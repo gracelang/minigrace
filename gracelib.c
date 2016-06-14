@@ -638,17 +638,17 @@ Object Object_bind(Object self, int nparts, int *argcv,
     int partcv[] = {1, 1};
     params[0] = self;
     params[1] = other;
-    return callmethod(grace_bindingClass(), "key()value", 2, partcv, params);
+    return callmethod(grace_bindingClass(), "key(1)value(1)", 2, partcv, params);
 }
 
 Object Object_concat(Object receiver, int nparts, int *argcv,
         Object* params, int flags) {
     Object a = callmethod(receiver, "asString", 0, NULL, NULL);
-    return callmethod(a, "++", 1, argcv, params);
+    return callmethod(a, "++(1)", 1, argcv, params);
 }
 Object Object_NotEquals(Object receiver, int nparts, int *argcv,
         Object* params, int flags) {
-    Object b = callmethod(receiver, "==", 1, argcv, params);
+    Object b = callmethod(receiver, "==(1)", 1, argcv, params);
     return callmethod(b, "not", 0, NULL, NULL);
 }
 Object Object_Equals(Object receiver, int nparts, int *argcv,
@@ -680,13 +680,13 @@ Object MatchResult_asString(Object self, int nparts, int *argcv,
         str = alloc_String("FailedMatch(result = ");
     int partcv[] = {1};
     Object tmpstr = callmethod(uo->data[0], "asString", 0, NULL, NULL);
-    str = callmethod(str, "++", 1, partcv, &tmpstr);
+    str = callmethod(str, "++(1)", 1, partcv, &tmpstr);
     tmpstr = alloc_String(", bindings = ");
-    str = callmethod(str, "++", 1, partcv, &tmpstr);
+    str = callmethod(str, "++(1)", 1, partcv, &tmpstr);
     tmpstr = callmethod(uo->data[1], "asString", 0, NULL, NULL);
-    str = callmethod(str, "++", 1, partcv, &tmpstr);
+    str = callmethod(str, "++(1)", 1, partcv, &tmpstr);
     tmpstr = alloc_String(")");
-    str = callmethod(str, "++", 1, partcv, &tmpstr);
+    str = callmethod(str, "++(1)", 1, partcv, &tmpstr);
     gc_unpause();
     return str;
 }
@@ -723,7 +723,7 @@ Object literal_match(Object self, int nparts, int *argcv,
         graceRaise(RequestError(), "match requires an argument");
     Object other = argv[0];
     int partcv[] = {1};
-    if (!istrue(callmethod(self, "==", 1, partcv, argv)))
+    if (!istrue(callmethod(self, "==(1)", 1, partcv, argv)))
         return alloc_FailedMatch(other, NULL);
     return alloc_SuccessfulMatch(other, NULL);
 }
@@ -746,15 +746,15 @@ Object AndPattern_match(Object self, int nparts, int *argcv, Object *argv,
     struct UserObject *b = (struct UserObject *)self;
     Object left = b->data[0];
     Object right = b->data[1];
-    Object m = callmethod(left, "match", 1, argcv, argv);
+    Object m = callmethod(left, "match(1)", 1, argcv, argv);
     if (!istrue(m))
         return m;
     Object bindings = callmethod(m, "bindings", 0, NULL, NULL);
-    m = callmethod(right, "match", 1, argcv, argv);
+    m = callmethod(right, "match(1)", 1, argcv, argv);
     if (!istrue(m))
         return m;
     Object bindings2 = callmethod(m, "bindings", 0, NULL, NULL);
-    bindings = callmethod(bindings, "++", 1, argcv, &bindings2);
+    bindings = callmethod(bindings, "++(1)", 1, argcv, &bindings2);
     return alloc_SuccessfulMatch(target, bindings);
 }
 Object OrPattern_match(Object self, int nparts, int *argcv, Object *argv,
@@ -764,10 +764,10 @@ Object OrPattern_match(Object self, int nparts, int *argcv, Object *argv,
     Object left = b->data[0];
     Object right = b->data[1];
     int tmp[1] = {1};
-    Object m = callmethod(left, "match", 1, argcv, argv);
+    Object m = callmethod(left, "match(1)", 1, argcv, argv);
     if (istrue(m))
         return alloc_SuccessfulMatch(target, NULL);
-    m = callmethod(right, "match", 1, argcv, argv);
+    m = callmethod(right, "match(1)", 1, argcv, argv);
     if (istrue(m))
         return alloc_SuccessfulMatch(target, NULL);
     return alloc_FailedMatch(target, NULL);
@@ -778,9 +778,9 @@ Object alloc_OrPattern(Object l, Object r) {
         OrPattern = o->class;
         glfree(o->class->name);
         o->class->name = "OrPattern";
-        add_Method(OrPattern, "|", &literal_or);
-        add_Method(OrPattern, "&", &literal_and);
-        add_Method(OrPattern, "match", &OrPattern_match);
+        add_Method(OrPattern, "|(1)", &literal_or);
+        add_Method(OrPattern, "&(1)", &literal_and);
+        add_Method(OrPattern, "match(1)", &OrPattern_match);
     }
     struct UserObject *b = (struct UserObject *)o;
     b->data[0] = l;
@@ -793,9 +793,9 @@ Object alloc_AndPattern(Object l, Object r) {
         AndPattern = o->class;
         glfree(o->class->name);
         o->class->name = "AndPattern";
-        add_Method(AndPattern, "|", &literal_or);
-        add_Method(AndPattern, "&", &literal_and);
-        add_Method(AndPattern, "match", &AndPattern_match);
+        add_Method(AndPattern, "|(1)", &literal_or);
+        add_Method(AndPattern, "&(1)", &literal_and);
+        add_Method(AndPattern, "match(1)", &AndPattern_match);
     }
     struct UserObject *b = (struct UserObject *)o;
     b->data[0] = l;
@@ -808,7 +808,7 @@ Object LessThanPattern_match(Object self, int nparts, int *argcv, Object *argv,
     Object target = argv[0];
     Object right = b->data[0];
     int tmp[1] = {1};
-    Object m = callmethod(target, "<", 1, argcv, &right);
+    Object m = callmethod(target, "<(1)", 1, argcv, &right);
     if (istrue(m))
         return alloc_SuccessfulMatch(target, NULL);
     return alloc_FailedMatch(target, NULL);
@@ -819,9 +819,9 @@ Object alloc_LessThanPattern(Object r) {
         LessThanPattern = o->class;
         glfree(o->class->name);
         o->class->name = "LessThanPattern";
-        add_Method(LessThanPattern, "|", &literal_or);
-        add_Method(LessThanPattern, "&", &literal_and);
-        add_Method(LessThanPattern, "match", &LessThanPattern_match);
+        add_Method(LessThanPattern, "|(1)", &literal_or);
+        add_Method(LessThanPattern, "&(1)", &literal_and);
+        add_Method(LessThanPattern, "match(1)", &LessThanPattern_match);
     }
     struct UserObject *b = (struct UserObject *)o;
     b->data[0] = r;
@@ -833,7 +833,7 @@ Object GreaterThanPattern_match(Object self, int nparts, int *argcv, Object *arg
     Object target = argv[0];
     Object right = b->data[0];
     int tmp[1] = {1};
-    Object m = callmethod(target, ">", 1, argcv, &right);
+    Object m = callmethod(target, ">(1)", 1, argcv, &right);
     if (istrue(m))
         return alloc_SuccessfulMatch(target, NULL);
     return alloc_FailedMatch(target, NULL);
@@ -844,9 +844,9 @@ Object alloc_GreaterThanPattern(Object r) {
         GreaterThanPattern = o->class;
         glfree(o->class->name);
         o->class->name = "GreaterThanPattern";
-        add_Method(GreaterThanPattern, "|", &literal_or);
-        add_Method(GreaterThanPattern, "&", &literal_and);
-        add_Method(GreaterThanPattern, "match", &GreaterThanPattern_match);
+        add_Method(GreaterThanPattern, "|(1)", &literal_or);
+        add_Method(GreaterThanPattern, "&(1)", &literal_and);
+        add_Method(GreaterThanPattern, "match(1)", &GreaterThanPattern_match);
     }
     struct UserObject *b = (struct UserObject *)o;
     b->data[0] = r;
@@ -916,7 +916,7 @@ Object ExceptionPacket_asString(Object self, int argc, int *argcv,
     strcpy(buf, x->name);
     strcat(buf, ": ");
     int tmp[1] = {1};
-    return callmethod(alloc_String(buf), "++", 1, tmp, &(e->message));
+    return callmethod(alloc_String(buf), "++(1)", 1, tmp, &(e->message));
 }
 Object ExceptionPacket_backtrace(Object self, int argc, int *argcv,
          Object *argv, int flags) {
@@ -927,7 +927,7 @@ Object ExceptionPacket_backtrace(Object self, int argc, int *argcv,
     for (int i=0; i < e->calldepth; i++) {
         int partcv[] = {1};
         Object btf = alloc_String(e->backtrace[i]);
-        callmethod(traceList, "push", 1, partcv, &btf);
+        callmethod(traceList, "push(1)", 1, partcv, &btf);
     }
     gc_unpause();
     return traceList;
@@ -945,7 +945,7 @@ Object alloc_ExceptionPacket(Object msg, Object exception) {
         add_Method(ExceptionPacket, "message", &ExceptionPacket_message);
         add_Method(ExceptionPacket, "exception", &ExceptionPacket_exception);
         add_Method(ExceptionPacket, "asString", &ExceptionPacket_asString);
-        add_Method(ExceptionPacket, "::", &Object_bind);
+        add_Method(ExceptionPacket, "::(1)", &Object_bind);
         add_Method(ExceptionPacket, "lineNumber", &ExceptionPacket_lineNumber);
         add_Method(ExceptionPacket, "moduleName", &ExceptionPacket_moduleName);
         add_Method(ExceptionPacket, "data", &ExceptionPacket_data);
@@ -1052,20 +1052,20 @@ Object Exception_asString(Object self, int argc, int *argcv, Object *argv,
 Object alloc_Exception(char *name, Object parent) {
     if (!ExceptionClass) {
         ExceptionClass = alloc_class("ExceptionClass", 14);
-        add_Method(ExceptionClass, "match", &Exception_match);
-        add_Method(ExceptionClass, "refine", &Exception_refine);
-        add_Method(ExceptionClass, "raise", &Exception_raise);
-        add_Method(ExceptionClass, "raiseWith", &Exception_raiseWith);
+        add_Method(ExceptionClass, "match(1)", &Exception_match);
+        add_Method(ExceptionClass, "refine(1)", &Exception_refine);
+        add_Method(ExceptionClass, "raise(1)", &Exception_raise);
+        add_Method(ExceptionClass, "raiseWith(2)", &Exception_raiseWith);
         add_Method(ExceptionClass, "parent", &Exception_parent);
-        add_Method(ExceptionClass, "==", &Exception_equals);
-        add_Method(ExceptionClass, "!=", &Object_NotEquals);
-        add_Method(ExceptionClass, "≠", &Object_NotEquals);
+        add_Method(ExceptionClass, "==(1)", &Exception_equals);
+        add_Method(ExceptionClass, "!=(1)", &Object_NotEquals);
+        add_Method(ExceptionClass, "≠(1)", &Object_NotEquals);
         add_Method(ExceptionClass, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(ExceptionClass, "asString", &Exception_asString);
         add_Method(ExceptionClass, "asDebugString", &Object_asDebugString);
-        add_Method(ExceptionClass, "::", &Object_bind);
-        add_Method(ExceptionClass, "|", &literal_or);
-        add_Method(ExceptionClass, "&", &literal_and);
+        add_Method(ExceptionClass, "::(1)", &Object_bind);
+        add_Method(ExceptionClass, "|(1)", &literal_or);
+        add_Method(ExceptionClass, "&(1)", &literal_and);
     }
     Object o = alloc_obj(sizeof (struct ExceptionObject)
             - sizeof(struct Object), ExceptionClass);
@@ -1086,7 +1086,7 @@ Object Float64_Point(Object self, int nparts, int *argcv,
     int partcv[] = {1, 1};
     params[0] = self;
     params[1] = other;
-    return callmethod(_prelude, "point2Dx()y", 2, partcv, params);
+    return callmethod(_prelude, "point2Dx(1)y(1)", 2, partcv, params);
 }
 
 Object String_Contains(Object self, int nparts, int *argcv,
@@ -1255,7 +1255,7 @@ Object BuiltinList_contains(Object self, int nparts, int *argcv,
     for (index=0; index<sself->size; index++) {
         my = sself->items[index];
         int partcv[] = {1};
-        b = callmethod(other, "==", 1, partcv, &my);
+        b = callmethod(other, "==(1)", 1, partcv, &my);
         if (istrue(b))
             return b;
     }
@@ -1269,7 +1269,7 @@ Object BuiltinList_equals(Object self, int nparts, int *argcv,
     requestArgs[0] = self;
     requestArgs[1] = other;
     Object collections = callmethod(_prelude, "collections", 0, NULL, NULL);
-    return callmethod(collections, "isEqual()toIterable", 2, partcv, requestArgs);
+    return callmethod(collections, "isEqual(1)toIterable(1)", 2, partcv, requestArgs);
 }
 Object BuiltinList_map(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -1279,7 +1279,7 @@ Object BuiltinList_map(Object self, int nparts, int *argcv,
     requestArgs[0] = self;
     requestArgs[1] = functionBlock;
     Object collections = callmethod(_prelude, "collections", 0, NULL, NULL);
-    return callmethodself(collections, "lazySequenceOver()mappedBy", 2,
+    return callmethodself(collections, "lazySequenceOver(1)mappedBy(1)", 2,
                 partcv, requestArgs);
 }
 Object BuiltinList_filter(Object self, int nparts, int *argcv,
@@ -1290,7 +1290,7 @@ Object BuiltinList_filter(Object self, int nparts, int *argcv,
     requestArgs[0] = self;
     requestArgs[1] = predicate1;
     Object collections = callmethod(_prelude, "collections", 0, NULL, NULL);
-    return callmethodself(collections, "lazySequenceOver()filteredBy", 2,
+    return callmethodself(collections, "lazySequenceOver(1)filteredBy(1)", 2,
                 partcv, requestArgs);
 }
 Object BuiltinList_reduce(Object self, int nparts, int *argcv,
@@ -1305,7 +1305,7 @@ Object BuiltinList_reduce(Object self, int nparts, int *argcv,
     for (index=0; index<sself->size; index++) {
         each = sself->items[index];
         int partcv[] = {2};
-        accum = callmethod(functionBlock, "apply", 1, partcv, &accum);
+        accum = callmethod(functionBlock, "apply(1)", 1, partcv, &accum);
         gc_frame_setslot(slot, accum);
     }
     return accum;
@@ -1323,7 +1323,7 @@ Object BuiltinList_fold_startingWith(Object self, int nparts, int *argcv,
     int index;
     for (index=0; index<sself->size; index++) {
         requestArgs[1] = sself->items[index];
-        requestArgs[0] = callmethod(functionBlock, "apply", 1, partcv, requestArgs);
+        requestArgs[0] = callmethod(functionBlock, "apply(1)", 1, partcv, requestArgs);
         gc_frame_setslot(slot, requestArgs[0]);
     }
     return requestArgs[0];
@@ -1337,7 +1337,7 @@ Object BuiltinList_do(Object self, int nparts, int *argcv,
     for (index=0; index<sself->size; index++) {
         each = sself->items[index];
         int partcv[] = {1};
-        callmethod(functionBlock, "apply", 1, partcv, &each);
+        callmethod(functionBlock, "apply(1)", 1, partcv, &each);
     }
     return done;
 }
@@ -1352,7 +1352,7 @@ Object BuiltinList_do_separatedBy(Object self, int nparts, int *argcv,
         each = sself->items[index];
         int partcv[] = {1};
         if (index > 0) callmethod(separatorBlock, "apply", 0, NULL, NULL);
-        callmethod(functionBlock, "apply", 1, partcv, &each);
+        callmethod(functionBlock, "apply(1)", 1, partcv, &each);
     }
     return done;
 }
@@ -1366,7 +1366,7 @@ Object BuiltinList_keyAndValuesDo(Object self, int nparts, int *argcv,
     for (index=0; index<sself->size; index++) {
         requestArgs[0] = alloc_Float64(index+1);
         requestArgs[1] = sself->items[index];
-        callmethod(functionBlock, "apply", 1, partcv, requestArgs);
+        callmethod(functionBlock, "apply(1)", 1, partcv, requestArgs);
     }
     return done;
 }
@@ -1411,12 +1411,12 @@ Object BuiltinList_asString(Object self, int nparts, int *argcv,
     Object c = alloc_String(", ");
     for (i=0; i<len; i++) {
         other = callmethod(sself->items[i], "asString", 0, NULL, NULL);
-        s = callmethod(s, "++", 1, partcv, &other);
+        s = callmethod(s, "++(1)", 1, partcv, &other);
         if (i != len-1)
-            s = callmethod(s, "++", 1, partcv, &c);
+            s = callmethod(s, "++(1)", 1, partcv, &c);
     }
     Object cb = alloc_String("]");
-    s = callmethod(s, "++", 1, partcv, &cb);
+    s = callmethod(s, "++(1)", 1, partcv, &cb);
     gc_unpause();
     return s;
 }
@@ -1429,7 +1429,7 @@ Object BuiltinList_indices(Object self, int nparts, int *argcv,
     int partcv[] = {1, 1};
     params[0] = alloc_Float64(1);
     params[1] = upperBound;
-    Object res = callmethod(grace_rangeClass(), "uncheckedFrom()to", 2, partcv, params);
+    Object res = callmethod(grace_rangeClass(), "uncheckedFrom(1)to(1)", 2, partcv, params);
     gc_unpause();
     return res;
 }
@@ -1530,17 +1530,17 @@ Object BuiltinList_reversed(Object self, int nparts, int *argcv,
 Object BuiltinList_asList(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int partcv[] = {1};
-    return callmethod(grace_prelude(), "list", 1, partcv, &self);
+    return callmethod(grace_prelude(), "list(1)", 1, partcv, &self);
 }
 Object BuiltinList_asSet(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int partcv[] = {1};
-    return callmethod(grace_prelude(), "set", 1, partcv, &self);
+    return callmethod(grace_prelude(), "set(1)", 1, partcv, &self);
 }
 Object BuiltinList_asSequence(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int partcv[] = {1};
-    return callmethod(grace_prelude(), "sequence", 1, partcv, &self);
+    return callmethod(grace_prelude(), "sequence(1)", 1, partcv, &self);
 }
 void BuiltinList__release(Object o) {
     struct BuiltinListObject *s = (struct BuiltinListObject *)o;
@@ -1559,27 +1559,27 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "asString", &BuiltinList_asString);
         add_Method(BuiltinList, "asDebugString", &BuiltinList_asString);
         add_Method(BuiltinList, "basicAsString", &BuiltinList_asString);
-        add_Method(BuiltinList, "::", &Object_bind);
-        add_Method(BuiltinList, "at", &BuiltinList_index);
+        add_Method(BuiltinList, "::(1)", &Object_bind);
+        add_Method(BuiltinList, "at(1)", &BuiltinList_index);
         add_Method(BuiltinList, "[]", &BuiltinList_index);
-        add_Method(BuiltinList, "at()put", &BuiltinList_indexAssign);
-        add_Method(BuiltinList, "[]:=", &BuiltinList_indexAssignReturnsDone);
-        add_Method(BuiltinList, "push", &BuiltinList_push);
+        add_Method(BuiltinList, "at(1)put(1)", &BuiltinList_indexAssign);
+        add_Method(BuiltinList, "[]:=(1)", &BuiltinList_indexAssignReturnsDone);
+        add_Method(BuiltinList, "push(1)", &BuiltinList_push);
         add_Method(BuiltinList, "pop", &BuiltinList_pop);
         add_Method(BuiltinList, "makeEmpty", &BuiltinList_makeEmpty);
-        add_Method(BuiltinList, "add", &BuiltinList_push);
-        add_Method(BuiltinList, "addAll", &BuiltinList_addAll);
-        add_Method(BuiltinList, "addLast", &BuiltinList_push);
+        add_Method(BuiltinList, "add(1)", &BuiltinList_push);
+        add_Method(BuiltinList, "addAll(1)", &BuiltinList_addAll);
+        add_Method(BuiltinList, "addLast(1)", &BuiltinList_push);
         add_Method(BuiltinList, "removeLast", &BuiltinList_pop);
         add_Method(BuiltinList, "size", &BuiltinList_length);
-        add_Method(BuiltinList, "sizeIfUnknown", &BuiltinList_length);
-        add_Method(BuiltinList, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
+        add_Method(BuiltinList, "sizeIfUnknown(1)", &BuiltinList_length);
+        add_Method(BuiltinList, "isMe(1)", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(BuiltinList, "isEmpty", &BuiltinList_isEmpty);
         add_Method(BuiltinList, "iterator", &BuiltinList_iter);
-        add_Method(BuiltinList, "contains", &BuiltinList_contains);
-        add_Method(BuiltinList, "==", &BuiltinList_equals);
-        add_Method(BuiltinList, "!=", &Object_NotEquals);
-        add_Method(BuiltinList, "≠", &Object_NotEquals);
+        add_Method(BuiltinList, "contains(1)", &BuiltinList_contains);
+        add_Method(BuiltinList, "==(1)", &BuiltinList_equals);
+        add_Method(BuiltinList, "!=(1)", &Object_NotEquals);
+        add_Method(BuiltinList, "≠(1)", &Object_NotEquals);
         add_Method(BuiltinList, "indices", &BuiltinList_indices);
         add_Method(BuiltinList, "keys", &BuiltinList_indices);
         add_Method(BuiltinList, "first", &BuiltinList_first);
@@ -1588,15 +1588,15 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "fourth", &BuiltinList_fourth);
         add_Method(BuiltinList, "fifth", &BuiltinList_fifth);
         add_Method(BuiltinList, "last", &BuiltinList_last);
-        add_Method(BuiltinList, "addFirst", &BuiltinList_addFirst);
-        add_Method(BuiltinList, "++", &BuiltinList_concat);
-        add_Method(BuiltinList, "reduce", &BuiltinList_reduce);
-        add_Method(BuiltinList, "map", &BuiltinList_map);
-        add_Method(BuiltinList, "filter", &BuiltinList_filter);
-        add_Method(BuiltinList, "fold()startingWith", &BuiltinList_fold_startingWith);
-        add_Method(BuiltinList, "do", &BuiltinList_do);
-        add_Method(BuiltinList, "do()separatedBy", &BuiltinList_do_separatedBy);
-        add_Method(BuiltinList, "keysAndValuesDo", &BuiltinList_keyAndValuesDo);
+        add_Method(BuiltinList, "addFirst(1)", &BuiltinList_addFirst);
+        add_Method(BuiltinList, "++(1)", &BuiltinList_concat);
+        add_Method(BuiltinList, "reduce(2)", &BuiltinList_reduce);
+        add_Method(BuiltinList, "map(1)", &BuiltinList_map);
+        add_Method(BuiltinList, "filter(1)", &BuiltinList_filter);
+        add_Method(BuiltinList, "fold(1)startingWith(1)", &BuiltinList_fold_startingWith);
+        add_Method(BuiltinList, "do(1)", &BuiltinList_do);
+        add_Method(BuiltinList, "do(1)separatedBy(1)", &BuiltinList_do_separatedBy);
+        add_Method(BuiltinList, "keysAndValuesDo(1)", &BuiltinList_keyAndValuesDo);
         add_Method(BuiltinList, "copy", &BuiltinList_copy);
         add_Method(BuiltinList, "reversed", &BuiltinList_reversed);
         add_Method(BuiltinList, "asList", &BuiltinList_asList);
@@ -1617,27 +1617,27 @@ Object alloc_Lineup() {
         add_Method(Lineup, "asString", &BuiltinList_asString);
         add_Method(Lineup, "asDebugString", &BuiltinList_asString);
         add_Method(Lineup, "basicAsString", &BuiltinList_asString);
-        add_Method(Lineup, "::", &Object_bind);
+        add_Method(Lineup, "::(1)", &Object_bind);
         add_Method(Lineup, "size", &BuiltinList_length);
-        add_Method(Lineup, "sizeIfUnknown", &BuiltinList_length);
+        add_Method(Lineup, "sizeIfUnknown(1)", &BuiltinList_length);
         add_Method(Lineup, "isEmpty", &BuiltinList_isEmpty);
-        add_Method(Lineup, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
+        add_Method(Lineup, "isMe(1)", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(Lineup, "iterator", &BuiltinList_iter);
-        add_Method(Lineup, "==", &BuiltinList_equals);
-        add_Method(Lineup, "!=", &Object_NotEquals);
-        add_Method(Lineup, "≠", &Object_NotEquals);
+        add_Method(Lineup, "==(1)", &BuiltinList_equals);
+        add_Method(Lineup, "!=(1)", &Object_NotEquals);
+        add_Method(Lineup, "≠(1)", &Object_NotEquals);
         add_Method(Lineup, "first", &BuiltinList_first);
         add_Method(Lineup, "second", &BuiltinList_second);
         add_Method(Lineup, "third", &BuiltinList_third);
         add_Method(Lineup, "fourth", &BuiltinList_fourth);
         add_Method(Lineup, "fifth", &BuiltinList_fifth);
-        add_Method(Lineup, "++", &BuiltinList_concat);
-        add_Method(Lineup, "map", &BuiltinList_map);
-        add_Method(Lineup, "filter", &BuiltinList_filter);
-        add_Method(Lineup, "fold()startingWith", &BuiltinList_fold_startingWith);
-        add_Method(Lineup, "do", &BuiltinList_do);
-        add_Method(Lineup, "do()separatedBy", &BuiltinList_do_separatedBy);
-        add_Method(Lineup, "push", &BuiltinList_push) -> flags = MFLAG_CONFIDENTIAL;
+        add_Method(Lineup, "++(1)", &BuiltinList_concat);
+        add_Method(Lineup, "map(1)", &BuiltinList_map);
+        add_Method(Lineup, "filter(1)", &BuiltinList_filter);
+        add_Method(Lineup, "fold(1)startingWith(1)", &BuiltinList_fold_startingWith);
+        add_Method(Lineup, "do(1)", &BuiltinList_do);
+        add_Method(Lineup, "do(1)separatedBy(1)", &BuiltinList_do_separatedBy);
+        add_Method(Lineup, "push(1)", &BuiltinList_push) -> flags = MFLAG_CONFIDENTIAL;
     }
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, Lineup);
     struct BuiltinListObject *lo = (struct BuiltinListObject*)o;
@@ -1687,9 +1687,9 @@ Object PrimitiveArray_asString(Object self, int nparts, int *argcv,
     gc_pause();
     Object s = alloc_String("[");
     other = callmethod(alloc_Float64(sself->size), "asString", 0, NULL, NULL);
-    s = callmethod(s, "++", 1, partcv, &other);
+    s = callmethod(s, "++(1)", 1, partcv, &other);
     other = alloc_String(": ");
-    s = callmethod(s, "++", 1, partcv, &other);
+    s = callmethod(s, "++(1)", 1, partcv, &other);
     Object c = alloc_String(", ");
     for (i=0; i<len; i++) {
         Object nextItem = sself->items[i];
@@ -1698,12 +1698,12 @@ Object PrimitiveArray_asString(Object self, int nparts, int *argcv,
         } else {
             other = callmethod(sself->items[i], "asString", 0, NULL, NULL);
         }
-        s = callmethod(s, "++", 1, partcv, &other);
+        s = callmethod(s, "++(1)", 1, partcv, &other);
         if (i != len-1)
-            s = callmethod(s, "++", 1, partcv, &c);
+            s = callmethod(s, "++(1)", 1, partcv, &c);
     }
     Object cb = alloc_String("]");
-    s = callmethod(s, "++", 1, partcv, &cb);
+    s = callmethod(s, "++(1)", 1, partcv, &cb);
     gc_unpause();
     return s;
 }
@@ -1717,9 +1717,9 @@ Object PrimitiveArray_asDebugString(Object self, int nparts, int *argcv,
     gc_pause();
     Object s = alloc_String("primArray(");
     other = callmethod(alloc_Float64(sself->size), "asString", 0, NULL, NULL);
-    s = callmethod(s, "++", 1, partcv, &other);
+    s = callmethod(s, "++(1)", 1, partcv, &other);
     other = alloc_String(": ");
-    s = callmethod(s, "++", 1, partcv, &other);
+    s = callmethod(s, "++(1)", 1, partcv, &other);
     Object c = alloc_String(", ");
     for (i=0; i<len; i++) {
         Object nextItem = sself->items[i];
@@ -1728,12 +1728,12 @@ Object PrimitiveArray_asDebugString(Object self, int nparts, int *argcv,
         } else {
             other = callmethod(sself->items[i], "asDebugString", 0, NULL, NULL);
         }
-        s = callmethod(s, "++", 1, partcv, &other);
+        s = callmethod(s, "++(1)", 1, partcv, &other);
         if (i != len-1)
-            s = callmethod(s, "++", 1, partcv, &c);
+            s = callmethod(s, "++(1)", 1, partcv, &c);
     }
     Object cb = alloc_String(")");
-    s = callmethod(s, "++", 1, partcv, &cb);
+    s = callmethod(s, "++(1)", 1, partcv, &cb);
     gc_unpause();
     return s;
 }
@@ -1745,7 +1745,7 @@ int compareFun(const void *a, const void *b) {
     Object params[2];
     params[0] = *(Object*) a;
     params[1] = *(Object*) b;
-    Object res = callmethod(compareBlock, "apply", 1, partcv, params);
+    Object res = callmethod(compareBlock, "apply(1)", 1, partcv, params);
     assertClass(res, Number);
     return integerfromAny(res);
 }
@@ -1763,19 +1763,19 @@ Object alloc_PrimitiveArray(int size) {
     if (PrimitiveArray == NULL) {
         PrimitiveArray = alloc_class3("primitiveArray", 13, (void*)&BuiltinList_mark,
                                       (void*)&BuiltinList__release);
-        add_Method(PrimitiveArray, "at", &PrimitiveArray_index);
+        add_Method(PrimitiveArray, "at(1)", &PrimitiveArray_index);
         add_Method(PrimitiveArray, "[]", &PrimitiveArray_index);
-        add_Method(PrimitiveArray, "at()put", &PrimitiveArray_indexAssign);
-        add_Method(PrimitiveArray, "[]:=", &PrimitiveArray_indexAssign);
+        add_Method(PrimitiveArray, "at(1)put(1)", &PrimitiveArray_indexAssign);
+        add_Method(PrimitiveArray, "[]:=(1)", &PrimitiveArray_indexAssign);
         add_Method(PrimitiveArray, "asString", &PrimitiveArray_asString);
         add_Method(PrimitiveArray, "asDebugString", &PrimitiveArray_asDebugString);
-        add_Method(PrimitiveArray, "::", &Object_bind);
+        add_Method(PrimitiveArray, "::(1)", &Object_bind);
         add_Method(PrimitiveArray, "size", &BuiltinList_length);
-        add_Method(PrimitiveArray, "sizeIfUnknown", &BuiltinList_length);
-        add_Method(PrimitiveArray, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
-        add_Method(PrimitiveArray, "==", &Object_Equals);
-        add_Method(PrimitiveArray, "!=", &Object_NotEquals);
-        add_Method(PrimitiveArray, "sortInitial()by", &PrimitiveArray_sort);
+        add_Method(PrimitiveArray, "sizeIfUnknown(1)", &BuiltinList_length);
+        add_Method(PrimitiveArray, "isMe(1)", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
+        add_Method(PrimitiveArray, "==(1)", &Object_Equals);
+        add_Method(PrimitiveArray, "!=(1)", &Object_NotEquals);
+        add_Method(PrimitiveArray, "sortInitial(1)by(1)", &PrimitiveArray_sort);
     }
     int i;
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, PrimitiveArray);
@@ -1798,9 +1798,9 @@ Object alloc_PrimitiveArrayClassObject() {
     if (PrimitiveArrayClassObject)
         return PrimitiveArrayClassObject;
     ClassData c = alloc_class("Class<primitiveArray>", 3);
-    add_Method(c, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
-    add_Method(c, "!=", &Object_NotEquals);
-    add_Method(c, "new", &PrimitiveArrayClassObject_new);
+    add_Method(c, "isMe(1)", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
+    add_Method(c, "!=(1)", &Object_NotEquals);
+    add_Method(c, "new(1)", &PrimitiveArrayClassObject_new);
     Object o = alloc_obj(0, c);
     gc_root(o);
     PrimitiveArrayClassObject = o;
@@ -1964,7 +1964,7 @@ Object String_indices(Object self, int nparts, int *argcv,
     int partcv[] = {1, 1};
     params[0] = alloc_Float64(1);
     params[1] = upperBound;
-    Object res = callmethod(grace_rangeClass(), "uncheckedFrom()to", 2, partcv, params);
+    Object res = callmethod(grace_rangeClass(), "uncheckedFrom(1)to(1)", 2, partcv, params);
     gc_unpause();
     return res;
 }
@@ -2059,8 +2059,8 @@ Object ConcatString_QuotedString(Object self, int nparts, int *argcv,
     gc_pause();
     Object q = alloc_String("\"");
     Object esc = makeQuotedString(p);
-    Object qesc = callmethod(q, "++", 1, partcv, &esc);
-    Object result = callmethod(qesc, "++", 1, partcv, &q);
+    Object qesc = callmethod(q, "++(1)", 1, partcv, &esc);
+    Object result = callmethod(qesc, "++(1)", 1, partcv, &q);
     gc_unpause();
     return result;
 }
@@ -2203,45 +2203,45 @@ Object alloc_ConcatString(Object left, Object right) {
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
         add_Method(ConcatString, "asDebugString", &ConcatString_QuotedString);
-        add_Method(ConcatString, "::", &Object_bind);
-        add_Method(ConcatString, "++", &String_concat);
+        add_Method(ConcatString, "::(1)", &Object_bind);
+        add_Method(ConcatString, "++(1)", &String_concat);
         add_Method(ConcatString, "size", &String_size);
-        add_Method(ConcatString, "sizeIfUnknown", &String_size);
-        add_Method(ConcatString, "at", &ConcatString_at);
+        add_Method(ConcatString, "sizeIfUnknown(1)", &String_size);
+        add_Method(ConcatString, "at(1)", &ConcatString_at);
         add_Method(ConcatString, "[]", &ConcatString_at);
-        add_Method(ConcatString, "contains", &ConcatString_Contains);
-        add_Method(ConcatString, "==", &ConcatString_Equals);
-        add_Method(ConcatString, ">", &String_Greater);
-        add_Method(ConcatString, ">=", &String_GreaterOrEqual);
-        add_Method(ConcatString, "≥", &String_GreaterOrEqual);
-        add_Method(ConcatString, "<", &String_Less);
-        add_Method(ConcatString, "<=", &String_LessOrEqual);
-        add_Method(ConcatString, "≤", &String_LessOrEqual);
-        add_Method(ConcatString, "!=", &Object_NotEquals);
-        add_Method(ConcatString, "≠", &Object_NotEquals);
-        add_Method(ConcatString, "compare", &String_Compare);
+        add_Method(ConcatString, "contains(1)", &ConcatString_Contains);
+        add_Method(ConcatString, "==(1)", &ConcatString_Equals);
+        add_Method(ConcatString, ">(1)", &String_Greater);
+        add_Method(ConcatString, ">=(1)", &String_GreaterOrEqual);
+        add_Method(ConcatString, "≥(1)", &String_GreaterOrEqual);
+        add_Method(ConcatString, "<(1)", &String_Less);
+        add_Method(ConcatString, "<=(1)", &String_LessOrEqual);
+        add_Method(ConcatString, "≤(1)", &String_LessOrEqual);
+        add_Method(ConcatString, "!=(1)", &Object_NotEquals);
+        add_Method(ConcatString, "≠(1)", &Object_NotEquals);
+        add_Method(ConcatString, "compare(1)", &String_Compare);
         add_Method(ConcatString, "first", &ConcatString_first);
-        add_Method(ConcatString, "do", &ConcatString_do);
+        add_Method(ConcatString, "do(1)", &ConcatString_do);
         add_Method(ConcatString, "iterator", &ConcatString_iter);
         add_Method(ConcatString, "quoted", &ConcatString_quoted);
         add_Method(ConcatString, "_escape", &ConcatString__escape);
         add_Method(ConcatString, "length", &ConcatString_length);
-        add_Method(ConcatString, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
+        add_Method(ConcatString, "isMe(1)", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(ConcatString, "isEmpty", &ConcatString_isEmpty);
         add_Method(ConcatString, "iter", &ConcatString_iter);
         add_Method(ConcatString, "iterator", &ConcatString_iter);
         add_Method(ConcatString, "ord", &ConcatString_ord);
         add_Method(ConcatString, "encode", &String_encode);
-        add_Method(ConcatString, "substringFrom()to", &ConcatString_substringFrom_to);
+        add_Method(ConcatString, "substringFrom(1)to(1)", &ConcatString_substringFrom_to);
         add_Method(ConcatString, "startsWith", &ConcatString_startsWith);
         add_Method(ConcatString, "endsWith", &ConcatString_endsWith);
-        add_Method(ConcatString, "replace()with", &ConcatString_replace_with);
+        add_Method(ConcatString, "replace(1)with(1)", &ConcatString_replace_with);
         add_Method(ConcatString, "hash", &String_hashcode);
         add_Method(ConcatString, "indices", &String_indices);
         add_Method(ConcatString, "asNumber", &String_asNumber);
-        add_Method(ConcatString, "match", &literal_match);
-        add_Method(ConcatString, "|", &literal_or);
-        add_Method(ConcatString, "&", &literal_and);
+        add_Method(ConcatString, "match(1)", &literal_match);
+        add_Method(ConcatString, "|(1)", &literal_or);
+        add_Method(ConcatString, "&(1)", &literal_and);
     }
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
@@ -2384,7 +2384,7 @@ Object String_do(Object self, int nparts, int *argcv,
     while (istrue(callmethod(iter, "hasNext", 0, NULL, NULL))) {
         Object next = callmethod(iter, "next", 0, NULL, NULL);
         gc_frame_setslot(slot, next);
-        callmethod(block, "apply", 1, partcv, &next);
+        callmethod(block, "apply(1)", 1, partcv, &next);
     }
     return done;
 }
@@ -2453,45 +2453,45 @@ Object alloc_String(const char *data) {
         String = alloc_class("String", 40);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "asDebugString", &String_QuotedString);
-        add_Method(String, "::", &Object_bind);
-        add_Method(String, "++", &String_concat);
+        add_Method(String, "::(1)", &Object_bind);
+        add_Method(String, "++(1)", &String_concat);
         add_Method(String, "size", &String_size);
-        add_Method(String, "sizeIfUnknown", &String_size);
-        add_Method(String, "at", &String_at);
+        add_Method(String, "sizeIfUnknown(1)", &String_size);
+        add_Method(String, "at(1)", &String_at);
         add_Method(String, "[]", &String_at);
-        add_Method(String, "contains", &String_Contains);
-        add_Method(String, "==", &String_Equals);
-        add_Method(String, ">", &String_Greater);
-        add_Method(String, ">=", &String_GreaterOrEqual);
-        add_Method(String, "≥", &String_GreaterOrEqual);
-        add_Method(String, "<", &String_Less);
-        add_Method(String, "<=", &String_LessOrEqual);
-        add_Method(String, "≤", &String_LessOrEqual);
-        add_Method(String, "!=", &Object_NotEquals);
-        add_Method(String, "≠", &Object_NotEquals);
-        add_Method(String, "compare", &String_Compare);
+        add_Method(String, "contains(1)", &String_Contains);
+        add_Method(String, "==(1)", &String_Equals);
+        add_Method(String, ">(1)", &String_Greater);
+        add_Method(String, ">=(1)", &String_GreaterOrEqual);
+        add_Method(String, "≥(1)", &String_GreaterOrEqual);
+        add_Method(String, "<(1)", &String_Less);
+        add_Method(String, "<=(1)", &String_LessOrEqual);
+        add_Method(String, "≤(1)", &String_LessOrEqual);
+        add_Method(String, "!=(1)", &Object_NotEquals);
+        add_Method(String, "≠(1)", &Object_NotEquals);
+        add_Method(String, "compare(1)", &String_Compare);
         add_Method(String, "first", &String_first);
         add_Method(String, "iterator", &String_iter);
         add_Method(String, "quoted", &String_quoted);
         add_Method(String, "_escape", &String__escape);
         add_Method(String, "length", &String_length);
-        add_Method(String, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
+        add_Method(String, "isMe(1)", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(String, "isEmpty", &String_isEmpty);
-        add_Method(String, "do", &String_do);
+        add_Method(String, "do(1)", &String_do);
         add_Method(String, "iter", &String_iter);
         add_Method(String, "iterator", &String_iter);
         add_Method(String, "ord", &String_ord);
         add_Method(String, "encode", &String_encode);
-        add_Method(String, "substringFrom()to", &String_substringFrom_to);
+        add_Method(String, "substringFrom(1)to(1)", &String_substringFrom_to);
         add_Method(String, "startsWith", &String_startsWith);
         add_Method(String, "endsWith", &String_endsWith);
-        add_Method(String, "replace()with", &String_replace_with);
+        add_Method(String, "replace(1)with(1)", &String_replace_with);
         add_Method(String, "hash", &String_hashcode);
         add_Method(String, "indices", &String_indices);
         add_Method(String, "asNumber", &String_asNumber);
-        add_Method(String, "match", &literal_match);
-        add_Method(String, "|", &literal_or);
-        add_Method(String, "&", &literal_and);
+        add_Method(String, "match(1)", &literal_match);
+        add_Method(String, "|(1)", &literal_or);
+        add_Method(String, "&(1)", &literal_and);
     }
     if (blen == 1) {
         if (String_Interned_1[data[0]] != NULL)
@@ -2607,8 +2607,8 @@ Object String_QuotedString(Object self, int nparts, int *argcv,
     gc_pause();
     Object q = alloc_String("\"");
     Object esc = makeQuotedString(p);
-    Object qesc = callmethod(q, "++", 1, partcv, &esc);
-    Object result = callmethod(qesc, "++", 1, partcv, &q);
+    Object qesc = callmethod(q, "++(1)", 1, partcv, &esc);
+    Object result = callmethod(qesc, "++(1)", 1, partcv, &q);
     gc_unpause();
     return result;
 }
@@ -2698,12 +2698,12 @@ Object alloc_Octets(const char *data, int len) {
     if (Octets == NULL) {
         Octets = alloc_class("Octets", 9);
         add_Method(Octets, "asString", &Octets_asString);
-        add_Method(Octets, "::", &Object_bind);
-        add_Method(Octets, "++", &Octets_Concat);
-        add_Method(Octets, "at", &Octets_at);
+        add_Method(Octets, "::(1)", &Object_bind);
+        add_Method(Octets, "++(1)", &Octets_Concat);
+        add_Method(Octets, "at(1)", &Octets_at);
         add_Method(Octets, "[]", &Octets_at);
-        add_Method(Octets, "==", &Octets_Equals);
-        add_Method(Octets, "!=", &Object_NotEquals);
+        add_Method(Octets, "==(1)", &Octets_Equals);
+        add_Method(Octets, "!=(1)", &Object_NotEquals);
         add_Method(Octets, "size", &Octets_size);
         add_Method(Octets, "decode", &Octets_decode);
     }
@@ -2721,7 +2721,7 @@ Object Float64_Range(Object self, int nparts, int *argcv,
     int partcv[] = {1, 1};
     params[0] = self;
     params[1] = other;
-    return callmethod(grace_rangeClass(), "from()to", 2, partcv, params);
+    return callmethod(grace_rangeClass(), "from(1)to(1)", 2, partcv, params);
 }
 Object Float64_Add(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -3009,35 +3009,35 @@ Object alloc_Float64(double num) {
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
         Number = alloc_class2("Number", 44, (void*)&Float64__mark);
-        add_Method(Number, "+", &Float64_Add);
-        add_Method(Number, "*", &Float64_Mul);
-        add_Method(Number, "-", &Float64_Sub);
-        add_Method(Number, "/", &Float64_Div);
-        add_Method(Number, "^", &Float64_Exp);
-        add_Method(Number, "%", &Float64_Mod);
-        add_Method(Number, "÷", &Float64_IntDiv);
-        add_Method(Number, "@", &Float64_Point);
-        add_Method(Number, "==", &Float64_Equals);
-        add_Method(Number, "!=", &Object_NotEquals);
-        add_Method(Number, "≠", &Object_NotEquals);
+        add_Method(Number, "+(1)", &Float64_Add);
+        add_Method(Number, "*(1)", &Float64_Mul);
+        add_Method(Number, "-(1)", &Float64_Sub);
+        add_Method(Number, "/(1)", &Float64_Div);
+        add_Method(Number, "^(1)", &Float64_Exp);
+        add_Method(Number, "%(1)", &Float64_Mod);
+        add_Method(Number, "÷(1)", &Float64_IntDiv);
+        add_Method(Number, "@(1)", &Float64_Point);
+        add_Method(Number, "==(1)", &Float64_Equals);
+        add_Method(Number, "!=(1)", &Object_NotEquals);
+        add_Method(Number, "≠(1)", &Object_NotEquals);
         add_Method(Number, "hashcode", &Float64_hashcode);
         add_Method(Number, "hash", &Float64_hashcode);
-        add_Method(Number, "++", &Object_concat);
-        add_Method(Number, "compare", &Float64_Compare);
-        add_Method(Number, "<", &Float64_LessThan);
-        add_Method(Number, ">", &Float64_GreaterThan);
-        add_Method(Number, "<=", &Float64_LessOrEqual);
-        add_Method(Number, "≤", &Float64_LessOrEqual);
-        add_Method(Number, ">=", &Float64_GreaterOrEqual);
-        add_Method(Number, "≥", &Float64_GreaterOrEqual);
+        add_Method(Number, "++(1)", &Object_concat);
+        add_Method(Number, "compare(1)", &Float64_Compare);
+        add_Method(Number, "<(1)", &Float64_LessThan);
+        add_Method(Number, ">(1)", &Float64_GreaterThan);
+        add_Method(Number, "<=(1)", &Float64_LessOrEqual);
+        add_Method(Number, "≤(1)", &Float64_LessOrEqual);
+        add_Method(Number, ">=(1)", &Float64_GreaterOrEqual);
+        add_Method(Number, "≥(1)", &Float64_GreaterOrEqual);
         add_Method(Number, "isEven", &Float64_IsEven);
         add_Method(Number, "isOdd", &Float64_IsOdd);
         add_Method(Number, "isInteger", &Float64_IsInteger);
         add_Method(Number, "isNaN", &Float64_IsNaN);
-        add_Method(Number, "..", &Float64_Range);
+        add_Method(Number, "..(1)", &Float64_Range);
         add_Method(Number, "asString", &Float64_asString);
         add_Method(Number, "asDebugString", &Object_asDebugString);
-        add_Method(Number, "::", &Object_bind);
+        add_Method(Number, "::(1)", &Object_bind);
         add_Method(Number, "asInteger32", &Float64_asInteger32);
         add_Method(Number, "prefix-", &Float64_Negate);
         add_Method(Number, "inBase", &Float64_inBase);
@@ -3048,11 +3048,11 @@ Object alloc_Float64(double num) {
         add_Method(Number, "ceiling", &Float64_ceiling);
         add_Method(Number, "abs", &Float64_abs);
         add_Method(Number, "sgn", &Float64_sgn);
-        add_Method(Number, "match", &literal_match);
-        add_Method(Number, "|", &literal_or);
-        add_Method(Number, "&", &literal_and);
-        add_Method(Number, "prefix<", &Float64_prefixLessThan);
-        add_Method(Number, "prefix>", &Float64_prefixGreaterThan);
+        add_Method(Number, "match(1)", &literal_match);
+        add_Method(Number, "|(1)", &literal_or);
+        add_Method(Number, "&(1)", &literal_and);
+        add_Method(Number, "prefix<(1)", &Float64_prefixLessThan);
+        add_Method(Number, "prefix>(1)", &Float64_prefixGreaterThan);
     }
     Object o = alloc_obj(sizeof(double) + sizeof(Object), Number);
     double *d = (double*)o->data;
@@ -3166,17 +3166,17 @@ Object alloc_Boolean(int val) {
         Boolean = alloc_class("Boolean", 13);
         add_Method(Boolean, "asString", &Boolean_asString);
         add_Method(Boolean, "asDebugString", &Object_asDebugString);
-        add_Method(Boolean, "::", &Object_bind);
-        add_Method(Boolean, "&", &literal_and);
-        add_Method(Boolean, "|", &literal_or);
-        add_Method(Boolean, "&&", &Boolean_AndAnd);
-        add_Method(Boolean, "||", &Boolean_OrOr);
+        add_Method(Boolean, "::(1)", &Object_bind);
+        add_Method(Boolean, "&(1)", &literal_and);
+        add_Method(Boolean, "|(1)", &literal_or);
+        add_Method(Boolean, "&&(1)", &Boolean_AndAnd);
+        add_Method(Boolean, "||(1)", &Boolean_OrOr);
         add_Method(Boolean, "prefix!", &Boolean_not);
         add_Method(Boolean, "not", &Boolean_not);
-        add_Method(Boolean, "==", &Boolean_Equals);
-        add_Method(Boolean, "!=", &Boolean_NotEquals);
-        add_Method(Boolean, "≠", &Boolean_NotEquals);
-        add_Method(Boolean, "match", &literal_match);
+        add_Method(Boolean, "==(1)", &Boolean_Equals);
+        add_Method(Boolean, "!=(1)", &Boolean_NotEquals);
+        add_Method(Boolean, "≠(1)", &Boolean_NotEquals);
+        add_Method(Boolean, "match(1)", &literal_match);
     }
     Object o = alloc_obj(sizeof(int8_t), Boolean);
     int8_t *d = (int8_t*)o->data;
@@ -3357,8 +3357,8 @@ Object alloc_File_from_stream(FILE *stream) {
         add_Method(File, "pathname", &File_pathname);
         add_Method(File, "eof", &File_eof);
         add_Method(File, "isatty", &File_isatty);
-        add_Method(File, "==", &Object_Equals);
-        add_Method(File, "!=", &Object_NotEquals);
+        add_Method(File, "==(1)", &Object_Equals);
+        add_Method(File, "!=(1)", &Object_NotEquals);
         add_Method(File, "asString", &File_asString);
         add_Method(File, "asDebugString", &Object_asDebugString);
     }
@@ -3498,9 +3498,9 @@ Object alloc_Process(pid_t pid) {
         add_Method(Process, "success", &Process_success);
         add_Method(Process, "terminated", &Process_terminated);
         add_Method(Process, "status", &Process_status);
-        add_Method(Process, "==", &Object_Equals);
-        add_Method(Process, "!=", &Object_NotEquals);
-        add_Method(Process, "≠", &Object_NotEquals);
+        add_Method(Process, "==(1)", &Object_Equals);
+        add_Method(Process, "!=(1)", &Object_NotEquals);
+        add_Method(Process, "≠(1)", &Object_NotEquals);
     }
     Object o = alloc_obj(sizeof(pid_t) + sizeof(int) * 2, Process);
     struct ProcessObject *p = (struct ProcessObject *)o;
@@ -3540,7 +3540,7 @@ Object io_listdir(Object self, int nparts, int *argcv,
     int partcv[] = {1};
     while((entry = readdir(dp)) != NULL){
         Object str = alloc_String(entry->d_name);
-        callmethod(ret,"push",1,partcv,&str);
+        callmethod(ret,"push(1)",1,partcv,&str);
     }
     gc_unpause();
     return ret;
@@ -3606,11 +3606,11 @@ Object alloc_environObject() {
         return environObject;
     if (!EnvironObject) {
         EnvironObject = alloc_class("Environ", 5);
-        add_Method(EnvironObject, "at", &environObject_at);
+        add_Method(EnvironObject, "at(1)", &environObject_at);
         add_Method(EnvironObject, "[]", &environObject_at);
-        add_Method(EnvironObject, "at()put", &environObject_atPut);
-        add_Method(EnvironObject, "[]:=", &environObject_atPut);
-        add_Method(EnvironObject, "contains", &environObject_contains);
+        add_Method(EnvironObject, "at(1)put(1)", &environObject_atPut);
+        add_Method(EnvironObject, "[]:=(1)", &environObject_atPut);
+        add_Method(EnvironObject, "contains(1)", &environObject_contains);
     }
     environObject = alloc_obj(0, EnvironObject);
     gc_root(environObject);
@@ -3725,9 +3725,9 @@ Object alloc_ObjectType() {
         return ObjectType;
     ObjectType = alloc_Type("Object", 6);
     gc_root(ObjectType);
-    add_Method((ClassData)ObjectType, "!=", NULL);
-    add_Method((ClassData)ObjectType, "≠", NULL);
-    add_Method((ClassData)ObjectType, "::", NULL);
+    add_Method((ClassData)ObjectType, "!=(1)", NULL);
+    add_Method((ClassData)ObjectType, "≠(1)", NULL);
+    add_Method((ClassData)ObjectType, "::(1)", NULL);
     add_Method((ClassData)ObjectType, "asString", NULL);
     add_Method((ClassData)ObjectType, "asDebugString", NULL);
     add_Method((ClassData)ObjectType, "basicAsString", NULL);
@@ -3739,11 +3739,11 @@ Object alloc_ellipsis() {
     ellipsisClass = alloc_class("ellipsis", 7);
     add_Method(ellipsisClass, "asString", &Object_asString);
     add_Method(ellipsisClass, "asDebugString", &Object_asDebugString);
-    add_Method(ellipsisClass, "::", &Object_bind);
-    add_Method(ellipsisClass, "++", &Object_concat);
-    add_Method(ellipsisClass, "==", &Object_Equals);
-    add_Method(ellipsisClass, "!=", &Object_NotEquals);
-    add_Method(ellipsisClass, "≠", &Object_NotEquals);
+    add_Method(ellipsisClass, "::(1)", &Object_bind);
+    add_Method(ellipsisClass, "++(1)", &Object_concat);
+    add_Method(ellipsisClass, "==(1)", &Object_Equals);
+    add_Method(ellipsisClass, "!=(1)", &Object_NotEquals);
+    add_Method(ellipsisClass, "≠(1)", &Object_NotEquals);
     Object o = alloc_obj(0, ellipsisClass);
     gc_root(o);
     ellipsis = o;
@@ -3900,7 +3900,7 @@ int checkmethodcall(Method *m, int nparts, int *argcv, Object *argv) {
     for (i = 0; i < nparts && i < t->nparts; i++) {
         for (j = 0; j < argcv[i] && j < t->argcv[i]; j++) {
             if (t->types[k])
-                if (!istrue(callmethod(t->types[k], "match", 1, partcv, &argv[k]))) {
+                if (!istrue(callmethod(t->types[k], "match(1)", 1, partcv, &argv[k]))) {
                     graceRaise(TypeError(), "expected %s for argument %s (%i) "
                             "of %s (defined at %s:%i), got %s",
                             ((struct TypeObject *)t->types[k])->name,
@@ -4128,12 +4128,12 @@ Object matchCase(Object matchee, Object *cases, int ncases, Object elsecase) {
     int i;
     int partcv[] = {1};
     for (i=0; i<ncases; i++) {
-        Object ret = callmethod(cases[i], "match", 1, partcv, &matchee);
+        Object ret = callmethod(cases[i], "match(1)", 1, partcv, &matchee);
         if (istrue(ret))
             return callmethod(ret, "result", 0, NULL, NULL);
     }
     if (elsecase)
-        return callmethod(elsecase, "apply", 1, partcv, &matchee);
+        return callmethod(elsecase, "apply(1)", 1, partcv, &matchee);
     graceRaise(ProgrammingError(), "non-exhaustive match in match()case()….");
     return done;        // will never happen, but keeps C compiler quiet
 }
@@ -4159,7 +4159,7 @@ Object tryCatch(Object block, Object *caseList, int ncases,
         int partcv[1] = {1};
         for (int i=0; i<ncases; i++) {
             Object val = caseList[i];
-            Object ret = callmethod(val, "match", 1, partcv,
+            Object ret = callmethod(val, "match(1)", 1, partcv,
                     &currentException);
             if (istrue(ret)) {
                 callmethod(finally, "apply", 0, NULL, NULL);
@@ -4386,10 +4386,10 @@ Object Type_methodNames(Object self, int nparts, int *argcv,
     int partcv[] = {1};
     gc_pause();
     Object emptyList = alloc_BuiltinList();
-    Object result = callmethod(grace_prelude(), "set", 1, partcv, &emptyList);
+    Object result = callmethod(grace_prelude(), "set(1)", 1, partcv, &emptyList);
     for (i=0; i < t->nummethods; i++) {
         mn = alloc_String(t->methods[i].name);
-        callmethod(result, "add", 1, partcv, &mn);
+        callmethod(result, "add(1)", 1, partcv, &mn);
     }
     gc_unpause();
     return result;
@@ -4401,7 +4401,7 @@ Object Type_and(Object self, int nparts, int *argcv,
     Object ti = callmethod(_prelude, "TypeIntersection", 0, NULL, NULL);
     int partcv[] = {2};
     Object args[] = {self, argv[0]};
-    Object res = callmethod(ti, "new", 1, partcv, args);
+    Object res = callmethod(ti, "new(1)", 1, partcv, args);
     return res;
 }
 Object Type_or(Object self, int nparts, int *argcv,
@@ -4411,7 +4411,7 @@ Object Type_or(Object self, int nparts, int *argcv,
     Object ti = callmethod(_prelude, "TypeVariant", 0, NULL, NULL);
     int partcv[] = {2};
     Object args[] = {self, argv[0]};
-    Object res = callmethod(ti, "new", 1, partcv, args);
+    Object res = callmethod(ti, "new(1)", 1, partcv, args);
     return res;
 }
 Object Type_plus(Object self, int nparts, int *argcv,
@@ -4421,21 +4421,21 @@ Object Type_plus(Object self, int nparts, int *argcv,
     Object ti = callmethod(_prelude, "TypeUnion", 0, NULL, NULL);
     int partcv[] = {2};
     Object args[] = {self, argv[0]};
-    Object res = callmethod(ti, "new", 1, partcv, args);
+    Object res = callmethod(ti, "new(1)", 1, partcv, args);
     return res;
 }
 Object alloc_Type(const char *name, int nummethods) {
     if (Type == NULL) {
         Type = alloc_class("Type", 10);
-        add_Method(Type, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
-        add_Method(Type, "!=", &Object_NotEquals);
-        add_Method(Type, "≠", &Object_NotEquals);
+        add_Method(Type, "isMe(1)", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
+        add_Method(Type, "!=(1)", &Object_NotEquals);
+        add_Method(Type, "≠(1)", &Object_NotEquals);
         add_Method(Type, "asString", &Type_asString);
-        add_Method(Type, "::", &Object_bind);
-        add_Method(Type, "match", &Type_match);
-        add_Method(Type, "&", &Type_and);
-        add_Method(Type, "|", &Type_or);
-        add_Method(Type, "+", &Type_plus);
+        add_Method(Type, "::(1)", &Object_bind);
+        add_Method(Type, "match(1)", &Type_match);
+        add_Method(Type, "&(1)", &Type_and);
+        add_Method(Type, "|(1)", &Type_or);
+        add_Method(Type, "+(1)", &Type_plus);
         add_Method(Type, "methodNames", &Type_methodNames);
     }
     Object o = alloc_obj(sizeof(struct TypeObject)
@@ -4474,11 +4474,11 @@ static inline void initialise_Class() {
         Class->nummethods = 3;
         Class->mark = NULL;
         Class->release = (void *)&ClassData__release;
-        add_Method(Class, "match", &Type_match);
-        add_Method(Class, "&", &literal_and);
-        add_Method(Class, "|", &literal_or);
+        add_Method(Class, "match(1)", &Type_match);
+        add_Method(Class, "&(1)", &literal_and);
+        add_Method(Class, "|(1)", &literal_or);
         add_Method(Class, "asString", &Class_asString);
-        add_Method(Class, "::", &Object_bind);
+        add_Method(Class, "::(1)", &Object_bind);
     }
 }
 ClassData alloc_class(const char *name, int nummethods) {
@@ -4641,21 +4641,21 @@ ClassData Integer32 = NULL;
 Object alloc_Integer32(int i) {
     if (Integer32 == NULL) {
         Integer32 = alloc_class("Integer32", 16);
-        add_Method(Integer32, "==", &Integer32_Equals);
-        add_Method(Integer32, "!=", &Integer32_NotEquals);
-        add_Method(Integer32, "≠", &Integer32_NotEquals);
-        add_Method(Integer32, "+", &Integer32_Plus);
-        add_Method(Integer32, "*", &Integer32_Times);
-        add_Method(Integer32, "-", &Integer32_Minus);
-        add_Method(Integer32, "/", &Integer32_DividedBy);
-        add_Method(Integer32, "<", &Integer32_LessThan);
-        add_Method(Integer32, ">", &Integer32_GreaterThan);
-        add_Method(Integer32, "<<", &Integer32_LShift);
-        add_Method(Integer32, ">>", &Integer32_RShift);
-        add_Method(Integer32, "&", &Integer32_And);
-        add_Method(Integer32, "|", &Integer32_Or);
+        add_Method(Integer32, "==(1)", &Integer32_Equals);
+        add_Method(Integer32, "!=(1)", &Integer32_NotEquals);
+        add_Method(Integer32, "≠(1)", &Integer32_NotEquals);
+        add_Method(Integer32, "+(1)", &Integer32_Plus);
+        add_Method(Integer32, "*(1)", &Integer32_Times);
+        add_Method(Integer32, "-(1)", &Integer32_Minus);
+        add_Method(Integer32, "/(1)", &Integer32_DividedBy);
+        add_Method(Integer32, "<(1)", &Integer32_LessThan);
+        add_Method(Integer32, ">(1)", &Integer32_GreaterThan);
+        add_Method(Integer32, "<<(1)", &Integer32_LShift);
+        add_Method(Integer32, ">>(1)", &Integer32_RShift);
+        add_Method(Integer32, "&(1)", &Integer32_And);
+        add_Method(Integer32, "|(1)", &Integer32_Or);
         add_Method(Integer32, "asString", &Integer32_asString);
-        add_Method(Integer32, "::", &Object_bind);
+        add_Method(Integer32, "::(1)", &Object_bind);
         add_Method(Integer32, "isInteger32", &Integer32_isInteger32);
     }
     Object o = alloc_obj(sizeof(int32_t), Integer32);
@@ -4670,7 +4670,7 @@ Object Block_apply(Object self, int nparts, int *argcv,
         memcpy(return_stack[calldepth - 1], bo->retpoint,
             sizeof(return_stack[calldepth - 1]));
     if (argcv != NULL)
-        return callmethod(self, "_apply", 1, argcv, args);
+        return callmethod(self, "_apply(1)", 1, argcv, args);
     else
         return callmethod(self, "_apply", 0, argcv, args);
 }
@@ -4684,10 +4684,10 @@ Object Block_applyIndirectly(Object self, int nparts, int *argcv,
     Object rargs[sz];
     for (i=0; i<sz; i++) {
         Object flt = alloc_Float64(i + 1);
-        rargs[i] = callmethod(tuple, "[]", 1, partcv, &flt);
+        rargs[i] = callmethod(tuple, "[](1)", 1, partcv, &flt);
     }
     partcv[0] = sz;
-    return callmethod(self, "_apply", 1, partcv, rargs);
+    return callmethod(self, "_apply(1)", 1, partcv, rargs);
 }
 Object Block_match(Object self, int nparts, int *argcv, Object *args, int flags) {
     struct BlockObject *bo = (struct BlockObject*)self;
@@ -4699,11 +4699,11 @@ Object Block_match(Object self, int nparts, int *argcv, Object *args, int flags)
     }
     Object pattern = bo->data[1];
     int partcv[] = {1};
-    Object match = callmethod(pattern, "match", 1, partcv, args);
+    Object match = callmethod(pattern, "match(1)", 1, partcv, args);
     if (!istrue(match))
         return match;
     Object bindings = callmethod(match, "bindings", 0, NULL, NULL);
-    Object rv = callmethod(self, "applyIndirectly", 1, partcv, &bindings);
+    Object rv = callmethod(self, "applyIndirectly(1)", 1, partcv, &bindings);
     return alloc_SuccessfulMatch(rv, NULL);
 }
 Object Block_pattern(Object self, int argc, int *argcv,
@@ -4731,15 +4731,15 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
     if (!Block)
         Block = c;
     add_Method(c, "apply", &Block_apply);
-    add_Method(c, "applyIndirectly", &Block_applyIndirectly);
-    add_Method(c, "match", &Block_match);
+    add_Method(c, "applyIndirectly(1)", &Block_applyIndirectly);
+    add_Method(c, "match(1)", &Block_match);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "asDebugString", &Object_asDebugString);
-    add_Method(c, "::", &Object_bind);
-    add_Method(c, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
-    add_Method(c, "!=", &Object_NotEquals);
-    add_Method(c, "≠", &Object_NotEquals);
-    add_Method(c, "pattern", &Block_pattern);
+    add_Method(c, "::(1)", &Object_bind);
+    add_Method(c, "isMe(1)", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
+    add_Method(c, "!=(1)", &Object_NotEquals);
+    add_Method(c, "≠(1)", &Object_NotEquals);
+    add_Method(c, "pattern(1)", &Block_pattern);
     if (self == NULL && line == -1)
         add_Method(c, "_apply", &identity_function);
     struct BlockObject *o = (struct BlockObject*)(
@@ -4845,7 +4845,7 @@ Object process_varargs(Object *args, int fixed, int nargs) {
     Object lst = alloc_BuiltinList();
     int partcv[] = {1};
     for (; i<nargs; i++) {
-        callmethod(lst, "push", 1, partcv, &args[i]);
+        callmethod(lst, "push(1)", 1, partcv, &args[i]);
     }
     return lst;
 }
@@ -5171,7 +5171,7 @@ Object grace_for_do(Object self, int nparts, int *argcv,
     Object coll = argv[0];
     Object blk = argv[1];
     int partcv[] = {1};
-    callmethod(coll, "do", 1, partcv, &blk);
+    callmethod(coll, "do(1)", 1, partcv, &blk);
     return done;
 }
 #define HEXVALC(c) ((c >= '0' && c <= '9') ? c - '0' : ((c >= 'a' && c <= 'f') ? c - 'a' + 10 : -1))
@@ -5205,7 +5205,7 @@ Object prelude__methods(Object self, int argc, int *argcv,
         int partcv[] = {1};
         for (i=0; i<c->nummethods; i++) {
             Object str = alloc_String(c->methods[i].name);
-            callmethod(l, "push", 1, partcv, &str);
+            callmethod(l, "push(1)", 1, partcv, &str);
         }
         c = NULL;
         if (self->flags & FLAG_USEROBJ) {
@@ -5357,14 +5357,14 @@ Object grace_prelude() {
     ClassData c = alloc_class2("StandardPrelude", 31, (void*)&UserObj__mark);
     add_Method(c, "asString", &Module_asString);
     add_Method(c, "asDebugString", &Object_asDebugString);
-    add_Method(c, "::", &Object_bind);
-    add_Method(c, "++", &Object_concat);
-    add_Method(c, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
-    add_Method(c, "==", &Object_Equals);
-    add_Method(c, "!=", &Object_NotEquals);
-    add_Method(c, "≠", &Object_NotEquals);
-    add_Method(c, "while()do", &grace_while_do);
-    add_Method(c, "for()do", &grace_for_do);
+    add_Method(c, "::(1)", &Object_bind);
+    add_Method(c, "++(1)", &Object_concat);
+    add_Method(c, "isMe(1)", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
+    add_Method(c, "==(1)", &Object_Equals);
+    add_Method(c, "!=(1)", &Object_NotEquals);
+    add_Method(c, "≠(1)", &Object_NotEquals);
+    add_Method(c, "while(1)do(1)", &grace_while_do);
+    add_Method(c, "for(1)do(1)", &grace_for_do);
     add_Method(c, "Exception", &prelude_Exception);
     add_Method(c, "RuntimeError", &prelude_RuntimeError);
     add_Method(c, "NoSuchMethod", &prelude_NoSuchMethod);
@@ -5381,8 +5381,8 @@ Object grace_prelude() {
     add_Method(c, "inBrowser", &prelude_inBrowser);
     add_Method(c, "clone", &prelude_clone);
     add_Method(c, "engine", &prelude_engine);
-    add_Method(c, "true()object", &prelude_true_object);
-    add_Method(c, "false()object", &prelude_false_object);
+    add_Method(c, "true(1)object(1)", &prelude_true_object);
+    add_Method(c, "false(1)object(1)", &prelude_false_object);
     add_Method(c, "infinity", &prelude_infinity_object);
     add_Method(c, "π", &prelude_pi_object);
     _prelude = alloc_userobj2(0, 0, c);
