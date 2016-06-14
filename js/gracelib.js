@@ -3307,28 +3307,28 @@ function GraceException(name, parent) {
 }
 GraceException.prototype = {
     methods: {
-        "refine": function(argcv, nm) {
+        "refine(1)": function(argcv, nm) {
             return new GraceException(nm._value, this);
         },
-        "raise": function(argcv, msg) {
+        "raise(1)": function(argcv, msg) {
             if (argcv[0] !== 1)
                 throw new GraceExceptionPacket(ProgrammingErrorObject,
                     new GraceString("wrong number of arguments for raise(1)"));
             throw new GraceExceptionPacket(this, msg, new GraceObject());
         },
-        "raiseWith": function(argcv, msg, data) {
+        "raiseWith(2)": function(argcv, msg, data) {
             if (argcv[0] !== 2)
                 throw new GraceExceptionPacket(ProgrammingErrorObject,
                     new GraceString("wrong number of arguments for raiseWith(1)"));
             throw new GraceExceptionPacket(this, msg, data);
         },
-        "raise()with": function(argcv, msg, data) {
+        "raise(1)with(1)": function(argcv, msg, data) {
             if ((argcv[0] !== 1) && (argcv[1] !== 1))
                 throw new GraceExceptionPacket(ProgrammingErrorObject,
                     new GraceString("wrong number of arguments for raise(1)with(1)"));
             throw new GraceExceptionPacket(this, msg, data);
         },
-        "match": function(argcv, other) {
+        "match(1)": function(argcv, other) {
             if (!other.exception)
                 return new GraceFailedMatch(other);
             if (other.exception.name === this.name)
@@ -3341,17 +3341,17 @@ GraceException.prototype = {
             }
             return new GraceFailedMatch(other);
         },
-        "|": function(argcv, o) {
+        "|(1)": function(argcv, o) {
             return new GraceOrPattern(this, o);
         },
-        "==": function(argcv, o) {
+        "==(1)": function(argcv, o) {
             if (o === this) return GraceTrue; // not just for efficiency, but
                                               // also to avoid infinite regress
             if (o.className !== 'Exception') return GraceFalse;
             if (o.name !== this.name) return GraceFalse;
             return GraceTrue;
         },
-        "&": function(argcv, o) {
+        "&(1)": function(argcv, o) {
             return new GraceAndPattern(this, o);
         },
         "asString": function(argcv) {
