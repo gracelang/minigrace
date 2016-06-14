@@ -155,7 +155,8 @@ echo:
 
 expWeb: expWebDeploy
 
-expWebBuild: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
+expWebBuild: ./includeJSLibraries
+	js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
 	ln -f $(filter-out js/samples.js js/tabs.js,$(filter %.js,$(WEBFILES))) grace-web-editor/js
 	ln -f $(GRAPHIX:%.grace=js/%.js) grace-web-editor/js
@@ -473,6 +474,9 @@ tarball: minigrace
       tar cjvf ../minigrace-$$VER.tar.bz2 minigrace-$$VER ;\
       chmod a+r ../minigrace-$$VER.tar.bz2 ;\
       rm -rf minigrace-$$VER
+
+test-load-js: 
+	./includeJSLibraries $(WEBFILES)
 
 test.js.compile: minigrace
 	@echo "compiling tests to JavaScript"
