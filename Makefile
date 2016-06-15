@@ -259,8 +259,8 @@ l1/buildinfo.gct: l1/buildinfo.grace
 l1/gracelib.h:
 	cd l1 && ln -sf ../gracelib.h .
 
-l1/gracelib.o: gracelib-basic.o debugger.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn
-	ld -o l1/gracelib.o -r gracelib-basic.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn debugger.o
+l1/gracelib.o: $(KG)/gracelib.o
+	ln -f $< $@
 
 l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(REALSOURCEFILES) l1/buildinfo.grace gracelib.c l1/gracelib.o l1/gracelib.h
 	GRACE_MODULE_PATH=../modules/: $(KG)/minigrace  $(VERBOSITY) --make --native --module minigrace --gracelib l1/ --dir l1 compiler.grace
