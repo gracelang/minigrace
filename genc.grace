@@ -495,7 +495,7 @@ method compileblock(o) {
     out("  Object {obj} = alloc_Block(NULL, NULL, \"{modname}\", {linenum});")
     out("  gc_frame_newslot({obj});")
     var id := ast.identifierNode.new("_apply", false)
-    var applymeth := ast.methodNode.new(id, [ast.signaturePart.partName(id) params(o.params)], o.body, false)
+    var applymeth := ast.methodNode.new([ast.signaturePart.partName(id) params(o.params)], o.body, false)
     applymeth.selfclosure := true
     compilemethod(applymeth, obj, 0)
     if (false != o.matchingPattern) then {
@@ -504,7 +504,7 @@ method compileblock(o) {
     }
     if (false != o.extraRuntimeData) then {
         def erdid = ast.identifierNode.new("extraRuntimeData", false)
-        def erdmeth = ast.methodNode.new(erdid,
+        def erdmeth = ast.methodNode.new(
             [ast.signaturePart.partName(erdid)],
             [o.extraRuntimeData], false)
         compilemethod(erdmeth, obj, 2)
@@ -533,7 +533,7 @@ method compiletype(o) {     // dead code!
     }
     if (compilationDepth == 1) then {
         def idd = ast.identifierNode.new(o.value, false)
-        compilenode(ast.methodNode.new(idd, [ast.signaturePart.partName(o.value)],
+        compilenode(ast.methodNode.new( [ast.signaturePart.partName(o.value)],
             [idd], false))
     }
 }
@@ -552,7 +552,7 @@ method compiletypedec(o) {
     out("  *var_{idName} = {o.value.register};")
     o.register := "done"
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name)],
+        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.name)],
             [o.name], false))  // TODO: should be TypeType
     }
 }
@@ -589,7 +589,7 @@ method compilemethod(o, selfobj, pos) {
     declaredvars := []
     var myc := auto_count
     auto_count := auto_count + 1
-    var name := o.value.value
+    def name = o.nameString
     var nm := name ++ myc
     var numslots := 0
     var slot := 0
@@ -859,7 +859,8 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
     def myc = auto_count
     auto_count := auto_count + 1
     var litname := escapeident("meth_{modname}_{escapestring2(nm)}_object")
-    def name = escapestring2(o.value.value ++ "()object")
+    def name = if (o.hasParams) then { o.nameString ++ "object(1)" }
+                                else { o.nameString ++ "(0)object(1)" }
     outswitchup
     if (closurevars.size > 0) then {
         if (o.selfclosure) then {
@@ -1098,7 +1099,7 @@ method compiledefdec(o) {
     out("  if ({val} == undefined)")
     out("    callmethod(done, \"assignment\", 0, NULL, NULL);")
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name)], [o.name], false))
+        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.name)], [o.name], false))
         if (ast.findAnnotation(o, "parent")) then {
             out("  ((struct UserObject *)self)->super = {val};")
         }
@@ -1122,10 +1123,10 @@ method compilevardec(o) {
         out("    callmethod(done, \"assignment\", 0, NULL, NULL);")
     }
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name)], [o.name], false))
+        compilenode(ast.methodNode.new( [ast.signaturePart.partName(o.name)], [o.name], false))
         def assignID = ast.identifierNode.new(o.name.value ++ ":=", false)
         def tmpID = ast.identifierNode.new("_var_assign_tmp", false)
-        compilenode(ast.methodNode.new(assignID, [ast.signaturePart.partName(assignID) params( [tmpID] )],
+        compilenode(ast.methodNode.new([ast.signaturePart.partName(assignID) params( [tmpID] )],
             [ast.bindNode.new(o.name, tmpID)], false))
     }
     o.register := "done"
@@ -1283,9 +1284,9 @@ method compilecall(o, tailcall) {
         }
         i := 0
     }
-    evl := escapestring2(o.value.value)
-    if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "super")}) then {
+    evl := escapestring2(o.nameString)
+    def receiver = o.receiver
+    if ((receiver == "identifier") && { receiver.nameString == "super" }) then {
         out "// call case 1: super request"
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
@@ -1297,11 +1298,10 @@ method compilecall(o, tailcall) {
         out("  Object call{auto_count} = callmethod4(self, \"{evl}\", "
             ++ "{nparts}, partcv, params, ((flags >> 24) & 0xff) + 1, "
             ++ "CFLAG_SELF);")
-    } elseif {(o.value.kind == "member") && {
-        o.value.in.kind == "member"} && {
-            o.value.in.value == "outer"} } then {
+    } elseif {(receiver.isMember) && { receiver.receiver.isMember} && {
+            receiver.receiver.nameString == "outer"} } then {
         out "// call case 2: outer request"
-        def ot = compilenode(o.value.in)
+        def ot = compilenode(receiver)
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1311,13 +1311,13 @@ method compilecall(o, tailcall) {
         }
         out("  Object call{auto_count} = callmethodflags({ot}, \"{evl}\", "
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
-    } elseif { (o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "self") && (o.value.value == "outer")} } then {
+    } elseif { (o.value.kind == "member") && {(o.value.receiver.kind == "identifier")
+        && (receiver.nameString == "self") && (o.value.value == "outer")} } then {
         out "// call case 3: self.outer request"
         out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
             ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
-    } elseif { (o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "self")} } then {
+    } elseif { (o.value.kind == "member") && {(o.value.receiver.kind == "identifier")
+        && (o.value.receiver.value == "self")} } then {
         out "// call case 4: self request"
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
@@ -1328,8 +1328,8 @@ method compilecall(o, tailcall) {
         }
         out("  Object call{auto_count} = callmethodflags(self, \"{evl}\", "
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
-    } elseif { (o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "prelude")} } then {
+    } elseif { (o.value.kind == "member") && {(receiver.kind == "identifier")
+        && (o.value.receiver.value == "prelude")} } then {
         out "// call case 5: prelude request"
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
@@ -1342,7 +1342,7 @@ method compilecall(o, tailcall) {
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
     } elseif { o.value.kind == "member" } then {
         out "// call case 6: other member request"
-        obj := compilenode(o.value.in)
+        obj := compilenode(o.value.receiver)
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1442,7 +1442,7 @@ method compileimport(o) {
         def methodIdent = o.value
         methodIdent.line := o.line
         methodIdent.linePos := o.linePos
-        def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.partName(o.name)],
+        def accessor = (ast.methodNode.new([ast.signaturePart.partName(o.name)],
                         [methodIdent], o.dtype))
         accessor.line := o.line
         accessor.linePos := o.linePos
@@ -1599,7 +1599,7 @@ method compilenode(o) {
     } elseif { oKind == "member" } then {
         compilemember(o)
     } elseif { oKind == "call" } then {
-        if (o.value.isMember && {o.value.in.value == "prelude"}) then {
+        if (o.value.isMember && {o.value.receiver.value == "prelude"}) then {
             if (o.nameString == "print") then {
                 compilePrint(o)
             } elseif {o.nameString == "native()code"} then {

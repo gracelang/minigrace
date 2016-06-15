@@ -141,7 +141,7 @@ class baseNode {
         }
         return self.dtype
     }
-    method isSimple { true }  // needs no parens when used as reciever
+    method isSimple { true }  // needs no parens when used as receiver
     method description { kind }
     method accept(visitor) {
         self.accept(visitor) from (ancestorChain.empty)
@@ -193,6 +193,16 @@ class baseNode {
         cmtNodeList.do { each -> addComment(each) }
     }
     method statementName { kind }
+}
+
+def implicit is public = object {
+    inherits baseNode
+    line := 0
+    linePos := 0
+    def kind is public = "implicit"
+    method toGrace(depth) { "implicit" }
+    method asString { "the implicit receiver" }
+    method == (other) { self.isMe(other) }
 }
 
 def nullNode is public = object {
@@ -542,18 +552,28 @@ def matchCaseNode is public = object {
   }
 }
 def methodTypeNode is public = object {
-  class new(name', signature', rtype') {
+  class new(signature', rtype') {
     // Represents the signature of a method in a type literal
-    // signature is an Iterable of callWithPart objects
+    // signature' is an Iterable of callWithPart objects, whcih contain
+    // the parts of the name and the parameter lists.
 
     inherits baseNode
     def kind is public = "methodtype"
-    var value is public := name'
     var signature is public := signature'
     var rtype is public := rtype'
     var typeParams is public := false
-    def nameString:String is public = value
 
+    method nameString {
+        signature.fold { acc, each -> acc ++ each.nameString }
+            startingWith ""
+    }
+    method value {
+        def id = identifierNode.new(nameString, false)
+        id.line := signature.first.line
+        id.linePos := signature.first.linePos
+        id.isBindingOccurrence := true
+        id
+    }
     method isExecutable { false }
     method parametersDo(b) {
         signature.do { part ->
@@ -638,7 +658,7 @@ def methodTypeNode is public = object {
         s
     }
     method shallowCopy {
-        methodTypeNode.new(value, emptySeq, false).shallowCopyFieldsFrom(self)
+        methodTypeNode.new(emptySeq, false).shallowCopyFieldsFrom(self)
     }
   }
 }
@@ -812,17 +832,17 @@ def typeDecNode is public = object {
 }
 
 def methodNode = object {
-    method new(name, signature, body, dtype) scope(s) {
-        def result = new(name, signature, body, dtype)
+    method new(signature, body, dtype) scope(s) {
+        def result = new(signature, body, dtype)
         result.scope := s
         result
     }
 
-    class new(name', signature', body', dtype') {
+    class new(signature', body', dtype') {
         // Represents a method declaration
-        // name' is the name of the method (an identifierNode),
-        // signature is a sequence of signatureParts,
-        // body is a sequence of statements and declarations,
+        // The name of the method is constructed from signature',
+        // which is a sequence of signatureParts;
+        // body is a sequence of statements and declarations.
         // dtype is the declared return type of the method, or false.
 
         inherits baseNode
@@ -851,6 +871,7 @@ def methodNode = object {
             signature.fold { acc, each -> acc ++ each.canonicalName }
                 startingWith ""
         }
+        method hasParams { signature.first.isEmpty.not }
         method isMethod { true }
         method isExecutable { false }
         method isLegalInTrait { true }
@@ -1019,7 +1040,7 @@ def methodNode = object {
             s
         }
         method shallowCopy {
-            methodNode.new(value, signature, body, dtype).shallowCopyFieldsFrom(self)
+            methodNode.new(signature, body, dtype).shallowCopyFieldsFrom(self)
         }
         method shallowCopyFieldsFrom(other) {
             super.shallowCopyFieldsFrom(other)
@@ -1030,15 +1051,14 @@ def methodNode = object {
     }
 }
 def callNode = object {
-    method new(what, with) scope(s) {
-        def result = new(what, with)
+    method new(receiver, with) scope(s) {
+        def result = new(receiver, with)
         result.scope := s
         result
     }
-    class new(what, with') {
-        // requested as callNode.new(target:AstNode, parts:List)
+    class new(receiver', with') {
+        // requested as callNode.new(receiver':AstNode, parts:List)
         // Represents a method request with arguments.
-        // The ‹target›.‹methodName› part is in `value`
         // The argument list is in `with`, as a sequence of `callWithPart`s.
         // [with]
         //     object {
@@ -1055,13 +1075,13 @@ def callNode = object {
         //     }
         inherits baseNode
         def kind is public = "call"
-        var value is public := what        // method being requested
         var with is public := with'        // arguments
         var generics is public := false
         var isPattern is public := false
+        var receiver is public := receiver'
 
         method nameString {
-            with.fold { acc, each -> acc + each.nameString } startingWith ""
+            with.fold { acc, each -> acc ++ each.nameString } startingWith ""
         }
 
         method canonicalName {
@@ -1069,12 +1089,11 @@ def callNode = object {
                 startingWith ""
         }
 
-        method target { value }
         method isCall { true }
         method returnsObject {
-            if (value.isMember.not) then { return false }
-            if (value.nameString == "clone") then { return true }
-            if (value.nameString == "copy") then { return true }
+            if (receiver.isMember.not) then { return false }
+            if (receiver.nameString == "clone") then { return true }
+            if (receiver.nameString == "copy") then { return true }
             return false
         }
         method returnedObjectScope {
@@ -1084,7 +1103,7 @@ def callNode = object {
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitCall(self) up(as)) then {
                 def newChain = as.extend(self)
-                self.value.accept(visitor) from(newChain)
+                self.receiver.accept(visitor) from(newChain)
                 for (self.with) do { part ->
                     for (part.args) do { arg ->
                         arg.accept(visitor) from(newChain)
@@ -1100,7 +1119,7 @@ def callNode = object {
         method map(blk) ancestors(as) {
             var n := shallowCopy
             def newChain = as.extend(n)
-            n.value := value.map(blk) ancestors(newChain)
+            n.receiver := receiver.map(blk) ancestors(newChain)
             n.with := listMap(with, blk) ancestors(newChain)
             n.generics := maybeListMap(generics, blk) ancestors(newChain)
             blk.apply(n, as)
@@ -1111,8 +1130,8 @@ def callNode = object {
                 spc := spc ++ "  "
             }
             var s := super.pretty(depth) ++ "\n"
-            s := s ++ spc ++ "Method Name: {self.value.pretty(depth + 1)}"
-            s := s ++ "\n"
+            s := s ++ spc ++ "Receiver: {receiver}\n"
+            s := s ++ spc ++ "Method Name: {nameString}\n"
             if (false != generics) then {
                 s := s ++ spc ++ "  Generics:\n"
                 for (generics) do {g->
@@ -1135,16 +1154,16 @@ def callNode = object {
             }
             var s := ""
             // only the last member is the method call we need to handle
-            if (self.value.kind == "member") then {
-                var member := self.value
-                if (member.value.substringFrom(1)to(6) == "prefix") then {
-                    s := member.value.substringFrom(7)to(member.value.size)
-                    return s ++ member.in.toGrace(0)
+            if (self.receiver.kind == "member") then {
+                var member := self.receiver
+                if (member.receiver.substringFrom(1)to(6) == "prefix") then {
+                    s := member.receiver.substringFrom(7)to(member.receiver.size)
+                    return s ++ member.receiver.toGrace(0)
                 }
-                if (member.in.isSimple) then {
-                    s := "{member.in.toGrace 0}."
+                if (member.receiver.isSimple) then {
+                    s := "{member.receiver.toGrace 0}."
                 } else {
-                    s := "({member.in.toGrace 0})."
+                    s := "({member.receiver.toGrace 0})."
                 }
             }
             var firstPart := true
@@ -1172,9 +1191,9 @@ def callNode = object {
             }
             s
         }
-        method asString { "call {what.pretty(0)}" }
+        method asString { "call {receiver.pretty(0)}" }
         method shallowCopy {
-            callNode.new(value, with).shallowCopyFieldsFrom(self)
+            callNode.new(receiver, with).shallowCopyFieldsFrom(self)
         }
         method shallowCopyFieldsFrom(other) {
             super.shallowCopyFieldsFrom(other)
@@ -1455,20 +1474,19 @@ def arrayNode is public = object {
   }
 }
 def memberNode = object {
-    method new(request, receiver) scope(s) {
-        def result = new(request, receiver)
+    method new(request, receiver') scope(s) {
+        def result = new(request, receiver')
         result.scope := s
         result
     }
-    class new(request, receiver) {
+    class new(request, receiver') {
         // Represents a dotted request ‹receiver›.‹request›
         inherits baseNode
         def kind is public = "member"
         var value is public := request  // NB: value is a String, not an Identifier
-        var in is public := receiver
+        var receiver is public := receiver'
         var generics is public := false
 
-        method target { in }
         method nameString { value }
         method isMember { true }
         method accept(visitor : ASTVisitor) from(as) {
@@ -1477,13 +1495,13 @@ def memberNode = object {
                 if (false != generics) then {
                     generics.do { each -> each.accept(visitor) from(newChain) }
                 }
-                in.accept(visitor) from(newChain)
+                receiver.accept(visitor) from(newChain)
             }
         }
         method map(blk) ancestors(as) {
             var n := shallowCopy
             def newChain = as.extend(n)
-            n.in := in.map(blk) ancestors(newChain)
+            n.receiver := receiver.map(blk) ancestors(newChain)
             n.generics := maybeListMap(generics, blk) ancestors(newChain)
             blk.apply(n, as)
         }
@@ -1493,7 +1511,7 @@ def memberNode = object {
                 spc := spc ++ "  "
             }
             var s := "{super.pretty(depth)}‹" ++ self.value ++ "›\n"
-            s := s ++ spc ++ in.pretty(depth)
+            s := s ++ spc ++ receiver.pretty(depth)
             if (false != generics) then {
                 s := s ++ "\n" ++ spc ++ "  Generics:"
                 for (generics) do {g->
@@ -1506,9 +1524,9 @@ def memberNode = object {
             var s := ""
             if (self.value.substringFrom(1)to(6) == "prefix") then {
                 s := self.value.substringFrom(7)to(value.size)
-                s := s ++ " " ++ self.in.toGrace(0)
+                s := s ++ " " ++ self.receiver.toGrace(0)
             } else {
-                s := self.in.toGrace(depth) ++ "." ++ self.value
+                s := self.receiver.toGrace(depth) ++ "." ++ self.value
             }
             if (false != generics) then {
                 s := s ++ "<"
@@ -1519,7 +1537,7 @@ def memberNode = object {
             }
             s
         }
-        method asString { "{in}.{value}" }
+        method asString { "{receiver}.{value}" }
         method asIdentifier {
             // make and return an identifiderNode for my request
             if (fakeSymbolTable == scope) then {
@@ -1824,7 +1842,7 @@ def opNode is public = object {
     var left is public := l
     var right is public := r
     method isSimple { false }    // needs parens when used as reciever
-    method nameString { value }
+    method nameString { value ++ "(1)" }
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitOp(self) up(as)) then {
             def newChain = as.extend(self)
@@ -1844,7 +1862,7 @@ def opNode is public = object {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "{super.pretty(depth)}‹" ++ self.value ++ "›"
+        var s := "{super.pretty(depth)}‹" ++ self.nameString ++ "›"
         s := s ++ "\n"
         s := s ++ spc ++ self.left.pretty(depth + 1)
         s := s ++ "\n"
@@ -1872,7 +1890,7 @@ def opNode is public = object {
     }
     method asIdentifier {
         // make an identifiderNode with the same properties as me
-        def resultNode = identifierNode.new (value, false) scope (scope)
+        def resultNode = identifierNode.new (value ++ "(1)", false) scope (scope)
         resultNode.inRequest := true
         resultNode.line := line
         resultNode.linePos := linePos
@@ -2492,7 +2510,7 @@ def signaturePart = object {
         var lineLength is public := 0
 
         method nameString {
-            if (params.size == 0) then {return name}
+            if (params.isEmpty) then {return name}
             name ++ "(" ++ params.size ++ ")"
         }
 

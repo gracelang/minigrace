@@ -1004,7 +1004,6 @@ method identifier {
 method prefixop {
     if (accept "op") then {
         var op := sym.value
-        var val
         next
         if (accept "lparen") then {
             next
@@ -1051,9 +1050,9 @@ method prefixop {
         dotrest(blocksOK)
         callrest(blocksOK)
         postfixsquare
-        val := values.pop
-        var mem := ast.memberNode.new("prefix" ++ op, val)
-        var call := ast.callNode.new(mem, [ast.callWithPart.request(mem.value) withArgs( [] )])
+        def rcvr = values.pop
+        def call = ast.callNode.new(rcvr,
+            [ ast.callWithPart.request("prefix" ++ op) withArgs( [] ) ] )
         values.push(call)
     }
 }
@@ -1761,11 +1760,11 @@ method callrest(acceptBlocks) {
     } elseif { meth.kind == "identifier" } then {
         values.push(meth)
     } elseif { meth.kind == "member" } then {
-        var root := meth.in
+        var root := meth.receiver
         var outroot := meth
         while {root.kind == "member"} do {
             outroot := root
-            root := root.in
+            root := root.receiver
         }
         if (root.kind == "identifier") then {
             values.push(meth)
@@ -1785,7 +1784,7 @@ method callrest(acceptBlocks) {
                 // callmprest loses this information, so restore
                 // the member lookup (for x.between(3)and(10)-type
                 // calls).
-                meth := ast.memberNode.new(methn.value, meth.in)
+                meth := ast.memberNode.new(methn.value, meth.receiver)
                 meth.line := methn.line
                 meth.linePos := methn.linePos
             } else {
@@ -1793,6 +1792,12 @@ method callrest(acceptBlocks) {
             }
         }
         util.setline(lnum)
+        if (meth.isIdentifier) then {
+            meth := ast.implicit
+        } else {
+            meth := meth.receiver     // because the final "with" part duplicates
+                                // first part of the method name
+        }
         def call = ast.callNode.new(meth, signature)
         call.generics := genericIdents
         values.push(call)
@@ -2516,7 +2521,7 @@ method doclass {
         objNode.name := objName.nameString ++ "." ++ meth.canonicalName
         def asStringBody = [ ast.stringNode.new("class {objName.nameString}") ]
         def signature = [ ast.signaturePart.partName "asString" ]
-        def asStringMeth = ast.methodNode.new(false, signature, asStringBody, false)
+        def asStringMeth = ast.methodNode.new(signature, asStringBody, false)
         def metaBody = [meth, asStringMeth]
         def metaObj = ast.objectNode.body (metaBody) named "class {objName.nameString}"
         def defDec = ast.defDecNode.new(objName, metaObj, ast.unknownType)
@@ -2739,7 +2744,7 @@ method methodsignature(sameline) {
     def startToken = sym
     def part = ast.signaturePart.partName(startToken.value)
     next
-    def result = ast.methodNode.new(false, [ part ], [], false)
+    def result = ast.methodNode.new( [ part ], [], false)
     if ((startToken.value == "[") && {sym.kind == "rsquare"}) then {
         errormessages.syntaxError("methods named '[]' and '[]:=' are no longer part of Grace.")
             atRange(lastToken.line, lastToken.linePos, sym.linePos)
@@ -2940,9 +2945,8 @@ method domethodtype {
     if (false == methNode.dtype) then {
         dtype := ast.identifierNode.new("Done", false)
     }
-    def o = ast.methodTypeNode
-        .new(methNode.nameString, methNode.signature, dtype)
-            .setPositionFrom(methodTypeTok)
+    def o = ast.methodTypeNode.new(methNode.signature, dtype)
+                                            .setPositionFrom(methodTypeTok)
     o.typeParams := methNode.typeParams
     values.push(o)
     reconcileComments

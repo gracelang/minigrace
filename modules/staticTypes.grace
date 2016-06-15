@@ -619,7 +619,7 @@ def RequestError = TypeError.refine "RequestError"
 
 rule { req: Request ->
     match (req.value) case { memb: Member ->
-        def rec = memb.in
+        def rec = memb.receiver
         def rType = if (Identifier.match (rec) && (rec.value == "self")) then {
             scope.types.find "Self" butIfMissing {
                 prelude.Exception.raise "type of self missing" with (rec)

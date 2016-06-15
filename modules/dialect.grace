@@ -422,7 +422,7 @@ def astVisitor = object {
         checkMatch(node)
 
         match(node.value) case { memb : Member ->
-            memb.in.accept(self)
+            memb.receiver.accept(self)
         } case { _ -> }
 
         for(node.with) do { part ->

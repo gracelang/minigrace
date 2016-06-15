@@ -573,7 +573,7 @@ method addFreshMethod (val) to (freshlist) for (gct) is confidential {
     } elseif {freshMethResult.isCall} then {
         // we know that freshMethResult.value.isMember and
         // freshMethResult.value.nameString == "clone"
-        def receiver = freshMethResult.value.in
+        def receiver = freshMethResult.value.receiver
         if ((receiver.nameString == "prelude") && {
           freshMethResult.with.first.args.first.nameString == "self"}) then {
             gct.at "fresh:{val.nameString}" put(gct.at "public")

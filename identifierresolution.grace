@@ -261,7 +261,7 @@ class newScopeIn(parent') kind(variety') {
             errormessages.syntaxError "no method {sought}"
                 atRange(nd.line, nd.linePos, nd.linePos + sought.size - 1)
         } elseif {nd.kind == "member"} then {
-            def receiverScope = self.scopeReferencedBy(nd.in)
+            def receiverScope = self.scopeReferencedBy(nd.receiver)
 //            util.log 70 verbose "receiverScope = {receiverScope}"
             if (nd.value == "outer") then {
                 return receiverScope.parent
@@ -571,7 +571,7 @@ method rewriteIdentifier(node) ancestors(as) {
         if (nodeScope.hasDefinitionInNest(nmGets)) then {
             if (nodeScope.kindInNest(nmGets) == k.methdec) then {
                 def meth = nodeScope.resolveOuterMethod(nmGets)
-                def meth2 = ast.memberNode.new(nm, meth.in)
+                def meth2 = ast.memberNode.new(nm, meth.receiver)
                 return meth2
             }
         }
@@ -1381,14 +1381,14 @@ method transformInherits(inhNode) ancestors(as) {
         var superCall := inhNode.value
         superCall.with.push(ast.callWithPart.request "object"
             withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
-        def newmem = ast.memberNode.new(superCall.value.value ++ "()object",
+        def newmem = ast.memberNode.new(superCall.value.nameString ++ "object(1)",
             superCall.value.target
         ) scope(currentScope)
         def newcall = ast.callNode.new(newmem, superCall.with) scope(currentScope)
         inhNode.value := newcall
     } elseif {inhNode.inheritsFromMember} then {
-        def newmem = ast.memberNode.new(inhNode.value.value ++ "()object",
-            inhNode.value.in
+        def newmem = ast.memberNode.new(inhNode.value.nameString ++ "(0)object(1)",
+            inhNode.value.receiver
         )
         def newcall = ast.callNode.new(newmem, [
             ast.callWithPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
