@@ -254,6 +254,7 @@ fi
 
 STUBS=$(cd stubs; ls *.grace | tr \\n ' ')
 LIBRARY_MODULES=$(cd modules; ls *.grace | grep -v Test | tr \\n ' ')
+ICONS=$(cd js; ls *.png | tr \\n ' ')
 
 cat <<EOT > Makefile.conf
 PREFIX ?= $PREFIX
@@ -264,6 +265,7 @@ STATIC_MODULES = $STATIC_MODULES
 OTHER_MODULES = ${OTHER_MODULES[@]}
 STUBS = $STUBS
 LIBRARY_MODULES = $LIBRARY_MODULES
+ICONS = $ICONS
 INCLUDE_PATH = $INCLUDE_PATH
 MODULE_PATH = $MODULE_PATH
 OBJECT_PATH = $OBJECT_PATH
