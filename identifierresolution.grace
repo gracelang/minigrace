@@ -268,7 +268,7 @@ class newScopeIn(parent') kind(variety') {
             }
             return receiverScope.scopeReferencedBy(nd.asIdentifier)
         } elseif {nd.kind == "call"} then {
-            return scopeReferencedBy(nd.value)
+            return scopeReferencedBy(nd.receiver)
         } elseif {nd.kind == "op"} then {
             def receiverScope = self.scopeReferencedBy(nd.left)
             return receiverScope.scopeReferencedBy(nd.asIdentifier)
@@ -383,7 +383,7 @@ method rewritematchblockterm(arg) {
     if (arg.kind == "boolean") then {
         return [arg, [] ]
     }
-    if ((arg.kind == "call") && {arg.value.value.substringFrom(1)to(6)
+    if ((arg.kind == "call") && {arg.receiver.nameString.substringFrom(1)to(6)
         == "prefix"}) then {
         return [arg, [] ]
     }
@@ -409,7 +409,7 @@ method rewritematchblockterm(arg) {
                     ast.identifierNode.new("prelude", false)
                 )
             ),
-            [ast.callWithPart.request "new" withArgs( [arg.value, ast.arrayNode.new(subpats)] )]
+            [ast.callWithPart.request "new" withArgs( [arg.receiver, ast.arrayNode.new(subpats)] )]
         )
         return [callpat, bindings]
     }
@@ -975,7 +975,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         }
         method visitCall (o) up (as) {
             o.scope := as.parent.scope
-            def callee = o.value
+            def callee = o.receiver
             if (callee.kind == "identifier") then {
                 callee.inRequest := true
             }
@@ -1381,16 +1381,8 @@ method transformInherits(inhNode) ancestors(as) {
         var superCall := inhNode.value
         superCall.with.push(ast.callWithPart.request "object"
             withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
-        def newmem = ast.memberNode.new(superCall.value.nameString ++ "object(1)",
-            superCall.value.target
-        ) scope(currentScope)
-        def newcall = ast.callNode.new(newmem, superCall.with) scope(currentScope)
-        inhNode.value := newcall
     } elseif {inhNode.inheritsFromMember} then {
-        def newmem = ast.memberNode.new(inhNode.value.nameString ++ "(0)object(1)",
-            inhNode.value.receiver
-        )
-        def newcall = ast.callNode.new(newmem, [
+        def newcall = ast.callNode.new(inhNode.value.receiver, [
             ast.callWithPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
             ast.callWithPart.request "object" withArgs (
                 [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope)

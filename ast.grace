@@ -14,7 +14,7 @@ import "identifierKinds" as k
 // both a value (the condition) and a body, for example.
 
 def lineLength is public = 80
-
+def uninitialized = Singleton.named "uninitialized"
 method listMap(l, b) ancestors(as) is confidential {
     def newList = [ ]
     l.do { nd -> newList.addLast(nd.map(b) ancestors(as)) }
@@ -127,6 +127,7 @@ class baseNode {
     method isExternal { false }
     method canInherit { false }
     method returnsObject { false }
+    method isImplicit { false }
     method usesAsType(aNode) { false }
     method hash { line.hash * linePos.hash }
     method asString { "{kind} {nameString}" }
@@ -200,9 +201,14 @@ def implicit is public = object {
     line := 0
     linePos := 0
     def kind is public = "implicit"
+    method isImplicit { true }
     method toGrace(depth) { "implicit" }
     method asString { "the implicit receiver" }
     method == (other) { self.isMe(other) }
+    method map(blk) ancestors(as) { self }
+    method accept(visitor) from (as) {
+        visitor.visitImplicit(self) up (as)
+    }
 }
 
 def nullNode is public = object {
@@ -562,17 +568,20 @@ def methodTypeNode is public = object {
     var signature is public := signature'
     var rtype is public := rtype'
     var typeParams is public := false
+    var cachedIdentifier := uninitialized
 
     method nameString {
         signature.fold { acc, each -> acc ++ each.nameString }
             startingWith ""
     }
     method value {
-        def id = identifierNode.new(nameString, false)
-        id.line := signature.first.line
-        id.linePos := signature.first.linePos
-        id.isBindingOccurrence := true
-        id
+        if (uninitialized == cachedIdentifier) then {
+            cachedIdentifier := identifierNode.new(nameString, false)
+            cachedIdentifier.line := signature.first.line
+            cachedIdentifier.linePos := signature.first.linePos
+            cachedIdentifier.isBindingOccurrence := true
+        }
+        cachedIdentifier
     }
     method isExecutable { false }
     method parametersDo(b) {
@@ -855,17 +864,20 @@ def methodNode = object {
         var annotations is public := [ ]
         var isFresh is public := false      // a method is 'fresh' if it answers a new object
         var usesClassSyntax is public := false
+        var cachedIdentifier := uninitialized
 
         method nameString {
             signature.fold { acc, each -> acc ++ each.nameString }
                 startingWith ""
         }
         method value {
-            def id = identifierNode.new(nameString, false)
-            id.line := signature.first.line
-            id.linePos := signature.first.linePos
-            id.isBindingOccurrence := true
-            id
+            if (uninitialized == cachedIdentifier) then {
+                cachedIdentifier := identifierNode.new(nameString, false)
+                cachedIdentifier.line := signature.first.line
+                cachedIdentifier.linePos := signature.first.linePos
+                cachedIdentifier.isBindingOccurrence := true
+            }
+            cachedIdentifier
         }
         method canonicalName {
             signature.fold { acc, each -> acc ++ each.canonicalName }
@@ -2720,35 +2732,36 @@ method wrap(str:String) to (l:Number) prefix (margin:String) {
 
 
 type ASTVisitor = {
-     visitIf(o) up(as) -> Boolean
-     visitBlock(o) up(as) -> Boolean
-     visitMatchCase(o) up(as) -> Boolean
-     visitTryCatch(o) up(as) -> Boolean
-     visitMethodType(o) up(as) -> Boolean
-     visitSignaturePart(o) up(as) -> Boolean
-     visitTypeLiteral(o) up(as) -> Boolean
-     visitTypeParameters(o) up(as) -> Boolean
-     visitTypeDec(o) up(as) -> Boolean
-     visitMethod(o) up(as) -> Boolean
-     visitCall(o) up(as) -> Boolean
-     visitObject(o) up(as) -> Boolean
-     visitModule(o) up(as) -> Boolean
-     visitArray(o) up(as) -> Boolean
-     visitMember(o) up(as) -> Boolean
-     visitGeneric(o) up(as) -> Boolean
-     visitIdentifier(o) up(as) -> Boolean
-     visitString(o) up(as) -> Boolean
-     visitNum(o) up(as) -> Boolean
-     visitOp(o) up(as) -> Boolean
-     visitBind(o) up(as) -> Boolean
-     visitDefDec(o) up(as) -> Boolean
-     visitVarDec(o) up(as) -> Boolean
-     visitImport(o) up(as) -> Boolean
-     visitReturn(o) up(as) -> Boolean
-     visitInherits(o) up(as) -> Boolean
-     visitDialect(o) up(as) -> Boolean
-     visitBlank(o) up(as) -> Boolean
-     visitComment(o) up(as) -> Boolean
+    visitIf(o) up(as) -> Boolean
+    visitBlock(o) up(as) -> Boolean
+    visitMatchCase(o) up(as) -> Boolean
+    visitTryCatch(o) up(as) -> Boolean
+    visitMethodType(o) up(as) -> Boolean
+    visitSignaturePart(o) up(as) -> Boolean
+    visitTypeLiteral(o) up(as) -> Boolean
+    visitTypeParameters(o) up(as) -> Boolean
+    visitTypeDec(o) up(as) -> Boolean
+    visitMethod(o) up(as) -> Boolean
+    visitCall(o) up(as) -> Boolean
+    visitObject(o) up(as) -> Boolean
+    visitModule(o) up(as) -> Boolean
+    visitArray(o) up(as) -> Boolean
+    visitMember(o) up(as) -> Boolean
+    visitGeneric(o) up(as) -> Boolean
+    visitIdentifier(o) up(as) -> Boolean
+    visitString(o) up(as) -> Boolean
+    visitNum(o) up(as) -> Boolean
+    visitOp(o) up(as) -> Boolean
+    visitBind(o) up(as) -> Boolean
+    visitDefDec(o) up(as) -> Boolean
+    visitVarDec(o) up(as) -> Boolean
+    visitImport(o) up(as) -> Boolean
+    visitReturn(o) up(as) -> Boolean
+    visitInherits(o) up(as) -> Boolean
+    visitDialect(o) up(as) -> Boolean
+    visitBlank(o) up(as) -> Boolean
+    visitComment(o) up(as) -> Boolean
+    visitImplicit(o) up(as) -> Boolean
 }
 
 class baseVisitor -> ASTVisitor {
@@ -2781,6 +2794,7 @@ class baseVisitor -> ASTVisitor {
     method visitDialect(o) up(as) { visitDialect(o) }
     method visitBlank(o) up(as) { visitBlank(o) }
     method visitComment(o) up(as) { visitComment(o) }
+    method visitImplicit(o) up(as) { visitImplicit(o) }
 
     method visitIf(o) -> Boolean { true }
     method visitBlock(o) -> Boolean { true }
@@ -2811,6 +2825,7 @@ class baseVisitor -> ASTVisitor {
     method visitDialect(o) -> Boolean { true }
     method visitBlank(o) -> Boolean { true }
     method visitComment(o) -> Boolean { true }
+    method visitImplicit(o) -> Boolean { true }
 
     method asString { "an AST visitor" }
 }
@@ -2850,6 +2865,7 @@ class pluggableVisitor(visitation:Block2) -> ASTVisitor {
     method visitDialect(o) up(as) { visitation.apply (o, as) }
     method visitBlank(o) up(as) { visitation.apply (o, as) }
     method visitComment(o) up(as) { visitation.apply (o, as) }
+    method visitImplicit(o) up(as) { visitation.apply (o, as) }
 
     method asString { "a pluggable AST visitor" }
 }
