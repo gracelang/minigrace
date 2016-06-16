@@ -48,16 +48,16 @@ method lookup(uName:String) -> String {
     // named Unicode codepoints.
     // NB -- currently missing from the Javascript implementation 
 }
-method pattern(*cs) -> Pattern {
+method pattern(cs:Iterable) -> Pattern {
     // Returns a pattern that matches any of the Unicode characters in cs.
     // Each c in cs can be a number, meaning the Unicode character with codepoint c,
     // or a one or two letter string indicating a Unicode category.
 }
-method pattern(*cs)not(*ncs) -> Pattern {
+method pattern(cs:Iterable)not(ncs:Iterable) -> Pattern {
     // Returns a pattern that matches any of the Unicode characters in cs and 
     // not in ncs.  Each c in cs and ncs can be a number, meaning the
     // Unicode character with codepoint c,  or a one or two letter string 
     // indicating a Unicode category.
-    // For example, pattern("C")not(10, 13) mathches any Unicode Control
+    // For example, pattern ["C"] not [10, 13] mathches any Unicode Control
     // character (in category "C") other than U+0010 and U+0013 (LF and CR)
 }

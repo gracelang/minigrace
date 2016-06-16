@@ -41,7 +41,7 @@ OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
 REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace genc.grace stringMap.grace xmodule.grace identifierresolution.grace)
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
-STABLE=cd3e574fdd2e41661ad9235356bfb71684d9b9bc
+STABLE=1e2f5d98abb4529b811183acfa9f4c89618406e0
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 TYPE_DIALECTS = staticTypes requireTypes
 VER = $(shell ./tools/calculate-version $(STABLE))

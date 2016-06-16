@@ -506,6 +506,7 @@ def aTypeAnnotation is confidential = object {
         def value is public = node
         def line is public = node.line
         def linePos is public = node.linePos
+        method == (o) { self.isMe(o) }
     }
 }
 
@@ -516,6 +517,7 @@ def aParameter is confidential = object {
         def dtype is public = node.dtype
         def line is public = node.line
         def linePos is public = node.linePos
+        method == (o) { self.isMe(o) }
     }
 }
 

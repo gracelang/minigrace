@@ -43,31 +43,41 @@ class patternTest.forMethod(m) {
 //    }
 
     method testPatternBadSeparatorNNBS {
-        def badSeparator = u.pattern("Z", 9)not(32, 8232)
+        def badSeparator = u.pattern ["Z", 9] not [32, 8232]
         assert(badSeparator.match "\u202f") 
             description "badSeparator doesn't match \\u202f (Narrow no-break space)"
     }
 
+    method testPatternClasses {
+        def letters = u.pattern ["L", "N", "Z"] not [32, "N"]
+        assert(letters.match "a")
+            description "letters doesn't match `a`"
+        deny(letters.match " ")
+            description "letters matches space"
+        assert(letters.match "\u2029")
+            description "letters doesn't match paragraph separator"
+    }
+
     method testPatternBadSeparatorTab {
-        def badSeparator = u.pattern("Z", "\t".ord)not(32, 160)
+        def badSeparator = u.pattern ["Z", "\t".ord] not [32, 160]
         assert(badSeparator.match "\t") 
             description "badSeparator doesn't match \\t"
     }
 
     method testPatternBadSeparatorParaSep {
-        def badSeparator = u.pattern("Z", "\t".ord)not(32, 160)
+        def badSeparator = u.pattern ["Z", "\t".ord] not [32, 160]
         assert(badSeparator.match "\u2029") 
             description "badSeparator doesn't match \\u2029 (Paragraph Separator)"
     }
         
     method testPatternBadSeparatorSpace {
-        def badSeparator = u.pattern("Z", 9)not(32, 160)
+        def badSeparator = u.pattern ["Z", 9] not [32, 160]
         deny(badSeparator.match " ") 
             description "badSeparator matches space"
     }
 
     method testPatternBadSeparatorNBS {
-        def badSeparator = u.pattern("Z", 9)not(32, 160)
+        def badSeparator = u.pattern ["Z", 9] not [32, 160]
         deny(badSeparator.match "\u00A0") 
             description "badSeparator matches non-breaking space"
     }
