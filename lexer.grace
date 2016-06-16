@@ -24,6 +24,49 @@ keywords.put("use", true)
 keywords.put("var", true)
 
 def operatorChars = "-&|:$#\\%^@?*/+!~"
+method isOperatorChar(c, ordval) {
+    if (operatorChars.contains(c)) then { return true }
+    if (unicode.isSymbolMathematical(ordval)) then { return true }
+    if (unicode.iscategory(c, "So")) then { return true }
+    return false
+}
+
+def spaceChars = " \u00A0"    // ASCII space + non-breaking space
+def tab = "\t"
+method isBadSeparator(ch) {
+    if (spaceChars.contains(ch)) then { return false }
+    if (tab == ch) then { return true }
+    return unicode.inCategory(ch, "Z")
+}
+
+def nl_cr = "\n\r"      // nl and cr
+method isBadControl(ch) {
+    if (nl_cr.contains(ch)) then { return false }
+    return unicode.inCategory(ch, "C")
+}
+
+def selfModes = "(),\{}[];⟦⟧"
+method isSelfMode(ch) { selfModes.contains(ch) }
+
+def brackets = "()\{}[]⟦⟧"
+method isBracket(ch) { brackets.contains(ch) }
+
+def alphaNums = "_'0123456789abcdefghijklmnopqrstuvwzyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+method isIdentifierChar(ch) {
+    if (alphaNums.contains(ch)) then { return true }
+    if (unicode.inCategory(ch, "L")) then { return true }
+    if (unicode.inCategory(ch, "N")) then { return true }
+    return false
+}
+def digits = "0123456789"
+method isDigit(ch) { digits.contains(ch) }
+
+def asciiLetters = "abcdefghijklmnopqrstuvwzyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+method isLetter(ch) {
+    if (asciiLetters.contains(ch)) then { return true }
+    if (unicode.inCategory(ch, "L")) then { return true }
+    return false
+}
 
 method padl(s, l, w) {
     if (s.size >= l) then {
@@ -380,9 +423,9 @@ class new {
             def n = c.ord
             val := val * base
             var inc := 0
-            if ((n >= 48) && (n <= 57)) then {
-                inc := n - 48 // 0
-            } elseif {(n >= 65) && (n <= 90)} then {
+            if ((n >= 48) && (n <= 57)) then {          // 48 = '0', 57 = '9'
+                inc := n - 48 // '0'
+            } elseif {(n >= 65) && (n <= 90)} then {    // 65 = 'A', 90 = 'Z'
                 inc := n - 55 // 'A' - 10
             } else {
                 inc := n - 87 // 'a' - 10
@@ -474,31 +517,6 @@ class new {
                 lineNumber, linePosition - accum.size + i)withSuggestions(suggestions)
         }
         numToken(fromBase(sofar, base).asString, base)
-    }
-    // True if ov is a valid identifier character. Identifier
-    // characters are Unicode letters, Unicode numbers, apostrophe,
-    // and (currently) underscore.
-    method isidentifierchar(ov) {
-        if (unicode.isLetter(ov)) then {
-            return true
-        }
-        if (unicode.isNumber(ov)) then {
-            return true
-        }
-        if ((ov == 95) || (ov == 39)) then {
-            // 95 is _, 39 is '
-            true
-        } else {
-            false
-        }
-    }
-
-    // True if c (with codepoint ordval) is a valid operator character.
-    method isoperatorchar(c, ordval) {
-        if (operatorChars.contains(c)) then { return true }
-        if (unicode.isSymbolMathematical(ordval)) then { return true }
-        if (unicode.iscategory(c, "So")) then { return true }
-        return false
     }
 
     // Read the program text from util.infile and return a list of
@@ -650,20 +668,10 @@ class new {
         var newlineFound := false
         linePosition := 0
         util.log_verbose "lexing."
-        def badSeparator = unicode.pattern("Z", 9)not(32, 160)
-            // 32 is SPACE, and 160 NO-BREAK SPACE
-        def badControl =  unicode.pattern("C")not(10, 13)
-        def selfModes = unicode.pattern("(".ord, ")".ord, ",".ord,
-            "\{".ord, "}".ord, "[".ord, "]".ord, ";".ord, "⟦".ord, "⟧".ord)
-        def brackets = unicode.pattern("(".ord, ")".ord,
-            "\{".ord, "}".ord, "[".ord, "]".ord, "⟦".ord, "⟧".ord)
-        def identifierChar = unicode.pattern("L", "N", 95, 39) // 95 = _, 39 = '
-        def digit = unicode.pattern("0".ord, "1".ord, "2".ord, "3".ord,
-            "4".ord, "5".ord, "6".ord, "7".ord, "8".ord, "9".ord)
         def mainBlock = { c ->
             var ct := ""
             var ordval := c.ord // String.ord gives the codepoint
-            if (badSeparator.match(ordval) && { mode != "q" }) then {
+            if (isBadSeparator(c) && { mode != "q" }) then {
                 // Character is whitespace, but not an ASCII space or
                 // Unicode NO-BREAK SPACE.  For example, a tab
                 def suggestion = errormessages.suggestion.new
@@ -671,13 +679,11 @@ class new {
                 if (ordval == 9) then {
                     if (inStr) then {
                         suggestion.replaceRange(linePosition, linePosition)
-                            with("\\u{padl(ordval.inBase 16, 4, "0")}")
+                            with("\\t")
                             onLine(lineNumber)
                         errormessages.syntaxError("tabs cannot be "
                             ++ "written in the source code; "
-                            ++ "use the Unicode escape \\u"
-                            ++ padl(ordval.inBase 16, 4, "0")
-                            ++ " instead")
+                            ++ "use the string escape \\t instead")
                             atRange(lineNumber, linePosition, linePosition)
                             withSuggestion(suggestion)
                     }
@@ -702,7 +708,7 @@ class new {
                         ++ "is not a valid whitespace character; use spaces instead.")atRange(lineNumber,
                         linePosition, linePosition)withSuggestion(suggestion)
                 }
-            } elseif {badControl.match(ordval) && { mode != "q" }} then {
+            } elseif {isBadControl(c) && { mode != "q" }} then {
                 // Character is a control character other than
                 // carriage return or line feed.
                 def suggestion = errormessages.suggestion.new
@@ -738,7 +744,7 @@ class new {
 
             } elseif { (mode != "c") && (mode != "p") } then {
                 // Not in a comment or pragma, so look for a mode.
-                if ((c == " ") && (mode != "d")) then {
+                if (spaceChars.contains(c) && (mode != "d")) then {
                     newmode := "n"
                 }
                 if (c == "\"") then {
@@ -752,23 +758,19 @@ class new {
                     inStr := true
                     startLine := lineNumber
                     stringStart := linePosition
-                } elseif { identifierChar.match(ordval) } then {
+                } elseif { isIdentifierChar(c) } then {
                     newmode := "i"
                 }
-                if (digit.match(ordval)) then {
+                if (isDigit(c)) then {
                     // This may overwrite newmode := "i"
-                    // established 5 lines up
+                    // established 4 lines up
                     if (mode != "i") then {
                         newmode := "m"
                     }
                 }
                 if (mode == "m") then {
-                    if ((ordval >= 97) && (ordval <=122)) then {
+                    if (isLetter(c)) then {
                         newmode := "m"
-                    } else {
-                        if ((ordval >= 65) && (ordval <= 90)) then {
-                            newmode := "m"
-                        }
                     }
                 }
                 if (c == "<") then {
@@ -784,9 +786,9 @@ class new {
                         modechange(tokens, mode, accum)
                     }
                     newmode := "⟧"
-                } elseif { isoperatorchar(c, ordval) } then {
+                } elseif { isOperatorChar(c, ordval) } then {
                     newmode := "o"
-                } elseif { selfModes.match(ordval) } then {
+                } elseif { isSelfMode(c) } then {
                     newmode := c
                 }
                 if (c == "#") then {
@@ -893,7 +895,7 @@ class new {
                 } else {
                     accum := c
                 }
-                if (brackets.match(mode)) then {
+                if (isBracket(mode)) then {
                     modechange(tokens, mode, accum)
                     mode := "e"
                     newmode := mode

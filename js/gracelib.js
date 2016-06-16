@@ -25,7 +25,7 @@ Array.prototype.sum = function () {
     return this.reduce(function(a,b) {return a+b;}, 0);
 };
 
-var inBrowser = (typeof global === "undefined")
+var inBrowser = (typeof global === "undefined");
 
 function GraceObject() {       // constructor function
     // gets its methods from the prototype.  Don't add to them!
@@ -635,7 +635,7 @@ GraceNum.prototype = {
                 if (other._value < 0) return new GraceNum(q + 1);
                 return new GraceNum(q - 1);
             }
-            return callmethod(other, "reverseDivideNumber", [1], this);
+            return callmethod(other, "reverseQuotientNumber", [1], this);
         },
         "@": function(argcv, other) {
             return callmethod(Grace_prelude, "point2Dx()y", [1, 1], this, other);
@@ -2370,14 +2370,11 @@ function gracecode_unicode() {
     this.methods.create = function unicode_create(argcv, n) {
         return new GraceString(String.fromCharCode(n._value));
     };
-    this.methods.pattern = function unicode_pattern(argcv) {
-        var args = Array.prototype.slice.call(arguments, 1);
-        return new GraceUnicodePattern(args);
+    this.methods.pattern = function unicode_pattern(argcv, patterns) {
+        return new GraceUnicodePattern(patterns);
     };
-    this.methods['pattern()not'] = function unicode_pattern_not(argcv) {
-        var args = Array.prototype.slice.call(arguments, 1, argcv[0] + 1);
-        var args2 = Array.prototype.slice.call(arguments, argcv[0] + 1);
-        return new GraceUnicodePattern(args, args2);
+    this.methods['pattern()not'] = function unicode_pattern_not(argcv, patterns, excludes) {
+        return new GraceUnicodePattern(patterns, excludes);
     };
     return this;
 }
@@ -2387,8 +2384,29 @@ if (typeof gctCache !== "undefined")
 
 
 function GraceUnicodePattern(pos, neg) {
-    this.pos = pos;
-    this.neg = neg;
+    // this.pos and this.neg are Iterables of positive and negative items
+    this.pos = pos._value
+        // APB: 2016 06 11     This is a horrible hack.
+        // pos._value          => pos is a PrimitiveGraceList or Lineup
+    if (! this.pos) {
+        this.pos = [];
+        var iter = callmethod(pos, "iterator", [0]);
+        while (Grace_isTrue(callmethod(iter, "hasNext", [0]))) {
+            var p = callmethod(iter, "next", [0]);
+            this.pos.push(p);
+        }
+    }
+    if (neg) {
+        this.neg = neg._value;
+        if (! this.neg) {
+            this.neg = [];
+            var niter = callmethod(pos, "iterator", [0]);
+            while (Grace_isTrue(callmethod(niter, "hasNext", [0]))) {
+                var n = callmethod(niter, "next", [0]);
+                this.neg.push(n);
+            }
+        }
+    }
 }
 
 GraceUnicodePattern.prototype = {
@@ -2617,7 +2635,7 @@ function gracecode_util() {
     };
     this.methods.type_error = function util_type_error(argcv, s) {
         minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
-            this._linepos._value + ": type error: " + s._value + "\n");
+            this._linepos._value + ": type error: " + s._value);
         throw "ErrorExit";
     };
     // This is called by various wrapper methods in the errormessages module.
@@ -2634,35 +2652,35 @@ function gracecode_util() {
     };
     this.methods['generalError'] = function util_generalError(argcv, message, errlinenum, position, arr, spacePos, suggestions) {
         minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value +
-            position._value + "]: " + message._value + "\n");
+            position._value + "]: " + message._value);
 
         if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [0])._value > 1))
             minigrace.stderr_write("  " + (errlinenum._value - 1) + ": " +
                 callmethod(this._lines, "at",
-                    [1], new GraceNum(errlinenum._value - 1))._value + "\n");
+                    [1], new GraceNum(errlinenum._value - 1))._value);
 
         if (callmethod(this._lines, "size", [0])._value >= errlinenum._value) {
             var line = callmethod(this._lines, "at", [1], new GraceNum(errlinenum._value))._value;
             if (spacePos._value !== false) {
                 minigrace.stderr_write("  " + errlinenum._value + ": " +
                     line.substring(0, spacePos._value - 1) + " " +
-                    line.substring(spacePos._value - 1) + "\n");
+                    line.substring(spacePos._value - 1));
             } else {
-                minigrace.stderr_write("  " + errlinenum._value + ": " + line + "\n");
+                minigrace.stderr_write("  " + errlinenum._value + ": " + line);
             }
-            minigrace.stderr_write(arr._value + "\n");
+            minigrace.stderr_write(arr._value);
         }
 
         if (errlinenum._value <
                 callmethod(this._lines, "size", [0])._value)
             minigrace.stderr_write("  " + (errlinenum._value + 1) + ": " +
                   callmethod(this._lines, "at", [1],
-                        new GraceNum(errlinenum._value + 1))._value + "\n");
+                        new GraceNum(errlinenum._value + 1))._value);
 
         var numsuggestions = callmethod(suggestions, "size", [0]);
         if(numsuggestions._value > 0) {
             for(var i=1; i <= numsuggestions._value; i++) {
-                minigrace.stderr_write("\nDid you mean:\n");
+                minigrace.stderr_write("\nDid you mean:");
                 var suggestion = callmethod(suggestions, "at", [1], new GraceNum(i));
                 callmethod(suggestion, "print", [0]);
             }
@@ -2672,29 +2690,29 @@ function gracecode_util() {
     };
     this.methods.semantic_error = function util_semantic_error(argcv, s) {
         minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
-            this._linepos._value + ": semantic error: " + s._value + "\n");
+            this._linepos._value + ": semantic error: " + s._value);
         if (this._linenum._value > 1)
             minigrace.stderr_write("  " + (this._linenum._value - 1) + ": " +
                 callmethod(this._lines, "at", [1],
-                    new GraceNum(this._linenum._value - 1))._value + "\n");
+                    new GraceNum(this._linenum._value - 1))._value);
         var linenumsize = callmethod(callmethod(this._linenum, "asString", []), "size", []);
         var arr = "----";
         for (var i=1; i<this._linepos._value+linenumsize._value; i++)
             arr = arr + "-";
         minigrace.stderr_write("  " + this._linenum._value + ": " +
                 callmethod(this._lines, "at", [1],
-                    new GraceNum(this._linenum._value))._value + "\n");
+                    new GraceNum(this._linenum._value))._value);
         minigrace.stderr_write(arr + "^\n");
         if (this._linenum._value <
                 callmethod(this._lines, "size", [])._value)
             minigrace.stderr_write("  " + (this._linenum._value + 1) + ": " +
                 callmethod(this._lines, "at", [1],
-                    new GraceNum(this._linenum._value + 1))._value + "\n");
+                    new GraceNum(this._linenum._value + 1))._value);
         throw "ErrorExit";
     };
     this.methods.warning = function util_warning(argcv, s) {
         minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
-            this._linepos._value + ": warning: " + s._value + "\n");
+            this._linepos._value + ": warning: " + s._value);
     };
     this.methods.hex = function util_hex(argcv, n) {
         var hexdigits = "0123456789abcdef";
@@ -3430,7 +3448,7 @@ function dbgp(o, d) {
 }
 
 function dbg(o) {
-    minigrace.stderr_write(dbgp(o, 0) + "\n");
+    minigrace.stderr_write(dbgp(o, 0));
 }
 
 var extensionsMap = callmethod(var_HashMap, "new", [0]);

@@ -1,0 +1,18 @@
+a = a
+a1 = a1, a2 = a2, b1 = b1
+no params
+method example has [1] parameters.
+method example()and has [2, 1] parameters.
+method noParams has [0] parameters.
+
+requests using `request`
+a = a
+a1 = a1, a2 = a2, b1 = b1
+no params
+
+requests using `requestWithArgs`
+a = 1
+a1 = a1, a2 = a2, b1 = b1
+no params
+
+done

@@ -1,0 +1,4 @@
+OK; inside main block.
+OK.
+OK.
+OK; both exception handler and finally ran.

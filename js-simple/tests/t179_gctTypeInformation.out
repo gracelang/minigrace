@@ -1,0 +1,36 @@
+classes:
+confidential:
+fresh-methods:
+methodtypes-of:A:
+ 2 m1(n : Number) -> Number
+ 2 m2(n : Number) -> Done
+ | 2
+ | B<T>
+ | other.C
+ | other.U<T>
+methodtypes-of:D:
+ & Collection<T>
+ & F
+ & G
+methodtypes-of:H<T>:
+ 2 m3(x : T) -> T
+methodtypes-of:Z:
+ & 3
+ & 4
+ 3 m4(x : Y) -> Y
+ 4 m5(x : Z) -> Z
+modules:
+path:
+ test_179_output
+public:
+ A
+ D
+ H
+ Z
+ m
+types:
+ A
+ D
+ H
+ Z
+

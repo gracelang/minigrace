@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8" />
+    <title>Minigrace JavaScript backend - Debugger Documentation</title>
+    <link type="text/css" rel="stylesheet" href="global.css" />
+    <style type="text/css">
+.interfacebox {
+        border: 1px inset gray;
+        padding: 3px 0px 9px 3px;}
+
+#d p        {display: none;
+        background: #aaf;}
+
+#Ddefault {display: block;}
+
+#stderr_txt {width: 49.5%;}
+#debugger {display: table;}
+
+.highlight {/*background-color: white;*/
+        transition: background-color 1s ease-in 0s;}
+
+.highlight:hover {background-color: #aaf;}
+    </style>
+    <script src="minigrace.in.js" type="text/javascript"></script>
+    <script src="tabs.js" type="text/javascript"></script>
+    <script src="gracelib.js" type="text/javascript"></script>    
+    <script src="debugger.js" type="text/javascript"></script>
+    <script type="text/javascript">
+GraceDebugger.SetStatus = function (value) {
+    var std_err = document.getElementById("stderr_txt");
+    std_err.value += value + "\n";
+    std_err.scrollTop = std_err.scrollHeight;
+}
+
+function describe(index) {
+    var d = document.getElementById("d").getElementsByTagName("p");
+    for (var i=0;i<d.length;i++) {
+        d[i].style.display = "none";
+    }
+    document.getElementById(index).style.display = "inline";
+}
+
+function falseStartup() {
+    document.getElementById("debugtoggle").checked = true;
+    if(typeof minigrace != "undefined") {
+        grace_code="";
+        minigrace.lastSourceCode="";
+        minigrace.mode="js";
+        minigrace.lastMode="js";
+        document.getElementById("modname").value = "debugObjIntTest";
+        minigrace.lastModule=document.getElementById("modname").value;
+        minigrace.visDefault=document.getElementById("defaultVisibility").value;
+        minigrace.compileError=false;
+    }
+    getCode = function () {return "";}
+}
+    </script>
+</head>
+<body onload='startup();falseStartup();'>
+    <h2>Debugger Documentation</h2>
+    
+    <p>This page details the Minigrace Debugger. To access the debugger, simply check the debugger check box </p>
+
+    <ol>
+        <li><a href="#interface">Interface</a></li>
+        <li><a href="#breakpoints_link">Breakpoints</a></li>
+        <li><a href="#restart">Restart and Continue</a></li>
+        <li><a href="#step">Step and Backstep</a></li>
+        <li><a href="#variables">Variables</a></li>
+        <li><a href="#cached">Cached Values</a></li>
+        <li><a href="#actual">Actual Workings</a></li>
+    </ol>
+
+    <h3 id="interface">Interface</h3>
+    
+    <div class="interfacebox" onmouseout='describe("Ddefault");'>
+    <span>
+        <input type="checkbox" id="acetoggle" onchange="toggleAce()" checked />Ace
+    </span>
+    <span onmouseover='describe("Dtoggle");' class="highlight"><input type="checkbox" id="debugtoggle" onchange="toggleDebugger()" checked />Debugger</span><br />
+        <textarea id="stderr_txt" rows="8" cols="60" onmouseover='describe("Derr");' class="highlight"></textarea>
+        <div id="text_areas">
+            <div id="debugger">
+                <table style="width: 100%;"><tr><td class="debugger_td_border">
+                    <div id="debugger_buttons">
+                        <button onmouseover='describe("Dback");' onclick="GraceDebugger['backStep']();go();" class="highlight">Back-step</button>
+                        <button onmouseover='describe("Drestart");' onclick="GraceDebugger['restart']();go()" class="highlight">Restart</button>
+                        <button onmouseover='describe("Dcontinue");' onclick="GraceDebugger['continue']();go();" class="highlight">Continue</button>
+                        <button onmouseover='describe("Dstep");' onclick="GraceDebugger['step']();go()" class="highlight">Step</button>                        
+                    </div>
+                    
+                    <div class="breakpoints">
+                        <span onmouseover='describe("Dbreakpoints");' class="highlight">Breakpoints</span>
+                        <div id="breakpoints" onmouseover='describe("Dbreakpoint");' class="highlight">
+                            <span style="color: #aaa;">(No breakpoints added yet)</span>
+                        </div>
+                        <button onclick="GraceDebugger.breakpoints.add();" onmouseover='describe("Dadd");' class="highlight">Add a breakpoint</button>
+                        <input id="add_break" onmouseover='describe("Dadd");' class="highlight" />
+                    </div>
+                </td><td class="debugger_td_border highlight" onmouseover='describe("Dvariables");'>
+                    <div id="debugger_vars_display">
+                         Variables: 
+                         <div></div>
+                    </div>
+                </td></tr></table>
+            </div>
+        </div>
+    </div>
+
+    <div id="d">
+        <p id="Ddefault" style="background: white; display: inline;">Mouse over parts of the interface above to see a quick explanation of what each part does.</p>
+        <p id="Dtoggle"><b>Debugger Toggle:</b> Unchecking this checkbox will hide the debugger interface, checking it again will show it again.</p>
+        <p id="Derr"><b>Standard Error:</b> This is the textarea where standard error and logging messages are printed to.</p>
+        <p id="Dback"><b>Back-Step:</b> This button will take the debugger to the line just before whatever line it's currently stopped on.</p>
+        <p id="Drestart"><b>Restart:</b> This button will run the debugger from the beginning to until it hits a breakpoint.</p>
+        <p id="Dcontinue"><b>Continue:</b> This button will run the debugger past any previous stops until it hits it's next breakpoint.
+        Note that this may make it stop for each cycle of a loop if there's a breakpoint set somewhere in the loop.</p>
+        <p id="Dstep"><b>Step:</b> This button will take the debugger to the line just before whatever line it's currently stopped on.</p>
+        <p id="Dbreakpoints"><b>breakpoints:</b> This is where the currently set breakpoints are listed.</p>
+        <p id="Dbreakpoint"><b>Breakpoint:</b> This is a breakpoint.
+        The number is the line where the program will stop if it reaches this point from being run by <b>Restart</b> or <b>Continue</b>.
+        <b>Disable</b> will prevent this breakpoint from stopping the program, and <b>Enable</b> will enable the breakpoint to again possibly stop the program.
+        <b>Remove</b> will completely remove the breakpoint.</p>
+        <p id="Dadd"><b>Add a breakpoint:</b> Enter a number greater than or equal to 1 and click <b>Add a breakpoint</b> to add a breakpoint.</p>
+        <p id="Dvariables"><b>Variable List:</b> This is where variables that are in existence at the time the program stops or is interrupted can be seen.</p>
+    </div>
+    <br />
+
+    <h3 id="breakpoints_link">Breakpoints</h3>
+    <p>A Breakpoint is an intentional stopping point in the program.
+    If ace is enabled, then you can set breakpoints by clicking on the space just to the left of the line number, and click again to disable it.
+    Otherwise, place a breakpoint in the program by typing the line number you want to stop at and clicking the <b>Add a breakpoint</b> button.
+    Remove a breakpoint by clicking <b>Remove</b>, disable it by clicking <b>Disable</b>.
+    Breakpoints only stop the program if the program is started by clicking either the <b>Restart</b> or <b>Continue</b> buttons.</p>
+    <br />
+
+    <h3 id="restart">Restart and Continue</h3>
+    <p>The <b>Restart</b> and <b>Continue</b> buttons run the program until it hits a breakpoint or finishes execution.</p>
+    <b>Continue</b> will run the debugger past wherever the program last stopped until the next breakpoint,
+    while <b>Restart</b> will stop at the first breakpoint the program encounters.</p>
+    <br />
+
+    <h3 id="step">Step and Back-step</h3>
+    <p><b>Step</b> will pause the program just after the last line the program paused on.
+    <b>Back-Step</b> will pause the program just before the last line the program paused on.</p>
+    <br />
+
+    <h3 id="variables">Variables</h3>
+    <p>All variables created in the current scope of the program should be displayed in the variables section,
+    along with their values or an expandable menu option to display variables within the given variable.
+    lists and objects are the most common variables types that may have a menu option.
+    If the program is interrupted before a variable is declared, it will not appear in the display.</p>
+    <p>It is possible to adjust how the debugger displays an object from within Grace.
+    To change the value displayed by an object, add a debugValue method to the object that will return a string.
+    <pre>    method debugValue() {
+        "\"Type == object\"" 
+    }</pre>
+    The above example will make the object display a value of "Type == object".</p>
+    <p>To change the variables within the object that are displayed, add a debugIterator to the object that will return an iterator.
+    <pre>    method debugIterator() {
+        return object {
+            var b := 1
+            var test
+        }.debugIterator()
+    }</pre>
+    The above example will make the object show itself as having a variable b with a value of 1 and a variable test with an undefined value.</p>
+
+    <p>To stop an object from having an expandable menu, the following to the object:
+    <pre>    var debugIteratorEnabled := false</pre>
+    The object will now show up as a variable without an expandable menu option.</p>
+
+    <br />
+
+    <h3 id="cached">Cached Values</h3>
+    <p>For programs that use the random method from the math module or the input.read method from the io module,
+    Caching is done on these methods to prevent odd behavior from the debugger.
+    To clear the cache, simply uncheck then reacheck the debugger check box.</p>
+    <p><b>For Developers:</b> As of writing this, to add a new method to the list of methods to be cached, you need to edit debugger.js to add the name of the module and method that will be cached.
+    Find "GraceDebugger.cache = {" and inside the definition should be the following lines:
+    <pre>    names : [
+        {module: "math", method : "random"},</pre>
+    Add the following line just after the above, but change "module name" and "method name" to the appropriate values.
+    <pre>        {module: "module name", method : "method name"},</pre>
+    That should cause the debugger to start caching that method's return values.</p>
+    <br />
+
+
+    <h3 id="actual">Actual Workings</h3>
+    <p>This Debugger does not actually pause the program mid-execution, but instead interrupts it based on line changes.
+    It resumes by running the program again, but changing where the interrupt occurs so that it seems to stop and resume.
+    Because of this, any non-deterministic behavior the program contains may cause unpredictable behavior.
+    The Caching system was put in place to help deal with this issue.</p>
+
+
+   <input type="hidden" value="js" id="mode" />
+   <input type="hidden" value="debugObjIntTest" id="modname" />
+   <input type="hidden" value="standard" id="defaultVisibility" />
+   <input type="hidden" value="" id="stdout_txt" />
+   <input type="hidden" value="" id="stderr_txt" />
+   <input type="hidden" value="" id="code_txt_real" />
+   <input type="hidden" value="" id="code_txt" />
+   <input type="hidden" value="" id="js_txt" />
+   <input type="checkbox" id="autoscroll" style="display: none;" />
+   <div id="tabs" style="display: none;"><div id="plus">+</div></div>
+   <div id="code_options" style="display: none;"></div>
+   <div id="tab_0" style="display: none;"></div>
+   <div id="stdout_options" style="display: none;"></div>
+    
+    <script type="text/javascript">
+function gracecode_debugObjIntTest () {
+    this.definitionModule = "debugObjIntTest";
+    this.definitionLine = 0;
+    setLineNumber(1)    // compilenode object;
+    var obj0 = Grace_allocObject();
+    obj0.definitionModule = "debugObjIntTest";
+    obj0.definitionLine = 1;
+    obj0.outer = this;
+    var reader_debugObjIntTest_outer1 = function() {
+      return this.outer;
+    }
+    obj0.methods["outer"] = reader_debugObjIntTest_outer1;
+    function obj_init_0() {
+      var origSuperDepth = superDepth;
+      superDepth = obj0;
+    sourceObject = obj0;
+    obj0.data["b"] = undefined;
+        var reader_debugObjIntTest_b2 = function() {
+        return this.data["b"];
+      }
+    obj0.methods["b"] = reader_debugObjIntTest_b2;
+    obj0.data["b"] = undefined;
+      var writer_debugObjIntTest_b2 = function(argcv, o) {
+        this.data["b"] = o;
+      }
+    obj0.methods["b:="] = writer_debugObjIntTest_b2;
+      reader_debugObjIntTest_b2.confidential = true;
+    obj0.mutable = true;
+    sourceObject = obj0;
+      setLineNumber(3)    // compilenode string;
+      var string3 = new GraceString("test");
+    obj0.data["c"] = string3;
+        var reader_debugObjIntTest_c4 = function() {
+        return this.data["c"];
+      }
+    obj0.methods["c"] = reader_debugObjIntTest_c4;
+    obj0.data["c"] = string3;
+      var writer_debugObjIntTest_c4 = function(argcv, o) {
+        this.data["c"] = o;
+      }
+    obj0.methods["c:="] = writer_debugObjIntTest_c4;
+      reader_debugObjIntTest_c4.confidential = true;
+      writer_debugObjIntTest_c4.confidential = true;
+    obj0.mutable = true;
+    superDepth = origSuperDepth;
+  }
+  obj_init_0.apply(obj0, []);
+    var var_a = obj0;
+    setLineNumber(1)    // compilenode method;
+    var func5 = function(argcv) {    // method a
+      var curarg = 1;
+      if (argcv[0] != 0)
+        callmethod(RuntimeErrorObject, "raise", [1], new GraceString("wrong number of arguments for list 1 of a"));
+      var returnTarget = invocationCount;
+      invocationCount++;
+      setLineNumber(1)    // compilemethod;
+      setModuleName("debugObjIntTest");
+      try {
+        return var_a
+      } catch(e) {
+        if ((e.exctype == 'return') && (e.target == returnTarget)) {
+          return e.returnvalue;
+        } else {
+          throw e;
+        }
+      }
+    }
+    func5.paramCounts = [
+        0,
+    ];
+    func5.variableArities = [
+        false,
+    ];
+    this.methods["a"] = func5;
+    var func6 = function(argcv) {    // method a:=(1)
+      var curarg = 1;
+      var var___95__var__95__assign__95__tmp = arguments[curarg];
+      curarg++;
+      if (argcv[0] != 1)
+        callmethod(RuntimeErrorObject, "raise", [1], new GraceString("wrong number of arguments for list 1 of a:=(1)"));
+      var returnTarget = invocationCount;
+      invocationCount++;
+      setLineNumber(1)    // compilemethod;
+      setModuleName("debugObjIntTest");
+      try {
+        var_a = var___95__var__95__assign__95__tmp;
+        return var___95__var__95__assign__95__tmp
+      } catch(e) {
+        if ((e.exctype == 'return') && (e.target == returnTarget)) {
+          return e.returnvalue;
+        } else {
+          throw e;
+        }
+      }
+    }
+    func6.paramCounts = [
+        1,
+    ];
+    func6.variableArities = [
+        false,
+    ];
+    this.methods["a:="] = func6;
+    this.methods["a"].debug = "var";
+    if (!Grace_isTrue(callmethod(var_Unknown, "match",
+      [1], var_a)))
+        throw new GraceExceptionPacket(TypeErrorObject,
+              new GraceString("expected "
+              + "initial value of var 'a' to be of type Unknown"))
+    setLineNumber(5)    // compilenode object;
+    var obj7 = Grace_allocObject();
+    obj7.definitionModule = "debugObjIntTest";
+    obj7.definitionLine = 5;
+    obj7.outer = this;
+    var reader_debugObjIntTest_outer8 = function() {
+      return this.outer;
+    }
+    obj7.methods["outer"] = reader_debugObjIntTest_outer8;
+    function obj_init_7() {
+      var origSuperDepth = superDepth;
+      superDepth = obj7;
+      var func9 = function(argcv) {    // method debugValue
+        var curarg = 1;
+        if (argcv[0] != 0)
+          callmethod(RuntimeErrorObject, "raise", [1], new GraceString("wrong number of arguments for list 1 of debugValue"));
+        var returnTarget = invocationCount;
+        invocationCount++;
+        setLineNumber(5)    // compilemethod;
+        setModuleName("debugObjIntTest");
+        try {
+          setLineNumber(9)    // compilenode string;
+          var string10 = new GraceString("\"Type == object\"");
+          return string10
+        } catch(e) {
+          if ((e.exctype == 'return') && (e.target == returnTarget)) {
+            return e.returnvalue;
+          } else {
+            throw e;
+          }
+        }
+      }
+      func9.paramCounts = [
+          0,
+      ];
+      func9.variableArities = [
+          false,
+      ];
+      obj7.methods["debugValue"] = func9;
+      var func11 = function(argcv) {    // method debugIterator
+        var curarg = 1;
+        if (argcv[0] != 0)
+          callmethod(RuntimeErrorObject, "raise", [1], new GraceString("wrong number of arguments for list 1 of debugIterator"));
+        var returnTarget = invocationCount;
+        invocationCount++;
+        setLineNumber(9)    // compilemethod;
+        setModuleName("debugObjIntTest");
+        try {
+          setLineNumber(12)    // compilenode object;
+          var obj12 = Grace_allocObject();
+          obj12.definitionModule = "debugObjIntTest";
+          obj12.definitionLine = 12;
+          obj12.outer = this;
+          var reader_debugObjIntTest_outer13 = function() {
+            return this.outer;
+          }
+          obj12.methods["outer"] = reader_debugObjIntTest_outer13;
+          function obj_init_12() {
+            var origSuperDepth = superDepth;
+            superDepth = obj12;
+          sourceObject = obj12;
+            setLineNumber(13)    // compilenode call;
+            var call14 = callmethod(superDepth, "outer", [0]);
+            onOuter = true;
+            onSelf = true;
+            var call15 = callmethod(call14, "a", [0]);
+          obj12.data["a"] = call15;
+              var reader_debugObjIntTest_a16 = function() {
+              return this.data["a"];
+            }
+          obj12.methods["a"] = reader_debugObjIntTest_a16;
+          obj12.data["a"] = call15;
+            var writer_debugObjIntTest_a16 = function(argcv, o) {
+              this.data["a"] = o;
+            }
+          obj12.methods["a:="] = writer_debugObjIntTest_a16;
+            reader_debugObjIntTest_a16.confidential = true;
+            writer_debugObjIntTest_a16.confidential = true;
+          obj12.mutable = true;
+          sourceObject = obj12;
+            setLineNumber(14)    // compilenode num;
+          obj12.data["b"] = new GraceNum(1);
+              var reader_debugObjIntTest_b17 = function() {
+              return this.data["b"];
+            }
+          obj12.methods["b"] = reader_debugObjIntTest_b17;
+          obj12.data["b"] = new GraceNum(1);
+            var writer_debugObjIntTest_b17 = function(argcv, o) {
+              this.data["b"] = o;
+            }
+          obj12.methods["b:="] = writer_debugObjIntTest_b17;
+            reader_debugObjIntTest_b17.confidential = true;
+            writer_debugObjIntTest_b17.confidential = true;
+          obj12.mutable = true;
+          sourceObject = obj12;
+          obj12.data["test"] = undefined;
+              var reader_debugObjIntTest_test18 = function() {
+              return this.data["test"];
+            }
+          obj12.methods["test"] = reader_debugObjIntTest_test18;
+          obj12.data["test"] = undefined;
+            var writer_debugObjIntTest_test18 = function(argcv, o) {
+              this.data["test"] = o;
+            }
+          obj12.methods["test:="] = writer_debugObjIntTest_test18;
+            reader_debugObjIntTest_test18.confidential = true;
+            writer_debugObjIntTest_test18.confidential = true;
+          obj12.mutable = true;
+          superDepth = origSuperDepth;
+        }
+        obj_init_12.apply(obj12, []);
+          var call19 = callmethod(obj12,"debugIterator", [0]);
+          return call19
+          return undefined
+        } catch(e) {
+          if ((e.exctype == 'return') && (e.target == returnTarget)) {
+            return e.returnvalue;
+          } else {
+            throw e;
+          }
+        }
+      }
+      func11.paramCounts = [
+          0,
+      ];
+      func11.variableArities = [
+          false,
+      ];
+      obj7.methods["debugIterator"] = func11;
+    sourceObject = obj7;
+    obj7.data["a"] = undefined;
+        var reader_debugObjIntTest_a20 = function() {
+        return this.data["a"];
+      }
+    obj7.methods["a"] = reader_debugObjIntTest_a20;
+    obj7.data["a"] = undefined;
+      var writer_debugObjIntTest_a20 = function(argcv, o) {
+        this.data["a"] = o;
+      }
+    obj7.methods["a:="] = writer_debugObjIntTest_a20;
+      reader_debugObjIntTest_a20.confidential = true;
+    obj7.mutable = true;
+    sourceObject = obj7;
+      setLineNumber(7)    // compilenode num;
+    obj7.data["d"] = new GraceNum(0);
+        var reader_debugObjIntTest_d21 = function() {
+        return this.data["d"];
+      }
+    obj7.methods["d"] = reader_debugObjIntTest_d21;
+    obj7.data["d"] = new GraceNum(0);
+      var writer_debugObjIntTest_d21 = function(argcv, o) {
+        this.data["d"] = o;
+      }
+    obj7.methods["d:="] = writer_debugObjIntTest_d21;
+      reader_debugObjIntTest_d21.confidential = true;
+      writer_debugObjIntTest_d21.confidential = true;
+    obj7.mutable = true;
+    sourceObject = obj7;
+    sourceObject = obj7;
+    superDepth = origSuperDepth;
+  }
+  obj_init_7.apply(obj7, []);
+    var var_b = obj7;
+    setLineNumber(13)    // compilenode method;
+    var func22 = function(argcv) {    // method b
+      var curarg = 1;
+      if (argcv[0] != 0)
+        callmethod(RuntimeErrorObject, "raise", [1], new GraceString("wrong number of arguments for list 1 of b"));
+      var returnTarget = invocationCount;
+      invocationCount++;
+      setLineNumber(13)    // compilemethod;
+      setModuleName("debugObjIntTest");
+      try {
+        setLineNumber(5)    // compilenode identifier;
+        return var_b
+      } catch(e) {
+        if ((e.exctype == 'return') && (e.target == returnTarget)) {
+          return e.returnvalue;
+        } else {
+          throw e;
+        }
+      }
+    }
+    func22.paramCounts = [
+        0,
+    ];
+    func22.variableArities = [
+        false,
+    ];
+    this.methods["b"] = func22;
+    setLineNumber(13)    // compilenode method;
+    var func23 = function(argcv) {    // method b:=(1)
+      var curarg = 1;
+      var var___95__var__95__assign__95__tmp = arguments[curarg];
+      curarg++;
+      if (argcv[0] != 1)
+        callmethod(RuntimeErrorObject, "raise", [1], new GraceString("wrong number of arguments for list 1 of b:=(1)"));
+      var returnTarget = invocationCount;
+      invocationCount++;
+      setLineNumber(13)    // compilemethod;
+      setModuleName("debugObjIntTest");
+      try {
+        var_b = var___95__var__95__assign__95__tmp;
+        return var___95__var__95__assign__95__tmp
+      } catch(e) {
+        if ((e.exctype == 'return') && (e.target == returnTarget)) {
+          return e.returnvalue;
+        } else {
+          throw e;
+        }
+      }
+    }
+    func23.paramCounts = [
+        1,
+    ];
+    func23.variableArities = [
+        false,
+    ];
+    this.methods["b:="] = func23;
+    this.methods["b"].debug = "var";
+    setLineNumber(5)    // compilenode identifier;
+    if (!Grace_isTrue(callmethod(var_Unknown, "match",
+      [1], var_b)))
+        throw new GraceExceptionPacket(TypeErrorObject,
+              new GraceString("expected "
+              + "initial value of var 'b' to be of type Unknown"))
+    setLineNumber(19)    // compilenode identifier;
+    var call24 = callmethod(var_a,"b:=", [1], var_b);
+    setLineNumber(20)    // compilenode identifier;
+    var call25 = callmethod(var_b,"a:=", [1], var_a);
+    setLineNumber(22)    // compilenode identifier;
+    var bool26 = new GraceBoolean(true)
+    var var_c = bool26;
+    setLineNumber(13)    // compilenode method;
+    var func27 = function(argcv) {    // method c
+      var curarg = 1;
+      if (argcv[0] != 0)
+        callmethod(RuntimeErrorObject, "raise", [1], new GraceString("wrong number of arguments for list 1 of c"));
+      var returnTarget = invocationCount;
+      invocationCount++;
+      setLineNumber(13)    // compilemethod;
+      setModuleName("debugObjIntTest");
+      try {
+        setLineNumber(22)    // compilenode identifier;
+        return var_c
+      } catch(e) {
+        if ((e.exctype == 'return') && (e.target == returnTarget)) {
+          return e.returnvalue;
+        } else {
+          throw e;
+        }
+      }
+    }
+    func27.paramCounts = [
+        0,
+    ];
+    func27.variableArities = [
+        false,
+    ];
+    this.methods["c"] = func27;
+    setLineNumber(13)    // compilenode method;
+    var func28 = function(argcv) {    // method c:=(1)
+      var curarg = 1;
+      var var___95__var__95__assign__95__tmp = arguments[curarg];
+      curarg++;
+      if (argcv[0] != 1)
+        callmethod(RuntimeErrorObject, "raise", [1], new GraceString("wrong number of arguments for list 1 of c:=(1)"));
+      var returnTarget = invocationCount;
+      invocationCount++;
+      setLineNumber(13)    // compilemethod;
+      setModuleName("debugObjIntTest");
+      try {
+        var_c = var___95__var__95__assign__95__tmp;
+        return var___95__var__95__assign__95__tmp
+      } catch(e) {
+        if ((e.exctype == 'return') && (e.target == returnTarget)) {
+          return e.returnvalue;
+        } else {
+          throw e;
+        }
+      }
+    }
+    func28.paramCounts = [
+        1,
+    ];
+    func28.variableArities = [
+        false,
+    ];
+    this.methods["c:="] = func28;
+    this.methods["c"].debug = "var";
+    setLineNumber(22)    // compilenode identifier;
+    if (!Grace_isTrue(callmethod(var_Unknown, "match",
+      [1], var_c)))
+        throw new GraceExceptionPacket(TypeErrorObject,
+              new GraceString("expected "
+              + "initial value of var 'c' to be of type Unknown"))
+    setLineNumber(23)    // compilenode num;
+    var array29 = new GraceList([
+    new GraceNum(1),
+    new GraceNum(2),
+    new GraceNum(3),
+    new GraceNum(4),
+  ]);
+
+    var var_d = array29;
+    setLineNumber(13)    // compilenode method;
+    var func30 = function(argcv) {    // method d
+      var curarg = 1;
+      if (argcv[0] != 0)
+        callmethod(RuntimeErrorObject, "raise", [1], new GraceString("wrong number of arguments for list 1 of d"));
+      var returnTarget = invocationCount;
+      invocationCount++;
+      setLineNumber(13)    // compilemethod;
+      setModuleName("debugObjIntTest");
+      try {
+        setLineNumber(23)    // compilenode identifier;
+        return var_d
+      } catch(e) {
+        if ((e.exctype == 'return') && (e.target == returnTarget)) {
+          return e.returnvalue;
+        } else {
+          throw e;
+        }
+      }
+    }
+    func30.paramCounts = [
+        0,
+    ];
+    func30.variableArities = [
+        false,
+    ];
+    this.methods["d"] = func30;
+    setLineNumber(13)    // compilenode method;
+    var func31 = function(argcv) {    // method d:=(1)
+      var curarg = 1;
+      var var___95__var__95__assign__95__tmp = arguments[curarg];
+      curarg++;
+      if (argcv[0] != 1)
+        callmethod(RuntimeErrorObject, "raise", [1], new GraceString("wrong number of arguments for list 1 of d:=(1)"));
+      var returnTarget = invocationCount;
+      invocationCount++;
+      setLineNumber(13)    // compilemethod;
+      setModuleName("debugObjIntTest");
+      try {
+        var_d = var___95__var__95__assign__95__tmp;
+        return var___95__var__95__assign__95__tmp
+      } catch(e) {
+        if ((e.exctype == 'return') && (e.target == returnTarget)) {
+          return e.returnvalue;
+        } else {
+          throw e;
+        }
+      }
+    }
+    func31.paramCounts = [
+        1,
+    ];
+    func31.variableArities = [
+        false,
+    ];
+    this.methods["d:="] = func31;
+    this.methods["d"].debug = "var";
+    setLineNumber(23)    // compilenode identifier;
+    if (!Grace_isTrue(callmethod(var_Unknown, "match",
+      [1], var_d)))
+        throw new GraceExceptionPacket(TypeErrorObject,
+              new GraceString("expected "
+              + "initial value of var 'd' to be of type Unknown"))
+    setLineNumber(24)    // compilenode num;
+    var idxres32 = var_d.methods["[]"].call(var_d, [1], new GraceNum(1));
+    var call33 = Grace_print(idxres32);
+    return this;
+}
+gracecode_debugObjIntTest.imports = [
+];
+if (gctCache)
+  gctCache['debugObjIntTest'] = "public:\n a\n a:=\n b\n b:=\n c\n c:=\n d\n d:=\npath:\n debugObjIntTest\nclasses:\nconfidential:\nfresh-methods:\nmodules:\n";
+if (originalSourceLines) {
+  originalSourceLines["debugObjIntTest"] = [
+    "var a := object {",
+    "    var b is writable",
+    "    var c := \"test\"",
+    "}",
+    "var b := object {",
+    "    var a is writable",
+    "    var d := 0",
+    "    method debugValue() {",
+    "        \"\\\"Type == object\\\"\" ",
+    "    }",
+    "    method debugIterator() {",
+    "        return object {",
+    "            var a := outer.a",
+    "            var b := 1",
+    "            var test",
+    "        }.debugIterator()",
+    "    }",
+    "}",
+    "a.b := b",
+    "b.a := a",
+    "",
+    "var c := true",
+    "var d := [1, 2, 3, 4]",
+    "print(d[1])",
+    "",
+  ];
+}
+    </script>
+</body>
+</html>
+
