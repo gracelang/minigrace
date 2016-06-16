@@ -156,8 +156,7 @@ echo:
 
 expWeb: expWebDeploy
 
-expWebBuild: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
-	./includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
+expWebBuild: js grace-web-editor/scripts/setup.js grace-web-editor/index.html $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
 	ln -f $(filter-out js/samples.js js/tabs.js,$(filter %.js,$(WEBFILES))) grace-web-editor/js
 	ln -f $(GRAPHIX:%.grace=js/%.js) grace-web-editor/js
@@ -177,7 +176,8 @@ gencheck:
 
 gracedoc: tools/gracedoc
 
-grace-web-editor/index.html: pull-web-editor
+grace-web-editor/index.html: pull-web-editor grace-web-editor/index.in.html grace-web-editor/scripts/background.in.js
+	./includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 
 grace-web-editor/scripts/setup.js: pull-web-editor $(filter-out %/setup.js,$(wildcard grace-web-editor/scripts/*.js)) $(wildcard grace-web-editor/scripts/*/*.js)
 	cd grace-web-editor; npm install
