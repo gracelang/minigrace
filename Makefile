@@ -155,6 +155,7 @@ echo:
 expWeb: expWebDeploy
 
 expWebBuild: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
+	./includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
 	ln -f $(filter-out js/samples.js js/tabs.js,$(filter %.js,$(WEBFILES))) grace-web-editor/js
 	ln -f $(GRAPHIX:%.grace=js/%.js) grace-web-editor/js
