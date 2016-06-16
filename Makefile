@@ -25,6 +25,7 @@ COMPILER_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace util
 DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso util.gct util.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
 DIALECTS_NEED = modules/dialect util ast modules/gUnit modules/math
 EXP_WEB_DIRECTORY = public_html/minigrace/exp/
+GRAPHICS_LIBRARY_MODULES = js/graphics/turtle.grace js/graphics/logo.grace js/graphics/simplegraphics.grace
 GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 
 LIBRARY_WO_OBJECTDRAW = $(sort $(filter-out $(OBJECTDRAW), $(LIBRARY_MODULES)))
@@ -223,6 +224,11 @@ js/grace-debug: js/grace
 	sed -e "s|#!/usr/bin/env node|#!/usr/bin/env node --debug-brk|" $< > js/grace-debug
 	chmod a+x js/grace-debug
 
+js/graphics: $(GRAPHICS_LIBRARY_MODULES:%.grace=%.js)
+
+js/graphics/%.js: js/graphics/%.grace minigrace
+	./minigrace --make --target js $<
+
 js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo Generating minigrace.js from minigrace.in.js...
 	@cat js/minigrace.in.js > js/minigrace.js
@@ -293,7 +299,7 @@ $(C_MODULES_GSO:%.gso=%.gct): modules/%.gct: stubs/%.gct
 
 $(LIBRARY_MODULES:%.grace=modules/%.gcn): modules/%.gcn: modules/%.gso
 
-$(LIBRARY_MODULES:%.grace=%.gct): %.gct: modules/%.grace l1/minigrace
+$(LIBRARY_MODjs/graphics/%js: minigraceULES:%.grace=%.gct): %.gct: modules/%.grace l1/minigrace
 	l1/minigrace  $(VERBOSITY) --make --dir . --noexec $<
 
 $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso): modules/%.gso: modules/%.grace minigrace
@@ -371,11 +377,12 @@ $(OBJECTDRAW:%.grace=js/%.js): js/%.js: modules/%.grace js/dom.gct minigrace js/
 $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
 
-oldWeb: $(WEBFILES) js/sample
+oldWeb: $(WEBFILES) js/sample js/graphics
 	rsync -a -l -z --delete $(WEBFILES) $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z js/samples.js $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z js/sample $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z sample $(WEB_SERVER):$(WEB_DIRECTORY)
+	rsync -a -l -z js/graphics/ $(WEB_SERVER):$(WEB_DIRECTORY)
 
 pull-web-editor:
 	@if [ -e grace-web-editor ] ; \
