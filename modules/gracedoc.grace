@@ -9,7 +9,7 @@ def settings = object {
     var outputdir:String is public := ""
     var verbosity:Number is public := 0
     var publicOnly:Boolean is public := false
-    def version:Number is public = 1.0
+    def version:Number is public = 1.1
 }
 
 method parseArguments {
@@ -84,7 +84,7 @@ class section.withTemplate(html')andCursorAt(idx) -> Section {
     var html:String is readable := html'
     var hasContent is readable := false
     var cursor:Number is confidential := idx
-    var elts is public := dictionary.empty
+    var elts is public := dictionary []
     method addElement(n:String)withText(t:String) {
         hasContent := true
         elts.at(n)put(t)
@@ -305,7 +305,7 @@ class directoryBuilderForFile(in) outTo (dir) as (pageType) {
             o.accept(classVis)
             classVis.generate
             return false
-        } 
+        }
         return true
     }
 }
@@ -877,8 +877,8 @@ iframe {
             }
             t := t ++ "</b> = "
             var temp := ""
-            var ops := list.empty
-            var tps := list.empty
+            var ops := list []
+            var tps := list []
             var node := o.value
 
             if (node.kind == "op") then {
@@ -1004,7 +1004,7 @@ iframe {
                     for(part.params) do { param ->
                         if (param.dtype != false) then {
                             t := t ++ "<span class='parameter-name'>" ++ param.value ++ "</span>"
-                            t := t ++ ":<span class='parameter-type'>" ++ getTypeLink(param.dtype.value) ++ "</span>"
+                            t := t ++ ":<span class='parameter-type'>" ++ getTypeLink(param.dtype.nameString) ++ "</span>"
                         } else {
                             t := t ++ "<span class='parameter-name'>" ++ param.value ++ "</span>"
                         }
@@ -1019,9 +1019,9 @@ iframe {
             if (m.dtype != false) then {
                 t := t ++ " -> "
                 if (m.dtype.kind == "identifier") then {
-                    t := t ++ getTypeLink(o.dtype.value)
+                    t := t ++ getTypeLink(m.dtype.value)
                 } elseif (m.dtype.kind == "generic") then {
-                    t := t ++ getTypeLink(o.dtype.value.value) ++ "&lt;"
+                    t := t ++ getTypeLink(m.dtype.value.value) ++ "&lt;"
                     m.dtype.args.do { each -> t := "{t}{getTypeLink(each.value)}" } separatedBy { t := t ++ ", " }
                     t := t ++ "&gt;"
                 }
@@ -1039,7 +1039,7 @@ iframe {
             classesSection.addElement(n) withText(t)
             return false
           } else {
-            var t := "<span class='headline'><code><b>{o.name.value}</b>."
+            var t := "<span class='headline'><code><b>{o.name}</b>."
 
             for(m.signature) do { part ->
                 t := t ++ "<b>{part.name}</b>"
@@ -1063,9 +1063,9 @@ iframe {
             if (m.dtype != false) then {
                 t := t ++ " -> "
                 if (m.dtype.kind == "identifier") then {
-                    t := t ++ getTypeLink(o.dtype.value)
+                    t := t ++ getTypeLink(m.dtype.value)
                 } elseif (m.dtype.kind == "generic") then {
-                    t := t ++ getTypeLink(o.dtype.value.value) ++ "&lt;"
+                    t := t ++ getTypeLink(m.dtype.value.value) ++ "&lt;"
                     m.dtype.args.do { each -> t := "{t}{getTypeLink(each.value)}" } separatedBy { t := t ++ ", " }
                     t := t ++ "&gt;"
                 }
@@ -1162,9 +1162,9 @@ iframe {
     }
 
     method visitVarDec(o) -> Boolean {
+        def n = o.nameString
         if (isOnClassPage == true) then {
             if (!settings.publicOnly) then {
-                def n = o.name.value
                 var t := "<tr class='placeholder'><td><code>var</code></td><td class='identifier-name'>{o.name.value}"
                 t := t ++ "</td><td><code>"
                 if (o.dtype != false) then {
@@ -1176,7 +1176,6 @@ iframe {
             } else {
                 if (o.isReadable) then {
                     var t := "<tr class='placeholder'><td class='identifier-name'>{o.name.value}"
-                    def n = o.name.value
                     t := t ++ "</td><td>"
                     if (o.dtype != false) then {
                         t := t ++ "{getTypeLink(o.dtype.value)}"
@@ -1187,19 +1186,17 @@ iframe {
                 }
                 if (o.isWritable) then {
                     var t := "<tr class='placeholder'><td><code><span class='method-name'>{o.name.value}:=</span>"
-                    def n = "{o.name.value}:="
                     if (o.dtype != false) then {
                         t := t ++ "(_:{getTypeLink(o.dtype.value)})"
                     }
                     t := t ++ "</code></td><td><code>Done</code></td></tr>"
-                    t := t ++ "<tr class='description'><td colspan='2'>Updates {o.name.value}</td></tr>"
-                    methodsSection.addElement(n)withText(t)
+                    t := t ++ "<tr class='description'><td colspan='2'>Updates {n}</td></tr>"
+                    methodsSection.addElement(n++":=")withText(t)
                 }
             }
             return false
         } else {
             if (!settings.publicOnly) then {
-                def n = o.name.value
                 var t := "<tr class='placeholder'><td><code>var</code></td><td class='identifier-name'>{o.name.value}"
                 t := t ++ "</td><td><code>"
                 if (o.dtype != false) then {
@@ -1210,7 +1207,6 @@ iframe {
                 fieldsSection.addElement(n)withText(t)
             } else {
                 if (o.isReadable) then {
-                    def n = o.name.value
                     var t := "<tr class='placeholder'><td class='identifier-name'>{o.name.value}"
                     t := t ++ "</td><td><code>"
                     if (o.dtype != false) then {
@@ -1221,14 +1217,13 @@ iframe {
                     methodsSection.addElement(n)withText(t)
                 }
                 if (o.isWritable) then {
-                    def n = "{o.name.value}:="
-                    var t := "<tr class='placeholder'><td><code><span class='method-name'>{o.name.value}:=</span>"
+                    var t := "<tr class='placeholder'><td><code><span class='method-name'>{n}:=</span>"
                     if (o.dtype != false) then {
                         t := t ++ "(_:{getTypeLink(o.dtype.value)})"
                     }
                     t := t ++ "</code></td><td><code>Done</code></td></tr>"
-                    t := t ++ "<tr class='description'><td colspan='2'>Updates {o.name.value}</td></tr>"
-                    methodsSection.addElement(n)withText(t)
+                    t := t ++ "<tr class='description'><td colspan='2'>Updates {n}</td></tr>"
+                    methodsSection.addElement "{n}:=" withText(t)
                 }
             }
             return false
@@ -1264,7 +1259,7 @@ var modulename
 var counter
 
 var allModules := io.listdir(settings.inputdir)
-var parsedFiles := dictionary.empty
+var parsedFiles := dictionary []
 var inputWasFound := false
 
 //LEX AND PARSE ALL INPUT FILES
@@ -1278,7 +1273,7 @@ for (allModules) do { filename ->
         if (settings.verbosity > 0) then { print "On {filename} - parsing... ({sys.elapsedTime})" }
         //var values := parser.parse(tokens)
         parsedFiles.at(counter)put(parser.parse(tokens))
-        
+
         if (settings.verbosity > 0) then { print "On {filename} - done parsing... ({sys.elapsedTime})" }
         counter := counter + 1
         inputWasFound := true
