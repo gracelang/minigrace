@@ -1,7 +1,4 @@
-var domNoObject = Grace_allocObject(GraceObject, "noObject");
-domNoObject.methods["=="] = function(argcv, other) {
-    return (this === other) ? GraceTrue : GraceFalse;
-};
+var domNoObject;
 
 function unwrapDOMObject(obj) {
   if (obj.hasOwnProperty("_wrappedDOMObject")) {
@@ -114,6 +111,11 @@ function wrapGraceObject(o) {
 }
 
 function gracecode_dom() {
+    domNoObject = Grace_allocObject(GraceObject, "noObject");
+    domNoObject.methods["=="] = function(argcv, other) {
+        return (this === other) ? GraceTrue : GraceFalse;
+    };
+
     this.methods.document = function(argcv) {
         if (typeof(document) === "undefined") {
             return wrapDOMObject(null);
