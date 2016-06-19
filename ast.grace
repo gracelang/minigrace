@@ -564,7 +564,7 @@ def matchCaseNode is public = object {
 def methodTypeNode is public = object {
   class new(signature', rtype') {
     // Represents the signature of a method in a type literal
-    // signature' is an Iterable of callWithPart objects, which contain
+    // signature' is an Iterable of requestPart objects, which contain
     // the parts of the name and the parameter lists.
 
     inherits baseNode
@@ -1053,7 +1053,7 @@ def callNode = object {
     class new(receiver', parts) {
         // requested as callNode.new(receiver':AstNode, parts:List)
         // Represents a method request with arguments.
-        // The argument list is in `with`, as a sequence of `callWithPart`s.
+        // The argument list is in `with`, as a sequence of `requestPart`s.
 
         inherits baseNode
         def kind is public = "call"
@@ -2555,7 +2555,7 @@ def signaturePart = object {
     }
 }
 
-def callWithPart = object {
+def requestPart = object {
     method new {
         request "" withArgs( [] )
     }
@@ -2626,7 +2626,7 @@ def callWithPart = object {
         }
 
         method shallowCopy {
-            callWithPart.request(name) withArgs(args).shallowCopyFieldsFrom(self)
+            requestPart.request(name) withArgs(args).shallowCopyFieldsFrom(self)
         }
         method shallowCopyFieldsFrom(other) {
             super.shallowCopyFieldsFrom(other)

@@ -409,7 +409,7 @@ method rewritematchblockterm(arg) {
                     ast.identifierNode.new("prelude", false)
                 )
             ),
-            [ast.callWithPart.request "new" withArgs( [arg.receiver, ast.arrayNode.new(subpats)] )]
+            [ast.requestPart.request "new" withArgs( [arg.receiver, ast.arrayNode.new(subpats)] )]
         )
         return [callpat, bindings]
     }
@@ -421,7 +421,7 @@ method rewritematchblockterm(arg) {
                     ast.identifierNode.new("prelude", false)
                 )
             ),
-            [ast.callWithPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )]
+            [ast.requestPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )]
         )
         if (false != arg.dtype) then {
             if (arg.dtype.kind == "identifier") then {
@@ -432,7 +432,7 @@ method rewritematchblockterm(arg) {
                             ast.identifierNode.new("prelude", false)
                         )
                     ),
-                    [ast.callWithPart.request "new" withArgs( [varpat, arg.dtype] )]
+                    [ast.requestPart.request "new" withArgs( [varpat, arg.dtype] )]
                 ), [arg] ]
             }
             def tmp = rewritematchblockterm(arg.dtype)
@@ -447,7 +447,7 @@ method rewritematchblockterm(arg) {
                         ast.identifierNode.new("prelude", false)
                     )
                 ),
-                [ast.callWithPart.request "new" withArgs( [varpat, tmp.first ] )]
+                [ast.requestPart.request "new" withArgs( [varpat, tmp.first ] )]
             )
             return [bindingpat, bindings]
         }
@@ -480,7 +480,7 @@ method rewritematchblock(blk) {
                     ast.identifierNode.new("prelude", false)
                 )
             ),
-            [ast.callWithPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )]
+            [ast.requestPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )]
         )
         if (false != arg.dtype) then {
             match (arg.dtype.kind)
@@ -491,7 +491,7 @@ method rewritematchblock(blk) {
                                 ast.identifierNode.new("prelude", false)
                                 )
                             ),
-                        [ast.callWithPart.request "new" withArgs( [varpat, arg.dtype] )])
+                        [ast.requestPart.request "new" withArgs( [varpat, arg.dtype] )])
                 } case { _ ->
                     def tmp = rewritematchblockterm(arg.dtype)
                     def bindingpat = ast.callNode.new(
@@ -500,7 +500,7 @@ method rewritematchblock(blk) {
                                 ast.identifierNode.new("prelude", false)
                                 )
                             ),
-                        [ast.callWithPart.request "new" withArgs( [varpat, tmp.first ] )]
+                        [ast.requestPart.request "new" withArgs( [varpat, tmp.first ] )]
                     )
                     pattern := bindingpat
                     for (tmp.second) do {p->
@@ -1351,7 +1351,7 @@ method transformBind(bindNode) ancestors(as) {
     if ( dest.kind == "member" ) then {
         dest.value := dest.value ++ ":="
         ast.callNode.new(dest,
-            ( [ast.callWithPart.request(dest.value) withArgs ( [bindNode.value] ) ] ) )
+            ( [ast.requestPart.request(dest.value) withArgs ( [bindNode.value] ) ] ) )
             scope(currentScope)
     } else {
         bindNode
@@ -1379,12 +1379,12 @@ method transformInherits(inhNode) ancestors(as) {
         // a `use` statement; no transformation necessary
     } elseif (inhNode.inheritsFromCall) then {
         var superCall := inhNode.value
-        superCall.with.push(ast.callWithPart.request "object"
+        superCall.with.push(ast.requestPart.request "object"
             withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
     } elseif {inhNode.inheritsFromMember} then {
         def newcall = ast.callNode.new(inhNode.value.receiver, [
-            ast.callWithPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
-            ast.callWithPart.request "object" withArgs (
+            ast.requestPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
+            ast.requestPart.request "object" withArgs (
                 [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope)
             ]
         ) scope(currentScope)

@@ -1052,7 +1052,7 @@ method prefixop {
         postfixsquare
         def rcvr = values.pop
         def call = ast.callNode.new(rcvr,
-            [ ast.callWithPart.request("prefix" ++ op) withArgs( [] ) ] )
+            [ ast.requestPart.request("prefix" ++ op) withArgs( [] ) ] )
         values.push(call)
     }
 }
@@ -1732,7 +1732,7 @@ method callrest(acceptBlocks) {
     def btok = sym
     util.setPosition(sym.line, sym.linePos)
     var signature := []
-    var part := ast.callWithPart.new
+    var part := ast.requestPart.new
     signature.push(part)
     var hadcall := false
     var tok := lastToken
@@ -1972,7 +1972,7 @@ method callmprest(meth, signature, tok) {
            || accept("identifier")onLineOf(lastToken)} do {
         // Each word must start on the same line as the preceding parameter
         // ended.
-        part := ast.callWithPart.new
+        part := ast.requestPart.new
         signature.push(part)
         methname := methname ++ "()"
         pushidentifier

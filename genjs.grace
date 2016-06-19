@@ -154,7 +154,7 @@ method compilearray(o) {
 method compilemember(o) {
     // Member in value position is actually a nullary method call.
     util.setline(o.line)
-    var c := ast.callNode.new(o, [ast.callWithPart.request(o.value) withArgs( [] )]) scope(o.scope)
+    var c := ast.callNode.new(o, [ast.requestPart.request(o.value) withArgs( [] )]) scope(o.scope)
     var r := compilenode(c)
     o.register := r
 }
