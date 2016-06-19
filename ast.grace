@@ -143,6 +143,7 @@ class baseNode {
         return self.dtype
     }
     method isSimple { true }  // needs no parens when used as receiver
+    method isDelimited { false }  // needs no parens when used as argument
     method description { kind }
     method accept(visitor) {
         self.accept(visitor) from (ancestorChain.empty)
@@ -329,6 +330,7 @@ def blockNode is public = object {
         p.accept(patternMarkVisitor) from(ancestorChain.with(self))
     }
     method isBlock { true }
+    method isDelimited { true }
     method isEmpty { body.size == 0 }
     method isntEmpty { body.size > 0 }
     method scope:=(st) {
@@ -379,23 +381,23 @@ def blockNode is public = object {
         var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ "Parameters:"
         for (self.params) do { mx ->
-            s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
+            s := s ++ "\n  "++ spc ++ mx.pretty(depth+1)
         }
         s := s ++ "\n"
         s := s ++ spc ++ "Body:"
         for (self.body) do { mx ->
-            s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
+            s := s ++ "\n  "++ spc ++ mx.pretty(depth+1)
         }
         if (false != self.matchingPattern) then {
             s := s ++ "\n"
             s := s ++ spc ++ "Pattern:"
-            s := s ++ "\n  "++ spc ++ self.matchingPattern.pretty(depth+2)
+            s := s ++ "\n  "++ spc ++ self.matchingPattern.pretty(depth+1)
         }
         s
     }
     method toGrace(depth : Number) -> String {
         var spc := ""
-        for (0..(depth - 1)) do { i ->
+        repeat (depth) times {
             spc := spc ++ "    "
         }
         var s := "\{"
@@ -411,15 +413,16 @@ def blockNode is public = object {
                 if (i < self.params.size) then {
                     s := s ++ ", "
                 } else {
-                    s := s ++ " ->"
+                    s := s ++ " →"
                 }
             }
         }
         for (self.body) do { mx ->
-            s := s ++ "\n" ++ spc ++ "    " ++ mx.toGrace(depth + 1)
+            s := s ++ "\n" ++ spc ++ mx.toGrace(depth + 1)
         }
-        s := s ++ "\n" ++ spc ++ "\}"
-        s
+        s := s ++ "\n"
+        repeat (depth - 1) times { s := s ++ "    " }
+        s ++ "\}"
     }
     method shallowCopy {
         blockNode.new(params, body).shallowCopyFieldsFrom(self)
@@ -561,7 +564,7 @@ def matchCaseNode is public = object {
 def methodTypeNode is public = object {
   class new(signature', rtype') {
     // Represents the signature of a method in a type literal
-    // signature' is an Iterable of callWithPart objects, whcih contain
+    // signature' is an Iterable of callWithPart objects, which contain
     // the parts of the name and the parameter lists.
 
     inherits baseNode
@@ -1042,31 +1045,19 @@ def methodNode = object {
     }
 }
 def callNode = object {
-    method new(receiver, with) scope(s) {
-        def result = new(receiver, with)
+    method new(receiver, parts) scope(s) {
+        def result = new(receiver, parts)
         result.scope := s
         result
     }
-    class new(receiver', with') {
+    class new(receiver', parts) {
         // requested as callNode.new(receiver':AstNode, parts:List)
         // Represents a method request with arguments.
         // The argument list is in `with`, as a sequence of `callWithPart`s.
-        // [with]
-        //     object {
-        //         name := ""
-        //         args := emptySequence
-        //     }
-        //     object {
-        //         name := ""
-        //         args := emptySequence
-        //     }
-        //     ...
-        //     object {
-        //         ...
-        //     }
+
         inherits baseNode
         def kind is public = "call"
-        var with is public := with'        // arguments
+        var with is public := parts        // arguments
         var generics is public := false
         var isPattern is public := false
         var receiver is public := receiver'
@@ -1082,15 +1073,29 @@ def callNode = object {
 
         method isCall { true }
         method returnsObject {
-            if (receiver.isMember.not) then { return false }
-            if (receiver.nameString == "clone") then { return true }
-            if (receiver.nameString == "copy") then { return true }
+            if (receiver.isImplicit) then { return false }
+            if (nameString == "clone") then { return true }
+            if (nameString == "copy") then { return true }
             return false
         }
         method returnedObjectScope {
             // precondition: returnsObject
             self.scope
         }
+        method arguments {
+            def result = [ ]
+            for (self.with) do { part ->
+                for (part.args) do { arg -> result.push(arg) }
+            }
+            result
+        }
+
+        method argumentsDo(action) {
+            for (self.with) do { part ->
+                for (part.args) do { arg -> action.apply(arg) }
+            }
+        }
+
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitCall(self) up(as)) then {
                 def newChain = as.extend(self)
@@ -1139,20 +1144,16 @@ def callNode = object {
             s
         }
         method toGrace(depth : Number) -> String {
-            var spc := ""
-            repeat (depth) times {
-                spc := spc ++ "    "
-            }
             var s := ""
             if (receiver.isImplicit.not) then {
                 if (receiver.isSimple) then {
-                    s := "{receiver.toGrace 0}."
+                    s := "{receiver.toGrace (depth + 1)}."
                 } else {
-                    s := "({receiver.toGrace 0})."
+                    s := "({receiver.toGrace (depth + 1)})."
                 }
             }
-            self.with.do { part -> s := part.toGrace(depth + 1) }
-                separatedBy { s := s + " " }
+            with.do { part -> s := s ++ part.toGrace(depth + 1) }
+                separatedBy { s := s ++ " " }
             s
         }
         method asString { "call {receiver.pretty(0)}" }
@@ -1457,7 +1458,7 @@ def memberNode = object {
         method isMember { true }
         method isCall { true }
 
-        method arguments { emptySequence }
+        method arguments { emptySeq }
         method argumentsDo { }
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitMember(self) up(as)) then {
@@ -1772,10 +1773,12 @@ def stringNode = object {
             def q = "\""
             q ++ value.quoted ++ q
         }
+        method asString { "string {toGrace 0}" }
         method shallowCopy {
             stringNode.new(value).shallowCopyFieldsFrom(self)
         }
         method statementName { "expression" }
+        method isDelimited { true }
     }
 }
 def numNode is public = object {
@@ -1802,6 +1805,7 @@ def numNode is public = object {
             numNode.new(value).shallowCopyFieldsFrom(self)
         }
         method statementName { "expression" }
+        method isDelimited { true }
     }
 }
 def opNode is public = object {
@@ -2370,7 +2374,11 @@ def inheritsNode = object {
             s
         }
         method toGrace(depth : Number) -> String {
-            var s := if (isUse) then { "use " } else { "inherit " }
+            var s := ""
+            repeat (depth) times {
+                s := s ++ "    "
+            }
+            s := s ++ if (isUse) then { "use " } else { "inherit " }
             s := s ++ self.value.toGrace(0)
             aliases.do { a ->
                 s := "{s} {a} "
@@ -2519,8 +2527,15 @@ def signaturePart = object {
             for (params) do { p ->
                 s := "{s}\n  {spc}{p.pretty(depth + 2)}"
             }
-            if (false != typeParams) then {
-                s := "{s}\n  {spc}TypeParams: {typeParams.pretty(depth + 1)}"
+            s
+        }
+        method toGrace(depth) {
+            var s := name
+            if (params.isEmpty.not) then {
+                s := s ++ "("
+                params.do { each -> s := each.toGrace(depth + 1) }
+                    separatedBy { s := s ++ ", " }
+                s := s ++ ")"
             }
             s
         }
@@ -2554,6 +2569,7 @@ def callWithPart = object {
         def kind is public = "callwithpart"
         var name is public := rPart
         var args is public := xs
+        var typeArgs := emptySeq
         var lineLength is public := 0
 
         method nameString {
@@ -2587,6 +2603,28 @@ def callWithPart = object {
             }
             s
         }
+        method toGrace(depth) {
+            var s := name
+            if (typeArgs.size > 0) then {
+                s := s ++ "⟦"
+                typeArgs.do { tArg ->
+                    s := s ++ tArg.toGrace(depth + 1)
+                } separatedBy { s := s ++ ", " }
+                s := s ++ "⟧"
+            }
+            if (args.size > 0) then {
+                def needsParens = (args.size > 1) || (args.first.isDelimited.not)
+                s := s ++ if (needsParens) then { "(" } else { " " }
+                args.do { arg ->
+                    s := s ++ arg.toGrace(depth)
+                } separatedBy {
+                    s := s ++ ", "
+                }
+                if (needsParens) then { s := s ++ ")" }
+            }
+            s
+        }
+
         method shallowCopy {
             callWithPart.request(name) withArgs(args).shallowCopyFieldsFrom(self)
         }
