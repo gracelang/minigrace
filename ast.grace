@@ -209,6 +209,7 @@ def implicit is public = object {
     method accept(visitor) from (as) {
         visitor.visitImplicit(self) up (as)
     }
+    method pretty(depth) { "implicit" }
 }
 
 def nullNode is public = object {
@@ -640,34 +641,11 @@ def methodTypeNode is public = object {
     }
     method toGrace(depth : Number) -> String {
         var s := ""
-        var firstPart := true
-        for (self.signature) do { part ->
-            s := s ++ part.name
-            if (firstPart) then {
-                firstPart := false
-                if (false != typeParams) then {
-                    typeParams.toGrace(depth + 1)
-                }
-            }
-            if (part.params.size > 0) then {
-                s := s ++ "("
-                for (part.params.indices) do { pnr ->
-                    var p := part.params.at(pnr)
-                    s := s ++ p.toGrace(depth + 1)
-                    if (pnr < part.params.size) then {
-                        s := s ++ ", "
-                    }
-                }
-                s := s ++ ")"
-            }
-        }
-        if (false != self.rtype) then {
-            s := s ++ " -> " ++ self.rtype.toGrace(depth + 1)
-        }
+        signature.do { part -> s:= s ++ part.toGrace(depth + 1) }
         s
     }
     method shallowCopy {
-        methodTypeNode.new(emptySeq, false).shallowCopyFieldsFrom(self)
+        methodTypeNode.new(signature, rtype).shallowCopyFieldsFrom(self)
     }
   }
 }
@@ -883,7 +861,8 @@ def methodNode = object {
             signature.fold { acc, each -> acc ++ each.canonicalName }
                 startingWith ""
         }
-        method hasParams { signature.first.isEmpty.not }
+        method hasParams { signature.first.params.isEmpty.not }
+        method hasTypeParams { false ≠ signature.first.typeParams }
         method isMethod { true }
         method isExecutable { false }
         method isLegalInTrait { true }
@@ -1142,7 +1121,7 @@ def callNode = object {
                 spc := spc ++ "  "
             }
             var s := super.pretty(depth) ++ "\n"
-            s := s ++ spc ++ "Receiver: {receiver}\n"
+            s := s ++ spc ++ "Receiver: {receiver.pretty(depth + 1)}\n"
             s := s ++ spc ++ "Method Name: {nameString}\n"
             if (false != generics) then {
                 s := s ++ spc ++ "  Generics:\n"
@@ -1165,42 +1144,15 @@ def callNode = object {
                 spc := spc ++ "    "
             }
             var s := ""
-            // only the last member is the method call we need to handle
-            if (self.receiver.kind == "member") then {
-                var member := self.receiver
-                if (member.receiver.substringFrom(1)to(6) == "prefix") then {
-                    s := member.receiver.substringFrom(7)to(member.receiver.size)
-                    return s ++ member.receiver.toGrace(0)
-                }
-                if (member.receiver.isSimple) then {
-                    s := "{member.receiver.toGrace 0}."
+            if (receiver.isImplicit.not) then {
+                if (receiver.isSimple) then {
+                    s := "{receiver.toGrace 0}."
                 } else {
-                    s := "({member.receiver.toGrace 0})."
+                    s := "({receiver.toGrace 0})."
                 }
             }
-            var firstPart := true
-            for (self.with) do { part ->
-                s := s ++ part.name
-                if (firstPart && {false != generics}) then {
-                    s := s ++ "<"
-                    for (1..(generics.size - 1)) do {ix ->
-                        s := s ++ generics.at(ix).toGrace(depth + 1)
-                    }
-                    s := s ++ generics.last.toGrace(depth + 1) ++ ">"
-                }
-                firstPart := false
-                if (part.args.size > 0) then {
-                    s := s ++ "("
-                    for (part.args.indices) do { anr ->
-                        var arg := part.args.at(anr)
-                        s := s ++ arg.toGrace(depth + 1)
-                        if (anr < part.args.size) then {
-                            s := s ++ ", "
-                        }
-                    }
-                    s := s ++ ")"
-                }
-            }
+            self.with.do { part -> s := part.toGrace(depth + 1) }
+                separatedBy { s := s + " " }
             s
         }
         method asString { "call {receiver.pretty(0)}" }
@@ -1486,13 +1438,14 @@ def arrayNode is public = object {
   }
 }
 def memberNode = object {
-    method new(request, receiver') scope(s) {
-        def result = new(request, receiver')
+    method new(request, receiver) scope(s) {
+        // Represents a dotted request ‹receiver›.‹request› with no arguments.
+        def result = new(request, receiver)
         result.scope := s
         result
     }
     class new(request, receiver') {
-        // Represents a dotted request ‹receiver›.‹request›
+        // Represents a dotted request ‹receiver›.‹request› with no arguments.
         inherits baseNode
         def kind is public = "member"
         var value is public := request  // NB: value is a String, not an Identifier
@@ -1500,7 +1453,12 @@ def memberNode = object {
         var generics is public := false
 
         method nameString { value }
+        method canonicalName { value }
         method isMember { true }
+        method isCall { true }
+
+        method arguments { emptySequence }
+        method argumentsDo { }
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitMember(self) up(as)) then {
                 def newChain = as.extend(self)
