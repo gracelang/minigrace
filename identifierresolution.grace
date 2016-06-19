@@ -563,7 +563,7 @@ method rewriteIdentifier(node) ancestors(as) {
     // former identifier resolution pass to keep the C code generator (genc) happy.
     // They may represent things that APB doesn't understand, or bugs in genc
 
-    var nm := node.value
+    var nm := node.nameString
     def nodeScope = node.scope
     def nmGets = nm ++ ":="
     util.setPosition(node.line, node.linePos)
@@ -1343,19 +1343,30 @@ method readableStringFrom(xs:Sequence) {
 }
 
 method transformBind(bindNode) ancestors(as) {
-    // bindNode is (a shallow copy of) a bindNode.  If it is binding
-    // a "member", transform it into a request on a setter method
+    // bindNode is (a shallow copy of) a bindNode.  If it is binding a
+    // "member" or an identifier, transform it into a request on a setter
 
     def dest = bindNode.dest
     def currentScope = bindNode.scope
-    if ( dest.kind == "member" ) then {
+    util.setPosition(bindNode.line, bindNode.linePos)
+    if ( dest.isMember ) then {
         dest.value := dest.value ++ ":="
-        ast.callNode.new(dest,
-            ( [ast.requestPart.request(dest.value) withArgs ( [bindNode.value] ) ] ) )
-            scope(currentScope)
-    } else {
-        bindNode
+        def part = ast.requestPart.request(dest.value) withArgs [bindNode.value]
+                scope(currentScope)
+        return ast.callNode.new(dest.receiver, [ part ]) scope(currentScope)
+    } elseif { dest.isIdentifier } then {
+        def nm = dest.nameString
+        def nmGets = nm ++ ":="
+        if (currentScope.hasDefinitionInNest(nmGets)) then {
+            if (currentScope.kindInNest(nmGets) == k.methdec) then {
+                def rcvr = currentScope.resolveOuterMethod(nmGets).receiver
+                def part = ast.requestPart.request(nmGets)
+                        withArgs [ bindNode.value ] scope(currentScope)
+                return = ast.callNode.new(rcvr, [ part ]) scope(currentScope)
+            }
+        }
     }
+    bindNode
 }
 
 
