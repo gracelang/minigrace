@@ -158,8 +158,11 @@ method initialise {
     trig := dom.window.Math
 
     canvas := document.getElementById("graphics")
+    def tab_canvas = document.getElementById("tab_canvas")
+    if (dom.noObject != tab_canvas) then {
+        tab_canvas.click
+    }
 
-    document.getElementById("tab_canvas").click
 
     ctx := canvas.getContext("2d")
     ctx.lineWidth := 1
