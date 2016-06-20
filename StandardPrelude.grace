@@ -252,7 +252,7 @@ class TypeVariant.new(t1, t2) {
 }
 
 class TypeUnion.new(t1, t2) {
-    inherits BasicPattern.new(t1, t2)
+    inherits BasicPattern.new
 //    inherits BaseType.new
     method &(o) {
         TypeIntersection.new(self, o)
@@ -286,7 +286,7 @@ class TypeUnion.new(t1, t2) {
 }
 
 class TypeSubtraction.new(t1, t2) {
-    inherits BasicPattern.new(t1, t2)
+    inherits BasicPattern.new
     method &(o) {
         TypeIntersection.new(self, o)
     }
