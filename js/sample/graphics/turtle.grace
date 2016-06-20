@@ -16,8 +16,8 @@ def blue = r 0 g 0 b 255
 def green = r 0 g 255 b 0
 def red = r 255 g 0 b 0
 
-var x := 150
-var y := 225
+var x := 50
+var y := 300
 var started := false
 var maxActionsDrawn := -1
 var delay := 1
@@ -153,25 +153,28 @@ method initialise {
         return false
     }
     document := dom.document
-    // Activate the canvas tab if it isn't already
-    //def ts = document.getElementById("tab")
-    //for (0..(ts.options.length-1)) do {i->
-    //    if (ts.options.item(i).value == "canvas_tab") then {
-    //        ts.selectedIndex := i
-    //        dom.window.tabswitch
-    //    }
-    //}
-    document.getElementById("tab_canvas").click
+
     initialised := true
     trig := dom.window.Math
-    canvas := document.getElementById("standard-canvas")
+
+    canvas := document.getElementById("graphics")
+    def tab_canvas = document.getElementById("tab_canvas")
+    if (dom.noObject != tab_canvas) then {
+        tab_canvas.click
+    }
+
+
     ctx := canvas.getContext("2d")
     ctx.lineWidth := 1
     ctx.fillStyle := "white"
-    ctx.fillRect(0, 0, 250, 250)
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
     ctx.strokeStyle := "black"
-    ctx.rect(0, 0, 250, 250)
+    ctx.rect(0, 0, canvas.width, canvas.height)
     ctx.stroke
+
+    x := 50
+    y := canvas.height - 50
+
 }
 method start {
     initialise
@@ -179,15 +182,15 @@ method start {
     // each separated in time by 10ms. dom.for()waiting()do
     // uses setTimeout internally so it runs asynchronously.
     backingCanvas := dom.document.createElement("canvas")
-    backingCanvas.height := 250
-    backingCanvas.width := 500
+    backingCanvas.height := canvas.height
+    backingCanvas.width := canvas.width
     ctx := backingCanvas.getContext("2d")
     def mctx = canvas.getContext("2d")
     dom.for(steps) waiting(delay)do {step->
         mctx.fillStyle := "white"
-        mctx.fillRect(0, 0, 500, 250)
-        x := 150
-        y := 225
+        mctx.fillRect(0, 0, canvas.width, canvas.height)
+        //x := 150
+        //y := 225
         turtleAngle := 0
         step.apply
         mctx.drawImage(backingCanvas, 0, 0)

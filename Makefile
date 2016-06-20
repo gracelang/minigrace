@@ -25,7 +25,7 @@ COMPILER_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace util
 DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso util.gct util.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
 DIALECTS_NEED = modules/dialect util ast modules/gUnit modules/math
 EXP_WEB_DIRECTORY = public_html/minigrace/exp/
-GRAPHICS_LIBRARY_MODULES = js/graphics/turtle.grace js/graphics/logo.grace js/graphics/simplegraphics.grace
+GRAPHICS_LIBRARY_MODULES = js/sample/graphics/turtle.grace js/sample/graphics/logo.grace js/sample/graphics/simplegraphics.grace
 GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 
 LIBRARY_WO_OBJECTDRAW = $(sort $(filter-out $(OBJECTDRAW), $(LIBRARY_MODULES)))
@@ -179,7 +179,7 @@ gencheck:
 gracedoc: tools/gracedoc
 
 grace-web-editor/index.html: pull-web-editor grace-web-editor/index.in.html grace-web-editor/scripts/background.in.js
-	./includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(GRAPHICS_LIBRARY_MODULES:js/graphics/%.grace=js/%.js)
+	./includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(GRAPHICS_LIBRARY_MODULES:js/sample/graphics/%.grace=js/%.js)
 
 grace-web-editor/scripts/setup.js: pull-web-editor $(filter-out %/setup.js,$(wildcard grace-web-editor/scripts/*.js)) $(wildcard grace-web-editor/scripts/*/*.js)
 	cd grace-web-editor; npm install
@@ -225,9 +225,9 @@ js/grace-debug: js/grace
 	sed -e "s|#!/usr/bin/env node|#!/usr/bin/env node --debug-brk|" $< > js/grace-debug
 	chmod a+x js/grace-debug
 
-js/graphics: $(GRAPHICS_LIBRARY_MODULES:%.grace=%.js)
+js/sample/graphics: $(GRAPHICS_LIBRARY_MODULES:%.grace=%.js)
 
-js/graphics/%.js: js/graphics/%.grace minigrace
+js/sample/graphics/%.js: js/sample/graphics/%.grace minigrace
 	./minigrace --make --target js $<
 
 js/minigrace.js: js/minigrace.in.js buildinfo.grace
@@ -378,12 +378,12 @@ $(OBJECTDRAW:%.grace=js/%.js): js/%.js: modules/%.grace js/dom.gct minigrace js/
 $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
 
-oldWeb: $(WEBFILES) js/sample js/graphics
+oldWeb: $(WEBFILES) js/sample js/sample/graphics
 	rsync -a -l -z --delete $(WEBFILES) $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z js/samples.js $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z js/sample $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z sample $(WEB_SERVER):$(WEB_DIRECTORY)
-	rsync -a -l -z js/graphics/ $(WEB_SERVER):$(WEB_DIRECTORY)
+	rsync -a -l -z js/sample/graphics/ $(WEB_SERVER):$(WEB_DIRECTORY)
 
 pull-web-editor:
 	@if [ -e grace-web-editor ] ; \
