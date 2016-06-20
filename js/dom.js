@@ -148,14 +148,14 @@ function gracecode_dom() {
     this.methods.window.paramCounts = [0];
     this.methods.window.variableArities = [false];
 
-    this.methods["doesObject()haveProperty"] = function (argcv, object, name) {
+    this.methods["doesObject(1)haveProperty(1)"] = function (argcv, object, name) {
         return name._value in unwrapDOMObject(object) ? GraceTrue : GraceFalse;
     };
-    this.methods["doesObject()haveProperty"].paramCounts = [1, 1];
-    this.methods["doesObject()haveProperty"].variableArities = [false, false];
+    this.methods["doesObject(1)haveProperty(1)"].paramCounts = [1, 1];
+    this.methods["doesObject(1)haveProperty(1)"].variableArities = [false, false];
 
-    this.methods["for()waiting()do"] = function(argcv, iterable, delay, block) {
-        var ret = Grace_allocObject(GraceObject, "dom.for()waiting()do");
+    this.methods["for(1)waiting(1)do(1)"] = function(argcv, iterable, delay, block) {
+        var ret = Grace_allocObject(GraceObject, "dom.for(1)waiting(1)do(1)");
         ret.methods.then = function(argcv, block) {
             this.data["then"] = block;
         };
@@ -175,11 +175,11 @@ function gracecode_dom() {
         func();
         return ret;
     };
-    this.methods["for()waiting()do"].paramCounts = [1, 1, 1];
-    this.methods["for()waiting()do"].variableArities = [false, false, false];
+    this.methods["for(1)waiting(1)do(1)"].paramCounts = [1, 1, 1];
+    this.methods["for(1)waiting(1)do(1)"].variableArities = [false, false, false];
 
-    this.methods["while()waiting()do"] = function(argcv, cond, delay, block) {
-        var ret = Grace_allocObject(GraceObject, "dom.while()waiting()do");
+    this.methods["while(1)waiting(1)do(1)"] = function(argcv, cond, delay, block) {
+        var ret = Grace_allocObject(GraceObject, "dom.while(1)waiting(1)do(1)");
         ret.methods.then = function(argcv, block) {
             this.data["then"] = block;
         };
@@ -197,8 +197,8 @@ function gracecode_dom() {
         func();
         return ret;
     };
-    this.methods["while()waiting()do"].paramCounts = [1, 1, 1];
-    this.methods["while()waiting()do"].variableArities = [false, false, false];
+    this.methods["while(1)waiting(1)do(1)"].paramCounts = [1, 1, 1];
+    this.methods["while(1)waiting(1)do(1)"].variableArities = [false, false, false];
 
     function color(g) {
       var c = g.theColor.data;
@@ -219,7 +219,7 @@ function gracecode_dom() {
       ctx[name](p.x._value, p.y._value, g.theWidth._value, g.theHeight._value);
     }
 
-    this.methods.framedRect = function (argcv, ctx, g) {
+    this.methods["framedRect(2)"] = function (argcv, ctx, g) {
       ctx = ctx._wrappedDOMObject;
       g = g.data;
       ctx.save();
@@ -229,7 +229,7 @@ function gracecode_dom() {
       return GraceDone;
     };
 
-    this.methods.filledRect = function (argcv, ctx, g) {
+    this.methods["filledRect(2)"] = function (argcv, ctx, g) {
       ctx = ctx._wrappedDOMObject;
       g = g.data;
       ctx.save();
@@ -239,7 +239,7 @@ function gracecode_dom() {
       return GraceDone;
     };
 
-    this.methods.framedOval = function (argcv, ctx, g) {
+    this.methods["framedOval(2)"] = function (argcv, ctx, g) {
       ctx = ctx._wrappedDOMObject;
       g = g.data;
       ctx.beginPath();
@@ -254,7 +254,7 @@ function gracecode_dom() {
       return GraceDone;
     };
 
-    this.methods.filledOval = function (argcv, ctx, g) {
+    this.methods["filledOval(2)"] = function (argcv, ctx, g) {
       ctx = ctx._wrappedDOMObject;
       g = g.data;
       ctx.beginPath();
@@ -269,13 +269,13 @@ function gracecode_dom() {
       return GraceDone;
     };
 
-    this.methods.image = function (argcv, ctx, g) {
+    this.methods["image(2)"] = function (argcv, ctx, g) {
       ctx = ctx._wrappedDOMObject;
       g = g.data;
       ctx.drawImage(g.theImage, g.x._value, g.y._value, g.theWidth._value, g.theHeight._value);
     };
 
-    this.methods.draw = function (argcv, ctx, graphics, width, height) {
+    this.methods["draw(4)"] = function (argcv, ctx, graphics, width, height) {
       ctx._wrappedDOMObject.clearRect(0, 0, width._value, height._value);
 
       var list = graphics._value;
@@ -300,4 +300,4 @@ function gracecode_dom() {
 
 gracecode_dom.imports = [];
 if (typeof gctCache !== "undefined")
-gctCache['dom'] = "classes:\nconfidential:\nfresh-methods:\nmodules:\npath:\n dom\npublic:\n document\n doesObject()haveProperty\n draw\n filledOval\n filledRect\n for()waiting()do\n framedOval\n framedRect\n image\n noObject\n while()waiting()do\n window\ntypes:\n";
+gctCache['dom'] = "classes:\nconfidential:\nfresh-methods:\nmodules:\npath:\n dom\npublic:\n document\n doesObject(1)haveProperty(1)\n draw(4)\n filledOval(2)\n filledRect(2)\n for(1)waiting(1)do(1)\n framedOval(2)\n framedRect(2)\n image\n noObject\n while(1)waiting(1)do(1)\n window\ntypes:\n";

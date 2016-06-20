@@ -326,7 +326,7 @@ Object unicode_pattern_not(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     if (!UnicodePattern) {
         UnicodePattern = alloc_class("UnicodePattern", 1);
-        add_Method(UnicodePattern, "match", &UnicodePattern_match);
+        add_Method(UnicodePattern, "match(1)", &UnicodePattern_match);
     }
     if ((argcv[0] != 1) || (argcv[1] > 1)) {
         graceRaise(RequestError(), "unicode.pattern requested with too many arguments.");
@@ -391,22 +391,22 @@ Object module_unicode_init() {
     if (unicode_module != NULL)
         return unicode_module;
     ClassData c = alloc_class("Module<unicode>", 18);
-    add_Method(c, "category", &unicode_category);
-    add_Method(c, "bidirectional", &unicode_bidirectional);
-    add_Method(c, "combining", &unicode_combining);
-    add_Method(c, "mirrored", &unicode_mirrored);
-    add_Method(c, "name", &unicode_name);
-    add_Method(c, "create", &unicode_create);
+    add_Method(c, "category(1)", &unicode_category);
+    add_Method(c, "bidirectional(1)", &unicode_bidirectional);
+    add_Method(c, "combining(1)", &unicode_combining);
+    add_Method(c, "mirrored(1)", &unicode_mirrored);
+    add_Method(c, "name(1)", &unicode_name);
+    add_Method(c, "create(1)", &unicode_create);
     add_Method(c, "iscategory", &unicode_iscategory);
-    add_Method(c, "inCategory", &unicode_iscategory);
-    add_Method(c, "isSeparator", &unicode_isSeparator);
-    add_Method(c, "isControl", &unicode_isControl);
-    add_Method(c, "isLetter", &unicode_isLetter);
-    add_Method(c, "isNumber", &unicode_isNumber);
-    add_Method(c, "isSymbolMathematical", &unicode_isSymbolMathematical);
-    add_Method(c, "lookup", &unicode_lookup);
-    add_Method(c, "pattern", &unicode_pattern);
-    add_Method(c, "pattern()not", &unicode_pattern_not);
+    add_Method(c, "inCategory(1)", &unicode_iscategory);
+    add_Method(c, "isSeparator(1)", &unicode_isSeparator);
+    add_Method(c, "isControl(1)", &unicode_isControl);
+    add_Method(c, "isLetter(1)", &unicode_isLetter);
+    add_Method(c, "isNumber(1)", &unicode_isNumber);
+    add_Method(c, "isSymbolMathematical(1)", &unicode_isSymbolMathematical);
+    add_Method(c, "lookup(1)", &unicode_lookup);
+    add_Method(c, "pattern(1)", &unicode_pattern);
+    add_Method(c, "pattern(1)not(1)", &unicode_pattern_not);
     add_Method(c, "asString", &unicode_asString);
     add_Method(c, "asDebugString", &unicode_asString);
     Object o = alloc_newobj(0, c);
