@@ -102,6 +102,7 @@ class newScopeIn(parent') kind(variety') {
         elements.contains(n)
     }
     method withSurroundingScopesDo (b) {
+        // do b in this scope and all surounding scopes.
         var cur := self
         while {b.apply(cur); cur.hasParent} do {
             cur := cur.parent
@@ -245,14 +246,17 @@ class newScopeIn(parent') kind(variety') {
         // Not found - leave it alone
         return ast.identifierNode.new(name, false) scope(self)
     }
-    method scopeReferencedBy(nd) {
+    method scopeReferencedBy(nd:ast.AstNode) {
         // Finds the scope referenced by astNode nd.
         // If nd references an object, then the returned
         // scope will have bindings for the methods of that object.
         // Otherwise, it will be the empty scope.
-//        util.log 70 verbose "looking for scope referenced by {nd.pretty 0}"
-        if (nd.kind == "identifier") then {
+
+        if (nd.isIdentifier) then {
             def sought = nd.nameString
+            if (sought == "outer") then {
+                return parent.enclosingObjectScope
+            }
             withSurroundingScopesDo {s->
                 if (s.contains(sought)) then {
                     return s.getScope(sought)
@@ -260,20 +264,14 @@ class newScopeIn(parent') kind(variety') {
             }
             errormessages.syntaxError "no method {sought}"
                 atRange(nd.line, nd.linePos, nd.linePos + sought.size - 1)
-        } elseif {nd.kind == "member"} then {
-            def receiverScope = self.scopeReferencedBy(nd.receiver)
-//            util.log 70 verbose "receiverScope = {receiverScope}"
-            if (nd.value == "outer") then {
-                return receiverScope.parent
-            }
-            return receiverScope.scopeReferencedBy(nd.asIdentifier)
-        } elseif {nd.kind == "call"} then {
-            return scopeReferencedBy(nd.receiver)
         } elseif {nd.kind == "op"} then {
             def receiverScope = self.scopeReferencedBy(nd.left)
             return receiverScope.scopeReferencedBy(nd.asIdentifier)
+        } elseif {nd.isCall} then { // this includes "memberNodes"
+            def receiverScope = self.scopeReferencedBy(nd.receiver)
+            return receiverScope.scopeReferencedBy(nd.asIdentifier)
         }
-        ProgrammingError.raise("{nd.value} is not a Call, Member or Identifier\n"
+        ProgrammingError.raise("{nd.value} is not a Call, Member, Identifier or op.\n"
             ++ nd.pretty(0))
     }
     method enclosingObjectScope {
@@ -565,14 +563,12 @@ method rewriteIdentifier(node) ancestors(as) {
 
     var nm := node.nameString
     def nodeScope = node.scope
-    def nmGets = nm ++ ":="
+    def nmGets = nm ++ ":=(1)"
     util.setPosition(node.line, node.linePos)
     if (node.isAssigned) then {
         if (nodeScope.hasDefinitionInNest(nmGets)) then {
             if (nodeScope.kindInNest(nmGets) == k.methdec) then {
-                def meth = nodeScope.resolveOuterMethod(nmGets)
-                def meth2 = ast.memberNode.new(nm, meth.receiver)
-                return meth2
+                return node     // do nothing; this will be tranformed by the enclosing bind
             }
         }
     }
@@ -1350,19 +1346,22 @@ method transformBind(bindNode) ancestors(as) {
     def currentScope = bindNode.scope
     util.setPosition(bindNode.line, bindNode.linePos)
     if ( dest.isMember ) then {
-        dest.value := dest.value ++ ":="
-        def part = ast.requestPart.request(dest.value) withArgs [bindNode.value]
-                scope(currentScope)
-        return ast.callNode.new(dest.receiver, [ part ]) scope(currentScope)
-    } elseif { dest.isIdentifier } then {
         def nm = dest.nameString
         def nmGets = nm ++ ":="
+        def part = ast.requestPart.request(nmGets) withArgs [bindNode.value]
+                scope(currentScope)
+        return ast.callNode.new(dest.receiver, [part]) scope(currentScope)
+    } elseif { dest.isIdentifier } then {
+        def nm = dest.nameString
+        def nmGets = nm ++ ":=(1)"
         if (currentScope.hasDefinitionInNest(nmGets)) then {
             if (currentScope.kindInNest(nmGets) == k.methdec) then {
                 def rcvr = currentScope.resolveOuterMethod(nmGets).receiver
-                def part = ast.requestPart.request(nmGets)
+                def part = ast.requestPart.request(nm ++ ":=")
                         withArgs [ bindNode.value ] scope(currentScope)
-                return = ast.callNode.new(rcvr, [ part ]) scope(currentScope)
+                return ast.callNode.new(rcvr, [ part ]) scope(currentScope)
+            } else {
+                util.log 20 verbose "bind check 2 failed"
             }
         }
     }
@@ -1388,10 +1387,6 @@ method transformInherits(inhNode) ancestors(as) {
     def superScope = currentScope.scopeReferencedBy(superObject)
     if (inhNode.isUse) then {
         // a `use` statement; no transformation necessary
-    } elseif (inhNode.inheritsFromCall) then {
-        var superCall := inhNode.value
-        superCall.with.push(ast.requestPart.request "object"
-            withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
     } elseif {inhNode.inheritsFromMember} then {
         def newcall = ast.callNode.new(inhNode.value.receiver, [
             ast.requestPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
@@ -1400,6 +1395,10 @@ method transformInherits(inhNode) ancestors(as) {
             ]
         ) scope(currentScope)
         inhNode.value := newcall
+    } elseif (inhNode.inheritsFromCall) then {
+        var superCall := inhNode.value
+        superCall.with.push(ast.requestPart.request "object"
+            withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
     } elseif {! util.extensions.contains "ObjectInheritance"} then {
         errormessages.syntaxError "inheritance must be from a freshly-created object"
             atRange(inhNode.line, superObject.linePos,

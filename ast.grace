@@ -1156,6 +1156,17 @@ def callNode = object {
                 separatedBy { s := s ++ " " }
             s
         }
+        method asIdentifier {
+            // make and return an identifiderNode for my request
+            if (fakeSymbolTable == scope) then {
+                ProgrammingError.raise "asIdentifier requested on {pretty 0} when scope was fake"
+            }
+            def resultNode = identifierNode.new (nameString, false) scope (scope)
+            resultNode.inRequest := true
+            resultNode.line := line
+            resultNode.linePos := linePos
+            return resultNode
+        }
         method asString { "call {receiver.pretty(0)}" }
         method shallowCopy {
             callNode.new(receiver, with).shallowCopyFieldsFrom(self)
@@ -1864,7 +1875,7 @@ def opNode is public = object {
     }
     method asIdentifier {
         // make an identifiderNode with the same properties as me
-        def resultNode = identifierNode.new (value ++ "(1)", false) scope (scope)
+        def resultNode = identifierNode.new (nameString, false) scope (scope)
         resultNode.inRequest := true
         resultNode.line := line
         resultNode.linePos := linePos
