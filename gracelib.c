@@ -4669,17 +4669,14 @@ Object Block_apply(Object self, int nparts, int *argcv,
     if (bo->retpoint)
         memcpy(return_stack[calldepth - 1], bo->retpoint,
             sizeof(return_stack[calldepth - 1]));
-    int nArgs = (argcv == NULL) ? 0 : argcv[0]
-    if (nArgs == 0)
+    int nArgs = (argcv == NULL) ? 0 : argcv[0];
+    if (nArgs == 0) {
         return callmethod(self, "_apply", 0, argcv, args);
-    else
-        char argCount[5];
-        itoa(nArgs, argCount, 10);
+    } else {
         char methName[13];
-        strcat(methName, "_apply(");
-        strcat(methName, argCount);
-        strcat(methName, ")");
+        sprintf(methName, "_apply(%i)", nArgs);
         return callmethod(self, methName, 1, argcv, args);
+    }
 }
 Object Block_applyIndirectly(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -4694,12 +4691,8 @@ Object Block_applyIndirectly(Object self, int nparts, int *argcv,
         rargs[i] = callmethod(tuple, "at(1)", 1, partcv, &flt);
     }
     partcv[0] = sz;
-    char argCount[5];
-    itoa(sz, argCount, 10);
     char methName[13];
-    strcat(methName, "_apply(");
-    strcat(methName, argCount);
-    strcat(methName, ")");
+    sprintf(methName, "_apply(%i)", sz);
     return callmethod(self, methName, 1, partcv, rargs);
 }
 Object Block_match(Object self, int nparts, int *argcv, Object *args, int flags) {
