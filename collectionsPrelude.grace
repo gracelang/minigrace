@@ -372,7 +372,7 @@ class enumerable.TRAIT<T> {
 
 class indexable.TRAIT<T> {
     inherits collection.TRAIT<T>
-    method at { abstract }
+    method at(index) { abstract }
     method size { abstract }
     method isEmpty { size == 0 }
     method keysAndValuesDo(action:Block2<Number,T,Done>) -> Done {
