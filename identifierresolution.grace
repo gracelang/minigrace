@@ -223,7 +223,7 @@ class newScopeIn(parent') kind(variety') {
     method isMethodScope {
         variety == "method"
     }
-    method resolveOuterMethod(name) {
+    method resolveOuterMethod(name) fromNode (aNode) {
         // replace name by outer.outer. ... .name,
         // depending on where name is declared.
         var mem := ast.identifierNode.new("self", false) scope(self)
@@ -243,9 +243,8 @@ class newScopeIn(parent') kind(variety') {
                 mem := ast.memberNode.new("outer", mem) scope(self)
             } case { _ -> }
         }
-        // Not found - leave it alone
-        util.log 60 verbose "failed to resolve {name}"
-        return ast.identifierNode.new(name, false) scope(self)
+        errormessages.syntaxError "no method {name}"
+                atRange(aNode.line, aNode.linePos, aNode.linePos + name.size - 1)
     }
     method scopeReferencedBy(nd:ast.AstNode) {
         // Finds the scope referenced by astNode nd.
@@ -629,7 +628,7 @@ method rewriteIdentifier(node) ancestors(as) {
         // defined in the enclosing method scope have to go in a closure
         // In that case, leaving the id untouched may be wrong
     if (v == "block") then { return node }
-    return nodeScope.resolveOuterMethod(nm)
+    return nodeScope.resolveOuterMethod(nm) fromNode(node)
 }
 method checkForAmbiguityOf (node) definedIn (definingScope) as (kind) {
     def currentScope = node.scope
@@ -1357,7 +1356,7 @@ method transformBind(bindNode) ancestors(as) {
         def nmGets = nm ++ ":=(1)"
         if (currentScope.hasDefinitionInNest(nmGets)) then {
             if (currentScope.kindInNest(nmGets) == k.methdec) then {
-                def rcvr = currentScope.resolveOuterMethod(nmGets).receiver
+                def rcvr = currentScope.resolveOuterMethod(nmGets) fromNode(bindNode).receiver
                 def part = ast.requestPart.request(nm ++ ":=")
                         withArgs [ bindNode.value ] scope(currentScope)
                 return ast.callNode.new(rcvr, [ part ]) scope(currentScope)
@@ -1410,7 +1409,11 @@ method transformInherits(inhNode) ancestors(as) {
 
 method transformCall(cNode) ancestors(as) -> ast.AstNode {
     if (cNode.receiver.isImplicit) then {
-        def rcvr = cNode.scope.resolveOuterMethod(cNode.nameString)
+        def rcvr = cNode.scope.resolveOuterMethod(cNode.nameString) fromNode(cNode)
+        if (rcvr.isIdentifier) then {
+            util.log 60 verbose "Transformed {cNode.pretty 0} answered identifier {rcvr.nameString}"
+            return cNode
+        }
         cNode.receiver := rcvr.receiver
         cNode
     } else {
