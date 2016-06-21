@@ -397,8 +397,8 @@ Object module_unicode_init() {
     add_Method(c, "mirrored(1)", &unicode_mirrored);
     add_Method(c, "name(1)", &unicode_name);
     add_Method(c, "create(1)", &unicode_create);
-    add_Method(c, "iscategory", &unicode_iscategory);
-    add_Method(c, "inCategory(1)", &unicode_iscategory);
+    add_Method(c, "iscategory(2)", &unicode_iscategory);
+    add_Method(c, "inCategory(2)", &unicode_iscategory);
     add_Method(c, "isSeparator(1)", &unicode_isSeparator);
     add_Method(c, "isControl(1)", &unicode_isControl);
     add_Method(c, "isLetter(1)", &unicode_isLetter);
