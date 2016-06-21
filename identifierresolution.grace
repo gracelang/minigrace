@@ -244,6 +244,7 @@ class newScopeIn(parent') kind(variety') {
             } case { _ -> }
         }
         // Not found - leave it alone
+        util.log 60 verbose "failed to resolve {name}"
         return ast.identifierNode.new(name, false) scope(self)
     }
     method scopeReferencedBy(nd:ast.AstNode) {
@@ -796,6 +797,8 @@ method resolveIdentifiers(topNode) {
         if ( node.isAppliedOccurenceOfIdentifier ) then {
             rewriteIdentifier(node) ancestors(as)
             // TODO — opNodes don't contain identifiers!
+        } elseif { node.isCall } then {
+            transformCall(node) ancestors(as)
         } elseif { node.isInherits } then {
             transformInherits(node) ancestors(as)
         } elseif { node.isBind } then {
@@ -860,15 +863,14 @@ method setupContext(moduleObject) {
     builtInsScope.addName "..." as(k.defdec)
 
     preludeScope.addName "asString"
-    preludeScope.addName "::"
-    preludeScope.addName "++"
-    preludeScope.addName "=="
-    preludeScope.addName "!="
-    preludeScope.addName "≠"
-    preludeScope.addName "for()do"
-    preludeScope.addName "while()do"
-    preludeScope.addName "print"
-    preludeScope.addName "native()code"
+    preludeScope.addName "::(1)"
+    preludeScope.addName "++(1)"
+    preludeScope.addName "==(1)"
+    preludeScope.addName "≠(1)"
+    preludeScope.addName "for(1)do(1)"
+    preludeScope.addName "while(1)do(1)"
+    preludeScope.addName "print(1)"
+    preludeScope.addName "native(1)code(1)"
     preludeScope.addName "Exception" as(k.defdec)
     preludeScope.addName "RuntimeError" as(k.defdec)
     preludeScope.addName "NoSuchMethod" as(k.defdec)
@@ -881,23 +883,22 @@ method setupContext(moduleObject) {
     preludeScope.addName "minigrace"
     preludeScope.addName "_methods"
     preludeScope.addName "primitiveArray"
-    preludeScope.addName "become"
-    preludeScope.addName "unbecome"
+    preludeScope.addName "become(1)"
+    preludeScope.addName "unbecome(1)"
     preludeScope.addName "clone"
     preludeScope.addName "inBrowser"
     preludeScope.addName "engine"
 
-    graceObjectScope.addName "isMe" as (k.graceObjectMethod)
-    graceObjectScope.addName "!=" as (k.graceObjectMethod)
-    graceObjectScope.addName "≠" as (k.graceObjectMethod)
+    graceObjectScope.addName "isMe(1)" as (k.graceObjectMethod)
+    graceObjectScope.addName "≠(1)" as (k.graceObjectMethod)
     graceObjectScope.addName "basicAsString" as (k.graceObjectMethod)
     graceObjectScope.addName "asString" as (k.graceObjectMethod)
     graceObjectScope.addName "asDebugString" as (k.graceObjectMethod)
-    graceObjectScope.addName "::" as (k.graceObjectMethod)
+    graceObjectScope.addName "::(1)" as (k.graceObjectMethod)
 
     booleanScope.addName "prefix!"
-    booleanScope.addName "&&"
-    booleanScope.addName "||"
+    booleanScope.addName "&&(1)"
+    booleanScope.addName "||(1)"
     booleanScope.addName "not"
 
     builtInsScope.addName "graceObject"
@@ -1405,6 +1406,16 @@ method transformInherits(inhNode) ancestors(as) {
                 superObject.linePos + superObject.nameString.size - 1)
     }
     inhNode
+}
+
+method transformCall(cNode) ancestors(as) -> ast.AstNode {
+    if (cNode.receiver.isImplicit) then {
+        def rcvr = cNode.scope.resolveOuterMethod(cNode.nameString)
+        cNode.receiver := rcvr.receiver
+        cNode
+    } else {
+        cNode
+    }
 }
 
 method rewriteMatches(topNode) {
