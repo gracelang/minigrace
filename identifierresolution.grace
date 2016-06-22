@@ -268,10 +268,15 @@ class newScopeIn(parent') kind(variety') {
             def receiverScope = self.scopeReferencedBy(nd.left)
             return receiverScope.scopeReferencedBy(nd.asIdentifier)
         } elseif {nd.isCall} then { // this includes "memberNodes"
-            def receiverScope = self.scopeReferencedBy(nd.receiver)
-            return receiverScope.scopeReferencedBy(nd.asIdentifier)
+            def receiver = nd.receiver
+            if (receiver.isImplicit) then {
+                util.log 60 verbose "inherits from implicit.{nd.nameString} on line {nd.line}"
+            }
+            def newNd = transformCall(nd)
+            def receiverScope = self.scopeReferencedBy(newNd.receiver)
+            return receiverScope.scopeReferencedBy(newNd.asIdentifier)
         }
-        ProgrammingError.raise("{nd.value} is not a Call, Member, Identifier or op.\n"
+        ProgrammingError.raise("{nd.nameString} is not a Call, Member, Identifier or op.\n"
             ++ nd.pretty(0))
     }
     method enclosingObjectScope {
@@ -280,7 +285,7 @@ class newScopeIn(parent') kind(variety') {
         withSurroundingScopesDo { s ->
             if (s.isObjectScope) then { return s }
         }
-        ProgrammingError "no object scope found!"
+        ProgrammingError.raise "no object scope found!"
         // the outermost scope should always be a module scope,
         // which is an object scope.
     }
@@ -797,7 +802,7 @@ method resolveIdentifiers(topNode) {
             rewriteIdentifier(node) ancestors(as)
             // TODO — opNodes don't contain identifiers!
         } elseif { node.isCall } then {
-            transformCall(node) ancestors(as)
+            transformCall(node)
         } elseif { node.isInherits } then {
             transformInherits(node) ancestors(as)
         } elseif { node.isBind } then {
@@ -1407,7 +1412,7 @@ method transformInherits(inhNode) ancestors(as) {
     inhNode
 }
 
-method transformCall(cNode) ancestors(as) -> ast.AstNode {
+method transformCall(cNode) -> ast.AstNode {
     if (cNode.receiver.isImplicit) then {
         def rcvr = cNode.scope.resolveOuterMethod(cNode.nameString) fromNode(cNode)
         if (rcvr.isIdentifier) then {

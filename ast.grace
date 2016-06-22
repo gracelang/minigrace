@@ -202,6 +202,7 @@ def implicit is public = object {
     line := 0
     linePos := 0
     def kind is public = "implicit"
+    def nameString is public = "implicit"
     method isImplicit { true }
     method toGrace(depth) { "implicit" }
     method asString { "the implicit receiver" }
