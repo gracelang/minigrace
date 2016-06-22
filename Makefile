@@ -428,7 +428,7 @@ selftest-js: minigrace-js-env $(ALL_LIBRARY_MODULES:%.grace=../js/%.js)
 
 # must be a pattern rule to get the "simultaneous build" semantics.
 StandardPrelude%gct StandardPrelude%gcn: StandardPrelude.grace collectionsPrelude.gct l1/minigrace
-	GRACE_MODULE_PATH=modules:js l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+	GRACE_MODULE_PATH=l1/modules:js l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 # The next few rules are Static Pattern Rules.  Each is like an implicit rule
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
@@ -506,8 +506,8 @@ tools/gracedoc: ./minigrace modules/gracedoc.grace ast.grace io.gct lexer.grace 
 	GRACE_MODULE_PATH=modules:js ./minigrace --verbose --make modules/gracedoc.grace
 
 # The dependency on unicodedata.h isn't captured by the pattern rule
-unicode.gso: unicode.c unicodedata.h gracelib.h
-	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
+# unicode.gso: unicode.c unicodedata.h gracelib.h
+# 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
 uninstall:
 	rm -f $(PREFIX)/bin/minigrace
