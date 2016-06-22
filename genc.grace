@@ -163,7 +163,7 @@ method compilearray(o) {
         r := compilenode(a)
         out("  params[0] = {r};")
         out("  partcv[0] = 1;")
-        out("  callmethodflags(array{myc}, \"push\", 1, partcv, params, CFLAG_SELF);")
+        out("  callmethodflags(array{myc}, \"push(1)\", 1, partcv, params, CFLAG_SELF);")
         i := i + 1
     }
     out("  gc_unpause();")
@@ -1904,7 +1904,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
         out("  int partcv_push[] = \{1\};")
         out("  int i; for (i=0; i<argc; i++) \{")
         out("    params[0] = alloc_String(argv[i]);")
-        out("    callmethodflags(tmp_argv, \"push\", 1, partcv_push, params, CFLAG_SELF);")
+        out("    callmethodflags(tmp_argv, \"push(1)\", 1, partcv_push, params, CFLAG_SELF);")
         out("  \}")
         out("  module_sys_init_argv(tmp_argv);")
         out("  module_{escmodname}_init();")
