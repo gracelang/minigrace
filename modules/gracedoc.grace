@@ -9,7 +9,7 @@ def settings = object {
     var outputdir:String is public := ""
     var verbosity:Number is public := 0
     var publicOnly:Boolean is public := false
-    def version:Number is public = 1.0
+    def version:Number is public = 1.1
 }
 
 method parseArguments {
@@ -84,7 +84,7 @@ class section.withTemplate(html')andCursorAt(idx) -> Section {
     var html:String is readable := html'
     var hasContent is readable := false
     var cursor:Number is confidential := idx
-    var elts is public := dictionary.empty
+    var elts is public := dictionary []
     method addElement(n:String)withText(t:String) {
         hasContent := true
         elts.at(n)put(t)
@@ -305,7 +305,7 @@ class directoryBuilderForFile(in) outTo (dir) as (pageType) {
             o.accept(classVis)
             classVis.generate
             return false
-        } 
+        }
         return true
     }
 }
@@ -377,44 +377,46 @@ class graceDocVisitor.createFrom(in) outTo (dir) as (pageType) {
         out := out ++ "'>{v}</a>"
         return out
     }
-
+    method getClassLink(c:String)show(rep:String){
+      def filename = "{c}.html"
+      var out := "<a href='"
+      //first, check current module's class directory for filename
+      if (io.exists("{settings.outputdir}/{outdir}/classes/{filename}")) then {
+          if (isOnClassPage) then {
+              out := out ++ "{filename}"
+          } elseif (isOnTypePage) then {
+              out := out ++ "../classes/{filename}"
+          } else {
+              out := out ++ "classes/{filename}"
+          }
+      //if not found, check imported module directories
+      } elseif (io.exists("{settings.outputdir}/imported/classes/{filename}")) then {
+          if (isOnTypePage || isOnClassPage) then {
+              out := out ++ "../../imported/classes/{filename}"
+          } else {
+              out := out ++ "../imported/classes/{filename}"
+          }
+      //if not found, check gracelib classes
+      } elseif (io.exists("{settings.outputdir}/gracelib/classes/{filename}")) then {
+          if (isOnTypePage || isOnClassPage) then {
+              out := out ++ "../../gracelib/classes/{filename}"
+          } else {
+              out := out ++ "../gracelib/classes/{filename}"
+          }
+      } else {
+          var dots := ""
+          if (isOnClassPage || isOnTypePage) then {
+              dots := "../../"
+          } else {
+              dots := "../"
+          }
+          out := out ++ "{dots}404.html"
+      }
+      out := out ++ "'>{rep}</a>"
+      return out
+    }
     method getClassLink(c:String) is confidential {
-        def filename = "{c}.html"
-        var out := "<a href='"
-        //first, check current module's class directory for filename
-        if (io.exists("{settings.outputdir}/{outdir}/classes/{filename}")) then {
-            if (isOnClassPage) then {
-                out := out ++ "{filename}"
-            } elseif (isOnTypePage) then {
-                out := out ++ "../classes/{filename}"
-            } else {
-                out := out ++ "classes/{filename}"
-            }
-        //if not found, check imported module directories
-        } elseif (io.exists("{settings.outputdir}/imported/classes/{filename}")) then {
-            if (isOnTypePage || isOnClassPage) then {
-                out := out ++ "../../imported/classes/{filename}"
-            } else {
-                out := out ++ "../imported/classes/{filename}"
-            }
-        //if not found, check gracelib classes
-        } elseif (io.exists("{settings.outputdir}/gracelib/classes/{filename}")) then {
-            if (isOnTypePage || isOnClassPage) then {
-                out := out ++ "../../gracelib/classes/{filename}"
-            } else {
-                out := out ++ "../gracelib/classes/{filename}"
-            }
-        } else {
-            var dots := ""
-            if (isOnClassPage || isOnTypePage) then {
-                dots := "../../"
-            } else {
-                dots := "../"
-            }
-            out := out ++ "{dots}404.html"
-        }
-        out := out ++ "'>{c}</a>"
-        return out
+        getClassLink(c)show(c)
     }
 
     method buildTemplate is confidential {
@@ -659,6 +661,9 @@ tr.description > td {
 .class-name {
     font-weight: bold;
 }
+.ancestor-name {
+    font-weight: bold;
+}
 .identifier-name {
     font-family: Monaco, monospace;
     font-weight: bold;
@@ -877,8 +882,8 @@ iframe {
             }
             t := t ++ "</b> = "
             var temp := ""
-            var ops := list.empty
-            var tps := list.empty
+            var ops := list []
+            var tps := list []
             var node := o.value
 
             if (node.kind == "op") then {
@@ -938,13 +943,14 @@ iframe {
         }
     }
 
-    method visitMethod(o) -> Boolean {
+    method visitMethod(o)up(anc) -> Boolean {
 
         if (settings.publicOnly && o.isConfidential) then { return false }
         if (o.isClass) then {
-            return doClassMethod(o)
+            return doClassMethod(o)up(anc)
         }
         var t := "<tr class='placeholder'><td><code>"
+        t := t ++ "<span class='ancestor-name'>{buildDefChain(anc)}</span>"
         var n := ""
         for (o.signature) do { part ->
             t := t ++ "<span class='method-name'>" ++ part.name ++ "</span>"
@@ -985,26 +991,38 @@ iframe {
         }
         t := t ++ "</code></td></tr>"
         t := t ++ formatComments(o) rowClass "description" colspan 2
-        methodsSection.addElement(n)withText(t)
+        methodsSection.addElement(buildDefChain(anc) ++ n)withText(t)
         return false
     }
-
-    method doClassMethod(m) -> Boolean {
+    method buildDefChain(anc) -> String {
+      var a := anc
+      var s := ""
+      while { a.isEmpty.not } do {
+          if ("defdec" == a.parent.kind) then {
+              s := (a.parent.nameString ++ "." ++ s)
+          }
+          elseif ("object" != a.parent.kind) then {
+              return s
+          }
+          a := a.forebears
+      }
+      return s
+    }
+    method doClassMethod(m)up(anc) -> Boolean {
         def o = m.body.last
 
         if (isOnClassPage == false) then {
             var t := "<tr class='placeholder'>"
             def n = m.nameString
-            t := t ++ "<td><code><span class='class-name'>{getClassLink(n)}</span>"
-            t := t ++ "."
+            t := t ++ "<td><code><span class='ancestor-name'>{buildDefChain(anc)}</span>"
             m.signature.do { part ->
-                t := t ++ "<span class='method-name'>{part.name}</span>"
+                t := t ++ "<span class='method-name'>{getClassLink(n)show(part.name)}</span>"
                 if (part.params.size > 0) then {
                     t := t ++ "("
                     for(part.params) do { param ->
                         if (param.dtype != false) then {
                             t := t ++ "<span class='parameter-name'>" ++ param.value ++ "</span>"
-                            t := t ++ ":<span class='parameter-type'>" ++ getTypeLink(param.dtype.value) ++ "</span>"
+                            t := t ++ ":<span class='parameter-type'>" ++ getTypeLink(param.dtype.nameString) ++ "</span>"
                         } else {
                             t := t ++ "<span class='parameter-name'>" ++ param.value ++ "</span>"
                         }
@@ -1019,9 +1037,9 @@ iframe {
             if (m.dtype != false) then {
                 t := t ++ " -> "
                 if (m.dtype.kind == "identifier") then {
-                    t := t ++ getTypeLink(o.dtype.value)
+                    t := t ++ getTypeLink(m.dtype.value)
                 } elseif (m.dtype.kind == "generic") then {
-                    t := t ++ getTypeLink(o.dtype.value.value) ++ "&lt;"
+                    t := t ++ getTypeLink(m.dtype.value.value) ++ "&lt;"
                     m.dtype.args.do { each -> t := "{t}{getTypeLink(each.value)}" } separatedBy { t := t ++ ", " }
                     t := t ++ "&gt;"
                 }
@@ -1036,10 +1054,10 @@ iframe {
             o.accept(classVis)
             classVis.generate
             t := t ++ formatComments(o) rowClass "top-box-description" colspan 1
-            classesSection.addElement(n) withText(t)
+            classesSection.addElement(buildDefChain(anc) ++ n) withText(t)
             return false
           } else {
-            var t := "<span class='headline'><code><b>{o.name.value}</b>."
+            var t := "<span class='headline'><code><b>{o.name}</b>."
 
             for(m.signature) do { part ->
                 t := t ++ "<b>{part.name}</b>"
@@ -1063,9 +1081,9 @@ iframe {
             if (m.dtype != false) then {
                 t := t ++ " -> "
                 if (m.dtype.kind == "identifier") then {
-                    t := t ++ getTypeLink(o.dtype.value)
+                    t := t ++ getTypeLink(m.dtype.value)
                 } elseif (m.dtype.kind == "generic") then {
-                    t := t ++ getTypeLink(o.dtype.value.value) ++ "&lt;"
+                    t := t ++ getTypeLink(m.dtype.value.value) ++ "&lt;"
                     m.dtype.args.do { each -> t := "{t}{getTypeLink(each.value)}" } separatedBy { t := t ++ ", " }
                     t := t ++ "&gt;"
                 }
@@ -1078,12 +1096,16 @@ iframe {
         }
     }
 
-    method visitDefDec(o) -> Boolean {
+    method visitDefDec(o)up(anc) -> Boolean {
         if (isOnClassPage == true) then {
             if (!settings.publicOnly) then {
                 def n = o.name.value
-                var t := "<tr class='placeholder'><td><code>def</code></td><td class='identifier-name'>{o.name.value}"
+
+
+                var t := "<tr class='placeholder'><td><code>def</code></td>"
+                t := t ++ "<td class='identifier-name'>{buildDefChain(anc) ++ n}"
                 t := t ++ "</td><td><code>"
+
                 if (o.dtype != false) then {
                     if (o.dtype.kind == "identifier") then {
                         t := t ++ getTypeLink(o.dtype.value)
@@ -1095,14 +1117,14 @@ iframe {
                 }
                 t := t ++ "</code></td></tr>"
                 t := t ++ formatComments(o) rowClass "description" colspan 3
-                fieldsSection.addElement(n) withText(t)
+                fieldsSection.addElement(buildDefChain(anc) ++ n) withText(t)
 
             } else {
                 //in publicOnly mode, readable defs should show up as getter methods
                 if (o.isReadable) then {
                     //FIXME: if isOnTypePage, then ???
                     def n = o.name.value
-                    var t := "<tr class='placeholder'><td class='identifier-name'>{o.name.value}"
+                    var t := "<tr class='placeholder'><td class='identifier-name'>{buildDefChain(anc) ++ n}"
                     t := t ++ "</td><td><code>"
                     if (o.dtype != false) then {
                         if (o.dtype.kind == "identifier") then {
@@ -1115,14 +1137,14 @@ iframe {
                     }
                     t := t ++ "</code></td></tr>"
                     t := t ++ formatComments(o) rowClass "description" colspan 2
-                    methodsSection.addElement(n)withText(t)
+                    methodsSection.addElement(buildDefChain(anc) ++ n)withText(t)
                 }
             }
-            return false
+            return anc.parent.isObject
         } else {
             if (!settings.publicOnly) then {
-                def n = o.name.value
-                var t := "<tr class='placeholder'><td><code>def</code></td><td class='identifier-name'>{o.name.value}"
+                def n = buildDefChain(anc) ++ o.name.value
+                var t := "<tr class='placeholder'><td><code>def</code></td><td class='identifier-name'>{n}"
                 t := t ++ "</td><td><code>"
                 if (o.dtype != false) then {
                     if (o.dtype.kind == "identifier") then {
@@ -1140,7 +1162,7 @@ iframe {
             } else {
                 //in publicOnly mode, readable defs should show up as getter methods
                 if (o.isReadable) then {
-                    var t := "<tr class='placeholder'><td class='identifier-name'>{o.name.value}"
+                    var t := "<tr class='placeholder'><td class='identifier-name'>{buildDefChain(anc) ++ o.name.value}"
                     def n = o.name.value
                     t := t ++ "</td><td><code>"
                     if (o.dtype != false) then {
@@ -1154,18 +1176,18 @@ iframe {
                     }
                     t := t ++ "</code></td></tr>"
                     t := t ++ formatComments(o) rowClass "description" colspan 2
-                    methodsSection.addElement(n)withText(t)
+                    methodsSection.addElement(buildDefChain(anc) ++ n)withText(t)
                 }
             }
-            return false
+            return anc.parent.isObject
         }
     }
 
-    method visitVarDec(o) -> Boolean {
+    method visitVarDec(o)up(anc) -> Boolean {
+        def n = buildDefChain(anc) ++ o.nameString
         if (isOnClassPage == true) then {
             if (!settings.publicOnly) then {
-                def n = o.name.value
-                var t := "<tr class='placeholder'><td><code>var</code></td><td class='identifier-name'>{o.name.value}"
+                var t := "<tr class='placeholder'><td><code>var</code></td><td class='identifier-name'>{buildDefChain(anc) ++ o.name.value}"
                 t := t ++ "</td><td><code>"
                 if (o.dtype != false) then {
                     t := t ++ "{getTypeLink(o.dtype.value)}"
@@ -1175,8 +1197,7 @@ iframe {
                 fieldsSection.addElement(n)withText(t)
             } else {
                 if (o.isReadable) then {
-                    var t := "<tr class='placeholder'><td class='identifier-name'>{o.name.value}"
-                    def n = o.name.value
+                    var t := "<tr class='placeholder'><td class='identifier-name'>{buildDefChain(anc) ++ o.name.value}"
                     t := t ++ "</td><td>"
                     if (o.dtype != false) then {
                         t := t ++ "{getTypeLink(o.dtype.value)}"
@@ -1186,21 +1207,19 @@ iframe {
                     methodsSection.addElement(n)withText(t)
                 }
                 if (o.isWritable) then {
-                    var t := "<tr class='placeholder'><td><code><span class='method-name'>{o.name.value}:=</span>"
-                    def n = "{o.name.value}:="
+                    var t := "<tr class='placeholder'><td><code><span class='method-name'>{buildDefChain(anc) ++ o.name.value}:=</span>"
                     if (o.dtype != false) then {
                         t := t ++ "(_:{getTypeLink(o.dtype.value)})"
                     }
                     t := t ++ "</code></td><td><code>Done</code></td></tr>"
-                    t := t ++ "<tr class='description'><td colspan='2'>Updates {o.name.value}</td></tr>"
-                    methodsSection.addElement(n)withText(t)
+                    t := t ++ "<tr class='description'><td colspan='2'>Updates {n}</td></tr>"
+                    methodsSection.addElement(n++":=")withText(t)
                 }
             }
             return false
         } else {
             if (!settings.publicOnly) then {
-                def n = o.name.value
-                var t := "<tr class='placeholder'><td><code>var</code></td><td class='identifier-name'>{o.name.value}"
+                var t := "<tr class='placeholder'><td><code>var</code></td><td class='identifier-name'>{buildDefChain(anc) ++ o.name.value}"
                 t := t ++ "</td><td><code>"
                 if (o.dtype != false) then {
                     t := t ++ "{getTypeLink(o.dtype.value)}"
@@ -1210,8 +1229,7 @@ iframe {
                 fieldsSection.addElement(n)withText(t)
             } else {
                 if (o.isReadable) then {
-                    def n = o.name.value
-                    var t := "<tr class='placeholder'><td class='identifier-name'>{o.name.value}"
+                    var t := "<tr class='placeholder'><td class='identifier-name'>{buildDefChain(anc) ++ o.name.value}"
                     t := t ++ "</td><td><code>"
                     if (o.dtype != false) then {
                         t := t ++ "{getTypeLink(o.dtype.value)}"
@@ -1221,14 +1239,13 @@ iframe {
                     methodsSection.addElement(n)withText(t)
                 }
                 if (o.isWritable) then {
-                    def n = "{o.name.value}:="
-                    var t := "<tr class='placeholder'><td><code><span class='method-name'>{o.name.value}:=</span>"
+                    var t := "<tr class='placeholder'><td><code><span class='method-name'>{n}:=</span>"
                     if (o.dtype != false) then {
                         t := t ++ "(_:{getTypeLink(o.dtype.value)})"
                     }
                     t := t ++ "</code></td><td><code>Done</code></td></tr>"
-                    t := t ++ "<tr class='description'><td colspan='2'>Updates {o.name.value}</td></tr>"
-                    methodsSection.addElement(n)withText(t)
+                    t := t ++ "<tr class='description'><td colspan='2'>Updates {n}</td></tr>"
+                    methodsSection.addElement "{n}:=" withText(t)
                 }
             }
             return false
@@ -1264,7 +1281,7 @@ var modulename
 var counter
 
 var allModules := io.listdir(settings.inputdir)
-var parsedFiles := dictionary.empty
+var parsedFiles := dictionary []
 var inputWasFound := false
 
 //LEX AND PARSE ALL INPUT FILES
@@ -1278,7 +1295,7 @@ for (allModules) do { filename ->
         if (settings.verbosity > 0) then { print "On {filename} - parsing... ({sys.elapsedTime})" }
         //var values := parser.parse(tokens)
         parsedFiles.at(counter)put(parser.parse(tokens))
-        
+
         if (settings.verbosity > 0) then { print "On {filename} - done parsing... ({sys.elapsedTime})" }
         counter := counter + 1
         inputWasFound := true

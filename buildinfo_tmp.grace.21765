@@ -1,0 +1,6 @@
+method gitrevision { "l1 compiler" }
+method gitgeneration { "l1 compiler" }
+method prefix { "" }
+method includepath { "" }
+method modulepath { "" }
+method objectpath { "" }
