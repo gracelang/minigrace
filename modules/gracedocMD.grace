@@ -216,7 +216,7 @@ method visitMethodType(o) -> Boolean {
        t := t ++ (formatComments(o) rowClass "description" colspan 2)
        methodtypesSection.addElement(n)withText(t)
        return false
-
+  
 //Class for a markdown writer object
 class markdownWriter
 {
