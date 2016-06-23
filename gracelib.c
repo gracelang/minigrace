@@ -5319,7 +5319,7 @@ Object prelude_inBrowser(Object self, int argc, int *argcv, Object *argv,
 }
 Object prelude_clone(Object self, int argc, int *argcv, Object *argv,
         int flags) {
-    if (!(argv[0]->flags & OFLAG_USEROBJ))
+    if (! isUserObj(argv[0]))
         return argv[0];
     Object obj = argv[0];
     struct UserObject *uo = (struct UserObject *)obj;

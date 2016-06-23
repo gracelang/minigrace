@@ -38,6 +38,7 @@ typedef struct Method {
 
 #define OBJECT_HEADER int32_t flags; \
                       ClassData class;
+#define isUserObj(o) (o->flags & OFLAG_USEROBJ)
 
 struct ClassData {
     OBJECT_HEADER;
