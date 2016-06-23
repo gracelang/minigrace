@@ -4796,7 +4796,7 @@ void UserObj__release(struct UserObject *o) {
 Object GraceDefaultObject;
 Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
     if (GraceDefaultObject == NULL) {
-        ClassData dc = alloc_class2("DefaultObject", 8,
+        ClassData dc = alloc_class2("DefaultObject", 7,
                 (void*)&UserObj__mark);
         GraceDefaultObject = alloc_obj(sizeof(struct UserObject) -
                 sizeof(struct Object), dc);
@@ -4807,13 +4807,12 @@ Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
         duo->data = glmalloc(sizeof(Object));
         duo->data[0] = NULL;
         addmethod2(GraceDefaultObject, "asString", &Object_asString);
-        addmethod2(GraceDefaultObject, "++", &Object_concat);
-        addmethod2flags(GraceDefaultObject, "isMe", &Object_Equals, MFLAG_CONFIDENTIAL);
-        addmethod2(GraceDefaultObject, "!=", &Object_NotEquals);
-        addmethod2(GraceDefaultObject, "≠", &Object_NotEquals);
+        addmethod2(GraceDefaultObject, "++(1)", &Object_concat);
+        addmethod2flags(GraceDefaultObject, "isMe(1)", &Object_Equals, MFLAG_CONFIDENTIAL);
+        addmethod2(GraceDefaultObject, "≠(1)", &Object_NotEquals);
         addmethod2(GraceDefaultObject, "asDebugString", &Object_asDebugString);
         addmethod2(GraceDefaultObject, "basicAsString", &Object_asString);
-        addmethod2(GraceDefaultObject, "::", &Object_bind);
+        addmethod2(GraceDefaultObject, "::(1)", &Object_bind);
     }
     if (c == NULL) {
         c = alloc_class3("object", numMethods + 1,
