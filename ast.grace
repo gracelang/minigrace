@@ -118,6 +118,10 @@ class baseNode {
     method isTrait { false }    // is a method that returns a trait object
     method inTrait { false }    // object in a syntactic trait definition
     method isBind { false }
+    method isSelf { false }
+    method isSuper { false }
+    method isPrelude { false }
+    method isOuter { false }
     method isBlock { false }
     method isObject { false }
     method isIdentifier { false }
@@ -1654,6 +1658,11 @@ def identifierNode = object {
         method nameString { value }     //  value changes when parsing "[]"
         method quoted { value.quoted }
         method isIdentifier { true }
+        
+        method isSelf { "self" == value }
+        method isSuper { "super" == value }
+        method isPrelude { "prelude" == value }
+        method isOuter { "outer" == value }
 
         method isAppliedOccurenceOfIdentifier {
             if (wildcard) then {
