@@ -1053,8 +1053,7 @@ method compilebind(o) {
         usedvars.push(nm)
         out("  *var_{nm} = {val};")
         out("  if ({val} == undefined)")
-        out("    callmethod(done, \"assignment\", 0, NULL, NULL);")
-        // APB: not clear what the above test is trying to accomplish
+        out("    graceRaise(ProgrammingError(), \"attempting to use an ininitilized variable\");");
         auto_count := auto_count + 1
         o.register := "done"
     } else {
@@ -1072,8 +1071,7 @@ method compiledefdec(o) {
     var val := compilenode(o.value)
     out("  *var_{nm} = {val};")
     out("  if ({val} == undefined)")
-    out("    callmethod(done, \"assignment\", 0, NULL, NULL);")
-    // TODO: this is supposed to be a check on an undefined value being bound to our def
+    out("    graceRaise(ProgrammingError(), \"attempting to use an ininitilized variable\");");
     if (compilationDepth == 1) then {
         compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString)], [o.name], false))
         if (ast.findAnnotation(o, "parent")) then {
@@ -1208,7 +1206,7 @@ method compileop(o) {
         }
         out("  params[0] = {right};")
         out("  partcv[0] = 1;")
-        out("  Object {rnm}{auto_count} = callmethod({left}, \"{o.value}\", "
+        out("  Object {rnm}{auto_count} = callmethod({left}, \"{o.nameString}\", "
             ++ "1, partcv, params);")
         o.register := rnm ++ auto_count
         auto_count := auto_count + 1
@@ -1216,18 +1214,13 @@ method compileop(o) {
         out("  params[0] = {right};")
         out("  partcv[0] = 1;")
         out("  Object opresult{auto_count} = "
-            ++ "callmethod({left}, \"{o.value.quoted}\", 1, partcv, params);")
+            ++ "callmethod({left}, \"{o.nameString.quoted}\", 1, partcv, params);")
         o.register := "opresult" ++ auto_count
         auto_count := auto_count + 1
     }
 }
-method compilecall(o, tailcall) {
-    def myc = auto_count
-    auto_count := auto_count + 1
-    var args := []
-    var obj := ""
+method compileArguments(o, args) {
     var i := 0
-    out("  int callframe{myc} = gc_frame_new();")
     for (o.with) do { part ->
         for (part.args) do { p ->
             var r := compilenode(p)
@@ -1258,95 +1251,87 @@ method compilecall(o, tailcall) {
         }
         i := 0
     }
-    def evl = escapestring2(o.nameString)
-    def receiver = o.receiver
-    if ((receiver == "identifier") && { receiver.nameString == "super" }) then {
-        out "// call case 1: super request"
-        for (args) do { arg ->
-            out("  params[{i}] = {arg};")
-            i := i + 1
-        }
-        for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
-        }
-        out("  Object call{auto_count} = callmethod4(self, \"{evl}\", "
-            ++ "{nparts}, partcv, params, ((flags >> 24) & 0xff) + 1, "
-            ++ "CFLAG_SELF);")
-    } elseif {(receiver.isMember) && { receiver.receiver.isMember} && {
-            receiver.receiver.nameString == "outer"} } then {
-        out "// call case 2: outer request"
-        def ot = compilenode(receiver)
-        for (args) do { arg ->
-            out("  params[{i}] = {arg};")
-            i := i + 1
-        }
-        for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
-        }
-        out("  Object call{auto_count} = callmethodflags({ot}, \"{evl}\", "
-            ++ "{nparts}, partcv, params, CFLAG_SELF);")
-    } elseif { (receiver.isMember) && {(receiver.receiver.isIdentifier)
-        && (receiver.receiver.nameString == "self") && (receiver.nameString == "outer")} } then {
-        out "// call case 3: self.outer request"
-        out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
-            ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
-    } elseif { (receiver.isMember) && {(receiver.receiver.isIdentifier)
-        && (receiver.receiver.nameString == "self")} } then {
-        out "// call case 4: self request"
-        for (args) do { arg ->
-            out("  params[{i}] = {arg};")
-            i := i + 1
-        }
-        for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
-        }
-        out("  Object call{auto_count} = callmethodflags(self, \"{evl}\", "
-            ++ "{nparts}, partcv, params, CFLAG_SELF);")
-    } elseif {(receiver.isIdentifier) && (receiver.nameString == "prelude")} then {
-        out "// call case 5: prelude request"
-        for (args) do { arg ->
-            out("  params[{i}] = {arg};")
-            i := i + 1
-        }
-        for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
-        }
-        out("  Object call{auto_count} = callmethodflags(prelude, \"{evl}\", "
-            ++ "{nparts}, partcv, params, CFLAG_SELF);")
-    } elseif { receiver.isMember} then {
-        out "// call case 6: other member request"
-        obj := compilenode(receiver.receiver)
-        for (args) do { arg ->
-            out("  params[{i}] = {arg};")
-            i := i + 1
-        }
-        for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
-        }
-        if (tailcall) then {
-            out("  Object call{auto_count} = tailcall({obj}, \"{evl}\",")
-            out("    {nparts}, partcv, params, 0);")
-        } else {
-            out("  Object call{auto_count} = callmethod({obj}, \"{evl}\",")
-            out("    {nparts}, partcv, params);")
-        }
+    nparts
+}
+method assembleArguments(o, args) {
+    var i := 0
+    args.do { arg ->
+        out "  params[{i}] = {arg};"
+        i := i + 1
+    }
+    for (o.with.indices) do { partnr ->
+        out "  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};"
+    }
+}
+method compileSuperRequest(o, args, nparts) {
+    out "// call case 1: super request"
+    assembleArguments(o, args)
+    def escapedName = escapestring2(o.nameString)
+    out("  Object call{auto_count} = callmethod4(self, \"{escapedName}\", "
+        ++ "{nparts}, partcv, params, ((flags >> 24) & 0xff) + 1, "
+        ++ "CFLAG_SELF);")
+}
+method compileOuterRequest(o, args, nparts) {
+    out "// call case 2: outer request"
+    def ot = "outer{auto_count}"
+    out("  Object {ot} = callmethod3(self, \"outer\", "
+        ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
+    assembleArguments(o, args)
+    def escapedName = escapestring2(o.nameString)
+    out("  Object call{auto_count} = callmethodflags({ot}, \"{escapedName}\", "
+        ++ "{nparts}, partcv, params, CFLAG_SELF);")
+}
+method compileSelfOuterRequest(o, args, nparts) {
+    out "// call case 3: self.outer request"
+    out("  Object call{auto_count} = callmethod3(self, \"outer\", "
+        ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
+}
+method compileSelfRequest(o, args, nparts) {
+    out "// call case 4: self request"
+    assembleArguments(o, args)
+    def escapedName = escapestring2(o.nameString)
+    out("  Object call{auto_count} = callmethodflags(self, \"{escapedName}\", "
+        ++ "{nparts}, partcv, params, CFLAG_SELF);")
+}
+method compilePreludeRequest(o, args, nparts) {
+    out "// call case 5: prelude request"
+    assembleArguments(o, args)
+    def escapedName = escapestring2(o.nameString)
+    out("  Object call{auto_count} = callmethodflags(prelude, \"{escapedName}\", "
+        ++ "{nparts}, partcv, params, CFLAG_SELF);")
+}
+method compileOtherRequest(o, args, nparts, tailcall) {
+    out "// call case 6: other requests"
+    def target = compilenode(o.receiver)
+    assembleArguments(o, args)
+    def escapedName = escapestring2(o.nameString)
+    if (tailcall) then {
+        out("  Object call{auto_count} = tailcall({target}, \"{escapedName}\",")
+        out("    {nparts}, partcv, params, 0);")
     } else {
-        out "// call case 7: all other requests"
-        obj := "self"
-        for (args) do { arg ->
-            out("  params[{i}] = {arg};")
-            i := i + 1
-        }
-        for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
-        }
-        if (tailcall) then {
-            out("  Object call{auto_count} = tailcall(self, \"{evl}\",")
-            out("    {nparts}, partcv, params, 0);")
-        } else {
-            out("  Object call{auto_count} = callmethod(self, \"{evl}\",")
-            out("    {nparts}, partcv, params);")
-        }
+        out("  Object call{auto_count} = callmethod({target}, \"{escapedName}\",")
+        out("    {nparts}, partcv, params);")
+    }
+}
+method compilecall(o, tailcall) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    out("  int callframe{myc} = gc_frame_new();")
+    var args := []
+    def nparts = compileArguments(o, args)
+    def receiver = o.receiver
+    if (receiver.isSuper) then {
+        compileSuperRequest(o, args, nparts)
+    } elseif { receiver.isOuter } then {
+        compileOuterRequest(o, args, nparts)
+    } elseif { receiver.isSelf && { o.nameString == "outer" } } then {
+        compileSelfOuterRequest(o, args, nparts)
+    } elseif { receiver.isSelf } then {
+        compileSelfRequest(o, args, nparts)
+    } elseif { receiver.isPrelude } then {
+        compilePreludeRequest(o, args, nparts)
+    } else {
+        compileOtherRequest(o, args, nparts, tailcall)
     }
     out("  gc_frame_end(callframe{myc});")
     o.register := "call" ++ auto_count
