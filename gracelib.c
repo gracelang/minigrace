@@ -3914,6 +3914,19 @@ int checkmethodcall(Method *m, int nparts, int *argcv, Object *argv) {
     }
     return 1;
 }
+void logMethodsOf(Object obj) {
+    ClassData c = obj->class;
+    int len = 0;
+    for (int i = 0; i < c->nummethods; i++) {
+        len += 2 + strlen(c->methods[i].name);
+        if (len > 80) {
+            fprintf(stderr, "\n");
+            len = strlen(c->methods[i].name);
+        }
+        fprintf(stderr, "  %s", c->methods[i].name);
+    }
+    fprintf(stderr, "\n");
+}
 Object callmethod4(Object self, const char *name,
         int partc, int *argcv, Object *argv, int superdepth, int callflags) {
     debug("callmethod %s on %p (%s)", name, self, self->class->name);
@@ -4037,16 +4050,12 @@ start:
     }
     fprintf(stderr, "No method '%s'%s; ", name, objDesc);
     fprintf(stderr, "available methods are:\n");
-    int len = 0;
-    for (i=0; i<c->nummethods; i++) {
-        len += 2 + strlen(c->methods[i].name);
-        if (len > 80) {
-            fprintf(stderr, "\n");
-            len = strlen(c->methods[i].name);
+    logMethodsOf(self);
+    Object parent = self;
+    while (isUserObj(parent) && ((struct UserObject*)parent)->super) {
+        parent = ((struct UserObject*)parent)->super;
+        logMethodsOf(parent);
     }
-        fprintf(stderr, "  %s", c->methods[i].name);
-    }
-    fprintf(stderr, "\n");
 //    graceRaise(NoSuchMethodError(), "no method %s in %s %s.", name, self->class->name,
 //             grcstring(callmethod(self, "asString", 0, NULL, NULL)));
 //    The above would identify the receiver, but if it fails, we learn less, not more

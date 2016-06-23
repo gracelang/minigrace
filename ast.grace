@@ -1066,6 +1066,7 @@ def callNode = object {
         var generics is public := false
         var isPattern is public := false
         var receiver is public := receiver'
+        var isSelfRequest is public := false
 
         method nameString {
             with.fold { acc, each -> acc ++ each.nameString } startingWith ""
@@ -1179,6 +1180,7 @@ def callNode = object {
         method shallowCopyFieldsFrom(other) {
             super.shallowCopyFieldsFrom(other)
             isPattern := other.isPattern
+            isSelfRequest := other.isSelfRequest
             self
         }
         method statementName { "request" }
@@ -1468,6 +1470,7 @@ def memberNode = object {
         var value is public := request  // NB: value is a String, not an Identifier
         var receiver is public := receiver'
         var generics is public := false
+        var isSelfRequest is public := false
 
         method nameString { value }
         method canonicalName { value }
@@ -1538,9 +1541,15 @@ def memberNode = object {
             return resultNode
         }
         method shallowCopy {
-            memberNode.new(value, nullNode).shallowCopyFieldsFrom(self)
+            memberNode.new(nameString, receiver).shallowCopyFieldsFrom(self)
         }
         method statementName { "expression" }
+        method shallowCopyFieldsFrom(other) {
+            super.shallowCopyFieldsFrom(other)
+            generics := other.generics
+            isSelfRequest := other.isSelfRequest
+            self
+        }
     }
 }
 def genericNode is public = object {

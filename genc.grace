@@ -1306,12 +1306,13 @@ method compileOtherRequest(o, args, nparts, tailcall) {
     def target = compilenode(o.receiver)
     assembleArguments(o, args)
     def escapedName = escapestring2(o.nameString)
+    def callFlags = if (o.isSelfRequest) then { "CFLAG_SELF" } else { "0" }
     if (tailcall) then {
-        out("  Object call{auto_count} = tailcall({target}, \"{escapedName}\",")
-        out("    {nparts}, partcv, params, 0);")
+        out("  Object call{auto_count} = tailcall({target}, \"{escapedName}\","
+            ++ " {nparts}, partcv, params, 0);")
     } else {
-        out("  Object call{auto_count} = callmethod({target}, \"{escapedName}\",")
-        out("    {nparts}, partcv, params);")
+        out("  Object call{auto_count} = callmethodflags({target}, \"{escapedName}\","
+            ++ " {nparts}, partcv, params, {callFlags});")
     }
 }
 method compilecall(o, tailcall) {

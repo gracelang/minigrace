@@ -1392,6 +1392,7 @@ method transformCall(cNode) -> ast.AstNode {
             return cNode
         }
         cNode.receiver := rcvr.receiver
+        cNode.isSelfRequest := true
         cNode
     } else {
         cNode
