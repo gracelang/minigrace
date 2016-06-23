@@ -2529,7 +2529,7 @@ method doclass {
         defDec.annotations.add(ast.identifierNode.new("public", false))
         values.push(defDec)
     } else {
-        objNode.name := meth.nameString
+        objNode.name := meth.canonicalName
         if (btok.value == "class") then {
             objNode.inClass := true
         } elseif { btok.value == "trait" } then {
