@@ -316,9 +316,7 @@ method compileobjvardecmeth(o, selfr, pos) {
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
     outprint("\}")
-    out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {rflags});")
-    var nmw := nm ++ ":="
-    nmw := escapestring2(nmw)
+    out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\", &reader_{escmodname}_{inm}_{myc}, {rflags});")
     outprint("Object writer_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
@@ -326,7 +324,7 @@ method compileobjvardecmeth(o, selfr, pos) {
     outprint("  uo->data[{pos}] = args[0];")
     outprint("  return done;");
     outprint("\}")
-    out("  Method *writer{myc} = addmethodrealflags({selfr}, \"{enm}:=\",&writer_{escmodname}_{inm}_{myc}, {wflags});")
+    out("  Method *writer{myc} = addmethodrealflags({selfr}, \"{enm}:=(1)\", &writer_{escmodname}_{inm}_{myc}, {wflags});")
     out("  reader{myc}->definitionModule = modulename;")
     out("  writer{myc}->definitionModule = modulename;")
     out("  reader{myc}->definitionLine = {o.line};")
@@ -351,8 +349,6 @@ method compileobjvardec(o, selfr, pos) {
     outprint("  return uo->data[{pos}];")
     outprint("\}")
     out("  addmethodreal({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc});")
-    var nmw := nm ++ ":="
-    nmw := escapestring2(nmw)
     outprint("Object writer_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
@@ -360,7 +356,7 @@ method compileobjvardec(o, selfr, pos) {
     outprint("  uo->data[{pos}] = args[0];")
     outprint("  return done;");
     outprint("\}")
-    out("  addmethodreal({selfr}, \"{enm}:=\", &writer_{escmodname}_{inm}_{myc});")
+    out("  addmethodreal({selfr}, \"{enm}:=(1)\", &writer_{escmodname}_{inm}_{myc});")
 }
 method compileobject(o, outerRef) {
     var origInBlock := inBlock
