@@ -125,11 +125,8 @@ checkgenjs: l1/minigrace
         then l1/minigrace --dir js --target js --verbose ast.grace ; fi
 	jsl -nologo -conf tools/jsl.genjs.conf -process js/ast.js
 
-# This should be a pattern rule for .gct and .gcn to get the "simultaneous
-# build" semantics.  However, doing so induces bogus circular dependencies.
-# Perhaps this is a bug in gnu make?
 collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
-	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+	GRACE_MODULE_PATH=l1 l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 collectionsPrelude.gcn: collectionsPrelude.gct
 
@@ -263,11 +260,10 @@ l1/gracelib.h:
 l1/gracelib.o: $(KG)/gracelib.o
 	ln -f $< $@
 
-l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(REALSOURCEFILES) l1/buildinfo.grace gracelib.c l1/gracelib.o l1/gracelib.h
+l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(REALSOURCEFILES) l1/buildinfo.grace l1/gracelib.o l1/gracelib.h
 	cd l1 && ../$(KG)/minigrace  $(VERBOSITY) --make --native --module minigrace compiler.grace
 
-# The following 2 rules ought to be pattern rules, to get the "sumiltaneous build"
-# behaviour, but that seems to induce fake curcular dependencies.
+# The following are pattern rules, to get the "sumiltaneous build" behaviour
 
 l1/%.gct: l1/%.gso
 
@@ -428,7 +424,7 @@ selftest-js: minigrace-js-env $(ALL_LIBRARY_MODULES:%.grace=../js/%.js)
 
 # must be a pattern rule to get the "simultaneous build" semantics.
 StandardPrelude%gct StandardPrelude%gcn: StandardPrelude.grace collectionsPrelude.gct l1/minigrace
-	GRACE_MODULE_PATH=l1/modules:js l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+	GRACE_MODULE_PATH=l1 l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 # The next few rules are Static Pattern Rules.  Each is like an implicit rule
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
