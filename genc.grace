@@ -1559,7 +1559,7 @@ method compilenode(o) {
     } elseif { oKind == "member" } then {
         compilemember(o)
     } elseif { oKind == "call" } then {
-        if (o.receiver.isMember && {o.receiver.receiver.nameString == "prelude"}) then {
+        if (o.receiver.isPrelude) then {
             if (o.nameString == "print(1)") then {
                 compilePrint(o)
             } elseif {o.nameString == "native(1)code(1)"} then {
