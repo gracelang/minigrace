@@ -1395,14 +1395,14 @@ method transformInherits(inhNode) ancestors(as) {
     } elseif {inhNode.inheritsFromMember} then {
         def newcall = ast.callNode.new(inhNode.value.receiver, [
             ast.requestPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
-            ast.requestPart.request "object" withArgs (
+            ast.requestPart.request "$object" withArgs (
                 [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope)
             ]
         ) scope(currentScope)
         inhNode.value := newcall
     } elseif (inhNode.inheritsFromCall) then {
         var superCall := inhNode.value
-        superCall.with.push(ast.requestPart.request "object"
+        superCall.with.push(ast.requestPart.request "$object"
             withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
     } elseif {! util.extensions.contains "ObjectInheritance"} then {
         errormessages.syntaxError "inheritance must be from a freshly-created object"

@@ -565,6 +565,7 @@ method compilemethod(o, selfobj, pos) {
     var myc := auto_count
     auto_count := auto_count + 1
     def name = o.nameString
+    def escapedName = escapestring2(name)
     var nm := name ++ myc
     var numslots := 0
     var slot := 0
@@ -719,7 +720,7 @@ method compilemethod(o, selfobj, pos) {
         out("  struct StackFrameObject *stackframe = alloc_StackFrame({numslots}, NULL);")
         out("  pushclosure(NULL);")
     }
-    out("  pushstackframe(stackframe, \"{escapestring2(name)}\");")
+    out("  pushstackframe(stackframe, \"{escapedName}\");")
     out("  int frame = gc_frame_new();")
     out("  gc_frame_newslot((Object)stackframe);")
     out "  Object methodInheritingObject = NULL;"
@@ -789,12 +790,12 @@ method compilemethod(o, selfobj, pos) {
         var uo2 := "uo{myc}"
         out("  struct UserObject *{uo2} = (struct UserObject*){selfobj};")
         out("  {uo2}->data[{pos}] = emptyclosure;")
-        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
+        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapedName}\", &{litname}, {pos});")
         compilemethodtypes(litname, o)
     } else {
         out("  block_savedest({selfobj});")
         out("  Object closure" ++ myc ++ " = createclosure("
-            ++ closurevars.size ++ ", \"{escapestring2(name)}\");")
+            ++ closurevars.size ++ ", \"{escapedName}\");")
         out("  setclosureframe(closure{myc}, stackframe);")
         for (closurevars) do { v ->
             if (v == "self") then {
@@ -807,7 +808,7 @@ method compilemethod(o, selfobj, pos) {
         var uo := "uo{myc}"
         out("  struct UserObject *{uo} = (struct UserObject*){selfobj};")
         out("  {uo}->data[{pos}] = (Object)closure{myc};")
-        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
+        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapedName}\", &{litname}, {pos});")
         compilemethodtypes(litname, o)
     }
     for (o.annotations) do {ann->
@@ -834,8 +835,8 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
     def myc = auto_count
     auto_count := auto_count + 1
     var litname := escapeident("meth_{modname}_{escapestring2(nm)}_object")
-    def name = if (o.hasParams) then { o.nameString ++ "object(1)" }
-                                else { o.nameString ++ "(0)object(1)" }
+    def name = o.nameString ++ "$object(1)"
+    def escapedName = escapestring2(name)
     outswitchup
     if (closurevars.size > 0) then {
         if (o.selfclosure) then {
@@ -856,7 +857,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
         out("  struct StackFrameObject *stackframe = alloc_StackFrame({numslots}, NULL);")
         out("  pushclosure(NULL);")
     }
-    out("  pushstackframe(stackframe, \"{escapestring2(name)}\");")
+    out("  pushstackframe(stackframe, \"{escapedName}\");")
     out("  int frame = gc_frame_new();")
     out("  gc_frame_newslot((Object)stackframe);")
     var sumAccum := "0"
@@ -868,7 +869,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
         def part = o.signature.at(partnr)
         if (part.params.size > 0) then {
             out("  if (nparts > 0 && argcv[{partnr - 1}] < {part.params.size})")
-            out("    graceRaise(RequestError(), \"insufficient arguments to method {name}\");")
+            out("    graceRaise(RequestError(), \"insufficient arguments to method {o.nameString}\");")
         }
     }
     out("  Object params[{paramsUsed}];")
@@ -889,12 +890,12 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
     output := oldout
     if (selfobj == false) then {
     } elseif { closurevars.size == 0 } then {
-        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
+        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapedName}\", &{litname}, {pos});")
         compilemethodtypes(litname, o)
     } else {
         out("  block_savedest({selfobj});")
         out("  Object closure" ++ myc ++ " = createclosure("
-            ++ closurevars.size ++ ", \"{escapestring2(name)}\");")
+            ++ closurevars.size ++ ", \"{escapedName}\");")
         out("  setclosureframe(closure{myc}, stackframe);")
         for (closurevars) do { v ->
             if (v == "self") then {
@@ -905,7 +906,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
             }
         }
         var uo := "uo{myc}"
-        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
+        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapedName}\", &{litname}, {pos});")
     }
     for (o.annotations) do {ann->
         if ((ann.kind == "identifier") && {ann.value == "confidential"}) then {
