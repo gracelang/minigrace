@@ -4035,7 +4035,7 @@ start:
                 NoSuchMethod());
         longjmp(error_jump, 1);
     }
-    fprintf(stderr, "No method '%s' %s; ", name, objDesc);
+    fprintf(stderr, "No method '%s'%s; ", name, objDesc);
     fprintf(stderr, "available methods are:\n");
     int len = 0;
     for (i=0; i<c->nummethods; i++) {
@@ -4120,7 +4120,7 @@ void enable_callgraph(char *filename) {
 Object MatchFailed;
 Object alloc_MatchFailed() {
     if (!MatchFailed) {
-        MatchFailed = alloc_userobj(0, 0);
+        MatchFailed = alloc_obj2(0, 0);
         gc_root(MatchFailed);
     }
     return MatchFailed;
@@ -4821,9 +4821,6 @@ Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
     uo->super = GraceDefaultObject;
     uo->ndata = numFields;
     return o;
-}
-Object alloc_userobj(int numMethods, int numFields) {
-    return alloc_userobj2(numMethods, numFields, NULL);
 }
 Object alloc_obj2(int numMethods, int numFields) {
     return alloc_userobj2(numMethods, numFields, NULL);

@@ -124,7 +124,6 @@ ClassData alloc_class(const char *, int);
 ClassData alloc_class2(const char *, int, void(*)(void *));
 ClassData alloc_class3(const char *, int, void(*)(void *), void(*)(void *));
 Object alloc_Type(const char *, int);
-Object alloc_userobj(int, int);
 Object alloc_userobj2(int, int, ClassData);
 Object alloc_obj2(int, int);
 Object* alloc_var();
