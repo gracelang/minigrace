@@ -1138,9 +1138,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             if (o.returnsObject) then {
                 myParent.scope.at(o.nameString) putScope(o.returnedObjectScope)
                 def objectName = myParent.name
-                if ((objectName != "object") && (o.body.last.isObject)) then {
-                    o.body.last.name := objectName ++ "." ++ o.body.last.name
-                }
             }
             true
         }
