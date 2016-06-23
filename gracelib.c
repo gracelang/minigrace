@@ -4724,11 +4724,20 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
         const char *modname, int line) {
     char buf[strlen(modname) + 15];
     sprintf(buf, "Block[%s:%i]", modname, line);
-    ClassData c = alloc_class3(buf, 11, (void*)&Block__mark,
+    ClassData c = alloc_class3(buf, 20, (void*)&Block__mark,
             (void*)&Block__release);
     if (!Block)
         Block = c;
     add_Method(c, "apply", &Block_apply);
+    add_Method(c, "apply(1)", &Block_apply);
+    add_Method(c, "apply(2)", &Block_apply);
+    add_Method(c, "apply(3)", &Block_apply);
+    add_Method(c, "apply(4)", &Block_apply);
+    add_Method(c, "apply(5)", &Block_apply);
+    add_Method(c, "apply(6)", &Block_apply);
+    add_Method(c, "apply(7)", &Block_apply);
+    add_Method(c, "apply(8)", &Block_apply);
+    add_Method(c, "apply(9)", &Block_apply);
     add_Method(c, "applyIndirectly(1)", &Block_applyIndirectly);
     add_Method(c, "match(1)", &Block_match);
     add_Method(c, "asString", &Object_asString);
