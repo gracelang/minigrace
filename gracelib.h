@@ -44,6 +44,7 @@ struct ClassData {
     char *name;
     Method *methods;
     int nummethods;
+    int methodsCapacity;   // capacity of the `methods` array
     void (*mark)(void *);
     void (*release)(void *);
     const char *definitionModule;

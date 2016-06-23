@@ -202,6 +202,7 @@ struct TypeObject {
     char *name;
     Method *methods;
     int nummethods;
+    int methodsCapacity;   // capacity of the `methods` array
 };
 
 struct ExceptionPacketObject {
@@ -3843,7 +3844,7 @@ Method *findmethod(Object *selfp, Object *realselfp, const char *name,
     for (i=0; i < c->nummethods; i++) {
         Method this_method = c->methods[i];
         if (strcmp(c->methods[i].name, name) == 0) {
-            m = &c->methods[i];
+            m = &(c->methods[i]);
             break;
         }
     }
@@ -4315,6 +4316,11 @@ Method* add_Method(ClassData c, const char *name,
             return &c->methods[i];
         }
     }
+    if (i >= c->methodsCapacity) {
+        graceRaise(RuntimeError(),
+                   "in gracelib.c, class %s has capacity %i and is full; can't add method %s",
+                   c->name, c->methodsCapacity, name);
+    }
     c->methods[i].flags = MFLAG_REALSELFONLY;
     c->methods[i].name = name;
     c->methods[i].func = func;
@@ -4401,7 +4407,7 @@ Object Type_and(Object self, int nparts, int *argcv,
     Object ti = callmethod(_prelude, "TypeIntersection", 0, NULL, NULL);
     int partcv[] = {2};
     Object args[] = {self, argv[0]};
-    Object res = callmethod(ti, "new(1)", 1, partcv, args);
+    Object res = callmethod(ti, "new(2)", 1, partcv, args);
     return res;
 }
 Object Type_or(Object self, int nparts, int *argcv,
@@ -4411,7 +4417,7 @@ Object Type_or(Object self, int nparts, int *argcv,
     Object ti = callmethod(_prelude, "TypeVariant", 0, NULL, NULL);
     int partcv[] = {2};
     Object args[] = {self, argv[0]};
-    Object res = callmethod(ti, "new(1)", 1, partcv, args);
+    Object res = callmethod(ti, "new(2)", 1, partcv, args);
     return res;
 }
 Object Type_plus(Object self, int nparts, int *argcv,
@@ -4421,16 +4427,17 @@ Object Type_plus(Object self, int nparts, int *argcv,
     Object ti = callmethod(_prelude, "TypeUnion", 0, NULL, NULL);
     int partcv[] = {2};
     Object args[] = {self, argv[0]};
-    Object res = callmethod(ti, "new(1)", 1, partcv, args);
+    Object res = callmethod(ti, "new(2)", 1, partcv, args);
     return res;
 }
 Object alloc_Type(const char *name, int nummethods) {
     if (Type == NULL) {
-        Type = alloc_class("Type", 10);
+        Type = alloc_class("Type", 11);
         add_Method(Type, "isMe(1)", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(Type, "!=(1)", &Object_NotEquals);
         add_Method(Type, "≠(1)", &Object_NotEquals);
         add_Method(Type, "asString", &Type_asString);
+        add_Method(Type, "asDebugString", &Object_asDebugString);
         add_Method(Type, "::(1)", &Object_bind);
         add_Method(Type, "match(1)", &Type_match);
         add_Method(Type, "&(1)", &Type_and);
@@ -4438,11 +4445,11 @@ Object alloc_Type(const char *name, int nummethods) {
         add_Method(Type, "+(1)", &Type_plus);
         add_Method(Type, "methodNames", &Type_methodNames);
     }
-    Object o = alloc_obj(sizeof(struct TypeObject)
-            - sizeof(int32_t) - sizeof(ClassData), Type);
+    Object o = alloc_obj(sizeof(struct TypeObject) - sizeof(struct Object), Type);
     struct TypeObject *t = (struct TypeObject *)o;
     t->methods = glmalloc(sizeof(Method) * nummethods);
     t->name = glmalloc(strlen(name) + 1);
+    t->methodsCapacity = nummethods;
     strcpy(t->name, name);
     return (Object)t;
 }
@@ -4466,12 +4473,14 @@ Object Class_asString(Object self, int nparts, int *argcv,
 }
 static inline void initialise_Class() {
     if (Class == NULL) {
+        int numClassMethods = 5;
         Class = glmalloc(sizeof(struct ClassData));
         Class->flags = 3;
         Class->class = Class;
         Class->name = "ClassOf<Class>";
-        Class->methods = glmalloc(sizeof(Method) * 5);
-        Class->nummethods = 3;
+        Class->methods = glmalloc(sizeof(Method) * numClassMethods);
+        Class->methodsCapacity = numClassMethods;
+        Class->nummethods = 0;
         Class->mark = NULL;
         Class->release = (void *)&ClassData__release;
         add_Method(Class, "match(1)", &Type_match);
@@ -4487,6 +4496,7 @@ ClassData alloc_class(const char *name, int nummethods) {
     c->name = glmalloc(strlen(name) + 1);
     strcpy(c->name, name);
     c->methods = glmalloc(sizeof(Method) * nummethods);
+    c->methodsCapacity = nummethods;
     c->flags = 3;
     c->class = Class;
     c->nummethods = 0;
@@ -4504,32 +4514,14 @@ ClassData alloc_class(const char *name, int nummethods) {
     return c;
 }
 ClassData alloc_class2(const char *name, int nummethods, void (*mark)(void*)) {
-    initialise_Class();
-    ClassData c = glmalloc(sizeof(struct ClassData));
-    c->name = glmalloc(strlen(name) + 1);
-    strcpy(c->name, name);
-    c->methods = glmalloc(sizeof(Method) * nummethods);
-    c->flags = 3;
-    c->class = Class;
-    c->nummethods = 0;
+    ClassData c = alloc_class(name, nummethods);
     c->mark = mark;
-    c->release = NULL;
-    c->definitionModule = "unknown";
-    c->definitionLine = 0;
-    int i;
-    for (i=0; i<nummethods; i++) {
-        c->methods[i].name = NULL;
-        c->methods[i].flags = 0;
-        c->methods[i].pos = 0;
-        c->methods[i].definitionModule = "unknown";
-    }
     return c;
 }
 ClassData alloc_class3(const char *name, int nummethods, void (*mark)(void*),
         void (*release)(void*)) {
     ClassData c = alloc_class(name, nummethods);
     c->flags = 3;
-    c->class = NULL;
     c->mark = mark;
     c->release = release;
     return c;
