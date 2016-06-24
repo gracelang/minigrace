@@ -4693,7 +4693,11 @@ Object Block_applyIndirectly(Object self, int nparts, int *argcv,
     }
     partcv[0] = sz;
     char methName[13];
-    sprintf(methName, "_apply(%i)", sz);
+    if (sz == 0) {
+        sprintf(methName, "_apply");
+    } else {
+        sprintf(methName, "_apply(%i)", sz);
+    }
     return callmethod(self, methName, 1, partcv, rargs);
 }
 Object Block_match(Object self, int nparts, int *argcv, Object *args, int flags) {
