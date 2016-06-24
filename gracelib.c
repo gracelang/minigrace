@@ -3765,12 +3765,15 @@ void block_return(Object self, Object obj) {
     if (!buf)
         gracedie("Cannot return from block at top level.");
     return_value = obj;
+//    fprintf(stderr, "returning from %s to %p\n", uo->class->name, buf);
     longjmp(*buf, 1);
 }
 void block_savedest(Object self) {
     struct UserObject *uo = (struct UserObject*)self;
-    if (calldepth > 0)
+    if (calldepth > 0) {
         uo->retpoint = (void *)&return_stack[calldepth-1];
+//        fprintf(stderr, "saving return point %p in %s\n", uo->retpoint, uo->class->name);
+    }
 }
 struct TailCallObject {
     OBJECT_HEADER;
@@ -4080,10 +4083,17 @@ Object callmethodflags(Object receiver, const char *name,
         debug("requested method on freed object %p: %s.%s",
                 receiver, receiver->class->name, name);
     }
-    if (strcmp(name, "_apply") != 0 && strcmp(name, "apply") != 0
-            && strcmp(name, "applyIndirectly") != 0) {
+    char* className = receiver->class->name;
+    if (! (className == strstr(className, "Block[") && strstr(name, "apply")) ) {
+        // if this is NOT a block apply ...
         if (setjmp(return_stack[calldepth])) {
+            // the setjump stores this program point on the return_stack,
+            // and returns FALSE, so the following code is skipped.
+            // It will be executed only if a return statement does a longjmp.
             Object rv = return_value;
+//            fprintf(stderr, "returned with value %p to just before call of %s\n",
+//                    grcstring(callmethod(rv, "asString", 0, NULL, NULL)),
+//                    name);
             return_value = NULL;
             for (i=calldepth; i>start_calldepth; i--)
                 if (finally_stack[i]) {
@@ -4096,6 +4106,7 @@ Object callmethodflags(Object receiver, const char *name,
             return rv;
         }
     } else {
+        // if this IS a block apply, just duplicate the prior old return_stack element
         memcpy(return_stack[calldepth], return_stack[calldepth-1],
                 sizeof(return_stack[calldepth]));
     }
