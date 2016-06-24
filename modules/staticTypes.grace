@@ -1229,7 +1229,7 @@ method continue'(e, bl) -> Done is confidential {
 
 
 // Run the type rules.
-method checker (nodes) {
+method parseChecker (nodes) {
     check (nodes)
 }
 

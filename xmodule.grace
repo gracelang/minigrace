@@ -66,7 +66,7 @@ method checkDialect(moduleObject) {
                 currentDialect.moduleObject := dobj
                 def mths = mirrors.reflect(dobj).methods
                 for (mths) do { m ->
-                    if (m.name == "checker") then {
+                    if (m.name == "parseChecker") then {
                         currentDialect.hasParseChecker := true
                     }
                     if (m.name == "astChecker") then {
@@ -107,7 +107,7 @@ method doParseCheck(moduleObj) {
                     withSuggestions(rs.suggestions)
             }
             case { _ ->
-                errormessages.error "{e.exception}: {e.message}." 
+                errormessages.error "{e.exception}: {e.message}."
                     atLine(util.linenum)
             }
     } catch { e : Exception ->      // some unknwown Grace exception
@@ -220,7 +220,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
             } elseif { binaryFile.newer(moduleFileGrace).not } then {
                 util.log 60 verbose "{binaryFile} not newer than {moduleFileGrace}"
             }
-            compileModule (nm) inFile (moduleFileGrace.asString) 
+            compileModule (nm) inFile (moduleFileGrace.asString)
                 forDialect (isDialect) atRange (line, linePos)
         }
         importsSet.add(nm)
@@ -238,7 +238,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
                 util.log 60 verbose "{moduleFileJs} not newer than {moduleFileGrace}"
             }
             if (moduleFileGrace.exists) then {
-                compileModule (nm) inFile (moduleFileGrace.asString) 
+                compileModule (nm) inFile (moduleFileGrace.asString)
                     forDialect (isDialect) atRange (line, linePos)
             } else {
                 def thing = if (isDialect) then {"dialect"} else {"module"}
@@ -588,4 +588,3 @@ method addFreshMethod (val) to (freshlist) for (gct) is confidential {
             "fresh method result of an unexpected kind: {freshMethResult.pretty(0)}"
     }
 }
-

@@ -41,7 +41,7 @@ def staticVisitor = object {
         }
     }
 }
-method checker(values) is public {
+method parseChecker(values) is public {
     for (values) do {v->
         v.accept(staticVisitor)
     }
