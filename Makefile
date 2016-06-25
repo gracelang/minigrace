@@ -432,6 +432,9 @@ StandardPrelude%gct StandardPrelude%gcn: StandardPrelude.grace collectionsPrelud
 $(filter-out modules/curl.gso,$(DYNAMIC_STUBS:%.grace=modules/%.gso)): modules/%.gso: %.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
+$(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
+	ln -sf $< .
+
 $(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace StandardPrelude.gct l1/minigrace
 	rm -f $(@:%.gct=%{.c,.gcn,})
 	GRACE_MODULE_PATH=.:modules l1/minigrace $(VERBOSITY) --make --noexec --dir stubs $<
@@ -446,7 +449,7 @@ $(STUBS:%.grace=js/%.gct): js/%.gct: stubs/%.gct
 	cd js && ln -sf ../$< .
 
 $(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/l1/%.gct
-	ln -sf $< l1
+	cd l1 && ln -sf ../$< .
 
 tarWeb: js
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
