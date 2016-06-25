@@ -3558,13 +3558,13 @@ Object module_io_init() {
     add_Method(IOModule, "input", &io_input);
     add_Method(IOModule, "output", &io_output);
     add_Method(IOModule, "error", &io_error);
-    add_Method(IOModule, "open", &io_open);
-    add_Method(IOModule, "system", &io_system);
-    add_Method(IOModule, "exists", &io_exists);
-    add_Method(IOModule, "newer", &io_newer);
-    add_Method(IOModule, "spawn", &io_spawn);
-    add_Method(IOModule, "realpath", &io_realpath);
-    add_Method(IOModule, "listdir", &io_listdir);
+    add_Method(IOModule, "open(2)", &io_open);
+    add_Method(IOModule, "system(1)", &io_system);
+    add_Method(IOModule, "exists(1)", &io_exists);
+    add_Method(IOModule, "newer(2)", &io_newer);
+    add_Method(IOModule, "spawn(1)", &io_spawn);
+    add_Method(IOModule, "realpath(1)", &io_realpath);
+    add_Method(IOModule, "listdir(1)", &io_listdir);
     add_Method(IOModule, "asString", &Module_asString);
     add_Method(IOModule, "asDebugString", &Object_asString);
 
