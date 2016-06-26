@@ -436,14 +436,14 @@ $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 	ln -sf $< .
 
 $(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace StandardPrelude.gct l1/minigrace
-	rm -f $(@:%.gct=%{.c,.gcn,})
-	GRACE_MODULE_PATH=.:modules l1/minigrace $(VERBOSITY) --make --noexec --dir stubs $<
-	rm -f $(@:%.gct=%{.c,.gcn});
+	@rm -f $(@:%.gct=%{.c,.gcn,})
+	GRACE_MODULE_PATH=l1:modules l1/minigrace $(VERBOSITY) --make --noexec --dir stubs $<
+	@rm -f $(@:%.gct=%{.c,.gcn});
 
 $(STUBS:%.grace=stubs/l1/%.gct): stubs/l1/%.gct: stubs/%.grace l1/StandardPrelude.gct $(KG)/minigrace
-	rm -f $(@:%.gct=%{.c,.gcn,})
+	@rm -f $(@:%.gct=%{.c,.gcn,})
 	GRACE_MODULE_PATH=l1 $(KG)/minigrace $(VERBOSITY) --make --noexec --dir stubs/l1 $<
-	rm -f $(@:%.gct=%{.c,.gcn});
+	@rm -f $(@:%.gct=%{.c,.gcn});
 
 $(STUBS:%.grace=js/%.gct): js/%.gct: stubs/%.gct
 	cd js && ln -sf ../$< .
