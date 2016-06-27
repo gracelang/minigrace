@@ -579,7 +579,7 @@ method addFreshMethod (node) to (freshlist) for (gct) is confidential {
         if (requestedName == "copy") then {
             gct.at "fresh:{methName}" put(gct.at "public")
         } elseif {requestedName == "clone(1)"} then {
-            def cloneArg = node.with.first.args.first
+            def cloneArg = freshMethExpression.with.first.args.first
             if (cloneArg.isSelf) then {
                 gct.at "fresh:{methName}" put(gct.at "public")
             } else {
