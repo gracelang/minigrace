@@ -870,6 +870,14 @@ def methodNode = object {
                 startingWith ""
         }
         method hasParams { signature.first.params.isEmpty.not }
+        method numParamLists {
+            // the number of my parameter lists.  If I have a single
+            // part to my name, there may be 0 or 1
+            def sigSz = signature.size
+            if (sigSz > 1) then { return sigSz }
+            if {signature.first.params.isEmpty} then { return 0 }
+            return 1
+        }
         method hasTypeParams { false ≠ signature.first.typeParams }
         method isMethod { true }
         method isExecutable { false }
@@ -1062,17 +1070,25 @@ def callNode = object {
 
         inherits baseNode
         def kind is public = "call"
-        var with is public := parts        // arguments
+        var with is public := parts            // [ argument parts ]
         var generics is public := false
         var isPattern is public := false
-        var receiver is public := receiver'
+        var receiver is public := receiver'    // formerly `value`
         var isSelfRequest is public := false
 
+        method onSelf {
+            // mark as a self-request.  Answers self for chaining.
+            isSelfRequest := true
+            self
+        }
+
         method nameString {
+            // the name of the method being requested, in numeric form
             with.fold { acc, each -> acc ++ each.nameString } startingWith ""
         }
 
         method canonicalName {
+            // the name of the method being requested, in underscore form
             with.fold { acc, each -> acc ++ each.canonicalName }
                 startingWith ""
         }
@@ -1134,7 +1150,8 @@ def callNode = object {
             for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
-            var s := super.pretty(depth) ++ "\n"
+            var s := super.pretty(depth)
+            s := s ++ if (isSelfRequest) then { " on self\n" } else { "\n" }
             s := s ++ spc ++ "Receiver: {receiver.pretty(depth + 1)}\n"
             s := s ++ spc ++ "Method Name: {nameString}\n"
             if (false != generics) then {
@@ -1475,6 +1492,10 @@ def memberNode = object {
         var generics is public := false
         var isSelfRequest is public := false
         
+        method onSelf {
+            isSelfRequest := true
+            self
+        }
         method nameString { value }
         method canonicalName { value }
         method isMember { true }
@@ -1504,7 +1525,9 @@ def memberNode = object {
             for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
-            var s := "{super.pretty(depth)}‹" ++ self.value ++ "›\n"
+            var s := super.pretty(depth)
+            s := s ++ if (isSelfRequest) then { " on self " } else { " " }
+            s := s ++ "‹" ++ self.value ++ "›\n"
             s := s ++ spc ++ receiver.pretty(depth)
             if (false != generics) then {
                 s := s ++ "\n" ++ spc ++ "  Generics:"

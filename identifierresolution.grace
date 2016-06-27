@@ -231,9 +231,9 @@ class newScopeIn(parent') kind(variety') {
             if (s.contains(name)) then {
                 if (s.variety == "dialect") then {
                     return ast.memberNode.new(name,
-                        ast.identifierNode.new("prelude", false) scope(self)) scope(self)
+                        ast.identifierNode.new("prelude", false) scope(self)) scope(self).onSelf
                 }
-                return ast.memberNode.new(name, mem) scope(self)
+                return ast.memberNode.new(name, mem) scope(self).onSelf
             }
             match ( s.variety
             ) case { "object" ->
@@ -528,7 +528,7 @@ method rewriteIdentifier(node) ancestors(as) {
     // This method seems to do the following:
     // - id is self => do nothing
     // - id is super => do nothing
-    // - id is in an assignment position and a method ‹id›:= is in scope:
+    // - id is in an assignment position and a method ‹id›:=(_) is in scope:
     //          replace node by a method request
     // - id is in the lexical scope: store binding occurence of id in node
     // - id is a method in an outer object scope: transform into member nodes.
@@ -575,8 +575,7 @@ method rewriteIdentifier(node) ancestors(as) {
     if (v == "built-in") then { return node }
     if (v == "dialect") then {
         def p = ast.identifierNode.new("prelude", false) scope(nodeScope)
-        def m = ast.memberNode.new(nm, p) scope(nodeScope)
-        return m
+        return ast.memberNode.new(nm, p) scope(nodeScope).onSelf
     }
     if (nodeKind.isParameter) then { return node }
     if (nodeKind == k.typedec) then { return node }
@@ -593,7 +592,7 @@ method rewriteIdentifier(node) ancestors(as) {
     if (definingScope == nodeScope.enclosingObjectScope) then {
         return ast.memberNode.new(nm,
             ast.identifierNode.new("self", false) scope(nodeScope)
-        ) scope(nodeScope)
+        ) scope(nodeScope).onSelf
     }
     if (nodeScope.isObjectScope.not
              && {nodeScope.isInSameObjectAs(definingScope)}) then {
@@ -1392,8 +1391,7 @@ method transformCall(cNode) -> ast.AstNode {
             return cNode
         }
         cNode.receiver := rcvr.receiver
-        cNode.isSelfRequest := true
-        cNode
+        cNode.onSelf
     } else {
         cNode
     }

@@ -171,11 +171,8 @@ method compilearray(o) {
 }
 method compilemember(o) {
     // memberNodes represent a nullary method request.
-    util.setPosition(o.line, o.linePos)
-    def parts =  [ ast.requestPart.request(o.nameString) withArgs [] ]
-    def c = ast.callNode.new(o.receiver, parts)
-    def r = compilenode(c)
-    o.register := r
+    o.generics := false         // because compilecall does generics incorrectly
+    compilecall(o, false)
 }
 method compileobjouter(selfr, outerRef) {
     var myc := auto_count
@@ -486,7 +483,7 @@ method compileobject(o, outerRef) {
 method compileblock(o) {
     def origInBlock = inBlock
     inBlock := true
-    var myc := auto_count
+    def myc = auto_count
     auto_count := auto_count + 1
     var obj := "block{myc}"
     out("  Object {obj} = alloc_Block(NULL, NULL, \"{modname}\", {linenum});")
@@ -544,7 +541,7 @@ method compilemethod(o, selfobj, pos) {
     // Calculate body, find difference of usedvars/declaredvars, if closure
     // then build as such. At top of method body bind var_x as usual, but
     // set to pointer from the additional closure parameter.
-    out "// method \"{o.nameString}\""
+    out "// method \"{o.canonicalName}\""
     var origParamsUsed := paramsUsed
     paramsUsed := 1
     var origPartsUsed := partsUsed
@@ -570,8 +567,8 @@ method compilemethod(o, selfobj, pos) {
     out("  int curarg = 0;")
     out("  int pushcv[] = \{1\};")
     if (!o.selfclosure) then {
-        out "  if (nparts < {o.signature.size} && args)"
-        out("    graceRaise(RequestError(), \"missing argument list for {name.quoted} (probably "
+        out "  if (nparts < {o.numParamLists} && args)"
+        out("    graceRaise(RequestError(), \"missing argument list for {o.canonicalName} (probably "
             ++ "reflection error): got %i lists, expected "
             ++ "{o.signature.size}.\", nparts);")
     }
@@ -593,9 +590,9 @@ method compilemethod(o, selfobj, pos) {
                 }
             }
         }
-        if (!o.selfclosure) then {
+        if (!o.selfclosure && (part.params.size > 0)) then {
             out "  if (argcv && argcv[{partnr - 1}] != {part.params.size})"
-            out "    graceRaise(RequestError(), \"wrong number of arguments for {part.name.quoted}\");"
+            out "    graceRaise(RequestError(), \"wrong number of arguments for part {part.canonicalName}\");"
         }
     }
     out("  Object *selfslot = &(stackframe->slots[{slot}]);")
@@ -865,7 +862,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
         def part = o.signature.at(partnr)
         if (part.params.size > 0) then {
             out("  if (nparts > 0 && argcv[{partnr - 1}] < {part.params.size})")
-            out("    graceRaise(RequestError(), \"insufficient arguments to method {o.nameString}\");")
+            out("    graceRaise(RequestError(), \"insufficient arguments for method {o.canonicalName}\");")
         }
     }
     out("  Object params[{paramsUsed}];")
@@ -1305,7 +1302,7 @@ method compileOtherRequest(o, args, nparts, tailcall) {
     def callFlags = if (o.isSelfRequest) then { "CFLAG_SELF" } else { "0" }
     if (tailcall) then {
         out("  Object call{auto_count} = tailcall({target}, \"{escapedName}\","
-            ++ " {nparts}, partcv, params, 0);")
+            ++ " {nparts}, partcv, params, {callFlags});")
     } else {
         out("  Object call{auto_count} = callmethodflags({target}, \"{escapedName}\","
             ++ " {nparts}, partcv, params, {callFlags});")
