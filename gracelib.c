@@ -5378,10 +5378,10 @@ Object grace_prelude() {
     add_Method(c, "minigrace", &grace_minigrace);
     add_Method(c, "_methods", &prelude__methods)->flags ^= MFLAG_REALSELFONLY;
     add_Method(c, "primitiveArray", &prelude_PrimitiveArray);
-    add_Method(c, "become", &prelude_become);
-    add_Method(c, "unbecome", &prelude_unbecome);
+    add_Method(c, "become(2)", &prelude_become);
+    add_Method(c, "unbecome(1)", &prelude_unbecome);
     add_Method(c, "inBrowser", &prelude_inBrowser);
-    add_Method(c, "clone", &prelude_clone);
+    add_Method(c, "clone(1)", &prelude_clone);
     add_Method(c, "engine", &prelude_engine);
     add_Method(c, "true(1)object(1)", &prelude_true_object);
     add_Method(c, "false(1)object(1)", &prelude_false_object);
