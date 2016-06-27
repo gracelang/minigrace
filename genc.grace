@@ -170,10 +170,11 @@ method compilearray(o) {
     o.register := "array" ++ myc
 }
 method compilemember(o) {
-    // Member in value position is actually a nullary method call.
-    util.setline(o.line)
-    var c := ast.callNode.new(o, [ast.requestPart.request(o.value) withArgs( [] )])
-    var r := compilenode(c)
+    // memberNodes represent a nullary method request.
+    util.setPosition(o.line, o.linePos)
+    def parts =  [ ast.requestPart.request(o.nameString) withArgs [] ]
+    def c = ast.callNode.new(o.receiver, parts)
+    def r = compilenode(c)
     o.register := r
 }
 method compileobjouter(selfr, outerRef) {

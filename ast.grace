@@ -1469,6 +1469,7 @@ def memberNode = object {
         method isMember { true }
         method isCall { true }
 
+        method with { emptySeq }
         method arguments { emptySeq }
         method argumentsDo { }
         method accept(visitor : ASTVisitor) from(as) {
@@ -1856,7 +1857,7 @@ def opNode is public = object {
     }
     method toGrace(depth : Number) -> String {
         var s := ""
-        if ((self.left.kind == "op") && (self.left.value != self.value)) then {
+        if ((self.left.kind == "op") && {self.left.value != self.value}) then {
             s := "(" ++ self.left.toGrace(0) ++ ")"
         } else {
             s := self.left.toGrace(0)
@@ -1866,7 +1867,7 @@ def opNode is public = object {
         } else {
             s := s ++ " " ++ self.value ++ " "
         }
-        if ((self.right.kind == "op") && (self.right.value != self.value)) then {
+        if ((self.right.kind == "op") && {self.right.value != self.value}) then {
             s := s ++ "(" ++ self.right.toGrace(0) ++ ")"
         } else {
             s := s ++ self.right.toGrace(0)
