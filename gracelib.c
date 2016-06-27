@@ -3674,7 +3674,7 @@ Object module_sys_init() {
     add_Method(SysModule, "argv", &sys_argv);
     add_Method(SysModule, "elapsed", &sys_elapsed);
     add_Method(SysModule, "elapsedTime", &sys_elapsed);
-    add_Method(SysModule, "exit", &sys_exit);
+    add_Method(SysModule, "exit(1)", &sys_exit);
     add_Method(SysModule, "execPath", &sys_execPath);
     add_Method(SysModule, "environ", &sys_environ);
     add_Method(SysModule, "requestCount", &sys_requestCount);
