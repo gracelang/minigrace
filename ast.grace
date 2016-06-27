@@ -1,3 +1,4 @@
+#pragme noTypeChecks
 #pragma ExtendedLineups
 import "util" as util
 import "identifierKinds" as k
@@ -747,7 +748,7 @@ def typeDecNode is public = object {
     def kind is public = "typedec"
     var name is public := name'
     var value is public := typeValue
-    def nameString:String is public = name.value
+    def nameString is public = name.value
     var annotations is public := [ ]
     var typeParams is public := false
 
@@ -1270,7 +1271,7 @@ def objectNode is public = object {
         var value is public := b
         var superclass is public := superclass'
         var usedTraits is public := [ ]
-        var name:String is public := "object"
+        var name is public := "object"
         var inClass is public := false
         var inTrait is public := false
         var myLocalNames := false
@@ -1995,7 +1996,7 @@ def defDecNode = object {
         var name is public := name'
         var value is public := val
         var dtype is public := dtype'
-        def nameString:String is public = name.nameString
+        def nameString is public = name.nameString
         var annotations is public := [ ]
         var startToken is public := false
 
@@ -2106,7 +2107,7 @@ def varDecNode is public = object {
     var name is public := name'
     var value is public := val'
     var dtype is public := dtype'
-    def nameString:String is public = name.value
+    def nameString is public = name.value
     var annotations is public := [ ]
 
     method isPublic {
@@ -2523,20 +2524,20 @@ def signaturePart = object {
     method new {
         partName "" params []
     }
-    method partName(n:String) scope(s) {
+    method partName(n) scope(s) {
         def result = partName(n) params []
         result.scope := s
         result
     }
-    method partName(n:String) params(ps) scope(s) {
+    method partName(n) params(ps) scope(s) {
         def result = partName(n) params(ps)
         result.scope := s
         result
     }
-    method partName(n:String) {
+    method partName(n) {
         partName(n) params []
     }
-    class partName(n:String) params(ps) {
+    class partName(n) params(ps) {
         inherits baseNode
         def kind is public = "signaturepart"
         var name is public := n
@@ -2621,7 +2622,7 @@ def requestPart = object {
         result.scope := s
         result
     }
-    class request(rPart:String) withArgs(xs) {
+    class request(rPart) withArgs(xs) {
         inherits baseNode
         def kind is public = "callwithpart"
         var name is public := rPart
@@ -2698,7 +2699,7 @@ def commentNode = object {
     class new(val') {
         inherits baseNode
         def kind is public = "comment"
-        var value:String is public := val'
+        var value is public := val'
         var isPartialLine:Boolean is public := false
         var isPreceededByBlankLine is public := false
         var endLine is public := util.linenum
@@ -2750,7 +2751,7 @@ def commentNode = object {
     }
 }
 
-method wrap(str:String) to (l:Number) prefix (margin:String) {
+method wrap(str) to (l:Number) prefix (margin) {
     def ind = margin.size
     def len = max(ind + 4, l)
     if ((ind + str.size) <= len) then {
