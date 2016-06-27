@@ -553,39 +553,52 @@ method addFreshMethodsOf (moduleObject) to (gct) is confidential {
     // TODO: doesn't this just duplicate what's in 'classes' ? No: 'classes'
     // lists only classes declared inside a def'd object constructer.
     def freshmeths = [ ]
-    for (moduleObject.value) do { val->
-        if (val.isClass) then {
-            addFreshMethod (val) to (freshmeths) for (gct)
+    for (moduleObject.value) do { node->
+        if (node.isClass) then {
+            addFreshMethod (node) to (freshmeths) for (gct)
         }
     }
     gct.at "fresh-methods" put(freshmeths)
 }
 
-method addFreshMethod (val) to (freshlist) for (gct) is confidential {
-    freshlist.push(val.nameString)
-    def freshMethResult = val.body.last
-    if (freshMethResult.isObject) then {
+method addFreshMethod (node) to (freshlist) for (gct) is confidential {
+    def methName = node.nameString
+    freshlist.push(methName)
+    def freshMethExpression = node.body.last
+    if (freshMethExpression.isObject) then {
         def exportedMethods = emptyList
-        freshMethResult.scope.keysAndKindsDo { key, knd ->
+        freshMethExpression.scope.keysAndKindsDo { key, knd ->
             if (knd.forGct) then { exportedMethods.add(key) }
         }
-        gct.at "fresh:{val.nameString}" put (exportedMethods.sort)
-    } elseif {freshMethResult.isCall} then {
-        // we know that freshMethResult.value.isMember and
-        // freshMethResult.value.nameString == "clone"
-        def receiver = freshMethResult.value.receiver
-        if ((receiver.nameString == "prelude") && {
-          freshMethResult.with.first.args.first.nameString == "self"}) then {
-            gct.at "fresh:{val.nameString}" put(gct.at "public")
-        } elseif {(receiver.nameString == "self")} then {
-            gct.at "fresh:{val.nameString}" put(gct.at "public")
+        gct.at "fresh:{methName}" put (exportedMethods.sort)
+    } elseif {freshMethExpression.isCall} then {
+        // this deals with the two special cases, defined in
+        // ast.callNode.returnsObject.  The freshMethExpression must
+        // be a request of self.copy or prelude.clone(_)
+        def requestedName = freshMethExpression.nameString
+        if (requestedName == "copy") then {
+            gct.at "fresh:{methName}" put(gct.at "public")
+        } elseif {requestedName == "clone(1)"} then {
+            def cloneArg = node.with.first.args.first
+            if (cloneArg.isSelf) then {
+                gct.at "fresh:{methName}" put(gct.at "public")
+            } else {
+                gct.at "fresh:{methName}"
+                    put(gct.at "methods-of:{cloneArg.toGrace 0}" isAbsent {
+                        ProgrammingError.raise (
+                            "unrecognized fresh method tail-call:\n" ++
+                              freshMethExpression.pretty(0) ++ "\n" ++
+                                "Can't find methods-of:{cloneArg.toGrace 0} in gct." )
+                    } )
+            }
         } else {
+            // if it's not a call or an object constructor, why is it labelled as fresh?
             ProgrammingError.raise
-                "unrecognized fresh method tail-call: {freshMethResult.pretty(0)}"
+                "unrecognized fresh method tail-call: {freshMethExpression.pretty(0)}"
         }
     } else {
         ProgrammingError.raise
-            "fresh method result of an unexpected kind: {freshMethResult.pretty(0)}"
+            "fresh method result of an unexpected kind: {freshMethExpression.pretty(0)}"
     }
 }
 

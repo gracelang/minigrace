@@ -1079,9 +1079,12 @@ def callNode = object {
 
         method isCall { true }
         method returnsObject {
-            if (receiver.isImplicit) then { return false }
-            if (nameString == "clone") then { return true }
-            if (nameString == "copy") then { return true }
+            // we recognize two special calls as returning a fresh object
+            // self.copy, and prelude.clone(_)
+            if ((receiver.isImplicit || receiver.isPrelude) &&
+                  (nameString == "clone(1)")) then {return true}
+            if ((receiver.isImplicit || receiver.isSelf) &&
+                  (nameString == "copy")) then {return true}
             return false
         }
         method returnedObjectScope {
@@ -1471,7 +1474,7 @@ def memberNode = object {
         var receiver is public := receiver'
         var generics is public := false
         var isSelfRequest is public := false
-
+        
         method nameString { value }
         method canonicalName { value }
         method isMember { true }
