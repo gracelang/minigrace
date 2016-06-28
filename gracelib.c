@@ -4302,7 +4302,7 @@ Object *alloc_var() {
 Method* add_Method(ClassData c, const char *name,
         Object(*func)(Object, int, int*, Object*, int)) {
     int i;
-    for (i=0; c->methods[i].name != NULL; i++) {
+    for (i=0; i < c->methodsCapacity && c->methods[i].name != NULL; i++) {
         if (strcmp(name, c->methods[i].name) == 0) {
             Object(*tmpf)(Object, int, int*, Object*, int) = func;
             func = c->methods[i].func;
@@ -4312,9 +4312,16 @@ Method* add_Method(ClassData c, const char *name,
         }
     }
     if (i >= c->methodsCapacity) {
-        graceRaise(RuntimeError(),
-                   "in gracelib.c, class %s has capacity %i and is full; can't add method %s",
-                   c->name, c->methodsCapacity, name);
+        gc_pause();
+        Method* temp = c->methods;
+        c->methods = glmalloc(sizeof(Method) * c->methodsCapacity * 2);
+        int j;
+        for (j = 0; j < c->methodsCapacity; j++) {
+            c->methods[j] = temp[j];
+        }
+        c->methodsCapacity *= 2;
+        gc_unpause();
+        glfree(temp);
     }
     c->methods[i].flags = MFLAG_REALSELFONLY;
     c->methods[i].name = name;
