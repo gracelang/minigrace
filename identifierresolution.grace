@@ -564,6 +564,7 @@ method rewriteIdentifier(node) ancestors(as) {
     if (nm == "outer") then {
         def selfId = ast.identifierNode.new("self", false) scope(nodeScope)
         def memb = ast.memberNode.new("outer", selfId) scope(nodeScope)
+        if (as.parent.isCall) then { as.parent.onSelf }
         return memb
         // TODO: represent outer statically
     }
@@ -863,7 +864,7 @@ method setupContext(moduleObject) {
     preludeScope.addName "primitiveArray"
     preludeScope.addName "become(1)"
     preludeScope.addName "unbecome(1)"
-    preludeScope.addName "clone"
+    preludeScope.addName "clone(1)"
     preludeScope.addName "inBrowser"
     preludeScope.addName "engine"
 
