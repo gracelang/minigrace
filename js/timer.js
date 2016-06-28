@@ -3,7 +3,7 @@ function gracecode_timer() {
     o.methods.intervalList = [];
     o.methods.timeoutList = [];
 
-    o.methods["every()do"] = function(argcv, millisec, code) {
+    o.methods["every(1)do(1)"] = function(argcv, millisec, code) {
         var func = function() {
             minigrace.trapErrors(function() {
                 callmethod(code, "apply", [0]);
@@ -16,7 +16,7 @@ function gracecode_timer() {
         return new GraceNum(id);
     }
 
-    o.methods["after()do"] = function(argcv, millisec, code) {
+    o.methods["after(1)do(1)"] = function(argcv, millisec, code) {
         var func = function() {
             minigrace.trapErrors(function() {
                 callmethod(code, "apply", [0]);
@@ -29,7 +29,7 @@ function gracecode_timer() {
         return new GraceNum(id);
     }
 
-    o.methods.stop = function(argcv, id) {
+    o.methods["stop(1)"] = function(argcv, id) {
         var index = o.methods.intervalList.indexOf(id._value);
         if(index != -1) {
             clearInterval(id._value);
@@ -43,14 +43,14 @@ function gracecode_timer() {
 
     }
 
-    o.methods.stopAll = function() {
-        var list = o.methods.intervalList;
-        for(var i=0;i<list.length;i++)
+    o.methods.stopAll = function() {        for(var i=0;i<list.length;i++)
             clearInterval(list[i]);
 
         o.methods.intervalList = [];
 
         list = o.methods.timeoutList;
+        var list = o.methods.intervalList;
+
         for(var i=0;i<list.length;i++)
             clearTimeout(list[i]);
 
@@ -63,4 +63,4 @@ function gracecode_timer() {
 gracecode_timer.imports = [];
 
 if (typeof gctCache !== "undefined")
-    gctCache['timer'] = "modules:\nfresh-methods:\npath:\n timer\nclasses:\npublic:\n intervalList\n timeoutList\n every()do\n after()do\n stop\n stopAll\nconfidential:\n";
+    gctCache['timer'] = "modules:\nfresh-methods:\npath:\n timer\nclasses:\npublic:\n intervalList\n timeoutList\n every(1)do(1)\n after(1)do(1)\n stop(1)\n stopAll\nconfidential:\n";

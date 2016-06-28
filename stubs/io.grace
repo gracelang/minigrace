@@ -1,7 +1,7 @@
 type FileStream = Object & type {
     read -> Object
     getline -> Object
-    write -> Object
+    write (s:String) -> Object
     close -> Object
     seek -> Object
     seekForward (n:Number) -> Object
@@ -58,7 +58,7 @@ type Process = Object & type {
 class input ->  FileStream {
     method read -> Object { }
     method getline -> Object { }
-    method write -> Object { }
+    method write (s:String) -> Object { }
     method close -> Object { }
     method seek -> Object { }
     method seekForward (n:Number) -> Object { }
@@ -75,7 +75,7 @@ class input ->  FileStream {
 class output ->  FileStream {
     method read -> Object { }
     method getline -> Object { }
-    method write -> Object { }
+    method write (s:String) -> Object { }
     method close -> Object { }
     method seek -> Object { }
     method seekForward (n:Number) -> Object { }
@@ -92,7 +92,7 @@ class output ->  FileStream {
 class error ->  FileStream {
     method read -> Object { }
     method getline -> Object { }
-    method write -> Object { }
+    method write (s:String) -> Object { }
     method close -> Object { }
     method seek -> Object { }
     method seekForward (n:Number) -> Object { }
@@ -109,7 +109,7 @@ class error ->  FileStream {
 class open (fileName:String, mode:String) -> FileStream {
     method read -> Object { }
     method getline -> Object { }
-    method write -> Object { }
+    method write (s:String) -> Object { }
     method close -> Object { }
     method seek -> Object { }
     method seekForward (n:Number) -> Object { }

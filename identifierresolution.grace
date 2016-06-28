@@ -102,6 +102,7 @@ class newScopeIn(parent') kind(variety') {
         elements.contains(n)
     }
     method withSurroundingScopesDo (b) {
+        // do b in this scope and all surounding scopes.
         var cur := self
         while {b.apply(cur); cur.hasParent} do {
             cur := cur.parent
@@ -222,7 +223,7 @@ class newScopeIn(parent') kind(variety') {
     method isMethodScope {
         variety == "method"
     }
-    method resolveOuterMethod(name) {
+    method resolveOuterMethod(name) fromNode (aNode) {
         // replace name by outer.outer. ... .name,
         // depending on where name is declared.
         var mem := ast.identifierNode.new("self", false) scope(self)
@@ -230,9 +231,9 @@ class newScopeIn(parent') kind(variety') {
             if (s.contains(name)) then {
                 if (s.variety == "dialect") then {
                     return ast.memberNode.new(name,
-                        ast.identifierNode.new("prelude", false) scope(self)) scope(self)
+                        ast.identifierNode.new("prelude", false) scope(self)) scope(self).onSelf
                 }
-                return ast.memberNode.new(name, mem) scope(self)
+                return ast.memberNode.new(name, mem) scope(self).onSelf
             }
             match ( s.variety
             ) case { "object" ->
@@ -242,17 +243,20 @@ class newScopeIn(parent') kind(variety') {
                 mem := ast.memberNode.new("outer", mem) scope(self)
             } case { _ -> }
         }
-        // Not found - leave it alone
-        return ast.identifierNode.new(name, false) scope(self)
+        errormessages.syntaxError "no method {name}"
+                atRange(aNode.line, aNode.linePos, aNode.linePos + name.size - 1)
     }
-    method scopeReferencedBy(nd) {
+    method scopeReferencedBy(nd:ast.AstNode) {
         // Finds the scope referenced by astNode nd.
         // If nd references an object, then the returned
         // scope will have bindings for the methods of that object.
         // Otherwise, it will be the empty scope.
-//        util.log 70 verbose "looking for scope referenced by {nd.pretty 0}"
-        if (nd.kind == "identifier") then {
+
+        if (nd.isIdentifier) then {
             def sought = nd.nameString
+            if (sought == "outer") then {
+                return parent.enclosingObjectScope
+            }
             withSurroundingScopesDo {s->
                 if (s.contains(sought)) then {
                     return s.getScope(sought)
@@ -260,20 +264,19 @@ class newScopeIn(parent') kind(variety') {
             }
             errormessages.syntaxError "no method {sought}"
                 atRange(nd.line, nd.linePos, nd.linePos + sought.size - 1)
-        } elseif {nd.kind == "member"} then {
-            def receiverScope = self.scopeReferencedBy(nd.in)
-//            util.log 70 verbose "receiverScope = {receiverScope}"
-            if (nd.value == "outer") then {
-                return receiverScope.parent
-            }
-            return receiverScope.scopeReferencedBy(nd.asIdentifier)
-        } elseif {nd.kind == "call"} then {
-            return scopeReferencedBy(nd.value)
         } elseif {nd.kind == "op"} then {
             def receiverScope = self.scopeReferencedBy(nd.left)
             return receiverScope.scopeReferencedBy(nd.asIdentifier)
+        } elseif {nd.isCall} then { // this includes "memberNodes"
+            def receiver = nd.receiver
+            if (receiver.isImplicit) then {
+                util.log 60 verbose "inherits from implicit.{nd.nameString} on line {nd.line}"
+            }
+            def newNd = transformCall(nd)
+            def receiverScope = self.scopeReferencedBy(newNd.receiver)
+            return receiverScope.scopeReferencedBy(newNd.asIdentifier)
         }
-        ProgrammingError.raise("{nd.value} is not a Call, Member or Identifier\n"
+        ProgrammingError.raise("{nd.nameString} is not a Call, Member, Identifier or op.\n"
             ++ nd.pretty(0))
     }
     method enclosingObjectScope {
@@ -282,7 +285,7 @@ class newScopeIn(parent') kind(variety') {
         withSurroundingScopesDo { s ->
             if (s.isObjectScope) then { return s }
         }
-        ProgrammingError "no object scope found!"
+        ProgrammingError.raise "no object scope found!"
         // the outermost scope should always be a module scope,
         // which is an object scope.
     }
@@ -373,6 +376,9 @@ def universalScope = object {
 }
 
 method rewritematchblockterm(arg) {
+    // arg is an AstNode prepresenting the pattern from a pattern-block
+    // Answer a pair consisting of a new AstNode that does the pattren-match,
+    // and a list of bindings.
     util.setPosition(arg.line, arg.linePos)
     if (arg.kind == "num") then {
         return [arg, [] ]
@@ -383,7 +389,7 @@ method rewritematchblockterm(arg) {
     if (arg.kind == "boolean") then {
         return [arg, [] ]
     }
-    if ((arg.kind == "call") && {arg.value.value.substringFrom(1)to(6)
+    if ((arg.kind == "call") && {arg.receiver.nameString.substringFrom(1)to(6)
         == "prefix"}) then {
         return [arg, [] ]
     }
@@ -403,36 +409,24 @@ method rewritematchblockterm(arg) {
             }
         }
         def callpat = ast.callNode.new(
-            ast.memberNode.new(
-                "new",
                 ast.memberNode.new("MatchAndDestructuringPattern",
-                    ast.identifierNode.new("prelude", false)
-                )
-            ),
-            [ast.callWithPart.request "new" withArgs( [arg.value, ast.arrayNode.new(subpats)] )]
+                    ast.identifierNode.new("prelude", false)),
+            [ast.requestPart.request "new" withArgs( [arg.receiver, ast.arrayNode.new(subpats)] )]
         )
         return [callpat, bindings]
     }
-    if (arg.kind == "identifier") then {
+    if (arg.isIdentifier) then {
         def varpat = ast.callNode.new(
-            ast.memberNode.new(
-                "new",
                 ast.memberNode.new("VariablePattern",
-                    ast.identifierNode.new("prelude", false)
-                )
-            ),
-            [ast.callWithPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )]
+                    ast.identifierNode.new("prelude", false)),
+            [ast.requestPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )]
         )
         if (false != arg.dtype) then {
-            if (arg.dtype.kind == "identifier") then {
+            if (arg.dtype.isIdentifier) then {
                 return [ast.callNode.new(
-                    ast.memberNode.new(
-                        "new",
                         ast.memberNode.new("AndPattern",
-                            ast.identifierNode.new("prelude", false)
-                        )
-                    ),
-                    [ast.callWithPart.request "new" withArgs( [varpat, arg.dtype] )]
+                            ast.identifierNode.new("prelude", false)),
+                    [ast.requestPart.request "new" withArgs( [varpat, arg.dtype] )]
                 ), [arg] ]
             }
             def tmp = rewritematchblockterm(arg.dtype)
@@ -441,13 +435,9 @@ method rewritematchblockterm(arg) {
                 bindings.push(b)
             }
             def bindingpat = ast.callNode.new(
-                ast.memberNode.new(
-                    "new",
                     ast.memberNode.new("AndPattern",
-                        ast.identifierNode.new("prelude", false)
-                    )
-                ),
-                [ast.callWithPart.request "new" withArgs( [varpat, tmp.first ] )]
+                        ast.identifierNode.new("prelude", false)),
+                [ast.requestPart.request "new" withArgs( [varpat, tmp.first ] )]
             )
             return [bindingpat, bindings]
         }
@@ -474,34 +464,22 @@ method rewritematchblock(blk) {
     }
     if (arg.kind == "identifier") then {
         def varpat = ast.callNode.new(
-            ast.memberNode.new(
-                "new",
                 ast.memberNode.new("VariablePattern",
-                    ast.identifierNode.new("prelude", false)
-                )
-            ),
-            [ast.callWithPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )]
-        )
+                    ast.identifierNode.new("prelude", false)),
+            [ast.requestPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )] )
         if (false != arg.dtype) then {
             match (arg.dtype.kind)
                 case { "identifier" | "op" ->
                     pattern := ast.callNode.new(
-                        ast.memberNode.new("new",
                             ast.memberNode.new("AndPattern",
-                                ast.identifierNode.new("prelude", false)
-                                )
-                            ),
-                        [ast.callWithPart.request "new" withArgs( [varpat, arg.dtype] )])
+                                ast.identifierNode.new("prelude", false)),
+                        [ast.requestPart.request "new" withArgs( [varpat, arg.dtype] )] )
                 } case { _ ->
                     def tmp = rewritematchblockterm(arg.dtype)
                     def bindingpat = ast.callNode.new(
-                        ast.memberNode.new("new",
                             ast.memberNode.new("AndPattern",
-                                ast.identifierNode.new("prelude", false)
-                                )
-                            ),
-                        [ast.callWithPart.request "new" withArgs( [varpat, tmp.first ] )]
-                    )
+                                ast.identifierNode.new("prelude", false)),
+                        [ast.requestPart.request "new" withArgs( [varpat, tmp.first ] )] )
                     pattern := bindingpat
                     for (tmp.second) do {p->
                         // We can't name both p and the extra param binding
@@ -550,7 +528,7 @@ method rewriteIdentifier(node) ancestors(as) {
     // This method seems to do the following:
     // - id is self => do nothing
     // - id is super => do nothing
-    // - id is in an assignment position and a method ‹id›:= is in scope:
+    // - id is in an assignment position and a method ‹id›:=(_) is in scope:
     //          replace node by a method request
     // - id is in the lexical scope: store binding occurence of id in node
     // - id is a method in an outer object scope: transform into member nodes.
@@ -563,16 +541,14 @@ method rewriteIdentifier(node) ancestors(as) {
     // former identifier resolution pass to keep the C code generator (genc) happy.
     // They may represent things that APB doesn't understand, or bugs in genc
 
-    var nm := node.value
+    var nm := node.nameString
     def nodeScope = node.scope
-    def nmGets = nm ++ ":="
+    def nmGets = nm ++ ":=(1)"
     util.setPosition(node.line, node.linePos)
     if (node.isAssigned) then {
         if (nodeScope.hasDefinitionInNest(nmGets)) then {
             if (nodeScope.kindInNest(nmGets) == k.methdec) then {
-                def meth = nodeScope.resolveOuterMethod(nmGets)
-                def meth2 = ast.memberNode.new(nm, meth.in)
-                return meth2
+                return node     // do nothing; this will be tranformed by the enclosing bind
             }
         }
     }
@@ -599,8 +575,7 @@ method rewriteIdentifier(node) ancestors(as) {
     if (v == "built-in") then { return node }
     if (v == "dialect") then {
         def p = ast.identifierNode.new("prelude", false) scope(nodeScope)
-        def m = ast.memberNode.new(nm, p) scope(nodeScope)
-        return m
+        return ast.memberNode.new(nm, p) scope(nodeScope).onSelf
     }
     if (nodeKind.isParameter) then { return node }
     if (nodeKind == k.typedec) then { return node }
@@ -617,7 +592,7 @@ method rewriteIdentifier(node) ancestors(as) {
     if (definingScope == nodeScope.enclosingObjectScope) then {
         return ast.memberNode.new(nm,
             ast.identifierNode.new("self", false) scope(nodeScope)
-        ) scope(nodeScope)
+        ) scope(nodeScope).onSelf
     }
     if (nodeScope.isObjectScope.not
              && {nodeScope.isInSameObjectAs(definingScope)}) then {
@@ -632,7 +607,7 @@ method rewriteIdentifier(node) ancestors(as) {
         // defined in the enclosing method scope have to go in a closure
         // In that case, leaving the id untouched may be wrong
     if (v == "block") then { return node }
-    return nodeScope.resolveOuterMethod(nm)
+    return nodeScope.resolveOuterMethod(nm) fromNode(node)
 }
 method checkForAmbiguityOf (node) definedIn (definingScope) as (kind) {
     def currentScope = node.scope
@@ -800,6 +775,8 @@ method resolveIdentifiers(topNode) {
         if ( node.isAppliedOccurenceOfIdentifier ) then {
             rewriteIdentifier(node) ancestors(as)
             // TODO — opNodes don't contain identifiers!
+        } elseif { node.isCall } then {
+            transformCall(node)
         } elseif { node.isInherits } then {
             transformInherits(node) ancestors(as)
         } elseif { node.isBind } then {
@@ -864,15 +841,14 @@ method setupContext(moduleObject) {
     builtInsScope.addName "..." as(k.defdec)
 
     preludeScope.addName "asString"
-    preludeScope.addName "::"
-    preludeScope.addName "++"
-    preludeScope.addName "=="
-    preludeScope.addName "!="
-    preludeScope.addName "≠"
-    preludeScope.addName "for()do"
-    preludeScope.addName "while()do"
-    preludeScope.addName "print"
-    preludeScope.addName "native()code"
+    preludeScope.addName "::(1)"
+    preludeScope.addName "++(1)"
+    preludeScope.addName "==(1)"
+    preludeScope.addName "≠(1)"
+    preludeScope.addName "for(1)do(1)"
+    preludeScope.addName "while(1)do(1)"
+    preludeScope.addName "print(1)"
+    preludeScope.addName "native(1)code(1)"
     preludeScope.addName "Exception" as(k.defdec)
     preludeScope.addName "RuntimeError" as(k.defdec)
     preludeScope.addName "NoSuchMethod" as(k.defdec)
@@ -885,23 +861,22 @@ method setupContext(moduleObject) {
     preludeScope.addName "minigrace"
     preludeScope.addName "_methods"
     preludeScope.addName "primitiveArray"
-    preludeScope.addName "become"
-    preludeScope.addName "unbecome"
+    preludeScope.addName "become(1)"
+    preludeScope.addName "unbecome(1)"
     preludeScope.addName "clone"
     preludeScope.addName "inBrowser"
     preludeScope.addName "engine"
 
-    graceObjectScope.addName "isMe" as (k.graceObjectMethod)
-    graceObjectScope.addName "!=" as (k.graceObjectMethod)
-    graceObjectScope.addName "≠" as (k.graceObjectMethod)
+    graceObjectScope.addName "isMe(1)" as (k.graceObjectMethod)
+    graceObjectScope.addName "≠(1)" as (k.graceObjectMethod)
     graceObjectScope.addName "basicAsString" as (k.graceObjectMethod)
     graceObjectScope.addName "asString" as (k.graceObjectMethod)
     graceObjectScope.addName "asDebugString" as (k.graceObjectMethod)
-    graceObjectScope.addName "::" as (k.graceObjectMethod)
+    graceObjectScope.addName "::(1)" as (k.graceObjectMethod)
 
     booleanScope.addName "prefix!"
-    booleanScope.addName "&&"
-    booleanScope.addName "||"
+    booleanScope.addName "&&(1)"
+    booleanScope.addName "||(1)"
     booleanScope.addName "not"
 
     builtInsScope.addName "graceObject"
@@ -975,7 +950,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         }
         method visitCall (o) up (as) {
             o.scope := as.parent.scope
-            def callee = o.value
+            def callee = o.receiver
             if (callee.kind == "identifier") then {
                 callee.inRequest := true
             }
@@ -1137,9 +1112,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             if (o.returnsObject) then {
                 myParent.scope.at(o.nameString) putScope(o.returnedObjectScope)
                 def objectName = myParent.name
-                if ((objectName != "object") && (o.body.last.isObject)) then {
-                    o.body.last.name := objectName ++ "." ++ o.body.last.name
-                }
             }
             true
         }
@@ -1343,19 +1315,33 @@ method readableStringFrom(xs:Sequence) {
 }
 
 method transformBind(bindNode) ancestors(as) {
-    // bindNode is (a shallow copy of) a bindNode.  If it is binding
-    // a "member", transform it into a request on a setter method
+    // bindNode is (a shallow copy of) a bindNode.  If it is binding a
+    // "member" or an identifier, transform it into a request on a setter
 
     def dest = bindNode.dest
     def currentScope = bindNode.scope
-    if ( dest.kind == "member" ) then {
-        dest.value := dest.value ++ ":="
-        ast.callNode.new(dest,
-            ( [ast.callWithPart.request(dest.value) withArgs ( [bindNode.value] ) ] ) )
-            scope(currentScope)
-    } else {
-        bindNode
+    util.setPosition(bindNode.line, bindNode.linePos)
+    if ( dest.isMember ) then {
+        def nm = dest.nameString
+        def nmGets = nm ++ ":="
+        def part = ast.requestPart.request(nmGets) withArgs [bindNode.value]
+                scope(currentScope)
+        return ast.callNode.new(dest.receiver, [part]) scope(currentScope)
+    } elseif { dest.isIdentifier } then {
+        def nm = dest.nameString
+        def nmGets = nm ++ ":=(1)"
+        if (currentScope.hasDefinitionInNest(nmGets)) then {
+            if (currentScope.kindInNest(nmGets) == k.methdec) then {
+                def rcvr = currentScope.resolveOuterMethod(nmGets) fromNode(bindNode).receiver
+                def part = ast.requestPart.request(nm ++ ":=")
+                        withArgs [ bindNode.value ] scope(currentScope)
+                return ast.callNode.new(rcvr, [ part ]) scope(currentScope)
+            } else {
+                util.log 20 verbose "bind check 2 failed"
+            }
+        }
     }
+    bindNode
 }
 
 
@@ -1377,32 +1363,38 @@ method transformInherits(inhNode) ancestors(as) {
     def superScope = currentScope.scopeReferencedBy(superObject)
     if (inhNode.isUse) then {
         // a `use` statement; no transformation necessary
-    } elseif (inhNode.inheritsFromCall) then {
-        var superCall := inhNode.value
-        superCall.with.push(ast.callWithPart.request "object"
-            withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
-        def newmem = ast.memberNode.new(superCall.value.value ++ "()object",
-            superCall.value.target
-        ) scope(currentScope)
-        def newcall = ast.callNode.new(newmem, superCall.with) scope(currentScope)
-        inhNode.value := newcall
     } elseif {inhNode.inheritsFromMember} then {
-        def newmem = ast.memberNode.new(inhNode.value.value ++ "()object",
-            inhNode.value.in
-        )
-        def newcall = ast.callNode.new(newmem, [
-            ast.callWithPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
-            ast.callWithPart.request "object" withArgs (
+        def newcall = ast.callNode.new(inhNode.value.receiver, [
+            ast.requestPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
+            ast.requestPart.request "$object" withArgs (
                 [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope)
             ]
         ) scope(currentScope)
         inhNode.value := newcall
+    } elseif (inhNode.inheritsFromCall) then {
+        var superCall := inhNode.value
+        superCall.with.push(ast.requestPart.request "$object"
+            withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
     } elseif {! util.extensions.contains "ObjectInheritance"} then {
         errormessages.syntaxError "inheritance must be from a freshly-created object"
             atRange(inhNode.line, superObject.linePos,
                 superObject.linePos + superObject.nameString.size - 1)
     }
     inhNode
+}
+
+method transformCall(cNode) -> ast.AstNode {
+    if (cNode.receiver.isImplicit) then {
+        def rcvr = cNode.scope.resolveOuterMethod(cNode.nameString) fromNode(cNode)
+        if (rcvr.isIdentifier) then {
+            util.log 60 verbose "Transformed {cNode.pretty 0} answered identifier {rcvr.nameString}"
+            return cNode
+        }
+        cNode.receiver := rcvr.receiver
+        cNode.onSelf
+    } else {
+        cNode
+    }
 }
 
 method rewriteMatches(topNode) {

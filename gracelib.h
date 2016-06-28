@@ -38,12 +38,14 @@ typedef struct Method {
 
 #define OBJECT_HEADER int32_t flags; \
                       ClassData class;
+#define isUserObj(o) (o->flags & OFLAG_USEROBJ)
 
 struct ClassData {
     OBJECT_HEADER;
     char *name;
     Method *methods;
     int nummethods;
+    int methodsCapacity;   // capacity of the `methods` array
     void (*mark)(void *);
     void (*release)(void *);
     const char *definitionModule;
@@ -123,7 +125,6 @@ ClassData alloc_class(const char *, int);
 ClassData alloc_class2(const char *, int, void(*)(void *));
 ClassData alloc_class3(const char *, int, void(*)(void *), void(*)(void *));
 Object alloc_Type(const char *, int);
-Object alloc_userobj(int, int);
 Object alloc_userobj2(int, int, ClassData);
 Object alloc_obj2(int, int);
 Object* alloc_var();

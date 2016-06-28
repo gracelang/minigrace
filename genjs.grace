@@ -154,7 +154,7 @@ method compilearray(o) {
 method compilemember(o) {
     // Member in value position is actually a nullary method call.
     util.setline(o.line)
-    var c := ast.callNode.new(o, [ast.callWithPart.request(o.value) withArgs( [] )]) scope(o.scope)
+    var c := ast.callNode.new(o, [ast.requestPart.request(o.value) withArgs( [] )]) scope(o.scope)
     var r := compilenode(c)
     o.register := r
 }
@@ -404,7 +404,7 @@ method compiletypedec(o) {
     out "var {varf(tName)} = {val};"
     o.register := "type{myc}"
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name.value) scope(enclosing)],
+        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.name.value) scope(enclosing)],
             [o.name], ast.typeType) scope(enclosing))
     }
 }
@@ -823,7 +823,7 @@ method compiledefdec(o) {
     var val := compilenode(o.value)
     out("var " ++ varf(nm) ++ " = " ++ val ++ ";")
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name.value) scope(currentScope)],
+        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.name.value) scope(currentScope)],
             [o.name], false) scope(currentScope))
         if (ast.findAnnotation(o, "parent")) then {
             out("this.superobj = {val};")
@@ -858,11 +858,11 @@ method compilevardec(o) {
         out "myframe.addVar(\"{escapestring(nm)}\", function() \{return {varf(nm)}});"
     }
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name.value) scope(currentScope)],
+        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.name.value) scope(currentScope)],
             [o.name], false) scope(currentScope))
         def assignID = ast.identifierNode.new(o.name.value ++ ":=", false) scope(currentScope)
         def tmpID = ast.identifierNode.new("_var_assign_tmp", false)
-        compilenode(ast.methodNode.new(assignID,
+        compilenode(ast.methodNode.new(
             [ast.signaturePart.partName(assignID.value) params( [tmpID] ) scope(currentScope)],
             [ast.bindNode.new(o.name, tmpID)], false)  scope(currentScope))
         out("this.methods[\"{nm}\"].debug = \"var\";")
@@ -984,8 +984,8 @@ method compilecall(o) {
     } else { 
         "callmethod"
     }
-    if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "super")}) then {
+    if ((o.value.kind == "member") && {(o.value.receiver.isIdentifier)
+        && (o.value.receiver.value == "super")}) then {
         var call := "var call" ++ auto_count ++ " = callmethodsuper(this"
             ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
         call := call ++ partl ++ "]"
@@ -994,10 +994,10 @@ method compilecall(o) {
         }
         call := call ++ ");"
         out(call)
-    } elseif { (o.value.kind == "member") && {
-        o.value.in.kind == "member"} && {
-            o.value.in.value == "outer"} } then {
-        def ot = compilenode(o.value.in)
+    } elseif { (o.value.isMember) && {
+        o.value.receiver.isMember} && {
+            o.value.receiver.value == "outer"} } then {
+        def ot = compilenode(o.value.receiver)
         var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "({ot}"
             ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
         call := call ++ partl ++ "]"
@@ -1008,13 +1008,13 @@ method compilecall(o) {
         out("onOuter = true;");
         out("onSelf = true;");
         out(call)
-    } elseif { (o.value.kind == "member") && {(o.value.in.kind == "identifier")
-            && (o.value.in.value == "self") && (o.value.value == "outer")}
+    } elseif { (o.value.kind == "member") && {(o.value.receiver.isIdentifier)
+            && (o.value.receiver.value == "self") && (o.value.value == "outer")}
         } then {
         out("var call{auto_count} = " ++ requestCall ++ "(superDepth, "
             ++ "\"outer\", [0]);")
-    } elseif { (o.value.kind == "member") && {(o.value.in.kind == "identifier")
-            && (o.value.in.value == "self")} } then {
+    } elseif { (o.value.kind == "member") && {(o.value.receiver.isIdentifier)
+            && (o.value.receiver.value == "self")} } then {
         var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(this"
             ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
         call := call ++ partl ++ "]"
@@ -1024,8 +1024,8 @@ method compilecall(o) {
         call := call ++ ");"
         out("onSelf = true;");
         out(call)
-    } elseif { (o.value.kind == "member") && {(o.value.in.kind == "identifier")
-            && (o.value.in.value == "prelude")} } then {
+    } elseif { (o.value.kind == "member") && {(o.value.receiver.isIdentifier)
+            && (o.value.receiver.value == "prelude")} } then {
         var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(var_prelude, \""
             ++ escapestring(o.value.value) ++ "\", ["
         call := call ++ partl ++ "]"
@@ -1034,8 +1034,8 @@ method compilecall(o) {
         }
         call := call ++ ");"
         out(call)
-    } elseif { o.value.kind == "member" } then {
-        obj := compilenode(o.value.in)
+    } elseif { o.value.isMember } then {
+        obj := compilenode(o.value.receiver)
         var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(" ++ obj
             ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
         call := call ++ partl ++ "]"
@@ -1080,7 +1080,7 @@ method compileimport(o) {
     out "    new GraceString('could not find module {o.path}'));"
     out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", {formatModname(o.path)});")
     def methodIdent = o.value
-    def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.partName(o.nameString) scope(currentScope)],
+    def accessor = (ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(currentScope)],
         [methodIdent], o.dtype) scope(currentScope))
     accessor.line := o.line
     accessor.linePos := o.linePos
@@ -1210,7 +1210,7 @@ method compilenode(o) {
     } elseif { oKind == "member" } then {
         compilemember(o)
     } elseif { oKind == "call" } then {
-        if (o.value.isMember && {o.value.in.value == "prelude"}) then {
+        if (o.value.isMember && {o.value.receiver.value == "prelude"}) then {
             if (o.nameString == "print") then {
                 compilePrint(o)
             } elseif {o.nameString == "native()code"} then {

@@ -197,18 +197,18 @@ Object alloc_CurlEasy() {
         CurlEasy = alloc_class3("CurlEasy", 14, (void*)&CurlEasy__mark,
                 (void*)&CurlEasy__release);
         add_Method(CurlEasy, "perform", &CurlEasy_perform);
-        add_Method(CurlEasy, "onReceive", &CurlEasy_onReceive);
-        add_Method(CurlEasy, "url:=", &CurlEasy_url_assign);
+        add_Method(CurlEasy, "onReceive(1)", &CurlEasy_onReceive);
+        add_Method(CurlEasy, "url:=(1)", &CurlEasy_url_assign);
         add_Method(CurlEasy, "responseCode", &CurlEasy_responseCode);
         add_Method(CurlEasy, "effectiveUrl", &CurlEasy_effectiveUrl);
-        add_Method(CurlEasy, "onHeader", &CurlEasy_onHeader);
-        add_Method(CurlEasy, "followLocation:=", &CurlEasy_followLocation);
-        add_Method(CurlEasy, "includeResponseHeader:=",
+        add_Method(CurlEasy, "onHeader(1)", &CurlEasy_onHeader);
+        add_Method(CurlEasy, "followLocation:=(1)", &CurlEasy_followLocation);
+        add_Method(CurlEasy, "includeResponseHeader:=(1)",
                 &CurlEasy_includeResponseHeader);
-        add_Method(CurlEasy, "escape", &CurlEasy_escape);
-        add_Method(CurlEasy, "unescape", &CurlEasy_unescape);
-        add_Method(CurlEasy, "==", &Object_Equals);
-        add_Method(CurlEasy, "!=", &Object_NotEquals);
+        add_Method(CurlEasy, "escape(1)", &CurlEasy_escape);
+        add_Method(CurlEasy, "unescape(1)", &CurlEasy_unescape);
+        add_Method(CurlEasy, "==(1)", &Object_Equals);
+        add_Method(CurlEasy, "!=(1)", &Object_NotEquals);
         add_Method(CurlEasy, "asString", &Object_asString);
         add_Method(CurlEasy, "asDebugString", &Object_asString);
     }

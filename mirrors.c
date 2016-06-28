@@ -75,7 +75,7 @@ Object MirrorMethod_paramcounts(Object self, int nparams, int *argcv,
     Object carg;
     for (i=0; i<s->method->type->nparts; i++) {
         carg = alloc_Float64(s->method->type->argcv[i]);
-        callmethod(l, "push", 1, cargcv, &carg);
+        callmethod(l, "push(1)", 1, cargcv, &carg);
     }
     gc_unpause();
     return l;
@@ -142,8 +142,8 @@ Object MirrorMethod_request_with_args(Object self, int nparts, int *argcv, Objec
 Object alloc_MirrorMethod(Method *method, Object obj) {
     if (MirrorMethodClass == NULL) {
         MirrorMethodClass = alloc_class("MirrorMethod", 7);
-        add_Method(MirrorMethodClass, "request", &MirrorMethod_request);
-        add_Method(MirrorMethodClass, "requestWithArgs", &MirrorMethod_request_with_args);
+        add_Method(MirrorMethodClass, "request(1)", &MirrorMethod_request);
+        add_Method(MirrorMethodClass, "requestWithArgs(1)", &MirrorMethod_request_with_args);
         add_Method(MirrorMethodClass, "name", &MirrorMethod_name);
         add_Method(MirrorMethodClass, "asString", &MirrorMethod_asString);
         add_Method(MirrorMethodClass, "asDebugString", &MirrorMethod_asString);
@@ -184,7 +184,7 @@ Object Mirror_methods(Object self, int nparams, int *argcv, Object *args,
     for (i=0; i<c->nummethods; i++) {
         m = &c->methods[i];
         arg = alloc_MirrorMethod(m, o);
-        callmethod(l, "push", 1, &tmp, &arg);
+        callmethod(l, "push(1)", 1, &tmp, &arg);
     }
     gc_unpause();
     return l;
@@ -200,12 +200,12 @@ Object Mirror_methodNames(Object self, int nparams, int *argcv, Object *args,
     int partcv[] = {1};
     gc_pause();
     Object emptyList = alloc_BuiltinList();
-    Object result = callmethod(grace_prelude(), "set", 1, partcv, &emptyList);
+    Object result = callmethod(grace_prelude(), "set(1)", 1, partcv, &emptyList);
     while (current != NULL) {
         c = current->class;
         for (i=0; i < c->nummethods; i++) {
             mn = alloc_String(c->methods[i].name);
-            callmethod(result, "add", 1, partcv, &mn);
+            callmethod(result, "add(1)", 1, partcv, &mn);
         }
         if (current->flags & OFLAG_USEROBJ) {
             current = ((struct UserObject *) current)->super;
@@ -227,7 +227,7 @@ Object alloc_mirror(Object obj) {
         MirrorClass = alloc_class("Mirror", 5);
         add_Method(MirrorClass, "methods", &Mirror_methods);
         add_Method(MirrorClass, "methodNames", &Mirror_methodNames);
-        add_Method(MirrorClass, "getMethod", &Mirror_getMethod);
+        add_Method(MirrorClass, "getMethod(1)", &Mirror_getMethod);
         add_Method(MirrorClass, "asString", &Mirror_asString);
         add_Method(MirrorClass, "asDebugString", &Mirror_asString);
     }
@@ -263,8 +263,8 @@ Object module_mirrors_init() {
     ClassData c = alloc_class("mirrors", 4);
     add_Method(c, "asString", &mirrors_asString);
     add_Method(c, "asDebugString", &mirrors_asString);
-    add_Method(c, "reflect", &mirrors_reflect);
-    add_Method(c, "loadDynamicModule", &mirrors_loadDynamicModule);
+    add_Method(c, "reflect(1)", &mirrors_reflect);
+    add_Method(c, "loadDynamicModule(1)", &mirrors_loadDynamicModule);
     Object o = alloc_newobj(0, c);
     mirrors_module = o;
     gc_root(mirrors_module);

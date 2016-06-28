@@ -163,18 +163,16 @@ method compilearray(o) {
         r := compilenode(a)
         out("  params[0] = {r};")
         out("  partcv[0] = 1;")
-        out("  callmethodflags(array{myc}, \"push\", 1, partcv, params, CFLAG_SELF);")
+        out("  callmethodflags(array{myc}, \"push(1)\", 1, partcv, params, CFLAG_SELF);")
         i := i + 1
     }
     out("  gc_unpause();")
     o.register := "array" ++ myc
 }
 method compilemember(o) {
-    // Member in value position is actually a nullary method call.
-    util.setline(o.line)
-    var c := ast.callNode.new(o, [ast.callWithPart.request(o.value) withArgs( [] )])
-    var r := compilenode(c)
-    o.register := r
+    // memberNodes represent a nullary method request.
+    o.generics := false         // because compilecall does generics incorrectly
+    compilecall(o, false)
 }
 method compileobjouter(selfr, outerRef) {
     var myc := auto_count
@@ -315,9 +313,7 @@ method compileobjvardecmeth(o, selfr, pos) {
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
     outprint("\}")
-    out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {rflags});")
-    var nmw := nm ++ ":="
-    nmw := escapestring2(nmw)
+    out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\", &reader_{escmodname}_{inm}_{myc}, {rflags});")
     outprint("Object writer_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
@@ -325,7 +321,7 @@ method compileobjvardecmeth(o, selfr, pos) {
     outprint("  uo->data[{pos}] = args[0];")
     outprint("  return done;");
     outprint("\}")
-    out("  Method *writer{myc} = addmethodrealflags({selfr}, \"{enm}:=\",&writer_{escmodname}_{inm}_{myc}, {wflags});")
+    out("  Method *writer{myc} = addmethodrealflags({selfr}, \"{enm}:=(1)\", &writer_{escmodname}_{inm}_{myc}, {wflags});")
     out("  reader{myc}->definitionModule = modulename;")
     out("  writer{myc}->definitionModule = modulename;")
     out("  reader{myc}->definitionLine = {o.line};")
@@ -350,8 +346,6 @@ method compileobjvardec(o, selfr, pos) {
     outprint("  return uo->data[{pos}];")
     outprint("\}")
     out("  addmethodreal({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc});")
-    var nmw := nm ++ ":="
-    nmw := escapestring2(nmw)
     outprint("Object writer_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
@@ -359,7 +353,7 @@ method compileobjvardec(o, selfr, pos) {
     outprint("  uo->data[{pos}] = args[0];")
     outprint("  return done;");
     outprint("\}")
-    out("  addmethodreal({selfr}, \"{enm}:=\", &writer_{escmodname}_{inm}_{myc});")
+    out("  addmethodreal({selfr}, \"{enm}:=(1)\", &writer_{escmodname}_{inm}_{myc});")
 }
 method compileobject(o, outerRef) {
     var origInBlock := inBlock
@@ -489,13 +483,12 @@ method compileobject(o, outerRef) {
 method compileblock(o) {
     def origInBlock = inBlock
     inBlock := true
-    var myc := auto_count
+    def myc = auto_count
     auto_count := auto_count + 1
     var obj := "block{myc}"
     out("  Object {obj} = alloc_Block(NULL, NULL, \"{modname}\", {linenum});")
     out("  gc_frame_newslot({obj});")
-    var id := ast.identifierNode.new("_apply", false)
-    var applymeth := ast.methodNode.new(id, [ast.signaturePart.partName(id) params(o.params)], o.body, false)
+    var applymeth := ast.methodNode.new([ast.signaturePart.partName("_apply") params(o.params)], o.body, false)
     applymeth.selfclosure := true
     compilemethod(applymeth, obj, 0)
     if (false != o.matchingPattern) then {
@@ -503,39 +496,14 @@ method compileblock(o) {
         out("((struct UserObject *){obj})->data[1] = {pat};")
     }
     if (false != o.extraRuntimeData) then {
-        def erdid = ast.identifierNode.new("extraRuntimeData", false)
-        def erdmeth = ast.methodNode.new(erdid,
-            [ast.signaturePart.partName(erdid)],
+        def erdmeth = ast.methodNode.new(
+            [ast.signaturePart.partName("extraRuntimeData")],
             [o.extraRuntimeData], false)
         compilemethod(erdmeth, obj, 2)
     }
     // TODO: get rid of extraRuntimeData — it doesn't appear to be used.
     o.register := obj
     inBlock := origInBlock
-}
-method compiletype(o) {     // dead code!
-    def myc = auto_count
-    auto_count := auto_count + 1
-    def escName = escapestring2(o.value)
-    def idName = escapeident(o.value)
-    out("// Type {o.value}")
-    out("Object type{myc} = alloc_Type(\"{escName}\", {o.methods.size});")
-    if (!o.anonymous) then {
-        out("*var_{idName} = type{myc};")
-    }
-    for (o.methods) do {meth->
-        def mnm = escapestring2(meth.value)
-        out("add_Method((ClassData)type{myc}, \"{mnm}\", NULL);")
-    }
-    o.register := "done"
-    if (o.anonymous) then {
-        o.register := "type{myc}"
-    }
-    if (compilationDepth == 1) then {
-        def idd = ast.identifierNode.new(o.value, false)
-        compilenode(ast.methodNode.new(idd, [ast.signaturePart.partName(o.value)],
-            [idd], false))
-    }
 }
 method compiletypedec(o) {
     def myc = auto_count
@@ -552,7 +520,7 @@ method compiletypedec(o) {
     out("  *var_{idName} = {o.value.register};")
     o.register := "done"
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name)],
+        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString)],
             [o.name], false))  // TODO: should be TypeType
     }
 }
@@ -562,7 +530,7 @@ method compiletypeliteral(o) {
     out("//   Type literal ")
     out("    Object type{myc} = alloc_Type(\"{o.name}\", {o.methods.size});")
     for (o.methods) do {meth->
-        def mnm = escapestring2(meth.value)
+        def mnm = escapestring2(meth.nameString)
         out("    add_Method((ClassData)type{myc}, \"{mnm}\", NULL);")
     }
     // TODO: types in the type literal
@@ -573,7 +541,7 @@ method compilemethod(o, selfobj, pos) {
     // Calculate body, find difference of usedvars/declaredvars, if closure
     // then build as such. At top of method body bind var_x as usual, but
     // set to pointer from the additional closure parameter.
-    out "// method \"{o.nameString}\""
+    out "// method \"{o.canonicalName}\""
     var origParamsUsed := paramsUsed
     paramsUsed := 1
     var origPartsUsed := partsUsed
@@ -589,7 +557,8 @@ method compilemethod(o, selfobj, pos) {
     declaredvars := []
     var myc := auto_count
     auto_count := auto_count + 1
-    var name := o.value.value
+    def name = o.nameString
+    def escapedName = escapestring2(name)
     var nm := name ++ myc
     var numslots := 0
     var slot := 0
@@ -598,8 +567,8 @@ method compilemethod(o, selfobj, pos) {
     out("  int curarg = 0;")
     out("  int pushcv[] = \{1\};")
     if (!o.selfclosure) then {
-        out "  if (nparts < {o.signature.size} && args)"
-        out("    graceRaise(RequestError(), \"missing argument list for {name.quoted} (probably "
+        out "  if (nparts < {o.numParamLists} && args)"
+        out("    graceRaise(RequestError(), \"missing argument list for {o.canonicalName} (probably "
             ++ "reflection error): got %i lists, expected "
             ++ "{o.signature.size}.\", nparts);")
     }
@@ -621,9 +590,9 @@ method compilemethod(o, selfobj, pos) {
                 }
             }
         }
-        if (!o.selfclosure) then {
+        if (!o.selfclosure && (part.params.size > 0)) then {
             out "  if (argcv && argcv[{partnr - 1}] != {part.params.size})"
-            out "    graceRaise(RequestError(), \"wrong number of arguments for {part.name.quoted}\");"
+            out "    graceRaise(RequestError(), \"wrong number of arguments for part {part.canonicalName}\");"
         }
     }
     out("  Object *selfslot = &(stackframe->slots[{slot}]);")
@@ -744,7 +713,7 @@ method compilemethod(o, selfobj, pos) {
         out("  struct StackFrameObject *stackframe = alloc_StackFrame({numslots}, NULL);")
         out("  pushclosure(NULL);")
     }
-    out("  pushstackframe(stackframe, \"{escapestring2(name)}\");")
+    out("  pushstackframe(stackframe, \"{escapedName}\");")
     out("  int frame = gc_frame_new();")
     out("  gc_frame_newslot((Object)stackframe);")
     out "  Object methodInheritingObject = NULL;"
@@ -752,7 +721,7 @@ method compilemethod(o, selfobj, pos) {
         def part = o.signature.at(partnr)
         if (part.params.size > 0) then {
             out("  if (nparts > 0 && argcv[{partnr - 1}] < {part.params.size})")
-            out("    graceRaise(RequestError(), \"insufficient arguments to method {name.quoted}\");")
+            out("    graceRaise(RequestError(), \"insufficient arguments to method {o.canonicalName.quoted}\");")
         }
     }
     // We need to detect which parameters are used in a closure, and
@@ -814,12 +783,12 @@ method compilemethod(o, selfobj, pos) {
         var uo2 := "uo{myc}"
         out("  struct UserObject *{uo2} = (struct UserObject*){selfobj};")
         out("  {uo2}->data[{pos}] = emptyclosure;")
-        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
+        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapedName}\", &{litname}, {pos});")
         compilemethodtypes(litname, o)
     } else {
         out("  block_savedest({selfobj});")
         out("  Object closure" ++ myc ++ " = createclosure("
-            ++ closurevars.size ++ ", \"{escapestring2(name)}\");")
+            ++ closurevars.size ++ ", \"{escapedName}\");")
         out("  setclosureframe(closure{myc}, stackframe);")
         for (closurevars) do { v ->
             if (v == "self") then {
@@ -832,7 +801,7 @@ method compilemethod(o, selfobj, pos) {
         var uo := "uo{myc}"
         out("  struct UserObject *{uo} = (struct UserObject*){selfobj};")
         out("  {uo}->data[{pos}] = (Object)closure{myc};")
-        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
+        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapedName}\", &{litname}, {pos});")
         compilemethodtypes(litname, o)
     }
     for (o.annotations) do {ann->
@@ -859,7 +828,8 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
     def myc = auto_count
     auto_count := auto_count + 1
     var litname := escapeident("meth_{modname}_{escapestring2(nm)}_object")
-    def name = escapestring2(o.value.value ++ "()object")
+    def name = o.nameString ++ "$object(1)"
+    def escapedName = escapestring2(name)
     outswitchup
     if (closurevars.size > 0) then {
         if (o.selfclosure) then {
@@ -880,7 +850,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
         out("  struct StackFrameObject *stackframe = alloc_StackFrame({numslots}, NULL);")
         out("  pushclosure(NULL);")
     }
-    out("  pushstackframe(stackframe, \"{escapestring2(name)}\");")
+    out("  pushstackframe(stackframe, \"{escapedName}\");")
     out("  int frame = gc_frame_new();")
     out("  gc_frame_newslot((Object)stackframe);")
     var sumAccum := "0"
@@ -892,7 +862,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
         def part = o.signature.at(partnr)
         if (part.params.size > 0) then {
             out("  if (nparts > 0 && argcv[{partnr - 1}] < {part.params.size})")
-            out("    graceRaise(RequestError(), \"insufficient arguments to method {name}\");")
+            out("    graceRaise(RequestError(), \"insufficient arguments for method {o.canonicalName}\");")
         }
     }
     out("  Object params[{paramsUsed}];")
@@ -913,12 +883,12 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
     output := oldout
     if (selfobj == false) then {
     } elseif { closurevars.size == 0 } then {
-        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
+        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapedName}\", &{litname}, {pos});")
         compilemethodtypes(litname, o)
     } else {
         out("  block_savedest({selfobj});")
         out("  Object closure" ++ myc ++ " = createclosure("
-            ++ closurevars.size ++ ", \"{escapestring2(name)}\");")
+            ++ closurevars.size ++ ", \"{escapedName}\");")
         out("  setclosureframe(closure{myc}, stackframe);")
         for (closurevars) do { v ->
             if (v == "self") then {
@@ -929,7 +899,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
             }
         }
         var uo := "uo{myc}"
-        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
+        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapedName}\", &{litname}, {pos});")
     }
     for (o.annotations) do {ann->
         if ((ann.kind == "identifier") && {ann.value == "confidential"}) then {
@@ -964,7 +934,7 @@ method compilemethodtypes(litname, o) {
                         out("meth_{litname}->type->types[{pi}] "
                             ++ "= type_{typeid};")
                         out("meth_{litname}->type->names[{pi}] "
-                            ++ "= \"{escapestring2(p.value)}\";")
+                            ++ "= \"{escapestring2(p.nameString)}\";")
                     }
                 }
             }
@@ -1077,8 +1047,7 @@ method compilebind(o) {
         usedvars.push(nm)
         out("  *var_{nm} = {val};")
         out("  if ({val} == undefined)")
-        out("    callmethod(done, \"assignment\", 0, NULL, NULL);")
-        // APB: not clear what the above test is trying to accomplish
+        out("    graceRaise(ProgrammingError(), \"attempting to use an ininitilized variable\");");
         auto_count := auto_count + 1
         o.register := "done"
     } else {
@@ -1096,9 +1065,9 @@ method compiledefdec(o) {
     var val := compilenode(o.value)
     out("  *var_{nm} = {val};")
     out("  if ({val} == undefined)")
-    out("    callmethod(done, \"assignment\", 0, NULL, NULL);")
+    out("    graceRaise(ProgrammingError(), \"attempting to use an ininitilized variable\");");
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name)], [o.name], false))
+        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString)], [o.name], false))
         if (ast.findAnnotation(o, "parent")) then {
             out("  ((struct UserObject *)self)->super = {val};")
         }
@@ -1122,11 +1091,10 @@ method compilevardec(o) {
         out("    callmethod(done, \"assignment\", 0, NULL, NULL);")
     }
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name)], [o.name], false))
-        def assignID = ast.identifierNode.new(o.name.value ++ ":=", false)
-        def tmpID = ast.identifierNode.new("_var_assign_tmp", false)
-        compilenode(ast.methodNode.new(assignID, [ast.signaturePart.partName(assignID) params( [tmpID] )],
-            [ast.bindNode.new(o.name, tmpID)], false))
+        compilenode(ast.methodNode.new( [ast.signaturePart.partName(o.nameString)], [o.name], false))
+        def paramId = ast.identifierNode.new("_var_assign_tmp", false)
+        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString ++ ":=") params( [paramId] )],
+            [ast.bindNode.new(o.name, paramId)], false))
     }
     o.register := "done"
 }
@@ -1204,7 +1172,7 @@ method compileop(o) {
     out("  int op_slot_right_{myc} = gc_frame_newslot({right});")
     auto_count := auto_count + 1
     if ((o.left.kind == "identifier") && {o.left.value == "super"}) then {
-        def evl = escapestring2(o.value)
+        def evl = escapestring2(o.nameString)
         out("  params[0] = {right};")
         out("  partcv[0] = 1;")
         out("  Object opresult{myc} = callmethod4(self, "
@@ -1232,7 +1200,7 @@ method compileop(o) {
         }
         out("  params[0] = {right};")
         out("  partcv[0] = 1;")
-        out("  Object {rnm}{auto_count} = callmethod({left}, \"{o.value}\", "
+        out("  Object {rnm}{auto_count} = callmethod({left}, \"{o.nameString}\", "
             ++ "1, partcv, params);")
         o.register := rnm ++ auto_count
         auto_count := auto_count + 1
@@ -1240,19 +1208,13 @@ method compileop(o) {
         out("  params[0] = {right};")
         out("  partcv[0] = 1;")
         out("  Object opresult{auto_count} = "
-            ++ "callmethod({left}, \"{o.value.quoted}\", 1, partcv, params);")
+            ++ "callmethod({left}, \"{o.nameString.quoted}\", 1, partcv, params);")
         o.register := "opresult" ++ auto_count
         auto_count := auto_count + 1
     }
 }
-method compilecall(o, tailcall) {
-    def myc = auto_count
-    auto_count := auto_count + 1
-    var args := []
-    var obj := ""
-    var evl
+method compileArguments(o, args) {
     var i := 0
-    out("  int callframe{myc} = gc_frame_new();")
     for (o.with) do { part ->
         for (part.args) do { p ->
             var r := compilenode(p)
@@ -1283,97 +1245,88 @@ method compilecall(o, tailcall) {
         }
         i := 0
     }
-    evl := escapestring2(o.value.value)
-    if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "super")}) then {
-        out "// call case 1: super request"
-        for (args) do { arg ->
-            out("  params[{i}] = {arg};")
-            i := i + 1
-        }
-        for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
-        }
-        out("  Object call{auto_count} = callmethod4(self, \"{evl}\", "
-            ++ "{nparts}, partcv, params, ((flags >> 24) & 0xff) + 1, "
-            ++ "CFLAG_SELF);")
-    } elseif {(o.value.kind == "member") && {
-        o.value.in.kind == "member"} && {
-            o.value.in.value == "outer"} } then {
-        out "// call case 2: outer request"
-        def ot = compilenode(o.value.in)
-        for (args) do { arg ->
-            out("  params[{i}] = {arg};")
-            i := i + 1
-        }
-        for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
-        }
-        out("  Object call{auto_count} = callmethodflags({ot}, \"{evl}\", "
-            ++ "{nparts}, partcv, params, CFLAG_SELF);")
-    } elseif { (o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "self") && (o.value.value == "outer")} } then {
-        out "// call case 3: self.outer request"
-        out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
-            ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
-    } elseif { (o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "self")} } then {
-        out "// call case 4: self request"
-        for (args) do { arg ->
-            out("  params[{i}] = {arg};")
-            i := i + 1
-        }
-        for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
-        }
-        out("  Object call{auto_count} = callmethodflags(self, \"{evl}\", "
-            ++ "{nparts}, partcv, params, CFLAG_SELF);")
-    } elseif { (o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "prelude")} } then {
-        out "// call case 5: prelude request"
-        for (args) do { arg ->
-            out("  params[{i}] = {arg};")
-            i := i + 1
-        }
-        for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
-        }
-        out("  Object call{auto_count} = callmethodflags(prelude, \"{evl}\", "
-            ++ "{nparts}, partcv, params, CFLAG_SELF);")
-    } elseif { o.value.kind == "member" } then {
-        out "// call case 6: other member request"
-        obj := compilenode(o.value.in)
-        for (args) do { arg ->
-            out("  params[{i}] = {arg};")
-            i := i + 1
-        }
-        for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
-        }
-        if (tailcall) then {
-            out("  Object call{auto_count} = tailcall({obj}, \"{evl}\",")
-            out("    {nparts}, partcv, params, 0);")
-        } else {
-            out("  Object call{auto_count} = callmethod({obj}, \"{evl}\",")
-            out("    {nparts}, partcv, params);")
-        }
+    nparts
+}
+method assembleArguments(o, args) {
+    var i := 0
+    args.do { arg ->
+        out "  params[{i}] = {arg};"
+        i := i + 1
+    }
+    for (o.with.indices) do { partnr ->
+        out "  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};"
+    }
+}
+method compileSuperRequest(o, args, nparts) {
+    out "// call case 1: super request"
+    assembleArguments(o, args)
+    def escapedName = escapestring2(o.nameString)
+    out("  Object call{auto_count} = callmethod4(self, \"{escapedName}\", "
+        ++ "{nparts}, partcv, params, ((flags >> 24) & 0xff) + 1, "
+        ++ "CFLAG_SELF);")
+}
+method compileOuterRequest(o, args, nparts) {
+    out "// call case 2: outer request"
+    def ot = "outer{auto_count}"
+    out("  Object {ot} = callmethod3(self, \"outer\", "
+        ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
+    assembleArguments(o, args)
+    def escapedName = escapestring2(o.nameString)
+    out("  Object call{auto_count} = callmethodflags({ot}, \"{escapedName}\", "
+        ++ "{nparts}, partcv, params, CFLAG_SELF);")
+}
+method compileSelfOuterRequest(o, args, nparts) {
+    out "// call case 3: self.outer request"
+    out("  Object call{auto_count} = callmethod3(self, \"outer\", "
+        ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
+}
+method compileSelfRequest(o, args, nparts) {
+    out "// call case 4: self request"
+    assembleArguments(o, args)
+    def escapedName = escapestring2(o.nameString)
+    out("  Object call{auto_count} = callmethodflags(self, \"{escapedName}\", "
+        ++ "{nparts}, partcv, params, CFLAG_SELF);")
+}
+method compilePreludeRequest(o, args, nparts) {
+    out "// call case 5: prelude request"
+    assembleArguments(o, args)
+    def escapedName = escapestring2(o.nameString)
+    out("  Object call{auto_count} = callmethodflags(prelude, \"{escapedName}\", "
+        ++ "{nparts}, partcv, params, CFLAG_SELF);")
+}
+method compileOtherRequest(o, args, nparts, tailcall) {
+    out "// call case 6: other requests"
+    def target = compilenode(o.receiver)
+    assembleArguments(o, args)
+    def escapedName = escapestring2(o.nameString)
+    def callFlags = if (o.isSelfRequest) then { "CFLAG_SELF" } else { "0" }
+    if (tailcall) then {
+        out("  Object call{auto_count} = tailcall({target}, \"{escapedName}\","
+            ++ " {nparts}, partcv, params, {callFlags});")
     } else {
-        out "// call case 7: all other requests"
-        obj := "self"
-        for (args) do { arg ->
-            out("  params[{i}] = {arg};")
-            i := i + 1
-        }
-        for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
-        }
-        if (tailcall) then {
-            out("  Object call{auto_count} = tailcall(self, \"{evl}\",")
-            out("    {nparts}, partcv, params, 0);")
-        } else {
-            out("  Object call{auto_count} = callmethod(self, \"{evl}\",")
-            out("    {nparts}, partcv, params);")
-        }
+        out("  Object call{auto_count} = callmethodflags({target}, \"{escapedName}\","
+            ++ " {nparts}, partcv, params, {callFlags});")
+    }
+}
+method compilecall(o, tailcall) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    out("  int callframe{myc} = gc_frame_new();")
+    var args := []
+    def nparts = compileArguments(o, args)
+    def receiver = o.receiver
+    if (receiver.isSuper) then {
+        compileSuperRequest(o, args, nparts)
+    } elseif { receiver.isOuter } then {
+        compileOuterRequest(o, args, nparts)
+    } elseif { receiver.isSelf && { o.nameString == "outer" } } then {
+        compileSelfOuterRequest(o, args, nparts)
+    } elseif { receiver.isSelf } then {
+        compileSelfRequest(o, args, nparts)
+    } elseif { receiver.isPrelude } then {
+        compilePreludeRequest(o, args, nparts)
+    } else {
+        compileOtherRequest(o, args, nparts, tailcall)
     }
     out("  gc_frame_end(callframe{myc});")
     o.register := "call" ++ auto_count
@@ -1439,10 +1392,11 @@ method compileimport(o) {
     }
     out("  *var_{nm} = {modg};")
     if (compilationDepth == 1) then {
+//      declaredvars.push(nm);
         def methodIdent = o.value
         methodIdent.line := o.line
         methodIdent.linePos := o.linePos
-        def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.partName(o.name)],
+        def accessor = (ast.methodNode.new([ast.signaturePart.partName(o.nameString)],
                         [methodIdent], o.dtype))
         accessor.line := o.line
         accessor.linePos := o.linePos
@@ -1599,10 +1553,10 @@ method compilenode(o) {
     } elseif { oKind == "member" } then {
         compilemember(o)
     } elseif { oKind == "call" } then {
-        if (o.value.isMember && {o.value.in.value == "prelude"}) then {
-            if (o.nameString == "print") then {
+        if (o.receiver.isPrelude) then {
+            if (o.nameString == "print(1)") then {
                 compilePrint(o)
-            } elseif {o.nameString == "native()code"} then {
+            } elseif {o.nameString == "native(1)code(1)"} then {
                 compileNativeCode(o)
             } else {
                 compilecall(o, false)
@@ -1930,7 +1884,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
         out("  int partcv_push[] = \{1\};")
         out("  int i; for (i=0; i<argc; i++) \{")
         out("    params[0] = alloc_String(argv[i]);")
-        out("    callmethodflags(tmp_argv, \"push\", 1, partcv_push, params, CFLAG_SELF);")
+        out("    callmethodflags(tmp_argv, \"push(1)\", 1, partcv_push, params, CFLAG_SELF);")
         out("  \}")
         out("  module_sys_init_argv(tmp_argv);")
         out("  module_{escmodname}_init();")
