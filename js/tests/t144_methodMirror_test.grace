@@ -13,9 +13,11 @@ method describe (methodMirror) {
     print "method {methodMirror.name} has {methodMirror.paramcounts} parameters."
 }
 
-def exampleMirror = mirror.reflect(foo).getMethod "example"
+def fooMirror = mirror.reflect(foo)
+def exampleMirror = fooMirror.getMethod "example(1)"
+print "got exampleMirror"
 describe(exampleMirror)
-def exampleAndMirror = mirror.reflect(foo).getMethod "example()and"
+def exampleAndMirror = mirror.reflect(foo).getMethod "example(2)and(1)"
 describe(exampleAndMirror)
 def noParamsMirror = mirror.reflect(foo).getMethod "noParams"
 describe(noParamsMirror)
