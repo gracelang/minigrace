@@ -4468,7 +4468,7 @@ Object Class_asString(Object self, int nparts, int *argcv,
 }
 static inline void initialise_Class() {
     if (Class == NULL) {
-        int numClassMethods = 5;
+        int numClassMethods = 6;
         Class = glmalloc(sizeof(struct ClassData));
         Class->flags = 3;
         Class->class = Class;
@@ -4483,6 +4483,7 @@ static inline void initialise_Class() {
         add_Method(Class, "|(1)", &literal_or);
         add_Method(Class, "asString", &Class_asString);
         add_Method(Class, "::(1)", &Object_bind);
+        add_Method(Class, "methodNames", &Type_methodNames);
     }
 }
 ClassData alloc_class(const char *name, int nummethods) {
