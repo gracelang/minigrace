@@ -188,12 +188,7 @@ class lazySequenceOver<T> (source: Iterable<T>)
         method hasNext {
         // To determine if this iterator has a next element, we have to find
         // an acceptable element; this is then cached, for the use of next
-            if (cacheLoaded) then { return true }
-            try {
-                cache := nextAcceptableElement
-                cacheLoaded := true
-            } catch { ex:IteratorExhausted -> return false }
-            return true
+            if (cacheLoaded) then { true } else { hasNextAcceptableElement }
         }
         method next {
             if (cacheLoaded.not) then { cache := nextAcceptableElement }
@@ -205,8 +200,22 @@ class lazySequenceOver<T> (source: Iterable<T>)
         // predicate; if there is none, raises IteratorExhausted.
             while { true } do {
                 def outerNext = sourceIterator.next
-                def acceptable = predicate.apply(outerNext)
-                if (acceptable) then { return outerNext }
+                def isAcceptable = predicate.apply(outerNext)
+                if (isAcceptable) then { return outerNext }
+            }
+        }
+        method hasNextAcceptableElement is confidential {
+        // returns true is there is another element in the underlying iterator
+        // satisfying predicate, otherwise false
+            while { true } do {
+                if (sourceIterator.hasNext.not) then { return false }
+                def outerNext = sourceIterator.next
+                def isAcceptable = predicate.apply(outerNext)
+                if (isAcceptable) then {
+                    cacheLoaded := true
+                    cache := outerNext
+                    return true
+                }
             }
         }
     }
