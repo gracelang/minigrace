@@ -1,28 +1,27 @@
 math's methods are: 
-    !=
-    ++
-    ::
-    abs
-    acos
+    ++(1)
+    ::(1)
+    abs(1)
+    acos(1)
     asDebugString
     asString
-    asin
-    atan
+    asin(1)
+    atan(1)
     basicAsString
-    cos
-    exp
-    isMe
-    lg
-    ln
-    log10
+    cos(1)
+    exp(1)
+    isMe(1)
+    lg(1)
+    ln(1)
+    log10(1)
     outer
     pi
     random
-    sin
-    sqrt
-    tan
+    sin(1)
+    sqrt(1)
+    tan(1)
     π
-    ≠
+    ≠(1)
 sin(90°) = 1
 cos(0°) = 1
 tan(45°) = 1
