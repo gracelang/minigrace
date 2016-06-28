@@ -1447,7 +1447,7 @@ type Binding<K,T> = {
     key -> K
     value -> T
     hash -> Number
-    == -> Boolean
+    ==(other) -> Boolean
 }
 
 def binding = object {
