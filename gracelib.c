@@ -2440,7 +2440,7 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 37);
+        String = alloc_class("String", 36);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "asDebugString", &String_QuotedString);
         add_Method(String, "::(1)", &Object_bind);
@@ -2448,7 +2448,6 @@ Object alloc_String(const char *data) {
         add_Method(String, "size", &String_size);
         add_Method(String, "sizeIfUnknown(1)", &String_size);
         add_Method(String, "at(1)", &String_at);
-        add_Method(String, "[]", &String_at);
         add_Method(String, "contains(1)", &String_Contains);
         add_Method(String, "==(1)", &String_Equals);
         add_Method(String, ">(1)", &String_Greater);
