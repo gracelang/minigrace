@@ -624,7 +624,7 @@ method checkForAmbiguityOf (node) definedIn (definingScope) as (kind) {
         }
     }
     util.log 60 verbose "currentScope = {currentScope}\n defines {name} as {kind}\nconflictingScope = {conflictingScope}\n defines {name} as {conflictingKind}"
-    errormessages.syntaxError "{name} is both {kind}, and defined in an enclosing scope{more}."
+    errormessages.syntaxError "{node.canonicalName} is both {kind}, and defined in an enclosing scope{more}."
         atRange(node.line, node.linePos, node.linePos + name.size - 1)
 }
 method checkForReservedName(node) {
@@ -1195,7 +1195,7 @@ method gatherInheritedNames(node) is confidential {
     }
     inhNode.exclusions.do { exId ->
         inhNode.providedNames.remove(exId.nameString) ifAbsent {
-            errormessages.syntaxError("can't exclude {exId.nameString} " ++
+            errormessages.syntaxError("can't exclude {exId.canonicalName} " ++
                 "because it is not present in the inherited object")
                 atRange(exId.line, exId.linePos,
                         exId.linePos + exId.nameString.size - 1)
@@ -1238,7 +1238,7 @@ method gatherUsedNames(objNode) is confidential {
         }
         t.exclusions.do { exId ->
             t.providedNames.remove(exId.nameString) ifAbsent {
-                errormessages.syntaxError("can't exclude {exId.nameString} " ++
+                errormessages.syntaxError("can't exclude {exId.canonicalName} " ++
                     "because it is not available in the trait")
                     atRange(exId.line, exId.linePos,
                             exId.linePos + exId.nameString.size - 1)

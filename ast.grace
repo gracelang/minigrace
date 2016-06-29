@@ -1691,7 +1691,8 @@ def identifierNode = object {
         var generics is public := false
         var isDeclaredByParent is public := false
 
-        method nameString { value }     //  value changes when parsing "[]"
+        method nameString { value }
+        method canonicalName { value }
         method quoted { value.quoted }
         method isIdentifier { true }
         
