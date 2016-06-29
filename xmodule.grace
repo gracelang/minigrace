@@ -66,16 +66,16 @@ method checkDialect(moduleObject) {
                 currentDialect.moduleObject := dobj
                 def mths = mirrors.reflect(dobj).methods
                 for (mths) do { m ->
-                    if (m.name == "checker") then {
+                    if (m.name == "checker(1)") then {
                         currentDialect.hasParseChecker := true
                     }
-                    if (m.name == "astChecker") then {
+                    if (m.name == "astChecker(1)") then {
                         currentDialect.hasAstChecker := true
                     }
-                    if (m.name == "atModuleEnd") then {
+                    if (m.name == "atModuleEnd(1)") then {
                         currentDialect.hasAtEnd := true
                     }
-                    if (m.name == "atModuleStart") then {
+                    if (m.name == "atModuleStart(1)") then {
                         currentDialect.hasAtStart := true
                     }
                 }

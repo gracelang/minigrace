@@ -9,6 +9,7 @@ def staticVisitor = object {
     }
 
     method visitDefDec(v) is public {
+        print "visiting def dec {v.pretty 0}"
         if (false == v.dtype) then {
             CheckerFailure.raise ("no type given to declaration"
                 ++ " of def '{v.name.value}'") with (v.name)
@@ -42,6 +43,7 @@ def staticVisitor = object {
     }
 }
 method checker(values) is public {
+    print "starting checker"
     for (values) do {v->
         v.accept(staticVisitor)
     }
