@@ -178,6 +178,7 @@ class newScopeIn(parent') kind(variety') {
         return false
     }
     method kindInNest(nm) {
+        // NEVER answers `inherited` or `fromTrait` !
         withSurroundingScopesDo {s->
             if (s.contains(nm)) then {
                 def kd = s.kind(nm)
@@ -606,25 +607,15 @@ method transformIdentifier(node) ancestors(as) {
     return nodeScope.resolveOuterMethod(nm) fromNode(node)
 }
 method checkForAmbiguityOf (node) definedIn (definingScope) as (kind) {
-    util.log 60 verbose "checking node {node.pretty 0} defined in {definingScope} as {kind}"
     def currentScope = node.scope
-    if (kind.fromParent.not) then {
-        util.log 60 verbose "{node.line}:{node.nameString} is OK because kind {kind} is not from parent"
-        return
-    }
-    if (currentScope.enclosingObjectScope != definingScope) then {
-        util.log 60 verbose "{node.line}:{node.nameString} is OK because currentScope.enclosingObjectScope = {currentScope.enclosingObjectScope} ≠ definingScope = {definingScope}"
-        return }
+    if (kind.fromParent.not) then { return }
+    if (currentScope.enclosingObjectScope != definingScope) then { return }
     def name = node.nameString
     def conflictingScope = definingScope.parent.thatDefines(name) ifNone {
-        util.log 60 verbose "{node.line}:{node.nameString} is OK because there's no conflicting definition"
         return
     }
     def conflictingKind = conflictingScope.kind(name)
-    if (conflictingKind.fromParent) then {
-        util.log 60 verbose "{node.line}:{node.nameString} is OK because conflicting definition is {conflictingKind}"
-        return
-    }
+    if (conflictingKind.fromParent) then { return }
     var more := ""
     if (conflictingScope.elementLines.contains(name)) then {
         def earlierDef = conflictingScope.elementLines.get(name)
@@ -1397,8 +1388,9 @@ method transformCall(cNode) -> ast.AstNode {
             util.log 60 verbose "Transformed {cNode.pretty 0} answered identifier {rcvr.nameString}"
             return cNode
         }
+        def definingScope = s.thatDefines(methodName)
         checkForAmbiguityOf (cNode)
-            definedIn (s.thatDefines(methodName)) as (s.kindInNest(methodName))
+            definedIn (definingScope) as (definingScope.kind(methodName))
         cNode.receiver := rcvr.receiver
         cNode.onSelf
     } else {
