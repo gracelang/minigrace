@@ -441,7 +441,7 @@ def testSuite is public = object {
         newSuite.name := aName
         for (mirror.reflect(example).methods) do { each ->
             if (each.name.startsWith "test") then {
-                if (! each.name.endsWith "()object") then {
+                if (! each.name.endsWith "$object(1)") then {
                     // we should also check that there are no arguments
                     // but a mirror on a method with no arguments currently
                     // has a partcount of 1!
