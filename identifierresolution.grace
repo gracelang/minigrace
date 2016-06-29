@@ -116,11 +116,7 @@ class newScopeIn(parent') kind(variety') {
     method keysAndKindsDo (action) {
         elements.keysAndValuesDo(action)
     }
-    method kind (n) {
-        def kd:DeclKind = elements.get(n)
-        if (DeclKind.match(kd).not) then { print "kind of {n} is {k}" }
-        kd
-    }
+    method kind (n) { elements.get(n) }
     method at(n) putScope(scp) {
         elementScopes.put(n, scp)
     }
@@ -235,13 +231,12 @@ class newScopeIn(parent') kind(variety') {
                 }
                 return ast.memberNode.new(name, mem) scope(self).onSelf
             }
-            match ( s.variety
-            ) case { "object" ->
+            if (s.variety == "object") then {
                 mem := ast.memberNode.new("outer", mem) scope(self)
-            } case { "class" ->
+            } elseif {s.variety == "class"} then {
                 mem := ast.memberNode.new("outer", mem) scope(self)
                 mem := ast.memberNode.new("outer", mem) scope(self)
-            } case { _ -> }
+            }
         }
         errormessages.syntaxError "no method {name}"
                 atRange(aNode.line, aNode.linePos, aNode.linePos + name.size - 1)
@@ -517,7 +512,7 @@ method rewritematchblock(blk) {
     return newblk
 }
 
-method rewriteIdentifier(node) ancestors(as) {
+method transformIdentifier(node) ancestors(as) {
     // node is a (copy of an) ast node that represents an applied occurence of
     // an identifer id.   This implies that node is a leaf in the ast.
     // This method may or may not transform node into another ast.
@@ -774,8 +769,7 @@ method resolveIdentifiers(topNode) {
 
     topNode.map { node, as ->
         if ( node.isAppliedOccurenceOfIdentifier ) then {
-            rewriteIdentifier(node) ancestors(as)
-            // TODO — opNodes don't contain identifiers!
+            transformIdentifier(node) ancestors(as)
         } elseif { node.isCall } then {
             transformCall(node)
         } elseif { node.isInherits } then {
@@ -1385,8 +1379,10 @@ method transformInherits(inhNode) ancestors(as) {
 }
 
 method transformCall(cNode) -> ast.AstNode {
+    def methodName = cNode.nameString
+    def s = cNode.scope
     if (cNode.receiver.isImplicit) then {
-        def rcvr = cNode.scope.resolveOuterMethod(cNode.nameString) fromNode(cNode)
+        def rcvr = s.resolveOuterMethod(methodName) fromNode(cNode)
         if (rcvr.isIdentifier) then {
             util.log 60 verbose "Transformed {cNode.pretty 0} answered identifier {rcvr.nameString}"
             return cNode
