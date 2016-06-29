@@ -1056,7 +1056,7 @@ Object alloc_Exception(char *name, Object parent) {
         add_Method(ExceptionClass, "match(1)", &Exception_match);
         add_Method(ExceptionClass, "refine(1)", &Exception_refine);
         add_Method(ExceptionClass, "raise(1)", &Exception_raise);
-        add_Method(ExceptionClass, "raiseWith(2)", &Exception_raiseWith);
+        add_Method(ExceptionClass, "raise(1)with(1)", &Exception_raiseWith);
         add_Method(ExceptionClass, "parent", &Exception_parent);
         add_Method(ExceptionClass, "==(1)", &Exception_equals);
         add_Method(ExceptionClass, "≠(1)", &Object_NotEquals);
