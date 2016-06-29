@@ -607,15 +607,14 @@ method transformIdentifier(node) ancestors(as) {
 }
 method checkForAmbiguityOf (node) definedIn (definingScope) as (kind) {
     def currentScope = node.scope
-    if (currentScope != definingScope) then { return done }
-    // TODO This isn't quite right:  currentScope might be a block (or method)
-    // node might be defined by inheritance in the object containing currentScope,
-    // and also in an enclosing scope.
     if (kind.fromParent.not) then { return }
-    def name = node.value
-    def conflictingScope = currentScope.parent.thatDefines(name) ifNone {
+    if (currentScope.enclosingObjectScope != definingScope) then { return }
+    def name = node.nameString
+    def conflictingScope = definingScope.parent.thatDefines(name) ifNone {
         return
     }
+    def conflictingKind = conflictingScope.kind(name)
+    if (conflictingKind.fromParent) then { return }
     var more := ""
     if (conflictingScope.elementLines.contains(name)) then {
         def earlierDef = conflictingScope.elementLines.get(name)
@@ -623,7 +622,8 @@ method checkForAmbiguityOf (node) definedIn (definingScope) as (kind) {
             more := " at line {earlierDef}"
         }
     }
-    errormessages.syntaxError "{name} is both {kind} and defined in an enclosing scope{more}."
+    util.log 60 verbose "currentScope = {currentScope}\n defines {name} as {kind}\nconflictingScope = {conflictingScope}\n defines {name} as {conflictingKind}"
+    errormessages.syntaxError "{name} is both {kind}, and defined in an enclosing scope{more}."
         atRange(node.line, node.linePos, node.linePos + name.size - 1)
 }
 method checkForReservedName(node) {
@@ -1387,6 +1387,8 @@ method transformCall(cNode) -> ast.AstNode {
             util.log 60 verbose "Transformed {cNode.pretty 0} answered identifier {rcvr.nameString}"
             return cNode
         }
+        checkForAmbiguityOf (cNode)
+            definedIn (s.thatDefines(methodName)) as (s.kindInNest(methodName))
         cNode.receiver := rcvr.receiver
         cNode.onSelf
     } else {
