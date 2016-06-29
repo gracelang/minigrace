@@ -606,15 +606,25 @@ method transformIdentifier(node) ancestors(as) {
     return nodeScope.resolveOuterMethod(nm) fromNode(node)
 }
 method checkForAmbiguityOf (node) definedIn (definingScope) as (kind) {
+    util.log 60 verbose "checking node {node.pretty 0} defined in {definingScope} as {kind}"
     def currentScope = node.scope
-    if (kind.fromParent.not) then { return }
-    if (currentScope.enclosingObjectScope != definingScope) then { return }
+    if (kind.fromParent.not) then {
+        util.log 60 verbose "{node.line}:{node.nameString} is OK because kind {kind} is not from parent"
+        return
+    }
+    if (currentScope.enclosingObjectScope != definingScope) then {
+        util.log 60 verbose "{node.line}:{node.nameString} is OK because currentScope.enclosingObjectScope = {currentScope.enclosingObjectScope} ≠ definingScope = {definingScope}"
+        return }
     def name = node.nameString
     def conflictingScope = definingScope.parent.thatDefines(name) ifNone {
+        util.log 60 verbose "{node.line}:{node.nameString} is OK because there's no conflicting definition"
         return
     }
     def conflictingKind = conflictingScope.kind(name)
-    if (conflictingKind.fromParent) then { return }
+    if (conflictingKind.fromParent) then {
+        util.log 60 verbose "{node.line}:{node.nameString} is OK because conflicting definition is {conflictingKind}"
+        return
+    }
     var more := ""
     if (conflictingScope.elementLines.contains(name)) then {
         def earlierDef = conflictingScope.elementLines.get(name)
