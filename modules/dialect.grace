@@ -232,7 +232,7 @@ method runRules(node) {
     cache.atKey(node) do { value -> return value }
     currentLine := node.line
 
-    var result := FailedMatch.new(node)
+    var result := prelude.FailedMatch.new(node)
     for(rules) do { each ->
         def matched = each.match(node)
         if(matched) then {
@@ -254,18 +254,18 @@ method check(nodes) -> Done {
 
 type AstNode = { kind -> String }
 
-class aPatternMatchingNode(kind : String) -> Pattern {
+class aPatternMatchingNode(kind : String) -> prelude.Pattern {
     inherits BasicPattern.new
 
     method match(obj : Object) {
         match(obj) 
           case { node : AstNode ->
             if(kind == node.kind) then {
-                SuccessfulMatch.new(node, [])
+                prelude.SuccessfulMatch.new(node, [])
             } else {
-                FailedMatch.new(node)
+                prelude.FailedMatch.new(node)
             }
-          } case { _ -> FailedMatch.new(obj) }
+          } case { _ -> prelude.FailedMatch.new(obj) }
     }
 }
 
@@ -300,7 +300,7 @@ def Inherits is public = aPatternMatchingNode "inherits"
 
 // Special requests patterns.
 
-class RequestOf(methodName:String) -> Pattern {
+class RequestOf(methodName:String) -> prelude.Pattern {
 
     inherits prelude.BasicPattern.new
 
@@ -310,11 +310,11 @@ class RequestOf(methodName:String) -> Pattern {
             if((node.kind == "call") && {
                 node.value.value == methodName
             }) then {
-                SuccessfulMatch.new(node, makeBindings(node))
+                prelude.Successfulmatch.new(node, makeBindings(node))
             } else {
-                FailedMatch.new(node)
+                prelude.Failedmatch.new(node)
             }
-          } case { _ -> FailedMatch.new(obj)
+          } case { _ -> prelude.Failedmatch.new(obj)
           }
     }
 
