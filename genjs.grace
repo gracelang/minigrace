@@ -475,7 +475,7 @@ method compilemethod(o, selfobj) {
         if (emitArgChecks) then {
             out "  if (argcv[{sz}] !== {o.typeParams.size}) \{"
             out "    throw new GraceExceptionPacket(ProgrammingErrorObject, "
-            out "        new GraceString(\"wrong number of type arguments for {textualSignature}\"));"
+            out "        new GraceString(\"wrong number of type arguments for {o.canonicalName}\"));"
             out "  \}"
         }
         o.typeParams.do { g ->
@@ -512,7 +512,7 @@ method compilemethod(o, selfobj) {
     // --- which is where the error happens.
     out("setModuleName(\"{modname}\");")
     if (isSimpleAccessor) then {
-        out "// {textualSignature} is a simple accessor - elide try ... catch"
+        out "// {o.canonicalName} is a simple accessor - elide try ... catch"
         def ret = compilenode(o.body.at(1))
         out("return " ++ ret ++ ";")
     } else {
@@ -533,7 +533,7 @@ method compilemethod(o, selfobj) {
                 noteLineNumber (lastLine) comment "return value"
                 out "if (!Grace_isTrue(callmethod({dtype}, \"match\", [1], {ret})))"
                 out "    throw new GraceExceptionPacket(TypeErrorObject," 
-                out "        new GraceString(\"result of method {textualSignature} does not have \" + "
+                out "        new GraceString(\"result of method {o.canonicalName} does not have \" + "
                 out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
             }
             out("return " ++ ret ++ ";")
