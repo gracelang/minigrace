@@ -19,7 +19,8 @@ COMPILER_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace util
 
 DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso util.gct util.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
 DIALECTS_NEED = modules/dialect util ast modules/gUnit modules/math
-EXP_WEB_DIRECTORY = public_html/minigrace/exp/
+WEB_DIRECTORY = public_html/ide/
+DEV_WEB_DIRECTORY = public_html/dev/ide/
 GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 
 LIBRARY_WO_OBJECTDRAW = $(sort $(filter-out $(OBJECTDRAW), $(LIBRARY_MODULES)))
@@ -41,8 +42,6 @@ STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 TYPE_DIALECTS = staticTypes requireTypes
 VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
-WEB_DIRECTORY = public_html/minigrace/js/
-WEB_DIRECTORY_SIMPLE = public_html/minigrace/js-simple/
 WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html js/unicodedata.js js/importStandardPrelude.js $(ICONS:%=js/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
 WEBFILES_SIMPLE = $(filter-out js-simple/sample,$(sort js-simple/index.html js-simple/global.css js-simple/tests js-simple/minigrace.js js-simple/tabs-simple.js js-simple/gracelib.js js-simple/dom.js js-simple/gtk.js js-simple/debugger.js js-simple/timer.js js-simple/ace  js-simple/debugger.html  js-simple/unicodedata.js js-simple/importStandardPrelude.js $(ICONS:%=js-simple/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
 
@@ -53,7 +52,7 @@ CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi ; (cd l1 ; ln -sf $(
 
 all: minigrace-environment $(C_MODULES_GSO) $(WEBFILES)
 
-.PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects echo expWebBuild expWebDeploy fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest selftest-js samples sample-% test test.js test.js.compile uninstall
+.PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects echo ideBuild ideDeploy fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest selftest-js samples sample-% test test.js test.js.compile uninstall
 
 # clear out the default rules: produces far less --debug output
 .SUFFIXES:
@@ -69,10 +68,10 @@ ace-code: js/ace/ace.js
 alltests: test test.js module-test-js js/sample-dialects
 
 blackWeb:
-	$(MAKE) WEB_SERVER=black@cs.pdx.edu expWeb
+	$(MAKE) WEB_SERVER=black@cs.pdx.edu ide
 
 bruceWeb:
-	$(MAKE) WEB_SERVER=kim@project2.cs.pomona.edu EXP_WEB_DIRECTORY=www/minigrace/ expWeb
+	$(MAKE) WEB_SERVER=kim@project2.cs.pomona.edu WEB_DIRECTORY=www/minigrace/ ide
 
 c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct c/Makefile mirrors.c mirrors.gct definitions.h curl.c modules/math.gso modules/unicode.gso modules/mirrors.gso modules/math.gct modules/math.gcn
 	for f in gracelib.c gracelib.h unicode.{c,gct} unicodedata.h $(SOURCEFILES) mirrors.{c,gct} definitions.h debugger.c curl.c modules/*.gso modules/*.gct modules/*.gcn ;\
@@ -130,6 +129,10 @@ collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
 
 collectionsPrelude.gcn: collectionsPrelude.gct
 
+dev-ideDeploy: ideBuild
+	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
+	rsync -az --delete --exclude .git grace-web-editor/ $(WEB_SERVER):$(DEV_WEB_DIRECTORY)
+
 dialects: gracelib.o js js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
 
 echo:
@@ -152,18 +155,6 @@ echo:
 	@echo GRAPHIX:%.grace=js/%.js = $(GRAPHIX:%.grace=js/%.js)
 	@echo WEBFILES_SIMPLE = $(WEBFILES_SIMPLE)
 
-expWeb: expWebDeploy
-
-expWebBuild: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
-	./includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
-	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
-	ln -f $(filter-out js/samples.js js/tabs.js,$(filter %.js,$(WEBFILES))) grace-web-editor/js
-	ln -f $(GRAPHIX:%.grace=js/%.js) grace-web-editor/js
-
-expWebDeploy: expWebBuild
-	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
-	rsync -az --delete grace-web-editor/ $(WEB_SERVER):$(EXP_WEB_DIRECTORY)
-
 fullclean: clean
 	rm -rf .git-generation-cache
 	rm -rf $$(ls -d known-good/*/* | grep -v $(STABLE))
@@ -181,13 +172,25 @@ grace-web-editor/scripts/setup.js: pull-web-editor $(filter-out %/setup.js,$(wil
 	cd grace-web-editor; npm install
 
 graceWeb:
-	$(MAKE) WEB_SERVER=grace@cs.pdx.edu expWeb
+	$(MAKE) WEB_SERVER=cs.pdx.edu ide
 
 gracelib-basic.o: gracelib.c gracelib.h
 	gcc -g -std=c99 -o gracelib-basic.o -c gracelib.c
 
 gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.gcn
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn collectionsPrelude.gcn debugger.o
+
+ide: ideDeploy
+
+ideBuild: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
+	./includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
+	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
+	ln -f $(filter-out js/samples.js js/tabs.js,$(filter %.js,$(WEBFILES))) grace-web-editor/js
+	ln -f $(GRAPHIX:%.grace=js/%.js) grace-web-editor/js
+
+ideDeploy: ideBuild
+	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
+	rsync -az --delete --exclude .git grace-web-editor/ $(WEB_SERVER):$(WEB_DIRECTORY)
 
 install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grace=%.gct) $(STUB_GCTS) $(STUBS:%.grace=js/%.gct) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=js/%.js) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gcn) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso) gracelib.o
 	install -d -p $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
