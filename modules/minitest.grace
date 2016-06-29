@@ -2,8 +2,8 @@ import "gUnit" as gu
 
 inherits prelude.methods
 
-def nullSuite = _prelude.Singleton.named "nullSuite"
-def nullBlock = _prelude.Singleton.named "nullBlock"
+def nullSuite = prelude.Singleton.named "nullSuite"
+def nullBlock = prelude.Singleton.named "nullBlock"
 
 var currentTestSuiteForDialect := nullSuite
 var currentSetupBlockForTesting := nullBlock
@@ -57,11 +57,11 @@ method assert(n1:Number) shouldEqual (n2:Number) within (epsilon:Number) {
     mtAssertion.assert(n1) shouldEqual (n2) within (epsilon)
 }
 
-method assert(b:Block) shouldRaise (desired:ExceptionKind) {
+method assert(b:Block) shouldRaise (desired:prelude.ExceptionKind) {
     mtAssertion.assert(b) shouldRaise (desired)
 }
 
-method assert(b:Block) shouldntRaise (undesired:ExceptionKind) {
+method assert(b:Block) shouldntRaise (undesired:prelude.ExceptionKind) {
     mtAssertion.assert(b) shouldntRaise (undesired)
 }
 
