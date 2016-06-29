@@ -1679,47 +1679,56 @@ function GraceBlock(recvr, lineNum, numParams) {
 
 GraceBlock.prototype = {
     "apply": function GraceBlock_realApply (argcv) {
-      throw new GraceExceptionPacket(TypeErrorObject,
+      throw new GraceExceptionPacket(RequestErrorObject,
           new GraceString("Incorrect number of parameters."));
     },
     "apply(1)": function GraceBlock_realApply (argcv, a1) {
-      throw new GraceExceptionPacket(TypeErrorObject,
+      throw new GraceExceptionPacket(RequestErrorObject,
           new GraceString("Incorrect number of parameters."));
     },
     "apply(2)": function GraceBlock_realApply (argcv, a1, a2) {
-      throw new GraceExceptionPacket(TypeErrorObject,
+      throw new GraceExceptionPacket(RequestErrorObject,
           new GraceString("Incorrect number of parameters."));
     },
     "apply(3)": function GraceBlock_realApply (argcv, a1, a2, a3) {
-      throw new GraceExceptionPacket(TypeErrorObject,
+      throw new GraceExceptionPacket(RequestErrorObject,
           new GraceString("Incorrect number of parameters."));
     },
     "apply(4)": function GraceBlock_realApply (argcv, a1, a2, a3, a4) {
-      throw new GraceExceptionPacket(TypeErrorObject,
+      throw new GraceExceptionPacket(RequestErrorObject,
           new GraceString("Incorrect number of parameters."));
     },
     "apply(5)": function GraceBlock_realApply (argcv, a1, a2, a3, a4, a5) {
-      throw new GraceExceptionPacket(TypeErrorObject,
+      throw new GraceExceptionPacket(RequestErrorObject,
           new GraceString("Incorrect number of parameters."));
     },
     "apply(6)": function GraceBlock_realApply (argcv, a1, a2, a3, a4, a5, a6) {
-      throw new GraceExceptionPacket(TypeErrorObject,
+      throw new GraceExceptionPacket(RequestErrorObject,
           new GraceString("Incorrect number of parameters."));
     },
     "apply(7)": function GraceBlock_realApply (argcv, a1, a2, a3, a4, a5, a6, a7) {
-      throw new GraceExceptionPacket(TypeErrorObject,
+      throw new GraceExceptionPacket(RequestErrorObject,
           new GraceString("Incorrect number of parameters."));
     },
     "apply(8)": function GraceBlock_realApply (argcv, a1, a2, a3, a4, a5, a6, a7, a8) {
-      throw new GraceExceptionPacket(TypeErrorObject,
+      throw new GraceExceptionPacket(RequestErrorObject,
           new GraceString("Incorrect number of parameters."));
     },
     "apply(9)": function GraceBlock_realApply (argcv, a1, a2, a3, a4, a5, a6, a7, a8, a9) {
-      throw new GraceExceptionPacket(TypeErrorObject,
+      throw new GraceExceptionPacket(RequestErrorObject,
           new GraceString("Incorrect number of parameters."));
     },
     methods: {
-        "apply": GraceBlock_apply,
+        "apply": this.apply,
+        "apply(1)": this.['apply(1)'],
+        "apply(2)": this.['apply(2)'],
+        "apply(3)": this.['apply(3)'],
+        "apply(4)": this.['apply(4)'],
+        "apply(5)": this.['apply(5)'],
+        "apply(6)": this.['apply(6)'],
+        "apply(7)": this.['apply(7)'],
+        "apply(8)": this.['apply(8)'],
+        "apply(9)": this.['apply(9)'],
         "applyIndirectly(1)": function GraceBlock_applyIndirectly (argcv, a) {
             var argList = a._value || a.data.jsArray ;
             // APB: 2015 09 08.  This is a horrible hack.

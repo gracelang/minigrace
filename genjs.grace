@@ -153,10 +153,7 @@ method compilearray(o) {
 }
 method compilemember(o) {
     // Member in value position is actually a nullary method call.
-    util.setline(o.line)
-    var c := ast.callNode.new(o, [ast.requestPart.request(o.value) withArgs( [] )]) scope(o.scope)
-    var r := compilenode(c)
-    o.register := r
+    compilecall(o, false)
 }
 method compileobjouter(selfr, outerRef) {
     var myc := auto_count
@@ -252,7 +249,7 @@ method compileobjvardec(o, selfr, pos) {
     out("  this.data[\"" ++ nm ++ "\"] = o;")
     out "  return GraceDone;"
     out("\};")
-    out(selfr ++ ".methods[\"" ++ nm ++ ":=\"] = writer_" ++ emod ++
+    out(selfr ++ ".methods[\"" ++ nm ++ ":=(1)\"] = writer_" ++ emod ++
         "_" ++ nmi ++ myc ++ ";")
     if (o.isReadable.not) then {
         out("reader_{emod}_{nmi}{myc}.confidential = true;")
@@ -352,7 +349,7 @@ method compileobject(o, outerRef, inheritingObject) {
 method compileblock(o) {
     var origInBlock := inBlock
     inBlock := true
-    var myc := auto_count
+    def myc = auto_count
     def nParams = o.params.size
     auto_count := auto_count + 1
     out "var block{myc} = new GraceBlock(this, {o.line}, {nParams});"
@@ -380,7 +377,7 @@ method compileblock(o) {
     if (paramsAreTyped && emitTypeChecks) then {
         out "block{myc}.paramTypes = {paramTypes};"
     }
-    out("block" ++ myc ++ ".real = function(" ++ paramList ++ ") \{")
+    out "block{myc}.real = function({paramList}) \{"
     increaseindent
     var ret := "GraceDone"
     for (o.body) do {l->
@@ -389,6 +386,7 @@ method compileblock(o) {
     out("return " ++ ret ++ ";")
     decreaseindent
     out("\};")
+    out "block{myc}['apply({nParams})'] = block{myc}.real"
     o.register := "block" ++ myc
     inBlock := origInBlock
 }
@@ -404,7 +402,7 @@ method compiletypedec(o) {
     out "var {varf(tName)} = {val};"
     o.register := "type{myc}"
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.name.value) scope(enclosing)],
+        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(enclosing)],
             [o.name], ast.typeType) scope(enclosing))
     }
 }
@@ -415,7 +413,7 @@ method compiletypeliteral(o) {
     out("//   Type literal ")
     out("var type{myc} = new GraceType(\"{escName}\");")
     for (o.methods) do {meth->
-        def mnm = escapestring(meth.value)
+        def mnm = escapestring(meth.nameString)
         out("type{myc}.typeMethods.push(\"{mnm}\");")
     }
     // TODO: types in the type literal
@@ -428,20 +426,12 @@ method compilemethod(o, selfobj) {
     for (o.signature) do { part ->
         paramCounts.push(part.params.size)
     }
-    var textualSignature := ""
-    for (o.signature) do { part ->
-        def size = part.params.size
-        textualSignature := textualSignature ++ part.name
-        if (size > 0) then {
-            textualSignature := textualSignature ++ "({size})"
-        }
-    }
     def isSimpleAccessor = (o.body.size == 1) && {o.body.first.isIdentifier}
     usedvars := []
     declaredvars := []
     var myc := auto_count
     auto_count := auto_count + 1
-    var name := escapestring(o.value.value)
+    var name := escapestring(o.nameString)
     var nm := name ++ myc
     var closurevars := []
     var haveTypedParams := false
@@ -456,7 +446,7 @@ method compilemethod(o, selfobj) {
             }
         }
     }
-    out("var func" ++ myc ++ " = function(argcv) \{    // method " ++ textualSignature)
+    out("var func" ++ myc ++ " = function(argcv) \{    // method " ++ o.canonicalName)
     increaseindent
     out("var returnTarget = invocationCount;")
     out("invocationCount++;")
@@ -473,17 +463,6 @@ method compilemethod(o, selfobj) {
                 out "myframe.addVar(\"{escapestring(p.value)}\","
                 out "  function() \{return {varf(p.value)};});"
             }
-        }
-        if { emitArgChecks } then {
-            out "if (argcv[{partnr - 1}] !== {part.params.size})"
-            def msgSuffix = if (o.signature.size < 2) then { 
-                textualSignature
-            } else { 
-                "{part.name} (arg list {partnr}) of {textualSignature}"
-            }
-            out("  throw new GraceExceptionPacket(ProgrammingErrorObject, new "
-                ++ "GraceString(\"wrong number of arguments for "
-                ++ msgSuffix ++ "\"));")
         }
     }
     if (o.typeParams != false) then {
@@ -602,7 +581,7 @@ method compilefreshmethod(o, selfobj) {
     }
     var myc := auto_count
     auto_count := auto_count + 1
-    var name := escapestring(o.value.value)
+    def name = escapestring(o.nameString ++ "$object(1)")
     var nm := name ++ myc
     var haveTypedParams := false
     for (o.signature) do { part ->
@@ -711,7 +690,7 @@ method compilefreshmethod(o, selfobj) {
             out("func{myc}.confidential = true;")
         }
     }
-    out(selfobj ++ ".methods[\"" ++ name ++ "()object\"] = func" ++ myc ++ ";")
+    out(selfobj ++ ".methods[\"" ++ name ++ "$object(1)\"] = func" ++ myc ++ ";")
 }
 method compilemethodtypes(func, o) {
     out("{func}.paramTypes = [];")
@@ -726,7 +705,7 @@ method compilemethodtypes(func, o) {
                     def typeid = escapeident(p.dtype.value)
                     if (topLevelTypes.contains(typeid)) then {
                         out("{func}.paramTypes.push(["
-                            ++ "type_{typeid}, \"{escapestring(p.value)}\"]);")
+                            ++ "type_{typeid}, \"{escapestring(p.nameString)}\"]);")
                     } else {
                         out("{func}.paramTypes.push([]);")
                     }
@@ -823,7 +802,7 @@ method compiledefdec(o) {
     var val := compilenode(o.value)
     out("var " ++ varf(nm) ++ " = " ++ val ++ ";")
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.name.value) scope(currentScope)],
+        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(currentScope)],
             [o.name], false) scope(currentScope))
         if (ast.findAnnotation(o, "parent")) then {
             out("this.superobj = {val};")
@@ -858,13 +837,12 @@ method compilevardec(o) {
         out "myframe.addVar(\"{escapestring(nm)}\", function() \{return {varf(nm)}});"
     }
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.name.value) scope(currentScope)],
+        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(currentScope)],
             [o.name], false) scope(currentScope))
-        def assignID = ast.identifierNode.new(o.name.value ++ ":=", false) scope(currentScope)
-        def tmpID = ast.identifierNode.new("_var_assign_tmp", false)
+        def paramID = ast.identifierNode.new("_var_assign_tmp", false)
         compilenode(ast.methodNode.new(
-            [ast.signaturePart.partName(assignID.value) params( [tmpID] ) scope(currentScope)],
-            [ast.bindNode.new(o.name, tmpID)], false)  scope(currentScope))
+            [ast.signaturePart.partName(o.nameString ++ ":=") params( [paramID] ) scope(currentScope)],
+            [ast.bindNode.new(o.name, paramID)], false)  scope(currentScope))
         out("this.methods[\"{nm}\"].debug = \"var\";")
     }
     if (emitTypeChecks) then {
@@ -935,18 +913,18 @@ method compileop(o) {
     if (o.value == "%") then {
         rnm := "modulus"
     }
-    if ((o.left.kind == "identifier") && (o.left.value == "super")) then {
+    if ((o.left.kind == "identifier") && {o.left.value == "super"}) then {
         out("var " ++ rnm ++ auto_count ++ " = callmethodsuper(this"
-            ++ ", \"" ++ escapestring(o.value) ++ "\", [1], " ++ right ++ ");")
+            ++ ", \"" ++ escapestring(o.nameString) ++ "\", [1], " ++ right ++ ");")
     } else {
         var left := compilenode(o.left)
         auto_count := auto_count + 1
         if (emitArgChecks) then {
             out("var " ++ rnm ++ auto_count ++ " = callmethodChecked(" ++ left
-                ++ ", \"" ++ escapestring(o.value) ++ "\", [1], " ++ right ++ ");")
+                ++ ", \"" ++ escapestring(o.nameString) ++ "\", [1], " ++ right ++ ");")
         } else {
             out("var " ++ rnm ++ auto_count ++ " = callmethod(" ++ left
-                ++ ", \"" ++ escapestring(o.value) ++ "\", [1], " ++ right ++ ");")
+                ++ ", \"" ++ escapestring(o.nameString) ++ "\", [1], " ++ right ++ ");")
         }
     }
     o.register := rnm ++ auto_count
@@ -984,22 +962,22 @@ method compilecall(o) {
     } else { 
         "callmethod"
     }
-    if ((o.value.kind == "member") && {(o.value.receiver.isIdentifier)
-        && (o.value.receiver.value == "super")}) then {
+    if ((o.receiver.kind == "member") && {(o.receiver.receiver.isIdentifier)
+        && (o.receiver.receiver.value == "super")}) then {
         var call := "var call" ++ auto_count ++ " = callmethodsuper(this"
-            ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
+            ++ ", \"" ++ escapestring(o.receiver.value) ++ "\", ["
         call := call ++ partl ++ "]"
         for (args) do { arg ->
             call := call ++ ", " ++ arg
         }
         call := call ++ ");"
         out(call)
-    } elseif { (o.value.isMember) && {
-        o.value.receiver.isMember} && {
-            o.value.receiver.value == "outer"} } then {
-        def ot = compilenode(o.value.receiver)
+    } elseif { (o.receiver.isMember) && {
+        o.receiver.receiver.isMember} && {
+            o.receiver.receiver.value == "outer"} } then {
+        def ot = compilenode(o.receiver.receiver)
         var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "({ot}"
-            ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
+            ++ ", \"" ++ escapestring(o.receiver.value) ++ "\", ["
         call := call ++ partl ++ "]"
         for (args) do { arg ->
             call := call ++ ", " ++ arg
@@ -1008,15 +986,15 @@ method compilecall(o) {
         out("onOuter = true;");
         out("onSelf = true;");
         out(call)
-    } elseif { (o.value.kind == "member") && {(o.value.receiver.isIdentifier)
-            && (o.value.receiver.value == "self") && (o.value.value == "outer")}
+    } elseif { (o.receiver.kind == "member") && {(o.receiver.receiver.isIdentifier)
+            && (o.receiver.receiver.value == "self") && (o.receiver.value == "outer")}
         } then {
         out("var call{auto_count} = " ++ requestCall ++ "(superDepth, "
             ++ "\"outer\", [0]);")
-    } elseif { (o.value.kind == "member") && {(o.value.receiver.isIdentifier)
-            && (o.value.receiver.value == "self")} } then {
+    } elseif { (o.receiver.kind == "member") && {(o.receiver.receiver.isIdentifier)
+            && (o.receiver.receiver.value == "self")} } then {
         var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(this"
-            ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
+            ++ ", \"" ++ escapestring(o.receiver.value) ++ "\", ["
         call := call ++ partl ++ "]"
         for (args) do { arg ->
             call := call ++ ", " ++ arg
@@ -1024,20 +1002,20 @@ method compilecall(o) {
         call := call ++ ");"
         out("onSelf = true;");
         out(call)
-    } elseif { (o.value.kind == "member") && {(o.value.receiver.isIdentifier)
-            && (o.value.receiver.value == "prelude")} } then {
+    } elseif { (o.receiver.kind == "member") && {(o.receiver.receiver.isIdentifier)
+            && (o.receiver.receiver.value == "prelude")} } then {
         var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(var_prelude, \""
-            ++ escapestring(o.value.value) ++ "\", ["
+            ++ escapestring(o.receiver.value) ++ "\", ["
         call := call ++ partl ++ "]"
         for (args) do { arg ->
             call := call ++ ", " ++ arg
         }
         call := call ++ ");"
         out(call)
-    } elseif { o.value.isMember } then {
-        obj := compilenode(o.value.receiver)
+    } elseif { o.receiver.isMember } then {
+        obj := compilenode(o.receiver.receiver)
         var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(" ++ obj
-            ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
+            ++ ", \"" ++ escapestring(o.receiver.value) ++ "\", ["
         call := call ++ partl ++ "]"
         for (args) do { arg ->
             call := call ++ ", " ++ arg
@@ -1047,7 +1025,7 @@ method compilecall(o) {
     } else {
         obj := "this"
         var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(this,"
-            ++ "\"" ++ escapestring(o.value.value) ++ "\", ["
+            ++ "\"" ++ escapestring(o.receiver.value) ++ "\", ["
         call := call ++ partl ++ "]"
         for (args) do { arg ->
             call := call ++ ", " ++ arg
@@ -1205,15 +1183,15 @@ method compilenode(o) {
         compileobject(o, "this", false)
     } elseif { oKind == "typedec" } then {
         compiletypedec(o)
-    } elseif { o.kind == "typeliteral" } then {
+    } elseif { oKind == "typeliteral" } then {
         compiletypeliteral(o)
     } elseif { oKind == "member" } then {
         compilemember(o)
     } elseif { oKind == "call" } then {
-        if (o.value.isMember && {o.value.receiver.value == "prelude"}) then {
-            if (o.nameString == "print") then {
+        if (o.receiver.isPrelude) then {
+            if (o.nameString == "print(1)") then {
                 compilePrint(o)
-            } elseif {o.nameString == "native()code"} then {
+            } elseif {o.nameString == "native(1)code(1)"} then {
                 compileNativeCode(o)
             } else {
                 compilecall(o)
