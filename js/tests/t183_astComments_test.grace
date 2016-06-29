@@ -143,7 +143,7 @@ testSuiteNamed "comment tests" with {
     
     test "class person" by {
         def classPerson = nodes.filter { each ->
-            each.isMethod && { each.nameString == "person" } }.first
+            each.isMethod && { each.canonicalName == "person(_,_)" } }.first
         def personComments = classPerson.comments
         def commentString = personComments.value
         assert (personComments.isPreceededByBlankLine)
@@ -158,7 +158,7 @@ testSuiteNamed "comment tests" with {
     
     test "person field name" by {
         def classPerson = nodes.filter { each ->
-            each.isMethod && { each.nameString == "person" } }.first
+            each.isMethod && { each.canonicalName == "person(_,_)" } }.first
         def classPersonBody = classPerson.body.first.value
         def classPersonDefs = classPersonBody.filter { each ->
             each.kind == "defdec" }
@@ -171,7 +171,7 @@ testSuiteNamed "comment tests" with {
     
     test "person field age" by {
         def classPerson = nodes.filter { each ->
-            each.isMethod && { each.nameString == "person" } }.first
+            each.isMethod && { each.canonicalName == "person(_,_)" } }.first
         def classPersonBody = classPerson.body.first.value
         def classPersonDefs = classPersonBody.filter { each ->
             each.kind == "defdec" }
