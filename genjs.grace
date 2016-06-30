@@ -153,7 +153,7 @@ method compilearray(o) {
 }
 method compilemember(o) {
     // Member in value position is actually a nullary method call.
-    compilecall(o, false)
+    compilecall(o)
 }
 method compileobjouter(selfr, outerRef) {
     var myc := auto_count
@@ -386,7 +386,8 @@ method compileblock(o) {
     out("return " ++ ret ++ ";")
     decreaseindent
     out("\};")
-    out "block{myc}['apply({nParams})'] = block{myc}.real"
+    def applyName = if (nParams == 0) then { "apply" } else { "apply({nParams})" }
+    out "block{myc}['{applyName}'] = block{myc}.real;"
     o.register := "block" ++ myc
     inBlock := origInBlock
 }
@@ -930,16 +931,10 @@ method compileop(o) {
     o.register := rnm ++ auto_count
     auto_count := auto_count + 1
 }
-method compilecall(o) {
-    noteLineNumber (o.line) comment "compilenode {o.kind}"
-    var args := []
-    var obj := ""
-    var len := 0
-    var con := ""
+method compileArguments(o, args) {
     for (o.with) do { part ->
         for (part.args) do { p ->
-            var r := compilenode(p)
-            args.push(r)
+            args.push(compilenode(p))
         }
     }
     if (false != o.generics) then {
@@ -947,96 +942,83 @@ method compilecall(o) {
             args.push(compilenode(g))
         }
     }
-    var partl := ""
+}
+method assembleArguments(args) {
+    var result := ""
+    for (args) do { arg ->
+        result := result ++ ", " ++ arg
+    }
+    result
+}
+method partl(o) {
+    var result := ""
     for (o.with.indices) do { partnr ->
-        partl := partl ++ o.with.at(partnr).args.size
+        result := result ++ o.with.at(partnr).args.size
         if (partnr < o.with.size) then {
-            partl := partl ++ ", "
+            result := result ++ ", "
         }
     }
     if (false != o.generics) then {
-        partl := partl ++ ", {o.generics.size}"
+        result := result ++ ", {o.generics.size}"
     }
-    def request = if (emitArgChecks) then {
-        "callmethodChecked"
-    } else { 
-        "callmethod"
-    }
-    if ((o.receiver.kind == "member") && {(o.receiver.receiver.isIdentifier)
-        && (o.receiver.receiver.value == "super")}) then {
-        var call := "var call" ++ auto_count ++ " = callmethodsuper(this"
-            ++ ", \"" ++ escapestring(o.receiver.value) ++ "\", ["
-        call := call ++ partl ++ "]"
-        for (args) do { arg ->
-            call := call ++ ", " ++ arg
-        }
-        call := call ++ ");"
-        out(call)
-    } elseif { (o.receiver.isMember) && {
-        o.receiver.receiver.isMember} && {
-            o.receiver.receiver.value == "outer"} } then {
-        def ot = compilenode(o.receiver.receiver)
-        var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "({ot}"
-            ++ ", \"" ++ escapestring(o.receiver.value) ++ "\", ["
-        call := call ++ partl ++ "]"
-        for (args) do { arg ->
-            call := call ++ ", " ++ arg
-        }
-        call := call ++ ");"
-        out("onOuter = true;");
-        out("onSelf = true;");
-        out(call)
-    } elseif { (o.receiver.kind == "member") && {(o.receiver.receiver.isIdentifier)
-            && (o.receiver.receiver.value == "self") && (o.receiver.value == "outer")}
-        } then {
-        out("var call{auto_count} = " ++ requestCall ++ "(superDepth, "
-            ++ "\"outer\", [0]);")
-    } elseif { (o.receiver.kind == "member") && {(o.receiver.receiver.isIdentifier)
-            && (o.receiver.receiver.value == "self")} } then {
-        var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(this"
-            ++ ", \"" ++ escapestring(o.receiver.value) ++ "\", ["
-        call := call ++ partl ++ "]"
-        for (args) do { arg ->
-            call := call ++ ", " ++ arg
-        }
-        call := call ++ ");"
-        out("onSelf = true;");
-        out(call)
-    } elseif { (o.receiver.kind == "member") && {(o.receiver.receiver.isIdentifier)
-            && (o.receiver.receiver.value == "prelude")} } then {
-        var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(var_prelude, \""
-            ++ escapestring(o.receiver.value) ++ "\", ["
-        call := call ++ partl ++ "]"
-        for (args) do { arg ->
-            call := call ++ ", " ++ arg
-        }
-        call := call ++ ");"
-        out(call)
-    } elseif { o.receiver.isMember } then {
-        obj := compilenode(o.receiver.receiver)
-        var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(" ++ obj
-            ++ ", \"" ++ escapestring(o.receiver.value) ++ "\", ["
-        call := call ++ partl ++ "]"
-        for (args) do { arg ->
-            call := call ++ ", " ++ arg
-        }
-        call := call ++ ");"
-        out(call)
+    result
+}
+method compileSuperRequest(o, args) {
+    out "// call case 1: super request"
+    def escapedName = escapestring(o.nameString)
+    out("var call{auto_count} = callmethodsuper(this" ++
+          ", \"{escapestring(o.receiver.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
+}
+method compileOuterRequest(o, args) {
+    out "// call case 2: outer request"
+    def ot = compilenode(o.receiver)
+    out("var call{auto_count} = {requestCall}({ot}" ++
+          ", \"{escapestring(o.receiver.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
+}
+method compileSelfOuterRequest(o, args) {
+    out "// call case 3: self.outer request"
+    out("var call{auto_count} = {requestCall}(superDepth, " ++
+            "\"outer\", [0]);")
+}
+method compileSelfRequest(o, args) {
+    out "// call case 4: self request"
+    out("onSelf = true;");
+    out("var call{auto_count} = {requestCall}(this" ++
+          ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
+}
+method compilePreludeRequest(o, args) {
+    out "// call case 5: prelude request"
+    out("var call{auto_count} = {requestCall}(var_prelude" ++
+          ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
+}
+method compileOtherRequest(o, args) {
+    out "// call case 6: other requests"
+    def target = compilenode(o.receiver)
+    out("var call{auto_count} = {requestCall}({target}" ++
+          ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
+}
+method compilecall(o) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    var args := []
+    compileArguments(o, args)
+    def receiver = o.receiver
+    if (receiver.isSuper) then {
+        compileSuperRequest(o, args)
+    } elseif { receiver.isOuter } then {
+        compileOuterRequest(o, args)
+    } elseif { receiver.isSelf && { o.nameString == "outer" } } then {
+        compileSelfOuterRequest(o, args)
+    } elseif { receiver.isSelf } then {
+        compileSelfRequest(o, args)
+    } elseif { receiver.isPrelude } then {
+        compilePreludeRequest(o, args)
     } else {
-        obj := "this"
-        var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(this,"
-            ++ "\"" ++ escapestring(o.receiver.value) ++ "\", ["
-        call := call ++ partl ++ "]"
-        for (args) do { arg ->
-            call := call ++ ", " ++ arg
-        }
-        call := call ++ ");"
-        out(call)
+        compileOtherRequest(o, args)
     }
     o.register := "call" ++ auto_count
     auto_count := auto_count + 1
 }
-
 method compiledialect(o) {
     out("// Dialect import of {o.value}")
     var fn := escapestring(o.value)

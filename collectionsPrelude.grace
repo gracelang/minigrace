@@ -625,19 +625,19 @@ class list<T> {
 
     method withAll(a: Iterable<T>) -> List<T> {
         if (engine == "js") then {
-          if (native "js" code ‹var result = (this === superDepth) ? GraceTrue : GraceFalse›) then {
+          if (native "js" code ‹result = (this === superDepth) ? GraceTrue : GraceFalse;›) then {
             return object {
                 inherits indexable.TRAIT<T>
 
                 var mods is readable := 0
                 var sz := 0
-                var jsArray := native "js" code ‹var result = [];›
+                var jsArray := native "js" code ‹result = [];›
                 a.do { each ->
                     native "js" code ‹superDepth.data.jsArray.push(var_each);›
                 }
 
                 method size {
-                    native "js" code ‹return new GraceNum(superDepth.data.jsArray.length)›
+                    native "js" code ‹return new GraceNum(superDepth.data.jsArray.length);›
                     sz
                 }
 
@@ -710,7 +710,7 @@ class list<T> {
                               if (res.className == "number") return res._value;
                               throw new GraceExceptionPacket(TypeErrorObject,
                                      new GraceString("sort block in list.sortBy method did not return a number"));
-                          }
+                          };
                           superDepth.data.jsArray.sort(compareFun);›
                     self
                 }
