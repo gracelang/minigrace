@@ -1721,26 +1721,26 @@ GraceBlock.prototype = {
           new GraceString("Incorrect number of parameters."));
     },
     methods: {
-        "apply"   : function() {
-            return this['apply']();    },
+        "apply": function(argcv) {
+            return this.real.apply(argcv); },
         "apply(1)": function(argcv, a1) {
-            return this['apply(1)'](argcv, a1); },
+            return this.real.apply(argcv, a1); },
         "apply(2)": function(argcv, a1, a2) {
-            return this['apply(2)'](argcv, a1, a2); },
+            return this.real.apply(argcv, a1, a2); },
         "apply(3)": function(argcv, a1, a2, a3) {
-            return this['apply(3)'](argcv, a1, a2, a3); },
+            return this.real.apply(argcv, a1, a2, a3); },
         "apply(4)": function(argcv, a1, a2, a3, a4) {
-            return this['apply(4)'](argcv, a1, a2, a3, a4); },
+            return this.real.apply(argcv, a1, a2, a3, a4); },
         "apply(5)": function(argcv, a1, a2, a3, a4, a5) {
-            return this['apply(5)'](argcv, a1, a2, a3, a4, a5); },
+            return this.real.apply(argcv, a1, a2, a3, a4, a5); },
         "apply(6)": function(argcv, a1, a2, a3, a4, a5, a6) {
-            return this['apply(6)'](argcv, a1, a2, a3, a4, a5, a6); },
+            return this.real.apply(argcv, a1, a2, a3, a4, a5, a6); },
         "apply(7)": function(argcv, a1, a2, a3, a4, a5, a6, a7) {
-            return this['apply(7)'](argcv, a1, a2, a3, a4, a5, a6, a7); },
+            return this.real.apply(argcv, a1, a2, a3, a4, a5, a6, a7); },
         "apply(8)": function(argcv, a1, a2, a3, a4, a5, a6, a7, a8) {
-            return this['apply(8)'](argcv, a1, a2, a3, a4, a5, a6, a7, a8); },
+            return this.real.apply(argcv, a1, a2, a3, a4, a5, a6, a7, a8); },
         "apply(9)": function(argcv, a1, a2, a3, a4, a5, a6, a7, a8, a9) {
-            return this['apply(9)'](argcv, a1, a2, a3, a4, a5, a6, a7, a8, a9); },
+            return this.real.apply(argcv, a1, a2, a3, a4, a5, a6, a7, a8, a9); },
         "applyIndirectly(1)": function GraceBlock_applyIndirectly (argcv, a) {
             var argList = a._value || a.data.jsArray ;
             // APB: 2015 09 08.  This is a horrible hack.
