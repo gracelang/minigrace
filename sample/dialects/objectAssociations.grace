@@ -1,6 +1,6 @@
 inherits prelude.methods
 
-method Relationship<From, To> {
+method Relationship⟦From, To⟧ {
     object {
         def map = dictionary []
         method add(f : From, t : To) is public {
@@ -24,7 +24,7 @@ method Relationship<From, To> {
     }
 }
 
-method ReflexiveRelationship<T> {
-    Relationship<T,T>
+method ReflexiveRelationship⟦T⟧ {
+    Relationship⟦T,T⟧
 }
 
