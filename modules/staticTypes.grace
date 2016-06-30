@@ -15,7 +15,7 @@ def TypeError is public = CheckerFailure.refine "TypeError"
 
 type MethodType = {
     name -> String
-    signature -> List<MixPart>
+    signature -> List⟦MixPart⟧
     returnType -> ObjectType
     isSpecialisationOf (other: MethodType) -> Boolean
 }
@@ -39,19 +39,19 @@ def aParam = object {
 
 type MixPart = {
     name -> String
-    parameters -> List<Param>
+    parameters -> List⟦Param⟧
 }
 
 class mixPartNamed (name': String)
-        parameters (parameters': List<Param>) -> MixPart {
+        parameters (parameters': List⟦Param⟧) -> MixPart {
     def name: String is public = name'
-    def parameters: List<Param> is public = parameters'
+    def parameters: List⟦Param⟧ is public = parameters'
 }
 
 def aMethodType = object {
-    class signature (signature': List<MixPart>)
+    class signature (signature': List⟦MixPart⟧)
           returnType (rType: ObjectType)-> MethodType {
-        def signature: List<MixPart> is public = signature'
+        def signature: List⟦MixPart⟧ is public = signature'
         def returnType: ObjectType is public = rType
 
         var name: String is readable:= ""
@@ -162,7 +162,7 @@ def aMethodType = object {
 def noSuchMethod = Singleton.named "noSuchMethod"
 
 type ObjectType = {
-    methods -> List<MethodType>
+    methods -> List⟦MethodType⟧
     getMethod (name: String) -> MethodType | noSuchMethod
     isUnknown -> Boolean
     isSubtypeOf (other: ObjectType) -> Boolean
@@ -172,8 +172,8 @@ type ObjectType = {
 
 def objectType = object {
 
-    class fromMethods (methods': List<MethodType>) -> ObjectType {
-        def methods: List<MethodType> is public = if (base == unknown)
+    class fromMethods (methods': List⟦MethodType⟧) -> ObjectType {
+        def methods: List⟦MethodType⟧ is public = if (base == unknown)
             then { [] } else { base.methods } ++ methods'
 
         method getMethod (name: String) -> MethodType | noSuchMethod {
@@ -316,7 +316,7 @@ def objectType = object {
         }
     }
 
-    class fromMethods (methods': List<MethodType>)
+    class fromMethods (methods': List⟦MethodType⟧)
             withName (name: String) -> ObjectType {
         inherits fromMethods (methods')
 
@@ -429,7 +429,7 @@ def objectType = object {
         method ==(other) { self.isMe(other) }
     }
 
-    method blockTaking (params: List<Parameter>)
+    method blockTaking (params: List⟦Parameter⟧)
             returning (rType: ObjectType) -> ObjectType {
         def signature = [mixPartNamed "apply" parameters (params)]
         def meths = [aMethodType.signature (signature) returnType (rType)]
@@ -448,7 +448,7 @@ def objectType = object {
     }
 
     method addTo (oType: ObjectType) name (name': String)
-            params (ptypes: Iterable<ObjectType>) returns (rType: ObjectType)
+            params (ptypes: Iterable⟦ObjectType⟧) returns (rType: ObjectType)
             -> Done is confidential {
         def parameters = []
         for (ptypes) do { ptype ->
@@ -524,8 +524,8 @@ def objectType = object {
     addTo (number) name "inBase" params [number] returns (number)
     addTo (number) name "truncated" returns (number)
     addTo (number) name "rounded" returns (number)
-    addTo (number) name "prefix<" returns (pattern)
-    addTo (number) name "prefix>" returns (pattern)
+    addTo (number) name "prefix⟦" returns (pattern)
+    addTo (number) name "prefix⟧" returns (pattern)
 
     extend (string) with (base)
     addTo (string) name "++" params [base] returns (string)

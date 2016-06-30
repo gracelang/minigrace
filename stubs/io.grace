@@ -29,10 +29,10 @@ type IO = Object & type {
     newer (path1:String, path2:String) -> Boolean
         // answers true iff the file at path1 is newer than the file at path2
     realpath (path:String) -> String     // answers absolute path
-    listdir (dirPath:String) -> Sequence<String>
+    listdir (dirPath:String) -> Sequence⟦String⟧
         // answers the names of the files in the directory at dirPath
     changeDirectory (dirPath:String)
-    env -> Dictionary<String,String>
+    env -> Dictionary⟦String,String⟧
         // answers a Dictionary maping names of environment variables to
         // their values
 }
@@ -127,8 +127,8 @@ method system (command:String) -> Boolean { }
     // executes command in a sub-process and answers true if it exits with 0
 method exists (path:String) -> Boolean { }
 method newer (path1:String, path2:String) -> Boolean { }
-method spawn (executable:String, args:Iterable<String>) -> Process { }
+method spawn (executable:String, args:Iterable⟦String⟧) -> Process { }
     // forks and execv's executable, with args
 method realpath (path:String) -> String { }
     // answers the canonicalized absolute pathname
-method listdir (dirPath:String) -> Sequence<String> { }
+method listdir (dirPath:String) -> Sequence⟦String⟧ { }

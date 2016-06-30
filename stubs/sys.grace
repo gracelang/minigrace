@@ -4,7 +4,7 @@ type Environment = type {
     contains(key:String) -> Boolean
 }
 
-method argv -> Sequence<String> {}
+method argv -> Sequence⟦String⟧ {}
 method elapsed -> Number {}
 method elapsedTime -> Number {}
 method exit(code:Number) -> Done {}

@@ -5,11 +5,11 @@
 // return returns from the method
 
 
-class list<T> {
-    method empty -> List<T>  { self.withAll [ ] }
+class list⟦T⟧ {
+    method empty -> List⟦T⟧  { self.withAll [ ] }
 
-    class withAll(a:Iterable<T>) -> List<T> {
-        inherits collections.indexable.TRAIT<T>
+    class withAll(a:Iterable⟦T⟧) -> List⟦T⟧ {
+        inherits collections.indexable.TRAIT⟦T⟧
         var sz := 0
         var jsArray := native "js" code ‹var result = [];›
         a.do { each ->
@@ -120,17 +120,17 @@ class list<T> {
         }
         
 
-        method remove(*v:T) ifAbsent(action:Block0<Done>) {
+        method remove(*v:T) ifAbsent(action:Block0⟦Done⟧) {
             removeAll(v) ifAbsent (action)
         }
         
 
-        method removeAll(vs: Collection<T>) {
+        method removeAll(vs: Collection⟦T⟧) {
             removeAll(vs) ifAbsent { NoSuchObject.raise "object not in list" }
         }
         
 
-        method removeAll(vs: Collection<T>) ifAbsent(action:Block0<Done>)  {
+        method removeAll(vs: Collection⟦T⟧) ifAbsent(action:Block0⟦Done⟧)  {
             for (vs) do { each -> 
                 def ix = self.indexOf(each) ifAbsent {return action.apply}
                 removeAt(ix)

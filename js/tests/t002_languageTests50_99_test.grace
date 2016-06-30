@@ -292,22 +292,22 @@ def aGraceLangTest = object {
         }
 
         method test_089_generic1 {
-            type A<T> = {
+            type A⟦T⟧ = {
                 foo(_ : T) -> Number
                 bar(_ : Number) -> T
             }
             
-            var a : A<String> := object {
+            var a : A⟦String⟧ := object {
                 method foo(x : String) -> Number { x.size }
                 method bar(y : Number) -> String { "{y}" }
             }
             
-            def b : A<Boolean> = object {
+            def b : A⟦Boolean⟧ = object {
                 method foo(x : Boolean) -> Number { 1 }
                 method bar(y : Number) -> Boolean { y < 0 }
             }
             
-            def c : A<String> = object {
+            def c : A⟦String⟧ = object {
                 method foo(x : String) -> Number { x.size }
                 method bar(y : Number) -> String { "{y}" }
             }

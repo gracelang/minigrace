@@ -314,7 +314,7 @@ type Extractable = {
 
 type MatchResult = Boolean & type {
     result -> Unknown
-    bindings -> List<Unknown>
+    bindings -> List⟦Unknown⟧
 }
 
 type Pattern = {
@@ -413,30 +413,30 @@ import "collectionsPrelude" as coll
 // not fully implemented.  So instead we create an alias:
 def collections is public = coll
 
-type Block0<R> = collections.Block0<R>
-type Block1<T,R> = collections.Block1<T,R>
-type Block2<S,T,R> = collections.Block2<S,T,R>
-type Block3<S,T,U,R> = type {
+type Block0⟦R⟧ = collections.Block0⟦R⟧
+type Block1⟦T,R⟧ = collections.Block1⟦T,R⟧
+type Block2⟦S,T,R⟧ = collections.Block2⟦S,T,R⟧
+type Block3⟦S,T,U,R⟧ = type {
     apply(a:S, b:T, c:U) -> R
 }
-type Cmd = Block0<Done>
-type Fun<T,R> = Block1<T,R>
-type Fun2<T,U,R> = Block2<T,U,R>
-type Fun3<T,U,W,R> = Block3<T,U,W,R>
-type Proc<T> = Block1<T,Done>
-type Proc2<T,U> = Block2<T,U,Done>
-type Proc3<T,U,W> = Block3<T,U,W,Done>
+type Cmd = Block0⟦Done⟧
+type Fun⟦T,R⟧ = Block1⟦T,R⟧
+type Fun2⟦T,U,R⟧ = Block2⟦T,U,R⟧
+type Fun3⟦T,U,W,R⟧ = Block3⟦T,U,W,R⟧
+type Proc⟦T⟧ = Block1⟦T,Done⟧
+type Proc2⟦T,U⟧ = Block2⟦T,U,Done⟧
+type Proc3⟦T,U,W⟧ = Block3⟦T,U,W,Done⟧
 
-type Collection<T> = collections.Collection<T>
-type Iterable<T> = collections.Iterable<T>
-type Expandable<T> = collections.Expandable<T>
-type Enumerable<T> = collections.Enumerable<T>
-type Binding<K,T> = collections.Binding<K,T>
-type Iterator<T> = collections.Iterator<T>
-type Sequence<T> = collections.Sequence<T>
-type List<T> = collections.List<T>
-type Set<T> = collections.Set<T>
-type Dictionary<K,T> = collections.Dictionary<K,T>
+type Collection⟦T⟧ = collections.Collection⟦T⟧
+type Iterable⟦T⟧ = collections.Iterable⟦T⟧
+type Expandable⟦T⟧ = collections.Expandable⟦T⟧
+type Enumerable⟦T⟧ = collections.Enumerable⟦T⟧
+type Binding⟦K,T⟧ = collections.Binding⟦K,T⟧
+type Iterator⟦T⟧ = collections.Iterator⟦T⟧
+type Sequence⟦T⟧ = collections.Sequence⟦T⟧
+type List⟦T⟧ = collections.List⟦T⟧
+type Set⟦T⟧ = collections.Set⟦T⟧
+type Dictionary⟦K,T⟧ = collections.Dictionary⟦K,T⟧
 
 def BoundsError is public = collections.BoundsError
 def IteratorExhausted is public = collections.IteratorExhausted
@@ -450,24 +450,24 @@ def collection is public = collections.collection
 def enumerable is public = collections.enumerable
 def indexable is public = collections.indexable
 
-method sequence<T>(arg) {
-    collections.sequence<T>.withAll(arg)
+method sequence⟦T⟧(arg) {
+    collections.sequence⟦T⟧.withAll(arg)
 }
 
 def emptySequence is public = collections.sequence.empty
 
-method list<T>(arg) {
-    collections.list<T>.withAll(arg)
+method list⟦T⟧(arg) {
+    collections.list⟦T⟧.withAll(arg)
 }
 method emptyList { collections.list.empty }
 
-method set<T>(arg) {
-    collections.set<T>.withAll(arg)
+method set⟦T⟧(arg) {
+    collections.set⟦T⟧.withAll(arg)
 }
 method emptySet { collections.set.empty }
 
-method dictionary<K, T>(arg) {
-    collections.dictionary<K, T>.withAll(arg)
+method dictionary⟦K, T⟧(arg) {
+    collections.dictionary⟦K, T⟧.withAll(arg)
 }
 method emptyDictionary { collections.dictionary.empty }
 

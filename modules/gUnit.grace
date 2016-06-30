@@ -39,14 +39,14 @@ type TestResult =  {
     testFailed(name:String) -> Done
     testErrored(name:String) -> Done
     testFinished(name:String) -> Done
-    erroredTestNames -> List<String>
-    failedTestNames -> List<String>
+    erroredTestNames -> List⟦String⟧
+    failedTestNames -> List⟦String⟧
     summary -> String
     detailedSummary -> String
     numberOfErrors -> Number
-    errors -> List<TestRecord>
+    errors -> List⟦TestRecord⟧
     numberOfFailures -> Number
-    failures -> List<TestRecord>
+    failures -> List⟦TestRecord⟧
     numberRun -> Number
     doNotRerunErrors -> Done
     doRerunErrors -> Done

@@ -1297,7 +1297,7 @@ def objectNode is public = object {
             return true
         }
 
-        method localNames -> Set<String> {
+        method localNames -> Set⟦String⟧ {
             // answers the names of all of the methods defined directly in
             // this object.  Inherited names are _not_ included.
             if (false == myLocalNames) then {
@@ -1586,7 +1586,7 @@ def genericNode is public = object {
     def kind is public = "generic"
     var value is public := base
         // in a generic application, `value` is the applied type
-        // e.g. in List<Number>, value is Identifier‹List›
+        // e.g. in List⟦Number⟧, value is Identifier‹List›
     var args is public := arguments
     method nameString { value.nameString }
     method asString { toGrace 0 }
