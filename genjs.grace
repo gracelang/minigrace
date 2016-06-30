@@ -691,7 +691,7 @@ method compilefreshmethod(o, selfobj) {
             out("func{myc}.confidential = true;")
         }
     }
-    out(selfobj ++ ".methods[\"" ++ name ++ "$object(1)\"] = func" ++ myc ++ ";")
+    out "{selfobj}.methods[\"{name}\"] = func{myc};"
 }
 method compilemethodtypes(func, o) {
     out("{func}.paramTypes = [];")
