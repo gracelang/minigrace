@@ -566,11 +566,12 @@ method compilemethod(o, selfobj, pos) {
     out("  int i;")
     out("  int curarg = 0;")
     out("  int pushcv[] = \{1\};")
-    if (!o.selfclosure) then {
-        out "  if (nparts < {o.numParamLists} && args)"
+    def npls = o.numParamLists
+    if ((!o.selfclosure) && (npls > 0)) then {
+        out "  if (nparts < {npls} && args)"
         out("    graceRaise(RequestError(), \"missing argument list for {o.canonicalName} (probably "
             ++ "reflection error): got %i lists, expected "
-            ++ "{o.signature.size}.\", nparts);")
+            ++ "{npls}.\", nparts);")
     }
     for (o.signature.indices) do { partnr ->
         var part := o.signature.at(partnr)
@@ -821,7 +822,7 @@ method compilemethod(o, selfobj, pos) {
 } // end of compilemethod
 
 // Compiles the "fresh" method version of a method, when applicable.
-// This method is given a different name ending in _object, with the final
+// This method is given a different name ending in `$object(1)`, with the final
 // parameter being the object into which to insert methods.
 method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
         oldout) {
