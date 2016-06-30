@@ -85,7 +85,7 @@ c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct c/Makefil
 
 clean:
 	rm -f gracelib.o gracelib-basic.o standardInput{.grace,.gct,.gcn,.gso,.o,}
-	rm -fr unicode.gco unicode.gcn unicode.gso.dSYM
+	rm -fr unicode.gco unicode.gcn unicode.gso unicode.gso.dSYM
 	cd modules && rm -fr *.gct *.gcn *.gso *.gso.dSYM *.js
 	cd modules/tests && rm -fr *.gct *.gcn *.gso *.gso.dSYM *.js
 	cd js && rm -f $(SOURCEFILES:%.grace=%.js)
@@ -318,9 +318,6 @@ $(MGSOURCEFILES:%.grace=%.gso): %.gso: %.grace StandardPrelude.gct l1/minigrace
 
 $(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace js/StandardPrelude.gct minigrace
 	GRACE_MODULE_PATH=modules ./minigrace $(VERBOSITY) --make --target js --dir js $<
-
-$(MGSOURCEFILES:%.grace=modules/%.gso): modules/%.gso: %.gso
-	cd modules && ln -sf ../$< .
 
 # Giant hack! Not suitable for use.
 minigrace-dynamic: l1/minigrace $(SOURCEFILES)
