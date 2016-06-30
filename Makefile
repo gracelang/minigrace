@@ -19,8 +19,8 @@ COMPILER_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace util
 
 DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso util.gct util.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
 DIALECTS_NEED = modules/dialect util ast modules/gUnit modules/math
-WEB_DIRECTORY = public_html/ide/
-DEV_WEB_DIRECTORY = public_html/dev/ide/
+WEB_DIRECTORY = ~grace/public_html/ide/
+DEV_WEB_DIRECTORY = ~grace/public_html/dev/ide/
 GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 
 LIBRARY_WO_OBJECTDRAW = $(sort $(filter-out $(OBJECTDRAW), $(LIBRARY_MODULES)))
@@ -54,7 +54,7 @@ CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi ; (cd l1 ; ln -sf $(
 
 all: minigrace-environment $(C_MODULES_GSO) $(WEBFILES)
 
-.PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects echo ideBuild ideDeploy fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest selftest-js samples sample-% test test.js test.js.compile uninstall
+.PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects dev-ide dev-ideDeploy echo ideBuild ideDeploy fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest selftest-js samples sample-% test test.js test.js.compile uninstall
 
 # clear out the default rules: produces far less --debug output
 .SUFFIXES:
@@ -131,9 +131,12 @@ collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
 
 collectionsPrelude.gcn: collectionsPrelude.gct
 
+dev-ide:
+	$(MAKE) WEB_SERVER=cs.pdx.edu dev-ideDeploy
+
 dev-ideDeploy: ideBuild
 	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
-	rsync -az --delete --exclude .git grace-web-editor/ $(WEB_SERVER):$(DEV_WEB_DIRECTORY)
+	rsync -rltz --delete --exclude .git --omit-dir-times --chmod=Fa+rX grace-web-editor/ $(WEB_SERVER):$(DEV_WEB_DIRECTORY)
 
 dialects: gracelib.o js js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
 
@@ -235,7 +238,7 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 js/sample-dialects js/sample-graphics: js/sample-%: js
 	$(MAKE) -C js/sample/$* VERBOSITY=$(VERBOSITY)
 
-js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sample/dialects/%.grace minigrace
+js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sample/dialects/%.grace js/grace minigrace
 	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
 #	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
