@@ -1720,15 +1720,15 @@ GraceBlock.prototype = {
     },
     methods: {
         "apply": this.apply,
-        "apply(1)": this.['apply(1)'],
-        "apply(2)": this.['apply(2)'],
-        "apply(3)": this.['apply(3)'],
-        "apply(4)": this.['apply(4)'],
-        "apply(5)": this.['apply(5)'],
-        "apply(6)": this.['apply(6)'],
-        "apply(7)": this.['apply(7)'],
-        "apply(8)": this.['apply(8)'],
-        "apply(9)": this.['apply(9)'],
+        "apply(1)": this['apply(1)'],
+        "apply(2)": this['apply(2)'],
+        "apply(3)": this['apply(3)'],
+        "apply(4)": this['apply(4)'],
+        "apply(5)": this['apply(5)'],
+        "apply(6)": this['apply(6)'],
+        "apply(7)": this['apply(7)'],
+        "apply(8)": this['apply(8)'],
+        "apply(9)": this['apply(9)'],
         "applyIndirectly(1)": function GraceBlock_applyIndirectly (argcv, a) {
             var argList = a._value || a.data.jsArray ;
             // APB: 2015 09 08.  This is a horrible hack.
