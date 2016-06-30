@@ -1523,8 +1523,10 @@ function Grace_isTrue(o) {
         return false;
     if (o._value === true)
         return true;
-    if (o.superobj !== null)
+    if (o.superobj)         //  if defined and not null ...
         return Grace_isTrue(o.superobj);
+    throw new GraceExceptionPacket(RuntimeErrorObject,
+        new GraceString("a Grace boolean is neither true nor false!"));
 }
 
 function Grace_print(obj) {
@@ -1719,16 +1721,26 @@ GraceBlock.prototype = {
           new GraceString("Incorrect number of parameters."));
     },
     methods: {
-        "apply": this.apply,
-        "apply(1)": this['apply(1)'],
-        "apply(2)": this['apply(2)'],
-        "apply(3)": this['apply(3)'],
-        "apply(4)": this['apply(4)'],
-        "apply(5)": this['apply(5)'],
-        "apply(6)": this['apply(6)'],
-        "apply(7)": this['apply(7)'],
-        "apply(8)": this['apply(8)'],
-        "apply(9)": this['apply(9)'],
+        "apply"   : function() {
+            return this['apply']();    },
+        "apply(1)": function(argcv, a1) {
+            return this['apply(1)'](argcv, a1); },
+        "apply(2)": function(argcv, a1, a2) {
+            return this['apply(2)'](argcv, a1, a2); },
+        "apply(3)": function(argcv, a1, a2, a3) {
+            return this['apply(3)'](argcv, a1, a2, a3); },
+        "apply(4)": function(argcv, a1, a2, a3, a4) {
+            return this['apply(4)'](argcv, a1, a2, a3, a4); },
+        "apply(5)": function(argcv, a1, a2, a3, a4, a5) {
+            return this['apply(5)'](argcv, a1, a2, a3, a4, a5); },
+        "apply(6)": function(argcv, a1, a2, a3, a4, a5, a6) {
+            return this['apply(6)'](argcv, a1, a2, a3, a4, a5, a6); },
+        "apply(7)": function(argcv, a1, a2, a3, a4, a5, a6, a7) {
+            return this['apply(7)'](argcv, a1, a2, a3, a4, a5, a6, a7); },
+        "apply(8)": function(argcv, a1, a2, a3, a4, a5, a6, a7, a8) {
+            return this['apply(8)'](argcv, a1, a2, a3, a4, a5, a6, a7, a8); },
+        "apply(9)": function(argcv, a1, a2, a3, a4, a5, a6, a7, a8, a9) {
+            return this['apply(9)'](argcv, a1, a2, a3, a4, a5, a6, a7, a8, a9); },
         "applyIndirectly(1)": function GraceBlock_applyIndirectly (argcv, a) {
             var argList = a._value || a.data.jsArray ;
             // APB: 2015 09 08.  This is a horrible hack.
@@ -2931,7 +2943,7 @@ GraceMirror.prototype = {
         superobjectMirror: function mirror_superobject(argcv) {
             return new GraceMirror(this.superobj);
         },
-        getMethod: function mirror_getMethod (argcv, methName) {
+        'getMethod(1)': function mirror_getMethod (argcv, methName) {
             var name = methName._value;
             var current = this.subject;
             while (current !== null) {
