@@ -153,6 +153,7 @@ method compilearray(o) {
 }
 method compilemember(o) {
     // Member in value position is actually a nullary method call.
+    o.generics := false     // because they are compiled wrongly
     compilecall(o)
 }
 method compileobjouter(selfr, outerRef) {
