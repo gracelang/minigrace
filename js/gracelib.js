@@ -1722,27 +1722,32 @@ GraceBlock.prototype = {
     },
     methods: {
         "apply": function(argcv) {
-            return this.real.apply(argcv); },
+            return this.real.call(this.receiver); },
         "apply(1)": function(argcv, a1) {
-            return this.real.apply(argcv, a1); },
+            return this.real.call(this.receiver, a1); },
         "apply(2)": function(argcv, a1, a2) {
-            return this.real.apply(argcv, a1, a2); },
+            return this.real.call(this.receiver, a1, a2); },
         "apply(3)": function(argcv, a1, a2, a3) {
-            return this.real.apply(argcv, a1, a2, a3); },
+            return this.real.call(this.receiver, a1, a2, a3); },
         "apply(4)": function(argcv, a1, a2, a3, a4) {
-            return this.real.apply(argcv, a1, a2, a3, a4); },
+            return this.real.call(this.receiver, a1, a2, a3, a4); },
         "apply(5)": function(argcv, a1, a2, a3, a4, a5) {
-            return this.real.apply(argcv, a1, a2, a3, a4, a5); },
+            return this.real.call(this.receiver, a1, a2, a3, a4, a5); },
         "apply(6)": function(argcv, a1, a2, a3, a4, a5, a6) {
-            return this.real.apply(argcv, a1, a2, a3, a4, a5, a6); },
+            return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6); },
         "apply(7)": function(argcv, a1, a2, a3, a4, a5, a6, a7) {
-            return this.real.apply(argcv, a1, a2, a3, a4, a5, a6, a7); },
+            return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6, a7); },
         "apply(8)": function(argcv, a1, a2, a3, a4, a5, a6, a7, a8) {
-            return this.real.apply(argcv, a1, a2, a3, a4, a5, a6, a7, a8); },
+            return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6, a7, a8); },
         "apply(9)": function(argcv, a1, a2, a3, a4, a5, a6, a7, a8, a9) {
-            return this.real.apply(argcv, a1, a2, a3, a4, a5, a6, a7, a8, a9); },
+            return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6, a7, a8, a9); },
         "applyIndirectly(1)": function GraceBlock_applyIndirectly (argcv, a) {
-            var argList = a._value || a.data.jsArray ;
+            var argList = a._value
+            if (! argList) {
+                if (a.data && a.data.jsArray) {
+                    argList = a.data.jsArray;
+                }
+            }
             // APB: 2015 09 08.  This is a horrible hack.
             // a._value          => a is a PrimitiveGraceList or Lineup
             // a.data.jsArray    => a is a native code list from collectionsPrelude
@@ -2852,7 +2857,7 @@ GraceMirrorMethod.prototype.methods['isVariableArity'] = function(argcv) {
 GraceMirrorMethod.prototype.methods['request(1)'] = function(argcv, argList) {
     if (! argList) {
         throw new GraceExceptionPacket(ProgrammingErrorObject,
-                new GraceString("'request' requires one argument (a list of argument lists)"));
+                new GraceString("'request(_)' requires one argument (a list of argument lists)"));
     }
     var theFunction = this.obj.methods[this.name];
     var requiredLen = theFunction.paramCounts.length;
@@ -2875,10 +2880,10 @@ GraceMirrorMethod.prototype.methods['request(1)'] = function(argcv, argList) {
     return callmethod.apply(null, allArgs);
 };
 
-GraceMirrorMethod.prototype.methods['requestWithArgs'] = function(argcv, argList) {
+GraceMirrorMethod.prototype.methods['requestWithArgs(1)'] = function(argcv, argList) {
     if (! argList) {
         throw new GraceExceptionPacket(ProgrammingErrorObject,
-                new GraceString("'requestWithArgs' requires one argument (a list of arguments)"));
+                new GraceString("'requestWithArgs(_)' requires one argument (a list of arguments)"));
     }
     var theFunction = this.obj.methods[this.name];
     var paramcv = theFunction.paramCounts;
@@ -2898,11 +2903,10 @@ GraceMirrorMethod.prototype.methods['requestWithArgs'] = function(argcv, argList
     return callmethod.apply(null, allArgs);
 };
 
-function methodMirror_hash (argcv, argList) {
+function methodMirror_hash (argcv) {
     return callmethod(new GraceString(this.name), "hash", [0]);
 }
 
-GraceMirrorMethod.prototype.methods['hashcode'] = methodMirror_hash;
 GraceMirrorMethod.prototype.methods['hash'] = methodMirror_hash;
 
 
@@ -2989,7 +2993,7 @@ function gracecode_mirrors() {
 }
 
 if (typeof gctCache !== "undefined")
-    gctCache['mirrors'] = "path:\n mirrors\nclasses:\npublic:\n Mirror\n MethodMirror\n ArgList\n loadDynamicModule\n reflect\nconfidential:\nfresh-methods:\n reflect\nfresh:reflect:\n basicAsString\n asDebugString\n ::\n methodNames\n ==\n !=\n getMethod\n methods\n ≠\n self\n asString\nmodules:\n";
+    gctCache['mirrors'] = "path:\n mirrors\nclasses:\npublic:\n Mirror\n MethodMirror\n ArgList\n loadDynamicModule(1)\n reflect(1)\nconfidential:\nfresh-methods:\n reflect(1)\nfresh:reflect(1):\n basicAsString\n asDebugString\n ::\n methodNames\n ==\n !=\n getMethod(1)\n methods\n ≠\n self\n asString\nmodules:\n";
 
 var overrideReceiver = null;
 
