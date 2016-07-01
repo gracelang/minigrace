@@ -4875,14 +4875,7 @@ int find_resource(const char *name, char *buf) {
 
     struct stat st;
 
-    // first try "."
-    strcpy(buf, "./");
-    strcat(buf, name);
-    if (stat(buf, &st) == 0) {
-        return 1;
-    }
-
-    // next try the elements of GRACE_MODULE_PATH
+    // try the elements of GRACE_MODULE_PATH
     char gmp[PATH_MAX];
     char *envEnquiry = getenv("GRACE_MODULE_PATH");
     if (envEnquiry) {

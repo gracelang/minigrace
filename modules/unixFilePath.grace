@@ -154,7 +154,6 @@ method split(pathString) -> List<String> {
 
 method file(name) onPath(pathString) otherwise(action) {
     def locations = split(pathString)
-    locations.addFirst "./"
     def candidate = name.copy
     def originalDir = name.dir
     if (originalDir.first == "/") then {

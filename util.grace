@@ -444,7 +444,6 @@ method execDir {
 method file(name) on(origin) orPath(pathString) otherwise(action) {
     def locations = filePath.split(pathString)
     locations.addFirst(origin)
-    if (origin != "./") then { locations.addFirst "./" }
     if (locations.contains(execDir).not) then { locations.addLast(execDir) }
     def candidate = name.copy
     def originalDir = name.directory
