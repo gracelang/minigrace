@@ -126,7 +126,7 @@ checkgenjs: l1/minigrace
 	jsl -nologo -conf tools/jsl.genjs.conf -process js/ast.js
 
 collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
-	GRACE_MODULE_PATH=l1 l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+	cd l1 && GRACE_MODULE_PATH=. ./minigrace $(VERBOSITY) --make --noexec -XNoMain --dir .. --gracelib .. ../$<
 
 collectionsPrelude.gcn: collectionsPrelude.gct
 
@@ -242,8 +242,8 @@ js/animation%gct js/animation%js: js/timer.gct objectdraw/animation.grace
 js: js/index.html js/dom.gct $(COMPILER_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES) minigrace
 	ln -f minigrace js/minigrace
 
-just-minigrace:
-	l1/minigrace --make --native --module minigrace $(VERBOSITY) compiler.grace
+just-minigrace: compiler.grace l1/minigrace
+	cd l1 && GRACE_MODULE_PATH=. ./minigrace --make --native --module minigrace $(VERBOSITY) -dir .. compiler.grace
 
 $(KG)/minigrace:
 	if [ -e minigrace-$(VER).tar.bz2 ] ;\
@@ -293,7 +293,7 @@ $(LIBRARY_MODULES:%.grace=modules/%.gcn): modules/%.gcn: modules/%.gso
 $(LIBRARY_MODULES:%.grace=modules/%.gct): modules/%.gct: modules/%.gso
 
 $(LIBRARY_MODULES:%.grace=%.gct): %.gct: modules/%.grace l1/minigrace
-	l1/minigrace  $(VERBOSITY) --make --dir . --noexec $<
+	cd l1 && ./minigrace $(VERBOSITY) --make --dir .. --noexec ../$<
 
 $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso): modules/%.gso: modules/%.grace minigrace
 	GRACE_MODULE_PATH=modules ./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
@@ -314,10 +314,13 @@ $(MGSOURCEFILES:%.grace=%.gct) $(MGSOURCEFILES:%.grace=%.gcn): $(MGSOURCEFILES:%
 $(MGSOURCEFILES:%.grace=%.gcn): $(MGSOURCEFILES:%.grace=%.gso)
 
 $(MGSOURCEFILES:%.grace=%.gso): %.gso: %.grace StandardPrelude.gct l1/minigrace
-	l1/minigrace $(VERBOSITY) --make --noexec $<
+	cd l1 && ./minigrace $(VERBOSITY) --make --noexec ../$<
 
 $(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace js/StandardPrelude.gct minigrace
 	GRACE_MODULE_PATH=modules ./minigrace $(VERBOSITY) --make --target js --dir js $<
+
+$(C_MODULES_GSO:modules/%.gso=%.gso): %.gso: modules/%.gso
+	ln -sf $< .
 
 # Giant hack! Not suitable for use.
 minigrace-dynamic: l1/minigrace $(SOURCEFILES)
@@ -326,7 +329,8 @@ minigrace-dynamic: l1/minigrace $(SOURCEFILES)
 	l1/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic compiler.grace
 
 minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) $(C_MODULES_GSO:%.gso=%.gct) gracelib.o unixFilePath.gct
-	GRACE_MODULE_PATH=l1 l1/minigrace --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
+	cd l1 && ./minigrace  --make --noexec --module minigrace ../compiler.grace
+	gcc -g -o minigrace -fPIC  minigrace.gcn gracelib.o ast.gcn unixFilePath.gcn parser.gcn xmodule.gcn buildinfo.gcn stringMap.gcn genjs.gcn identifierresolution.gcn identifierKinds.gcn genc.gcn util.gcn lexer.gcn errormessages.gcn -lm
 
 minigrace-environment: minigrace-c-env minigrace-js-env
 
@@ -421,7 +425,7 @@ selftest-js: minigrace-js-env $(ALL_LIBRARY_MODULES:%.grace=../js/%.js)
 
 # must be a pattern rule to get the "simultaneous build" semantics.
 StandardPrelude%gct StandardPrelude%gcn: StandardPrelude.grace collectionsPrelude.gct l1/minigrace
-	GRACE_MODULE_PATH=l1 l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+	cd l1 && GRACE_MODULE_PATH=. ./minigrace $(VERBOSITY) --make --noexec -XNoMain --dir .. ../$<
 
 # The next few rules are Static Pattern Rules.  Each is like an implicit rule
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
@@ -434,7 +438,7 @@ $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 
 $(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace StandardPrelude.gct l1/minigrace
 	@rm -f $(@:%.gct=%{.c,.gcn,})
-	GRACE_MODULE_PATH=l1:modules l1/minigrace $(VERBOSITY) --make --noexec --dir stubs $<
+	cd l1 && GRACE_MODULE_PATH=. ./minigrace $(VERBOSITY) --make --noexec --dir ../stubs ../$<
 	@rm -f $(@:%.gct=%{.c,.gcn});
 
 $(STUBS:%.grace=stubs/l1/%.gct): stubs/l1/%.gct: stubs/%.grace l1/StandardPrelude.gct $(KG)/minigrace
