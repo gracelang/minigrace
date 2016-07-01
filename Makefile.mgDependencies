@@ -31,12 +31,12 @@ StandardPrelude.gct: collectionsPrelude.gct
 ast.gct: util.gct identifierKinds.gct
 errormessages.gct: io.gct sys.gct util.gct
 modules/gUnit.gct: modules/mirrors.gct  modules/mirrors.gso modules/math.gct modules/math.gcn
-genc.gct: io.gct sys.gct ast.gct util.gct stringMap.gct xmodule.gct l1/mirrors.gso errormessages.gct
-genjs.gct: io.gct sys.gct ast.gct util.gct xmodule.gct l1/mirrors.gso errormessages.gct
-identifierresolution.gct: io.gct sys.gct ast.gct util.gct xmodule.gct stringMap.gct l1/mirrors.gso errormessages.gct  identifierKinds.gct
-lexer.gct: util.gct modules/unicode.gso modules/unicode.gct errormessages.gct
-minigrace: io.gct sys.gct modules/unicode.gct util.gct lexer.gct ast.gct parser.gct genc.gct genjs.gct buildinfo.gct identifierresolution.gct l1/mirrors.gso
+genc.gct: io.gct sys.gct ast.gct util.gct stringMap.gct xmodule.gct mirrors.gso errormessages.gct
+genjs.gct: io.gct sys.gct ast.gct util.gct xmodule.gct mirrors.gso errormessages.gct
+identifierresolution.gct: io.gct sys.gct ast.gct util.gct xmodule.gct stringMap.gct mirrors.gso errormessages.gct  identifierKinds.gct
+lexer.gct: util.gct unicode.gso unicode.gct errormessages.gct
+minigrace: io.gct sys.gct unicode.gct util.gct lexer.gct ast.gct parser.gct genc.gct genjs.gct buildinfo.gct identifierresolution.gct mirrors.gso
 parser.gct: io.gct ast.gct util.gct errormessages.gct
 symbolTable.gct: ast.gct errormessages.gct
-util.gct: io.gct sys.gct stringMap.gct l1/unixFilePath.gct
-xmodule.gct: io.gct sys.gct util.gct ast.gct l1/mirrors.gso l1/unixFilePath.gso errormessages.gct
+util.gct: io.gct sys.gct stringMap.gct unixFilePath.gct
+xmodule.gct: io.gct sys.gct util.gct ast.gct mirrors.gso unixFilePath.gct errormessages.gct
