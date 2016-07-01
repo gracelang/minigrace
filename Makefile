@@ -38,7 +38,9 @@ REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 STABLE=1e2f5d98abb4529b811183acfa9f4c89618406e0
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
-TYPE_DIALECTS = staticTypes requireTypes
+# Removed because it won't build — insists on running an old dialects.gso?
+# TYPE_DIALECTS = staticTypes requireTypes
+TYPE_DIALECTS = requireTypes
 VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
 WEB_DIRECTORY = public_html/minigrace/js/
