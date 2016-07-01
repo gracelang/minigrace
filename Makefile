@@ -242,9 +242,6 @@ js/animation%gct js/animation%js: js/timer.gct objectdraw/animation.grace
 js: js/index.html js/dom.gct $(COMPILER_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES) minigrace
 	ln -f minigrace js/minigrace
 
-just-minigrace: compiler.grace l1/minigrace
-	cd l1 && GRACE_MODULE_PATH=. ./minigrace --make --native --module minigrace $(VERBOSITY) -dir .. compiler.grace
-
 $(KG)/minigrace:
 	if [ -e minigrace-$(VER).tar.bz2 ] ;\
 	then ./tools/tarball-bootstrap minigrace-$(VER).tar.bz2 ;\
@@ -328,9 +325,11 @@ minigrace-dynamic: l1/minigrace $(SOURCEFILES)
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 	l1/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic compiler.grace
 
-minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) $(C_MODULES_GSO:%.gso=%.gct) gracelib.o unixFilePath.gct
-	cd l1 && ./minigrace  --make --noexec --module minigrace ../compiler.grace
+minigrace: l1/minigrace minigrace.gcn gracelib.o unixFilePath.gct minigrace.gcn
 	gcc -g -o minigrace -fPIC  minigrace.gcn gracelib.o ast.gcn unixFilePath.gcn parser.gcn xmodule.gcn buildinfo.gcn stringMap.gcn genjs.gcn identifierresolution.gcn identifierKinds.gcn genc.gcn util.gcn lexer.gcn errormessages.gcn -lm
+
+minigrace.gcn: $(SOURCEFILES) $(C_MODULES_GSO) $(C_MODULES_GSO:%.gso=%.gct) $(STUBS:%.grace=%.gct)
+	cd l1 && ./minigrace  --make --noexec --module minigrace ../compiler.grace
 
 minigrace-environment: minigrace-c-env minigrace-js-env
 
