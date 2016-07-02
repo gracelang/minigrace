@@ -633,56 +633,56 @@ class list⟦T⟧ {
                 var sz := 0
                 var jsArray := native "js" code ‹result = [];›
                 a.do { each ->
-                    native "js" code ‹superDepth.data.jsArray.push(var_each);›
+                    native "js" code ‹this.data.jsArray.push(var_each);›
                 }
 
                 method size {
-                    native "js" code ‹return new GraceNum(superDepth.data.jsArray.length);›
+                    native "js" code ‹return new GraceNum(this.data.jsArray.length);›
                     sz
                 }
 
                 method at(n) {
                     native "js" code ‹var ix = var_n._value;
-                        if ( !(ix >= 1) || !(ix <= superDepth.data.jsArray.length)) {
-                            var msg = "index " + ix + " out of bounds 1.." + superDepth.data.jsArray.length;
+                        if ( !(ix >= 1) || !(ix <= this.data.jsArray.length)) {
+                            var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
                             var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                            callmethod(BoundsError, "raise", [1], new GraceString(msg));
+                            callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
                         }
-                        return superDepth.data.jsArray[ix - 1];›
+                        return this.data.jsArray[ix - 1];›
                 }
 
                 method at(n)put(x) {
                     mods := mods + 1
                     native "js" code ‹var  ix = var_n._value;
-                        if (!(ix >= 1) || !(ix <= superDepth.data.jsArray.length + 1)) {
-                            var msg = "index " + ix + " out of bounds 1.." + superDepth.data.jsArray.length;
+                        if (!(ix >= 1) || !(ix <= this.data.jsArray.length + 1)) {
+                            var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
                             var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                            callmethod(BoundsError, "raise", [1], new GraceString(msg));
+                            callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
                         }
-                        superDepth.data.jsArray[ix-1] = var_x;
+                        this.data.jsArray[ix-1] = var_x;
                         return this;›
                 }
 
                 method add(x:T) {
                     mods := mods + 1
-                    native "js" code ‹superDepth.data.jsArray.push(var_x);
+                    native "js" code ‹this.data.jsArray.push(var_x);
                         return this;›
                 }
 
                 method push(x) {
                     mods := mods + 1
-                    native "js" code ‹superDepth.data.jsArray.push(var_x);
+                    native "js" code ‹this.data.jsArray.push(var_x);
                         return this;›
                 }
 
                 method removeLast {
                     mods := mods + 1
-                    native "js" code ‹if (superDepth.data.jsArray.length === 0) {
+                    native "js" code ‹if (this.data.jsArray.length === 0) {
                         var msg = "you can't remove an element from an empty list";
                         var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                        callmethod(BoundsError, "raise", [1], new GraceString(msg));
+                        callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
                     } else
-                        return superDepth.data.jsArray.pop();›
+                        return this.data.jsArray.pop();›
                 }
 
                 method addAllFirst(l) {
@@ -691,7 +691,7 @@ class list⟦T⟧ {
                     while {ix > 0} do {
                         def each = l.at(ix)
                         ix := ix - 1
-                        native "js" code ‹superDepth.data.jsArray.unshift(var_each);›
+                        native "js" code ‹this.data.jsArray.unshift(var_each);›
                     }
                     self
                 }
@@ -699,19 +699,19 @@ class list⟦T⟧ {
                 method removeAt(n) {
                     mods := mods + 1
                     def removed = self.at(n)    // does the bounds check
-                    native "js" code ‹superDepth.data.jsArray.splice(var_n._value - 1, 1);›
+                    native "js" code ‹this.data.jsArray.splice(var_n._value - 1, 1);›
                     return removed
                 }
 
                 method sortBy(sortBlock:Block2) {
                     mods := mods + 1
                     native "js" code ‹var compareFun = function compareFun(a, b) {
-                              var res = callmethod(var_sortBlock, "apply", [2], a, b);
+                              var res = callmethod(var_sortBlock, "apply(2)", [2], a, b);
                               if (res.className == "number") return res._value;
                               throw new GraceExceptionPacket(TypeErrorObject,
                                      new GraceString("sort block in list.sortBy method did not return a number"));
                           };
-                          superDepth.data.jsArray.sort(compareFun);›
+                          this.data.jsArray.sort(compareFun);›
                     self
                 }
                 // end of native methods
@@ -725,7 +725,7 @@ class list⟦T⟧ {
 
                 method addFirst(elem) {
                     mods := mods + 1
-                    native "js" code ‹superDepth.data.jsArray.unshift(var_elem);›
+                    native "js" code ‹this.data.jsArray.unshift(var_elem);›
                     self
                 }                
 
