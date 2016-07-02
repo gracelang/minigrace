@@ -1680,66 +1680,35 @@ function GraceBlock(recvr, lineNum, numParams) {
 }
 
 GraceBlock.prototype = {
-    "apply": function GraceBlock_realApply (argcv) {
-      throw new GraceExceptionPacket(RequestErrorObject,
-          new GraceString("Incorrect number of parameters."));
-    },
-    "apply(1)": function GraceBlock_realApply (argcv, a1) {
-      throw new GraceExceptionPacket(RequestErrorObject,
-          new GraceString("Incorrect number of parameters."));
-    },
-    "apply(2)": function GraceBlock_realApply (argcv, a1, a2) {
-      throw new GraceExceptionPacket(RequestErrorObject,
-          new GraceString("Incorrect number of parameters."));
-    },
-    "apply(3)": function GraceBlock_realApply (argcv, a1, a2, a3) {
-      throw new GraceExceptionPacket(RequestErrorObject,
-          new GraceString("Incorrect number of parameters."));
-    },
-    "apply(4)": function GraceBlock_realApply (argcv, a1, a2, a3, a4) {
-      throw new GraceExceptionPacket(RequestErrorObject,
-          new GraceString("Incorrect number of parameters."));
-    },
-    "apply(5)": function GraceBlock_realApply (argcv, a1, a2, a3, a4, a5) {
-      throw new GraceExceptionPacket(RequestErrorObject,
-          new GraceString("Incorrect number of parameters."));
-    },
-    "apply(6)": function GraceBlock_realApply (argcv, a1, a2, a3, a4, a5, a6) {
-      throw new GraceExceptionPacket(RequestErrorObject,
-          new GraceString("Incorrect number of parameters."));
-    },
-    "apply(7)": function GraceBlock_realApply (argcv, a1, a2, a3, a4, a5, a6, a7) {
-      throw new GraceExceptionPacket(RequestErrorObject,
-          new GraceString("Incorrect number of parameters."));
-    },
-    "apply(8)": function GraceBlock_realApply (argcv, a1, a2, a3, a4, a5, a6, a7, a8) {
-      throw new GraceExceptionPacket(RequestErrorObject,
-          new GraceString("Incorrect number of parameters."));
-    },
-    "apply(9)": function GraceBlock_realApply (argcv, a1, a2, a3, a4, a5, a6, a7, a8, a9) {
-      throw new GraceExceptionPacket(RequestErrorObject,
-          new GraceString("Incorrect number of parameters."));
-    },
     methods: {
         "apply": function(argcv) {
             return this.real.call(this.receiver); },
         "apply(1)": function(argcv, a1) {
+            checkBlockApply.call(this, 1, a1)
             return this.real.call(this.receiver, a1); },
-        "apply(2)": function(argcv, a1, a2) {
+        "apply(2)": function(argcv, a1, a2) { 
+            checkBlockApply.call(this, 2, a1, a2)
             return this.real.call(this.receiver, a1, a2); },
         "apply(3)": function(argcv, a1, a2, a3) {
+            checkBlockApply.call(this, 3, a1, a2, a3)
             return this.real.call(this.receiver, a1, a2, a3); },
         "apply(4)": function(argcv, a1, a2, a3, a4) {
+            checkBlockApply.call(this, 4, a1, a2, a3, a4)
             return this.real.call(this.receiver, a1, a2, a3, a4); },
         "apply(5)": function(argcv, a1, a2, a3, a4, a5) {
+            checkBlockApply.call(this, 5, a1, a2, a3, a4, a5)
             return this.real.call(this.receiver, a1, a2, a3, a4, a5); },
         "apply(6)": function(argcv, a1, a2, a3, a4, a5, a6) {
+            checkBlockApply.call(this, 6, a1, a2, a3, a4, a5, a6)
             return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6); },
         "apply(7)": function(argcv, a1, a2, a3, a4, a5, a6, a7) {
+            checkBlockApply.call(this, 7, a1, a2, a3, a4, a5, a6, a7)
             return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6, a7); },
         "apply(8)": function(argcv, a1, a2, a3, a4, a5, a6, a7, a8) {
+            checkBlockApply.call(this, 8, a1, a2, a3, a4, a5, a6, a7, a8)
             return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6, a7, a8); },
         "apply(9)": function(argcv, a1, a2, a3, a4, a5, a6, a7, a8, a9) {
+            checkBlockApply.call(this, 9, a1, a2, a3, a4, a5, a6, a7, a8, a9)
             return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6, a7, a8, a9); },
         "applyIndirectly(1)": function GraceBlock_applyIndirectly (argcv, a) {
             var argList = a._value
@@ -1775,15 +1744,24 @@ GraceBlock.prototype = {
     superobj: new GraceObject()
 };
 
-function GraceBlock_apply(argcv) {
+function blockWrongArityException(numArgs) {
+    var plural = (this.numParams === 1) ? "" : "s";
+    throw new GraceExceptionPacket(RequestErrorObject,
+        new GraceString("block requires " + this.numParams + " argument" +
+                plural + " but given " + numArgs + " arguments."));
+};
+
+function checkBlockApply(numargs) {
     var args = Array.prototype.slice.call(arguments, 1);
         // makes a copy of arguments, without element at index 0
-    var len = args.length;
-    if (args.length !== this.numParams) {
+    var nArgs = args.length;
+    setLineNumber(this.definitionLine);
+    setModuleName(this.definitionModule);
+    if (nArgs !== this.numParams) {
         var plural = (this.numParams === 1) ? "" : "s";
-        throw new GraceExceptionPacket(ProgrammingErrorObject,
+        throw new GraceExceptionPacket(RequestErrorObject,
             new GraceString("block takes " + this.numParams + " argument" +
-                plural + " but given " + len + "."));
+                plural + " but given " + nArgs + "."));
     }
     var match;
     superDepth = this.receiver;
@@ -1791,21 +1769,22 @@ function GraceBlock_apply(argcv) {
         match = callmethod(this.pattern, "match(1)", [1], args[0]);
         if ( ! Grace_isTrue(match)) {
             throw new GraceExceptionPacket(TypeErrorObject,
-                new GraceString("argument to block.apply has wrong type."));
+                new GraceString("argument to block.apply(_) has wrong type."));
         }
     } else if (this.paramTypes) {
-        for (var ix=0; ix < this.paramTypes.length; ix++) {
+        for (var ix = 0; ix < this.paramTypes.length; ix++) {
             match = callmethod(this.paramTypes[ix], "match(1)", [1], args[ix]);
             if ( ! Grace_isTrue(match)) {
                 var n = ix + 1;
+                var canonicalName = "apply(_"
+                for (ix = 1; ix < numargs; ix++) { canonicalName += ",_" }
+                canonicalName += ")"
                 throw new GraceExceptionPacket(TypeErrorObject,
                     new GraceString("argument " + n +
-                        " to block.apply has wrong type."));
+                        " to block." + canonicalName + " has wrong type."));
             }
         }
     }
-    setModuleName(this.definitionModule);
-    return this.real.apply(this.receiver, args);
 }
 
 function GraceBlock_match(argcv, o) {
