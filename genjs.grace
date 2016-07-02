@@ -387,8 +387,6 @@ method compileblock(o) {
     out("return " ++ ret ++ ";")
     decreaseindent
     out("\};")
-    def applyName = if (nParams == 0) then { "apply" } else { "apply({nParams})" }
-    out "block{myc}['{applyName}'] = block{myc}.real;"
     o.register := "block" ++ myc
     inBlock := origInBlock
 }
@@ -995,6 +993,9 @@ method compilePreludeRequest(o, args) {
 method compileOtherRequest(o, args) {
     out "// call case 6: other requests"
     def target = compilenode(o.receiver)
+    if (o.isSelfRequest) then {
+        out "onSelf = true;"
+    }
     out("var call{auto_count} = {requestCall}({target}" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
