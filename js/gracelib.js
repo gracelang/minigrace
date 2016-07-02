@@ -2972,7 +2972,7 @@ function gracecode_mirrors() {
 }
 
 if (typeof gctCache !== "undefined")
-    gctCache['mirrors'] = "path:\n mirrors\nclasses:\npublic:\n Mirror\n MethodMirror\n ArgList\n loadDynamicModule(1)\n reflect(1)\nconfidential:\nfresh-methods:\n reflect(1)\nfresh:reflect(1):\n basicAsString\n asDebugString\n ::\n methodNames\n ==\n !=\n getMethod(1)\n methods\n ≠\n self\n asString\nmodules:\n";
+    gctCache['mirrors'] = "path:\n mirrors\nclasses:\npublic:\n Mirror\n MethodMirror\n ArgList\n loadDynamicModule(1)\n reflect(1)\nconfidential:\nfresh-methods:\n reflect(1)\nfresh:reflect(1):\n basicAsString\n asDebugString\n ::\n methodNames\n ==(1)\n getMethod(1)\n methods\n ≠(1)\n self\n asString\nmodules:\n";
 
 var overrideReceiver = null;
 
@@ -3038,7 +3038,12 @@ function callmethod(obj, methname, argcv) {
         }
     }
     try {
+        if (overrideReceiver !== null) {
+            obj = overrideReceiver;
+            overrideReceiver = null;
+        }
         if (typeof(meth) !== "function") {
+            onSelf = false
             raiseNoSuchMethod(methname, obj);
         }
         if (meth.confidential && !onSelf) {
@@ -3046,10 +3051,6 @@ function callmethod(obj, methname, argcv) {
         }
         onSelf = false;
         onOuter = false;
-        if (overrideReceiver !== null) {
-            obj = overrideReceiver;
-            overrideReceiver = null;
-        }
         var args = Array.prototype.slice.call(arguments, 3);
         args.unshift(argcv);
         var ret = meth.apply(obj, args);
@@ -3102,14 +3103,11 @@ function callmethodChecked(obj, methname, argcv) {
             raiseNoSuchMethod(methname, obj);
         }
         if (meth.confidential && !onSelf) {
+            onSelf = false
             raiseConfidentialMethod(methname, obj);
         }
         onSelf = false;
         onOuter = false;
-        if (overrideReceiver !== null) {
-            obj = overrideReceiver;
-            overrideReceiver = null;
-        }
         var args = Array.prototype.slice.call(arguments, 3);
         for (var i=0; i<args.length; i++) {
             if (typeof args[i] === 'undefined') {
@@ -3192,11 +3190,11 @@ function describe(obj) {
 }
 
 function tryCatch(obj, cases, finallyblock) {
-    setModuleName("try()catch()...finally()");
+    setModuleName("try(_)catch(_)...finally(_)");
     setLineNumber(0);
     var ret;
     try {
-        return callmethod(obj, "apply");
+        return callmethod(obj, "apply", [0]);
     } catch (e) {
         if (e.exctype === 'graceexception') {
             for (var i = 0; i < cases.length; i++) {
@@ -3210,7 +3208,7 @@ function tryCatch(obj, cases, finallyblock) {
         }
     } finally {
         if (finallyblock !== false)
-            ret = callmethod(finallyblock, "apply");
+            ret = callmethod(finallyblock, "apply", [0]);
     }
     return ret;
 }
