@@ -1362,7 +1362,7 @@ Lineup.prototype = {
             var res = initial;
             for (var i=0; i<self.length; i++) {
                 var v = self[i];
-                res = callmethod(block, "apply(1)", [2], res, v);
+                res = callmethod(block, "apply(2)", [2], res, v);
             }
             return res;
         },
@@ -3317,12 +3317,6 @@ GraceException.prototype = {
                 throw new GraceExceptionPacket(ProgrammingErrorObject,
                     new GraceString("wrong number of arguments for raise(1)"));
             throw new GraceExceptionPacket(this, msg, new GraceObject());
-        },
-        "raiseWith(2)": function(argcv, msg, data) {
-            if (argcv[0] !== 2)
-                throw new GraceExceptionPacket(ProgrammingErrorObject,
-                    new GraceString("wrong number of arguments for raiseWith(1)"));
-            throw new GraceExceptionPacket(this, msg, data);
         },
         "raise(1)with(1)": function(argcv, msg, data) {
             if ((argcv[0] !== 1) && (argcv[1] !== 1))
