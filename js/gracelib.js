@@ -2392,7 +2392,7 @@ function GraceUnicodePattern(pos, neg) {
 
 GraceUnicodePattern.prototype = {
     methods: {
-        match: function(argcv, o) {
+        'match(1)': function(argcv, o) {
             var success = false;
             var cc = o._value;
             if (cc.charCodeAt)
