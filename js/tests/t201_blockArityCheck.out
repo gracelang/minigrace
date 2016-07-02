@@ -1,5 +1,8 @@
 GOT 1: 345
 GOT 3: 123456789
-ProgrammingError: block takes 2 arguments but given 3.
-ProgrammingError: block takes 4 arguments but given 3.
+RequestError: block takes 2 arguments but given 3.
+RequestError: block takes 1 argument but given 3.
+RequestError: block takes 4 arguments but given 3.
+GOT 3: 123 hi  lo.
+TypeError: argument 3 to block.apply(_,_,_) has wrong type.
 done
