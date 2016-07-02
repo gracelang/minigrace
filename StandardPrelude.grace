@@ -324,10 +324,10 @@ type Pattern = {
 }
 
 type ExceptionKind = Pattern & type {
-    refine -> ExceptionKind
+    refine (parentKind:ExceptionKind) -> ExceptionKind
     parent -> ExceptionKind
-    raise(message:String) -> Done
-    raise(message:String) with (argument:Object) -> Done
+    raise (message:String) -> Done
+    raise (message:String) with (argument:Object) -> Done
 }
 
 type Point =  {
