@@ -137,7 +137,7 @@ class new {
             var keys = Object.keys(inner);
             for (var ix = 0; ix < keys.length; ix++) {
                 var key = keys[ix];
-                callmethod(var_action, "apply", [2], new GraceString(key), inner[key]);
+                callmethod(var_action, "apply(2)", [2], new GraceString(key), inner[key]);
             }
             return GraceDone;›
         var count := 1
@@ -159,7 +159,7 @@ class new {
             var keys = Object.keys(inner);
             for (var ix = 0; ix < keys.length; ix++) {
                 var key = keys[ix];
-                callmethod(var_action, "apply", [1], inner[key]);
+                callmethod(var_action, "apply(1)", [1], inner[key]);
             }
             return GraceDone;›
         var count := 1
@@ -180,7 +180,7 @@ class new {
             var keys = Object.keys(inner);
             for (var ix = 0; ix < keys.length; ix++) {
                 var key = keys[ix];
-                callmethod(var_action, "apply", [1], new GraceString(key));
+                callmethod(var_action, "apply(1)", [1], new GraceString(key));
             }
             return GraceDone;›
         var count := 1
@@ -222,9 +222,9 @@ class new {
             for (var ix = 0; ix < keys.length; ix++) {
                 var key = keys[ix];
                 var keyStr = new GraceString(key);
-                var binding = callmethod(GraceBindingClass(), "key()value", 
+                var binding = callmethod(GraceBindingClass(), "key(1)value(1)",
                                                     [1, 1], keyStr, inner[key]);
-                callmethod(var_result, "add", [1], binding);
+                callmethod(var_result, "add(1)", [1], binding);
             }
             return var_result;›
         var count := 1
