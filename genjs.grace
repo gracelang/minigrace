@@ -966,7 +966,7 @@ method compileSuperRequest(o, args) {
     out "// call case 1: super request"
     def escapedName = escapestring(o.nameString)
     out("var call{auto_count} = callmethodsuper(this" ++
-          ", \"{escapestring(o.receiver.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
+          ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compileOuterRequest(o, args) {
     out "// call case 2: outer request"
