@@ -1107,7 +1107,13 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             def myParent = as.parent
             if (o.returnsObject) then {
                 myParent.scope.at(o.nameString) putScope(o.returnedObjectScope)
-                def objectName = myParent.name
+                if (as.forebears.forebears.isEmpty.not) then {
+                    // omit this if I'm at the module-level
+                    def factoryName = myParent.name
+                    if ((factoryName != "object") && (o.body.last.isObject)) then {
+                        o.body.last.name := factoryName ++ "." ++ o.body.last.name
+                    }
+                }
             }
             true
         }
