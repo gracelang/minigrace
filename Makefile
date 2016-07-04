@@ -312,7 +312,7 @@ Makefile.conf: configure stubs modules
 	./configure
 
 $(REALSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
-	cd l1 && GRACE_MODULE_PATH=../modules ../$(KG)/minigrace  $(VERBOSITY) --make --noexec  $(<F)
+	cd l1 && GRACE_MODULE_PATH=. ../$(KG)/minigrace  $(VERBOSITY) --make --noexec  $(<F)
 
 $(MGSOURCEFILES:%.grace=%.gct) $(MGSOURCEFILES:%.grace=%.gcn): $(MGSOURCEFILES:%.grace=%.gso)
 
