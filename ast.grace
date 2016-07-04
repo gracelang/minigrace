@@ -852,6 +852,23 @@ def methodNode = object {
         var isFresh is public := false      // a method is 'fresh' if it answers a new object
         var usesClassSyntax is public := false
         var cachedIdentifier := uninitialized
+        var isBindingOccurence is readable := true
+            // the only exception is the oldMethodName in an alias clause
+
+        method appliedOccurence {
+            isBindingOccurence := false
+            if (uninitialized ≠ cachedIdentifier) then {
+                cachedIdentifier.isBindingOccurence := false
+            }
+            self
+        }
+        method numParams {
+            signature.fold { acc, p -> acc + p.numParams } startingWith 0
+        }
+        method endPos {
+            def lastPart = signature.last
+            lastPart.linePos + lastPart.name.size - 1
+        }
 
         method nameString {
             signature.fold { acc, each -> acc ++ each.nameString }
@@ -862,7 +879,7 @@ def methodNode = object {
                 cachedIdentifier := identifierNode.new(nameString, false)
                 cachedIdentifier.line := signature.first.line
                 cachedIdentifier.linePos := signature.first.linePos
-                cachedIdentifier.isBindingOccurrence := true
+                cachedIdentifier.isBindingOccurrence := isBindingOccurence
             }
             cachedIdentifier
         }
@@ -2550,7 +2567,7 @@ def signaturePart = object {
             if (params.isEmpty) then {return name}
             name ++ "(" ++ params.size ++ ")"
         }
-
+        method numParams { params.size }
         method canonicalName {
             if (params.size == 0) then {return name}
             var underScores := ""
