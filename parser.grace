@@ -2348,17 +2348,18 @@ method inheritsModifier(node) onLineOf(startToken) {
 
 method parseAlias(node) {
     next    // skip the alias keyword
-    def newSig = methodsignature(true)
-    def newMeth = newSig.nameString
+    def newMeth = methodsignature(true)
     if (accept "op" && (sym.value == "=")) then {
         next
-        def oldSig = methodsignature(true)
-        def oldMeth = oldSig.nameString
-        oldMeth.isBindingOccurrence := false
-        node.addAlias (newMeth) for (oldMeth)
+        def oldMeth = methodsignature(true).appliedOccurence
+        if (newMeth.numParams ≠ oldMeth.numParams) then {
+            errormessages.syntaxError "A method and its alias must have the same number of parameters"
+                atRange (newMeth.line, newMeth.linePos, oldMeth.endPos)
+        }
+        node.addAlias (newMeth.asIdentifier) for (oldMeth.asIdentifier)
     } else {
         errormessages.syntaxError ("An alias modifier must take the form " ++
-            "'newMethodName = oldMethodName'") 
+            "'‹newMethodName› = ‹oldMethodName›'")
             atPosition (lastToken.line, lastToken.linePos + lastToken.size)
     }
     return true
