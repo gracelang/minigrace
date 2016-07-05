@@ -2353,12 +2353,12 @@ method parseAlias(node) {
         next
         def oldMeth = methodsignature(true).appliedOccurence
         if (newMeth.numParams ≠ oldMeth.numParams) then {
-            errormessages.syntaxError "A method and its alias must have the same number of parameters"
+            errormessages.syntaxError "a method and its alias must have the same number of parameters"
                 atRange (newMeth.line, newMeth.linePos, oldMeth.endPos)
         }
         node.addAlias (newMeth.asIdentifier) for (oldMeth.asIdentifier)
     } else {
-        errormessages.syntaxError ("An alias modifier must take the form " ++
+        errormessages.syntaxError ("an alias modifier must take the form " ++
             "'‹newMethodName› = ‹oldMethodName›'")
             atPosition (lastToken.line, lastToken.linePos + lastToken.size)
     }
@@ -2366,9 +2366,7 @@ method parseAlias(node) {
 }
 method parseExclude(node) {
     next    // skip the exclude keyword
-    def exSig = methodsignature(true)
-    def excludedMeth = exSig.nameString
-    excludedMeth.isBindingOccurrence := false
+    def excludedMeth = methodsignature(true).appliedOccurence
     node.addExclusion (excludedMeth)
     return true
 }
