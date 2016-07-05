@@ -147,7 +147,7 @@ unicode.name = function(s) {
     return "UNICODE CHARACTER " + charCode().toString(16);
 };
 
-unicode.isCategory = function(s, c) {
+unicode.inCategory = function(s, c) {
     var table = unicodedata.categories[c];
     var o = s;
     if (typeof o == "string")
@@ -171,7 +171,7 @@ unicode.category = function(s) {
         o = s.charCodeAt(0);
     for (catName in unicodedata.categories) {
         if (unicodedata.categories.hasOwnProperty(catName)) {
-            if (unicode.isCategory(o, catName)) {
+            if (unicode.inCategory(o, catName)) {
                 return catName;
             }
         }

@@ -498,23 +498,23 @@ GraceString.prototype = {
         },
         "startsWithSpace": function string_startsWithSpace (argcv) {
             var s = this._value.charCodeAt(0);
-            return  ( (unicode.isCategory(s, "Zs") ) ? GraceTrue : GraceFalse);
+            return  ( (unicode.inCategory(s, "Zs") ) ? GraceTrue : GraceFalse);
         },
         "startsWithPeriod": function string_startsWithPeriod (argcv) {
             if (this._value.charCodeAt(0) === 46) return GraceTrue; else return GraceFalse;
         },
         "startsWithDigit": function string_startsWithDigit (argcv) {
             var s = this._value.charCodeAt(0);
-            return ( ( unicode.isCategory(s, "Nd") ||
-                       unicode.isCategory(s, "No") ||
-                       unicode.isCategory(s, "Nl") ) ? GraceTrue : GraceFalse);
+            return ( ( unicode.inCategory(s, "Nd") ||
+                       unicode.inCategory(s, "No") ||
+                       unicode.inCategory(s, "Nl") ) ? GraceTrue : GraceFalse);
         },
         "startsWithLetter": function string_startsWithLetter (argcv) {
             var c = this._value.charCodeAt(0);
-            return ( ( unicode.isCategory(c, "Ll") ||
-                       unicode.isCategory(c, "Lu") ||
-                       unicode.isCategory(c, "Lo") ||
-                       unicode.isCategory(c, "Lm") ) ? GraceTrue : GraceFalse);
+            return ( ( unicode.inCategory(c, "Ll") ||
+                       unicode.inCategory(c, "Lu") ||
+                       unicode.inCategory(c, "Lo") ||
+                       unicode.inCategory(c, "Lm") ) ? GraceTrue : GraceFalse);
         },
         "*(1)": function string_times (argcv, num) {
             // We could adapt the Russian Peasant algorithm for multiplication by addition,
@@ -2299,49 +2299,48 @@ function gracecode_unicode() {
         if (typeof s._value === "number")
             s = String.fromCharCode(s._value);
         else s = s._value;
-        return ( ( unicode.isCategory(s, "Ll") ||
-                   unicode.isCategory(s, "Lu") ||
-                   unicode.isCategory(s, "Lo") ||
-                   unicode.isCategory(s, "Lm") ) ? GraceTrue : GraceFalse);
+        return ( ( unicode.inCategory(s, "Ll") ||
+                   unicode.inCategory(s, "Lu") ||
+                   unicode.inCategory(s, "Lo") ||
+                   unicode.inCategory(s, "Lm") ) ? GraceTrue : GraceFalse);
     };
     this.methods['isNumber(1)'] = function unicode_isNumber(argcv, s) {
         if (typeof s._value === "number")
             s = String.fromCharCode(s._value);
         else s = s._value;
-        return ( ( unicode.isCategory(s, "Nd") ||
-                   unicode.isCategory(s, "No") ||
-                   unicode.isCategory(s, "Nl") ) ? GraceTrue : GraceFalse);
+        return ( ( unicode.inCategory(s, "Nd") ||
+                   unicode.inCategory(s, "No") ||
+                   unicode.inCategory(s, "Nl") ) ? GraceTrue : GraceFalse);
     };
     this.methods['isSymbolMathematical(1)'] = function unicode_isSymbolMathematical(argcv, s) {
         if (typeof s._value === "number")
             s = String.fromCharCode(s._value);
         else s = s._value;
-        return ((unicode.isCategory(s, "Sm")) ? GraceTrue : GraceFalse);
+        return ((unicode.inCategory(s, "Sm")) ? GraceTrue : GraceFalse);
     };
     this.methods['isSeparator(1)'] = function unicode_isSeparator(argcv, s) {
         if (typeof s._value === "number")
             s = String.fromCharCode(s._value);
         else s = s._value;
-        return ( ( unicode.isCategory(s, "Zs") ||
-                   unicode.isCategory(s, "Zp") ||
-                   unicode.isCategory(s, "Zl") ) ? GraceTrue : GraceFalse);
+        return ( ( unicode.inCategory(s, "Zs") ||
+                   unicode.inCategory(s, "Zp") ||
+                   unicode.inCategory(s, "Zl") ) ? GraceTrue : GraceFalse);
     };
     this.methods['isControl(1)'] = function unicode_isControl(argcv, s) {
         if (typeof s._value === "number")
             s = String.fromCharCode(s._value);
         else s = s._value;
-        return ( ( unicode.isCategory(s, "Cf") ||
-                   unicode.isCategory(s, "Cc") ||
-                   unicode.isCategory(s, "Co") ||
-                   unicode.isCategory(s, "Cs") ) ? GraceTrue : GraceFalse);
+        return ( ( unicode.inCategory(s, "Cf") ||
+                   unicode.inCategory(s, "Cc") ||
+                   unicode.inCategory(s, "Co") ||
+                   unicode.inCategory(s, "Cs") ) ? GraceTrue : GraceFalse);
     };
     this.methods['inCategory(2)'] = function unicode_inCategory(argcv, s, c) {
         if (typeof s._value === "number")
             s = String.fromCharCode(s._value);
         else s = s._value;
-        return ((unicode.isCategory(s, c._value)) ? GraceTrue : GraceFalse);
+        return ((unicode.inCategory(s, c._value)) ? GraceTrue : GraceFalse);
     };
-    this.methods['iscategory(2)'] = this.methods.inCategory;
     this.methods['category(1)'] = function unicode_category(argcv, s) {
         return new GraceString(unicode.category(s._value));
     };
@@ -2361,7 +2360,7 @@ function gracecode_unicode() {
 }
 
 if (typeof gctCache !== "undefined")
-    gctCache['unicode'] = "path:\n unicode\nclasses:\npublic:\n category(1)\n iscategory(2)\n isSeparator(1)\n isControl(1)\n isLetter(1)\n isNumber(1)\n isSymbolMathematical(1)\n create(1)\nconfidential:\nfresh-methods:\nmodules:\n";
+    gctCache['unicode'] = "path:\n unicode\nclasses:\npublic:\n category(1)\n inCategory(2)\n isSeparator(1)\n isControl(1)\n isLetter(1)\n isNumber(1)\n isSymbolMathematical(1)\n create(1)\nconfidential:\nfresh-methods:\nmodules:\n";
 
 
 function GraceUnicodePattern(pos, neg) {
@@ -2405,7 +2404,7 @@ GraceUnicodePattern.prototype = {
                         break;
                     }
                 } else {
-                    if (unicode.isCategory(cc, t._value)) {
+                    if (unicode.inCategory(cc, t._value)) {
                         success = true;
                         break;
                     }
@@ -2422,7 +2421,7 @@ GraceUnicodePattern.prototype = {
                             break;
                         }
                     } else {
-                        if (unicode.isCategory(cc, u._value)) {
+                        if (unicode.inCategory(cc, u._value)) {
                             success = false;
                             break;
                         }

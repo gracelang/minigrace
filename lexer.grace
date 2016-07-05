@@ -27,7 +27,7 @@ def operatorChars = "-&|:$#\\%^@?*/+!~"
 method isOperatorChar(c, ordval) {
     if (operatorChars.contains(c)) then { return true }
     if (unicode.isSymbolMathematical(ordval)) then { return true }
-    if (unicode.iscategory(c, "So")) then { return true }
+    if (unicode.inCategory(c, "So")) then { return true }
     return false
 }
 
