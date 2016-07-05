@@ -874,7 +874,7 @@ def methodNode = object {
             signature.fold { acc, each -> acc ++ each.nameString }
                 startingWith ""
         }
-        method value {
+        method asIdentifier {
             if (uninitialized == cachedIdentifier) then {
                 cachedIdentifier := identifierNode.new(nameString, false)
                 cachedIdentifier.line := signature.first.line
@@ -883,6 +883,7 @@ def methodNode = object {
             }
             cachedIdentifier
         }
+        method value { asIdentifier }
         method canonicalName {
             signature.fold { acc, each -> acc ++ each.canonicalName }
                 startingWith ""
