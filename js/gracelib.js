@@ -1684,34 +1684,34 @@ GraceBlock.prototype = {
         "apply": function(argcv) {
             return this.real.call(this.receiver); },
         "apply(1)": function(argcv, a1) {
-            checkBlockApply.call(this, 1, a1)
+            checkBlockApply.call(this, 1, a1);
             return this.real.call(this.receiver, a1); },
         "apply(2)": function(argcv, a1, a2) { 
-            checkBlockApply.call(this, 2, a1, a2)
+            checkBlockApply.call(this, 2, a1, a2);
             return this.real.call(this.receiver, a1, a2); },
         "apply(3)": function(argcv, a1, a2, a3) {
-            checkBlockApply.call(this, 3, a1, a2, a3)
+            checkBlockApply.call(this, 3, a1, a2, a3);
             return this.real.call(this.receiver, a1, a2, a3); },
         "apply(4)": function(argcv, a1, a2, a3, a4) {
-            checkBlockApply.call(this, 4, a1, a2, a3, a4)
+            checkBlockApply.call(this, 4, a1, a2, a3, a4);
             return this.real.call(this.receiver, a1, a2, a3, a4); },
         "apply(5)": function(argcv, a1, a2, a3, a4, a5) {
-            checkBlockApply.call(this, 5, a1, a2, a3, a4, a5)
+            checkBlockApply.call(this, 5, a1, a2, a3, a4, a5);
             return this.real.call(this.receiver, a1, a2, a3, a4, a5); },
         "apply(6)": function(argcv, a1, a2, a3, a4, a5, a6) {
-            checkBlockApply.call(this, 6, a1, a2, a3, a4, a5, a6)
+            checkBlockApply.call(this, 6, a1, a2, a3, a4, a5, a6);
             return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6); },
         "apply(7)": function(argcv, a1, a2, a3, a4, a5, a6, a7) {
-            checkBlockApply.call(this, 7, a1, a2, a3, a4, a5, a6, a7)
+            checkBlockApply.call(this, 7, a1, a2, a3, a4, a5, a6, a7);
             return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6, a7); },
         "apply(8)": function(argcv, a1, a2, a3, a4, a5, a6, a7, a8) {
-            checkBlockApply.call(this, 8, a1, a2, a3, a4, a5, a6, a7, a8)
+            checkBlockApply.call(this, 8, a1, a2, a3, a4, a5, a6, a7, a8);
             return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6, a7, a8); },
         "apply(9)": function(argcv, a1, a2, a3, a4, a5, a6, a7, a8, a9) {
-            checkBlockApply.call(this, 9, a1, a2, a3, a4, a5, a6, a7, a8, a9)
+            checkBlockApply.call(this, 9, a1, a2, a3, a4, a5, a6, a7, a8, a9);
             return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6, a7, a8, a9); },
         "applyIndirectly(1)": function GraceBlock_applyIndirectly (argcv, a) {
-            var argList = a._value
+            var argList = a._value;
             if (! argList) {
                 if (a.data && a.data.jsArray) {
                     argList = a.data.jsArray;
@@ -1749,7 +1749,7 @@ function blockWrongArityException(numArgs) {
     throw new GraceExceptionPacket(RequestErrorObject,
         new GraceString("block requires " + this.numParams + " argument" +
                 plural + " but given " + numArgs + " arguments."));
-};
+}
 
 function checkBlockApply(numargs) {
     var args = Array.prototype.slice.call(arguments, 1);
@@ -1776,9 +1776,9 @@ function checkBlockApply(numargs) {
             match = callmethod(this.paramTypes[ix], "match(1)", [1], args[ix]);
             if ( ! Grace_isTrue(match)) {
                 var n = ix + 1;
-                var canonicalName = "apply(_"
-                for (ix = 1; ix < numargs; ix++) { canonicalName += ",_" }
-                canonicalName += ")"
+                var canonicalName = "apply(_";
+                for (ix = 1; ix < numargs; ix++) { canonicalName += ",_"; }
+                canonicalName += ")";
                 throw new GraceExceptionPacket(TypeErrorObject,
                     new GraceString("argument " + n +
                         " to block." + canonicalName + " has wrong type."));
@@ -2341,7 +2341,7 @@ function gracecode_unicode() {
         else s = s._value;
         return ((unicode.isCategory(s, c._value)) ? GraceTrue : GraceFalse);
     };
-    this.methods.iscategory = this.methods.inCategory;
+    this.methods['iscategory(2)'] = this.methods.inCategory;
     this.methods['category(1)'] = function unicode_category(argcv, s) {
         return new GraceString(unicode.category(s._value));
     };
@@ -2361,7 +2361,7 @@ function gracecode_unicode() {
 }
 
 if (typeof gctCache !== "undefined")
-    gctCache['unicode'] = "path:\n unicode\nclasses:\npublic:\n category\n bidirectional\n combining\n mirrored\n name\n iscategory\n isSeparator\n isControl\n isLetter\n isNumber\n isSymbolMathematical\n create\nconfidential:\nfresh-methods:\nmodules:\n";
+    gctCache['unicode'] = "path:\n unicode\nclasses:\npublic:\n category(1)\n iscategory(2)\n isSeparator(1)\n isControl(1)\n isLetter(1)\n isNumber(1)\n isSymbolMathematical(1)\n create(1)\nconfidential:\nfresh-methods:\nmodules:\n";
 
 
 function GraceUnicodePattern(pos, neg) {
@@ -3043,7 +3043,7 @@ function callmethod(obj, methname, argcv) {
             overrideReceiver = null;
         }
         if (typeof(meth) !== "function") {
-            onSelf = false
+            onSelf = false;
             raiseNoSuchMethod(methname, obj);
         }
         if (meth.confidential && !onSelf) {
@@ -3103,7 +3103,7 @@ function callmethodChecked(obj, methname, argcv) {
             raiseNoSuchMethod(methname, obj);
         }
         if (meth.confidential && !onSelf) {
-            onSelf = false
+            onSelf = false;
             raiseConfidentialMethod(methname, obj);
         }
         onSelf = false;
