@@ -17,6 +17,7 @@
 #include <limits.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <ctype.h>
 
 #include "gracelib.h"
 #define IN_GRACELIB 1
@@ -1356,7 +1357,7 @@ Object BuiltinList_do_separatedBy(Object self, int nparts, int *argcv,
     }
     return done;
 }
-Object BuiltinList_keyAndValuesDo(Object self, int nparts, int *argcv,
+Object BuiltinList_keysAndValuesDo(Object self, int nparts, int *argcv,
                            Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     Object functionBlock = args[0];
@@ -1593,7 +1594,7 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "fold(1)startingWith(1)", &BuiltinList_fold_startingWith);
         add_Method(BuiltinList, "do(1)", &BuiltinList_do);
         add_Method(BuiltinList, "do(1)separatedBy(1)", &BuiltinList_do_separatedBy);
-        add_Method(BuiltinList, "keysAndValuesDo(1)", &BuiltinList_keyAndValuesDo);
+        add_Method(BuiltinList, "keysAndValuesDo(1)", &BuiltinList_keysAndValuesDo);
         add_Method(BuiltinList, "copy", &BuiltinList_copy);
         add_Method(BuiltinList, "reversed", &BuiltinList_reversed);
         add_Method(BuiltinList, "asList", &BuiltinList_asList);
@@ -1802,7 +1803,6 @@ Object alloc_PrimitiveArrayClassObject() {
     return o;
 }
 int getutf8charlen(const char *s) {
-    int i;
     if ((s[0] & 128) == 0)
         return 1;
     if ((s[0] & 64) == 0) {
@@ -2273,11 +2273,350 @@ Object String_iter(Object receiver, int nparts, int *argcv,
         Object* args, int flags) {
     return alloc_StringIter(receiver);
 }
+char* strstr_utf8(const char *in, const char *str) {
+    char c;
+    size_t len;
+    
+    c = *str;
+    if (!c) {
+        return (char *) in;
+    }
+    len = strlen(str);
+    int charlen;
+    do {
+        char sc;
+        do {
+            sc = *in;
+            charlen = getutf8charlen(in);
+            in += charlen;
+            if (!sc) {
+                return (char *)0;
+            }
+        } while (sc != c);
+    } while (strncmp(in - charlen, str, len) != 0);
+    return (char *) (in - charlen);
+}
+
+int indexOf_shift (const char* base, const char* str, int startIndex) {
+    int result;
+    int baselen = strlen(base);
+    if (strlen(str) > baselen || startIndex > baselen) {
+        result = -1;
+    } else {
+        if (startIndex < 0 ) {
+            startIndex = 0;
+        }
+        char* pos = strstr_utf8(base+startIndex, str);
+        if (pos == NULL) {
+            result = -1;
+        } else {
+            result = pos - base;
+        }
+    }
+    return result;
+}
+
+Object String_indexOf(Object self, int nparts, int *argcv,
+        Object *args, int flags) { // broken for special characters
+    const char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    if (needle[0] == '\0') {
+        return alloc_Float64(1);
+    }
+    if (sstr[0] == '\0') {
+        return alloc_Float64(0);
+    }
+    int bufferIndex = indexOf_shift(sstr, needle, 0);
+    if (bufferIndex == -1) {
+        return alloc_Float64(0);
+    }
+    int realIndex = 0;
+    int i = 0;
+    while (i < bufferIndex) {
+        i += getutf8charlen(sstr + i);
+        ++realIndex;
+    }
+    return alloc_Float64(realIndex + 1);
+}
+Object String_indexOf_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    if (needle[0] == '\0') {
+        return alloc_Float64(1);
+    }
+    if (sstr[0] == '\0') {
+        return callmethod(args[1], "apply", 0, NULL, NULL);
+    }
+    int bufferIndex = indexOf_shift(sstr, needle, 0);
+    if (bufferIndex == -1) {
+        return callmethod(args[1], "apply", 0, NULL, NULL);
+    }
+    int realIndex = 0;
+    int i = 0;
+    while (i < bufferIndex) {
+        i += getutf8charlen(sstr + i);
+        ++realIndex;
+    }
+    return alloc_Float64(realIndex + 1);
+}
+Object String_indexOf_startingAt(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    int st = integerfromAny(args[1]) - 1;
+    if (needle[0] == '\0') {
+        return alloc_Float64(1 + st);
+    }
+    if (sstr[0] == '\0') {
+        return alloc_Float64(0);
+    }
+    int realSt = 0;
+    int j = 0;
+    while (j < st) {
+        realSt += getutf8charlen(sstr + j);
+        ++j;
+    }
+    int bufferIndex = indexOf_shift(sstr, needle, realSt);
+    if (bufferIndex == -1) {
+        return alloc_Float64(0);
+    }
+    int realIndex = 0;
+    int i = 0;
+    while (i < bufferIndex) {
+        i += getutf8charlen(sstr + i);
+        ++realIndex;
+    }
+    return alloc_Float64(realIndex + 1);
+}
+Object String_indexOf_startingAt_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    int st = integerfromAny(args[1]) - 1;
+    if (needle[0] == '\0') {
+        return alloc_Float64(1 + st);
+    }
+    if (sstr[0] == '\0') {
+        return callmethod(args[2], "apply", 0, NULL, NULL);
+    }
+    int realSt = 0;
+    int j = 0;
+    while (j < st) {
+        realSt += getutf8charlen(sstr + j);
+        ++j;
+    }
+    int bufferIndex = indexOf_shift(sstr, needle, realSt);
+    if (bufferIndex == -1) {
+        return callmethod(args[2], "apply", 0, NULL, NULL);
+    }
+    int realIndex = 0;
+    int i = 0;
+    while (i < bufferIndex) {
+        i += getutf8charlen(sstr + i);
+        ++realIndex;
+    }
+    return alloc_Float64(realIndex + 1);
+}
+
+Object String_lastIndexOf(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    if (needle[0] == '\0') {
+        int sz = strlen(sstr);
+        return alloc_Float64(sz + 1);
+    }
+    if (sstr[0] == '\0') {
+        return alloc_Float64(0);
+    }
+    int result;
+    // needle should not be longer than sstr
+    if (strlen(needle) > strlen(sstr)) {
+        result = -1;
+    } else {
+        int start = 0;
+        int endinit = strlen(sstr) - strlen(needle);
+        int end = endinit;
+        int endtmp = endinit;
+        while(start != end) {
+            start = indexOf_shift(sstr, needle, start);
+            end = indexOf_shift(sstr, needle, end);
+            
+            // not found from start
+            if (start == -1) {
+                end = -1; // then break;
+            } else if (end == -1) {
+                // found from start
+                // but not found from end
+                // move end to middle
+                if (endtmp == (start+1)) {
+                    end = start; // then break;
+                } else {
+                    end = endtmp - (endtmp - start) / 2;
+                    if (end <= start) {
+                        end = start+1;
+                    }
+                    endtmp = end;
+                }
+            } else {
+                // found from both start and end
+                // move start to end and
+                // move end to sstr - strlen(needle)
+                start = end;
+                end = endinit;
+            }
+        }
+        result = start;
+    }
+    if (result == -1) {
+        return alloc_Float64(0);
+    }
+    int bufferIndex = result;
+    int realIndex = 0;
+    int i = 0;
+    while (i < bufferIndex) {
+        i += getutf8charlen(sstr + i);
+        ++realIndex;
+    }
+    return alloc_Float64(realIndex + 1);
+}
+
+Object String_lastIndexOf_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    if (needle[0] == '\0') {
+        int sz = strlen(sstr);
+        return alloc_Float64(sz + 1);
+    }
+    if (sstr[0] == '\0') {
+        return callmethod(args[1], "apply", 0, NULL, NULL);
+    }
+    int result;
+    if (strlen(needle) > strlen(sstr)) {
+        result = -1;
+    } else {
+        int start = 0;
+        int endinit = strlen(sstr) - strlen(needle);
+        int end = endinit;
+        int endtmp = endinit;
+        while(start != end) {
+            start = indexOf_shift(sstr, needle, start);
+            end = indexOf_shift(sstr, needle, end);
+            if (start == -1) {
+                end = -1;
+            } else if (end == -1) {
+                if (endtmp == (start+1)) {
+                    end = start;
+                } else {
+                    end = endtmp - (endtmp - start) / 2;
+                    if (end <= start) {
+                        end = start+1;
+                    }
+                    endtmp = end;
+                }
+            } else {
+                start = end;
+                end = endinit;
+            }
+        }
+        result = start;
+    }
+    if (result == -1) {
+        return callmethod(args[1], "apply", 0, NULL, NULL);
+    }
+    int bufferIndex = result;
+    int realIndex = 0;
+    int i = 0;
+    while (i < bufferIndex) {
+        i += getutf8charlen(sstr + i);
+        ++realIndex;
+    }
+    return alloc_Float64(realIndex + 1);
+}
+Object String_lastIndexOf_startingAt_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    int st = integerfromAny(args[1]);
+    if (needle[0] == '\0') {
+        int sz = strlen(sstr);
+        return alloc_Float64(sz + 1);
+    }
+    if (sstr[0] == '\0') {
+        return callmethod(args[2], "apply", 0, NULL, NULL);
+    }
+    int realEnd = 0;
+    int j = 0;
+    while (j < st && realEnd < strlen(sstr)) {
+        realEnd += getutf8charlen(sstr + j);
+        ++j;
+    }
+    if (realEnd > strlen(sstr)) {
+        realEnd = strlen(sstr);
+    }
+    // make a trimmed version of sstr
+    char trimmed[realEnd + 1];
+    int k = 0;
+    while (k < realEnd) {
+        trimmed[k] = sstr[k];
+        ++k;
+    }
+    trimmed[realEnd] = 0;
+    // just like lastIndexOf but with trimmed
+    int result;
+    if (strlen(needle) > strlen(trimmed)) {
+        result = -1;
+    } else {
+        int start = 0;
+        int endinit = strlen(trimmed) - strlen(needle);
+        int end = endinit;
+        int endtmp = endinit;
+        while(start != end) {
+            start = indexOf_shift(trimmed, needle, start);
+            end = indexOf_shift(trimmed, needle, end);
+            if (start == -1) {
+                end = -1;
+            } else if (end == -1) {
+                if (endtmp == (start+1)) {
+                    end = start;
+                } else {
+                    end = endtmp - (endtmp - start) / 2;
+                    if (end <= start) {
+                        end = start+1;
+                    }
+                    endtmp = end;
+                }
+            } else {
+                start = end;
+                end = endinit;
+            }
+        }
+        result = start;
+    }
+    if (result == -1) {
+        return callmethod(args[2], "apply", 0, NULL, NULL);
+    }
+    int bufferIndex = result;
+    int realIndex = 0;
+    int i = 0;
+    while (i < bufferIndex) {
+        i += getutf8charlen(sstr + i);
+        ++realIndex;
+    }
+    return alloc_Float64(realIndex + 1);
+}
 Object String_at(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object idxobj = args[0];
     assertClass(idxobj, Number);
     int idx = integerfromAny(idxobj);
+    const char *sstr = grcstring(self);
+    int size = strlen(sstr);
+    if (idx <= 0 || idx > size) {
+        graceRaise(BoundsError(), "Strings index %i >= size %i", idx, size);
+    }
     idx--;
     int i = 0;
     char *ptr = ((struct StringObject*)(self))->flat;
@@ -2295,9 +2634,50 @@ Object String_at(Object self, int nparts, int *argcv,
     return alloc_String(buf);
 }
 Object String_first(Object self, int nparts, int *argcv,
-                    Object *args, int flags) {
+        Object *args, int flags) {
     gc_pause();
     Object newargs[] = { alloc_Float64(1) };
+    Object result = String_at(self, nparts, argcv, newargs, flags);
+    gc_unpause();
+    return result;
+}
+Object String_second(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    gc_pause();
+    Object newargs[] = { alloc_Float64(2) };
+    Object result = String_at(self, nparts, argcv, newargs, flags);
+    gc_unpause();
+    return result;
+}
+Object String_third(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    gc_pause();
+    Object newargs[] = { alloc_Float64(3) };
+    Object result = String_at(self, nparts, argcv, newargs, flags);
+    gc_unpause();
+    return result;
+}
+Object String_fourth(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    gc_pause();
+    Object newargs[] = { alloc_Float64(4) };
+    Object result = String_at(self, nparts, argcv, newargs, flags);
+    gc_unpause();
+    return result;
+}
+Object String_fifth(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    gc_pause();
+    Object newargs[] = { alloc_Float64(5) };
+    Object result = String_at(self, nparts, argcv, newargs, flags);
+    gc_unpause();
+    return result;
+}
+Object String_last(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    gc_pause();
+    struct StringObject* sself = (struct StringObject*)self;
+    Object newargs[] = { alloc_Float64(sself->size) };
     Object result = String_at(self, nparts, argcv, newargs, flags);
     gc_unpause();
     return result;
@@ -2338,6 +2718,49 @@ Object String_substringFrom_to(Object self,
     st--;
     en--;
     int mysize = sself->size;
+    if (st > mysize) {
+        graceRaise(BoundsError(), "Strings index %i >= size %i", st, mysize);
+    }
+    if (en > mysize)
+        en = mysize;
+    int cl = en - st;
+    if (cl < 0)
+        return alloc_String("");
+    char buf[cl * 4 + 1];
+    char *bufp = buf;
+    buf[0] = 0;
+    int i;
+    char *pos = sself->flat;
+    for (i=0; i<st; i++) {
+        pos += getutf8charlen(pos);
+    }
+    char cp[5];
+    for (i=0; i<=cl; i++) {
+        getutf8char(pos, cp);
+        strcpy(bufp, cp);
+        while (bufp[0] != 0) {
+            pos++;
+            bufp++;
+        }
+    }
+    return alloc_String(buf);
+}
+Object String_substringFrom_size(Object self,
+        int nparts, int *argcv, Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    int st = integerfromAny(args[0]);
+    int sz = integerfromAny(args[1]);
+    if (st <= 0) {
+        graceRaise(BoundsError(), "Strings index starts at 1");
+    }
+    if (sz == 0) {
+        return alloc_String("");
+    }
+    int en = st + sz - 1;
+    if (st < 1) st = 1;
+    st--;
+    en--;
+    int mysize = sself->size;
     if (en > mysize)
         en = mysize;
     int cl = en - st;
@@ -2363,7 +2786,7 @@ Object String_substringFrom_to(Object self,
     return alloc_String(buf);
 }
 Object String_do(Object self, int nparts, int *argcv,
-                 Object *args, int flags) {
+        Object *args, int flags) {
     if (nparts != 1 || argcv[0] != 1)
         graceRaise(RequestError(), "string.do requires exactly one argument");
     Object block = args[0];
@@ -2378,6 +2801,73 @@ Object String_do(Object self, int nparts, int *argcv,
     }
     return done;
 }
+Object String_keysAndValuesDo(Object self, int nparts, int *argcv,
+         Object *args, int flags) {
+    Object iter = callmethod(self, "iterator", 0, NULL, NULL);
+    Object block = args[0];
+    Object nextArgs[2];
+    gc_frame_newslot(iter);
+    int slot = gc_frame_newslot(NULL);     // Stack slot for argument object
+    int index = 0;
+    int partcv[] = {2};
+    while (istrue(callmethod(iter, "hasNext", 0, NULL, NULL))) {
+        Object next = callmethod(iter, "next", 0, NULL, NULL);
+        nextArgs[0] = alloc_Float64(index+1);
+        index = index + 1;
+        nextArgs[1] = next;
+        gc_frame_setslot(slot, next);
+        callmethod(block, "apply(1)", 1, partcv, nextArgs);
+    }
+    return done;
+}
+Object String_filter(Object self, int nparts, int *argcv,
+         Object *args, int flags) {
+    Object iter = callmethod(self, "iterator", 0, NULL, NULL);
+    const char *sstr = grcstring(self);
+    Object block = args[0];
+    char accum[strlen(sstr)];
+    accum[0] = '\0';
+    gc_frame_newslot(iter);
+    int slot = gc_frame_newslot(NULL);     // Stack slot for argument object
+    int partcv[] = {1};
+    while (istrue(callmethod(iter, "hasNext", 0, NULL, NULL))) {
+        Object next = callmethod(iter, "next", 0, NULL, NULL);
+        gc_frame_setslot(slot, next);
+        if (istrue(callmethod(block, "apply(1)", 1, partcv, &next))) {
+            strcat(accum, grcstring(next));
+        }
+    }
+    return alloc_String(accum);
+}
+Object String_fold_startingWith(Object self, int nparts, int *argcv,
+         Object *args, int flags) {
+    Object iter = callmethod(self, "iterator", 0, NULL, NULL);
+    Object block = args[0];
+    Object accum = args[1];
+    Object nextArgs[2];
+    gc_frame_newslot(iter);
+    int slot = gc_frame_newslot(NULL);     // Stack slot for argument object
+    int partcv[] = {2};
+    while (istrue(callmethod(iter, "hasNext", 0, NULL, NULL))) {
+        Object next = callmethod(iter, "next", 0, NULL, NULL);
+        nextArgs[0] = accum;
+        nextArgs[1] = next;
+        gc_frame_setslot(slot, next);
+        accum = callmethod(block, "apply(1)", 1, partcv, nextArgs);
+    }
+    return alloc_String(grcstring(accum));
+}
+Object String_map(Object self, int nparts, int *argcv,
+         Object *args, int flags) {
+    Object functionBlock = args[0];
+    int partcv[] = {1, 1};
+    Object requestArgs[2];
+    requestArgs[0] = self;
+    requestArgs[1] = functionBlock;
+    Object collections = callmethod(_prelude, "collections", 0, NULL, NULL);
+    return callmethodself(collections, "lazySequenceOver(1)mappedBy(1)", 2,
+                partcv, requestArgs);
+}
 Object String_startsWith(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     const char *sstr = grcstring(self);
@@ -2386,8 +2876,88 @@ Object String_startsWith(Object self, int nparts, int *argcv,
         return alloc_Boolean(1);
     return alloc_Boolean(0);
 }
+Object String_startsWithDigit(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    char digits[] = "1234567890";
+    int result = strcspn (sstr,digits);
+    if (result == 0)
+        return alloc_Boolean(1);
+    return alloc_Boolean(0);
+}
+Object String_startsWithLetter(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    if (sstr[0] == '\303') {            // not a good solution
+        return alloc_Boolean(1);
+    }
+    char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    int result = strcspn (sstr,letters);
+    if (result == 0)
+        return alloc_Boolean(1);
+    return alloc_Boolean(0);
+}
+Object String_startsWithSpace(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    int result = strcspn (sstr," ");
+    if (result == 0)
+        return alloc_Boolean(1);
+    return alloc_Boolean(0);
+}
+Object String_timesNumber(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    int n = integerfromAny(args[0]);
+    if (n == 0) {
+        return alloc_String("");
+    }
+    const char *sstr = grcstring(self);
+    int reqLength = n * strlen(sstr);
+    char result[reqLength];
+    result[0] ='\0';
+    for (int i = 0; i < n; i++) {
+        strcat(result, sstr);
+    }
+    return alloc_String(result);
+}
+Object String_asLower(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    char result[strlen(sstr)];
+    result[0] ='\0';
+    strcpy(result, sstr);
+    for (int i = 0; i < strlen(result); i++) {
+        result[i] = tolower(result[i]);
+    }
+    return alloc_String(result);
+}
+Object String_asUpper(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    char result[strlen(sstr)];
+    result[0] ='\0';
+    strcpy(result, sstr);
+    for (int i = 0; i < strlen(result); i++) {
+        result[i] = toupper(result[i]);
+    }
+    return alloc_String(result);
+}
+Object String_capitalized(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    char result[strlen(sstr)];
+    result[0] ='\0';
+    strcpy(result, sstr);
+    result[0] = toupper(result[0]);
+    for (int i = 1; i < strlen(result); i++) {
+        if (isalpha(result[i]) && result[i-1] == ' ') {
+            result[i] = toupper(result[i]);
+        }
+    }
+    return alloc_String(result);
+}
 Object String_endsWith(Object self, int nparts, int *argcv,
-                         Object *args, int flags) {
+        Object *args, int flags) {
     const char *sstr = grcstring(self);
     const char *needle = grcstring(args[0]);
     size_t lenSelf = strlen(sstr);
@@ -2457,6 +3027,11 @@ Object alloc_String(const char *data) {
         add_Method(String, "≠(1)", &Object_NotEquals);
         add_Method(String, "compare(1)", &String_Compare);
         add_Method(String, "first", &String_first);
+        add_Method(String, "second", &String_second);
+        add_Method(String, "third", &String_third);
+        add_Method(String, "fourth", &String_fourth);
+        add_Method(String, "fifth", &String_fifth);
+        add_Method(String, "last", &String_last);
         add_Method(String, "iterator", &String_iter);
         add_Method(String, "quoted", &String_quoted);
         add_Method(String, "_escape", &String__escape);
@@ -2468,6 +3043,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "ord", &String_ord);
         add_Method(String, "encode", &String_encode);
         add_Method(String, "substringFrom(1)to(1)", &String_substringFrom_to);
+        add_Method(String, "substringFrom(1)size(1)", &String_substringFrom_size);
         add_Method(String, "startsWith(1)", &String_startsWith);
         add_Method(String, "endsWith(1)", &String_endsWith);
         add_Method(String, "replace(1)with(1)", &String_replace_with);
@@ -2477,6 +3053,26 @@ Object alloc_String(const char *data) {
         add_Method(String, "match(1)", &literal_match);
         add_Method(String, "|(1)", &literal_or);
         add_Method(String, "&(1)", &literal_and);
+        add_Method(String, "startsWithDigit", &String_startsWithDigit);
+        add_Method(String, "startsWithLetter", &String_startsWithLetter);
+        add_Method(String, "startsWithSpace", &String_startsWithSpace);
+        add_Method(String, "*(1)", &String_timesNumber);
+        add_Method(String, "asUpper", &String_asUpper);
+        add_Method(String, "asLower", &String_asLower);
+        add_Method(String, "capitalized", &String_capitalized);
+        add_Method(String, "indexOf(1)", &String_indexOf);
+        add_Method(String, "keysAndValuesDo(1)", &String_keysAndValuesDo);
+        add_Method(String, "filter(1)", &String_filter);
+        add_Method(String, "fold(1)startingWith(1)", &String_fold_startingWith);
+        add_Method(String, "indexOf(1)ifAbsent(1)", &String_indexOf_ifAbsent);
+        add_Method(String, "indexOf(1)startingAt(1)", &String_indexOf_startingAt);
+        add_Method(String, "indexOf(1)startingAt(1)ifAbsent(1)",
+                   &String_indexOf_startingAt_ifAbsent);
+        add_Method(String, "lastIndexOf(1)startingAt(1)ifAbsent(1)",
+                   &String_lastIndexOf_startingAt_ifAbsent);
+        add_Method(String, "lastIndexOf(1)ifAbsent(1)",
+                   &String_lastIndexOf_ifAbsent);
+        add_Method(String, "map(1)", &String_map);
     }
     if (blen == 1) {
         if (String_Interned_1[data[0]] != NULL)
@@ -2735,6 +3331,10 @@ Object Float64_Sub(Object self, int nparts, int *argcv,
 Object Float64_Mul(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
+    if (other->class == String) {
+        int partcv[] = {1};
+        return callmethod(args[0], "*(1)", 1, partcv, &self);
+    }
     assertClass(other, Number);
     double a = *(double*)self->data;
     double b;
@@ -4693,7 +5293,7 @@ Object Block_applyIndirectly(Object self, int nparts, int *argcv,
         sprintf(methName, "_apply(%i)", sz);
         nArgLists = 1;
     }
-    return callmethod(self, methName, 0, partcv, rargs);
+    return callmethod(self, methName, 1, partcv, rargs);
 }
 Object Block_match(Object self, int nparts, int *argcv, Object *args, int flags) {
     struct BlockObject *bo = (struct BlockObject*)self;
