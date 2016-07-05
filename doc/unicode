@@ -91,7 +91,7 @@ The unicode module contains methods for dealing with Unicode data:
   combining(char : String) -> Number
   mirrored(char : String) -> Boolean
   name(char : String) -> String
-  iscategory(char : String, category : String) -> Boolean
+  inCategory(char : String, category : String) -> Boolean
   isSeparator(char : String) -> Boolean
   isControl(char : String) -> Boolean
   isLetter(char : String) -> Boolean

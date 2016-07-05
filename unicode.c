@@ -14,7 +14,7 @@
 //   combining(char : String) -> Number
 //   mirrored(char : String) -> Boolean
 //   name(char : String) -> String
-//   iscategory(char : String, category : String) -> Boolean
+//   inCategory(char : String, category : String) -> Boolean
 //   isSeparator(char : String) -> Boolean
 //   isControl(char : String) -> Boolean
 //   isLetter(char : String) -> Boolean
@@ -90,7 +90,7 @@ Object unicode_bidirectional(Object self, int nparts, int *argcv,
 // argument String is in the Unicode category given by the second. The second
 // can be either one or two characters in length, testing for either a broad
 // category (like "N") or a specific one (like "Nd").
-Object unicode_iscategory(Object self, int nparts, int *argcv,
+Object unicode_inCategory(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object o = args[0];
     char *classname = o->class->name;
@@ -397,8 +397,7 @@ Object module_unicode_init() {
     add_Method(c, "mirrored(1)", &unicode_mirrored);
     add_Method(c, "name(1)", &unicode_name);
     add_Method(c, "create(1)", &unicode_create);
-    add_Method(c, "iscategory(2)", &unicode_iscategory);
-    add_Method(c, "inCategory(2)", &unicode_iscategory);
+    add_Method(c, "inCategory(2)", &unicode_inCategory);
     add_Method(c, "isSeparator(1)", &unicode_isSeparator);
     add_Method(c, "isControl(1)", &unicode_isControl);
     add_Method(c, "isLetter(1)", &unicode_isLetter);
