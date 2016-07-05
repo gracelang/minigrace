@@ -170,7 +170,14 @@ unicode.category = function(s) {
     if (typeof o == "string")
         o = s.charCodeAt(0);
     for (catName in unicodedata.categories) {
-        if (unicodedata.categories.hasOwnProperty(catName)) {
+        if ((catName.length === 2) && unicodedata.categories.hasOwnProperty(catName)) {
+            if (unicode.inCategory(o, catName)) {
+                return catName;
+            }
+        }
+    }
+    for (catName in unicodedata.categories) {
+        if ((catName.length === 1) && unicodedata.categories.hasOwnProperty(catName)) {
             if (unicode.inCategory(o, catName)) {
                 return catName;
             }
