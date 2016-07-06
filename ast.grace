@@ -988,6 +988,7 @@ def methodNode = object {
                 s := s ++ spc ++ "Returns:\n" ++ spc ++ "  "
                 s := s ++ self.dtype.pretty(depth + 2) ++ "\n"
             }
+            if (isBindingOccurence.not) then { s := s ++ spc ++ "Applied\n" }
             if (isFresh) then { s := s ++ spc ++ "Fresh\n" }
             s := "{s}{spc}Signature:"
             for (signature) do { part ->
@@ -1072,6 +1073,9 @@ def methodNode = object {
             super.shallowCopyFieldsFrom(other)
             isFresh := other.isFresh
             selfclosure := other.selfclosure
+            if (other.isBindingOccurence.not) then {
+                self.appliedOccurence
+            }
             self
         }
     }
@@ -2472,8 +2476,8 @@ def inheritsNode = object {
         method addAlias (newName) for (oldName) {
             aliases.push(aliasNew(newName) old(oldName))
         }
-        method addExclusion(methName) {
-            exclusions.push(methName)
+        method addExclusion(ident) {
+            exclusions.push(ident)
         }
         method shallowCopy {
             inheritsNode.new(nullNode).shallowCopyFieldsFrom(self)

@@ -2367,7 +2367,7 @@ method parseAlias(node) {
 method parseExclude(node) {
     next    // skip the exclude keyword
     def excludedMeth = methodsignature(true).appliedOccurence
-    node.addExclusion (excludedMeth)
+    node.addExclusion (excludedMeth.asIdentifier)
     return true
 }
 

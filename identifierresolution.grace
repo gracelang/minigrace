@@ -1028,13 +1028,16 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 errormessages.syntaxError("class declarations are permitted only" ++
                     " inside an object") atRange(o.line, o.linePos, o.linePos + 4)
             }
-            def ident = o.value
+            def ident = o.asIdentifier
             checkForReservedName(ident)
             surroundingScope.addNode(ident) as(k.methdec)
             ident.isDeclaredByParent := true
-            o.scope := newScopeIn(surroundingScope) kind "method"
-            if (o.returnsObject) then {
-                o.isFresh := true
+            if (ident.isBindingOccurrence) then {
+                // aliased and excluded names are appliedOccurences
+                o.scope := newScopeIn(surroundingScope) kind "method"
+                if (o.returnsObject) then {
+                    o.isFresh := true
+                }
             }
             true
         }
