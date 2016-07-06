@@ -319,7 +319,7 @@ $(MGSOURCEFILES:%.grace=%.gct) $(MGSOURCEFILES:%.grace=%.gcn): $(MGSOURCEFILES:%
 $(MGSOURCEFILES:%.grace=%.gcn): $(MGSOURCEFILES:%.grace=%.gso)
 
 $(MGSOURCEFILES:%.grace=%.gso): %.gso: %.grace StandardPrelude.gct l1/minigrace
-	cd l1 && ./minigrace $(VERBOSITY) --make --noexec ../$<
+	GRACE_MODULE_PATH=. l1/minigrace $(VERBOSITY) --make --noexec $<
 
 $(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace js/StandardPrelude.gct minigrace
 	GRACE_MODULE_PATH=modules ./minigrace $(VERBOSITY) --make --target js --dir js $<
@@ -334,8 +334,7 @@ minigrace-dynamic: l1/minigrace $(SOURCEFILES)
 	l1/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic compiler.grace
 
 minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) $(C_MODULES_GSO:%.gso=%.gct) gracelib.o unixFilePath.gct
-	cd l1 && ./minigrace  --make --noexec --module minigrace ../compiler.grace
-	gcc -g -o minigrace -fPIC  minigrace.gcn gracelib.o ast.gcn unixFilePath.gcn parser.gcn xmodule.gcn buildinfo.gcn stringMap.gcn genjs.gcn identifierresolution.gcn identifierKinds.gcn genc.gcn util.gcn lexer.gcn errormessages.gcn -lm
+	GRACE_MODULE_PATH=. l1/minigrace --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
 
 minigrace-environment: minigrace-c-env minigrace-js-env
 
