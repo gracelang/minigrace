@@ -4894,13 +4894,6 @@ int find_resource(const char *name, char *buf) {
         }
     }
 
-    // next try "."
-    strcpy(buf, "./");
-    strcat(buf, name);
-    if (stat(buf, &st) == 0) {
-        return 1;
-    }
-
     // finally try execdir
     char *execPath = grcstring(execDir());
     strncpy(buf, execPath, PATH_MAX);
