@@ -37,7 +37,7 @@ OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
 REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace genc.grace stringMap.grace xmodule.grace identifierresolution.grace)
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
-STABLE=5585c0e69862e890e55fad7079c674a0c95c200b
+STABLE=1e2f5d98abb4529b811183acfa9f4c89618406e0
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 TYPE_DIALECTS = staticTypes requireTypes
 VER = $(shell ./tools/calculate-version $(STABLE))
@@ -84,7 +84,7 @@ c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct c/Makefil
 
 clean:
 	rm -f gracelib.o gracelib-basic.o standardInput{.grace,.gct,.gcn,.gso,.o,}
-	rm -fr unicode.gco unicode.gcn unicode.gso unicode.gso.dSYM
+	rm -fr unicode.gco unicode.gcn unicode.gso.dSYM
 	cd modules && rm -fr *.gct *.gcn *.gso *.gso.dSYM *.js
 	cd modules/tests && rm -fr *.gct *.gcn *.gso *.gso.dSYM *.js
 	cd js && rm -f $(SOURCEFILES:%.grace=%.js)
@@ -271,10 +271,10 @@ l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=
 l1/%.gct: l1/%.gso
 
 l1/StandardPrelude%gct l1/StandardPrelude%gcn: StandardPrelude.grace l1/collectionsPrelude.gct $(KG)/minigrace
-	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
+	GRACE_MODULE_PATH=l1 $(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
 
 l1/collectionsPrelude%gct l1/collectionsPrelude%gcn: collectionsPrelude.grace $(KG)/minigrace
-	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
+	GRACE_MODULE_PATH=l1 $(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
 
 l1/curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC curl.c -lcurl
@@ -332,7 +332,11 @@ minigrace-dynamic: l1/minigrace $(SOURCEFILES)
 	l1/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic compiler.grace
 
 minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) $(C_MODULES_GSO:%.gso=%.gct) gracelib.o unixFilePath.gct
-	GRACE_MODULE_PATH=. l1/minigrace --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
+	rm unicode.gso
+	rm unicode.gct
+	GRACE_MODULE_PATH=./l1 l1/minigrace --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
+	ln -sf modules/unicode.gso .
+	ln -sf modules/unicode.gct .
 
 minigrace-environment: minigrace-c-env minigrace-js-env
 
