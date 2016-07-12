@@ -19,6 +19,7 @@
 #include <dirent.h>
 #include <ctype.h>
 
+
 #include "gracelib.h"
 #define IN_GRACELIB 1
 #include "definitions.h"
@@ -2888,13 +2889,11 @@ Object String_startsWithDigit(Object self, int nparts, int *argcv,
 Object String_startsWithLetter(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     const char *sstr = grcstring(self);
-    if (sstr[0] == '\303') {            // not a good solution
+    char ch = sstr[0];
+    if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+        ((unsigned char)ch >= 0xC0)) {
         return alloc_Boolean(1);
     }
-    char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    int result = strcspn (sstr,letters);
-    if (result == 0)
-        return alloc_Boolean(1);
     return alloc_Boolean(0);
 }
 Object String_startsWithSpace(Object self, int nparts, int *argcv,
@@ -2920,16 +2919,76 @@ Object String_timesNumber(Object self, int nparts, int *argcv,
     }
     return alloc_String(result);
 }
+void toLower(char *stringTo, const char *stringFrom, int index, int len) {
+    if (len == 1) {
+        stringTo[index] = tolower(stringFrom[index]);
+    } else {
+        char utf8[5];
+        getutf8char(stringFrom + index, utf8);
+        // Following strategy is not robust. To see values for the
+        // UTF-8 chars, use:
+            // printf("buf = %s\n", utf8);
+            // printf("buf[0] = %d\n", utf8[0]);
+            // printf("buf[1] = %d\n", utf8[1]);
+            // ...
+        int change;
+        if (utf8[0] == -61 && utf8[1] <= -100 && utf8[1] >= -128) {
+            change = 32;
+        } else if (utf8[1] % 2 == 0) {
+            if (utf8[0] == -59 && utf8[1] == -72) {
+                stringTo[index] = -61;
+                stringTo[index + 1] = -65;
+                return;
+            } else {
+                change = 1;
+            }
+        }
+        stringTo[index] = stringFrom[index];
+        stringTo[index + 1] = stringFrom[index + 1] + change;
+    }
+}
 Object String_asLower(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     const char *sstr = grcstring(self);
     char result[strlen(sstr)];
     result[0] ='\0';
     strcpy(result, sstr);
-    for (int i = 0; i < strlen(result); i++) {
-        result[i] = tolower(result[i]);
+    int i = 0;
+    int len;
+    while (i < strlen(result)) {
+        len = getutf8charlen(sstr + i);
+        toLower(result, sstr, i, len);
+        i += len;
     }
     return alloc_String(result);
+}
+void toUpper(char *stringTo, const char *stringFrom, int index, int len) {
+    if (len == 1) {
+        stringTo[index] = toupper(stringFrom[index]);
+    } else {
+        char utf8[5];
+        getutf8char(stringFrom + index, utf8);
+        // Following strategy is not robust. To see values for the
+        // UTF-8 chars, use:
+            // printf("buf = %s\n", utf8);
+            // printf("buf[0] = %d\n", utf8[0]);
+            // printf("buf[1] = %d\n", utf8[1]);
+            // ...
+        int change;
+        if (utf8[0] == -61 && utf8[1] > -100) {
+            if (utf8[1] == -65) {
+                stringTo[index] = -59;
+                stringTo[index + 1] = -72;
+                return;
+            } else {
+                change = -32;
+            }
+        } else if (utf8[1] % 2 != 0) {
+            change = -1;
+        }
+        stringTo[index] = stringFrom[index];
+        stringTo[index + 1] = stringFrom[index + 1] + change;
+    }
 }
 Object String_asUpper(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -2937,8 +2996,12 @@ Object String_asUpper(Object self, int nparts, int *argcv,
     char result[strlen(sstr)];
     result[0] ='\0';
     strcpy(result, sstr);
-    for (int i = 0; i < strlen(result); i++) {
-        result[i] = toupper(result[i]);
+    int i = 0;
+    int len;
+    while (i < strlen(result)) {
+        len = getutf8charlen(sstr + i);
+        toUpper(result, sstr, i, len);
+        i += len;
     }
     return alloc_String(result);
 }
