@@ -11,7 +11,8 @@ inherits prelude.methods
 
 def TypeError is public = CheckerFailure.refine "TypeError"
 
-// Method signature information.
+// Method signature information consisting of the name, list of MixParts,
+// return type and info on what types it specializes.
 
 type MethodType = {
     name -> String
@@ -25,14 +26,17 @@ type Param = {
     typeAnnotation -> ObjectType
 }
 
+// factory method to create parameters with given name and type
 def aParam = object {
+    // create parameter with name': type'
     class withName (name': String) ofType (type': ObjectType) -> Param {
         def name: String is public = name'
         def typeAnnotation: ObjectType is public = type'
         method asString is override { "{name}:{typeAnnotation}" }
     }
 
-    method ofType (type': Object) -> Param {
+   // create parameter with type', but use wildcard as name
+   method ofType (type': Object) -> Param {
         withName "_" ofType (type')
     }
 }
@@ -42,13 +46,17 @@ type MixPart = {
     parameters -> List⟦Param⟧
 }
 
+// create a mixPart from name and list of parameters 
 class mixPartNamed (name': String)
         parameters (parameters': List⟦Param⟧) -> MixPart {
     def name: String is public = name'
     def parameters: List⟦Param⟧ is public = parameters'
 }
 
+// A factory object to create method types
 def aMethodType = object {
+    // create method type from signature and return type
+    // The name is constructed by gluing together part names
     class signature (signature': List⟦MixPart⟧)
           returnType (rType: ObjectType)-> MethodType {
         def signature: List⟦MixPart⟧ is public = signature'
@@ -84,7 +92,7 @@ def aMethodType = object {
 
         // Determines if this method is a specialisation of the given one.
         method isSpecialisationOf (other: MethodType) -> Boolean {
-            if (self == other) then {
+            if (self.isMe(other)) then {
                 return true
             }
 
@@ -118,10 +126,14 @@ def aMethodType = object {
         def asString: String is public, override = show
     }
 
+    // create method type for methods without parameters
     method member (name: String) ofType (rType: ObjectType) -> MethodType {
         signature ([mixPartNamed (name) parameters [ ] ]) returnType (rType)
     }
 
+    // create method type from a node
+    // Do obvious thing if method, class, or method signature
+    // If it is a def or var, create method to return value
     method fromNode (node) -> MethodType {
         match (node) case { meth: Method | Class | MethodSignature ->
             def signature = []
@@ -162,16 +174,23 @@ def aMethodType = object {
 def noSuchMethod = Singleton.named "noSuchMethod"
 
 type ObjectType = {
+    // return list of methods
     methods -> List⟦MethodType⟧
+    // return method type matching name, if it exists
     getMethod (name: String) -> MethodType | noSuchMethod
+    // return whether type is unknown
     isUnknown -> Boolean
+    // return if type is subytpe of other
     isSubtypeOf (other: ObjectType) -> Boolean
+    // create new types using |, &
     |(other: ObjectType) -> ObjectType
     &(other: ObjectType) -> ObjectType
 }
 
+// Factory for creating object types
 def objectType = object {
 
+    // return object type built from methods'
     class fromMethods (methods': List⟦MethodType⟧) -> ObjectType {
         def methods: List⟦MethodType⟧ is public = if (base == unknown)
             then { [] } else { base.methods } ++ methods'
@@ -478,6 +497,7 @@ def objectType = object {
     def number: ObjectType is public = fromMethods [ ] withName "Number"
     def string: ObjectType is public = fromMethods [ ] withName "String"
     def list: ObjectType is public = fromMethods [ ] withName "List"
+    def point: ObjectType is public = fromMethods [ ] withName "Point"
 
     addTo (binding) name "key" returns (base)
     addTo (binding) name "value" returns (base)
@@ -486,6 +506,7 @@ def objectType = object {
     addTo (base) name "asDebugString" returns (string)
     addTo (base) name "asString" returns (string)
     addTo (base) name "::" returns (binding)
+    addTo (base) name "emptyList" returns (list)
 
     extend (pattern) with (base)
     addTo (pattern) name "match" params [base] returns (unknown)
@@ -512,6 +533,7 @@ def objectType = object {
     addTo (number) name "^" params [number] returns (number)
     addTo (number) name "%" params [number] returns (number)
     addTo (number) name "÷" params [number] returns (number)
+    addTo (number) name "@" params [number] returns (point)
     addTo (number) name "hash" returns (string)
     addTo (number) name "++" params [base] returns (string)
     addTo (number) name "<" params [number] returns (boolean)
@@ -526,6 +548,10 @@ def objectType = object {
     addTo (number) name "rounded" returns (number)
     addTo (number) name "prefix⟦" returns (pattern)
     addTo (number) name "prefix⟧" returns (pattern)
+
+    extend (point) with (base)
+    addTo (point) name "x" returns (number)
+    addTo (point) name "y" returns (number)
 
     extend (string) with (base)
     addTo (string) name "++" params [base] returns (string)
@@ -554,6 +580,7 @@ def objectType = object {
     addTo (list) name "indices" returns (list)
     addTo (list) name "first" returns (unknown)
     addTo (list) name "last" returns (unknown)
+    addTo (list) name "add" params [unknown] returns (list)
     addTo (list) name "addFirst" params [unknown] returns (list)
     addTo (list) name "addAll" params [unknown] returns (list)
     addTo (list) name "++" params [list] returns (list)
@@ -567,6 +594,7 @@ def objectType = object {
     scope.types.at "Number" put (number)
     scope.types.at "String" put (string)
     scope.types.at "List" put (list)
+    scope.types.at "Point" put (point)
 
     addVar "Unknown" ofType (pattern)
     addVar "Dynamic" ofType (pattern)
@@ -577,10 +605,12 @@ def objectType = object {
     addVar "Number" ofType (pattern)
     addVar "String" ofType (pattern)
     addVar "List" ofType (pattern)
+    addVar "Point" ofType (pattern)
 
     addVar "done" ofType (self.done)
     addVar "true" ofType (boolean)
     addVar "false" ofType (boolean)
+    addVar "emptyList" ofType (list)
 }
 
 method addVar (name: String) ofType (oType: ObjectType) is confidential {
