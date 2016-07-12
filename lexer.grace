@@ -80,13 +80,14 @@ method padl(s, l, w) {
 }
 
 class new {
-    var lineNumber := 1
-    var linePosition := 0
-    var startPosition := 1
-    var indentLevel := 0
-    var startLine := 1
-    var stringStart
-    
+    var tokens
+    var lineNumber is writable := 1
+    var linePosition is writable  := 0
+    var startPosition is writable  := 1
+    var indentLevel is writable  := 0
+    var startLine is writable  := 1
+    var stringStart is writable
+    var unichars is writable  := 0
     class token {
         def line is public = lineNumber
         def indent is public = indentLevel
@@ -116,7 +117,7 @@ class new {
         inherits token
         def kind is public = "string"
         def value is public = s
-        def size is public = linePosition - stringStart + 1
+        def size is public = linePosition - startPosition + 1
     }
     class multiLineStringToken(s) {
         inherits token
@@ -244,78 +245,353 @@ class new {
         def size is public = 0
     }
 
+    var state
+    var accum is writable  := ""
 
-    method modechange(tokens, mode, accum) {
-        // When a new lexical class has begun, add to the token list
-        // the token corresponding to the previous accumulated data.
-        // mode is the previous lexical mode (a string), and accum the
-        // accumulated characters since that mode began. Modes are:
-        //   n           Whitespace       i   Identifier
-        //   "           Quoted string    q   extended string
-        //   m           Number           o   Any operator
-        //   p           Pragma           d   Indentation
-        //   c           Comment          e   empty
-        //   ,.{}()[]⟦⟧; The corresponding literal character
-        //
-        // There are three special cases for mode o. If accum is "→",
-        // ":=", or "=", the corresponding special token is created.
-        // For mode i, a keyword token is created when the identifier
-        // is a reserved keyword.
+    var inStr is writable  := false
+    //var inBackticks := false
+    //var backtickIdent := false
+    var escaped is writable := false
+    var codepoint is writable := 0
+    var interpdepth is writable := 0
+    var interpString is writable := false
 
-        var tok := 0
-        if ((mode != "n") || (accum.size > 0)) then {
-            if (mode == "i") then {
-                tok := if (keywords.contains(accum)) then {
-                    keywordToken(accum)
+    method advanceTo(s) { state := s }
+    method emit(t) {
+        tokens.push(t)
+        accum := ""
+    }
+    method store(c) { accum := accum ++ c }
+
+    def startState = object {
+        method consume(c){
+            if (c == "#") then {
+                advanceTo(pragmaPrefixState)
+            } else {
+                advanceTo(defaultState)
+                state.consume(c)
+            }
+        }
+    }
+    state := startState
+
+    def pragmaPrefixState = object {
+        method consume(c){
+            checkSeparator(c)
+            if (c == "\n") then {
+                errormessages.syntaxError "Incomplete pragma definition "
+                    atRange(lineNumber, startPosition, linePosition)
+            } elseif(isSpaceChar(c)) then {
+                if (accum == "pragma") then {
+                    accum := ""
+                    advanceTo(pragmaBodyState)
                 } else {
-                    identifierToken(accum)
+                    errormessages.syntaxError "Pragmas must start with #pragma "
+                        atRange(lineNumber, startPosition, linePosition)
                 }
-                tokens.push(tok)
-            } elseif { mode == "\"" } then {
-                tok := stringToken(accum)
-                tokens.push(tok)
-            } elseif { mode == "q" } then {
-                tok := multiLineStringToken(accum)
-                tokens.push(tok)
-            } elseif { mode == "," } then {
-                tok := commaToken
-                tokens.push(tok)
-            } elseif { mode == "." } then {
-                tok := dotToken
-                tokens.push(tok)
-            } elseif { mode == "\{" } then {
-                tok := lBraceToken
-                tokens.push(tok)
-            } elseif { mode == "}" } then {
-                tok := rBraceToken
-                tokens.push(tok)
-            } elseif { mode == "(" } then {
-                tok := lParenToken
-                tokens.push(tok)
-            } elseif { mode == ")" } then {
-                tok := rParenToken
+            }
+            else {
+                store(c)
+            }
+        }
+    }
+
+    def pragmaBodyState = object {
+        method consume(c){
+            checkSeparator(c)
+            if ((c == "\n") || isSpaceChar(c)) then {
+                //a complete pragma has been found
+                util.processExtension(accum)
+                accum := ""
+                advanceTo(pragmaTrailingWhitespaceState)
+                state.consume(c)
+            } else {
+                store(c)
+            }
+        }
+    }
+
+    def pragmaTrailingWhitespaceState = object {
+        method consume(c) {
+            checkSeparator(c)
+            if (c == "\n") then {
+                advanceTo(startState)
+            } elseif (!isSpaceChar(c)) then {
+                errormessages.syntaxError "Pragmas must be a single word "
+                    atRange(lineNumber, startPosition, linePosition)
+            }
+        }
+    }
+
+    def defaultState = object {
+        method consume(c) {
+            def ordval = c.ord
+            checkSeparator(c)
+            startPosition := linePosition
+            startLine := lineNumber
+            if (spaceChars.contains(c)) then {
+                //do nothing
+            } elseif (c == "\"") then {
+                inStr := true
+                stringStart := linePosition
+                advanceTo(quotedStringState)
+            } elseif (c == "‹") then {
+                inStr := true
+                stringStart := linePosition
+                advanceTo(extendedStringState)
+            } elseif (isDigit(c)) then {
+                startPosition := linePosition
+                advanceTo(numberState)
+                state.consume(c)
+            } elseif (isIdentifierChar(c)) then {
+                advanceTo(identifierState)
+                state.consume(c)
+            } elseif (c == "/") then {
+                advanceTo(slashState)
+                state.consume(c)
+            } elseif (c == ".") then {
+                advanceTo(dotState)
+                state.consume(c)
+            } elseif ((c == "<") || isOperatorChar(c, ordval)) then {
+                advanceTo(operatorState)
+                state.consume(c)
+            } elseif (c == ",") then {
+                emit(commaToken)
+            } elseif (c == "\{") then {
+                emit(lBraceToken)
+            } elseif (c == "}") then {
+                advanceTo(rBraceState)
+                state.consume(c)
+            } elseif (c == "(") then {
+                emit(lParenToken)
+            } elseif (c == ")") then {
                 if (tokens.last.kind == "lparen") then {
                     errormessages.syntaxError("empty parenthesis are not allowed. " ++
                         "Remove them, or put something between them.")
-                        atRange(tok.line, tokens.last.linePos, tok.linePos)
+                        atRange(lineNumber, tokens.last.linePos, linePosition)
                 }
-                tokens.push(tok)
-            } elseif { mode == "[" } then {
-                tok := lSquareToken
-                tokens.push(tok)
-            } elseif { mode == "]" } then {
-                tok := rSquareToken
-                tokens.push(tok)
-            } elseif { mode == "⟦" } then {
-                tok := lGenericToken
-                tokens.push(tok)
-            } elseif { mode == "⟧" } then {
-                tok := rGenericToken
-                tokens.push(tok)
-            } elseif { mode == ";" } then {
-                tok := semicolonToken
-                tokens.push(tok)
-            } elseif { mode == "m" } then {
+                emit(rParenToken)
+            } elseif (c == "[") then {
+                emit(lSquareToken)
+            } elseif (c == "]") then {
+                emit(rSquareToken)
+            } elseif (c == "⟦") then {
+                emit(lGenericToken)
+            } elseif (c == "⟧") then {
+                emit(rGenericToken)
+            } elseif (c == ";") then {
+                emit(semicolonToken)
+            } elseif (c == "\n") then {
+                indentLevel := 0
+                advanceTo(indentationState)
+            } else {
+                if((unicode.isSeparator(ordval).not) &&
+                        (unicode.isControl(ordval).not) &&
+                        (ordval != 10) &&
+                        (ordval != 13) &&
+                        (ordval != 32)) then {
+                    errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
+                        ++ "is not a valid character; use spaces instead.")atRange(
+                        lineNumber, linePosition, linePosition)
+                }
+            }
+        }
+    }
+
+    def rBraceState = object {
+        method consume (c){
+            if (interpdepth > 0) then {
+                if (tokens.last.kind == "lbrace") then {
+                    def suggestion = errormessages.suggestion.new
+                    suggestion.deleteRange(linePosition - 1, linePosition)onLine(lineNumber)
+                    errormessages.syntaxError("a string interpolation cannot be empty.")atRange(
+                        lineNumber, tokens.last.linePos, linePosition)withSuggestion(suggestion)
+                }
+                emit (rParenToken)
+                emit (opToken("++"))
+                interpdepth := interpdepth - 1
+                inStr := true
+                advanceTo(quotedStringState)
+            }
+            else {
+                emit (rBraceToken)
+                advanceTo (defaultState)
+            }
+        }
+    }
+
+    def slashState = object {
+        method consume (c) {
+            checkSeparator(c)
+            if (c == "/") then {
+                store(c)
+                if (accum == "//") then {
+                    advanceTo(commentState)
+                }
+            } elseif (accum == "/") then {
+                advanceTo(operatorState)
+                state.consume(c)
+            } else {
+                advanceTo(defaultState)
+                state.consume(c)
+            }
+        }
+    }
+
+    def dotState = object {
+        method consume (c) {
+            checkSeparator(c)
+            if (c == ".") then {
+                store(c)
+                if (accum == "...") then {
+                    advanceTo(identifierState)
+                }
+            } elseif (accum == "..") then {
+                advanceTo(operatorState)
+                state.consume(c)
+            } else {
+                emit(dotToken)
+                advanceTo(defaultState)
+                state.consume(c)
+            }
+        }
+    }
+
+    def identifierState = object {
+        method consume (c) {
+            checkSeparator(c)
+            if (!isIdentifierChar(c)) then {
+                if (keywords.contains(accum)) then {
+                    emit(keywordToken(accum))
+                } else {
+                    emit(identifierToken(accum))
+                }
+                advanceTo(defaultState)
+                state.consume(c)
+            } else {
+                store(c)
+            }
+        }
+    }
+    def quotedStringState = object {
+        method consume (c) {
+
+            checkSeparatorString (c)
+            if (c == "\"") then {
+                emit(stringToken(accum))
+                if (interpString && (interpdepth == 0)) then {
+                    emit(rParenToken)
+                    interpString := false
+                }
+                advanceTo(defaultState)
+                inStr := false
+            } elseif (c == "\n") then {
+                newLineError
+            } elseif (c == "\{") then {
+                def strToken = stringToken(accum)
+                if (!interpString) then {
+                    emit(lParenToken)
+                    interpString := true
+                }
+                emit(strToken)
+                emit(opToken("++"))
+                emit(lParenToken)
+                advanceTo(defaultState)
+                inStr := false
+                interpdepth := interpdepth + 1
+            } elseif (c == "\\") then {
+                advanceTo(quotedStringEscapedState)
+            } else {
+                store(c)
+            }
+        }
+    }
+    def unicodeState = object {
+        method consume(c){
+            unichars := unichars - 1
+            codepoint := codepoint * 16
+            codepoint := codepoint + hexdecchar(c)
+            //print "adding unicode char {c}"
+            if (unichars == 0) then {
+                // At the end of the sequence construct
+                // the character in the unicode library.
+                store(unicode.create(codepoint))
+                advanceTo(quotedStringState)
+            }
+        }
+    }
+    def quotedStringEscapedState = object {
+        method consume (c) {
+            checkSeparatorString (c)
+            advanceTo(quotedStringState)
+            if (c == "\n") then {
+               newLineError
+            } elseif (c == "n") then {
+                // Newline escape
+                accum := accum ++ "\u000a"
+            } elseif { c == "u" } then {
+                // Beginning of a four-digit Unicode escape
+                // (for a BMP codepoint).
+                unichars := 4
+                codepoint := 0
+                advanceTo(unicodeState)
+            } elseif { c == "U" } then {
+                // Beginning of a six-digit Unicode escape
+                // (for a general codepoint).
+                unichars := 6
+                codepoint := 0
+                advanceTo(unicodeState)
+            } elseif { c == "t" } then {
+                // Tab escape
+                accum := accum ++ "\u0009"
+            } elseif { c == "r" } then {
+                // Carriage return escape
+                accum := accum ++ "\u000d"
+            } elseif { c == "b" } then {
+                // Backspace escape
+                accum := accum ++ "\u0008"
+            } elseif { c == "l" } then {
+                // LINE SEPARATOR escape
+                accum := accum ++ "\u2028"
+            } elseif { c == "f" } then {
+                // Form feed/page down escape
+                accum := accum ++ "\u000c"
+            } elseif { c == "e" } then {
+                // Escape escape
+                accum := accum ++ "\u001b"
+            } elseif { c == "_" } then {
+                // non-breaking space
+                accum := accum ++ "\u00a0"
+            } else {
+                // For any other character preceded by \,
+                // insert it literally.
+                store(c)
+            }
+        }
+    }
+
+    def extendedStringState = object {
+        method consume (c) {
+
+            if (c == "›") then {
+                emit(multiLineStringToken(accum))
+                inStr := false
+                advanceTo(defaultState)
+            }
+            else {
+                store(c)
+            }
+        }
+    }
+
+    def numberState = object {
+        method consume (c) {
+            checkSeparator (c)
+            if (isDigit(c) || isLetter(c)) then {
+                store(c)
+            }
+            else {
+                var tok
                 if ((tokens.size > 1) && {tokens.last.kind == "dot"}) then {
                     def dot = tokens.pop
                     if (tokens.last.kind == "num") then {
@@ -378,42 +654,221 @@ class new {
                 } else {
                     tok := makeNumToken(accum)
                 }
-                tokens.push(tok)
-            } elseif { mode == "o" } then {
-                tok := opToken(accum)
-                if (accum == "→") then {
-                    tok := arrowToken
-                } elseif { accum == ":=" } then {
-                    tok := bindToken
-                } elseif { accum == ":" } then {
-                    tok := colonToken
-                }
-                tokens.push(tok)
-            } elseif { mode == "d" } then {
-                indentLevel := linePosition - 1
-            } elseif { mode == "n" } then {
-            } elseif { mode == "e" } then {
-            } elseif { mode == "c" } then {
-                var firstNonSpace := 3      // skip the leading "//"
-                def accumSize = accum.size
-                while { (firstNonSpace <= accum.size) && {
-                        accum.at(firstNonSpace) == " " } } do {
-                    firstNonSpace := firstNonSpace + 1 
-                }
-                def cmt = accum.substringFrom(firstNonSpace)to(accum.size)
-                tokens.push(commentToken(cmt))
-            } elseif { mode == "p" } then {
-                if (accum.substringFrom(1)to(8) == "#pragma ") then {
-                    util.processExtension(
-                        accum.substringFrom(9)to(accum.size))
-                }
-            } else {
-                ProgrammingError.raise("Internal error in lexer: " ++
-                    "no handler for mode {mode} with accum ‹{accum}› " ++
-                    "at position {lineNumber}:{linePosition}")
+                emit (tok)
+                advanceTo(defaultState)
+                state.consume(c)
             }
         }
-        startPosition := linePosition
+    }
+
+    def operatorState = object {
+        method consume (c) {
+            checkSeparator (c)
+            if (isOperatorChar(c, c.ord)) then {
+                store(c)
+            }
+            else {
+                if (accum == "→") then {
+                    emit(arrowToken)
+                } elseif { accum == ":=" } then {
+                    emit(bindToken)
+                } elseif { accum == ":" } then {
+                    emit(colonToken)
+                } else {
+                    emit (opToken(accum))
+                }
+                advanceTo(defaultState)
+                state.consume(c)
+            }
+        }
+    }
+
+    def indentationState = object {
+        method consume (c) {
+            if (spaceChars.contains(c)) then {
+                indentLevel := linePosition
+            }
+            else {
+                advanceTo(defaultState)
+                state.consume(c)
+            }
+        }
+    }
+
+    def commentState = object {
+        method consume (c) {
+            if (c == "\n") then {
+                var firstNonSpace := 3      // skip the leading "//"
+                while { (firstNonSpace <= accum.size) && {
+                        accum.at(firstNonSpace) == " " } } do {
+                    firstNonSpace := firstNonSpace + 1
+                }
+                def cmt = accum.substringFrom(firstNonSpace)to(accum.size)
+                emit (commentToken(cmt))
+                indentLevel := 0
+                advanceTo(indentationState)
+            }
+            else {
+                store(c)
+            }
+        }
+    }
+
+    method newLineError {
+        if (interpdepth > 0) then {
+            // Find closest {.
+            var line := lineNumber
+            var i := util.lines.at(line).size
+            while { util.lines.at(line).at(i) != "\{" } do {
+                i := i - 1
+                if(i == 0) then {
+                    lineNumber := line - 1
+                    i := util.lines.at(line).size
+                }
+            }
+            def suggestions = []
+            var suggestion := errormessages.suggestion.new
+            suggestion.insert("\\")atPosition(i)onLine(line)
+            suggestions.push(suggestion)
+            if((line == lineNumber) && (i == (linePosition - 2))) then {
+                errormessages.syntaxError("for a '\{' character in a string use '\\\{'.")atPosition(
+                    line, i)withSuggestions(suggestions)
+            } else {
+                suggestion := errormessages.suggestion.new
+                suggestion.insert("}")atPosition(linePosition - accum.size - 1)onLine(lineNumber)
+                suggestions.push(suggestion)
+                errormessages.syntaxError("a string interpolation must end with a '}'. For a '\{' character in a string use '\\\{'.")atPosition(
+                    lineNumber, linePosition - accum.size - 1)withSuggestions(suggestions)
+            }
+        } else {
+            def errorLine = util.lines.at(lineNumber)
+            def nextLine = if(util.lines.size >= (lineNumber + 1)) then {
+                util.lines.at(lineNumber + 1)
+            } else {
+                ""
+            }
+            // Count the number of literal quotes in the next line.
+            var i := 1
+            var count := 0
+            while { i <= nextLine.size } do {
+                if(nextLine.at(i) == "\"") then { count := count + 1 }
+                elseif { nextLine.at(i) == "\\" } then { i := i + 1 }
+                i := i + 1
+            }
+            if ((count % 2) == 1) then {
+                def suggestions = []
+                var suggestion := errormessages.suggestion.new
+                suggestion.addLine(lineNumber, errorLine ++ nextLine)
+                suggestion.addLine(lineNumber + 1, "")
+                suggestions.push(suggestion)
+                suggestion := errormessages.suggestion.new
+                suggestion.addLine(lineNumber, errorLine ++ "\"")
+                suggestion.addLine(lineNumber + 1, "    ++ \"" ++ nextLine)
+                suggestions.push(suggestion)
+                suggestion := errormessages.suggestion.new
+                suggestion.addLine(lineNumber, errorLine ++ "\\n" ++ nextLine)
+                suggestion.addLine(lineNumber + 1, "")
+                suggestions.push(suggestion)
+                errormessages.syntaxError("a string must be terminated by a \" before the end of the line. To insert a newline in a string, use '\\n'. To split a string over multiple lines, use '++' to join strings together.")
+                    atRange(lineNumber, linePosition, linePosition)
+                    withSuggestions(suggestions)
+            } else {
+                def suggestion = errormessages.suggestion.new
+                suggestion.addLine(lineNumber, errorLine ++ "\"")
+                errormessages.syntaxError("a string must be terminated " ++
+                    "by a \" before the end of the line.")
+                    atPosition(lineNumber, linePosition)
+                    withSuggestion(suggestion)
+            }
+        }
+    }
+
+    method isSpaceChar(c){
+        spaceChars.contains(c)
+    }
+    method checkSeparatorString (c) {
+        def ordval = c.ord
+        if (isBadSeparator(c)) then {
+            // Character is whitespace, but not an ASCII space or
+            // Unicode NO-BREAK SPACE.  For example, a tab
+
+            def suggestion = errormessages.suggestion.new
+            suggestion.replaceChar(linePosition)with(" ")onLine(lineNumber)
+            if (ordval == 9) then {
+                suggestion.replaceRange(linePosition, linePosition)
+                    with("\\t")
+                    onLine(lineNumber)
+                errormessages.syntaxError("tabs cannot be "
+                    ++ "written in the source code; "
+                    ++ "use the string escape \\t instead")
+                    atRange(lineNumber, linePosition, linePosition)
+                    withSuggestion(suggestion)
+                errormessages.syntaxError("tabs are not allowed; use spaces instead.")atRange(lineNumber,
+                    linePosition, linePosition)withSuggestion(suggestion)
+            } else {
+                suggestion.replaceRange(linePosition, linePosition)
+                    with("\\u{padl(ordval.inBase 16, 4, "0")}")
+                    onLine(lineNumber)
+                errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
+                    ++ "is not a valid whitespace character"
+                    ++ " and cannot be "
+                    ++ "written in the source code; "
+                    ++ "use the Unicode escape \\u"
+                    ++ padl(ordval.inBase 16, 4, "0")
+                    ++ " instead")
+                    atRange(lineNumber, linePosition, linePosition)
+                    withSuggestion(suggestion)
+                errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
+                    ++ "is not a valid whitespace character; use spaces instead.")atRange(lineNumber,
+                    linePosition, linePosition)withSuggestion(suggestion)
+            }
+        } elseif {isBadControl(c)} then {
+            // Character is a control character other than
+            // carriage return or line feed.
+            def suggestion = errormessages.suggestion.new
+            suggestion.replaceRange(linePosition, linePosition)
+                with("\\u{padl(ordval.inBase 16, 4, "0")}")
+                onLine(lineNumber)
+            errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
+                ++ "is a control character and cannot be "
+                ++ "written in the source code; "
+                ++ "use the Unicode escape \\u"
+                ++ padl(ordval.inBase 16, 4, "0")
+                ++ " instead")
+                atRange(lineNumber, linePosition, linePosition)
+                withSuggestion(suggestion)
+            suggestion.deleteChar(linePosition)onLine(lineNumber)
+            errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
+                ++ "is a control character and cannot be written in the source code; consider using spaces instead.")atRange(lineNumber,
+                linePosition, linePosition)withSuggestion(suggestion)
+        }
+    }
+
+    method checkSeparator (c){
+        def ordval = c.ord
+        if (isBadSeparator(c)) then {
+            // Character is whitespace, but not an ASCII space or
+            // Unicode NO-BREAK SPACE.  For example, a tab
+
+            def suggestion = errormessages.suggestion.new
+            suggestion.replaceChar(linePosition)with(" ")onLine(lineNumber)
+            if (ordval == 9) then {
+                errormessages.syntaxError("tabs are not allowed; use spaces instead.")atRange(lineNumber,
+                    linePosition, linePosition)withSuggestion(suggestion)
+            } else {
+                errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
+                    ++ "is not a valid whitespace character; use spaces instead.")atRange(lineNumber,
+                    linePosition, linePosition)withSuggestion(suggestion)
+            }
+        } elseif {isBadControl(c)} then {
+            // Character is a control character other than
+            // carriage return or line feed.
+            def suggestion = errormessages.suggestion.new
+            suggestion.deleteChar(linePosition)onLine(lineNumber)
+            errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
+                ++ "is a control character and cannot be written in the source code; consider using spaces instead.")atRange(lineNumber,
+                linePosition, linePosition)withSuggestion(suggestion)
+        }
     }
 
     method fromBase(str, base) {
@@ -457,7 +912,7 @@ class new {
         }
         val
     }
-            
+
     method hexdecchar(c) {
     // Return the numeric value of the single hexadecimal digit c.
         def AOrd = "A".ord
@@ -476,12 +931,12 @@ class new {
         }
     }
 
-    method makeNumToken(accum) {
+    method makeNumToken(accum2) {
         var base := 10
         var baseSet := false
         var sofar := ""
         var i := 0
-        for (accum) do {c->
+        for (accum2) do {c->
             if ((c == "x") && (!baseSet)) then {
                 base := sofar.asNumber
                 baseSet := true
@@ -491,13 +946,13 @@ class new {
                 if((base < 2) || (base > 36)) then {
                     def suggestions = []
                     var suggestion := errormessages.suggestion.new
-                    suggestion.replaceChar(linePosition - accum.size + i)with("*")onLine(lineNumber)
+                    suggestion.replaceChar(linePosition - accum2.size + i)with("*")onLine(lineNumber)
                     suggestions.push(suggestion)
                     suggestion := errormessages.suggestion.new
-                    suggestion.deleteRange(linePosition - accum.size, linePosition - accum.size + i)onLine(lineNumber)
+                    suggestion.deleteRange(linePosition - accum2.size, linePosition - accum2.size + i)onLine(lineNumber)
                     suggestions.push(suggestion)
                     errormessages.syntaxError("base {base} is not a valid numerical base.")atRange(
-                        lineNumber, linePosition - accum.size, linePosition - accum.size + i - 1)withSuggestions(suggestions)
+                        lineNumber, linePosition - accum2.size, linePosition - accum2.size + i - 1)withSuggestions(suggestions)
                 }
                 sofar := ""
             } else {
@@ -508,13 +963,13 @@ class new {
         if(sofar == "") then {
             def suggestions = []
             var suggestion := errormessages.suggestion.new
-            suggestion.deleteRange(linePosition - accum.size + i - 1, linePosition - 1)onLine(lineNumber)
+            suggestion.deleteRange(linePosition - accum2.size + i - 1, linePosition - 1)onLine(lineNumber)
             suggestions.push(suggestion)
             suggestion := errormessages.suggestion.new
             suggestion.insert("0")atPosition(linePosition)onLine(lineNumber)
             suggestions.push(suggestion)
             errormessages.syntaxError("at least one digit must follow the 'x' in a number.")atPosition(
-                lineNumber, linePosition - accum.size + i)withSuggestions(suggestions)
+                lineNumber, linePosition - accum2.size + i)withSuggestions(suggestions)
         }
         numToken(fromBase(sofar, base).asString, base)
     }
@@ -578,7 +1033,7 @@ class new {
 
     method lexinput(inputLines) {
         // tokens is a doubly-linked list of tokens.
-        var tokens := object {
+        tokens := object {
             var first is readable := false
             var last is readable := false
             var size' := 0
@@ -643,7 +1098,7 @@ class new {
             method iterator {
                 iter
             }
-            
+
             method do(action) {
                 var n := first
                 while { n != false } do {
@@ -653,426 +1108,10 @@ class new {
             }
         }
 
-        var mode := "d"
-        var newmode := mode
-        var inStr := false
-        var inBackticks := false
-        var backtickIdent := false
-        var accum := ""
-        var escaped := false
-        var unichars := 0
-        var codepoint := 0
-        var interpdepth := 0
-        var interpString := false
-        var atStart := true
-        var newlineFound := false
+
         linePosition := 0
         util.log_verbose "lexing."
-        def mainBlock = { c ->
-            var ct := ""
-            var ordval := c.ord // String.ord gives the codepoint
-            if (isBadSeparator(c) && { mode != "q" }) then {
-                // Character is whitespace, but not an ASCII space or
-                // Unicode NO-BREAK SPACE.  For example, a tab
-                def suggestion = errormessages.suggestion.new
-                suggestion.replaceChar(linePosition)with(" ")onLine(lineNumber)
-                if (ordval == 9) then {
-                    if (inStr) then {
-                        suggestion.replaceRange(linePosition, linePosition)
-                            with("\\t")
-                            onLine(lineNumber)
-                        errormessages.syntaxError("tabs cannot be "
-                            ++ "written in the source code; "
-                            ++ "use the string escape \\t instead")
-                            atRange(lineNumber, linePosition, linePosition)
-                            withSuggestion(suggestion)
-                    }
-                    errormessages.syntaxError("tabs are not allowed; use spaces instead.")atRange(lineNumber,
-                        linePosition, linePosition)withSuggestion(suggestion)
-                } else {
-                    if (mode == "\"") then {
-                        suggestion.replaceRange(linePosition, linePosition)
-                            with("\\u{padl(ordval.inBase 16, 4, "0")}")
-                            onLine(lineNumber)
-                        errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                            ++ "is not a valid whitespace character"
-                            ++ " and cannot be "
-                            ++ "written in the source code; "
-                            ++ "use the Unicode escape \\u"
-                            ++ padl(ordval.inBase 16, 4, "0")
-                            ++ " instead")
-                            atRange(lineNumber, linePosition, linePosition)
-                            withSuggestion(suggestion)
-                    }
-                    errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                        ++ "is not a valid whitespace character; use spaces instead.")atRange(lineNumber,
-                        linePosition, linePosition)withSuggestion(suggestion)
-                }
-            } elseif {isBadControl(c) && { mode != "q" }} then {
-                // Character is a control character other than
-                // carriage return or line feed.
-                def suggestion = errormessages.suggestion.new
-                if (inStr) then {
-                    suggestion.replaceRange(linePosition, linePosition)
-                        with("\\u{padl(ordval.inBase 16, 4, "0")}")
-                        onLine(lineNumber)
-                    errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                        ++ "is a control character and cannot be "
-                        ++ "written in the source code; "
-                        ++ "use the Unicode escape \\u"
-                        ++ padl(ordval.inBase 16, 4, "0")
-                        ++ " instead")
-                        atRange(lineNumber, linePosition, linePosition)
-                        withSuggestion(suggestion)
-                }
-                suggestion.deleteChar(linePosition)onLine(lineNumber)
-                errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                    ++ "is a control character and cannot be written in the source code; consider using spaces instead.")atRange(lineNumber,
-                    linePosition, linePosition)withSuggestion(suggestion)
-            }
-            if (atStart) then {
-                if (linePosition == 1) then {
-                    if (c == "#") then {
-                        mode := "p"
-                        newmode := mode
-                    } else {
-                        atStart := false
-                    }
-                }
-            }
-            if (inStr) then {
-
-            } elseif { (mode != "c") && (mode != "p") } then {
-                // Not in a comment or pragma, so look for a mode.
-                if (spaceChars.contains(c) && (mode != "d")) then {
-                    newmode := "n"
-                }
-                if (c == "\"") then {
-                    // Beginning of a string
-                    newmode := "\""
-                    inStr := true
-                    stringStart := linePosition
-                } elseif { c == "‹" } then {
-                    // Beginning of a multi-line string
-                    newmode := "q"
-                    inStr := true
-                    startLine := lineNumber
-                    stringStart := linePosition
-                } elseif { isIdentifierChar(c) } then {
-                    newmode := "i"
-                }
-                if (isDigit(c)) then {
-                    // This may overwrite newmode := "i"
-                    // established 4 lines up
-                    if (mode != "i") then {
-                        newmode := "m"
-                    }
-                }
-                if (mode == "m") then {
-                    if (isLetter(c)) then {
-                        newmode := "m"
-                    }
-                }
-                if (c == "<") then {
-                    if (mode == "i") then {
-                        newmode := "⟦"
-                    } elseif {(mode == "n") && (tokens.last.kind == "op")} then {
-                        newmode := "⟧"
-                    } else {
-                        newmode := "o"
-                    }
-                } elseif { (c == ">") && {(mode == "i") || (mode == "e")} } then {
-                    if (mode == "⟧") then {
-                        modechange(tokens, mode, accum)
-                    }
-                    newmode := "⟧"
-                } elseif { isOperatorChar(c, ordval) } then {
-                    newmode := "o"
-                } elseif { isSelfMode(c) } then {
-                    newmode := c
-                }
-                if (c == "#") then {
-                    if(util.lines.at(lineNumber).substringFrom(1)to(7) == "#pragma") then {
-                        if (atStart) then {
-                            mode := "p"
-                            newmode := "p"
-                        } else {
-                            errormessages.syntaxError "pragmas must be at the start of the file."
-                                atLine(lineNumber)
-                        }
-                    }
-                }
-                if (c == ".") then {
-                    if (accum == ".") then {
-                        // Special handler for .. operator
-                        mode := "o"
-                        newmode := mode
-                    } elseif { accum == ".." } then {
-                        // Special handler for ... identifier
-                        mode := "n"
-                        newmode := mode
-                        modechange(tokens, "i", "...")
-                        accum := ""
-                    } else {
-                        newmode := "."
-                    }
-                }
-                if (c == "/") then {
-                    if (accum == "/") then {
-                        // Start of comment
-                        mode := "c"
-                        newmode := mode
-                    }
-                }
-                if (mode == "n") then {
-                    if (mode == newmode) then {
-                        if (unicode.isSeparator(ordval).not) then {
-                            if (unicode.isControl(ordval).not) then {
-                                if (ordval != 10) then {
-                                    if (ordval != 13) then {
-                                        if (ordval != 32) then {
-                                            if (c != ".") then{
-                                                errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                                                    ++ "is not a valid character; use spaces instead.")atRange(
-                                                    lineNumber, linePosition, linePosition)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            if (mode == "\"") then {
-                if (c == "\"") then {
-                    if (escaped.not) then {
-                        // End of string literal
-                        newmode := "n"
-                        inStr := false
-                        if (interpString) then {
-                            modechange(tokens, mode, accum)
-                            modechange(tokens, ")", ")")
-                            mode := newmode
-                            interpString := false
-                        }
-                    }
-                }
-            } elseif {mode == "q"} then {
-                if (c == "›") then {
-                    //end of literal
-                    newmode := "n"
-                    inStr := false
-                }
-            }
-            if (newmode != mode) then {
-                // This character is the beginning of a different
-                // lexical mode - process the old one now.
-                modechange(tokens, mode, accum)
-                if (interpdepth > 0) then {
-                    if (newmode == "}") then {
-                        // Find the position of the opening brace to 
-                        // check if the interpolation is empty.
-                        if (tokens.last.kind == "lbrace") then {
-                            def suggestion = errormessages.suggestion.new
-                            suggestion.deleteRange(linePosition - 1, linePosition)onLine(lineNumber)
-                            errormessages.syntaxError("a string interpolation cannot be empty.")atRange(
-                                lineNumber, tokens.last.linePos, linePosition)withSuggestion(suggestion)
-                        }
-                        modechange(tokens, ")", ")")
-                        modechange(tokens, "o", "++")
-                        newmode := "\""
-                        inStr := true
-                        interpdepth := interpdepth - 1
-                    }
-                }
-                mode := newmode
-                if (inStr) then {
-                    // String accum should skip the opening quote, but
-                    // other modes' should include their first
-                    // character.
-                    accum := ""
-                } else {
-                    accum := c
-                }
-                if (isBracket(mode)) then {
-                    modechange(tokens, mode, accum)
-                    mode := "e"
-                    newmode := mode
-                    accum := ""
-                }
-            } elseif { mode == "\"" } then {
-                if (c == "\n") then {
-                    if (interpdepth > 0) then {
-                        // Find closest {.
-                        var line := lineNumber
-                        var i := util.lines.at(line).size
-                        while { util.lines.at(line).at(i) != "\{" } do {
-                            i := i - 1
-                            if(i == 0) then {
-                                lineNumber := line - 1
-                                i := util.lines.at(line).size
-                            }
-                        }
-                        def suggestions = []
-                        var suggestion := errormessages.suggestion.new
-                        suggestion.insert("\\")atPosition(i)onLine(line)
-                        suggestions.push(suggestion)
-                        if((line == lineNumber) && (i == (linePosition - 2))) then {
-                            errormessages.syntaxError("for a '\{' character in a string use '\\\{'.")atPosition(
-                                line, i)withSuggestions(suggestions)
-                        } else {
-                            suggestion := errormessages.suggestion.new
-                            suggestion.insert("}")atPosition(linePosition - accum.size - 1)onLine(lineNumber)
-                            suggestions.push(suggestion)
-                            errormessages.syntaxError("a string interpolation must end with a '}'. For a '\{' character in a string use '\\\{'.")atPosition(
-                                lineNumber, linePosition - accum.size - 1)withSuggestions(suggestions)
-                        }
-                    } else {
-                        def errorLine = util.lines.at(lineNumber)
-                        def nextLine = if(util.lines.size >= (lineNumber + 1)) then {
-                            util.lines.at(lineNumber + 1)
-                        } else {
-                            ""
-                        }
-                        // Count the number of literal quotes in the next line.
-                        var i := 1
-                        var count := 0
-                        while { i <= nextLine.size } do {
-                            if(nextLine.at(i) == "\"") then { count := count + 1 }
-                            elseif { nextLine.at(i) == "\\" } then { i := i + 1 }
-                            i := i + 1
-                        }
-                        if ((count % 2) == 1) then {
-                            def suggestions = []
-                            var suggestion := errormessages.suggestion.new
-                            suggestion.addLine(lineNumber, errorLine ++ nextLine)
-                            suggestion.addLine(lineNumber + 1, "")
-                            suggestions.push(suggestion)
-                            suggestion := errormessages.suggestion.new
-                            suggestion.addLine(lineNumber, errorLine ++ "\"")
-                            suggestion.addLine(lineNumber + 1, "    ++ \"" ++ nextLine)
-                            suggestions.push(suggestion)
-                            suggestion := errormessages.suggestion.new
-                            suggestion.addLine(lineNumber, errorLine ++ "\\n" ++ nextLine)
-                            suggestion.addLine(lineNumber + 1, "")
-                            suggestions.push(suggestion)
-                            errormessages.syntaxError("a string must be terminated by a \" before the end of the line. To insert a newline in a string, use '\\n'. To split a string over multiple lines, use '++' to join strings together.")
-                                atRange(lineNumber, linePosition, linePosition)
-                                withSuggestions(suggestions)
-                        } else {
-                            def suggestion = errormessages.suggestion.new
-                            suggestion.addLine(lineNumber, errorLine ++ "\"")
-                            errormessages.syntaxError("a string must be terminated " ++
-                                "by a \" before the end of the line.")
-                                atPosition(lineNumber, linePosition)
-                                withSuggestion(suggestion)
-                        }
-                    }
-                }
-                if (escaped) then {
-                    if (c == "n") then {
-                        // Newline escape
-                        accum := accum ++ "\u000a"
-                    } elseif { c == "u" } then {
-                        // Beginning of a four-digit Unicode escape
-                        // (for a BMP codepoint).
-                        unichars := 4
-                        codepoint := 0
-                    } elseif { c == "U" } then {
-                        // Beginning of a six-digit Unicode escape
-                        // (for a general codepoint).
-                        unichars := 6
-                        codepoint := 0
-                    } elseif { c == "t" } then {
-                        // Tab escape
-                        accum := accum ++ "\u0009"
-                    } elseif { c == "r" } then {
-                        // Carriage return escape
-                        accum := accum ++ "\u000d"
-                    } elseif { c == "b" } then {
-                        // Backspace escape
-                        accum := accum ++ "\u0008"
-                    } elseif { c == "l" } then {
-                        // LINE SEPARATOR escape
-                        accum := accum ++ "\u2028"
-                    } elseif { c == "f" } then {
-                        // Form feed/page down escape
-                        accum := accum ++ "\u000c"
-                    } elseif { c == "e" } then {
-                        // Escape escape
-                        accum := accum ++ "\u001b"
-                    } elseif { c == "_" } then {
-                        // non-breaking space
-                        accum := accum ++ "\u00a0"
-                    } else {
-                        // For any other character preceded by \,
-                        // insert it literally.
-                        accum := accum ++ c
-                    }
-                    escaped := false
-                } elseif { c == "\\" } then {
-                    // Begin an escape sequence
-                    escaped := true
-                } elseif { unichars > 0 } then {
-                    // There are still hex digits to read for a
-                    // Unicode escape. Use the current character
-                    // as a hex digit and update the codepoint
-                    // being calculated with its value.
-                    unichars := unichars - 1
-                    codepoint := codepoint * 16
-                    codepoint := codepoint + hexdecchar(c)
-                    if (unichars == 0) then {
-                        // At the end of the sequence construct
-                        // the character in the unicode library.
-                        accum := accum ++ unicode.create(codepoint)
-                    }
-                } elseif { c == "\{" } then {
-                    if (interpString.not) then {
-                        modechange(tokens, "(", "(")
-                        interpString := true
-                    }
-                    modechange(tokens, mode, accum)
-                    modechange(tokens, "o", "++")
-                    modechange(tokens, "(", "(")
-                    mode := "n"
-                    newmode := "n"
-                    accum := ""
-                    inStr:= false
-                    interpdepth := interpdepth + 1
-                } else {
-                    accum := accum ++ c
-                }
-            } elseif { c == "\n" } then {
-                newlineFound := true
-                if (mode == "q") then {
-                    accum := accum ++ c
-                } else {
-                    // Linebreaks terminate any open tokens
-                    modechange(tokens, mode, accum)
-                    mode := "d"
-                    newmode := "d"
-                    accum := ""
-                }
-            } else {
-                accum := accum ++ c
-            }
-            if (accum == "...") then {
-                if (mode == "o") then {
-                    modechange(tokens, "i", "...")
-                    newmode := "n"
-                    mode := newmode
-                    accum := ""
-                }
-            }
-            if (newlineFound) then {
-                // Linebreaks increment the line counter.
-                newlineFound := false
-                lineNumber := lineNumber + 1
-                linePosition := 0
-                startPosition := 1
-            }
-        }
+        state := startState
         for (inputLines) do { eachLine ->
             def charS = eachLine.iterator
             while {charS.hasNext} do {
@@ -1083,26 +1122,29 @@ class new {
                     def nextCh = charS.next
                     linePosition := linePosition + 1
                     def bigraph = ch ++ nextCh
-                    if (bigraph == ">=") then { mainBlock.apply "≥"
-                    } elseif { bigraph == "<=" } then { mainBlock.apply "≤"
-                    } elseif { bigraph == "!=" } then { mainBlock.apply "≠"
-                    } elseif { bigraph == "[[" } then { mainBlock.apply "⟦"
-                    } elseif { bigraph == "]]" } then { mainBlock.apply "⟧"
-                    } elseif { bigraph == "->" } then { mainBlock.apply "→"
+                    if (bigraph == ">=") then { state.consume "≥"
+                    } elseif { bigraph == "<=" } then { state.consume("≤")
+                    } elseif { bigraph == "!=" } then { state.consume("≠")
+                    } elseif { bigraph == "[[" } then { state.consume("⟦")
+                    } elseif { bigraph == "]]" } then { state.consume("⟧")
+                    } elseif { bigraph == "->" } then { state.consume("→")
                     } else {
                         linePosition := linePosition - 1
-                        mainBlock.apply(ch)
+                        state.consume(ch)
                         linePosition := linePosition + 1
-                        mainBlock.apply(nextCh)
+                        state.consume(nextCh)
                     }
-                } elseif { ((ch == " ") && {"dn".contains(mode)}).not } then {
-                    mainBlock.apply(ch)
+                } else {
+                    state.consume(ch)
                 }
             }
-            mainBlock.apply "\n"
+            state.consume("\n")
+            linePosition := 0
+            lineNumber := lineNumber + 1
         }
         linePosition := linePosition + 1
         if (inStr) then {
+            def mode = ""
             if (mode == "\"") then {
                 def suggestion = errormessages.suggestion.new
                 suggestion.addLine(lineNumber, util.lines.at(lineNumber) ++ "\"")
@@ -1114,10 +1156,7 @@ class new {
                     atRange(startLine, stringStart, util.lines.at(startLine).size)
             }
         }
-        modechange(tokens, mode, accum)
         tokens.push(eofToken)
         tokens
     }
 }
-
-
