@@ -426,7 +426,7 @@ class new {
             if (c == "/") then {
                 store(c)
                 if (accum == "//") then {
-                    advanceTo(commentState)
+                    advanceTo(commentSpaceState)
                 }
             } elseif (accum == "/") then {
                 advanceTo(operatorState)
@@ -589,8 +589,7 @@ class new {
             checkSeparator (c)
             if (isDigit(c) || isLetter(c)) then {
                 store(c)
-            }
-            else {
+            } else {
                 var tok
                 if ((tokens.size > 1) && {tokens.last.kind == "dot"}) then {
                     def dot = tokens.pop
@@ -666,8 +665,7 @@ class new {
             checkSeparator (c)
             if (isOperatorChar(c, c.ord)) then {
                 store(c)
-            }
-            else {
+            } else {
                 if (accum == "→") then {
                     emit(arrowToken)
                 } elseif { accum == ":=" } then {
@@ -675,7 +673,7 @@ class new {
                 } elseif { accum == ":" } then {
                     emit(colonToken)
                 } else {
-                    emit (opToken(accum))
+                    emit(opToken(accum))
                 }
                 advanceTo(defaultState)
                 state.consume(c)
@@ -687,28 +685,28 @@ class new {
         method consume (c) {
             if (spaceChars.contains(c)) then {
                 indentLevel := linePosition
-            }
-            else {
+            } else {
                 advanceTo(defaultState)
                 state.consume(c)
             }
         }
     }
-
+    def commentSpaceState = object {
+        method consume (c) {
+            if (!spaceChars.contains(c)) then {
+                accum := ""
+                advanceTo(commentState)
+                state.consume(c)
+            }
+        }
+    }
     def commentState = object {
         method consume (c) {
             if (c == "\n") then {
-                var firstNonSpace := 3      // skip the leading "//"
-                while { (firstNonSpace <= accum.size) && {
-                        accum.at(firstNonSpace) == " " } } do {
-                    firstNonSpace := firstNonSpace + 1
-                }
-                def cmt = accum.substringFrom(firstNonSpace)to(accum.size)
-                emit (commentToken(cmt))
+                emit (commentToken(accum))
                 indentLevel := 0
                 advanceTo(indentationState)
-            }
-            else {
+            } else {
                 store(c)
             }
         }
@@ -1144,17 +1142,9 @@ class new {
         }
         linePosition := linePosition + 1
         if (inStr) then {
-            def mode = ""
-            if (mode == "\"") then {
-                def suggestion = errormessages.suggestion.new
-                suggestion.addLine(lineNumber, util.lines.at(lineNumber) ++ "\"")
-                errormessages.syntaxError("a string must be terminated with a \" before the end of the line.")atPosition(
-                    lineNumber, linePosition)withSuggestion(suggestion)
-            } elseif {mode == "q"} then {
-                errormessages.syntaxError("a multi-line string must end with a '›'.\n" ++
-                    "String opened on line {startLine} and unclosed at end of input.")
-                    atRange(startLine, stringStart, util.lines.at(startLine).size)
-            }
+            errormessages.syntaxError("a multi-line string must end with a '›'.\n" ++
+                "String opened on line {startLine} and unclosed at end of input.")
+                atRange(startLine, stringStart, util.lines.at(startLine).size)
         }
         tokens.push(eofToken)
         tokens
