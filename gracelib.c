@@ -3312,6 +3312,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "|(1)", &literal_or);
         add_Method(String, "&(1)", &literal_and);
         add_Method(String, "*(1)", &String_timesNumber);
+        add_Method(String, "reverseTimesNumber(1)", &String_timesNumber);
         add_Method(String, "asUpper", &String_asUpper);
         add_Method(String, "asLower", &String_asLower);
         add_Method(String, "capitalized", &String_capitalized);
@@ -3556,10 +3557,12 @@ Object Float64_Add(Object self, int nparts, int *argcv,
     assertClass(other, Number);
     double a = *((double*)self->data);
     double b;
-    if (other->class == Number)
+    if (other->class == Number) {
         b = *(double*)other->data;
-    else
-        b = integerfromAny(other);
+    } else {
+        int partcv[] = {1};
+        return callmethod(other, "reversePlusNumber(1)", 1, partcv, &self);
+    }
     return alloc_Float64(a+b);
 }
 Object Float64_Sub(Object self, int nparts, int *argcv,
@@ -3570,24 +3573,23 @@ Object Float64_Sub(Object self, int nparts, int *argcv,
     double b;
     if (other->class == Number)
         b = *(double*)other->data;
-    else
-        b = integerfromAny(other);
+    else {
+        int partcv[] = {1};
+        return callmethod(other, "reverseMinusNumber(1)", 1, partcv, &self);
+    }
     return alloc_Float64(a-b);
 }
 Object Float64_Mul(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
-    if (other->class == String) {
-        int partcv[] = {1};
-        return callmethod(args[0], "*(1)", 1, partcv, &self);
-    }
-    assertClass(other, Number);
     double a = *(double*)self->data;
     double b;
-    if (other->class == Number)
+    if (other->class == Number) {
         b = *(double*)other->data;
-    else
-        b = integerfromAny(other);
+    } else {
+        int partcv[] = {1};
+        return callmethod(other, "reverseTimesNumber(1)", 1, partcv, &self);
+    }
     return alloc_Float64(a*b);
 }
 Object Float64_Div(Object self, int nparts, int *argcv,
@@ -3596,45 +3598,59 @@ Object Float64_Div(Object self, int nparts, int *argcv,
     assertClass(other, Number);
     double a = *(double*)self->data;
     double b;
-    if (other->class == Number)
+    if (other->class == Number) {
         b = *(double*)other->data;
-    else
-        b = integerfromAny(other);
+    } else {
+        int partcv[] = {1};
+        return callmethod(other, "reverseDivideNumber(1)", 1, partcv, &self);
+    }
     return alloc_Float64(a/b);
 }
 Object Float64_Exp(Object self, int nparts, int *argcv,
                    Object *args, int flags) {
     Object other = args[0];
-    assertClass(other, Number);
-    double a = *(double*)self->data;
-    double b = *(double*)other->data;
+    double a = *(double*)self->data;double b;
+    if (other->class == Number) {
+        b = *(double*)other->data;
+    } else {
+        int partcv[] = {1};
+        return callmethod(other, "reversePowerNumber(1)", 1, partcv, &self);
+    }
     return alloc_Float64(pow(a,b));
 }
 Object Float64_Mod(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
-    assertClass(other, Number);
-    double a = *(double*)self->data;
-    double b = *(double*)other->data;
-    double quo = a / b;
-    double q = trunc(quo);
-    if ((a < 0) && (q != quo))
-        q = (b < 0) ? q+1 : q-1;
-    double r = a - (b * q);
-    return alloc_Float64(r);
+    if (other->class == Number) {
+        double a = *(double*)self->data;
+        double b = *(double*)other->data;
+        double quo = a / b;
+        double q = trunc(quo);
+        if ((a < 0) && (q != quo))
+            q = (b < 0) ? q+1 : q-1;
+        double r = a - (b * q);
+        return alloc_Float64(r);
+    } else {
+        int partcv[] = {1};
+        return callmethod(other, "reverseRemainderNumber(1)", 1, partcv, &self);
+    }
 }
 Object Float64_IntDiv(Object self, int nparts, int *argcv,
                    Object *args, int flags) {
     Object other = args[0];
-    assertClass(other, Number);
-    double a = *(double*)self->data;
-    double b = *(double*)other->data;
-    double quo = a / b;
-    double q = trunc(quo);
-    if (a >= 0) return alloc_Float64(q);
-    if (q == quo) return alloc_Float64(q);
-    if (b < 0) return alloc_Float64(q + 1);
-    return alloc_Float64(q - 1);
+    if (other->class == Number) {
+        double a = *(double*)self->data;
+        double b = *(double*)other->data;
+        double quo = a / b;
+        double q = trunc(quo);
+        if (a >= 0) return alloc_Float64(q);
+        if (q == quo) return alloc_Float64(q);
+        if (b < 0) return alloc_Float64(q + 1);
+        return alloc_Float64(q - 1);
+    } else {
+        int partcv[] = {1};
+        return callmethod(other, "reverseQuotientNumber(1)", 1, partcv, &self);
+    }
 }
 Object Float64_Equals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
