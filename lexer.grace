@@ -341,7 +341,7 @@ class new {
                 advanceTo(extendedStringState)
             } elseif (isDigit(c)) then {
                 startPosition := linePosition
-                advanceTo(numberState)
+                advanceTo(numberStartState)
                 state.consume(c)
             } elseif (isIdentifierChar(c)) then {
                 advanceTo(identifierState)
@@ -584,76 +584,129 @@ class new {
         }
     }
 
-    def numberState = object {
+    var tokenBase is writable
+    var mantissa is writable
+    def numberStartState = object {
         method consume (c) {
             checkSeparator (c)
+            if (isDigit(c)) then {
+                store(c)
+            } elseif (c == "x") then {
+                tokenBase := accum.asNumber
+                if (tokenBase == 0) then {
+                    tokenBase := 16
+                }
+                accum := ""
+                advanceTo(numberBaseState)
+            } elseif ((c == "e") || (c == "E")) then {
+                mantissa := accum.asNumber
+                accum := ""
+                advanceTo(numberExponentSignState)
+            } elseif (isLetter(c)) then {
+                //TODO: make this suggestion better
+                errormessages.syntaxError("'{c}' is not a valid digit in base 10. Valid digits are 0..9.")atRange(
+                    lineNumber, startPosition, linePosition)
+            } elseif (c == ".") then {
+                advanceTo(numberDotState)
+            } else {
+                emit(numToken(accum, 10))
+                advanceTo(defaultState)
+                state.consume(c)
+            }
+        }
+    }
+    def numberBaseState = object {
+        method consume (c) {
+            checkSeparator(c)
             if (isDigit(c) || isLetter(c)) then {
                 store(c)
+            } elseif (c == ".") then {
+                errormessages.syntaxError("a number in base {tokenBase} cannot have a fractional part.")atRange(
+                    lineNumber, startPosition, linePosition)
             } else {
-                var tok
-                if ((tokens.size > 1) && {tokens.last.kind == "dot"}) then {
-                    def dot = tokens.pop
-                    if (tokens.last.kind == "num") then {
-                        if (tokens.last.base == 10) then {
-                            tok := tokens.pop
-                            var decimal := makeNumToken(accum)
-                            if(decimal.base == 10) then {
-                                tok := numToken(tok.value ++ "." ++ accum, 10)
-                            } else {
-                                def suggestions = []
-                                var suggestion := errormessages.suggestion.new
-                                suggestion.replaceRange(dot.linePos + 1, linePosition - 1)with(decimal.value)onLine(lineNumber)
-                                suggestions.push(suggestion)
-                                suggestion := errormessages.suggestion.new
-                                suggestion.deleteRange(dot.linePos, linePosition - 1)onLine(lineNumber)
-                                suggestions.push(suggestion)
-                                errormessages.syntaxError("the fractional part of a number must be in base 10.")atRange(
-                                    lineNumber, dot.linePos + 1, linePosition - 1)withSuggestions(suggestions)
-                            }
-                        } else {
-                            def suggestions = []
-                            var suggestion := errormessages.suggestion.new
-                            suggestion.replaceRange(tokens.last.linePos, dot.linePos - 1)with(tokens.last.value)onLine(lineNumber)
-                            suggestions.push(suggestion)
-                            suggestion := errormessages.suggestion.new
-                            suggestion.deleteChar(dot.linePos)onLine(lineNumber)
-                            suggestions.push(suggestion)
-                            errormessages.syntaxError("a number in base {tokens.last.base} cannot have a fractional part.")atRange(
-                                lineNumber, dot.linePos, linePosition - 1)withSuggestions(suggestions)
-                        }
-                    } else {
-                        if(tokens.last.kind == "string") then {
-                            def suggestion = errormessages.suggestion.new
-                            suggestion.replaceChar(dot.linePos)with("++")onLine(dot.line)
-                            errormessages.syntaxError("a number may follow a '.' only if there is a number before the '.'. "
-                                ++ "To join a number to a string, use '++'.")atRange(
-                                dot.line, dot.linePos, dot.linePos)withSuggestion(suggestion)
-                        } elseif { (tokens.last.kind == "op" ) || (tokens.last.kind == "bind") } then {
-                            def suggestion = errormessages.suggestion.new
-                            suggestion.insert("0")atPosition(dot.linePos)onLine(dot.line)
-                            errormessages.syntaxError("a number must have a digit before the decimal point.")atPosition(
-                                dot.line, dot.linePos)withSuggestion(suggestion)
-                        } elseif { tokens.last.kind == "identifier" } then {
-                            def suggestions = []
-                            if(tokens.last.value == "o") then {
-                                def suggestion = errormessages.suggestion.new
-                                suggestion.replaceChar(tokens.last.linePos)with("0")onLine(tokens.last.line)
-                                suggestions.push(suggestion)
-                            }
-                            def suggestion = errormessages.suggestion.new
-                            suggestion.replaceRange(dot.linePos, linePosition - 1)with("({accum})")onLine(tokens.last.line)
-                            suggestions.push(suggestion)
-                            errormessages.syntaxError("a number may follow a '.' only if there is a number before the '.'.")atRange(
-                                dot.line, dot.linePos, dot.linePos)withSuggestions(suggestions)
-                        } else {
-                            errormessages.syntaxError("a number may follow a '.' only if there is a number before the '.'.")atRange(
-                                dot.line, dot.linePos, dot.linePos)
-                        }
-                    }
-                } else {
-                    tok := makeNumToken(accum)
+                emit(numToken(fromBase(accum, tokenBase).asString, tokenBase))
+                advanceTo(defaultState)
+                state.consume(c)
+            }
+        }
+    }
+    def numberDotState = object {
+        method consume (c) {
+            if (c == ".") then {
+                emit(numToken(accum, 10))
+                accum := ".."
+                advanceTo(dotState)
+            } else {
+                store(".")
+                advanceTo(numberFractionState)
+                state.consume(c)
+            }
+        }
+    }
+    def numberFractionState = object {
+        method consume (c) {
+            checkSeparator(c)
+            if (isDigit(c)) then {
+                store(c)
+            } elseif ((c == "e") || (c == "E")) then {
+                mantissa := accum.asNumber
+                accum := ""
+                advanceTo(numberExponentSignState)
+            } elseif (isLetter(c)) then {
+                errormessages.syntaxError("the fractional part of a number must be in base 10.")atRange(
+                    lineNumber, startPosition, linePosition)
+            } else {
+                emit(numToken(accum, 10))
+                advanceTo(defaultState)
+                state.consume(c)
+            }
+        }
+    }
+    def numberExponentSignState = object {
+        method consume (c) {
+            checkSeparator(c)
+            if (isDigit(c) || (c == "-")) then {
+                store(c)
+                advanceTo(numberExponentState)
+            } elseif (isLetter(c)) then {
+                errormessages.syntaxError("{c} is not an allowed base-10 exponent character")atRange(
+                    lineNumber, startPosition, linePosition)
+            } else {
+                errormessages.syntaxError("exponents must have at least one digit")atRange(
+                    lineNumber, startPosition, linePosition)
+            } 
+        }
+    }
+    def numberExponentState = object {
+        method consume (c) {
+            checkSeparator(c)
+            if (isDigit(c)) then {
+                store(c)
+            } elseif (isLetter(c)) then {
+                errormessages.syntaxError("{c} is not an allowed base-10 exponent character")atRange(
+                    lineNumber, startPosition, linePosition)
+            } elseif (c == ".") then {
+                errormessages.syntaxError("exponents cannot have a fractional part")atRange(
+                    lineNumber, startPosition, linePosition)
+            } else {
+                if (accum == "-") then {
+                    errormessages.syntaxError("exponents must have at least one digit")atRange(
+                        lineNumber, startPosition, linePosition)
                 }
-                emit (tok)
+                def exponent = accum.asNumber
+                var absExp := exponent
+                if (exponent < 0) then {
+                    absExp := -exponent
+                }
+                var absMultiplier := 1
+                repeat (absExp) times {
+                    absMultiplier := absMultiplier * 10
+                }
+                if (exponent >= 0) then {
+                    emit (numToken((mantissa * absMultiplier).asString, 10))
+                } else {
+                    emit (numToken((mantissa / absMultiplier).asString, 10))
+                }
                 advanceTo(defaultState)
                 state.consume(c)
             }
@@ -928,50 +981,6 @@ class new {
                 atRange(lineNumber, linePosition, linePosition)
         }
     }
-
-    method makeNumToken(accum2) {
-        var base := 10
-        var baseSet := false
-        var sofar := ""
-        var i := 0
-        for (accum2) do {c->
-            if ((c == "x") && (!baseSet)) then {
-                base := sofar.asNumber
-                baseSet := true
-                if (base == 0) then {
-                    base := 16
-                }
-                if((base < 2) || (base > 36)) then {
-                    def suggestions = []
-                    var suggestion := errormessages.suggestion.new
-                    suggestion.replaceChar(linePosition - accum2.size + i)with("*")onLine(lineNumber)
-                    suggestions.push(suggestion)
-                    suggestion := errormessages.suggestion.new
-                    suggestion.deleteRange(linePosition - accum2.size, linePosition - accum2.size + i)onLine(lineNumber)
-                    suggestions.push(suggestion)
-                    errormessages.syntaxError("base {base} is not a valid numerical base.")atRange(
-                        lineNumber, linePosition - accum2.size, linePosition - accum2.size + i - 1)withSuggestions(suggestions)
-                }
-                sofar := ""
-            } else {
-                sofar := sofar ++ c
-            }
-            i := i + 1
-        }
-        if(sofar == "") then {
-            def suggestions = []
-            var suggestion := errormessages.suggestion.new
-            suggestion.deleteRange(linePosition - accum2.size + i - 1, linePosition - 1)onLine(lineNumber)
-            suggestions.push(suggestion)
-            suggestion := errormessages.suggestion.new
-            suggestion.insert("0")atPosition(linePosition)onLine(lineNumber)
-            suggestions.push(suggestion)
-            errormessages.syntaxError("at least one digit must follow the 'x' in a number.")atPosition(
-                lineNumber, linePosition - accum2.size + i)withSuggestions(suggestions)
-        }
-        numToken(fromBase(sofar, base).asString, base)
-    }
-
     // Read the program text from util.infile and return a list of
     // tokens.
     method lexfile(file) {
