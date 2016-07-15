@@ -636,9 +636,13 @@ class new {
                 emit(numToken(accum, 10))
                 accum := ".."
                 advanceTo(dotState)
-            } else {
+            } elseif (isDigit(c)) then {
                 store(".")
                 advanceTo(numberFractionState)
+                state.consume(c)
+            } else {
+                emit(numToken(accum, 10))
+                advanceTo(defaultState)
                 state.consume(c)
             }
         }
@@ -674,7 +678,7 @@ class new {
             } else {
                 errormessages.syntaxError("exponents must have at least one digit")atRange(
                     lineNumber, startPosition, linePosition)
-            } 
+            }
         }
     }
     def numberExponentState = object {
