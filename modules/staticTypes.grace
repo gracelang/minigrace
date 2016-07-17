@@ -35,8 +35,8 @@ def aParam = object {
         method asString is override { "{name}:{typeAnnotation}" }
     }
 
-   // create parameter with type', but use wildcard as name
-   method ofType (type': Object) -> Param {
+    // create parameter with type', but use wildcard as name
+    method ofType (type': Object) -> Param {
         withName "_" ofType (type')
     }
 }
