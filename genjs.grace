@@ -607,8 +607,8 @@ method compilefreshmethod(o, selfobj) {
         out "if (argcv.length == {1 + sz}) \{"
         if (emitArgChecks) then {
             out "  if (argcv[{sz}] !== {o.typeParams.size}) \{"
-            out "    callmethod(ProgrammingErrorObject, \"raise\", [1], "
-            out "        new GraceString(\"wrong number of type arguments\"));"
+            out "    throw new GraceExceptionPacket(ProgrammingErrorObject, "
+            out "        new GraceString(\"wrong number of type arguments for \{o.canonicalName}\"));"
             out "  \}"
         }
         o.typeParams.do { g ->
