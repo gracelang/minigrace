@@ -1112,9 +1112,6 @@ PrimitiveGraceList.prototype = {
             return GraceFalse;
         },
         "==(1)": function(argcv, other) {
-            if (argcv[0] !== 1)
-                throw new GraceExceptionPacket(ProgrammingErrorObject,
-                    new GraceString("wrong number of arguments for ==(1)"));
             var collections = callmethod(var___95__prelude, "collections", [0]);
             onSelf = true;
             return callmethod(collections,
@@ -1128,10 +1125,6 @@ PrimitiveGraceList.prototype = {
             return new GraceListIterator(this._value);
         },
         "do(1)": function list_do(argcv, action1) {
-            if (argcv[0] !== 1)
-                callmethod(ProgrammingErrorObject, "raise(1)", [1],
-                    new GraceString("wrong number of arguments for do(1)" +
-                    "\n argcv[0] = " + argcv[0]));
             var self = this._value;
             var size = self.length;
             for (var ix = 0; ix < size; ix ++) {
@@ -1140,10 +1133,6 @@ PrimitiveGraceList.prototype = {
             return GraceDone;
         },
         "keysAndValuesDo(1)": function list_do(argcv, action2) {
-            if (argcv[0] !== 1)
-                callmethod(ProgrammingErrorObject, "raise(1)", [1],
-                    new GraceString("wrong number of arguments for do(_)" +
-                    "\n argcv[0] = " + argcv[0]));
             var self = this._value;
             var size = self.length;
             for (var ix = 0; ix < size; ix ++) {
@@ -1305,9 +1294,6 @@ Lineup.prototype = {
             return new GraceListIterator(this._value);
         },
         "==(1)": function(argcv, other) {
-            if (argcv[0] !== 1)
-                throw new GraceExceptionPacket(ProgrammingErrorObject,
-                    new GraceString("wrong number of arguments for ==(1)"));
             var collections = callmethod(var___95__prelude, "collections", [0]);
             onSelf = true;
             return callmethod(collections,
@@ -1321,10 +1307,6 @@ Lineup.prototype = {
             return new GraceListIterator(this._value);
         },
         "do(1)": function list_do(argcv, action1) {
-            if (argcv[0] !== 1)
-                callmethod(ProgrammingErrorObject, "raise(1)", [1],
-                    new GraceString("wrong number of arguments for do(1)" +
-                    "\n argcv[0] = " + argcv[0]));
             var self = this._value;
             var size = self.length;
             for (var ix = 0; ix < size; ix ++) {
@@ -2526,9 +2508,6 @@ function gracecode_util() {
         superDepth = obj_requiredModules;
         var meth_isAlready = function(argcv) {    // method isAlready(1)
             var var_moduleName = arguments[1];
-            if (argcv[0] !== 1)
-                callmethod(ProgrammingErrorObject, "raise(1)", [1],
-                    new GraceString("wrong number of arguments for isAlready(1)"));
             setModuleName("util");
             onSelf = true;
             var staticv = callmethod(this, "static", [0]);
@@ -2567,13 +2546,9 @@ function gracecode_util() {
     obj_init_requiredModules.apply(obj_requiredModules, []);
     var var_requiredModules = obj_requiredModules;
     var util_requiredmodules = function(argcv) {    // method requiredModules
-        var curarg = 1;
-        if (argcv[0] !== 0)
-            callmethod(ProgrammingErrorObject, "raise(1)", [1], new GraceString("wrong number of arguments for requiredModules"));
         return var_requiredModules;
     };
     util_requiredmodules.paramCounts = [ 0 ];
-    util_requiredmodules.variableArities = [false];
     this.methods.requiredModules = util_requiredmodules;
     this.methods['debug(1)'] = function util_debug(argcv, s) {
         dbg(s._value);
@@ -3312,15 +3287,9 @@ GraceException.prototype = {
             return new GraceException(nm._value, this);
         },
         "raise(1)": function(argcv, msg) {
-            if (argcv[0] !== 1)
-                throw new GraceExceptionPacket(ProgrammingErrorObject,
-                    new GraceString("wrong number of arguments for raise(1)"));
             throw new GraceExceptionPacket(this, msg, new GraceObject());
         },
         "raise(1)with(1)": function(argcv, msg, data) {
-            if ((argcv[0] !== 1) && (argcv[1] !== 1))
-                throw new GraceExceptionPacket(ProgrammingErrorObject,
-                    new GraceString("wrong number of arguments for raise(1)with(1)"));
             throw new GraceExceptionPacket(this, msg, data);
         },
         "match(1)": function(argcv, other) {
