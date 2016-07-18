@@ -571,14 +571,6 @@ method compilefreshmethod(o, selfobj) {
     for (o.signature) do { part ->
         paramCounts.push(part.params.size)
     }
-    var textualSignature := ""
-    for (o.signature) do { part ->
-        def size = part.params.size
-        textualSignature := textualSignature ++ part.name
-        if (size > 0) then {
-            textualSignature := textualSignature ++ "({size}     )"
-        }
-    }
     var myc := auto_count
     auto_count := auto_count + 1
     def name = escapestring(o.nameString ++ "$object(1)")
@@ -595,7 +587,7 @@ method compilefreshmethod(o, selfobj) {
             }
         }
     }
-    out "var func{myc} = function(argcv) \{    // method {textualSignature}()object"
+    out "var func{myc} = function(argcv) \{    // method {o.canonicalName}$object(_)"
     increaseindent
     out("var curarg = 1;")
     for (o.signature.indices) do { partnr ->
