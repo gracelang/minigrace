@@ -3378,7 +3378,7 @@ Object Float64_Add(Object self, int nparts, int *argcv,
         b = *(double*)other->data;
     else
         int partcv[] = {1};
-        return callmethod(args[0], "reversePlusNumber(1)", 1, partcv, &self);
+        return callmethod(other, "reversePlusNumber(1)", 1, partcv, &self);
     return alloc_Float64(a+b);
 }
 Object Float64_Sub(Object self, int nparts, int *argcv,
@@ -3391,7 +3391,7 @@ Object Float64_Sub(Object self, int nparts, int *argcv,
         b = *(double*)other->data;
     else
         int partcv[] = {1};
-        return callmethod(args[0], "reverseMinusNumber(1)", 1, partcv, &self);
+        return callmethod(other, "reverseMinusNumber(1)", 1, partcv, &self);
     return alloc_Float64(a-b);
 }
 Object Float64_Mul(Object self, int nparts, int *argcv,
@@ -3403,7 +3403,7 @@ Object Float64_Mul(Object self, int nparts, int *argcv,
         b = *(double*)other->data;
     } else {
         int partcv[] = {1};
-        return callmethod(args[0], "reverseTimesNumber(1)", 1, partcv, &self);
+        return callmethod(other, "reverseTimesNumber(1)", 1, partcv, &self);
     }
     return alloc_Float64(a*b);
 }
@@ -3417,7 +3417,7 @@ Object Float64_Div(Object self, int nparts, int *argcv,
         b = *(double*)other->data;
     else
         int partcv[] = {1};
-        return callmethod(args[0], "reverseDivideNumber(1)", 1, partcv, &self);
+        return callmethod(other, "reverseDivideNumber(1)", 1, partcv, &self);
     return alloc_Float64(a/b);
 }
 Object Float64_Exp(Object self, int nparts, int *argcv,
@@ -3428,7 +3428,7 @@ Object Float64_Exp(Object self, int nparts, int *argcv,
         b = *(double*)other->data;
     } else {
         int partcv[] = {1};
-        return callmethod(args[0], "reversePowerNumber(1)", 1, partcv, &self);
+        return callmethod(other, "reversePowerNumber(1)", 1, partcv, &self);
     }
     return alloc_Float64(pow(a,b));
 }
