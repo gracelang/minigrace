@@ -1,12 +1,10 @@
 #!/bin/bash
 
-NEWLINE = $'\n'
-
 for i in $*; do
     if [[ $i =~ .*\.js$ ]] &&
        [ $i != "js/tabs.js" ]; then
-        BACKGROUND=${BACKGROUND}"  window.importScripts(\"../$i\"); ${NEWLINE}"
-        INDEX=${INDEX}"    <script src=\"$i\" type=\"text/javascript\"></script> ${NEWLINE}"
+        BACKGROUND=${BACKGROUND}"  window.importScripts(\"../$i\");"
+        INDEX=${INDEX}"    <script src=\"$i\" type=\"text/javascript\"></script>"
     fi
 done
 cat grace-web-editor/scripts/background.in.js | sed -e 's|JAVASCRIPT_SRC_FILES|'"$BACKGROUND"'|' >grace-web-editor/scripts/background.js
