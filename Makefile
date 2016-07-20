@@ -67,12 +67,6 @@ ace-code: js/ace/ace.js
 
 alltests: test test.js module-test-js js/sample-dialects
 
-blackWeb:
-	$(MAKE) WEB_SERVER=black@cs.pdx.edu ide
-
-bruceWeb:
-	$(MAKE) WEB_SERVER=kim@project2.cs.pomona.edu WEB_DIRECTORY=www/minigrace/ ide
-
 c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct c/Makefile mirrors.c mirrors.gct definitions.h curl.c modules/math.gso modules/unicode.gso modules/mirrors.gso modules/math.gct modules/math.gcn modules/unixFilePath.gct modules/unixFilePath.gcn
 	for f in gracelib.c gracelib.h unicode.{c,gct} unicodedata.h $(SOURCEFILES) mirrors.{c,gct} definitions.h debugger.c curl.c modules/*.gso modules/*.gct modules/*.gcn ;\
     do cp -f $$f c ; done &&\
@@ -130,7 +124,7 @@ collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
 collectionsPrelude.gcn: collectionsPrelude.gct
 
 dev-ide:
-	$(MAKE) WEB_SERVER=cs.pdx.edu dev-ideDeploy
+	$(MAKE) dev-ideDeploy
 
 dev-ideDeploy: ideBuild
 	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
@@ -175,7 +169,7 @@ grace-web-editor/scripts/setup.js: pull-web-editor $(filter-out %/setup.js,$(wil
 	cd grace-web-editor; npm install
 
 graceWeb:
-	$(MAKE) WEB_SERVER=cs.pdx.edu ide
+	$(MAKE) ide
 
 gracelib-basic.o: gracelib.c gracelib.h
 	gcc -g -std=c99 -o gracelib-basic.o -c gracelib.c
