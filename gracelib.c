@@ -4700,7 +4700,7 @@ Object Block_match(Object self, int nparts, int *argcv, Object *args, int flags)
     if (!bo->data[1]) {
         if (nparts != 1 || argcv == NULL || argcv[0] != 1)
             gracedie("block is not a matching block");
-        Object r = callmethod(self, "apply", nparts, argcv, args);
+        Object r = callmethod(self, "apply(1)", nparts, argcv, args);
         return alloc_SuccessfulMatch(r, NULL);
     }
     Object pattern = bo->data[1];

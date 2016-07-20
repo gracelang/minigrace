@@ -1837,7 +1837,7 @@ function GraceHashMap() {
     this.size = 0;
 }
 GraceHashMap.prototype = Grace_allocObject(GraceObject, "hashMap");
-GraceHashMap.prototype.methods.put = function(argcv, k, v) {
+GraceHashMap.prototype.methods['put(2)'] = function(argcv, k, v) {
     var hc = callmethod(k, "hash", [0]);
     hc = hc._value;
     while (this.table[hc]) {
@@ -1849,7 +1849,7 @@ GraceHashMap.prototype.methods.put = function(argcv, k, v) {
     this.table[hc] = {key: k, value: v};
     return this;
 };
-GraceHashMap.prototype.methods.get = function(argcv, k) {
+GraceHashMap.prototype.methods['get(1)'] = function(argcv, k) {
     var hc = callmethod(k, "hash", [0]);
     hc = hc._value;
     while (this.table[hc]) {
@@ -1860,7 +1860,7 @@ GraceHashMap.prototype.methods.get = function(argcv, k) {
     throw new GraceExceptionPacket(RuntimeErrorObject,
             new GraceString("key not found in HashMap"));
 };
-GraceHashMap.prototype.methods.contains = function(argcv, k) {
+GraceHashMap.prototype.methods['contains(1)'] = function(argcv, k) {
     var hc = callmethod(k, "hash", [0]);
     hc = hc._value;
     while (this.table[hc]) {
@@ -2442,7 +2442,7 @@ function gracecode_util() {
     this.methods.infile = function util_infile(argcv) {
         return stdin;
     };
-    this.methods.parseargs = function util_parseargs(argcv) {
+    this.methods['parseargs(1)'] = function util_parseargs(argcv) {
         return GraceDone;
     };
     this.methods.target = function util_target(argcv) {
