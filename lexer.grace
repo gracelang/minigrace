@@ -455,6 +455,11 @@ class new {
             } elseif (accum == "..") then {
                 advanceTo(operatorState)
                 state.consume(c)
+            } elseif (isDigit(c)) then {
+                accum := "0."
+                //should an error be thrown instead?
+                advanceTo(numberFractionState)
+                state.consume(c)
             } else {
                 emit(dotToken)
                 advanceTo(defaultState)
@@ -634,6 +639,8 @@ class new {
             }
         }
     }
+    
+    
     def numberDotState = object {
         method consume (c) {
             if (isDigit(c)) then {
