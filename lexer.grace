@@ -620,9 +620,6 @@ class new {
             checkSeparator(c)
             if (isDigit(c) || isLetter(c)) then {
                 store(c)
-            } elseif (c == ".") then {
-                errormessages.syntaxError("a number in base {tokenBase} cannot have a fractional part.")atRange(
-                    lineNumber, startPosition, linePosition)
             } else {
                 emit(numToken(fromBase(accum, tokenBase).asString, tokenBase))
                 advanceTo(defaultState)
@@ -632,17 +629,14 @@ class new {
     }
     def numberDotState = object {
         method consume (c) {
-            if (c == ".") then {
-                emit(numToken(accum, 10))
-                accum := ".."
-                advanceTo(dotState)
-            } elseif (isDigit(c)) then {
+            if (isDigit(c)) then {
                 store(".")
                 advanceTo(numberFractionState)
                 state.consume(c)
             } else {
                 emit(numToken(accum, 10))
-                advanceTo(defaultState)
+                accum := "."
+                advanceTo(dotState)
                 state.consume(c)
             }
         }
@@ -688,9 +682,6 @@ class new {
                 store(c)
             } elseif (isLetter(c)) then {
                 errormessages.syntaxError("{c} is not an allowed base-10 exponent character")atRange(
-                    lineNumber, startPosition, linePosition)
-            } elseif (c == ".") then {
-                errormessages.syntaxError("exponents cannot have a fractional part")atRange(
                     lineNumber, startPosition, linePosition)
             } else {
                 if (accum == "-") then {
