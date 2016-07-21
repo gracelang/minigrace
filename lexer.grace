@@ -340,6 +340,12 @@ class new {
                 stringStart := linePosition
                 advanceTo(extendedStringState)
             } elseif (isDigit(c)) then {
+                if ((tokens.size > 0) && {tokens.last.kind == "num"}) then {
+                    def suggestion = errormessages.suggestion.new
+                    suggestion.deleteRange(tokens.last.linePos+tokens.last.size, linePosition - 1)onLine(lineNumber)
+                    errormessages.syntaxError("Consecutive numbers are not allowed.")
+                        atRange(lineNumber, tokens.last.linePos, linePosition)withSuggestion(suggestion)
+                }
                 startPosition := linePosition
                 advanceTo(numberStartState)
                 state.consume(c)
@@ -365,7 +371,7 @@ class new {
             } elseif (c == "(") then {
                 emit(lParenToken)
             } elseif (c == ")") then {
-                if (tokens.last.kind == "lparen") then {
+                if ((tokens.size > 0) && {tokens.last.kind == "lparen"}) then {
                     errormessages.syntaxError("empty parenthesis are not allowed. " ++
                         "Remove them, or put something between them.")
                         atRange(lineNumber, tokens.last.linePos, linePosition)
@@ -603,9 +609,10 @@ class new {
                 accum := ""
                 advanceTo(numberExponentSignState)
             } elseif (isLetter(c)) then {
-                //TODO: make this suggestion better
+                def suggestion = errormessages.suggestion.new
+                suggestion.insert(".")atPosition(linePosition)onLine(lineNumber)
                 errormessages.syntaxError("'{c}' is not a valid digit in base 10. Valid digits are 0..9.")atRange(
-                    lineNumber, startPosition, linePosition)
+                    lineNumber, startPosition, linePosition)withSuggestion(suggestion)
             } elseif (c == ".") then {
                 advanceTo(numberDotState)
             } else {
@@ -632,6 +639,10 @@ class new {
             if (isDigit(c)) then {
                 store(".")
                 advanceTo(numberFractionState)
+                state.consume(c)
+            } elseif (spaceChars.contains(c)) then {
+                emit(numToken(accum, 10))
+                advanceTo(defaultState)
                 state.consume(c)
             } else {
                 emit(numToken(accum, 10))
