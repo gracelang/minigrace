@@ -123,6 +123,7 @@ class baseNode {
     method isSuper { false }
     method isPrelude { false }
     method isOuter { false }
+    method isSelfOrOuter { false }
     method isBlock { false }
     method isObject { false }
     method isIdentifier { false }
@@ -1536,6 +1537,10 @@ def memberNode = object {
                 receiver.accept(visitor) from(newChain)
             }
         }
+        method isSelfOrOuter {
+            if (value ≠ "outer") then { return false }
+            receiver.isSelfOrOuter
+        }
         method map(blk) ancestors(as) {
             var n := shallowCopy
             def newChain = as.extend(n)
@@ -1722,7 +1727,11 @@ def identifierNode = object {
         method isSuper { "super" == value }
         method isPrelude { "prelude" == value }
         method isOuter { "outer" == value }
-
+        method isSelfOrOuter {
+            if (isSelf) then { return true }
+            if (isOuter) then { return true }
+            return false
+        }
         method isAppliedOccurenceOfIdentifier {
             if (wildcard) then {
                 false
