@@ -524,11 +524,9 @@ method transformIdentifier(node) ancestors(as) {
     // This method seems to do the following:
     // - id is self => do nothing
     // - id is super => do nothing
-    // - id is in an assignment position and a method ‹id›:=(_) is in scope:
-    //          replace node by a method request
+    // - id is in an assignment position and a method ‹id›:=(_) is in scope => do nothing.  The enclosing bind will transform it.
     // - id is in the lexical scope: store binding occurence of id in node
     // - id is a method in an outer object scope: transform into member nodes.
-    //  TODO: can't make references to fields direct because they might be overridden
     // - id is a self-method: transform into a request on self
     // - id is not declared: generate an error message
 
