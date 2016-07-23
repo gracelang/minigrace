@@ -1331,7 +1331,11 @@ method transformBind(bindNode) ancestors(as) {
         def nmGets = nm ++ ":="
         def part = ast.requestPart.request(nmGets) withArgs [bindNode.value]
                 scope(currentScope)
-        return ast.callNode.new(dest.receiver, [part]) scope(currentScope)
+        def newCall = ast.callNode.new(dest.receiver, [part]) scope(currentScope)
+        if (dest.receiver.isSelfOrOuter) then {
+            newCall.onSelf
+        }
+        return newCall
     } elseif { dest.isIdentifier } then {
         def nm = dest.nameString
         def nmGets = nm ++ ":=(1)"
