@@ -1362,7 +1362,7 @@ method transformInherits(inhNode) ancestors(as) {
     def currentScope = inhNode.scope
     if (currentScope.isObjectScope.not) then {
         errormessages.syntaxError "{inhNode.statementName} statements must be directly inside an object"
-                    atRange(inhNode.line, inhNode.linePos, inhNode.linePos + 7)
+                    atRange(inhNode.line, inhNode.linePos, inhNode.linePos + (inhNode.statementName.size - 1))
     }
     if (superObject.isAppliedOccurenceOfIdentifier) then {
         // this deals with "inherits true" etc.
