@@ -632,6 +632,8 @@ class new {
             checkSeparator(c)
             if (isDigit(c) || isLetter(c)) then {
                 store(c)
+            } else if ((c == ".") && (tokenBase == 10)) then {
+                advanceTo(numberDotState)
             } else {
                 emit(numToken(fromBase(accum, tokenBase).asString, tokenBase))
                 advanceTo(defaultState)
@@ -639,8 +641,8 @@ class new {
             }
         }
     }
-    
-    
+
+
     def numberDotState = object {
         method consume (c) {
             if (isDigit(c)) then {
@@ -648,6 +650,7 @@ class new {
                 advanceTo(numberFractionState)
                 state.consume(c)
             } elseif (spaceChars.contains(c)) then {
+                //alternatively, throw an error here
                 emit(numToken(accum, 10))
                 advanceTo(defaultState)
                 state.consume(c)
