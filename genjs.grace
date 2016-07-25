@@ -419,71 +419,84 @@ method compiletypeliteral(o) {
     // TODO: types in the type literal
     o.register := "type{myc}"
 }
-method compilemethod(o, selfobj) {
-    var oldusedvars := usedvars
-    var olddeclaredvars := declaredvars
-    def paramCounts =  [ ]
+method paramCounts(o) {
+    def result = [ ]
     for (o.signature) do { part ->
-        paramCounts.push(part.params.size)
+        result.push(part.params.size)
     }
-    def isSimpleAccessor = (o.body.size == 1) && {o.body.first.isIdentifier}
-    usedvars := []
-    declaredvars := []
-    var myc := auto_count
-    auto_count := auto_count + 1
-    var name := escapestring(o.nameString)
-    var nm := name ++ myc
-    var closurevars := []
-    var haveTypedParams := false
+}
+method hasTypedParams(o) {
     for (o.signature) do { part ->
-        for (part.params) do {p->
+        for (part.params) do { p->
             if (p.dtype != false) then {
                 if ((p.dtype.value != "Unknown")
                     && ((p.dtype.kind == "identifier")
                         || (p.dtype.kind == "typeliteral"))) then {
-                    haveTypedParams := true
+                    return true
                 }
             }
         }
     }
-    out("var func" ++ myc ++ " = function(argcv) \{    // method " ++ o.canonicalName)
+    return false
+}
+
+method compileMethodPreamble(o, myc, name) {
+    out "var func{myc} = function(argcv) \{    // method {name}"
     increaseindent
-    out("var returnTarget = invocationCount;")
-    out("invocationCount++;")
-    out("var curarg = 1;")
-    if (debugMode && isSimpleAccessor.not) then {
-        out "var myframe = new StackFrame(\"{name}\");"
+    out "var curarg = 1;"
+    out "var returnTarget = invocationCount;"
+    out "invocationCount++;"
+}
+
+method compileMethodPostamble(o, myc, name) {
+    decreaseindent
+    out "\};    // end of method {name}"
+    if (hasTypedParams(o)) then {
+        compilemethodtypes("func{myc}", o)
     }
-    for (o.signature.indices) do { partnr ->
-        var part := o.signature.at(partnr)
+    if (o.isConfidential) then {
+        out "func{myc}.confidential = true;"
+    }
+}
+
+method compileParameters(o) withDebug(needsDebug) {
+    for (o.signature) do { part ->
         for (part.params) do { p ->
-            out "var {varf(p.value)} = arguments[curarg];"
+            def pName = p.nameString
+            def varName = varf(pName)
+            out "var {varName} = arguments[curarg];"
             out "curarg++;"
-            if (debugMode && isSimpleAccessor.not) then {
-                out "myframe.addVar(\"{escapestring(p.value)}\","
-                out "  function() \{return {varf(p.value)};});"
+            if (needsDebug) then {
+                out "myframe.addVar(\"{escapestring(pName)}\","
+                out "  function() \{return {varName};});"
             }
         }
     }
-    if (o.typeParams != false) then {
-        def sz = o.signature.size
-        out "// Start type arguments"
-        o.typeParams.do {g->
-            out "var {varf(g.value)} = var_Unknown;"
-        }
-        out "if (argcv.length == {1 + sz}) \{"
-        if (emitArgChecks) then {
-            out "  if (argcv[{sz}] !== {o.typeParams.size}) \{"
-            out "    throw new GraceExceptionPacket(ProgrammingErrorObject, "
-            out "        new GraceString(\"wrong number of type arguments for {o.canonicalName}\"));"
-            out "  \}"
-        }
-        o.typeParams.do { g ->
-            out("  {varf(g.value)} = arguments[curarg++];")
-        }
-        out "\}"
-        out "// End type arguments"
+}
+
+method compileTypeParameters(o) atPosition(sz) {
+    if (false == o.typeParams) then { return }
+    out "// Start type parameters"
+    out "if (argcv.length == {1 + sz}) \{"
+    if (emitArgChecks) then {
+        out "  if (argcv[{sz}] !== {o.typeParams.size}) \{"
+        out "    throw new GraceExceptionPacket(ProgrammingErrorObject, "
+        out "        new GraceString(\"wrong number of type arguments for {o.canonicalName}\"));"
+        out "  \}"
     }
+    o.typeParams.do { g ->
+        out "  var {varf(g.value)} = arguments[curarg++];"
+    }
+    out "\} else \{"
+    o.typeParams.do { g->
+        out "  var {varf(g.value)} = var_Unknown;"
+    }
+    out "\}"
+    out "// End type parameters"
+}
+
+method compileArgumentTypeChecks(o) {
+    out "setModuleName(\"{modname}\");"     // do this before noteLineNumber
     if (emitTypeChecks && o.needsArgChecks) then {
         out "// Start argument checking"
         out "curarg = 1;"
@@ -506,60 +519,97 @@ method compilemethod(o, selfobj) {
         }
         out "// End argument checking"
     }
+}
+method debugModePrefix {
+    if (debugMode) then {
+        out "stackFrames.push(myframe);"
+        out("try \{")
+        increaseindent
+    }
+}
 
-    // Setting the location is deliberately delayed to this point, so that
-    // argument checking errors are reported as errors at the request site
-    // --- which is where the error happens.
-    out("setModuleName(\"{modname}\");")
-    if (isSimpleAccessor) then {
-        out "// {o.canonicalName} is a simple accessor - elide try ... catch"
-        def ret = compilenode(o.body.at(1))
-        out("return " ++ ret ++ ";")
-    } else {
-        if (debugMode) then {
-            out "stackFrames.push(myframe);"
-            out("try \{")
-            increaseindent
-        }
-        var ret := "GraceDone"
-        var lastLine := o.line
-        for (o.body) do { l ->
-            ret := compilenode(l)
-            lastLine := l.line
-        }
-        if (ret != "undefined") then {
-            if (emitTypeChecks && (o.dtype != false)) then {
-                def dtype = compilenode(o.dtype)
-                noteLineNumber (lastLine) comment "return value"
-                out "if (!Grace_isTrue(callmethod({dtype}, \"match(1)\", [1], {ret})))"
-                out "    throw new GraceExceptionPacket(TypeErrorObject," 
-                out "        new GraceString(\"result of method {o.canonicalName} does not have \" + "
-                out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
-            }
-            out("return " ++ ret ++ ";")
-        }
-        if (debugMode) then {
-            decreaseindent
-            out "\} finally \{"
-            out "    stackFrames.pop();"
-            out "\}"
+method debugModeSuffix {
+    if (debugMode) then {
+        decreaseindent
+        out "\} finally \{"
+        out "    stackFrames.pop();"
+        out "\}"
+    }
+}
+
+method compileMethodBody(o) {
+    var ret := "GraceDone"
+    var lastLine := o.line
+    for (o.body) do { l ->
+        ret := compilenode(l)
+        lastLine := l.line
+    }
+    if (ret != "undefined") then {  // TODO what if it is "undefined" ?
+        if (emitTypeChecks && (false ≠ o.dtype)) then {
+            def dtype = compilenode(o.dtype)
+            noteLineNumber (lastLine) comment "return value"
+            out "if (!Grace_isTrue(callmethod({dtype}, \"match(1)\", [1], {ret})))"
+            out "    throw new GraceExceptionPacket(TypeErrorObject," 
+            out "        new GraceString(\"result of method {o.canonicalName} does not have \" + "
+            out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
         }
     }
-    decreaseindent
-    out "\};"
-    usedvars := oldusedvars
-    declaredvars := olddeclaredvars
-    if (haveTypedParams) then {
-        compilemethodtypes("func{myc}", o)
+    return ret
+}
+
+method compileFreshMethodBody(o) {
+    var tailObject := false
+    // two cases: body ends with an object, or body ends with a clone method
+    if ((o.body.size > 0) && {o.body.last.isObject}) then {
+        tailObject := o.body.pop    // remove tail object
+        util.log 50 verbose "object name was {tailObject.name}, changed to {o.nameString}"
+        tailObject.name := o.nameString
     }
-    if (o.isConfidential) then {
-        out "func{myc}.confidential = true;"
+    var ret := compileMethodBody(o)
+    if (false != tailObject) then {
+        o.body.push(tailObject)     // put tail object back
+        compileobject(tailObject, "this", true)
+        ret := tailObject.register
     }
-    out "func{myc}.paramCounts = {paramCounts};"
-    out("{selfobj}.methods[\"{name}\"] = func{myc};")
+    return ret
+}
+
+method compileMetadata(o, myc, name, selfobj) {
+    out "func{myc}.paramCounts = {paramCounts(o)};"
     out "func{myc}.definitionLine = {o.line};"
     out "func{myc}.definitionModule = \"{modname}\";"
+    out "{selfobj}.methods[\"{name}\"] = func{myc};"
+}
+
+method compilemethod(o, selfobj) {
+    def oldusedvars = usedvars
+    def olddeclaredvars = declaredvars
+    def myc = auto_count
+    auto_count := auto_count + 1
     o.register := "func{myc}"
+    def isSimpleAccessor = (o.body.size == 1) && {o.body.first.isIdentifier}
+    usedvars := []
+    declaredvars := []
+    def name = escapestring(o.nameString)
+    compileMethodPreamble(o, myc, o.canonicalName)
+    if (debugMode && isSimpleAccessor.not) then {
+        out "var myframe = new StackFrame(\"{name}\");"
+    }
+    compileParameters(o) withDebug(debugMode && isSimpleAccessor.not)
+    compileTypeParameters(o) atPosition(o.signature.size)
+    compileArgumentTypeChecks(o)
+    if (isSimpleAccessor) then {
+        out "// {o.canonicalName} is a simple accessor - elide try ... catch"
+        out "return {compilenode(o.body.first)};"
+    } else {
+        debugModePrefix
+        out "return {compileMethodBody(o)};"
+        debugModeSuffix
+    }
+    compileMethodPostamble(o, myc, o.canonicalName)
+    usedvars := oldusedvars
+    declaredvars := olddeclaredvars
+    compileMetadata(o, myc, name, selfobj)
     if (o.isFresh) then {
         increaseindent
         compilefreshmethod(o, selfobj)
@@ -567,122 +617,19 @@ method compilemethod(o, selfobj) {
     }
 }
 method compilefreshmethod(o, selfobj) {
-    def paramCounts =  [ ]
-    for (o.signature) do { part ->
-        paramCounts.push(part.params.size)
-    }
-    var myc := auto_count
+    def myc = auto_count
     auto_count := auto_count + 1
+    def isSimpleAccessor = false
     def name = escapestring(o.nameString ++ "$object(1)")
-    var nm := name ++ myc
-    var haveTypedParams := false
-    for (o.signature) do { part ->
-        for (part.params) do {p->
-            if (p.dtype != false) then {
-                if ((p.dtype.value != "Unknown")
-                    && ((p.dtype.kind == "identifier")
-                        || (p.dtype.kind == "typeliteral"))) then {
-                    haveTypedParams := true
-                }
-            }
-        }
-    }
-    out "var func{myc} = function(argcv) \{    // method {o.canonicalName}$object(_)"
-    increaseindent
-    out("var curarg = 1;")
-    for (o.signature.indices) do { partnr ->
-        var part := o.signature.at(partnr)
-        for (part.params) do { p ->
-            out("var {varf(p.value)} = arguments[curarg];")
-            out("curarg++;")
-        }
-    }
-    out "var inheritingObject = arguments[curarg++];"
-    if (o.typeParams != false) then {
-        def sz = o.signature.size + 1
-        out "// Start type arguments"
-        o.typeParams.do {g->
-            out "var {varf(g.value)} = var_Unknown;"
-        }
-        out "if (argcv.length == {1 + sz}) \{"
-        if (emitArgChecks) then {
-            out "  if (argcv[{sz}] !== {o.typeParams.size}) \{"
-            out "    throw new GraceExceptionPacket(ProgrammingErrorObject, "
-            out "        new GraceString(\"wrong number of type arguments for \{o.canonicalName}\"));"
-            out "  \}"
-        }
-        o.typeParams.do { g ->
-            out("  {varf(g.value)} = arguments[curarg++];")
-        }
-        out "\}"
-        out "// End type arguments"
-    }
-    out "// Start argument processing"
-    out "curarg = 1;"
-    for (o.signature.indices) do { partnr ->
-        var part := o.signature.at(partnr)
-        var paramnr := 0
-        for (part.params) do { p ->
-            paramnr := paramnr + 1
-            if (emitTypeChecks && (p.dtype != false)) then {
-                noteLineNumber(o.line)comment("argument check in compilefreshmethod")
-                def dtype = compilenode(p.dtype)
-                out("if (!Grace_isTrue(callmethod({dtype}, \"match(1)\"," ++
-                    "  [1], arguments[curarg])))")
-                out "    throw new GraceExceptionPacket(TypeErrorObject," 
-                out "        new GraceString(\"argument {paramnr} in {part.name} (arg list {partnr}), which corresponds to parameter {p.value}, does not have \" + "
-                out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
-            }
-            out("curarg++;")
-        }
-    }
-    out "// End argument processing"
-
-    // Setting the location is deliberately delayed to this point, so that
-    // argument checking errors are reported as errors at the request site
-    // --- which is where the error happens.
-    out("setModuleName(\"{modname}\");")
-    if (debugMode) then {
-        out "stackFrames.push(myframe);"
-    }
-    out("var returnTarget = invocationCount;")
-    out("invocationCount++;")
-    if (debugMode) then {
-        out("try \{")
-        increaseindent
-    }
-    var tailObject := false
-    if ((o.body.size > 0) && {o.body.last.kind == "object"}) then {
-        tailObject := o.body.pop    // remove tail object
-        tailObject.name := o.nameString
-    }
-    var ret := "GraceDone"
-    for (o.body) do { l ->
-        ret := compilenode(l)
-    }
-    if (false != tailObject) then {
-        o.body.push(tailObject)     // put tail object back
-        compileobject(tailObject, "this", true)
-        ret := tailObject.register
-    }
-    out("return " ++ ret ++ ";")
-    if (debugMode) then {
-        decreaseindent
-        out "\} finally \{"
-        out "    stackFrames.pop();"
-        out "\}"
-    }
-    out "\};"
-    if (haveTypedParams) then {
-        compilemethodtypes("func{myc}", o)
-    }
-    for (o.annotations) do {ann->
-        if ((ann.kind == "identifier") && 
-            {ann.value == "confidential"}) then {
-            out("func{myc}.confidential = true;")
-        }
-    }
-    out "{selfobj}.methods[\"{name}\"] = func{myc};"
+    compileMethodPreamble(o, myc, o.canonicalName ++ "$object(_)")
+    compileParameters(o) withDebug(false)
+    compileTypeParameters(o) atPosition(o.signature.size + 1)
+    compileArgumentTypeChecks(o)
+    debugModePrefix
+    out "return {compileFreshMethodBody(o)};"
+    debugModeSuffix
+    compileMethodPostamble(o, myc, o.canonicalName ++ "$object(_)")
+    compileMetadata(o, myc, name, selfobj)
 }
 method compilemethodtypes(func, o) {
     out("{func}.paramTypes = [];")
