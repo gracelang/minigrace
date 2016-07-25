@@ -632,7 +632,7 @@ class new {
             checkSeparator(c)
             if (isDigit(c) || isLetter(c)) then {
                 store(c)
-            } else if ((c == ".") && (tokenBase == 10)) then {
+            } elseif ((c == ".") && (tokenBase == 10)) then {
                 advanceTo(numberDotState)
             } else {
                 emit(numToken(fromBase(accum, tokenBase).asString, tokenBase))
