@@ -1508,7 +1508,7 @@ function Grace_isTrue(o) {
     if (o.superobj)         //  if defined and not null ...
         return Grace_isTrue(o.superobj);
     throw new GraceExceptionPacket(RuntimeErrorObject,
-        new GraceString("a Grace boolean is neither true nor false!"));
+        new GraceString("non-Boolean object " + describe(o) + " used as condition."));
 }
 
 function Grace_print(obj) {
