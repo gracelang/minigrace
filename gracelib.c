@@ -3374,11 +3374,12 @@ Object Float64_Add(Object self, int nparts, int *argcv,
     assertClass(other, Number);
     double a = *((double*)self->data);
     double b;
-    if (other->class == Number)
+    if (other->class == Number) {
         b = *(double*)other->data;
-    else
+    } else {
         int partcv[] = {1};
         return callmethod(other, "reversePlusNumber(1)", 1, partcv, &self);
+    }
     return alloc_Float64(a+b);
 }
 Object Float64_Sub(Object self, int nparts, int *argcv,
@@ -3389,9 +3390,10 @@ Object Float64_Sub(Object self, int nparts, int *argcv,
     double b;
     if (other->class == Number)
         b = *(double*)other->data;
-    else
+    else {
         int partcv[] = {1};
         return callmethod(other, "reverseMinusNumber(1)", 1, partcv, &self);
+    }
     return alloc_Float64(a-b);
 }
 Object Float64_Mul(Object self, int nparts, int *argcv,
@@ -3413,11 +3415,12 @@ Object Float64_Div(Object self, int nparts, int *argcv,
     assertClass(other, Number);
     double a = *(double*)self->data;
     double b;
-    if (other->class == Number)
+    if (other->class == Number) {
         b = *(double*)other->data;
-    else
+    } else {
         int partcv[] = {1};
         return callmethod(other, "reverseDivideNumber(1)", 1, partcv, &self);
+    }
     return alloc_Float64(a/b);
 }
 Object Float64_Exp(Object self, int nparts, int *argcv,
