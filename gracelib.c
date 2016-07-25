@@ -3435,28 +3435,36 @@ Object Float64_Exp(Object self, int nparts, int *argcv,
 Object Float64_Mod(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
-    assertClass(other, Number);
-    double a = *(double*)self->data;
-    double b = *(double*)other->data;
-    double quo = a / b;
-    double q = trunc(quo);
-    if ((a < 0) && (q != quo))
-        q = (b < 0) ? q+1 : q-1;
-    double r = a - (b * q);
-    return alloc_Float64(r);
+    if (other->class == Number) {
+        double a = *(double*)self->data;
+        double b = *(double*)other->data;
+        double quo = a / b;
+        double q = trunc(quo);
+        if ((a < 0) && (q != quo))
+            q = (b < 0) ? q+1 : q-1;
+        double r = a - (b * q);
+        return alloc_Float64(r);
+    } else {
+        int partcv[] = {1};
+        return callmethod(other, "reverseRemainderNumber(1)", 1, partcv, &self);
+    }
 }
 Object Float64_IntDiv(Object self, int nparts, int *argcv,
                    Object *args, int flags) {
     Object other = args[0];
-    assertClass(other, Number);
-    double a = *(double*)self->data;
-    double b = *(double*)other->data;
-    double quo = a / b;
-    double q = trunc(quo);
-    if (a >= 0) return alloc_Float64(q);
-    if (q == quo) return alloc_Float64(q);
-    if (b < 0) return alloc_Float64(q + 1);
-    return alloc_Float64(q - 1);
+    if (other->class == Number) {
+        double a = *(double*)self->data;
+        double b = *(double*)other->data;
+        double quo = a / b;
+        double q = trunc(quo);
+        if (a >= 0) return alloc_Float64(q);
+        if (q == quo) return alloc_Float64(q);
+        if (b < 0) return alloc_Float64(q + 1);
+        return alloc_Float64(q - 1);
+    } else {
+        int partcv[] = {1};
+        return callmethod(other, "reverseQuotientNumber(1)", 1, partcv, &self);
+    }
 }
 Object Float64_Equals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
