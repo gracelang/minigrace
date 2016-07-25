@@ -72,11 +72,11 @@ MiniGrace.prototype.compile = function(grace_code) {
     this.compileError = false;
     extensionsMap = callmethod(var_HashMap, "new", [0]);
     if (this.vis !== "standard") {
-        callmethod(extensionsMap, "put", [2], new GraceString("DefaultVisibility"),
+        callmethod(extensionsMap, "put(2)", [2], new GraceString("DefaultVisibility"),
                    new GraceString(this.vis));
     }
     if (this.debugMode) {
-        callmethod(extensionsMap, "put", [2], new GraceString("Debug"), new GraceString("yes"));
+        callmethod(extensionsMap, "put(2)", [2], new GraceString("Debug"), new GraceString("yes"));
     }
     try {
         gracecode_compiler.call(new GraceModule(":user:"));

@@ -2255,7 +2255,7 @@ function gracecode_sys() {
             return GraceTrue;
         };
         o.methods['[]:=(1)'] = o.methods['at(1)put(1)'];
-        o.methods['contains'] = function environ_contains(argcv, searchkey) {
+        o.methods['contains(1)'] = function environ_contains(argcv, searchkey) {
             if(typeof(process) !== "undefined") {
                 return (safeJsString(searchkey) in process.env) ? GraceTrue : GraceFalse;
             } else {
@@ -2521,7 +2521,7 @@ function gracecode_util() {
         };
         meth_isAlready.paramCounts = [1];
         meth_isAlready.variableArities = [false];
-        obj_requiredModules.methods['isAlready'] = meth_isAlready;
+        obj_requiredModules.methods['isAlready(1)'] = meth_isAlready;
         meth_isAlready.definitionModule = "util";
         obj_requiredModules.data['static'] = callmethod(Grace_prelude, "emptySet", [0]);
         var reader_util_static1257 = function() {
@@ -2602,7 +2602,7 @@ function gracecode_util() {
     // - spacePos: The position in the error line that a space should be inserted, or false.
     // - suggestions: A (possibly empty) list of suggestions to correct the error.
     this.methods['syntaxError(6)'] = function util_syntaxError(argcv, message, errlinenum, position, arr, spacePos, suggestions) {
-        callmethod(this, "generalError", [6], new GraceString("Syntax error: " + message._value), errlinenum,
+        callmethod(this, "generalError(6)", [6], new GraceString("Syntax error: " + message._value), errlinenum,
             position, arr, spacePos, suggestions);
     };
     this.methods['generalError(6)'] = function util_generalError(argcv, message, errlinenum, position, arr, spacePos, suggestions) {
@@ -2669,7 +2669,7 @@ function gracecode_util() {
         minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
             this._linepos._value + ": warning: " + s._value);
     };
-    this.methods.hex = function util_hex(argcv, n) {
+    this.methods['hex(1)'] = function util_hex(argcv, n) {
         var hexdigits = "0123456789abcdef";
         var s = "";
         var num = n._value;
