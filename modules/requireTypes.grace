@@ -8,20 +8,21 @@ def staticVisitor = object {
         "the requireTypes visitor"
     }
 
-    method visitDefDec(v) is public {
-        print "visiting def dec {v.pretty 0}"
+    method visitDefDec(v) -> Boolean is public {
         if (false == v.dtype) then {
             CheckerFailure.raise ("no type given to declaration"
                 ++ " of def '{v.name.value}'") with (v.name)
         }
+        true
     }
-    method visitVarDec(v) is public {
+    method visitVarDec(v) -> Boolean is public {
         if (false == v.dtype) then {
             CheckerFailure.raise ("no type given to declaration"
                 ++ " of var '{v.name.value}'") with (v.name)
         }
+        true
     }
-    method visitMethod(v) is public {
+    method visitMethod(v) -> Boolean is public {
         for (v.signature) do {p ->
             if (p.isIdentifier && {p.wildcard.not && (false == p.dtype)}) then {
                 CheckerFailure.raise ("no type given to declaration"
@@ -32,14 +33,16 @@ def staticVisitor = object {
             CheckerFailure.raise ("no return type given to declaration"
                 ++ " of method '{v.value.value}'") with (v.value)
         }
+        true
     }
-    method visitBlock(v) is public {
+    method visitBlock(v) -> Boolean is public {
         for (v.params) do {p ->
             if (p.isIdentifier && {p.wildcard.not && (false == p.dtype)}) then {
                 CheckerFailure.raise ("no type given to declaration"
                     ++ " of block parameter '{p.value}'") with (p)
             }
         }
+        true
     }
 }
 method checker(values) is public {
