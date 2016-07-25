@@ -62,17 +62,17 @@ trait basic {
         native "js" code "return new GraceString(this.data.value.toString())"
     }
     method asDateString -> String {
-        native "js" code "return new GraceString(this.data.value.toDateString())"
+        native "js" code "return new GraceString(this.data.value.toDateString());"
     }
     method asTimeString -> String {
-        native "js" code "return new GraceString(this.data.value.toTimeString())"
+        native "js" code "return new GraceString(this.data.value.toTimeString());"
     }
     method asIsoString -> String {
-        native "js" code "return new GraceString(this.data.value.toISOString())"
+        native "js" code "return new GraceString(this.data.value.toISOString());"
     }
     method asMilliseconds -> Number {
         // date as milliseconds since the epoch
-        native "js" code "return new GraceNum(this.data.value.getTime())"
+        native "js" code "return new GraceNum(this.data.value.getTime());"
     }
     method + (other:Date) -> Date {
         milliseconds(self.asMilliseconds + other.asMilliseconds)
@@ -94,7 +94,7 @@ trait basic {
 class milliseconds(n) -> Date {
     // n milliseconds since the epoch 
     inherit basic
-    def value = native "js" code "result = new Date(var_n._value)"
+    def value = native "js" code "result = new Date(var_n._value);"
 }
     
 method seconds(n) -> Date {
@@ -120,17 +120,17 @@ method weeks(n) -> Date {
 
 method timeZoneOffset -> Number {
     // the offset between local time and UTC, in munites.
-    native "js" code "return new GraceNum(new Date().getTimezoneOffset())"
+    native "js" code "return new GraceNum(new Date().getTimezoneOffset());"
 }
 
 class now {
     inherit basic
-    def value = native "js" code "result = new Date()"
+    def value = native "js" code "result = new Date();"
 }
 
 class fromString(dateString) {
     inherit basic
-    def value = native "js" code "result = new Date(var_dateString._value)"
+    def value = native "js" code "result = new Date(var_dateString._value);"
 }
 
     
