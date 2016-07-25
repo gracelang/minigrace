@@ -1974,6 +1974,8 @@ def bindNode is public = object {
     var dest is public := dest'
     var value is public := val'
 
+    method nameString { value ++ ":=(1)" }
+    method canonicalName { value ++ ":=(_)" }
     method isBind { true }
     method asString { "bind {value}" }
     method accept(visitor : ASTVisitor) from(as) {
