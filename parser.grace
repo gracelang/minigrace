@@ -763,8 +763,8 @@ method doif {
                         if(nextTok == sym) then {
                             suggestion.insert(" («expression») then")afterToken(statementToken)
                         } else {
-                            suggestion.insert("(")beforeToken(sym)
-                            suggestion.insert(") then")afterToken(nextTok.prev)andTrailingSpace(true)
+                            suggestion.insert("\{")beforeToken(sym)
+                            suggestion.insert("\} then")afterToken(nextTok.prev)andTrailingSpace(true)
                         }
                     } elseif { nextTok.kind == "identifier" } then {
                         if(nextTok == sym) then {
@@ -792,17 +792,17 @@ method doif {
                         } else {
                             suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression») then \{")
                         }
-                        errormessages.syntaxError("an elseif statement must have an expression in parentheses or braces after the 'elseif'.")atPosition(
+                        errormessages.syntaxError("an elseif statement must have an expression in braces after the 'elseif'.")atPosition(
                             sym.line, sym.linePos)withSuggestion(suggestion)
                     } else {
                         if(nextTok == sym) then {
                             suggestion.insert("«expression»")afterToken(lastToken)
-                            errormessages.syntaxError("an elseif statement must have an expression in parentheses or braces after the 'elseif'.")atPosition(
+                            errormessages.syntaxError("an elseif statement must have an expression in braces after the 'elseif'.")atPosition(
                                 sym.line, sym.linePos)withSuggestion(suggestion)
                         } else {
                             //checkInvalidExpression
                             suggestion.replaceTokenRange(sym, nextTok.prev)leading(false)trailing(true)with("«expression»")
-                            errormessages.syntaxError("4: An elseif statement must have an expression in parentheses or braces after the 'elseif'.")atRange(
+                            errormessages.syntaxError("4: An elseif statement must have an expression in braces after the 'elseif'.")atRange(
                                 sym.line, sym.linePos, nextTok.linePos - 1)withSuggestion(suggestion)
                         }
                     }
@@ -849,7 +849,7 @@ method doif {
                             suggestion.insert(" then \{")afterToken(lastToken)
                         }
                     }
-                    errormessages.syntaxError("an elseif statement must have 'then' after the expression in parentheses.")atPosition(
+                    errormessages.syntaxError("an elseif statement must have 'then' after the expression in braces.")atPosition(
                         sym.line, sym.linePos)withSuggestion(suggestion)
                 }
                 if(sym.kind != "lbrace") then {
