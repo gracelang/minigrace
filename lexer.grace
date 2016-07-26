@@ -281,7 +281,7 @@ class new {
             if (c == "\n") then {
                 errormessages.syntaxError "Incomplete pragma definition "
                     atRange(lineNumber, startPosition, linePosition)
-            } elseif(isSpaceChar(c)) then {
+            } elseif{isSpaceChar(c)} then {
                 if (accum == "pragma") then {
                     accum := ""
                     advanceTo(pragmaBodyState)
@@ -316,7 +316,7 @@ class new {
             checkSeparator(c)
             if (c == "\n") then {
                 advanceTo(startState)
-            } elseif (!isSpaceChar(c)) then {
+            } elseif {!isSpaceChar(c)} then {
                 errormessages.syntaxError "Pragmas must be a single word "
                     atRange(lineNumber, startPosition, linePosition)
             }
@@ -331,15 +331,15 @@ class new {
             startLine := lineNumber
             if (spaceChars.contains(c)) then {
                 //do nothing
-            } elseif (c == "\"") then {
+            } elseif {c == "\""} then {
                 inStr := true
                 stringStart := linePosition
                 advanceTo(quotedStringState)
-            } elseif (c == "‹") then {
+            } elseif {c == "‹"} then {
                 inStr := true
                 stringStart := linePosition
                 advanceTo(extendedStringState)
-            } elseif (isDigit(c)) then {
+            } elseif {isDigit(c)} then {
                 if ((tokens.size > 0) && {tokens.last.kind == "num"}) then {
                     def suggestion = errormessages.suggestion.new
                     suggestion.deleteRange(tokens.last.linePos+tokens.last.size, linePosition - 1)onLine(lineNumber)
@@ -349,45 +349,45 @@ class new {
                 startPosition := linePosition
                 advanceTo(numberStartState)
                 state.consume(c)
-            } elseif (isIdentifierChar(c)) then {
+            } elseif {isIdentifierChar(c)} then {
                 advanceTo(identifierState)
                 state.consume(c)
-            } elseif (c == "/") then {
+            } elseif {c == "/"} then {
                 advanceTo(slashState)
                 state.consume(c)
-            } elseif (c == ".") then {
+            } elseif {c == "."} then {
                 advanceTo(dotState)
                 state.consume(c)
-            } elseif ((c == "<") || isOperatorChar(c, ordval)) then {
+            } elseif {(c == "<") || isOperatorChar(c, ordval)} then {
                 advanceTo(operatorState)
                 state.consume(c)
-            } elseif (c == ",") then {
+            } elseif {c == ","} then {
                 emit(commaToken)
-            } elseif (c == "\{") then {
+            } elseif {c == "\{"} then {
                 emit(lBraceToken)
-            } elseif (c == "}") then {
+            } elseif {c == "}"} then {
                 advanceTo(rBraceState)
                 state.consume(c)
-            } elseif (c == "(") then {
+            } elseif {c == "("} then {
                 emit(lParenToken)
-            } elseif (c == ")") then {
+            } elseif {c == ")"} then {
                 if ((tokens.size > 0) && {tokens.last.kind == "lparen"}) then {
                     errormessages.syntaxError("empty parenthesis are not allowed. " ++
                         "Remove them, or put something between them.")
                         atRange(lineNumber, tokens.last.linePos, linePosition)
                 }
                 emit(rParenToken)
-            } elseif (c == "[") then {
+            } elseif {c == "["} then {
                 emit(lSquareToken)
-            } elseif (c == "]") then {
+            } elseif {c == "]"} then {
                 emit(rSquareToken)
-            } elseif (c == "⟦") then {
+            } elseif {c == "⟦"} then {
                 emit(lGenericToken)
-            } elseif (c == "⟧") then {
+            } elseif {c == "⟧"} then {
                 emit(rGenericToken)
-            } elseif (c == ";") then {
+            } elseif {c == ";"} then {
                 emit(semicolonToken)
-            } elseif (c == "\n") then {
+            } elseif {c == "\n"} then {
                 indentLevel := 0
                 advanceTo(indentationState)
             } else {
@@ -434,7 +434,7 @@ class new {
                 if (accum == "//") then {
                     advanceTo(commentSpaceState)
                 }
-            } elseif (accum == "/") then {
+            } elseif {accum == "/"} then {
                 advanceTo(operatorState)
                 state.consume(c)
             } else {
@@ -452,10 +452,10 @@ class new {
                 if (accum == "...") then {
                     advanceTo(identifierState)
                 }
-            } elseif (accum == "..") then {
+            } elseif {accum == ".."} then {
                 advanceTo(operatorState)
                 state.consume(c)
-            } elseif (isDigit(c)) then {
+            } elseif {isDigit(c)} then {
                 accum := "0."
                 //should an error be thrown instead?
                 advanceTo(numberFractionState)
@@ -496,9 +496,9 @@ class new {
                 }
                 advanceTo(defaultState)
                 inStr := false
-            } elseif (c == "\n") then {
+            } elseif {c == "\n"} then {
                 newLineError
-            } elseif (c == "\{") then {
+            } elseif {c == "\{"} then {
                 def strToken = stringToken(accum)
                 if (!interpString) then {
                     emit(lParenToken)
@@ -510,7 +510,7 @@ class new {
                 advanceTo(defaultState)
                 inStr := false
                 interpdepth := interpdepth + 1
-            } elseif (c == "\\") then {
+            } elseif {c == "\\"} then {
                 advanceTo(quotedStringEscapedState)
             } else {
                 store(c)
@@ -537,7 +537,7 @@ class new {
             advanceTo(quotedStringState)
             if (c == "\n") then {
                newLineError
-            } elseif (c == "n") then {
+            } elseif { c == "n" } then {
                 // Newline escape
                 accum := accum ++ "\u000a"
             } elseif { c == "u" } then {
@@ -602,23 +602,23 @@ class new {
             checkSeparator (c)
             if (isDigit(c)) then {
                 store(c)
-            } elseif (c == "x") then {
+            } elseif { c == "x" } then {
                 tokenBase := accum.asNumber
                 if (tokenBase == 0) then {
                     tokenBase := 16
                 }
                 accum := ""
                 advanceTo(numberBaseState)
-            } elseif ((c == "e") || (c == "E")) then {
+            } elseif {(c == "e") || (c == "E")} then {
                 mantissa := accum.asNumber
                 accum := ""
                 advanceTo(numberExponentSignState)
-            } elseif (isLetter(c)) then {
+            } elseif { isLetter(c) } then {
                 def suggestion = errormessages.suggestion.new
                 suggestion.insert(".")atPosition(linePosition)onLine(lineNumber)
                 errormessages.syntaxError("'{c}' is not a valid digit in base 10. Valid digits are 0..9.")atRange(
                     lineNumber, startPosition, linePosition)withSuggestion(suggestion)
-            } elseif (c == ".") then {
+            } elseif { c == "." } then {
                 advanceTo(numberDotState)
             } else {
                 emit(numToken(accum, 10))
@@ -632,7 +632,7 @@ class new {
             checkSeparator(c)
             if (isDigit(c) || isLetter(c)) then {
                 store(c)
-            } elseif ((c == ".") && (tokenBase == 10)) then {
+            } elseif {(c == ".") && (tokenBase == 10)} then {
                 advanceTo(numberDotState)
             } else {
                 emit(numToken(fromBase(accum, tokenBase).asString, tokenBase))
@@ -649,7 +649,7 @@ class new {
                 store(".")
                 advanceTo(numberFractionState)
                 state.consume(c)
-            } elseif (spaceChars.contains(c)) then {
+            } elseif { spaceChars.contains(c) } then {
                 //alternatively, throw an error here
                 emit(numToken(accum, 10))
                 advanceTo(defaultState)
@@ -667,11 +667,11 @@ class new {
             checkSeparator(c)
             if (isDigit(c)) then {
                 store(c)
-            } elseif ((c == "e") || (c == "E")) then {
+            } elseif {(c == "e") || (c == "E")} then {
                 mantissa := accum.asNumber
                 accum := ""
                 advanceTo(numberExponentSignState)
-            } elseif (isLetter(c)) then {
+            } elseif {isLetter(c)} then {
                 errormessages.syntaxError("the fractional part of a number must be in base 10.")atRange(
                     lineNumber, startPosition, linePosition)
             } else {
@@ -687,7 +687,7 @@ class new {
             if (isDigit(c) || (c == "-")) then {
                 store(c)
                 advanceTo(numberExponentState)
-            } elseif (isLetter(c)) then {
+            } elseif {isLetter(c)} then {
                 errormessages.syntaxError("{c} is not an allowed base-10 exponent character")atRange(
                     lineNumber, startPosition, linePosition)
             } else {
@@ -701,7 +701,7 @@ class new {
             checkSeparator(c)
             if (isDigit(c)) then {
                 store(c)
-            } elseif (isLetter(c)) then {
+            } elseif {isLetter(c)} then {
                 errormessages.syntaxError("{c} is not an allowed base-10 exponent character")atRange(
                     lineNumber, startPosition, linePosition)
             } else {
