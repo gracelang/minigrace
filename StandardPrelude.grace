@@ -338,6 +338,9 @@ type Point =  {
     y -> Number
     // the y-coordinate of self
 
+    == (other:Object) -> Boolean
+    // true if other is a Point with the same x and y coordinates as self.
+
     + (other:Point) -> Point
     // the Point that is the vector sum of self and other, i.e. (self.x+other.x) @ (self.y+other.y)
 
@@ -363,7 +366,7 @@ type Point =  {
     ⋅ (other:Point) -> Number
     // dot product of self and other
 
-    norm (other:Point) -> Point
+    norm -> Point
     // the unit vector (vecor of length 1) in same direction as self
 }
 
