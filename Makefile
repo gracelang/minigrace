@@ -19,8 +19,8 @@ COMPILER_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace util
 
 DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso util.gct util.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
 DIALECTS_NEED = modules/dialect util ast modules/gUnit modules/math
-WEB_DIRECTORY = ~grace/public_html/ide/
-DEV_WEB_DIRECTORY = ~grace/public_html/dev/ide/
+WEB_DIRECTORY = public_html/ide/
+DEV_WEB_DIRECTORY = public_html/dev/ide/
 GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 
 LIBRARY_WO_OBJECTDRAW = $(sort $(filter-out $(OBJECTDRAW), $(LIBRARY_MODULES)))
@@ -163,13 +163,15 @@ gencheck:
 
 gracedoc: tools/gracedoc
 
-grace-web-editor/index.html: pull-web-editor
+grace-web-editor/index.html: pull-web-editor grace-web-editor/index.in.html
+	./includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 
 grace-web-editor/scripts/setup.js: pull-web-editor $(filter-out %/setup.js,$(wildcard grace-web-editor/scripts/*.js)) $(wildcard grace-web-editor/scripts/*/*.js)
 	cd grace-web-editor; npm install
 
-graceWeb:
-	$(MAKE) ide
+graceWebIde:
+#   make sure that the user who does this can log in as user grace
+	$(MAKE) WEB_SERVER=grace@cs.pdx.edu ide
 
 gracelib-basic.o: gracelib.c gracelib.h
 	gcc -g -std=c99 -o gracelib-basic.o -c gracelib.c
@@ -501,15 +503,14 @@ togracetest: minigrace
 tools/gracedoc: ./minigrace modules/gracedoc.grace ast.grace io.gct lexer.grace parser.grace sys.gct
 	GRACE_MODULE_PATH=modules:js ./minigrace --verbose --make modules/gracedoc.grace
 
-# The dependency on unicodedata.h isn't captured by the pattern rule
-# unicode.gso: unicode.c unicodedata.h gracelib.h
-# 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
-
 uninstall:
 	rm -f $(PREFIX)/bin/minigrace
 	rm -f $(OBJECT_PATH)/gracelib.o
 	rm -f $(INCLUDE_PATH)/gracelib.h
 	rm -rf $(MODULE_PATH)/*.{gct,js,grace,gcn,gso,gso.dSYM,c}
+
+webIde:
+	$(MAKE) ide
 
 .git/hooks/commit-msg: tools/validate-commit-message
 	@ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
