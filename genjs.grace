@@ -424,6 +424,7 @@ method paramCounts(o) {
     for (o.signature) do { part ->
         result.push(part.params.size)
     }
+    result
 }
 method hasTypedParams(o) {
     for (o.signature) do { part ->
@@ -472,6 +473,11 @@ method compileParameters(o) withDebug(needsDebug) {
             }
         }
     }
+}
+
+method compileInheritingObjectParameter {
+    out "var inheritingObject = arguments[curarg];"
+    out "curarg++;"
 }
 
 method compileTypeParameters(o) atPosition(sz) {
@@ -537,7 +543,7 @@ method debugModeSuffix {
     }
 }
 
-method compileMethodBody(o) {
+method compileMethodBody(o)  {
     var ret := "GraceDone"
     var lastLine := o.line
     for (o.body) do { l ->
@@ -545,15 +551,9 @@ method compileMethodBody(o) {
         lastLine := l.line
     }
     if (ret != "undefined") then {  // TODO what if it is "undefined" ?
-        if (emitTypeChecks && (false ≠ o.dtype)) then {
-            def dtype = compilenode(o.dtype)
-            noteLineNumber (lastLine) comment "return value"
-            out "if (!Grace_isTrue(callmethod({dtype}, \"match(1)\", [1], {ret})))"
-            out "    throw new GraceExceptionPacket(TypeErrorObject," 
-            out "        new GraceString(\"result of method {o.canonicalName} does not have \" + "
-            out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
-        }
+
     }
+    compileResultTypeCheck(o, ret) onLine (lastLine)
     return ret
 }
 
@@ -565,13 +565,30 @@ method compileFreshMethodBody(o) {
         util.log 50 verbose "object name was {tailObject.name}, changed to {o.nameString}"
         tailObject.name := o.nameString
     }
-    var ret := compileMethodBody(o)
+    var ret := "GraceDone"
+    var lastLine := o.line
+    for (o.body) do { l ->
+        ret := compilenode(l)
+        lastLine := l.line
+    }
     if (false != tailObject) then {
         o.body.push(tailObject)     // put tail object back
         compileobject(tailObject, "this", true)
         ret := tailObject.register
     }
+    compileResultTypeCheck(o, ret) onLine (lastLine)
     return ret
+}
+
+method compileResultTypeCheck(o, ret) onLine (lineNr) {
+    if (emitTypeChecks && (false ≠ o.dtype)) then {
+        def dtype = compilenode(o.dtype)
+        noteLineNumber (lineNr) comment "return value"
+        out "if (!Grace_isTrue(callmethod({dtype}, \"match(1)\", [1], {ret})))"
+        out "    throw new GraceExceptionPacket(TypeErrorObject," 
+        out "        new GraceString(\"result of method {o.canonicalName} does not have \" + "
+        out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
+    }
 }
 
 method compileMetadata(o, myc, name, selfobj) {
@@ -611,9 +628,7 @@ method compilemethod(o, selfobj) {
     declaredvars := olddeclaredvars
     compileMetadata(o, myc, name, selfobj)
     if (o.isFresh) then {
-        increaseindent
         compilefreshmethod(o, selfobj)
-        decreaseindent
     }
 }
 method compilefreshmethod(o, selfobj) {
@@ -623,6 +638,7 @@ method compilefreshmethod(o, selfobj) {
     def name = escapestring(o.nameString ++ "$object(1)")
     compileMethodPreamble(o, myc, o.canonicalName ++ "$object(_)")
     compileParameters(o) withDebug(false)
+    compileInheritingObjectParameter
     compileTypeParameters(o) atPosition(o.signature.size + 1)
     compileArgumentTypeChecks(o)
     debugModePrefix
