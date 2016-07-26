@@ -11,11 +11,11 @@ def primitiveListTest = object {
 
         method testListTypeCollection {
             def witness = [1, 2, 3, 4, 5, 6]
-            assert (witness) hasType (Collection<Number>)
+            assert (witness) hasType (Collection⟦Number⟧)
         }
         method testListTypeIterable {
             def witness = [1, 2, 3, 4, 5, 6]
-            assert (witness) hasType (Iterable<Number>)
+            assert (witness) hasType (Iterable⟦Number⟧)
         }
         method testListSize {
             assert(oneToFive.size) shouldBe 5
@@ -117,7 +117,7 @@ def primitiveListTest = object {
             assert (assign21at2.asString) shouldBe ([11, 21, 3, 4, 5].asString)
                 // equality of primitive lists is object identity, so compare strings
         }
-        
+
         method assign21at2 { oneToFive.at 2 put 21 }
 
         method testListAtPutExtend {
@@ -353,7 +353,7 @@ def primitiveListTest = object {
             def s = oneToFive.asSet
             assert (s) hasType (Set)
             assert (s) shouldBe (set [1, 2, 3, 4, 5])
-        } 
+        }
         method testAsSequence {
             def s = oneToFive.asSequence
             assert (s) hasType (Sequence)

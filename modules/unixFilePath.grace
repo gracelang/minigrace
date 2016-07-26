@@ -132,7 +132,7 @@ method fromString(s) {
     p
 }
 
-method split(pathString) -> List<String> {
+method split(pathString) -> List[[String]] {
     // splits pathString, assumed to be a Unix PATH containing items separated
     // by colons, into a List of items.  Ensures that each item ends with /
     def locations = emptyList

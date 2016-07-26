@@ -20,9 +20,9 @@ type IO = Object & type {
     input -> FileStream        // answers stdin
     output -> FileStream       // answers stdout
     error -> FileStream        // answers stderr
-    open (path:String, mode:String) -> FileStream     
+    open (path:String, mode:String) -> FileStream
         // opens path in mode
-    system (command:String) -> Boolean           
+    system (command:String) -> Boolean
         // executes system command, answers true iff exit status is 0
     exists (path:String) -> Boolean
         // answers true iff path exists in the file system
@@ -43,12 +43,12 @@ type Process = Object & type {
         // +ve indicates that I terminated normally.  Other
         // Unix status codes are negated.
     success -> Boolean
-        // waits for me to terminate, and returns true if I 
+        // waits for me to terminate, and returns true if I
         // exited normally (status = 0)
     terminated -> Boolean
         // answers true if I've terminated.
     status -> Number
-        // waits for me to terminate, if necessary.  Answers the 
+        // waits for me to terminate, if necessary.  Answers the
         // cached status.
 }
 
@@ -124,11 +124,11 @@ class open (fileName:String, mode:String) -> FileStream {
     method isatty -> Boolean { }
 }
 method system (command:String) -> Boolean { }
-    // executes command in a sub-process and answers true if it exits with 0
+// executes command in a sub-process and answers true if it exits with 0
 method exists (path:String) -> Boolean { }
 method newer (path1:String, path2:String) -> Boolean { }
 method spawn (executable:String, args:Iterable⟦String⟧) -> Process { }
-    // forks and execv's executable, with args
+// forks and execv's executable, with args
 method realpath (path:String) -> String { }
-    // answers the canonicalized absolute pathname
+// answers the canonicalized absolute pathname
 method listdir (dirPath:String) -> Sequence⟦String⟧ { }
