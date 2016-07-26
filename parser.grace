@@ -742,36 +742,33 @@ method doif {
                 // TODO: allow blocks after elseif to contain a sequence of expressions.
                 statementToken := sym
                 next
-                def elopener = if (sym.kind == "lbrace")
-                                then { sym.value } else { "-missing-" }
-                def elcloser = if (elopener == "\{") then { "\}" } else { "-nothing-" }
-                if (elopener == "-missing-") then {
+                if(sym.kind != "lbrace") then {
                     def suggestion = errormessages.suggestion.new
                     // Look ahead for a rparen or then.
                     def nextTok = findNextToken({ t -> (t.line == statementToken.line)
-                        && ((t.kind == "rparen") || (t.kind == "rbrace") || (t.kind == "lbrace")
+                        && ((t.kind == "rbrace") || (t.kind == "lbrace")
                         || ((t.kind == "identifier") && (t.value == "then"))) })
                     if(false == nextTok) then {
-                        suggestion.insert(" («expression») then \{")afterToken(statementToken)
+                        suggestion.insert(" \{ «expression» \} then \{")afterToken(statementToken)
                     } elseif { nextTok.kind == "rparen" } then {
                         if(nextTok == sym) then {
-                            suggestion.insert("(«expression»")beforeToken(sym)
+                            suggestion.insert("\{ «expression» \}")beforeToken(sym)
                         } else {
-                            suggestion.insert("(")beforeToken(sym)
+                            suggestion.insert("\{ ")beforeToken(sym)
                         }
                     } elseif { nextTok.kind == "lbrace" } then {
                         if(nextTok == sym) then {
-                            suggestion.insert(" («expression») then")afterToken(statementToken)
+                            suggestion.insert(" \{ «expression» \} then")afterToken(statementToken)
                         } else {
-                            suggestion.insert("\{")beforeToken(sym)
-                            suggestion.insert("\} then")afterToken(nextTok.prev)andTrailingSpace(true)
+                            suggestion.insert("\{ ")beforeToken(sym)
+                            suggestion.insert(" \} then")afterToken(nextTok.prev)andTrailingSpace(true)
                         }
                     } elseif { nextTok.kind == "identifier" } then {
                         if(nextTok == sym) then {
-                            suggestion.insert("(«expression») ")beforeToken(sym)
+                            suggestion.insert("\{ «expression» \} ")beforeToken(sym)
                         } else {
-                            suggestion.insert("(")beforeToken(sym)
-                            suggestion.insert(")")afterToken(nextTok.prev)andTrailingSpace(true)
+                            suggestion.insert("\{ ")beforeToken(sym)
+                            suggestion.insert(" \}")afterToken(nextTok.prev)andTrailingSpace(true)
                         }
                     }
                     errormessages.syntaxError("an elseif statement must have a " ++
@@ -782,13 +779,13 @@ method doif {
                 next
                 if(didConsume({expression(blocksOK)}).not) then {
                     def suggestion = errormessages.suggestion.new
-                    // Look ahead for a rparen or then.
+                    // Look ahead for a rbrace or then.
                     var nextTok := findNextToken({ t -> (t.line == lastToken.line) && 
-                        ((t.kind == "rparen") || (t.kind == "rbrace"))})
+                        (t.kind == "rbrace")})
                     if(false == nextTok) then {
-                        nextTok := findNextValidToken( ["rparen"] )
+                        nextTok := findNextValidToken( ["rbrace"] )
                         if(nextTok == sym) then {
-                            suggestion.insert("«expression») then \{")afterToken(lastToken)
+                            suggestion.insert("«expression» \} then \{")afterToken(lastToken)
                         } else {
                             suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression») then \{")
                         }
@@ -807,12 +804,12 @@ method doif {
                         }
                     }
                 }
-                if(sym.value != elcloser) then {
+                if(sym.value != "\}") then {
                     checkBadOperators
                     def suggestion = errormessages.suggestion.new
                     suggestion.insert(")")afterToken(lastToken)
-                    errormessages.syntaxError("an expression beginning with a " ++
-                        "'{elopener}' must end with a '{elcloser}'.")
+                    errormessages.syntaxError("a condition beginning with a " ++
+                        "'\{' must end with a '\}'.")
                         atPosition(lastToken.line, lastToken.linePos + lastToken.size)
                         withSuggestion(suggestion)
                 }
