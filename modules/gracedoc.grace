@@ -123,14 +123,14 @@ method trim(c:String) -> String {
 method indent(n:Number) -> String {
     //unrolled for optimization
     if (n==0) then { return "" }
-    elseif (n==1) then { return "    " }
-    elseif (n==2) then { return "        " }
-    elseif (n==3) then { return "            " }
-    elseif (n==4) then { return "                " }
-    elseif (n==5) then { return "                    " }
-    elseif (n==6) then { return "                        " }
-    elseif (n==7) then { return "                            " }
-    elseif (n==8) then { return "                                " }
+    elseif {n==1} then { return "    " }
+    elseif {n==2} then { return "        " }
+    elseif {n==3} then { return "            " }
+    elseif {n==4} then { return "                " }
+    elseif {n==5} then { return "                    " }
+    elseif {n==6} then { return "                        " }
+    elseif {n==7} then { return "                            " }
+    elseif {n==8} then { return "                                " }
     else { return "                                    "}
 }
 
@@ -181,7 +181,7 @@ method autoindent(input) {
                     }
                 }
             }
-        } elseif ((char1=="/") && (char2==">")) then {
+        } elseif {(char1=="/") && (char2==">")} then {
             //ABBREVIATED CLOSING TAG
             stack := stack - 1
         }
@@ -197,12 +197,12 @@ class directoryBuilderForFile(in) outTo (dir) as (pageType) {
     var isOnClassPage := false
     var isOnTypePage := false
     if (pageType=="class") then { isOnClassPage := true }
-    elseif (pageType=="type") then { isOnTypePage := true }
+    elseif {pageType=="type"} then { isOnTypePage := true }
 
     def pageName = if (in.endsWith(".grace").not) then { in }
                    else { in.substringFrom(0)to(in.size - 6) }
     def title = if (isOnTypePage) then { "Type: {pageName}" }
-                elseif (isOnClassPage) then { "Class: {pageName}" }
+                elseif {isOnClassPage} then { "Class: {pageName}" }
                 else { "Module: {pageName}" }
 
     def outdir = if (isOnClassPage || isOnTypePage) then { dir } else { pageName }
@@ -219,7 +219,7 @@ class directoryBuilderForFile(in) outTo (dir) as (pageType) {
         }
         if (isOnClassPage) then {
             outfile := io.open("{settings.outputdir}/{outdir}/classes/{pageName}.html", "w")
-        } elseif (isOnTypePage) then {
+        } elseif {isOnTypePage} then {
             outfile := io.open("{settings.outputdir}/{outdir}/types/{pageName}.html", "w")
         } else {
             outfile := io.open("{settings.outputdir}/{outdir}/{pageName}.html", "w")
@@ -317,12 +317,12 @@ class graceDocVisitor.createFrom(in) outTo (dir) as (pageType) {
     var isOnClassPage := false
     var isOnTypePage := false
     if (pageType=="class") then { isOnClassPage := true }
-    elseif (pageType=="type") then { isOnTypePage := true }
+    elseif {pageType=="type"} then { isOnTypePage := true }
 
     def pageName = if (in.endsWith(".grace").not) then { in }
                    else { in.substringFrom(0)to(in.size - 6) }
     def title = if (isOnTypePage) then { "Type: {pageName}" }
-                elseif (isOnClassPage) then { "Class: {pageName}" }
+                elseif {isOnClassPage} then { "Class: {pageName}" }
                 else { "Module: {pageName}" }
     var headerSection
     var methodsSection
@@ -346,20 +346,20 @@ class graceDocVisitor.createFrom(in) outTo (dir) as (pageType) {
         if (io.exists("{settings.outputdir}/{outdir}/types/{filename}")) then {
             if (isOnTypePage) then {
                 out := out ++ "{filename}"
-            } elseif (isOnClassPage) then {
+            } elseif {isOnClassPage} then {
                 out := out ++ "../types/{filename}"
             } else {
                 out := out ++ "types/{filename}"
             }
         //if not found, check imported module directories
-        } elseif (io.exists("{settings.outputdir}/imported/types/{filename}")) then {
+        } elseif {io.exists("{settings.outputdir}/imported/types/{filename}")} then {
             if (isOnTypePage || isOnClassPage) then {
                 out := out ++ "../../imported/types/{filename}"
             } else {
                 out := out ++ "../imported/types/{filename}"
             }
         //if not found, check gracelib types
-        } elseif (io.exists("{settings.outputdir}/gracelib/types/{filename}")) then {
+        } elseif {io.exists("{settings.outputdir}/gracelib/types/{filename}")} then {
             if (isOnTypePage || isOnClassPage) then {
                 out := out ++ "../../gracelib/types/{filename}"
             } else {
@@ -385,20 +385,20 @@ class graceDocVisitor.createFrom(in) outTo (dir) as (pageType) {
         if (io.exists("{settings.outputdir}/{outdir}/classes/{filename}")) then {
             if (isOnClassPage) then {
                 out := out ++ "{filename}"
-            } elseif (isOnTypePage) then {
+            } elseif {isOnTypePage} then {
                 out := out ++ "../classes/{filename}"
             } else {
                 out := out ++ "classes/{filename}"
             }
         //if not found, check imported module directories
-        } elseif (io.exists("{settings.outputdir}/imported/classes/{filename}")) then {
+        } elseif {io.exists("{settings.outputdir}/imported/classes/{filename}")} then {
             if (isOnTypePage || isOnClassPage) then {
                 out := out ++ "../../imported/classes/{filename}"
             } else {
                 out := out ++ "../imported/classes/{filename}"
             }
         //if not found, check gracelib classes
-        } elseif (io.exists("{settings.outputdir}/gracelib/classes/{filename}")) then {
+        } elseif {io.exists("{settings.outputdir}/gracelib/classes/{filename}")} then {
             if (isOnTypePage || isOnClassPage) then {
                 out := out ++ "../../gracelib/classes/{filename}"
             } else {
@@ -755,7 +755,7 @@ iframe {
         var output := ""
         if (isOnClassPage) then {
             outfile := io.open("{settings.outputdir}/{outdir}/classes/{pageName}.html", "w")
-        } elseif (isOnTypePage) then {
+        } elseif {isOnTypePage} then {
             outfile := io.open("{settings.outputdir}/{outdir}/types/{pageName}.html", "w")
         } else {
             outfile := io.open("{settings.outputdir}/{outdir}/{pageName}.html", "w")
@@ -807,7 +807,7 @@ iframe {
                             t := t ++ ":"
                             if (param.dtype.kind == "identifier") then {
                                 t := t ++ getTypeLink(param.dtype.value)
-                            } elseif (param.dtype.kind == "generic") then {
+                            } elseif {param.dtype.kind == "generic"} then {
                                 t := t ++ getTypeLink(param.dtype.value.value) ++ "&lt;"
                                 param.dtype.args.do { each -> t := "{t}{getTypeLink(each.value)}" } separatedBy { t := t ++ ", " }
                                 t := t ++ "&gt;"
@@ -827,7 +827,7 @@ iframe {
             if (o.rtype != false) then {
                 if (o.rtype.kind == "identifier") then {
                     t := t ++ getTypeLink(o.rtype.value)
-                } elseif (o.rtype.kind == "generic") then {
+                } elseif {o.rtype.kind == "generic"} then {
                     t := t ++ getTypeLink(o.rtype.value.value) ++ "&lt;"
                     o.rtype.args.do { each -> t := "{t}{getTypeLink(each.value)}" } separatedBy { t := t ++ ", " }
                     t := t ++ "&gt;"
@@ -886,13 +886,13 @@ iframe {
                     ops.push(node.value)
                     if ((node.left.kind == "identifier") && (node.right.kind == "identifier")) then {
                         temp := "{getTypeLink(node.left.value)} {ops.pop} {getTypeLink(node.right.value)}"
-                    } elseif (node.right.kind == "identifier") then {
+                    } elseif {node.right.kind == "identifier"} then {
                         tps.push(node.right.value)
-                    } elseif (node.left.kind == "identifier") then {
+                    } elseif {node.left.kind == "identifier"} then {
                         temp := "{getTypeLink(node.left.value)} {ops.pop}"
-                    } elseif (node.left.kind == "member") then {
+                    } elseif {node.left.kind == "member"} then {
                         temp := getTypeLink("{node.left.receiver.value}.{node.left.value}") ++ " {ops.pop}"
-                    } elseif (node.right.kind == "member") then {
+                    } elseif {node.right.kind == "member"} then {
                         tps.push("{node.left.receiver.value}.{node.left.value}")
                     }
                     node := node.left
@@ -906,10 +906,10 @@ iframe {
                 }
                 t := t ++ temp ++ " type "
                 t := t ++ "\{ <span class='quiet'>...added methods below...</span> \}"
-            } elseif (node.kind == "typeliteral") then {
+            } elseif {node.kind == "typeliteral"} then {
                 t := t ++ temp ++ " type "
                 t := t ++ "\{ <span class='quiet'>...added methods below...</span> \}"
-            } elseif (node.kind == "identifier") then {
+            } elseif {node.kind == "identifier"} then {
                 t := t ++ " " ++ getTypeLink(node.value)
                 if (node.generics != false) then {
                     t := t ++ "&lt;"
@@ -919,7 +919,7 @@ iframe {
                     }
                     t := t ++ "&gt;"
                 }
-            } elseif (node.kind == "member") then {
+            } elseif {node.kind == "member"} then {
                 t := t ++ getTypeLink("{node.receiver.value}.{node.value}")
                 if (node.generics != false) then {
                     t := t ++ "&lt;"
@@ -959,7 +959,7 @@ iframe {
                         t := t ++ ":<span class='parameter-type'>"
                         if (param.dtype.kind == "identifier") then {
                             t := t ++ getTypeLink(param.dtype.value)
-                        } elseif (param.dtype.kind == "generic") then {
+                        } elseif {param.dtype.kind == "generic"} then {
                             t := t ++ getTypeLink(param.dtype.value.value) ++ "&lt;"
                             param.dtype.args.do { each -> t := "{t}{getTypeLink(each.value)}" } separatedBy { t := t ++ ", " }
                             t := t ++ "&gt;"
@@ -1020,7 +1020,7 @@ iframe {
                 t := t ++ " -> "
                 if (m.dtype.kind == "identifier") then {
                     t := t ++ getTypeLink(m.dtype.value)
-                } elseif (m.dtype.kind == "generic") then {
+                } elseif {m.dtype.kind == "generic"} then {
                     t := t ++ getTypeLink(m.dtype.value.value) ++ "&lt;"
                     m.dtype.args.do { each -> t := "{t}{getTypeLink(each.value)}" } separatedBy { t := t ++ ", " }
                     t := t ++ "&gt;"
@@ -1064,7 +1064,7 @@ iframe {
                 t := t ++ " -> "
                 if (m.dtype.kind == "identifier") then {
                     t := t ++ getTypeLink(m.dtype.value)
-                } elseif (m.dtype.kind == "generic") then {
+                } elseif {m.dtype.kind == "generic"} then {
                     t := t ++ getTypeLink(m.dtype.value.value) ++ "&lt;"
                     m.dtype.args.do { each -> t := "{t}{getTypeLink(each.value)}" } separatedBy { t := t ++ ", " }
                     t := t ++ "&gt;"
@@ -1087,7 +1087,7 @@ iframe {
                 if (o.dtype != false) then {
                     if (o.dtype.kind == "identifier") then {
                         t := t ++ getTypeLink(o.dtype.value)
-                    } elseif (o.dtype.kind == "generic") then {
+                    } elseif {o.dtype.kind == "generic"} then {
                         t := t ++ getTypeLink(o.dtype.value.value) ++ "&lt;"
                         o.dtype.args.do { each -> t := "{t}{getTypeLink(each.value)}" } separatedBy { t := t ++ ", " }
                         t := t ++ "&gt;"
@@ -1107,7 +1107,7 @@ iframe {
                     if (o.dtype != false) then {
                         if (o.dtype.kind == "identifier") then {
                             t := t ++ getTypeLink(o.dtype.value)
-                        } elseif (o.dtype.kind == "generic") then {
+                        } elseif {o.dtype.kind == "generic"} then {
                             t := t ++ getTypeLink(o.dtype.value.value) ++ "&lt;"
                             o.dtype.args.do { each -> t := "{t}{getTypeLink(each.value)}" } separatedBy { t := t ++ ", " }
                             t := t ++ "&gt;"
@@ -1127,7 +1127,7 @@ iframe {
                 if (o.dtype != false) then {
                     if (o.dtype.kind == "identifier") then {
                         t := t ++ getTypeLink(o.dtype.value)
-                    } elseif (o.dtype.kind == "generic") then {
+                    } elseif {o.dtype.kind == "generic"} then {
                         t := t ++ getTypeLink(o.dtype.value.value) ++ "&lt;"
                         o.dtype.args.do { each -> t := "{t}{each.value}" } separatedBy { t := t ++ ", " }
                         t := t ++ "&gt;"
@@ -1146,7 +1146,7 @@ iframe {
                     if (o.dtype != false) then {
                         if (o.dtype.kind == "identifier") then {
                             t := t ++ getTypeLink(o.dtype.value)
-                        } elseif (o.dtype.kind == "generic") then {
+                        } elseif {o.dtype.kind == "generic"} then {
                             t := t ++ getTypeLink(o.dtype.value.value) ++ "&lt;"
                             o.dtype.args.do { each -> t := "{t}{getTypeLink(each.value)}" } separatedBy { t := t ++ ", " }
                             t := t ++ "&gt;"
