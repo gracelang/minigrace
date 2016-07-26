@@ -742,10 +742,9 @@ method doif {
                 // TODO: allow blocks after elseif to contain a sequence of expressions.
                 statementToken := sym
                 next
-                def elopener = if ((sym.kind == "lparen") || {sym.kind == "lbrace"})
+                def elopener = if ({sym.kind == "lbrace"})
                                 then { sym.value } else { "-missing-" }
-                def elcloser = if (elopener == "(") then { ")" }
-                                else { if (elopener == "\{") then { "\}" } else { "-nothing-" } }
+                def elcloser = if (elopener == "\{") then { "\}" } else { "-nothing-" }
                 if (elopener == "-missing-") then {
                     def suggestion = errormessages.suggestion.new
                     // Look ahead for a rparen or then.
@@ -776,7 +775,7 @@ method doif {
                         }
                     }
                     errormessages.syntaxError("an elseif statement must have a " ++
-                          "condition in parentheses or braces after the 'elseif'.")
+                          "condition in braces after the 'elseif'.")
                           atPosition(sym.line, sym.linePos)
                           withSuggestion(suggestion)
                 }
