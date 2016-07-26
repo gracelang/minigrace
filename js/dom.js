@@ -18,7 +18,7 @@ function wrapDOMFunction(obj, fn) {
 }
 
 function wrapDOMField(o, obj, k) {
-    o.methods[k + ":="] = function(argcv, val) {
+    o.methods[k + ":=(1)"] = function(argcv, val) {
         obj[k] = wrapGraceObject(val);
         return var_done;
     };
@@ -47,13 +47,25 @@ function wrapDOMObject(obj) {
     o.methods.asString = function() {
         return new GraceString("DOMObject(" + obj + ")");
     };
-    o.methods["=="] = function(argcv, other) {
+    o.methods["==(1)"] = function(argcv, other) {
         return (this === other) ? GraceTrue : GraceFalse;
     };
     for (var k in obj) {
         switch(typeof obj[k]) {
             case "function":
-                o.methods[k] = wrapDOMFunction(obj, k);
+                let wrappedFun = wrapDOMFunction(obj, k);
+                if (k === "drawImage") {
+                    o.methods[k + "(3)"] = wrappedFun;
+                    o.methods[k + "(5)"] = wrappedFun;
+                    o.methods[k + "(9)"] = wrappedFun;
+                } else {
+                    o.methods[k] = wrappedFun;
+                    o.methods[k + "(1)"] = wrappedFun;
+                    o.methods[k + "(2)"] = wrappedFun;
+                    o.methods[k + "(3)"] = wrappedFun;
+                    o.methods[k + "(4)"] = wrappedFun;
+                    // we don't know how many arguments this method takes
+                }
                 break;
             case "string":
             case "boolean":
@@ -99,7 +111,8 @@ function wrapGraceObject(o) {
             }
             var ret;
             minigrace.trapErrors(function() {
-                ret = wrapGraceObject(o.real.apply(o.receiver, args));
+                superDepth = o.receiver;
+                ret = wrapGraceObject(o.real.apply(superDepth, args));
             });
             return ret;
         };
@@ -112,16 +125,17 @@ function wrapGraceObject(o) {
 
 function gracecode_dom() {
     domNoObject = Grace_allocObject(GraceObject, "noObject");
-    domNoObject.methods["=="] = function(argcv, other) {
+    domNoObject.methods["==(1)"] = function(argcv, other) {
         return (this === other) ? GraceTrue : GraceFalse;
     };
 
     this.methods.document = function(argcv) {
         if (typeof(document) === "undefined") {
             return wrapDOMObject(null);
-            // This return is here because objectdraw requests `dom.document` in its initialization.
-            // When used as a dialect, the initialization code runs inside the compiler, were there
-            // is no document.  Raising an exception at this point kills the compiler.
+            // This return is here because objectdraw requests `dom.document` in
+            // its initialization. When used as a dialect, the initialization
+            // code runs inside the compiler, where there is no document.
+            // Raising an exception at this point kills the compiler.
             throw new GraceExceptionPacket(EnvironmentExceptionObject,
                        new GraceString("There is no 'document' in this context."));
         }
@@ -283,7 +297,7 @@ function gracecode_dom() {
       for (var i = 0, l = list.length; i < l; i++) {
         var graphic = list[i];
         if (Grace_isTrue(graphic.data.isVisible)) {
-          graphic.methods.draw.call(graphic, [1], ctx);
+          graphic.methods["draw(1)"].call(graphic, [1], ctx);
         }
       }
       return GraceDone;
