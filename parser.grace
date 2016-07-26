@@ -744,13 +744,13 @@ method doif {
                 next
                 if(sym.kind != "lbrace") then {
                     def suggestion = errormessages.suggestion.new
-                    // Look ahead for a rparen or then.
+                    // Look ahead for a rbrace or then.
                     def nextTok = findNextToken({ t -> (t.line == statementToken.line)
                         && ((t.kind == "rbrace") || (t.kind == "lbrace")
                         || ((t.kind == "identifier") && (t.value == "then"))) })
                     if(false == nextTok) then {
                         suggestion.insert(" \{ «expression» \} then \{")afterToken(statementToken)
-                    } elseif { nextTok.kind == "rparen" } then {
+                    } elseif { nextTok.kind == "rbrace" } then {
                         if(nextTok == sym) then {
                             suggestion.insert("\{ «expression» \}")beforeToken(sym)
                         } else {
@@ -787,7 +787,7 @@ method doif {
                         if(nextTok == sym) then {
                             suggestion.insert("«expression» \} then \{")afterToken(lastToken)
                         } else {
-                            suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression») then \{")
+                            suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression» \} then \{")
                         }
                         errormessages.syntaxError("an elseif statement must have an expression in braces after the 'elseif'.")atPosition(
                             sym.line, sym.linePos)withSuggestion(suggestion)
