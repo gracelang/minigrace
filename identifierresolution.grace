@@ -1367,7 +1367,7 @@ method transformInherits(inhNode) ancestors(as) {
             ]
         ) scope(currentScope)
         inhNode.value := newcall
-    } elseif (inhNode.inheritsFromCall) then {
+    } elseif {inhNode.inheritsFromCall} then {
         var superCall := inhNode.value
         superCall.with.push(ast.requestPart.request "$object"
             withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
