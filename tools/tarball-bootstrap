@@ -55,7 +55,7 @@ then
     exit 0
 fi
 
-tar xf "$TARBALL" || die "Failed to extract tarball"
+bunzip2 -c - $TARBALL | tar xf - || die "Failed to extract tarball"
 dir=$(sed 's/.tar.bz2//' < <(basename "$TARBALL"))
 pushd "$dir"
 ./configure || die "Failed to configure tarball"
