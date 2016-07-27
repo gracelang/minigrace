@@ -182,7 +182,7 @@ gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.g
 
 ide: ideDeploy
 
-ideBuild: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
+ideBuild: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(WEB_GRAPHICS_MODULES:%.grace=%.js)
 	./includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(WEB_GRAPHICS_MODULES:js/sample/graphics/%.grace=js/%.js)
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
 	ln -f $(filter-out js/samples.js js/tabs.js,$(filter %.js,$(WEBFILES))) grace-web-editor/js
@@ -241,7 +241,7 @@ js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sa
 js/sample/graphics: $(WEB_GRAPHICS_MODULES:%.grace=%.js)
 
 js/sample/graphics/%.js: js/sample/graphics/%.grace minigrace
-	./minigrace --make --target js $<
+	cd js && GRACE_MODULE_PATH=. ../minigrace --make --target js ../$<
 
 js/StandardPrelude%js js/StandardPrelude%gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
 	GRACE_MODULE_PATH=modules:js ./minigrace --target js --dir js --make $(VERBOSITY) $<
