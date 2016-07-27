@@ -1,11 +1,13 @@
+"use strict";
+
 var domNoObject;
 
 function unwrapDOMObject(obj) {
-  if (obj.hasOwnProperty("_wrappedDOMObject")) {
-    return obj._wrappedDOMObject;
-  }
+    if (obj.hasOwnProperty("_wrappedDOMObject")) {
+        return obj._wrappedDOMObject;
+    }
 
-  return obj;
+    return obj;
 }
 
 function wrapDOMFunction(obj, fn) {
@@ -36,6 +38,8 @@ function wrapDOMObject(obj) {
             return new GraceNum(obj);
         case "undefined":
             return domNoObject;
+        default:
+            break;
     }
     if (obj === null) {
       return domNoObject;
@@ -53,7 +57,7 @@ function wrapDOMObject(obj) {
     for (var k in obj) {
         switch(typeof obj[k]) {
             case "function":
-                let wrappedFun = wrapDOMFunction(obj, k);
+                var wrappedFun = wrapDOMFunction(obj, k);
                 if (k === "drawImage") {
                     o.methods[k + "(3)"] = wrappedFun;
                     o.methods[k + "(5)"] = wrappedFun;
@@ -73,6 +77,12 @@ function wrapDOMObject(obj) {
             case "object":
                 o.methods[k] = wrapDOMField(o, obj, k);
                 break;
+            case "undefined":
+                o.methods[k] = null;
+                break;
+            default:
+                throw new GraceExceptionPacket(ExceptionObject,
+                      new GraceString("JavaScript value " + obj[k] + " has unknown type"));
         }
     }
     o.methods._methods = function() {
@@ -136,8 +146,8 @@ function gracecode_dom() {
             // its initialization. When used as a dialect, the initialization
             // code runs inside the compiler, where there is no document.
             // Raising an exception at this point kills the compiler.
-            throw new GraceExceptionPacket(EnvironmentExceptionObject,
-                       new GraceString("There is no 'document' in this context."));
+            // throw new GraceExceptionPacket(EnvironmentExceptionObject,
+            //           new GraceString("There is no 'document' in this context."));
         }
         return wrapDOMObject(document);
     };
@@ -312,6 +322,13 @@ function gracecode_dom() {
     return this;
 }
 
+// for node: explicitly make names global
+if (typeof global !== "undefined") {
+    global.gracecode_dom = gracecode_dom;
+}
+
 gracecode_dom.imports = [];
 if (typeof gctCache !== "undefined")
 gctCache['dom'] = "classes:\nconfidential:\nfresh-methods:\nmodules:\npath:\n dom\npublic:\n document\n doesObject(1)haveProperty(1)\n draw(4)\n filledOval(2)\n filledRect(2)\n for(1)waiting(1)do(1)\n framedOval(2)\n framedRect(2)\n image\n noObject\n while(1)waiting(1)do(1)\n window\ntypes:\n";
+
+
