@@ -111,7 +111,8 @@ clean:
 	cd js/sample/dialects && $(MAKE) clean
 
 checkjs:
-	jsl -nologo -conf tools/jsl.gracelib.conf -process js/gracelib.js
+	@jsl -nologo -conf tools/jsl.gracelib.conf -process js/gracelib.js | perl -p -e 's/gracelib.js\n/gracelib.js –– /'
+	@jsl -nologo -conf tools/jsl.gracemod.conf -process js/dom.js | perl -p -e 's/dom.js\n/dom.js -- /'
 
 checkgenjs: l1/minigrace
 	if [ ! -e js/ast.js ] ;\
