@@ -288,7 +288,7 @@ l1/mirrors.gso: $(KG)/mirrors.gso
 l1/unicode.gso: $(KG)/unicode.gso
 	cd l1 && ln -f ../$(KG)/unicode.gso .
 
-l1/unixFilePath.gct: modules/unixFilePath.grace $(KG)/minigrace
+l1/unixFilePath.gct: modules/unixFilePath.grace $(KG)/minigrace l1/StandardPrelude.gct
 	$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --dir l1 $<
 
 $(C_MODULES_GSO:%.gso=%.gct): modules/%.gct: stubs/%.gct
@@ -349,7 +349,7 @@ module-test-js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.js) $(TYPE_DIALECTS:%=mo
 modules/curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC curl.c -lcurl
 
-modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: modules/mirrors.gso modules/math.gso
+modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: modules/mirrors.gso modules/math.gso modules/dialect.gso
 
 modules/minitest.gct modules/minitest.gso modules/minitest.gcn: modules/gUnit.gso
 
@@ -526,6 +526,34 @@ webIde:
 %.o: %.c
 	gcc -g -std=c99 -c -o $@ $<
 
+#missing JS dependencies; required for parallel building
+js/staticTypes.js: js/dialect.js
+js/requireTypes.js: js/dialect.js
+
+js/compiler.js: js/genc.js js/genjs.js js/lexer.js js/parser.js js/identifierresolution.js
+js/genc.js: js/xmodule.js
+js/genjs.js: js/xmodule.js
+js/identifierresolution.js: js/xmodule.js js/identifierKinds.js
+js/lexer.js: js/errormessages.js
+js/parser.js: js/ast.js js/errormessages.js
+js/xmodule.js: js/ast.js js/errormessages.js
+
+js/ast.js: js/util.js
+js/errormessages.js: js/util.js
+js/util.js: js/buildinfo.js js/stringMap.js
+
+
+#missing dialect dependencies; required for parallel building
+modules/staticTypes.gso: modules/dialect.gso
+modules/requireTypes.gso: modules/dialect.gso
+#missing compiler dependencies; required for parallel building
+compiler.gso: genc.gso genjs.gso lexer.gso parser.gso identifierresolution.gso
+genc.gso: xmodule.gso
+genjs.gso: xmodule.gso
+identifierresolution.gso: xmodule.gso identifierKinds.gso
+lexer.gso: unicode.gso errormessages.gso
+parser.gso: ast.gso errormessages.gso
+xmodule.gso: ast.gso mirrors.gso errormessages.gso
 ## GENERATED WITH: for i in stringMap errormessages buildinfo util ast; do ./tools/make-depend $i; done | sort -u | grep -v :$ | sed 's/gct/gso/g'
 # manually removed io.gso and sys.gso, which are built in!
 ast.gso: util.gso
