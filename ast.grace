@@ -1,4 +1,4 @@
-#pragme noTypeChecks
+#pragma noTypeChecks
 #pragma ExtendedLineups
 import "util" as util
 import "identifierKinds" as k
@@ -1515,7 +1515,7 @@ def memberNode = object {
         var receiver is public := receiver'
         var generics is public := false
         var isSelfRequest is public := false
-        
+
         method onSelf {
             isSelfRequest := true
             self
@@ -1722,7 +1722,7 @@ def identifierNode = object {
         method canonicalName { value }
         method quoted { value.quoted }
         method isIdentifier { true }
-        
+
         method isSelf { "self" == value }
         method isSuper { "super" == value }
         method isPrelude { "prelude" == value }

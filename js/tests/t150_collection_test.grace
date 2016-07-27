@@ -40,19 +40,19 @@ def rangeTest = object {
 
         method testRangeTypeCollection {
             def witness = range.from 1 to 6
-            assert (witness) hasType (Collection<Number>)
+            assert (witness) hasType (Collection⟦Number⟧)
         }
         method testRangeTypeSequence {
             def witness = range.from 1 to 6
-            assert (witness) hasType (Sequence<Number>)
+            assert (witness) hasType (Sequence⟦Number⟧)
         }
         method testRangeTypeEnumerable {
             def witness = range.from 1 to 6
-            assert (witness) hasType (Enumerable<Number>)
+            assert (witness) hasType (Enumerable⟦Number⟧)
         }
         method testRangeTypeNotTypeWithWombat {
             def witness = range.from 1 to 6
-            deny (witness) hasType (Collection<Number> & type { wombat })
+            deny (witness) hasType (Collection⟦Number⟧ & type { wombat })
         }
         method testDotDotPreconditionUp1 {
             assert {4.5 .. 5} shouldRaise (RequestError)
@@ -292,16 +292,16 @@ def sequenceTest = object {
         }
 
         method testSequenceTypeCollection {
-            def witness = sequence<Number> [1,3]
-            assert (witness) hasType (Collection<Number>)
+            def witness = sequence⟦Number⟧ [1,3]
+            assert (witness) hasType (Collection⟦Number⟧)
         }
         method testSequenceTypeSequence {
-            def witness = sequence<Number> [1,3]
-            assert (witness) hasType (Sequence<Number>)
+            def witness = sequence⟦Number⟧ [1,3]
+            assert (witness) hasType (Sequence⟦Number⟧)
         }
         method testSequenceTypeEnumerable {
-            def witness = sequence<Number> [1,3]
-            assert (witness) hasType (Enumerable<Number>)
+            def witness = sequence⟦Number⟧ [1,3]
+            assert (witness) hasType (Enumerable⟦Number⟧)
         }
         method testEmptySequenceTypeCollection {
             def witness = emptySequence
@@ -316,19 +316,19 @@ def sequenceTest = object {
             assert (witness) hasType (Enumerable)
         }
         method testFilteredSequenceTypeEnumerable {
-            def witness = sequence<Number> [1,3].filter{x -> true}
-            assert (witness) hasType (Enumerable<Number>)
+            def witness = sequence⟦Number⟧ [1,3].filter{x -> true}
+            assert (witness) hasType (Enumerable⟦Number⟧)
         }
         method testSequenceNotTypeWithWombat {
-            def witness = sequence<Number> [1,3]
-            deny (witness) hasType (Collection<Number> & type { wombat })
+            def witness = sequence⟦Number⟧ [1,3]
+            deny (witness) hasType (Collection⟦Number⟧ & type { wombat })
         }
         method testSequenceSize {
             assert(oneToFive.size) shouldBe 5
             assert(empty.size) shouldBe 0
             assert(evens.size) shouldBe 4
         }
-        
+
         method testSequenceEmptyDo {
             empty.do {each -> failBecause "emptySequence.do did with {each}"}
             assert(true)
@@ -591,7 +591,7 @@ def listTest = object {
         var oneToFive
         var evens
         var empty
-        
+
         method setup {
             oneToFive := list [1, 2, 3, 4, 5]
             evens := list [2, 4, 6, 8]
@@ -599,20 +599,20 @@ def listTest = object {
         }
 
         method testListTypeCollection {
-            def witness = list<Number> [1, 2, 3, 4, 5, 6]
-            assert (witness) hasType (Collection<Number>)
+            def witness = list⟦Number⟧ [1, 2, 3, 4, 5, 6]
+            assert (witness) hasType (Collection⟦Number⟧)
         }
         method testListTypeList {
-            def witness = list<Number> [1, 2, 3, 4, 5, 6]
-            assert (witness) hasType (List<Number>)
+            def witness = list⟦Number⟧ [1, 2, 3, 4, 5, 6]
+            assert (witness) hasType (List⟦Number⟧)
         }
         method testListTypeSequence {
-            def witness = list<Number> [1, 2, 3, 4, 5, 6]
-            assert (witness) hasType (Sequence<Number>)
+            def witness = list⟦Number⟧ [1, 2, 3, 4, 5, 6]
+            assert (witness) hasType (Sequence⟦Number⟧)
         }
         method testListTypeNotTypeWithWombat {
-            def witness = list<Number> [1, 2, 3, 4, 5, 6]
-            deny (witness) hasType (List<Number> & type { wombat })
+            def witness = list⟦Number⟧ [1, 2, 3, 4, 5, 6]
+            deny (witness) hasType (List⟦Number⟧ & type { wombat })
         }
 
         method testListSize {
@@ -1044,7 +1044,7 @@ def setTest = object {
         var oneToFive
         var evens
         var empty
-        
+
         method setup {
             oneToFive := set [1, 2, 3, 4, 5]
             evens := set [2, 4, 6, 8]
@@ -1052,16 +1052,16 @@ def setTest = object {
         }
 
         method testSetTypeCollection {
-            def witness = set<Number> [1, 2, 3, 4, 5, 6]
-            assert (witness) hasType (Collection<Number>)
+            def witness = set⟦Number⟧ [1, 2, 3, 4, 5, 6]
+            assert (witness) hasType (Collection⟦Number⟧)
         }
         method testSetTypeSet {
-            def witness = set<Number> [1, 2, 3, 4, 5, 6]
-            assert (witness) hasType (Set<Number>)
+            def witness = set⟦Number⟧ [1, 2, 3, 4, 5, 6]
+            assert (witness) hasType (Set⟦Number⟧)
         }
         method testSetTypeNotSequence {
-            def witness = set<Number> [1, 2, 3, 4, 5, 6]
-            deny (witness) hasType (Sequence<Number>)
+            def witness = set⟦Number⟧ [1, 2, 3, 4, 5, 6]
+            deny (witness) hasType (Sequence⟦Number⟧)
         }
 
         method testSetSize {
@@ -1277,13 +1277,13 @@ def dictionaryTest = object {
             empty := emptyDictionary
         }
         method testDictionaryTypeCollection {
-            assert (oneToFive) hasType (Collection<Binding<String,Number>>)
+            assert (oneToFive) hasType (Collection⟦Binding⟦String,Number⟧⟧)
         }
         method testDictionaryTypeDictionary {
-            assert (oneToFive) hasType (Dictionary<String,Number>)
+            assert (oneToFive) hasType (Dictionary⟦String,Number⟧)
         }
         method testDictionaryTypeNotTypeWithWombat {
-            deny (oneToFive) hasType (Dictionary<String,Number> & type { wombat })
+            deny (oneToFive) hasType (Dictionary⟦String,Number⟧ & type { wombat })
         }
 
         method testDictionarySize {
@@ -1646,4 +1646,3 @@ dictTests.runAndPrintResults
 
 def lazyEnumTests = gU.testSuite.fromTestMethodsIn(lazyEnumTest)
 lazyEnumTests.runAndPrintResults
-
