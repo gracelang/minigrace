@@ -107,7 +107,7 @@ method doParseCheck(moduleObj) {
                     withSuggestions(rs.suggestions)
             }
             case { _ ->
-                errormessages.error "{e.exception}: {e.message}." 
+                errormessages.error "{e.exception}: {e.message}."
                     atLine(util.linenum)
             }
     } catch { e : Exception ->      // some unknwown Grace exception
@@ -220,12 +220,22 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
             } elseif { binaryFile.newer(moduleFileGrace).not } then {
                 util.log 60 verbose "{binaryFile} not newer than {moduleFileGrace}"
             }
-            compileModule (nm) inFile (moduleFileGrace.asString) 
+            compileModule (nm) inFile (moduleFileGrace.asString)
                 forDialect (isDialect) atRange (line, linePos)
         }
         importsSet.add(nm)
     } elseif { util.target == "js" } then {
         def moduleFileJs = moduleFileGct.copy.setExtension ".js"
+        if (moduleFileJs.exists) then {
+            util.log 60 verbose "{moduleFileJs} found."
+            if (moduleFileGct.exists) then {
+                util.log 60 verbose "{moduleFileGct} found."
+            } else {
+                util.log 60 verbose "{moduleFileGct} not found."
+            }
+        } else {
+            util.log 60 verbose "{moduleFileJs} not found."
+        }
         if (moduleFileJs.exists && {
             moduleFileGct.exists } && {
                 noSource || {
@@ -238,7 +248,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
                 util.log 60 verbose "{moduleFileJs} not newer than {moduleFileGrace}"
             }
             if (moduleFileGrace.exists) then {
-                compileModule (nm) inFile (moduleFileGrace.asString) 
+                compileModule (nm) inFile (moduleFileGrace.asString)
                     forDialect (isDialect) atRange (line, linePos)
             } else {
                 def thing = if (isDialect) then {"dialect"} else {"module"}
@@ -601,4 +611,3 @@ method addFreshMethod (node) to (freshlist) for (gct) is confidential {
             "fresh method result of an unexpected kind: {freshMethExpression.pretty(0)}"
     }
 }
-
