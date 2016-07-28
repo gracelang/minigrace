@@ -40,3 +40,42 @@ parser.gct: io.gct ast.gct util.gct errormessages.gct
 symbolTable.gct: ast.gct errormessages.gct
 util.gct: io.gct sys.gct stringMap.gct unixFilePath.gct
 xmodule.gct: io.gct sys.gct util.gct ast.gct mirrors.gso unixFilePath.gct errormessages.gct
+
+
+#missing JS dependencies; required for parallel building
+js/staticTypes.js: js/dialect.js
+js/requireTypes.js: js/dialect.js
+
+js/compiler.js: js/genc.js js/genjs.js js/lexer.js js/parser.js js/identifierresolution.js
+js/genc.js: js/xmodule.js
+js/genjs.js: js/xmodule.js
+js/identifierresolution.js: js/xmodule.js js/identifierKinds.js
+js/lexer.js: js/errormessages.js
+js/parser.js: js/ast.js js/errormessages.js
+js/xmodule.js: js/ast.js js/errormessages.js
+
+js/ast.js: js/util.js
+js/errormessages.js: js/util.js
+js/util.js: js/buildinfo.js js/stringMap.js
+
+
+#missing dialect dependencies; required for parallel building
+modules/staticTypes.gso: modules/dialect.gso
+modules/requireTypes.gso: modules/dialect.gso
+#missing compiler dependencies; required for parallel building
+compiler.gso: genc.gso genjs.gso lexer.gso parser.gso identifierresolution.gso
+genc.gso: xmodule.gso
+genjs.gso: xmodule.gso
+identifierresolution.gso: xmodule.gso identifierKinds.gso
+lexer.gso: unicode.gso errormessages.gso
+parser.gso: ast.gso errormessages.gso
+xmodule.gso: ast.gso mirrors.gso errormessages.gso
+## GENERATED WITH: for i in stringMap errormessages buildinfo util ast; do ./tools/make-depend $i; done | sort -u | grep -v :$ | sed 's/gct/gso/g'
+# manually removed io.gso and sys.gso, which are built in!
+ast.gso: util.gso
+errormessages.gso: util.gso
+util.gso: buildinfo.gso stringMap.gso
+
+l1/ast.gso: l1/util.gso
+l1/errormessages.gso: l1/util.gso
+l1/util.gso: l1/stringMap.gso

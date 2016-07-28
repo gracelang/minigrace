@@ -282,7 +282,7 @@ l1/mirrors.gso: $(KG)/mirrors.gso
 l1/unicode.gso: $(KG)/unicode.gso
 	cd l1 && ln -f ../$(KG)/unicode.gso .
 
-l1/unixFilePath.gct: modules/unixFilePath.grace $(KG)/minigrace
+l1/unixFilePath.gct: modules/unixFilePath.grace $(KG)/minigrace l1/StandardPrelude.gct
 	$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --dir l1 $<
 
 $(C_MODULES_GSO:%.gso=%.gct): modules/%.gct: stubs/%.gct
@@ -343,7 +343,7 @@ module-test-js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.js) $(TYPE_DIALECTS:%=mo
 modules/curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC curl.c -lcurl
 
-modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: modules/mirrors.gso modules/math.gso
+modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: modules/mirrors.gso modules/math.gso modules/dialect.gso
 
 modules/minitest.gct modules/minitest.gso modules/minitest.gcn: modules/gUnit.gso
 
@@ -518,16 +518,6 @@ webIde:
 
 %.o: %.c
 	gcc -g -std=c99 -c -o $@ $<
-
-## GENERATED WITH: for i in stringMap errormessages buildinfo util ast; do ./tools/make-depend $i; done | sort -u | grep -v :$ | sed 's/gct/gso/g'
-# manually removed io.gso and sys.gso, which are built in!
-ast.gso: util.gso
-errormessages.gso: util.gso
-util.gso: buildinfo.gso stringMap.gso
-
-l1/ast.gso: l1/util.gso
-l1/errormessages.gso: l1/util.gso
-l1/util.gso: l1/stringMap.gso
 
 modules/%.gso: %.c gracelib.h
 	gcc -g -I. -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
