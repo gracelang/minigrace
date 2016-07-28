@@ -1,4 +1,4 @@
-#!/bin/bash -c false
+#!/usr/bin/env bash -c false
 
 # Data file containing generation numbers of some versions to simplify
 # calculation and avoid hitting recursion limits.

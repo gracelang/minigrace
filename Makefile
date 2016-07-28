@@ -274,7 +274,7 @@ l1/collectionsPrelude%gct l1/collectionsPrelude%gcn: collectionsPrelude.grace $(
 	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
 
 l1/curl.gso: curl.c gracelib.h
-	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC curl.c -lcurl
+	gcc -g -std=c99 $(UNICODE_LDFLAGS) -I/usr/local/include -L/usr/local/lib -o $@ -shared -fPIC curl.c -lcurl
 
 l1/mirrors.gso: $(KG)/mirrors.gso
 	cd l1 && ln -f ../$(KG)/mirrors.gso .

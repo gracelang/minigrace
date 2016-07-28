@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 PATH_VAR_NAME=$1
 INSTALL_PATH=$2
 if [[ `printenv ${PATH_VAR_NAME}` != *${INSTALL_PATH}* ]]

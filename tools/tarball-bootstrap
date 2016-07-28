@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Use a tarball to provide known-good for bootstrapping
 
 die() {
@@ -55,10 +55,10 @@ then
     exit 0
 fi
 
-tar xf "$TARBALL" || die "Failed to extract tarball"
+bunzip2 -c - $TARBALL | tar xf - || die "Failed to extract tarball"
 dir=$(sed 's/.tar.bz2//' < <(basename "$TARBALL"))
 pushd "$dir"
-./configure || die "Failed to configure tarball"
+/usr/bin/env bash ./configure || die "Failed to configure tarball"
 make || die "Failed to build"
 hash=$(./minigrace --version | awk '/git revision/ { print $3 }')
 kgdir=../known-good/$(uname -s)-$(uname -m)/$hash

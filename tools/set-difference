@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 #
 # computes $1 \ $2
 # each parameter must be a list of words, separated by spaces
