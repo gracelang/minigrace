@@ -96,6 +96,7 @@ type List⟦T⟧ = Sequence⟦T⟧ & type {
     addAllFirst(xs: Iterable⟦T⟧) -> List⟦T⟧
     addLast(x: T) -> List⟦T⟧    // same as add
     at(ix:Number) put(v:T) -> List⟦T⟧
+    clear -> List⟦T⟧
     removeFirst -> T
     removeAt(n: Number) -> T
     removeLast -> T
@@ -119,6 +120,7 @@ type Set⟦T⟧ = Collection⟦T⟧ & type {
     addAll(elements: Iterable⟦T⟧) -> SelfType
     remove(x: T) -> Set⟦T⟧
     remove(x: T) ifAbsent(block: Block0⟦Done⟧) -> Set⟦T⟧
+    clear -> Set⟦T⟧
     includes(booleanBlock: Block1⟦T,Boolean⟧) -> Boolean
     find(booleanBlock: Block1⟦T,Boolean⟧) ifNone(notFoundBlock: Block0⟦T⟧) -> T
     copy -> Set⟦T⟧
@@ -145,6 +147,7 @@ type Dictionary⟦K,T⟧ = Collection⟦T⟧ & type {
     removeKey(key:K) -> Dictionary⟦K,T⟧
     removeAllValues(removals: Iterable⟦T⟧) -> Dictionary⟦K,T⟧
     removeValue(v:T) -> Dictionary⟦K,T⟧
+    clear -> Dictionary⟦K,T⟧
     keys -> Enumerable⟦K⟧
     values -> Enumerable⟦T⟧
     bindings -> Enumerable⟦Binding⟦K,T⟧⟧
@@ -996,6 +999,11 @@ class list⟦T⟧ {
                 size := size + 1
                 self
             }
+            method clear {
+                inner := _prelude.primitiveArray.new(initialSize)
+                size := 0
+                self
+            }
             method removeFirst {
                 removeAt(1)
             }
@@ -1241,6 +1249,11 @@ class set⟦T⟧ {
                 }
             }
             self    // for chaining
+        }
+        method clear {
+            inner := _prelude.primitiveArray.new(cap)
+            size := 0
+            self
         }
 
         method remove (elt:T) ifAbsent (block) {
@@ -1605,6 +1618,15 @@ class dictionary⟦K,T⟧ {
             }
             if (numBindings == initialNumBindings) then {
                 action.apply
+            }
+            self
+        }
+        method clear {
+            inner := _prelude.primitiveArray.new(8)
+            numBindings := 0
+            mods := 0
+            for (0..(inner.size-1)) do { i ->
+                inner.at(i)put(unused)
             }
             self
         }
