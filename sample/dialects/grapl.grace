@@ -69,14 +69,14 @@ class vector {
         }
         prod
     }
-    method ∘·+(o) {
+    method ∘⋅+(o) {
         def tmp = vector
         for (data) do {d->
             tmp.data.push(o + d)
         }
         tmp
     }
-    method ∘·*(o) {
+    method ∘⋅*(o) {
         def tmp = vector
         for (data) do {d->
             tmp.data.push(o * d)
