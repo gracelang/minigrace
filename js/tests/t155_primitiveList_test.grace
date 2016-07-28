@@ -50,7 +50,10 @@ def primitiveListTest = object {
             assert(isEqual)
             deny(oneToFive != list [1, 2, 3, 4, 5])
         }
-
+        method testListClear {
+            var toClear := [1, 2, 3]
+            assert (toClear.clear) shouldBe ([ ])
+        }
         method testListOneToFiveDo {
             var element := 1
             oneToFive.do { each ->

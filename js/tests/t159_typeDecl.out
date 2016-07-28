@@ -11,6 +11,7 @@ The following list methods are not in sequence:
     addFirst(1)
     addLast(1)
     at(1)put(1)
+    clear
     copy
     pop
     remove(1)

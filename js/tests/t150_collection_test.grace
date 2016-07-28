@@ -597,7 +597,6 @@ def listTest = object {
             evens := list [2, 4, 6, 8]
             empty := emptyList
         }
-
         method testListTypeCollection {
             def witness = list⟦Number⟧ [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (Collection⟦Number⟧)
@@ -1034,6 +1033,10 @@ def listTest = object {
           input.removeAt(1)
           assert {iter4.next} shouldRaise (ConcurrentModification)
         }
+        method testListClear {
+            var toClear := list [1, 2, 3]
+            assert (toClear.clear) shouldBe (emptyList)
+        }
     }
 }
 
@@ -1050,7 +1053,7 @@ def setTest = object {
             evens := set [2, 4, 6, 8]
             empty := set [ ]
         }
-
+        
         method testSetTypeCollection {
             def witness = set⟦Number⟧ [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (Collection⟦Number⟧)
@@ -1258,6 +1261,10 @@ def setTest = object {
             def iter3 = input.iterator
             input.remove(2)
             assert {iter3.next} shouldRaise (ConcurrentModification)
+        }
+        method testSetClear {
+            var toClear := set [1, 2, 3]
+            assert (toClear.clear) shouldBe (emptySet)
         }
     }
 }
@@ -1591,6 +1598,10 @@ def dictionaryTest = object {
             input.removeKey("four")
             assert {iter4.next} shouldRaise (ConcurrentModification)
         }
+        method testDictionaryClear {
+            var toClear := dictionary [1::2, 2::4, 3::6]
+            assert (toClear.clear) shouldBe (emptyDictionary)
+        }
     }
 }
 
@@ -1625,7 +1636,6 @@ def lazyEnumTest = object {
     }
 }
 
-
 def bindingTests = gU.testSuite.fromTestMethodsIn(bindingTest)
 bindingTests.runAndPrintResults
 
@@ -1646,3 +1656,4 @@ dictTests.runAndPrintResults
 
 def lazyEnumTests = gU.testSuite.fromTestMethodsIn(lazyEnumTest)
 lazyEnumTests.runAndPrintResults
+
