@@ -5,3 +5,4 @@ setTest: 39 run, 0 failed, 0 errors
 rangeTest: 49 run, 0 failed, 0 errors
 dictionaryTest: 52 run, 0 failed, 0 errors
 lazyEnumTest: 5 run, 0 failed, 0 errors
+clearTest: 4 run, 0 failed, 0 errors
