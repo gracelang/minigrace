@@ -57,7 +57,30 @@ Object String_size(Object, int, int*, Object*, int flags);
 Object String_at(Object, int, int*, Object*, int flags);
 Object String_replace_with(Object, int, int*, Object*, int flags);
 Object String_substringFrom_to(Object, int, int*, Object*, int flags);
+Object String_substringFrom_size(Object, int, int*, Object*, int flags);
 Object String_startsWith(Object, int, int*, Object*, int flags);
+Object String_startsWithLetter(Object, int, int*, Object*, int flags);
+Object String_startsWithDigit(Object, int, int*, Object*, int flags);
+Object String_startsWithSpace(Object, int, int*, Object*, int flags);
+Object String_indexOf(Object, int, int*, Object*, int flags);
+Object String_indexOf_ifAbsent(Object, int, int*, Object*, int flags);
+Object String_indexOf_startingAt(Object, int, int*, Object*, int flags);
+Object String_indexOf_startingAt_ifAbsent(Object, int, int*, Object*, int flags);
+Object String_lastIndexOf_ifAbsent(Object, int, int*, Object*, int flags);
+Object String_lastIndexOf_startingAt_ifAbsent(Object, int, int*, Object*, int flags);
+Object String_asUpper(Object, int, int*, Object*, int flags);
+Object String_asLower(Object, int, int*, Object*, int flags);
+Object String_capitalized(Object, int, int*, Object*, int flags);
+Object String_timesNumber(Object, int, int*, Object*, int flags);
+Object String_second(Object, int, int*, Object*, int flags);
+Object String_third(Object, int, int*, Object*, int flags);
+Object String_fourth(Object, int, int*, Object*, int flags);
+Object String_fifth(Object, int, int*, Object*, int flags);
+Object String_last(Object, int, int*, Object*, int flags);
+Object String_map(Object, int, int*, Object*, int flags);
+Object String_filter(Object, int, int*, Object*, int flags);
+Object String_fold_startingWith(Object, int, int*, Object*, int flags);
+Object String_keysAndValuesDo(Object, int, int*, Object*, int flags);
 Object prelude_clone(Object, int, int*, Object*, int flags);
 Object makeEscapedString(char *);
 Object makeQuotedString(char *);
@@ -1860,6 +1883,29 @@ int getutf8char(const char *s, char buf[5]) {
     }
     return 0;
 }
+char* strstr_utf8(const char *in, const char *str) {
+    char c;
+    size_t len;
+    
+    c = *str;
+    if (!c) {
+        return (char *) in;
+    }
+    len = strlen(str);
+    int charlen;
+    do {
+        char sc;
+        do {
+            sc = *in;
+            charlen = getutf8charlen(in);
+            in += charlen;
+            if (!sc) {
+                return (char *)0;
+            }
+        } while (sc != c);
+    } while (strncmp(in - charlen, str, len) != 0);
+    return (char *) (in - charlen);
+}
 Object StringIter_next(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int *pos = (int*)self->data;
@@ -1983,6 +2029,60 @@ Object ConcatString_Contains(Object self, int nparts, int *argcv,
     // Notice that indexOf would be more complicated, since each Unicode
     // char may be multiple C chars.
 }
+Object ConcatString_indexOf(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_indexOf(self, nparts, argcv, args, flags);
+}
+Object ConcatString_indexOf_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_indexOf_ifAbsent(self, nparts, argcv, args, flags);
+}
+Object ConcatString_indexOf_startingAt(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_indexOf_startingAt(self, nparts, argcv, args, flags);
+}
+Object ConcatString_indexOf_startingAt_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_indexOf_startingAt_ifAbsent(self, nparts, argcv, args, flags);
+}
+Object ConcatString_lastIndexOf_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_lastIndexOf_ifAbsent(self, nparts, argcv, args, flags);
+}
+Object ConcatString_lastIndexOf_startingAt_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_lastIndexOf_startingAt_ifAbsent(self, nparts, argcv, args, flags);
+}
+Object ConcatString_asUpper(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_asUpper(self, nparts, argcv, args, flags);
+}
+Object ConcatString_asLower(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_asLower(self, nparts, argcv, args, flags);
+}
+Object ConcatString_capitalized(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_capitalized(self, nparts, argcv, args, flags);
+}
 Object ConcatString_Equals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     if (self == args[0])
@@ -2073,6 +2173,30 @@ Object ConcatString_ord(Object self, int nparts, int *argcv,
     Object right = sself->right;
     return callmethod(right, "ord", 0, NULL, NULL);
 }
+Object ConcatString_map(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_map(self, nparts, argcv, args, flags);
+}
+Object ConcatString_fold_startingWith(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_fold_startingWith(self, nparts, argcv, args, flags);
+}
+Object ConcatString_keysAndValuesDo(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_keysAndValuesDo(self, nparts, argcv, args, flags);
+}
+Object ConcatString_filter(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_filter(self, nparts, argcv, args, flags);
+}
 Object ConcatString_at(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
@@ -2095,6 +2219,36 @@ Object ConcatString_first(Object self, int nparts, int *argcv,
     Object result = String_at(self, nparts, argcv, newargs, flags);
     gc_unpause();
     return result;
+}
+Object ConcatString_second(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_second(self, nparts, argcv, args, flags);
+}
+Object ConcatString_third(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_third(self, nparts, argcv, args, flags);
+}
+Object ConcatString_fourth(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_fourth(self, nparts, argcv, args, flags);
+}
+Object ConcatString_fifth(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_fifth(self, nparts, argcv, args, flags);
+}
+Object ConcatString_last(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_last(self, nparts, argcv, args, flags);
 }
 Object ConcatString_length(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -2124,17 +2278,47 @@ Object ConcatString_substringFrom_to(Object self,
     ConcatString__Flatten(self);
     return String_substringFrom_to(self, nparts, argcv, args, flags);
 }
+Object ConcatString_substringFrom_size(Object self,
+        int nparts, int *argcv, Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_substringFrom_size(self, nparts, argcv, args, flags);
+}
 Object ConcatString_startsWith(Object self,
         int nparts, int *argcv, Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     ConcatString__Flatten(self);
     return String_startsWith(self, nparts, argcv, args, flags);
 }
+Object ConcatString_startsWithLetter(Object self,
+        int nparts, int *argcv, Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_startsWithLetter(self, nparts, argcv, args, flags);
+}
+Object ConcatString_startsWithDigit(Object self,
+        int nparts, int *argcv, Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_startsWithDigit(self, nparts, argcv, args, flags);
+}
+Object ConcatString_startsWithSpace(Object self,
+        int nparts, int *argcv, Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_startsWithSpace(self, nparts, argcv, args, flags);
+}
 Object ConcatString_endsWith(Object self,
        int nparts, int *argcv, Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     ConcatString__Flatten(self);
     return String_endsWith(self, nparts, argcv, args, flags);
+}
+Object ConcatString_timesNumber(Object self,
+       int nparts, int *argcv, Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_timesNumber(self, nparts, argcv, args, flags);
 }
 Object ConcatString_replace_with(Object self,
        int nparts, int *argcv, Object *args, int flags) {
@@ -2205,6 +2389,12 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "sizeIfUnknown(1)", &String_size);
         add_Method(ConcatString, "at(1)", &ConcatString_at);
         add_Method(ConcatString, "contains(1)", &ConcatString_Contains);
+        add_Method(ConcatString, "indexOf(1)", &ConcatString_indexOf);
+        add_Method(ConcatString, "indexOf(1)ifAbsent(1)", &ConcatString_indexOf_ifAbsent);
+        add_Method(ConcatString, "indexOf(1)startingAt(1)", &ConcatString_indexOf_startingAt);
+        add_Method(ConcatString, "indexOf(1)startingAt(1)ifAbsent(1)", &ConcatString_indexOf_startingAt_ifAbsent);
+        add_Method(ConcatString, "lastIndexOf(1)ifAbsent(1)", &ConcatString_lastIndexOf_ifAbsent);
+        add_Method(ConcatString, "lastIndexOf(1)startingAt(1)ifAbsent(1)", &ConcatString_lastIndexOf_startingAt_ifAbsent);
         add_Method(ConcatString, "==(1)", &ConcatString_Equals);
         add_Method(ConcatString, ">(1)", &String_Greater);
         add_Method(ConcatString, "≥(1)", &String_GreaterOrEqual);
@@ -2213,6 +2403,11 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "≠(1)", &Object_NotEquals);
         add_Method(ConcatString, "compare(1)", &String_Compare);
         add_Method(ConcatString, "first", &ConcatString_first);
+        add_Method(ConcatString, "second", &ConcatString_second);
+        add_Method(ConcatString, "third", &ConcatString_third);
+        add_Method(ConcatString, "fourth", &ConcatString_fourth);
+        add_Method(ConcatString, "fifth", &ConcatString_fifth);
+        add_Method(ConcatString, "last", &ConcatString_last);
         add_Method(ConcatString, "do(1)", &ConcatString_do);
         add_Method(ConcatString, "iterator", &ConcatString_iter);
         add_Method(ConcatString, "quoted", &ConcatString_quoted);
@@ -2220,11 +2415,14 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "length", &ConcatString_length);
         add_Method(ConcatString, "isMe(1)", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(ConcatString, "isEmpty", &ConcatString_isEmpty);
-        add_Method(ConcatString, "iterator", &ConcatString_iter);
         add_Method(ConcatString, "ord", &ConcatString_ord);
         add_Method(ConcatString, "encode", &String_encode);
         add_Method(ConcatString, "substringFrom(1)to(1)", &ConcatString_substringFrom_to);
+        add_Method(ConcatString, "substringFrom(1)size(1)", &ConcatString_substringFrom_size);
         add_Method(ConcatString, "startsWith(1)", &ConcatString_startsWith);
+        add_Method(ConcatString, "startsWithLetter", &ConcatString_startsWithLetter);
+        add_Method(ConcatString, "startsWithDigit", &ConcatString_startsWithDigit);
+        add_Method(ConcatString, "startsWithSpace", &ConcatString_startsWithSpace);
         add_Method(ConcatString, "endsWith(1)", &ConcatString_endsWith);
         add_Method(ConcatString, "replace(1)with(1)", &ConcatString_replace_with);
         add_Method(ConcatString, "hash", &String_hashcode);
@@ -2233,6 +2431,15 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "match(1)", &literal_match);
         add_Method(ConcatString, "|(1)", &literal_or);
         add_Method(ConcatString, "&(1)", &literal_and);
+        add_Method(ConcatString, "*(1)", &ConcatString_timesNumber);
+        add_Method(ConcatString, "reverseTimesNumber(1)", &ConcatString_timesNumber);
+        add_Method(ConcatString, "asUpper", &ConcatString_asUpper);
+        add_Method(ConcatString, "asLower", &ConcatString_asLower);
+        add_Method(ConcatString, "capitalized", &ConcatString_capitalized);
+        add_Method(ConcatString, "map(1)", &ConcatString_map);
+        add_Method(ConcatString, "filter(1)", &ConcatString_filter);
+        add_Method(ConcatString, "keysAndValuesDo(1)", &ConcatString_keysAndValuesDo);
+        add_Method(ConcatString, "fold(1)startingWith(1)", &ConcatString_fold_startingWith);
     }
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
@@ -2273,29 +2480,6 @@ Object String_isEmpty(Object, int, int*, Object*, int flags);
 Object String_iter(Object receiver, int nparts, int *argcv,
         Object* args, int flags) {
     return alloc_StringIter(receiver);
-}
-char* strstr_utf8(const char *in, const char *str) {
-    char c;
-    size_t len;
-    
-    c = *str;
-    if (!c) {
-        return (char *) in;
-    }
-    len = strlen(str);
-    int charlen;
-    do {
-        char sc;
-        do {
-            sc = *in;
-            charlen = getutf8charlen(in);
-            in += charlen;
-            if (!sc) {
-                return (char *)0;
-            }
-        } while (sc != c);
-    } while (strncmp(in - charlen, str, len) != 0);
-    return (char *) (in - charlen);
 }
 
 int indexOf_shift (const char* base, const char* str, int startIndex) {
@@ -2498,6 +2682,7 @@ Object String_lastIndexOf_ifAbsent(Object self, int nparts, int *argcv,
     if (strlen(needle) > strlen(sstr)) {
         result = -1;
     } else {
+    
         int start = 0;
         int endinit = strlen(sstr) - strlen(needle);
         int end = endinit;
@@ -2877,15 +3062,6 @@ Object String_startsWith(Object self, int nparts, int *argcv,
         return alloc_Boolean(1);
     return alloc_Boolean(0);
 }
-Object String_startsWithDigit(Object self, int nparts, int *argcv,
-        Object *args, int flags) {
-    const char *sstr = grcstring(self);
-    char digits[] = "1234567890";
-    int result = strcspn (sstr,digits);
-    if (result == 0)
-        return alloc_Boolean(1);
-    return alloc_Boolean(0);
-}
 Object String_startsWithLetter(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     const char *sstr = grcstring(self);
@@ -2894,6 +3070,15 @@ Object String_startsWithLetter(Object self, int nparts, int *argcv,
         ((unsigned char)ch >= 0xC0)) {
         return alloc_Boolean(1);
     }
+    return alloc_Boolean(0);
+}
+Object String_startsWithDigit(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    char digits[] = "1234567890";
+    int result = strcspn (sstr,digits);
+    if (result == 0)
+        return alloc_Boolean(1);
     return alloc_Boolean(0);
 }
 Object String_startsWithSpace(Object self, int nparts, int *argcv,
@@ -3082,6 +3267,14 @@ Object alloc_String(const char *data) {
         add_Method(String, "sizeIfUnknown(1)", &String_size);
         add_Method(String, "at(1)", &String_at);
         add_Method(String, "contains(1)", &String_Contains);
+        add_Method(String, "indexOf(1)", &String_indexOf);
+        add_Method(String, "indexOf(1)ifAbsent(1)", &String_indexOf_ifAbsent);
+        add_Method(String, "indexOf(1)startingAt(1)", &String_indexOf_startingAt);
+        add_Method(String, "indexOf(1)startingAt(1)ifAbsent(1)",
+            &String_indexOf_startingAt_ifAbsent);
+        add_Method(String, "lastIndexOf(1)startingAt(1)ifAbsent(1)",
+            &String_lastIndexOf_startingAt_ifAbsent);
+        add_Method(String, "lastIndexOf(1)ifAbsent(1)", &String_lastIndexOf_ifAbsent);
         add_Method(String, "==(1)", &String_Equals);
         add_Method(String, ">(1)", &String_Greater);
         add_Method(String, "≥(1)", &String_GreaterOrEqual);
@@ -3095,19 +3288,21 @@ Object alloc_String(const char *data) {
         add_Method(String, "fourth", &String_fourth);
         add_Method(String, "fifth", &String_fifth);
         add_Method(String, "last", &String_last);
+        add_Method(String, "do(1)", &String_do);
         add_Method(String, "iterator", &String_iter);
         add_Method(String, "quoted", &String_quoted);
         add_Method(String, "_escape", &String__escape);
         add_Method(String, "length", &String_length);
         add_Method(String, "isMe(1)", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(String, "isEmpty", &String_isEmpty);
-        add_Method(String, "do(1)", &String_do);
-        add_Method(String, "iterator", &String_iter);
         add_Method(String, "ord", &String_ord);
         add_Method(String, "encode", &String_encode);
         add_Method(String, "substringFrom(1)to(1)", &String_substringFrom_to);
         add_Method(String, "substringFrom(1)size(1)", &String_substringFrom_size);
         add_Method(String, "startsWith(1)", &String_startsWith);
+        add_Method(String, "startsWithDigit", &String_startsWithDigit);
+        add_Method(String, "startsWithLetter", &String_startsWithLetter);
+        add_Method(String, "startsWithSpace", &String_startsWithSpace);
         add_Method(String, "endsWith(1)", &String_endsWith);
         add_Method(String, "replace(1)with(1)", &String_replace_with);
         add_Method(String, "hash", &String_hashcode);
@@ -3116,26 +3311,14 @@ Object alloc_String(const char *data) {
         add_Method(String, "match(1)", &literal_match);
         add_Method(String, "|(1)", &literal_or);
         add_Method(String, "&(1)", &literal_and);
-        add_Method(String, "startsWithDigit", &String_startsWithDigit);
-        add_Method(String, "startsWithLetter", &String_startsWithLetter);
-        add_Method(String, "startsWithSpace", &String_startsWithSpace);
         add_Method(String, "*(1)", &String_timesNumber);
         add_Method(String, "asUpper", &String_asUpper);
         add_Method(String, "asLower", &String_asLower);
         add_Method(String, "capitalized", &String_capitalized);
-        add_Method(String, "indexOf(1)", &String_indexOf);
-        add_Method(String, "keysAndValuesDo(1)", &String_keysAndValuesDo);
-        add_Method(String, "filter(1)", &String_filter);
-        add_Method(String, "fold(1)startingWith(1)", &String_fold_startingWith);
-        add_Method(String, "indexOf(1)ifAbsent(1)", &String_indexOf_ifAbsent);
-        add_Method(String, "indexOf(1)startingAt(1)", &String_indexOf_startingAt);
-        add_Method(String, "indexOf(1)startingAt(1)ifAbsent(1)",
-                   &String_indexOf_startingAt_ifAbsent);
-        add_Method(String, "lastIndexOf(1)startingAt(1)ifAbsent(1)",
-                   &String_lastIndexOf_startingAt_ifAbsent);
-        add_Method(String, "lastIndexOf(1)ifAbsent(1)",
-                   &String_lastIndexOf_ifAbsent);
         add_Method(String, "map(1)", &String_map);
+        add_Method(String, "filter(1)", &String_filter);
+        add_Method(String, "keysAndValuesDo(1)", &String_keysAndValuesDo);
+        add_Method(String, "fold(1)startingWith(1)", &String_fold_startingWith);
     }
     if (blen == 1) {
         if (String_Interned_1[data[0]] != NULL)
