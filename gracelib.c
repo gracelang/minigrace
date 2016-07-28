@@ -17,6 +17,8 @@
 #include <limits.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <ctype.h>
+
 
 #include "gracelib.h"
 #define IN_GRACELIB 1
@@ -55,7 +57,30 @@ Object String_size(Object, int, int*, Object*, int flags);
 Object String_at(Object, int, int*, Object*, int flags);
 Object String_replace_with(Object, int, int*, Object*, int flags);
 Object String_substringFrom_to(Object, int, int*, Object*, int flags);
+Object String_substringFrom_size(Object, int, int*, Object*, int flags);
 Object String_startsWith(Object, int, int*, Object*, int flags);
+Object String_startsWithLetter(Object, int, int*, Object*, int flags);
+Object String_startsWithDigit(Object, int, int*, Object*, int flags);
+Object String_startsWithSpace(Object, int, int*, Object*, int flags);
+Object String_indexOf(Object, int, int*, Object*, int flags);
+Object String_indexOf_ifAbsent(Object, int, int*, Object*, int flags);
+Object String_indexOf_startingAt(Object, int, int*, Object*, int flags);
+Object String_indexOf_startingAt_ifAbsent(Object, int, int*, Object*, int flags);
+Object String_lastIndexOf_ifAbsent(Object, int, int*, Object*, int flags);
+Object String_lastIndexOf_startingAt_ifAbsent(Object, int, int*, Object*, int flags);
+Object String_asUpper(Object, int, int*, Object*, int flags);
+Object String_asLower(Object, int, int*, Object*, int flags);
+Object String_capitalized(Object, int, int*, Object*, int flags);
+Object String_timesNumber(Object, int, int*, Object*, int flags);
+Object String_second(Object, int, int*, Object*, int flags);
+Object String_third(Object, int, int*, Object*, int flags);
+Object String_fourth(Object, int, int*, Object*, int flags);
+Object String_fifth(Object, int, int*, Object*, int flags);
+Object String_last(Object, int, int*, Object*, int flags);
+Object String_map(Object, int, int*, Object*, int flags);
+Object String_filter(Object, int, int*, Object*, int flags);
+Object String_fold_startingWith(Object, int, int*, Object*, int flags);
+Object String_keysAndValuesDo(Object, int, int*, Object*, int flags);
 Object prelude_clone(Object, int, int*, Object*, int flags);
 Object makeEscapedString(char *);
 Object makeQuotedString(char *);
@@ -1356,7 +1381,7 @@ Object BuiltinList_do_separatedBy(Object self, int nparts, int *argcv,
     }
     return done;
 }
-Object BuiltinList_keyAndValuesDo(Object self, int nparts, int *argcv,
+Object BuiltinList_keysAndValuesDo(Object self, int nparts, int *argcv,
                            Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     Object functionBlock = args[0];
@@ -1593,7 +1618,7 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "fold(1)startingWith(1)", &BuiltinList_fold_startingWith);
         add_Method(BuiltinList, "do(1)", &BuiltinList_do);
         add_Method(BuiltinList, "do(1)separatedBy(1)", &BuiltinList_do_separatedBy);
-        add_Method(BuiltinList, "keysAndValuesDo(1)", &BuiltinList_keyAndValuesDo);
+        add_Method(BuiltinList, "keysAndValuesDo(1)", &BuiltinList_keysAndValuesDo);
         add_Method(BuiltinList, "copy", &BuiltinList_copy);
         add_Method(BuiltinList, "reversed", &BuiltinList_reversed);
         add_Method(BuiltinList, "asList", &BuiltinList_asList);
@@ -1802,7 +1827,6 @@ Object alloc_PrimitiveArrayClassObject() {
     return o;
 }
 int getutf8charlen(const char *s) {
-    int i;
     if ((s[0] & 128) == 0)
         return 1;
     if ((s[0] & 64) == 0) {
@@ -1858,6 +1882,29 @@ int getutf8char(const char *s, char buf[5]) {
         gracedie("Illegal non-character in UTF-8 sequence: U+%x", cp);
     }
     return 0;
+}
+char* strstr_utf8(const char *in, const char *str) {
+    char c;
+    size_t len;
+    
+    c = *str;
+    if (!c) {
+        return (char *) in;
+    }
+    len = strlen(str);
+    int charlen;
+    do {
+        char sc;
+        do {
+            sc = *in;
+            charlen = getutf8charlen(in);
+            in += charlen;
+            if (!sc) {
+                return (char *)0;
+            }
+        } while (sc != c);
+    } while (strncmp(in - charlen, str, len) != 0);
+    return (char *) (in - charlen);
 }
 Object StringIter_next(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -1982,6 +2029,60 @@ Object ConcatString_Contains(Object self, int nparts, int *argcv,
     // Notice that indexOf would be more complicated, since each Unicode
     // char may be multiple C chars.
 }
+Object ConcatString_indexOf(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_indexOf(self, nparts, argcv, args, flags);
+}
+Object ConcatString_indexOf_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_indexOf_ifAbsent(self, nparts, argcv, args, flags);
+}
+Object ConcatString_indexOf_startingAt(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_indexOf_startingAt(self, nparts, argcv, args, flags);
+}
+Object ConcatString_indexOf_startingAt_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_indexOf_startingAt_ifAbsent(self, nparts, argcv, args, flags);
+}
+Object ConcatString_lastIndexOf_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_lastIndexOf_ifAbsent(self, nparts, argcv, args, flags);
+}
+Object ConcatString_lastIndexOf_startingAt_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_lastIndexOf_startingAt_ifAbsent(self, nparts, argcv, args, flags);
+}
+Object ConcatString_asUpper(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_asUpper(self, nparts, argcv, args, flags);
+}
+Object ConcatString_asLower(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_asLower(self, nparts, argcv, args, flags);
+}
+Object ConcatString_capitalized(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_capitalized(self, nparts, argcv, args, flags);
+}
 Object ConcatString_Equals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     if (self == args[0])
@@ -2072,6 +2173,30 @@ Object ConcatString_ord(Object self, int nparts, int *argcv,
     Object right = sself->right;
     return callmethod(right, "ord", 0, NULL, NULL);
 }
+Object ConcatString_map(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_map(self, nparts, argcv, args, flags);
+}
+Object ConcatString_fold_startingWith(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_fold_startingWith(self, nparts, argcv, args, flags);
+}
+Object ConcatString_keysAndValuesDo(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_keysAndValuesDo(self, nparts, argcv, args, flags);
+}
+Object ConcatString_filter(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_filter(self, nparts, argcv, args, flags);
+}
 Object ConcatString_at(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
@@ -2094,6 +2219,36 @@ Object ConcatString_first(Object self, int nparts, int *argcv,
     Object result = String_at(self, nparts, argcv, newargs, flags);
     gc_unpause();
     return result;
+}
+Object ConcatString_second(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_second(self, nparts, argcv, args, flags);
+}
+Object ConcatString_third(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_third(self, nparts, argcv, args, flags);
+}
+Object ConcatString_fourth(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_fourth(self, nparts, argcv, args, flags);
+}
+Object ConcatString_fifth(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_fifth(self, nparts, argcv, args, flags);
+}
+Object ConcatString_last(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_last(self, nparts, argcv, args, flags);
 }
 Object ConcatString_length(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -2123,17 +2278,47 @@ Object ConcatString_substringFrom_to(Object self,
     ConcatString__Flatten(self);
     return String_substringFrom_to(self, nparts, argcv, args, flags);
 }
+Object ConcatString_substringFrom_size(Object self,
+        int nparts, int *argcv, Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_substringFrom_size(self, nparts, argcv, args, flags);
+}
 Object ConcatString_startsWith(Object self,
         int nparts, int *argcv, Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     ConcatString__Flatten(self);
     return String_startsWith(self, nparts, argcv, args, flags);
 }
+Object ConcatString_startsWithLetter(Object self,
+        int nparts, int *argcv, Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_startsWithLetter(self, nparts, argcv, args, flags);
+}
+Object ConcatString_startsWithDigit(Object self,
+        int nparts, int *argcv, Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_startsWithDigit(self, nparts, argcv, args, flags);
+}
+Object ConcatString_startsWithSpace(Object self,
+        int nparts, int *argcv, Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_startsWithSpace(self, nparts, argcv, args, flags);
+}
 Object ConcatString_endsWith(Object self,
        int nparts, int *argcv, Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     ConcatString__Flatten(self);
     return String_endsWith(self, nparts, argcv, args, flags);
+}
+Object ConcatString_timesNumber(Object self,
+       int nparts, int *argcv, Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_timesNumber(self, nparts, argcv, args, flags);
 }
 Object ConcatString_replace_with(Object self,
        int nparts, int *argcv, Object *args, int flags) {
@@ -2204,6 +2389,12 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "sizeIfUnknown(1)", &String_size);
         add_Method(ConcatString, "at(1)", &ConcatString_at);
         add_Method(ConcatString, "contains(1)", &ConcatString_Contains);
+        add_Method(ConcatString, "indexOf(1)", &ConcatString_indexOf);
+        add_Method(ConcatString, "indexOf(1)ifAbsent(1)", &ConcatString_indexOf_ifAbsent);
+        add_Method(ConcatString, "indexOf(1)startingAt(1)", &ConcatString_indexOf_startingAt);
+        add_Method(ConcatString, "indexOf(1)startingAt(1)ifAbsent(1)", &ConcatString_indexOf_startingAt_ifAbsent);
+        add_Method(ConcatString, "lastIndexOf(1)ifAbsent(1)", &ConcatString_lastIndexOf_ifAbsent);
+        add_Method(ConcatString, "lastIndexOf(1)startingAt(1)ifAbsent(1)", &ConcatString_lastIndexOf_startingAt_ifAbsent);
         add_Method(ConcatString, "==(1)", &ConcatString_Equals);
         add_Method(ConcatString, ">(1)", &String_Greater);
         add_Method(ConcatString, "≥(1)", &String_GreaterOrEqual);
@@ -2212,6 +2403,11 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "≠(1)", &Object_NotEquals);
         add_Method(ConcatString, "compare(1)", &String_Compare);
         add_Method(ConcatString, "first", &ConcatString_first);
+        add_Method(ConcatString, "second", &ConcatString_second);
+        add_Method(ConcatString, "third", &ConcatString_third);
+        add_Method(ConcatString, "fourth", &ConcatString_fourth);
+        add_Method(ConcatString, "fifth", &ConcatString_fifth);
+        add_Method(ConcatString, "last", &ConcatString_last);
         add_Method(ConcatString, "do(1)", &ConcatString_do);
         add_Method(ConcatString, "iterator", &ConcatString_iter);
         add_Method(ConcatString, "quoted", &ConcatString_quoted);
@@ -2219,11 +2415,14 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "length", &ConcatString_length);
         add_Method(ConcatString, "isMe(1)", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(ConcatString, "isEmpty", &ConcatString_isEmpty);
-        add_Method(ConcatString, "iterator", &ConcatString_iter);
         add_Method(ConcatString, "ord", &ConcatString_ord);
         add_Method(ConcatString, "encode", &String_encode);
         add_Method(ConcatString, "substringFrom(1)to(1)", &ConcatString_substringFrom_to);
+        add_Method(ConcatString, "substringFrom(1)size(1)", &ConcatString_substringFrom_size);
         add_Method(ConcatString, "startsWith(1)", &ConcatString_startsWith);
+        add_Method(ConcatString, "startsWithLetter", &ConcatString_startsWithLetter);
+        add_Method(ConcatString, "startsWithDigit", &ConcatString_startsWithDigit);
+        add_Method(ConcatString, "startsWithSpace", &ConcatString_startsWithSpace);
         add_Method(ConcatString, "endsWith(1)", &ConcatString_endsWith);
         add_Method(ConcatString, "replace(1)with(1)", &ConcatString_replace_with);
         add_Method(ConcatString, "hash", &String_hashcode);
@@ -2232,6 +2431,15 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "match(1)", &literal_match);
         add_Method(ConcatString, "|(1)", &literal_or);
         add_Method(ConcatString, "&(1)", &literal_and);
+        add_Method(ConcatString, "*(1)", &ConcatString_timesNumber);
+        add_Method(ConcatString, "reverseTimesNumber(1)", &ConcatString_timesNumber);
+        add_Method(ConcatString, "asUpper", &ConcatString_asUpper);
+        add_Method(ConcatString, "asLower", &ConcatString_asLower);
+        add_Method(ConcatString, "capitalized", &ConcatString_capitalized);
+        add_Method(ConcatString, "map(1)", &ConcatString_map);
+        add_Method(ConcatString, "filter(1)", &ConcatString_filter);
+        add_Method(ConcatString, "keysAndValuesDo(1)", &ConcatString_keysAndValuesDo);
+        add_Method(ConcatString, "fold(1)startingWith(1)", &ConcatString_fold_startingWith);
     }
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
@@ -2273,11 +2481,328 @@ Object String_iter(Object receiver, int nparts, int *argcv,
         Object* args, int flags) {
     return alloc_StringIter(receiver);
 }
+
+int indexOf_shift (const char* base, const char* str, int startIndex) {
+    int result;
+    int baselen = strlen(base);
+    if (strlen(str) > baselen || startIndex > baselen) {
+        result = -1;
+    } else {
+        if (startIndex < 0 ) {
+            startIndex = 0;
+        }
+        char* pos = strstr_utf8(base+startIndex, str);
+        if (pos == NULL) {
+            result = -1;
+        } else {
+            result = pos - base;
+        }
+    }
+    return result;
+}
+
+Object String_indexOf(Object self, int nparts, int *argcv,
+        Object *args, int flags) { // broken for special characters
+    const char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    if (needle[0] == '\0') {
+        return alloc_Float64(1);
+    }
+    if (sstr[0] == '\0') {
+        return alloc_Float64(0);
+    }
+    int bufferIndex = indexOf_shift(sstr, needle, 0);
+    if (bufferIndex == -1) {
+        return alloc_Float64(0);
+    }
+    int realIndex = 0;
+    int i = 0;
+    while (i < bufferIndex) {
+        i += getutf8charlen(sstr + i);
+        ++realIndex;
+    }
+    return alloc_Float64(realIndex + 1);
+}
+Object String_indexOf_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    if (needle[0] == '\0') {
+        return alloc_Float64(1);
+    }
+    if (sstr[0] == '\0') {
+        return callmethod(args[1], "apply", 0, NULL, NULL);
+    }
+    int bufferIndex = indexOf_shift(sstr, needle, 0);
+    if (bufferIndex == -1) {
+        return callmethod(args[1], "apply", 0, NULL, NULL);
+    }
+    int realIndex = 0;
+    int i = 0;
+    while (i < bufferIndex) {
+        i += getutf8charlen(sstr + i);
+        ++realIndex;
+    }
+    return alloc_Float64(realIndex + 1);
+}
+Object String_indexOf_startingAt(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    int st = integerfromAny(args[1]) - 1;
+    if (needle[0] == '\0') {
+        return alloc_Float64(1 + st);
+    }
+    if (sstr[0] == '\0') {
+        return alloc_Float64(0);
+    }
+    int realSt = 0;
+    int j = 0;
+    while (j < st) {
+        realSt += getutf8charlen(sstr + j);
+        ++j;
+    }
+    int bufferIndex = indexOf_shift(sstr, needle, realSt);
+    if (bufferIndex == -1) {
+        return alloc_Float64(0);
+    }
+    int realIndex = 0;
+    int i = 0;
+    while (i < bufferIndex) {
+        i += getutf8charlen(sstr + i);
+        ++realIndex;
+    }
+    return alloc_Float64(realIndex + 1);
+}
+Object String_indexOf_startingAt_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    int st = integerfromAny(args[1]) - 1;
+    if (needle[0] == '\0') {
+        return alloc_Float64(1 + st);
+    }
+    if (sstr[0] == '\0') {
+        return callmethod(args[2], "apply", 0, NULL, NULL);
+    }
+    int realSt = 0;
+    int j = 0;
+    while (j < st) {
+        realSt += getutf8charlen(sstr + j);
+        ++j;
+    }
+    int bufferIndex = indexOf_shift(sstr, needle, realSt);
+    if (bufferIndex == -1) {
+        return callmethod(args[2], "apply", 0, NULL, NULL);
+    }
+    int realIndex = 0;
+    int i = 0;
+    while (i < bufferIndex) {
+        i += getutf8charlen(sstr + i);
+        ++realIndex;
+    }
+    return alloc_Float64(realIndex + 1);
+}
+
+Object String_lastIndexOf(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    if (needle[0] == '\0') {
+        int sz = strlen(sstr);
+        return alloc_Float64(sz + 1);
+    }
+    if (sstr[0] == '\0') {
+        return alloc_Float64(0);
+    }
+    int result;
+    // needle should not be longer than sstr
+    if (strlen(needle) > strlen(sstr)) {
+        result = -1;
+    } else {
+        int start = 0;
+        int endinit = strlen(sstr) - strlen(needle);
+        int end = endinit;
+        int endtmp = endinit;
+        while(start != end) {
+            start = indexOf_shift(sstr, needle, start);
+            end = indexOf_shift(sstr, needle, end);
+            
+            // not found from start
+            if (start == -1) {
+                end = -1; // then break;
+            } else if (end == -1) {
+                // found from start
+                // but not found from end
+                // move end to middle
+                if (endtmp == (start+1)) {
+                    end = start; // then break;
+                } else {
+                    end = endtmp - (endtmp - start) / 2;
+                    if (end <= start) {
+                        end = start+1;
+                    }
+                    endtmp = end;
+                }
+            } else {
+                // found from both start and end
+                // move start to end and
+                // move end to sstr - strlen(needle)
+                start = end;
+                end = endinit;
+            }
+        }
+        result = start;
+    }
+    if (result == -1) {
+        return alloc_Float64(0);
+    }
+    int bufferIndex = result;
+    int realIndex = 0;
+    int i = 0;
+    while (i < bufferIndex) {
+        i += getutf8charlen(sstr + i);
+        ++realIndex;
+    }
+    return alloc_Float64(realIndex + 1);
+}
+
+Object String_lastIndexOf_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    if (needle[0] == '\0') {
+        int sz = strlen(sstr);
+        return alloc_Float64(sz + 1);
+    }
+    if (sstr[0] == '\0') {
+        return callmethod(args[1], "apply", 0, NULL, NULL);
+    }
+    int result;
+    if (strlen(needle) > strlen(sstr)) {
+        result = -1;
+    } else {
+    
+        int start = 0;
+        int endinit = strlen(sstr) - strlen(needle);
+        int end = endinit;
+        int endtmp = endinit;
+        while(start != end) {
+            start = indexOf_shift(sstr, needle, start);
+            end = indexOf_shift(sstr, needle, end);
+            if (start == -1) {
+                end = -1;
+            } else if (end == -1) {
+                if (endtmp == (start+1)) {
+                    end = start;
+                } else {
+                    end = endtmp - (endtmp - start) / 2;
+                    if (end <= start) {
+                        end = start+1;
+                    }
+                    endtmp = end;
+                }
+            } else {
+                start = end;
+                end = endinit;
+            }
+        }
+        result = start;
+    }
+    if (result == -1) {
+        return callmethod(args[1], "apply", 0, NULL, NULL);
+    }
+    int bufferIndex = result;
+    int realIndex = 0;
+    int i = 0;
+    while (i < bufferIndex) {
+        i += getutf8charlen(sstr + i);
+        ++realIndex;
+    }
+    return alloc_Float64(realIndex + 1);
+}
+Object String_lastIndexOf_startingAt_ifAbsent(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    int st = integerfromAny(args[1]);
+    if (needle[0] == '\0') {
+        int sz = strlen(sstr);
+        return alloc_Float64(sz + 1);
+    }
+    if (sstr[0] == '\0') {
+        return callmethod(args[2], "apply", 0, NULL, NULL);
+    }
+    int realEnd = 0;
+    int j = 0;
+    while (j < st && realEnd < strlen(sstr)) {
+        realEnd += getutf8charlen(sstr + j);
+        ++j;
+    }
+    if (realEnd > strlen(sstr)) {
+        realEnd = strlen(sstr);
+    }
+    // make a trimmed version of sstr
+    char trimmed[realEnd + 1];
+    int k = 0;
+    while (k < realEnd) {
+        trimmed[k] = sstr[k];
+        ++k;
+    }
+    trimmed[realEnd] = 0;
+    // just like lastIndexOf but with trimmed
+    int result;
+    if (strlen(needle) > strlen(trimmed)) {
+        result = -1;
+    } else {
+        int start = 0;
+        int endinit = strlen(trimmed) - strlen(needle);
+        int end = endinit;
+        int endtmp = endinit;
+        while(start != end) {
+            start = indexOf_shift(trimmed, needle, start);
+            end = indexOf_shift(trimmed, needle, end);
+            if (start == -1) {
+                end = -1;
+            } else if (end == -1) {
+                if (endtmp == (start+1)) {
+                    end = start;
+                } else {
+                    end = endtmp - (endtmp - start) / 2;
+                    if (end <= start) {
+                        end = start+1;
+                    }
+                    endtmp = end;
+                }
+            } else {
+                start = end;
+                end = endinit;
+            }
+        }
+        result = start;
+    }
+    if (result == -1) {
+        return callmethod(args[2], "apply", 0, NULL, NULL);
+    }
+    int bufferIndex = result;
+    int realIndex = 0;
+    int i = 0;
+    while (i < bufferIndex) {
+        i += getutf8charlen(sstr + i);
+        ++realIndex;
+    }
+    return alloc_Float64(realIndex + 1);
+}
 Object String_at(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object idxobj = args[0];
     assertClass(idxobj, Number);
     int idx = integerfromAny(idxobj);
+    const char *sstr = grcstring(self);
+    int size = strlen(sstr);
+    if (idx <= 0 || idx > size) {
+        graceRaise(BoundsError(), "Strings index %i >= size %i", idx, size);
+    }
     idx--;
     int i = 0;
     char *ptr = ((struct StringObject*)(self))->flat;
@@ -2295,9 +2820,50 @@ Object String_at(Object self, int nparts, int *argcv,
     return alloc_String(buf);
 }
 Object String_first(Object self, int nparts, int *argcv,
-                    Object *args, int flags) {
+        Object *args, int flags) {
     gc_pause();
     Object newargs[] = { alloc_Float64(1) };
+    Object result = String_at(self, nparts, argcv, newargs, flags);
+    gc_unpause();
+    return result;
+}
+Object String_second(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    gc_pause();
+    Object newargs[] = { alloc_Float64(2) };
+    Object result = String_at(self, nparts, argcv, newargs, flags);
+    gc_unpause();
+    return result;
+}
+Object String_third(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    gc_pause();
+    Object newargs[] = { alloc_Float64(3) };
+    Object result = String_at(self, nparts, argcv, newargs, flags);
+    gc_unpause();
+    return result;
+}
+Object String_fourth(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    gc_pause();
+    Object newargs[] = { alloc_Float64(4) };
+    Object result = String_at(self, nparts, argcv, newargs, flags);
+    gc_unpause();
+    return result;
+}
+Object String_fifth(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    gc_pause();
+    Object newargs[] = { alloc_Float64(5) };
+    Object result = String_at(self, nparts, argcv, newargs, flags);
+    gc_unpause();
+    return result;
+}
+Object String_last(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    gc_pause();
+    struct StringObject* sself = (struct StringObject*)self;
+    Object newargs[] = { alloc_Float64(sself->size) };
     Object result = String_at(self, nparts, argcv, newargs, flags);
     gc_unpause();
     return result;
@@ -2338,6 +2904,49 @@ Object String_substringFrom_to(Object self,
     st--;
     en--;
     int mysize = sself->size;
+    if (st > mysize) {
+        graceRaise(BoundsError(), "Strings index %i >= size %i", st, mysize);
+    }
+    if (en > mysize)
+        en = mysize;
+    int cl = en - st;
+    if (cl < 0)
+        return alloc_String("");
+    char buf[cl * 4 + 1];
+    char *bufp = buf;
+    buf[0] = 0;
+    int i;
+    char *pos = sself->flat;
+    for (i=0; i<st; i++) {
+        pos += getutf8charlen(pos);
+    }
+    char cp[5];
+    for (i=0; i<=cl; i++) {
+        getutf8char(pos, cp);
+        strcpy(bufp, cp);
+        while (bufp[0] != 0) {
+            pos++;
+            bufp++;
+        }
+    }
+    return alloc_String(buf);
+}
+Object String_substringFrom_size(Object self,
+        int nparts, int *argcv, Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    int st = integerfromAny(args[0]);
+    int sz = integerfromAny(args[1]);
+    if (st <= 0) {
+        graceRaise(BoundsError(), "Strings index starts at 1");
+    }
+    if (sz == 0) {
+        return alloc_String("");
+    }
+    int en = st + sz - 1;
+    if (st < 1) st = 1;
+    st--;
+    en--;
+    int mysize = sself->size;
     if (en > mysize)
         en = mysize;
     int cl = en - st;
@@ -2363,7 +2972,7 @@ Object String_substringFrom_to(Object self,
     return alloc_String(buf);
 }
 Object String_do(Object self, int nparts, int *argcv,
-                 Object *args, int flags) {
+        Object *args, int flags) {
     if (nparts != 1 || argcv[0] != 1)
         graceRaise(RequestError(), "string.do requires exactly one argument");
     Object block = args[0];
@@ -2378,6 +2987,73 @@ Object String_do(Object self, int nparts, int *argcv,
     }
     return done;
 }
+Object String_keysAndValuesDo(Object self, int nparts, int *argcv,
+         Object *args, int flags) {
+    Object iter = callmethod(self, "iterator", 0, NULL, NULL);
+    Object block = args[0];
+    Object nextArgs[2];
+    gc_frame_newslot(iter);
+    int slot = gc_frame_newslot(NULL);     // Stack slot for argument object
+    int index = 0;
+    int partcv[] = {2};
+    while (istrue(callmethod(iter, "hasNext", 0, NULL, NULL))) {
+        Object next = callmethod(iter, "next", 0, NULL, NULL);
+        nextArgs[0] = alloc_Float64(index+1);
+        index = index + 1;
+        nextArgs[1] = next;
+        gc_frame_setslot(slot, next);
+        callmethod(block, "apply(1)", 1, partcv, nextArgs);
+    }
+    return done;
+}
+Object String_filter(Object self, int nparts, int *argcv,
+         Object *args, int flags) {
+    Object iter = callmethod(self, "iterator", 0, NULL, NULL);
+    const char *sstr = grcstring(self);
+    Object block = args[0];
+    char accum[strlen(sstr)];
+    accum[0] = '\0';
+    gc_frame_newslot(iter);
+    int slot = gc_frame_newslot(NULL);     // Stack slot for argument object
+    int partcv[] = {1};
+    while (istrue(callmethod(iter, "hasNext", 0, NULL, NULL))) {
+        Object next = callmethod(iter, "next", 0, NULL, NULL);
+        gc_frame_setslot(slot, next);
+        if (istrue(callmethod(block, "apply(1)", 1, partcv, &next))) {
+            strcat(accum, grcstring(next));
+        }
+    }
+    return alloc_String(accum);
+}
+Object String_fold_startingWith(Object self, int nparts, int *argcv,
+         Object *args, int flags) {
+    Object iter = callmethod(self, "iterator", 0, NULL, NULL);
+    Object block = args[0];
+    Object accum = args[1];
+    Object nextArgs[2];
+    gc_frame_newslot(iter);
+    int slot = gc_frame_newslot(NULL);     // Stack slot for argument object
+    int partcv[] = {2};
+    while (istrue(callmethod(iter, "hasNext", 0, NULL, NULL))) {
+        Object next = callmethod(iter, "next", 0, NULL, NULL);
+        nextArgs[0] = accum;
+        nextArgs[1] = next;
+        gc_frame_setslot(slot, next);
+        accum = callmethod(block, "apply(1)", 1, partcv, nextArgs);
+    }
+    return alloc_String(grcstring(accum));
+}
+Object String_map(Object self, int nparts, int *argcv,
+         Object *args, int flags) {
+    Object functionBlock = args[0];
+    int partcv[] = {1, 1};
+    Object requestArgs[2];
+    requestArgs[0] = self;
+    requestArgs[1] = functionBlock;
+    Object collections = callmethod(_prelude, "collections", 0, NULL, NULL);
+    return callmethodself(collections, "lazySequenceOver(1)mappedBy(1)", 2,
+                partcv, requestArgs);
+}
 Object String_startsWith(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     const char *sstr = grcstring(self);
@@ -2386,8 +3062,150 @@ Object String_startsWith(Object self, int nparts, int *argcv,
         return alloc_Boolean(1);
     return alloc_Boolean(0);
 }
+Object String_startsWithLetter(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    char ch = sstr[0];
+    if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+        ((unsigned char)ch >= 0xC0)) {
+        return alloc_Boolean(1);
+    }
+    return alloc_Boolean(0);
+}
+Object String_startsWithDigit(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    char digits[] = "1234567890";
+    int result = strcspn (sstr,digits);
+    if (result == 0)
+        return alloc_Boolean(1);
+    return alloc_Boolean(0);
+}
+Object String_startsWithSpace(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    int result = strcspn (sstr," ");
+    if (result == 0)
+        return alloc_Boolean(1);
+    return alloc_Boolean(0);
+}
+Object String_timesNumber(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    int n = integerfromAny(args[0]);
+    if (n == 0) {
+        return alloc_String("");
+    }
+    const char *sstr = grcstring(self);
+    int reqLength = n * strlen(sstr);
+    char result[reqLength];
+    result[0] ='\0';
+    for (int i = 0; i < n; i++) {
+        strcat(result, sstr);
+    }
+    return alloc_String(result);
+}
+void toLower(char *stringTo, const char *stringFrom, int index, int len) {
+    if (len == 1) {
+        stringTo[index] = tolower(stringFrom[index]);
+    } else {
+        char utf8[5];
+        getutf8char(stringFrom + index, utf8);
+        // Following strategy is not robust. To see values for the
+        // UTF-8 chars, use:
+            // printf("buf = %s\n", utf8);
+            // printf("buf[0] = %d\n", utf8[0]);
+            // printf("buf[1] = %d\n", utf8[1]);
+            // ...
+        int change;
+        if (utf8[0] == -61 && utf8[1] <= -100 && utf8[1] >= -128) {
+            change = 32;
+        } else if (utf8[1] % 2 == 0) {
+            if (utf8[0] == -59 && utf8[1] == -72) {
+                stringTo[index] = -61;
+                stringTo[index + 1] = -65;
+                return;
+            } else {
+                change = 1;
+            }
+        }
+        stringTo[index] = stringFrom[index];
+        stringTo[index + 1] = stringFrom[index + 1] + change;
+    }
+}
+Object String_asLower(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    char result[strlen(sstr)];
+    result[0] ='\0';
+    strcpy(result, sstr);
+    int i = 0;
+    int len;
+    while (i < strlen(result)) {
+        len = getutf8charlen(sstr + i);
+        toLower(result, sstr, i, len);
+        i += len;
+    }
+    return alloc_String(result);
+}
+void toUpper(char *stringTo, const char *stringFrom, int index, int len) {
+    if (len == 1) {
+        stringTo[index] = toupper(stringFrom[index]);
+    } else {
+        char utf8[5];
+        getutf8char(stringFrom + index, utf8);
+        // Following strategy is not robust. To see values for the
+        // UTF-8 chars, use:
+            // printf("buf = %s\n", utf8);
+            // printf("buf[0] = %d\n", utf8[0]);
+            // printf("buf[1] = %d\n", utf8[1]);
+            // ...
+        int change;
+        if (utf8[0] == -61 && utf8[1] > -100) {
+            if (utf8[1] == -65) {
+                stringTo[index] = -59;
+                stringTo[index + 1] = -72;
+                return;
+            } else {
+                change = -32;
+            }
+        } else if (utf8[1] % 2 != 0) {
+            change = -1;
+        }
+        stringTo[index] = stringFrom[index];
+        stringTo[index + 1] = stringFrom[index + 1] + change;
+    }
+}
+Object String_asUpper(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    char result[strlen(sstr)];
+    result[0] ='\0';
+    strcpy(result, sstr);
+    int i = 0;
+    int len;
+    while (i < strlen(result)) {
+        len = getutf8charlen(sstr + i);
+        toUpper(result, sstr, i, len);
+        i += len;
+    }
+    return alloc_String(result);
+}
+Object String_capitalized(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    char result[strlen(sstr)];
+    result[0] ='\0';
+    strcpy(result, sstr);
+    result[0] = toupper(result[0]);
+    for (int i = 1; i < strlen(result); i++) {
+        if (isalpha(result[i]) && result[i-1] == ' ') {
+            result[i] = toupper(result[i]);
+        }
+    }
+    return alloc_String(result);
+}
 Object String_endsWith(Object self, int nparts, int *argcv,
-                         Object *args, int flags) {
+        Object *args, int flags) {
     const char *sstr = grcstring(self);
     const char *needle = grcstring(args[0]);
     size_t lenSelf = strlen(sstr);
@@ -2449,6 +3267,14 @@ Object alloc_String(const char *data) {
         add_Method(String, "sizeIfUnknown(1)", &String_size);
         add_Method(String, "at(1)", &String_at);
         add_Method(String, "contains(1)", &String_Contains);
+        add_Method(String, "indexOf(1)", &String_indexOf);
+        add_Method(String, "indexOf(1)ifAbsent(1)", &String_indexOf_ifAbsent);
+        add_Method(String, "indexOf(1)startingAt(1)", &String_indexOf_startingAt);
+        add_Method(String, "indexOf(1)startingAt(1)ifAbsent(1)",
+            &String_indexOf_startingAt_ifAbsent);
+        add_Method(String, "lastIndexOf(1)startingAt(1)ifAbsent(1)",
+            &String_lastIndexOf_startingAt_ifAbsent);
+        add_Method(String, "lastIndexOf(1)ifAbsent(1)", &String_lastIndexOf_ifAbsent);
         add_Method(String, "==(1)", &String_Equals);
         add_Method(String, ">(1)", &String_Greater);
         add_Method(String, "≥(1)", &String_GreaterOrEqual);
@@ -2457,18 +3283,26 @@ Object alloc_String(const char *data) {
         add_Method(String, "≠(1)", &Object_NotEquals);
         add_Method(String, "compare(1)", &String_Compare);
         add_Method(String, "first", &String_first);
+        add_Method(String, "second", &String_second);
+        add_Method(String, "third", &String_third);
+        add_Method(String, "fourth", &String_fourth);
+        add_Method(String, "fifth", &String_fifth);
+        add_Method(String, "last", &String_last);
+        add_Method(String, "do(1)", &String_do);
         add_Method(String, "iterator", &String_iter);
         add_Method(String, "quoted", &String_quoted);
         add_Method(String, "_escape", &String__escape);
         add_Method(String, "length", &String_length);
         add_Method(String, "isMe(1)", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(String, "isEmpty", &String_isEmpty);
-        add_Method(String, "do(1)", &String_do);
-        add_Method(String, "iterator", &String_iter);
         add_Method(String, "ord", &String_ord);
         add_Method(String, "encode", &String_encode);
         add_Method(String, "substringFrom(1)to(1)", &String_substringFrom_to);
+        add_Method(String, "substringFrom(1)size(1)", &String_substringFrom_size);
         add_Method(String, "startsWith(1)", &String_startsWith);
+        add_Method(String, "startsWithDigit", &String_startsWithDigit);
+        add_Method(String, "startsWithLetter", &String_startsWithLetter);
+        add_Method(String, "startsWithSpace", &String_startsWithSpace);
         add_Method(String, "endsWith(1)", &String_endsWith);
         add_Method(String, "replace(1)with(1)", &String_replace_with);
         add_Method(String, "hash", &String_hashcode);
@@ -2477,6 +3311,15 @@ Object alloc_String(const char *data) {
         add_Method(String, "match(1)", &literal_match);
         add_Method(String, "|(1)", &literal_or);
         add_Method(String, "&(1)", &literal_and);
+        add_Method(String, "*(1)", &String_timesNumber);
+        add_Method(String, "reverseTimesNumber(1)", &String_timesNumber);
+        add_Method(String, "asUpper", &String_asUpper);
+        add_Method(String, "asLower", &String_asLower);
+        add_Method(String, "capitalized", &String_capitalized);
+        add_Method(String, "map(1)", &String_map);
+        add_Method(String, "filter(1)", &String_filter);
+        add_Method(String, "keysAndValuesDo(1)", &String_keysAndValuesDo);
+        add_Method(String, "fold(1)startingWith(1)", &String_fold_startingWith);
     }
     if (blen == 1) {
         if (String_Interned_1[data[0]] != NULL)
@@ -2714,10 +3557,12 @@ Object Float64_Add(Object self, int nparts, int *argcv,
     assertClass(other, Number);
     double a = *((double*)self->data);
     double b;
-    if (other->class == Number)
+    if (other->class == Number) {
         b = *(double*)other->data;
-    else
-        b = integerfromAny(other);
+    } else {
+        int partcv[] = {1};
+        return callmethod(other, "reversePlusNumber(1)", 1, partcv, &self);
+    }
     return alloc_Float64(a+b);
 }
 Object Float64_Sub(Object self, int nparts, int *argcv,
@@ -2728,20 +3573,23 @@ Object Float64_Sub(Object self, int nparts, int *argcv,
     double b;
     if (other->class == Number)
         b = *(double*)other->data;
-    else
-        b = integerfromAny(other);
+    else {
+        int partcv[] = {1};
+        return callmethod(other, "reverseMinusNumber(1)", 1, partcv, &self);
+    }
     return alloc_Float64(a-b);
 }
 Object Float64_Mul(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
-    assertClass(other, Number);
     double a = *(double*)self->data;
     double b;
-    if (other->class == Number)
+    if (other->class == Number) {
         b = *(double*)other->data;
-    else
-        b = integerfromAny(other);
+    } else {
+        int partcv[] = {1};
+        return callmethod(other, "reverseTimesNumber(1)", 1, partcv, &self);
+    }
     return alloc_Float64(a*b);
 }
 Object Float64_Div(Object self, int nparts, int *argcv,
@@ -2750,45 +3598,59 @@ Object Float64_Div(Object self, int nparts, int *argcv,
     assertClass(other, Number);
     double a = *(double*)self->data;
     double b;
-    if (other->class == Number)
+    if (other->class == Number) {
         b = *(double*)other->data;
-    else
-        b = integerfromAny(other);
+    } else {
+        int partcv[] = {1};
+        return callmethod(other, "reverseDivideNumber(1)", 1, partcv, &self);
+    }
     return alloc_Float64(a/b);
 }
 Object Float64_Exp(Object self, int nparts, int *argcv,
                    Object *args, int flags) {
     Object other = args[0];
-    assertClass(other, Number);
-    double a = *(double*)self->data;
-    double b = *(double*)other->data;
+    double a = *(double*)self->data;double b;
+    if (other->class == Number) {
+        b = *(double*)other->data;
+    } else {
+        int partcv[] = {1};
+        return callmethod(other, "reversePowerNumber(1)", 1, partcv, &self);
+    }
     return alloc_Float64(pow(a,b));
 }
 Object Float64_Mod(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
-    assertClass(other, Number);
-    double a = *(double*)self->data;
-    double b = *(double*)other->data;
-    double quo = a / b;
-    double q = trunc(quo);
-    if ((a < 0) && (q != quo))
-        q = (b < 0) ? q+1 : q-1;
-    double r = a - (b * q);
-    return alloc_Float64(r);
+    if (other->class == Number) {
+        double a = *(double*)self->data;
+        double b = *(double*)other->data;
+        double quo = a / b;
+        double q = trunc(quo);
+        if ((a < 0) && (q != quo))
+            q = (b < 0) ? q+1 : q-1;
+        double r = a - (b * q);
+        return alloc_Float64(r);
+    } else {
+        int partcv[] = {1};
+        return callmethod(other, "reverseRemainderNumber(1)", 1, partcv, &self);
+    }
 }
 Object Float64_IntDiv(Object self, int nparts, int *argcv,
                    Object *args, int flags) {
     Object other = args[0];
-    assertClass(other, Number);
-    double a = *(double*)self->data;
-    double b = *(double*)other->data;
-    double quo = a / b;
-    double q = trunc(quo);
-    if (a >= 0) return alloc_Float64(q);
-    if (q == quo) return alloc_Float64(q);
-    if (b < 0) return alloc_Float64(q + 1);
-    return alloc_Float64(q - 1);
+    if (other->class == Number) {
+        double a = *(double*)self->data;
+        double b = *(double*)other->data;
+        double quo = a / b;
+        double q = trunc(quo);
+        if (a >= 0) return alloc_Float64(q);
+        if (q == quo) return alloc_Float64(q);
+        if (b < 0) return alloc_Float64(q + 1);
+        return alloc_Float64(q - 1);
+    } else {
+        int partcv[] = {1};
+        return callmethod(other, "reverseQuotientNumber(1)", 1, partcv, &self);
+    }
 }
 Object Float64_Equals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -4693,7 +5555,7 @@ Object Block_applyIndirectly(Object self, int nparts, int *argcv,
         sprintf(methName, "_apply(%i)", sz);
         nArgLists = 1;
     }
-    return callmethod(self, methName, 0, partcv, rargs);
+    return callmethod(self, methName, 1, partcv, rargs);
 }
 Object Block_match(Object self, int nparts, int *argcv, Object *args, int flags) {
     struct BlockObject *bo = (struct BlockObject*)self;
