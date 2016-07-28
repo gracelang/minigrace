@@ -928,6 +928,10 @@ PrimitiveGraceList.prototype = {
             this._value = [ ];
             return this;
         },
+        "clear": function(argcv) {
+            this._value = [ ];
+            return this;
+        },
         "push(1)": function(argcv, val) {
             this._value.push(val);
             return this;
@@ -1206,6 +1210,10 @@ Lineup.prototype = {
         "isEmpty": function list_isEmpty (argcv) {
             return (this._value.length === 0) ? GraceTrue : GraceFalse;
         },
+        "clear": function list_clear (argcv) {
+            this._value = [ ];
+            return this;
+        },
         "size": function list_size (argcv) {
             //dbg("called size: " + this._value.length);
             return new GraceNum(this._value.length);
@@ -1372,6 +1380,10 @@ GracePrimitiveArray.prototype = {
         },
         "sizeIfUnknown(1)": function(argcv) {
             return new GraceNum(this._value.length);
+        },
+        "clear": function(argcv) {
+            this._value = [ ];
+            return this;
         },
         "at(1)": function(argcv, where) {
             var idx = where._value;
