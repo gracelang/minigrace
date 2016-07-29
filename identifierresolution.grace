@@ -93,7 +93,7 @@ class newScopeIn(parent') kind(variety') {
             more := " as a {oldKind}"
                 ++ " on line {elementLines.get(ndName)}"
         }
-        errormessages.syntaxError("'{ndName}' cannot be"
+        errormessages.syntaxError("'{nd.canonicalName}' cannot be"
             ++ " redeclared because it is already declared"
             ++ more ++ " as well as here at line {nd.line}.")
             atRange(nd.line, nd.linePos, nd.linePos + ndName.size - 1)
@@ -337,7 +337,7 @@ class newScopeIn(parent') kind(variety') {
                 atRange(ident.line, ident.linePos, ident.linePos + name.size - 1)
                 withSuggestions(suggs)
         } else {
-            errormessages.syntaxError("'{name}' cannot be "
+            errormessages.syntaxError("'{ident.canonicalName}' cannot be "
                 ++ "redeclared because it is already declared in "
                 ++ "{description} scope{more}. Use a different name.")
                 atRange(ident.line, ident.linePos,

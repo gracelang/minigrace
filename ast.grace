@@ -881,6 +881,7 @@ def methodNode = object {
                 cachedIdentifier.line := signature.first.line
                 cachedIdentifier.linePos := signature.first.linePos
                 cachedIdentifier.isBindingOccurrence := isBindingOccurence
+                cachedIdentifier.canonicalName := canonicalName
             }
             cachedIdentifier
         }
@@ -1719,7 +1720,7 @@ def identifierNode = object {
         var isDeclaredByParent is public := false
 
         method nameString { value }
-        method canonicalName { value }
+        var canonicalName is public := value
         method quoted { value.quoted }
         method isIdentifier { true }
 
