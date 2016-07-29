@@ -44,7 +44,7 @@ VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
 WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html js/unicodedata.js js/importStandardPrelude.js $(ICONS:%=js/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
 WEBFILES_SIMPLE = $(filter-out js-simple/sample,$(sort js-simple/index.html js-simple/global.css js-simple/tests js-simple/minigrace.js js-simple/tabs-simple.js js-simple/gracelib.js js-simple/dom.js js-simple/gtk.js js-simple/debugger.js js-simple/timer.js js-simple/ace  js-simple/debugger.html  js-simple/unicodedata.js js-simple/importStandardPrelude.js $(ICONS:%=js-simple/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
-
+WEB_GRAPHICS_MODULES = js/sample/graphics/turtle.grace js/sample/graphics/logo.grace
 # The next 2 rules are here for their side effects: updating
 # buildinfo.grace if necessary, and creating the l1 directory
 CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
@@ -182,11 +182,12 @@ gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.g
 
 ide: ideDeploy
 
-ideBuild: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
-	./includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
+ideBuild: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(WEB_GRAPHICS_MODULES:%.grace=%.js)
+	./includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(WEB_GRAPHICS_MODULES:js/sample/graphics/%.grace=js/%.js)
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
 	ln -f $(filter-out js/samples.js js/tabs.js,$(filter %.js,$(WEBFILES))) grace-web-editor/js
 	ln -f $(GRAPHIX:%.grace=js/%.js) grace-web-editor/js
+	ln -f $(WEB_GRAPHICS_MODULES:%.grace=%.js) grace-web-editor/js
 
 ideDeploy: ideBuild
 	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
@@ -237,6 +238,11 @@ js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sa
 	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
 #	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
+js/sample/graphics: $(WEB_GRAPHICS_MODULES:%.grace=%.js)
+
+js/sample/graphics/%.js: js/sample/graphics/%.grace minigrace
+	cd js && GRACE_MODULE_PATH=. ../minigrace --make --target js ../$<
+
 js/StandardPrelude%js js/StandardPrelude%gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
 	GRACE_MODULE_PATH=modules:js ./minigrace --target js --dir js --make $(VERBOSITY) $<
 
@@ -282,7 +288,7 @@ l1/mirrors.gso: $(KG)/mirrors.gso
 l1/unicode.gso: $(KG)/unicode.gso
 	cd l1 && ln -f ../$(KG)/unicode.gso .
 
-l1/unixFilePath.gct: modules/unixFilePath.grace $(KG)/minigrace
+l1/unixFilePath.gct: modules/unixFilePath.grace $(KG)/minigrace l1/StandardPrelude.gct
 	$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --dir l1 $<
 
 $(C_MODULES_GSO:%.gso=%.gct): modules/%.gct: stubs/%.gct
@@ -343,7 +349,7 @@ module-test-js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.js) $(TYPE_DIALECTS:%=mo
 modules/curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC curl.c -lcurl
 
-modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: modules/mirrors.gso modules/math.gso
+modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: modules/mirrors.gso modules/math.gso modules/dialect.gso
 
 modules/minitest.gct modules/minitest.gso modules/minitest.gcn: modules/gUnit.gso
 
@@ -376,6 +382,7 @@ oldWeb: $(WEBFILES) js/sample
 	rsync -a -l -z js/samples.js $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z js/sample $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z sample $(WEB_SERVER):$(WEB_DIRECTORY)
+	rsync -a -l -z js/sample/graphics/ $(WEB_SERVER):$(WEB_DIRECTORY)
 
 pull-web-editor:
 	@if [ -e grace-web-editor ] ; \
@@ -518,16 +525,3 @@ webIde:
 
 %.o: %.c
 	gcc -g -std=c99 -c -o $@ $<
-
-## GENERATED WITH: for i in stringMap errormessages buildinfo util ast; do ./tools/make-depend $i; done | sort -u | grep -v :$ | sed 's/gct/gso/g'
-# manually removed io.gso and sys.gso, which are built in!
-ast.gso: util.gso
-errormessages.gso: util.gso
-util.gso: buildinfo.gso stringMap.gso
-
-l1/ast.gso: l1/util.gso
-l1/errormessages.gso: l1/util.gso
-l1/util.gso: l1/stringMap.gso
-
-modules/%.gso: %.c gracelib.h
-	gcc -g -I. -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<

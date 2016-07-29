@@ -161,16 +161,19 @@ method initialise {
     //        dom.window.tabswitch
     //    }
     //}
-    document.getElementById("tab_canvas").click
+    def tab = document.getElementById("tab_canvas");
+    if (dom.noObject != tab) then {
+        tab.click
+    }
     initialised := true
     trig := dom.window.Math
-    canvas := document.getElementById("standard-canvas")
+    canvas := document.getElementById("graphics")
     ctx := canvas.getContext("2d")
     ctx.lineWidth := 1
     ctx.fillStyle := "white"
-    ctx.fillRect(0, 0, 250, 250)
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
     ctx.strokeStyle := "black"
-    ctx.rect(0, 0, 250, 250)
+    ctx.rect(0, 0, canvas.width, canvas.height)
     ctx.stroke
 }
 method start {
@@ -179,15 +182,15 @@ method start {
     // each separated in time by 10ms. dom.for()waiting()do
     // uses setTimeout internally so it runs asynchronously.
     backingCanvas := dom.document.createElement("canvas")
-    backingCanvas.height := 250
-    backingCanvas.width := 500
+    backingCanvas.height := canvas.height
+    backingCanvas.width := canvas.width
     ctx := backingCanvas.getContext("2d")
     def mctx = canvas.getContext("2d")
     dom.for(steps) waiting(delay)do {step->
         mctx.fillStyle := "white"
-        mctx.fillRect(0, 0, 500, 250)
-        x := 150
-        y := 225
+        mctx.fillRect(0, 0, canvas.width, canvas.height)
+        x := 50
+        y := canvas.height - 50
         turtleAngle := 0
         step.apply
         mctx.drawImage(backingCanvas, 0, 0)
