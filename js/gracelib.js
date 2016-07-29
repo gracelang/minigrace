@@ -1668,7 +1668,7 @@ GraceBlock.prototype = {
         "apply(1)": function(argcv, a1) {
             checkBlockApply.call(this, 1, a1);
             return this.real.call(this.receiver, a1); },
-        "apply(2)": function(argcv, a1, a2) { 
+        "apply(2)": function(argcv, a1, a2) {
             checkBlockApply.call(this, 2, a1, a2);
             return this.real.call(this.receiver, a1, a2); },
         "apply(3)": function(argcv, a1, a2, a3) {
@@ -2984,7 +2984,7 @@ function findMethod (obj, methname) {
 
 function GraceCallStackToString() {
     var errorLine = this.lineNumber;
-    var errorString = this.className + "." + this.methname;
+    var errorString = this.className + "." + canonicalMethodName(this.methname);
     if (typeof(errorLine) === "undefined" || errorLine === 0) {
         errorString += " in ";
     } else {
@@ -3112,7 +3112,26 @@ function callmethodChecked(obj, methname, argcv) {
     }
     return ret;
 }
-
+function canonicalMethodName(name) {
+    var parts = name.split("(");
+    var output = parts[0];
+    for(var i = 1; i < parts.length; i++){
+        var part_split = parts[i].split(")");
+        if(isNaN(Number(part_split[0]))){
+            output += part_split[0];
+        } else {
+            output += "(";
+            for(var j = 0; j < Number(part_split[0]) - 1; j++){
+                output += "_,";
+            }
+            output += "_)";
+            if(part_split.length > 1) {
+                output += part_split[1];
+            }
+        }
+    }
+    return output;
+}
 function raiseNoSuchMethod(name, target) {
     var targetDesc = "";
     if (target.definitionLine && target.definitionModule !== "unknown") {
@@ -3122,13 +3141,13 @@ function raiseNoSuchMethod(name, target) {
         targetDesc = " in " + target.definitionModule + " module";
     }
     throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-            new GraceString("no method '" + name + "' on " +
+            new GraceString("no method '" + canonicalMethodName(name) + "' on " +
                 describe(target) + "."));
 }
 
 function raiseConfidentialMethod(name, target) {
     throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-            new GraceString("requested confidential method '" + name +
+            new GraceString("requested confidential method '" + canonicalMethodName(name) +
                 "' of " + describe(target) + " from outside."));
 }
 
