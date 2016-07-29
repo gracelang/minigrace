@@ -1111,8 +1111,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 if (as.forebears.forebears.isEmpty.not) then {
                     // omit this if I'm at the module-level
                     def factoryName = myParent.name
-                    if ((factoryName != "object") && (o.body.last.isObject)) then {
-                        o.body.last.name := factoryName ++ "." ++ o.body.last.name
+                    def tailNode = o.body.last
+                    if ((factoryName != "object") && (tailNode.isObject)) then {
+                        tailNode.name := factoryName ++ "." ++ tailNode.name
                     }
                 }
             }
