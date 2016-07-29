@@ -183,7 +183,7 @@ MiniGrace.prototype.run = function() {
         Grace_prelude.methods["while()do"].safe = this.breakLoops;
     this.trapErrors(function() {
         if(document.getElementById("debugtoggle").checked) {
-            superDepth = new graceModule(this.moduleName);
+            superDepth = new GraceModule(this.modname);
             GraceDebugger.cache.start();
             GraceDebugger.that = superDepth;
             GraceDebugger.run(theModuleFunc, GraceDebugger.that);
