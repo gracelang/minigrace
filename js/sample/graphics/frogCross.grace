@@ -51,13 +51,13 @@ class frog.atX(highwayCenterX:Number)   below(highwayBottom:Number)
     }
     
     method hopToward(point: Point) -> Done {
-        if (point.x < frogImage.x) then {
+        if {point.x < frogImage.x} then {
             frogImage.moveBy(-hopDistance, 0)
-            } elseif (point.x > (frogImage.x + frogImage.width)) then {
+            } elseif {point.x > (frogImage.x + frogImage.width)} then {
             frogImage.moveBy(hopDistance, 0)
-            } elseif (point.y < frogImage.y) then {
+            } elseif {point.y < frogImage.y} then {
             frogImage.moveBy(0, -hopDistance)
-            } elseif (point.y > (frogImage.y + frogImage.height)) then {
+            } elseif {point.y > (frogImage.y + frogImage.height)} then {
             frogImage.moveBy(0, hopDistance)
         } // Else clicked on the image.  Don't move.
     }
@@ -228,7 +228,7 @@ def froggerGame: GraphicApplication = object {
         // Move the frog when mouse is clicked.
         if (theFrog.isAlive) then {
             theFrog.hopToward(mousePoint)
-        } elseif (mousePoint.y > highwayBottom) then {
+        } elseif {mousePoint.y > highwayBottom} then {
             theFrog.reincarnate
         }
     }
