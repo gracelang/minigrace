@@ -18,10 +18,10 @@ whileLiteral.gso: whileLiteral.grace dialect.gso
 	GRACE_MODULE_PATH="$(GM)" ../../minigrace $(VERBOSITY) --noexec --dir . $<
 
 ../../modules/staticTypes.gso: ../../modules/staticTypes.grace ../../modules/dialect.gso
-	GRACE_MODULE_PATH="$(GM)" ../../minigrace $(VERBOSITY) --noexec --dir . $<
+	GRACE_MODULE_PATH="$(GM):." ../../minigrace $(VERBOSITY) --noexec --dir . $<
 
 ../../modules/requireTypes.gso: ../../modules/requireTypes.grace ../../modules/dialect.gso
-	GRACE_MODULE_PATH="$(GM)" ../../minigrace $(VERBOSITY) --noexec --dir . $<
+	GRACE_MODULE_PATH="$(GM):." ../../minigrace $(VERBOSITY) --noexec --dir . $<
 
 $(GM)%.gct $(GM)%.gso $(GM)%.gcn:
 	$(MAKE) -C ../../ VERBOSITY=$(VERBOSITY) modules/$(@F)
@@ -30,10 +30,10 @@ $(CM)%.gct $(CM)%.gso $(CM)%.gcn:
 	$(MAKE) -C ../../ VERBOSITY=$(VERBOSITY) $(@F)
 
 %.gct %.gso %.gcn: %.grace ../../minigrace
-	GRACE_MODULE_PATH="$(GM)" ../../minigrace $(VERBOSITY) --noexec --dir . $<
+	GRACE_MODULE_PATH="$(GM):." ../../minigrace $(VERBOSITY) --noexec --dir . $<
 
 %Example: %Example.grace %.gso ../../gracelib.o ../../minigrace
-	GRACE_MODULE_PATH="$(GM)" ../../minigrace $(VERBOSITY) --dir . $<
+	GRACE_MODULE_PATH="$(GM):." ../../minigrace $(VERBOSITY) --dir . $<
 
 clean:
 	rm -fR *.gso *.c *.gct *.gcn *.c *.gso.dSYM $(SAMPLES) $(DIALECTS)
