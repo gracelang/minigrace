@@ -182,7 +182,7 @@ gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.g
 
 ide: ideDeploy
 
-ideBuild: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
+ideBuild: js pull-brace grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	./includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
 	ln -f $(filter-out js/samples.js js/tabs.js,$(filter %.js,$(WEBFILES))) grace-web-editor/js
@@ -379,13 +379,18 @@ oldWeb: $(WEBFILES) js/sample
 
 pull-web-editor:
 	@if [ -e grace-web-editor ] ; \
-    then printf "grace-web-editor: " ; cd grace-web-editor; git pull ; \
-    else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi
+       then printf "grace-web-editor: " ; cd grace-web-editor; git pull ; \
+       else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi
 
 pull-objectdraw:
 	@if [ -e objectdraw ] ; \
-    then printf "objectdraw: " ; cd objectdraw; git pull ; \
-    else git clone https://github.com/gracelang/objectdraw/ ; fi
+       then printf "objectdraw: " ; cd objectdraw; git pull ; \
+       else git clone https://github.com/gracelang/objectdraw/ ; fi
+
+pull-brace: pull-web-editor
+	@if [ -e grace-web-editor/brace ] ; \
+       then printf "grace-web-editor/brace: " ; cd grace-web-editor/brace; git pull ; \
+       else git clone https://github.com/gracelang/brace/ grace-web-editor/brace ; fi
 
 sample-dialects: $(DIALECT_DEPENDENCIES)
 	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
