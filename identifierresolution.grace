@@ -68,7 +68,7 @@ class newScopeIn(parent') kind(variety') {
             elementLines.put(n, util.linenum)
             return
         }
-        errormessages.syntaxError("'{n}' cannot be" ++ 
+        errormessages.syntaxError("'{n}' cannot be" ++
             " redefined as {kind} because it is already declared as {oldKind}")
             atRange(util.line, util.linePos, util.linePos + n.size - 1)
     }
@@ -93,7 +93,7 @@ class newScopeIn(parent') kind(variety') {
             more := " as a {oldKind}"
                 ++ " on line {elementLines.get(ndName)}"
         }
-        errormessages.syntaxError("'{ndName}' cannot be"
+        errormessages.syntaxError("'{nd.canonicalName}' cannot be"
             ++ " redeclared because it is already declared"
             ++ more ++ " as well as here at line {nd.line}.")
             atRange(nd.line, nd.linePos, nd.linePos + ndName.size - 1)
@@ -239,7 +239,7 @@ class newScopeIn(parent') kind(variety') {
                 mem := ast.memberNode.new("outer", mem) scope(self)
             }
         }
-        errormessages.syntaxError "no method {name}"
+        errormessages.syntaxError "no method {aNode.canonicalName}"
                 atRange(aNode.line, aNode.linePos, aNode.linePos + name.size - 1)
     }
     method scopeReferencedBy(nd:ast.AstNode) {
@@ -258,7 +258,7 @@ class newScopeIn(parent') kind(variety') {
                     return s.getScope(sought)
                 }
             }
-            errormessages.syntaxError "no method {sought}"
+            errormessages.syntaxError "no method {nd.canonicalName}"
                 atRange(nd.line, nd.linePos, nd.linePos + sought.size - 1)
         } elseif {nd.kind == "op"} then {
             def receiverScope = self.scopeReferencedBy(nd.left)
@@ -331,13 +331,13 @@ class newScopeIn(parent') kind(variety') {
             if (priorKind == k.vardec) then {
                 more := more ++ ". To assign to the existing variable, remove 'var'"
             }
-            errormessages.syntaxError("'{name}' cannot be "
+            errormessages.syntaxError("'{ident.canonicalName}' cannot be "
                 ++ "redeclared because it is already declared in "
                 ++ "{description} scope{more}.")
                 atRange(ident.line, ident.linePos, ident.linePos + name.size - 1)
                 withSuggestions(suggs)
         } else {
-            errormessages.syntaxError("'{name}' cannot be "
+            errormessages.syntaxError("'{ident.canonicalName}' cannot be "
                 ++ "redeclared because it is already declared in "
                 ++ "{description} scope{more}. Use a different name.")
                 atRange(ident.line, ident.linePos,
@@ -696,12 +696,12 @@ method reportUndeclaredIdentifier(node) {
             suggestion.append " do \{ aVarName -> \}" onLine(node.line)
             suggestions.push(suggestion)
         }
-        errormessages.syntaxError "unknown method '{nm}'. This may be a spelling mistake or an attempt to access a method in another scope.{extra}"
+        errormessages.syntaxError "unknown method '{node.canonicalName}'. This may be a spelling mistake or an attempt to access a method in another scope.{extra}"
             atRange(node.line, node.linePos, node.linePos +
                 highlightLength - 1)
             withSuggestions(suggestions)
     }
-    errormessages.syntaxError("unknown variable or method '{nm}'. This may be a spelling mistake or an attempt to access a variable in another scope.")atRange(
+    errormessages.syntaxError("unknown variable or method '{node.canonicalName}'. This may be a spelling mistake or an attempt to access a variable in another scope.")atRange(
         node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
 }
 method reportAssignmentTo(node) declaredInScope(scp) {
@@ -1461,6 +1461,3 @@ method resolve(moduleObject) {
     }
     resolveIdentifiers(patternMatchModule)
 }
-
-
-
