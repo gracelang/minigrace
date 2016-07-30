@@ -3,8 +3,7 @@
 # Takes the name of a file and dumps an 'rt' version of it to stdout.
 
 N=`grep -n ^import "$1" | tail -n 1 | cut -f1 -d:`
-L1='import "modules/requireTypes" as rt'
-L2='method checker(ast) { rt.checker(ast) }'
-sed  -e ${N}a"\\
-$L1" -e ${N}a"\\
-$L2" $1
+head -n $N $1
+echo 'import "modules/requireTypes" as rt'
+echo 'method checker(ast) { rt.checker(ast) }'
+tail -n +$(($N+1)) $1
