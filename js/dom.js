@@ -177,7 +177,7 @@ function gracecode_dom() {
             minigrace.trapErrors(function() {
                 if (Grace_isTrue(callmethod(iter, "hasNext", [0]))) {
                     var val = callmethod(iter, "next", [0]);
-                    callmethod(block, "apply", [1], val);
+                    callmethod(block, "apply(1)", [1], val);
                     setTimeout(func, delay._value);
                 } else {
                     if (ret.data.then)
