@@ -147,7 +147,7 @@ function gracecode_dom() {
             // code runs inside the compiler, where there is no document.
             // Raising an exception at this point kills the compiler.
             // throw new GraceExceptionPacket(EnvironmentExceptionObject,
-            //           new GraceString("There is no 'document' in this context."));
+            //       new GraceString("There is no 'document' in this context."));
         }
         return wrapDOMObject(document);
     };
@@ -156,17 +156,6 @@ function gracecode_dom() {
 
     this.methods.window = function(argcv) {
         var win = wrapDOMObject(window);
-        win.methods["Math"] = function() {
-            return {"methods": {
-                "cos": wrapDOMFunction(Math, "cos"),
-                "sin": wrapDOMFunction(Math, "sin"),
-                "tan": wrapDOMFunction(Math, "tan"),
-                "asin": wrapDOMFunction(Math, "asin"),
-                "acos": wrapDOMFunction(Math, "acos"),
-                "atan": wrapDOMFunction(Math, "atan"),
-                "atan2": wrapDOMFunction(Math, "atan2")
-            }};
-        };
         return win;
     };
     this.methods.window.paramCounts = [0];

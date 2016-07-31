@@ -4,7 +4,6 @@ import "dom" as dom
 var document
 var canvas
 var ctx
-var trig
 
 class r(r')g(g')b(b') {
     def r is readable = r'
@@ -33,16 +32,16 @@ method drawTurtle(angle) {
     initialise
     def mctx = canvas.getContext("2d")
     def triangleSize = 30
-    def x' = x + trig.sin(angle / 180 * π) * triangleSize / 2
-    def y' = y - trig.cos(angle / 180 * π) * triangleSize / 2
+    def x' = x + (angle / 180 * π).sin * triangleSize / 2
+    def y' = y - (angle / 180 * π).cos * triangleSize / 2
     mctx.beginPath
     mctx.fillStyle := "rgb(0, 128, 0)"
     mctx.lineWidth := 3
     mctx.moveTo(x', y')
-    mctx.lineTo(x' - trig.cos((angle - 75) / 180 * π) * triangleSize,
-              y' - trig.sin((angle - 75) / 180 * π) * triangleSize)
-    mctx.lineTo(x' + trig.cos((angle + 75) / 180 * π) * triangleSize,
-              y' + trig.sin((angle + 75) / 180 * π) * triangleSize)
+    mctx.lineTo(x' - ((angle - 75) / 180 * π).cos * triangleSize,
+              y' - ((angle - 75) / 180 * π).sin * triangleSize)
+    mctx.lineTo(x' + ((angle + 75) / 180 * π).cos * triangleSize,
+              y' + ((angle + 75) / 180 * π).sin * triangleSize)
     mctx.lineTo(x', y')
     mctx.fill
     mctx.closePath
@@ -54,8 +53,8 @@ var drawingEnabled := true
 method move(dist, lineCol, lineWidth) {
     initialise
     def angle = turtleAngle
-    def y' = trig.cos(angle / 180 * π) * dist
-    def x' = trig.sin(angle / 180 * π) * dist
+    def y' = (angle / 180 * π).cos * dist
+    def x' = (angle / 180 * π).sin * dist
     def startX = x
     def startY = y
     def startAngle = turtleAngle
@@ -66,8 +65,8 @@ method move(dist, lineCol, lineWidth) {
     // One frame for each unit of distance
     for (1..dist.floor) do {i->
         steps.push {
-            def y'' = trig.cos(angle / 180 * π) * i
-            def x'' = trig.sin(angle / 180 * π) * i
+            def y'' = (angle / 180 * π).cos * i
+            def x'' = (angle / 180 * π).sin * i
             mctx.beginPath
             mctx.strokeStyle := "rgb({lineCol.r}, {lineCol.g}, {lineCol.b})"
             mctx.lineWidth := lineWidth
@@ -82,8 +81,8 @@ method move(dist, lineCol, lineWidth) {
         }
     }
     steps.push {
-        def y'' = trig.cos(angle / 180 * π) * dist
-        def x'' = trig.sin(angle / 180 * π) * dist
+        def y'' = (angle / 180 * π).cos * dist
+        def x'' = (angle / 180 * π).sin * dist
         ctx.beginPath
         ctx.strokeStyle := "rgb({lineCol.r}, {lineCol.g}, {lineCol.b})"
         ctx.lineWidth := lineWidth
@@ -163,7 +162,6 @@ method initialise {
     //}
     document.getElementById("tab_canvas").click
     initialised := true
-    trig := dom.window.Math
     canvas := document.getElementById("standard-canvas")
     ctx := canvas.getContext("2d")
     ctx.lineWidth := 1
