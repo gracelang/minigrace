@@ -1019,7 +1019,7 @@ method compiledialect(o) {
     out "var_prelude = do_import(\"{fn}\", {formatModname(o.value)});"
     out "this.outer = var_prelude;"
     if (xmodule.currentDialect.hasAtStart) then {
-        out "callmethod(var_prelude, \"atModuleStart\", [1], "
+        out "callmethod(var_prelude, \"atModuleStart(1)\", [1], "
         out "  new GraceString(\"{escapestring(modname)}\"));"
     }
     o.register := "undefined"
@@ -1280,7 +1280,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
         compilenode(o)
     }
     if (xmodule.currentDialect.hasAtEnd) then {
-        out("callmethod(var_prelude, \"atModuleEnd\", [1], this);")
+        out("callmethod(var_prelude, \"atModuleEnd(1)\", [1], this);")
     }
     if (debugMode) then {
         out "stackFrames.pop();"
