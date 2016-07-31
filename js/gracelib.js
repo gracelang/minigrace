@@ -2973,7 +2973,7 @@ function safeJsString (obj) {
 function findMethod (obj, methname) {
     var s = obj;
     var meth = s.methods[methname];
-    while ((typeof(meth) !== "function") && (s.superobj !== null)) {
+    while ((typeof(meth) !== "function") && (s.superobj)) {
         s = s.superobj;
         meth = s.methods[methname];
     }
