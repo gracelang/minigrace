@@ -928,6 +928,10 @@ PrimitiveGraceList.prototype = {
             this._value = [ ];
             return this;
         },
+        "clear": function(argcv) {
+            this._value = [ ];
+            return this;
+        },
         "push(1)": function(argcv, val) {
             this._value.push(val);
             return this;

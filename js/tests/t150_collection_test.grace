@@ -597,7 +597,6 @@ def listTest = object {
             evens := list [2, 4, 6, 8]
             empty := emptyList
         }
-
         method testListTypeCollection {
             def witness = list⟦Number⟧ [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (Collection⟦Number⟧)
@@ -1625,6 +1624,28 @@ def lazyEnumTest = object {
     }
 }
 
+def clearTest = object {
+    class forMethod(m) {
+        inherits gU.testCaseNamed(m)
+
+        method testLineupClear {
+            var toClear := [1, 2, 3]
+            assert (toClear.clear) shouldBe ([ ])
+        }
+        method testListClear {
+            var toClear := list [1, 2, 3]
+            assert (toClear.clear) shouldBe (emptyList)
+        }
+        method testSetClear {
+            var toClear := set [1, 2, 3]
+            assert (toClear.clear) shouldBe (emptySet)
+        }
+        method testDictionaryClear {
+            var toClear := dictionary [1::2, 2::4, 3::6]
+            assert (toClear.clear) shouldBe (emptyDictionary)
+        }
+    }
+}
 
 def bindingTests = gU.testSuite.fromTestMethodsIn(bindingTest)
 bindingTests.runAndPrintResults
@@ -1646,3 +1667,6 @@ dictTests.runAndPrintResults
 
 def lazyEnumTests = gU.testSuite.fromTestMethodsIn(lazyEnumTest)
 lazyEnumTests.runAndPrintResults
+
+def clearTests = gU.testSuite.fromTestMethodsIn(clearTest)
+clearTests.runAndPrintResults

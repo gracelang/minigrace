@@ -1207,7 +1207,7 @@ Object BuiltinList_removeLast(Object self, int nparts, int *argcv,
                 ++sself->size);
     return sself->items[sself->size];
 }
-Object BuiltinList_makeEmpty(Object self, int nparts, int *argcv,
+Object BuiltinList_clear(Object self, int nparts, int *argcv,
                         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     sself->size = 0;
@@ -1589,7 +1589,8 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "at(1)put(1)", &BuiltinList_indexAssign);
         add_Method(BuiltinList, "push(1)", &BuiltinList_push);
         add_Method(BuiltinList, "pop", &BuiltinList_pop);
-        add_Method(BuiltinList, "makeEmpty", &BuiltinList_makeEmpty);
+        add_Method(BuiltinList, "clear", &BuiltinList_clear);
+        add_Method(BuiltinList, "makeEmpty", &BuiltinList_clear);
         add_Method(BuiltinList, "add(1)", &BuiltinList_push);
         add_Method(BuiltinList, "addAll(1)", &BuiltinList_addAll);
         add_Method(BuiltinList, "addLast(1)", &BuiltinList_push);
@@ -1643,6 +1644,7 @@ Object alloc_Lineup() {
         add_Method(Lineup, "size", &BuiltinList_length);
         add_Method(Lineup, "sizeIfUnknown(1)", &BuiltinList_length);
         add_Method(Lineup, "isEmpty", &BuiltinList_isEmpty);
+        add_Method(Lineup, "clear", &BuiltinList_clear);
         add_Method(Lineup, "isMe(1)", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(Lineup, "iterator", &BuiltinList_iter);
         add_Method(Lineup, "==(1)", &BuiltinList_equals);
