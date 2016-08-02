@@ -28,7 +28,8 @@ method penUp {
 method penDown {
     turtle.penDown
 }
-
-method atModuleEnd(mod) {
-    turtle.start
+def thisDialect is public = object {
+    method atEnd(mod) {
+        turtle.start
+    }
 }

@@ -51,3 +51,7 @@ method checker(values) is public {
         v.accept(staticVisitor)
     }
 }
+
+def thisDialect is public = object {
+    method parseChecker (moduleObj) { checker (moduleObj) }
+}
