@@ -1,58 +1,130 @@
 Minigrace supports exceptions and exception handlers. Exceptions are
 raised by requesting the "raise" method on an exception object,
 providing a string message to accompany the exception. Exception
-handlers are defined using the catch-case construct, which parallels
-match-case:
-  catch {
-    // Some code that may raise an exception
-  } case { e : SomeError ->
-    ...
-  } case { e : AnotherError ->
-    ...
-  }
-Inside these case blocks, e points to the exception packet created from
+handlers are defined using the try-catch construct, which is similar to
+match-case, except that the first argument must be a block.
+
+    try {
+        // Some code that may raise an exception
+    } catch { e : SomeError ->
+        ...
+    } catch { e : AnotherError ->
+        ...
+    } finally {
+        ...
+    }
+
+Inside the catch blocks, e is the exception packet created from
 the raised exception. This object has a "message" field containing the
 message provided when the exception was raised, and an "exception" field
-pointing to the exception it was raised from.
+pointing to the exception kind it was raised from.
 
-The first case with a matching exception will be executed. Exceptions
-that are not handled by any case propagate up the stack to the
+The first catch-block with a matching exception will be executed. Exceptions
+that are not handled by any catch-block propagate up the stack to the
 next-defined exception handler, or to the top where they will be
 reported as errors and terminate the program.
 
-Most exceptions will be instances of Error, the kind of exception
-representing failures. Exceptions raised by failures in built-in methods
-are all instances of this exception. User code can define its own
-exceptions:
-  def MyError = Error.refine "MyError"
-The MyError object can then be raised and used in exception handlers
-exactly as built-in exceptions are:
-  catch { MyError.raise "Something happened!" }
-    case { e : MyError -> print "Caught my error: {e}" }
-Exception refinement creates a hierarchy of exceptions. In this example,
-a case handling Error would also handle MyError. Exceptions are
+The finally block will always execute before control leaves the
+try(_)catch(_)... construct, whether or not an exception is raised, and
+whether or not one of the catch blocks returns.  Finally clauses can return
+early, either by executing a `return`, or by raising an exception. In such
+a situation, any prior `return` or raised exception is silently dropped.
+
+## Kinds of Exception
+
+Grace defines a hierarchy of kinds of exception.
+All exceptions have the same type, that is, they understand the same set of requests.
+However, there are various kinds of exception, corresponding to various kinds of
+exceptional situation.
+
+The exception hierarchy classifies these kinds of exception using `ExceptionKind`
+objects, which have the following type:
+
+    type ExceptionKind = Pattern & {
+    parent -> ExceptionKind
+    // answers the exceptionKind that is the parent of this exception in the
+    // hierarchy. The parent of exception is defined to be exception. The parent
+    // of any other exceptionKind is the exception that was refined to create it.
+
+    refine (name:String) -> ExceptionKind
+    // answers a new exceptionKind, which is a refinement of self.
+
+    raise (message:String)
+    // creates an exception of this kind, terminating the current execution,
+    // and transferring control to an appropriate handler.
+
+    raise (message:String) with (data:Object)
+    // similar to raise(), except that the object data is associated with the
+    // new exception.
+    }
+
+Because `ExceptionKinds` are also `Patterns`, they support the pattern protocol
+(`match`, `&`, and `|`).
+Perhaps more pertinently, this means that they can be used as the argument of
+the `catch blocks` in a `try()catch()...` construct.
+
+At the top of the hierarchy is the `Exception` object; all exceptions are
+refinements of `exception`.  There are three immediate refinements, of `Exception`.
+
+ * `EnvironmentException`: those exceptions arising from interactions between the program and the environment, including network exceptions, file system exceptions, and inappropriate user input.
+ * `ProgrammingError`: exceptions arising from programming errors.
+Examples are `IndexOutOfBounds`, `NoSuchMethod`, and `NoSuchObject`.
+ * `ResourceException`: exceptions arising from an implementation insufficiency, such as running out of memory or disk space.
+
+Notice that there is no category for "expected" exceptions.
+This is deliberate; expected events should not be represented by exceptions,
+but by other values and control structures.
+For example, if you you have a key that may or may not be in a dictionary,
+you should not request the `at` method and catch the `NoSuchObject` error.
+Instead, you should request the `at()ifAbsent()` method.
+
+Each exception is matched by the `ExceptionKind` that was raised to create it,
+and all of the ancestors of that kind of exception. Because `Exception`
+is the top of the exception hierarchy, it matches all exceptions.
+
+Exceptions have the following type.
+
+
+    type Exception = type {
+        exception -> exceptionKind	// the exceptionKind of this exception.
+        message -> String
+        // the message that was provided when this exaction was raised.
+
+        data -> Object 		// the data object that was associated with this exception
+        // when it was raised, if there was one. Otherwise, the string "no data".
+
+        lineNumber -> Number		// the source code line number
+        // of the raise request that created this exception.
+
+        moduleName -> String		// the name of the module
+        // containing the raise request that created this exception.
+
+        backtrace -> List<String>
+        // a description of the call stack at the time that this exception was raised.
+        // backtrace.first is the initial execution environment; backtrace.last is the
+        // context that raised the exception.
+    }
+
+Exceptions are
 distinguished by the name passed to the refine method when they were
 created.
 
 Exception packets also contain a "data" field, which may be populated
-with any object using the raiseWith method on exceptions:
-  MyError.raiseWith("A message", anObject)
+with any object using the raise(_)with(_) method on exceptions:
+
+  MyError.raise "A message" with (anObject)
+
 There is no behaviour or requirement attached to this object. It is
 simply stored to be used by the exception handler if desired.
 
-There is also a finally construct:
-  catch { ... }
-    case { e : Error -> ... }
-    finally {
-        // Clean up, etc
-    }
-The finally block is always applied, whether an exception was raised or
-not, including when a non-local return has jumped up the stack over the
-handler.
-
 A single handler may be defined for more than one kind of exception
-using the | combinator:
-  catch { ... }
-    case { e : MyError | AnotherError -> ... }
+using the | pattern combinator:
+
+    try {
+        ...
+    } case { e : MyError | AnotherError ->
+        ...
+    }
+
 This handler will be run when either MyError or AnotherError is raised
-inside the catch block.
+inside the try block.
