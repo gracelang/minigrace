@@ -391,6 +391,8 @@ method stop {
     canvas.removeEventListener("mousedown", mouseDownListener)
     canvas.removeEventListener("mousemove", mouseMoveListener)
 }
-method atModuleEnd(module) {
-    start
+def thisDialect is public = object {
+    method atEnd(module) {
+        start
+    }
 }
