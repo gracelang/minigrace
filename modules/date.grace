@@ -14,9 +14,9 @@ type Date = type {
     second -> Number
         // the second past the minute, e.g. 33 for 4:49:32 pm
     asString -> String
-        // a sttring representation of this date and time
+        // a string representation of this date and time
     asDateString -> String
-        // a sttring representation of just date part 
+        // a string representation of just date part
     asTimeString -> String
         // a sttring representation of just the time part
     asIsoString -> String
