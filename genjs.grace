@@ -202,13 +202,13 @@ method compileobjvardec(o, selfr) {
     }
 }
 
-method create (kind) field(o) {
+method create (kind) field (o) in (objr) {
     // compile code that creates a field in objectUnderConstruction
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := escapestring(o.name.value)
     var nmi := escapeident(o.name.value)
-    out "objectUnderConstruction.data[\"{nm}\"] = undefined;"
+    out "{objr}.data[\"{nm}\"] = undefined;"
     out "var reader_{nmi}{myc} = function() \{  // reader method"
     out "    return this.data[\"{nm}\"];"
     out "\};"
@@ -217,14 +217,51 @@ method create (kind) field(o) {
         out "reader_{nmi}{myc}.confidential = true;"
     }
     if (kind == "var") then {
-        out "objectUnderConstruction.methods[\"{nm}\"] = reader_{nmi}{myc};"
+        out "{objr}.methods[\"{nm}\"] = reader_{nmi}{myc};"
         out "var writer_{nmi}{myc} = function(argcv, n) \{   // writer method"
         out "    this.data[\"{nm}\"] = n;"
         out "    return GraceDone;"
         out "\};"
-        out "objectUnderConstruction.methods[\"{nm}:=(1)\"] = writer_{nmi}{myc};"
+        out "{objr}.methods[\"{nm}:=(1)\"] = writer_{nmi}{myc};"
         if (o.isWritable.not) then {
             out "writer_{nmi}{myc}.confidential = true;"
+        }
+    }
+}
+
+method installLocalAttributesOf(o) into (objr) {
+    var mutable := false
+
+    for (o.body) do { e ->
+        if (e.kind == "method") then {
+            compilemethod(e, objr)
+        } elseif { e.kind == "vardec" } then {
+            create "var" field (e) in (objr)
+            mutable := true
+        } elseif { e.kind == "defdec" } then {
+            create "def" field (e) in (objr)
+        } elseif { e.kind == "typedec" } then {
+            create "type" field (e) in (objr)
+        }
+    }
+    if (mutable) then {
+        out "{objr}.mutable = true;"
+    }
+}
+
+method compileInitialization(o, selfr) {
+    o.body.do { e ->
+        if (e.kind == "method") then {
+        } elseif { e.kind == "vardec" } then {
+            compileobjvardec(e, selfr)
+        } elseif { e.kind == "defdec" } then {
+            compileobjdefdec(e, selfr)
+        } elseif { e.kind == "typedec" } then {
+            compiletypedec(e)
+        } elseif { e.kind == "object" } then {
+            compileobject(e, selfr)
+        } else {
+            compilenode(e)
         }
     }
 }
@@ -241,63 +278,22 @@ method compileObjectConstructor(o, outerRef) into (inheritingObj) {
     out "while (inho_{selfr}.superobj) inho_{selfr} = inho_{selfr}.superobj;"
     out "inho_{selfr}.superobj = {selfr};"
     out "{selfr}.data = {inheritingObj}.data;"
-    out "if ({inheritingObj}.hasOwnProperty(\"_value\"))"
+    out "if ({inheritingObj}.hasOwnProperty('_value'))"
     out "  {selfr}._value = {inheritingObj}._value;"
 
+    out "var {selfr}_init = function(objectUnderConstruction) \{";
+    increaseindent
     compileobjouter(selfr, outerRef)
-
-    // compile builder
-    out("var {selfr}_build = function(objectUnderConstruction) \{")
-    increaseindent
-    out "var origSuperDepth = superDepth;"
-    out "this = objectUnderConstruction;"
-    var superObj := "graceObject"
+    installLocalAttributesOf(o) into (objectUnderConstruction)
+    o.traits.do { t -> compileTrait(t) in (o, objectUnderConstruction) }
     if (false != o.superclass) then {
-        compileInherits(o.superclass) in (o, inheritingObj)
+        compileInherits(o.superclass) in (o, objectUnderConstruction)
     }
-    out "{superObj}_build(superObj_{selfr});"
-    o.traits.do { t -> compileTrait(t) in (o, inheritingObj) }
-    var mutable := false
-    for (o.body) do { e ->
-        if (e.kind == "method") then {
-            compilemethod(e, inheritingObj)
-        } elseif { e.kind == "vardec" } then {
-            create "var" field (e)
-            mutable := true
-        } elseif { e.kind == "defdec" } then {
-            create "def" field (e)
-        } elseif { e.kind == "typedec" } then {
-            create "type" field (e)
-        }
-    }
-    if (mutable) then {
-        out "objectUnderConstruction.mutable = true;"
-    }
-    decreaseindent
-    out "\}"
-
-    // compile initializer
-    out("var {selfr}_initialize = function() \{")
-    increaseindent
-    o.body.do { e ->
-        if (e.kind == "method") then {
-        } elseif { e.kind == "vardec" } then {
-            compileobjvardec(e, selfr)
-        } elseif { e.kind == "defdec" } then {
-            compileobjdefdec(e, selfr)
-        } elseif { e.kind == "typedec" } then {
-            compiletypedec(e)
-        } elseif { e.kind == "object" } then {
-            compileobject(e, selfr)
-        } else {
-            compilenode(e)
-        }
-    }
+    compileInitialization(o, selfr)
     decreaseindent
     out "\};"
-
-    out "{selfr}_initialize();"
     inBlock := origInBlock
+    selfr
 }
 method compileobject(o, outerRef) {
     // compiles an object in all contexts _except_ inside a fresh method,
@@ -308,8 +304,7 @@ method compileobject(o, outerRef) {
     o.register := selfr
     out "var {selfr} = Grace_allocObject(null, \"{o.name}\");  // create empty object"
     def objcon = compileObjectConstructor(o, outerRef) into (selfr)
-    out "{objcon}_build(selfr);"
-    out "{objcon}_initialize();"
+    out "{objcon}_init(selfr);"
     selfr
 }
 method compileblock(o) {
