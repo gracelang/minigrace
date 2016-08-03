@@ -1192,7 +1192,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
         out "\"use strict\";"
     }
     if (isPrelude.not) then {
-        out "var___95__prelude = do_import(\"StandardPrelude\", gracecode_StandardPrelude);"
+        out "var___95__prelude = do_import(\"standardGrace\", gracecode_standardGrace);"
     }
     util.setline(1)
     out("function {formatModname(modname)}() \{")

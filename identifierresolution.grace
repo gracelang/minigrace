@@ -900,7 +900,7 @@ method setupContext(moduleObject) {
             }
         }
         if (!hadDialect) then {
-            def gctDict = xmodule.parseGCT "StandardPrelude"
+            def gctDict = xmodule.parseGCT "standardGrace"
             gctDict.at "public" ifAbsent{emptySequence}.do { mn ->
                 preludeScope.addName(mn)
             }

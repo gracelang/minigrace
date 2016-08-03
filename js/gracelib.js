@@ -3371,8 +3371,8 @@ function do_import(modname, moduleCodeFunc) {
         throw new GraceExceptionPacket(ImportErrorObject,
             new GraceString("could not find code for module '" + modname + "'"));
     var origSuperDepth = superDepth;
-    superDepth = (modname === "StandardPrelude") ? Grace_prelude : new GraceModule(modname);
-    // importing "StandardPrelude" adds to the built-in prelude.
+    superDepth = (modname === "standardGrace") ? Grace_prelude : new GraceModule(modname);
+    // importing "standardGrace" adds to the built-in prelude.
     try {
         var f = Function.prototype.call.call(moduleCodeFunc, superDepth);
           // Almost like moduleCodeFunc.call(superDepth), which executes
@@ -3454,11 +3454,11 @@ var UninitializedVariableObject = new GraceException("UninitializedVariable", Pr
 
 //
 // Define "Grace_prelude" as a Grace object to which some methods are added here,
-// and to which more methods will be added by the compiled StandardPrelude module
+// and to which more methods will be added by the compiled standardGrace module
 // when it is loaded.
 //
 
-var Grace_prelude = new GraceModule("StandardPrelude");
+var Grace_prelude = new GraceModule("standardGrace");
 
 Grace_prelude.methods['true()object'] = function prelude_true_object (argcv) {
     return GraceTrue;

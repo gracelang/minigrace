@@ -1724,7 +1724,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     outprint("static int isTailObject = 0;")
     outprint("static Object inheritingObject = NULL;")
     outprint("static const char modulename[] = \"{modname}\";");
-    outprint("Object module_StandardPrelude_init();");
+    outprint("Object module_standardGrace_init();");
     outprint("static char *originalSourceLines[] = \{")
     for (util.cLines) do {l->
         outprint("  \"{l}\",")
@@ -1746,7 +1746,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
         out "  adddatum2(self, grace_prelude(), 0);"
         out "  Object ObjectType = alloc_ObjectType();"
     } else {
-        out("  prelude = module_StandardPrelude_init();")
+        out("  prelude = module_standardGrace_init();")
         out("  adddatum2(self, prelude, 0);")
     }
     out("  addmethod2(self, \"outer\", &grace_userobj_outer);")
@@ -1813,7 +1813,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
             out("type_{typeid} = *var_{typeid};")
         }
     }
-    if (modname == "StandardPrelude") then {
+    if (modname == "standardGrace") then {
     // this has the same effect as "inherits _prelude" in the source
         out("  self = setsuperobj(self, *var__prelude);")
         out("  *selfslot = self;")
@@ -1835,7 +1835,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
 
     moduleObject.value.do { o ->
         if (o.isExternal) then {
-            if (modname == "StandardPrelude") then {
+            if (modname == "standardGrace") then {
                 compilenode(o)
             } else {
                 // do nothing, because it was already compiled above

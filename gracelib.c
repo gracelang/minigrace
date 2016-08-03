@@ -6025,7 +6025,7 @@ Object grace_while_do(Object self, int nparts, int *argcv,
         graceRaise(RequestError(), "while-do requires exactly two arguments");
     if (argv[0]->class == Boolean || argv[0]->class == Number) {
         graceRaise(TypeError(), "expected a Block for first (condition) "
-                "argument of while()do (defined in standardPrelude), got %s",
+                "argument of while()do (defined in standardGrace), got %s",
                 argv[0]->class->name);
     }
     while (istrue(callmethod(argv[0], "apply", 0, NULL, NULL))) {
@@ -6223,7 +6223,7 @@ Object prelude_pi_object(Object self, int argc, int *argcv, Object *argv,
 Object grace_prelude() {
     if (_prelude != NULL)
         return _prelude;
-    ClassData c = alloc_class2("StandardPrelude", 29, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("standardGrace", 29, (void*)&UserObj__mark);
     add_Method(c, "asString", &Module_asString);
     add_Method(c, "asDebugString", &Object_asDebugString);
     add_Method(c, "::(1)", &Object_bind);

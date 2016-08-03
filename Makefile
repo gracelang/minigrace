@@ -15,7 +15,7 @@ CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c stringMap.c xm
 
 # COMPILER_MODULES are the parts of the compiler that should go into the modules
 # directory on an install (in addition to ALL_LIBRARY_MODULES)
-COMPILER_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace util.grace identifierKinds.grace stringMap.grace
+COMPILER_MODULES = standardGrace.grace collectionsPrelude.grace ast.grace util.grace identifierKinds.grace stringMap.grace
 
 DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso util.gct util.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
 DIALECTS_NEED = modules/dialect util ast modules/gUnit modules/math
@@ -34,7 +34,7 @@ JSSOURCEFILES = $(SOURCEFILES:%.grace=js/%.js)
 KG=known-good/$(ARCH)/$(STABLE)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
-PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
+PRELUDESOURCEFILES = collectionsPrelude.grace standardGrace.grace
 REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace genc.grace stringMap.grace xmodule.grace identifierresolution.grace)
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 STABLE=ebebbdf31e78362af099d4a09ba52e11d415ff8e
@@ -42,8 +42,8 @@ STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 TYPE_DIALECTS = staticTypes requireTypes
 VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
-WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html js/unicodedata.js js/importStandardPrelude.js $(ICONS:%=js/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
-WEBFILES_SIMPLE = $(filter-out js-simple/sample,$(sort js-simple/index.html js-simple/global.css js-simple/tests js-simple/minigrace.js js-simple/tabs-simple.js js-simple/gracelib.js js-simple/dom.js js-simple/gtk.js js-simple/debugger.js js-simple/timer.js js-simple/ace  js-simple/debugger.html  js-simple/unicodedata.js js-simple/importStandardPrelude.js $(ICONS:%=js-simple/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
+WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html js/unicodedata.js js/importStandardGrace.js $(ICONS:%=js/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
+WEBFILES_SIMPLE = $(filter-out js-simple/sample,$(sort js-simple/index.html js-simple/global.css js-simple/tests js-simple/minigrace.js js-simple/tabs-simple.js js-simple/gracelib.js js-simple/dom.js js-simple/gtk.js js-simple/debugger.js js-simple/timer.js js-simple/ace  js-simple/debugger.html  js-simple/unicodedata.js js-simple/importStandardGrace.js $(ICONS:%=js-simple/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
 
 # The next 2 rules are here for their side effects: updating
 # buildinfo.grace if necessary, and creating the l1 directory
@@ -72,7 +72,7 @@ c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct c/Makefil
     do cp -f $$f c ; done &&\
     cd c &&\
     ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude collectionsPrelude.grace &&\
-    ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude StandardPrelude.grace &&\
+    ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude standardGrace.grace &&\
     ../minigrace --target c --make $(VERBOSITY) --module minigrace --noexec compiler.grace &&\
     rm -f *.gcn *.gso
 
@@ -83,7 +83,7 @@ clean:
 	cd modules/tests && rm -fr *.gct *.gcn *.gso *.gso.dSYM *.js
 	cd js && rm -f $(SOURCEFILES:%.grace=%.js)
 	rm -f debugger.o
-	rm -f StandardPrelude.{c,gcn,gct} js/StandardPrelude.js collectionsPrelude.{c,gcn,gct} js/collectionsPrelude.js
+	rm -f standardGrace.{c,gcn,gct} js/standardGrace.js collectionsPrelude.{c,gcn,gct} js/collectionsPrelude.js
 	rm -rf l1 l2 buildinfo.grace
 	rm -f $(SOURCEFILES:.grace=.c) minigrace.c
 	rm -f *.gcn *.gct
@@ -177,8 +177,8 @@ graceWebIde:
 gracelib-basic.o: gracelib.c gracelib.h
 	gcc -g -std=c99 -o gracelib-basic.o -c gracelib.c
 
-gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.gcn
-	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn collectionsPrelude.gcn debugger.o
+gracelib.o: gracelib-basic.o debugger.o standardGrace.gcn collectionsPrelude.gcn
+	ld -o gracelib.o -r gracelib-basic.o standardGrace.gcn collectionsPrelude.gcn debugger.o
 
 ide: ideDeploy
 
@@ -202,7 +202,7 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 	install -p -m 644 gracelib.h $(INCLUDE_PATH)
 	install -p -m 644 $(COMPILER_MODULES) $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grace=%.gct) $(MODULE_PATH)
 	install -p -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=modules/%.gct) $(LIBRARY_MODULES:%.grace=js/%.js) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gcn) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso) js/dom.js js/dom.gct $(MODULE_PATH)
-	install -p -m 644 StandardPrelude.gcn collectionsPrelude.gcn $(MODULE_PATH)
+	install -p -m 644 standardGrace.gcn collectionsPrelude.gcn $(MODULE_PATH)
 	@./tools/warnAbout PATH $(PREFIX)/bin
 	@./tools/warnAbout GRACE_MODULE_PATH $(MODULE_PATH)
 
@@ -237,7 +237,7 @@ js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sa
 	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
 #	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
-js/StandardPrelude%js js/StandardPrelude%gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
+js/standardGrace%js js/standardGrace%gct: standardGrace.grace js/collectionsPrelude.gct minigrace
 	GRACE_MODULE_PATH=modules:js ./minigrace --target js --dir js --make $(VERBOSITY) $<
 
 js/animation%gct js/animation%js: js/timer.gct objectdraw/animation.grace
@@ -267,7 +267,10 @@ l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=
 
 l1/%.gct: l1/%.gso
 
-l1/StandardPrelude%gct l1/StandardPrelude%gcn: StandardPrelude.grace l1/collectionsPrelude.gct $(KG)/minigrace
+l1/StandardPrelude.%: l1/standardGrace.%
+	ln -f $< $@
+
+l1/standardGrace%gct l1/standardGrace%gcn: standardGrace.grace l1/collectionsPrelude.gct $(KG)/minigrace
 	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
 
 l1/collectionsPrelude%gct l1/collectionsPrelude%gcn: collectionsPrelude.grace $(KG)/minigrace
@@ -313,10 +316,10 @@ $(MGSOURCEFILES:%.grace=%.gct) $(MGSOURCEFILES:%.grace=%.gcn): $(MGSOURCEFILES:%
 
 $(MGSOURCEFILES:%.grace=%.gcn): $(MGSOURCEFILES:%.grace=%.gso)
 
-$(MGSOURCEFILES:%.grace=%.gso): %.gso: %.grace StandardPrelude.gct l1/minigrace
+$(MGSOURCEFILES:%.grace=%.gso): %.gso: %.grace standardGrace.gct l1/minigrace
 	GRACE_MODULE_PATH=. l1/minigrace $(VERBOSITY) --make --noexec $<
 
-$(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace js/StandardPrelude.gct minigrace
+$(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace js/standardGrace.gct minigrace
 	GRACE_MODULE_PATH=modules ./minigrace $(VERBOSITY) --make --target js --dir js $<
 
 $(C_MODULES_GSO:modules/%.gso=%.gso): %.gso: modules/%.gso
@@ -324,8 +327,8 @@ $(C_MODULES_GSO:modules/%.gso=%.gso): %.gso: modules/%.gso
 
 # Giant hack! Not suitable for use.
 minigrace-dynamic: l1/minigrace $(SOURCEFILES)
-	l1/minigrace $(VERBOSITY) --make --noexec --import-dynamic -XNoMain -XNativePrelude StandardPrelude.grace
-	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
+	l1/minigrace $(VERBOSITY) --make --noexec --import-dynamic -XNoMain -XNativePrelude standardGrace.grace
+	ld -o gracelib.o -r gracelib-basic.o standardGrace.gcn debugger.o
 	l1/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic compiler.grace
 
 minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) $(C_MODULES_GSO:%.gso=%.gct) gracelib.o unixFilePath.gct
@@ -333,9 +336,9 @@ minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) $
 
 minigrace-environment: minigrace-c-env minigrace-js-env
 
-minigrace-c-env: minigrace StandardPrelude.gct gracelib.o $(LIBRARY_MODULES:%.grace=modules/%.gct) .git/hooks/commit-msg
+minigrace-c-env: minigrace standardGrace.gct gracelib.o $(LIBRARY_MODULES:%.grace=modules/%.gct) .git/hooks/commit-msg
 
-minigrace-js-env: minigrace js/grace js/grace-debug StandardPrelude.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) $(TYPE_DIALECTS:%=modules/%.gso) $(TYPE_DIALECTS:%=js/%.js)
+minigrace-js-env: minigrace js/grace js/grace-debug standardGrace.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) $(TYPE_DIALECTS:%=modules/%.gso) $(TYPE_DIALECTS:%=js/%.js)
 
 module-test-js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.js) $(TYPE_DIALECTS:%=modules/%.gso)
 	modules/tests/harness_js minigrace
@@ -431,7 +434,7 @@ selftest-js: minigrace-js-env $(ALL_LIBRARY_MODULES:%.grace=../js/%.js)
 	tests/harness selftest-js/minigrace tests
 
 # must be a pattern rule to get the "simultaneous build" semantics.
-StandardPrelude%gct StandardPrelude%gcn: StandardPrelude.grace collectionsPrelude.gct l1/minigrace
+standardGrace%gct standardGrace%gcn: standardGrace.grace collectionsPrelude.gct l1/minigrace
 	cd l1 && GRACE_MODULE_PATH=. ./minigrace $(VERBOSITY) --make --noexec -XNoMain --dir .. ../$<
 
 # The next few rules are Static Pattern Rules.  Each is like an implicit rule
@@ -443,7 +446,7 @@ $(filter-out modules/curl.gso,$(DYNAMIC_STUBS:%.grace=modules/%.gso)): modules/%
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 	ln -sf $< .
 
-$(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace StandardPrelude.gct l1/minigrace
+$(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace standardGrace.gct l1/minigrace
 	@rm -f $(@:%.gct=%{.c,.gcn,})
 	cd l1 && GRACE_MODULE_PATH=. ./minigrace $(VERBOSITY) --make --noexec --dir ../stubs ../$<
 	@rm -f $(@:%.gct=%{.c,.gcn});

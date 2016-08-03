@@ -278,11 +278,11 @@ try {
     require(findOnPath("gracelib.js", pathdirs));
     require(findOnPath("unicodedata.js", pathdirs));
     minigrace = new MiniGrace();
-    minigrace.loadModule("StandardPrelude", "./");
+    minigrace.loadModule("standardGrace", "./");
 
-    // as as special case, do_import("StandardPrelude", …) adds to Grace_prelude,
+    // as as special case, do_import("standardGrace", …) adds to Grace_prelude,
     // rather than creating a new module object.
-    do_import('StandardPrelude', gracecode_StandardPrelude);
+    do_import('standardGrace', gracecode_standardGrace);
 
     minigrace.run(process.argv[2]);
 } catch (e) {

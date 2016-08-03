@@ -1,4 +1,4 @@
-l1/StandardPrelude.gct: l1/collectionsPrelude.gct
+l1/standardGrace.gct: l1/collectionsPrelude.gct
 l1/ast.gct: l1/util.gct l1/identifierKinds.gct
 l1/errormessages.gct: l1/io.gct l1/sys.gct l1/util.gct
 l1/gUnit.gct: l1/mirrors.gct l1/mirrors.gso
@@ -14,7 +14,7 @@ l1/xmodule.gct: l1/io.gct l1/sys.gct l1/util.gct l1/ast.gct l1/mirrors.gct l1/mi
 
 # had to remove all: js/unicode.js js/io.js js/sys.js js/mirrors.js and js/minigrace/compiler.js/ !
 ## TODO: add --js to make-depend that does the above!
-js/StandardPrelude.gct: js/collectionsPrelude.gct
+js/standardGrace.gct: js/collectionsPrelude.gct
 js/ast.gct: js/util.gct js/identifierKinds.gct
 js/errormessages.gct: js/util.gct
 js/genc.gct: js/ast.gct js/util.gct js/stringMap.gct js/xmodule.gct js/errormessages.gct
@@ -27,7 +27,7 @@ js/symbolTable.gct: js/ast.gct js/errormessages.gct
 js/util.gct: js/io.gct js/sys.gct js/unixFilePath.gct js/stringMap.gct
 js/xmodule.gct: js/util.gct js/ast.gct js/errormessages.gct js/unixFilePath.gct
 
-StandardPrelude.gct: collectionsPrelude.gct
+standardGrace.gct: collectionsPrelude.gct
 ast.gct: util.gct identifierKinds.gct
 errormessages.gct: io.gct sys.gct util.gct
 modules/gUnit.gct: modules/mirrors.gct  modules/mirrors.gso modules/math.gct modules/math.gcn

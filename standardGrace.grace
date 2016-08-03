@@ -1,7 +1,7 @@
 #pragma NativePrelude
 #pragma ExtendedLineups
 
-var isStandardPrelude := true
+var isStandardGrace := true
 
 class SuccessfulMatch.new(result', bindings') {
     inherits true
@@ -480,5 +480,3 @@ def range is public = collections.range
 method methods {
     prelude.clone(self)
 }
-
-

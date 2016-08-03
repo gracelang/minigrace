@@ -601,4 +601,3 @@ method addFreshMethod (node) to (freshlist) for (gct) is confidential {
             "fresh method result of an unexpected kind: {freshMethExpression.pretty(0)}"
     }
 }
-
