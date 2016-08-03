@@ -53,5 +53,5 @@ method checker(values) is public {
 }
 
 def thisDialect is public = object {
-    method parseChecker (moduleObj) { checker (moduleObj) }
+    method parseChecker (moduleObj) { checker (moduleObj.body) }
 }
