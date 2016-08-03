@@ -449,7 +449,7 @@ method compileobject(o, outerRef) {
         pos := pos + 1
     }
     pos := 1
-    
+
     def content = [ ]
     if (false != o.superclass) then { content.add(o.superclass) }
     o.usedTraits.do { t -> content.add(t) }
@@ -671,7 +671,7 @@ method compilemethod(o, selfobj, pos) {
     out("  gc_frame_end(frame);")
     out("  return {ret};")
     out("\}")
-    // Now we've finished compiling the body of the method, we need to 
+    // Now we've finished compiling the body of the method, we need to
     // construct the closure that makes the variables available.
     var body := output
     outswitchup
@@ -748,7 +748,7 @@ method compilemethod(o, selfobj, pos) {
         }
     }
     // APB: I believe that `toremove` is the list of enclosing
-    // variables that are shadowed by parameters.  This is unnecessary, 
+    // variables that are shadowed by parameters.  This is unnecessary,
     // since it is syntactially illgeal for a parameter to have the
     // same name as a variable in an enclosing scope.
     def origclosurevars = closurevars
@@ -1366,10 +1366,11 @@ method compiledialect(o) {
     globals.push("Object {modg}_init();")
     globals.push("Object {modg};")
     auto_count := auto_count + 1
-    if (xmodule.currentDialect.hasAtEnd) then {
+    if (xmodule.currentDialect.hasAtStart) then {
         out("  partcv[0] = 1;")
         out("  params[0] = alloc_String(\"{escapestring(modname)}\");")
-        out("  callmethodflags(prelude, \"atModuleStart\", "
+        out("  callmethodflags(callmethodflags(prelude, \"thisDialect\", "
+            ++ "0, NULL, NULL, CFLAG_SELF), \"atStart(1)\", "
             ++ "1, partcv, params, CFLAG_SELF);")
     }
     o.register := "done"
@@ -1459,7 +1460,7 @@ method compileNativeCode(o) {
         errormessages.syntaxError "the first argument to native()code must be a string literal"
             atRange(param1.line, param1.linePos, param1.linePos)
     }
-    if (param1.value != "c") then { 
+    if (param1.value != "c") then {
         o.register := "done"
         return
     }
@@ -1621,7 +1622,7 @@ method compileStaticModule(fnBase, buildinfo) {
         "-I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -o \"{fnBase}.gcn\" -c \"{fnBase}.c\""
         // -c          => don't run linker
         // -o <file>   => names the output file
-    
+
     if ((io.system(cmd)).not) then {
         io.error.write("Fatal error: C compilation of {modname} failed.\n")
         io.error.write("The failing command was\n{cmd}\n")
@@ -1671,7 +1672,7 @@ method linkExecutable(fnBase, buildinfo) {
 method implementAliasesAndExclusionsFor(o) inheriting(e, superobj) {
     // o is an object node, and e an inherits node.  e has already been
     // compiled into register superobj.
-    
+
     if (e.aliases.isEmpty && e.exclusions.isEmpty) then { return }
 
     errormessages.error("I'm sorry, aliases and exclusions are not yet supported " ++
@@ -1837,12 +1838,12 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
             def superobj = compilenode(moduleObject.superclass.value)
             out("  self = setsuperobj(self, {superobj});")
             out("  *selfslot = self;")
-            implementAliasesAndExclusionsFor(moduleObject) 
+            implementAliasesAndExclusionsFor(moduleObject)
                 inheriting(moduleObject.superclass, superobj)
         }
     }
-    
-    moduleObject.usedTraits.do { t -> 
+
+    moduleObject.usedTraits.do { t ->
         errormessages.error("I'm sorry, trait usage is not yet supported by " ++
               "the C code generator.") atRange(t.line. t.linePos, t.linePos + 3)
     }
@@ -1861,7 +1862,8 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     if (xmodule.currentDialect.hasAtEnd) then {
         out("  partcv[0] = 1;")
         out("  params[0] = self;")
-        out("  callmethodflags(prelude, \"atModuleEnd\", "
+        out("  callmethodflags(callmethodflags(prelude, \"thisDialect\", "
+            ++ "0, NULL, NULL, CFLAG_SELF), \"atEnd(1)\", "
             ++ "1, partcv, params, CFLAG_SELF);")
     }
     for (globals) do {e->
@@ -1922,7 +1924,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
 
     moduleObject.imports := imports.static ++ imports.other
     xmodule.writeGctForModule(moduleObject)
-        
+
     outfile.close
 
     if (runmode == "make") then {
@@ -1930,14 +1932,14 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
         def ofpn = outfile.pathname
         var ix := ofpn.size
         while { (ix > 1) && {ofpn.at(ix) != "."} } do { ix := ix - 1 }
-        def ofpnBase = if (ix > 0) then { 
+        def ofpnBase = if (ix > 0) then {
                 ofpn.substringFrom 1 to (ix-1)
             } else {
                 ofpn
             }
         compileStaticModule(ofpnBase, buildinfo)
         compileDynamicModule(ofpnBase, buildinfo)
-        if (util.noexec.not) then { 
+        if (util.noexec.not) then {
             linkExecutable(ofpnBase, buildinfo)
         }
         util.log_verbose "done."
