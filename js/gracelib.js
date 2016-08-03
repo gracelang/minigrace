@@ -1840,6 +1840,7 @@ function classType(obj) {
     return t;
 }
 
+var var_graceObject = new GraceObject();
 var var_Unknown = new GraceType("Unknown");
 var var_Done = new GraceType("Done");
 var_Done.typeMethods.push("asString");
@@ -3786,6 +3787,7 @@ if (typeof global !== "undefined") {
     global.var_done = var_done;
     global.var_Block = var_Block;
     global.var_Boolean = var_Boolean;
+    global.var_graceObject = var_graceObject;
     global.var_GraceType = var_GraceType;
     global.var_Number = var_Number;
     global.var_Object = var_Object;
