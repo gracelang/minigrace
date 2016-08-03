@@ -1381,10 +1381,6 @@ GracePrimitiveArray.prototype = {
         "sizeIfUnknown(1)": function(argcv) {
             return new GraceNum(this._value.length);
         },
-        "clear": function(argcv) {
-            this._value = [ ];
-            return this;
-        },
         "at(1)": function(argcv, where) {
             var idx = where._value;
             var result = this._value[idx];
