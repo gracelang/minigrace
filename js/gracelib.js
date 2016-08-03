@@ -132,6 +132,13 @@ GraceTrait.prototype = {
     }
 };
 
+function isEmptyObject(obj) {
+    for (var name in obj) {
+        return false;
+    }
+    return true;
+}
+
 function Grace_allocObject(superConstructor, givenName) {
     // The difference between this function and "new GraceObject" is that the
     // object returned here has its OWN methods object,
