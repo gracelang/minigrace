@@ -64,19 +64,21 @@ method checkDialect(moduleObject) {
             try {
                 def dobj = mirrors.loadDynamicModule(node.path)
                 currentDialect.moduleObject := dobj
-                def mths = mirrors.reflect(dobj).methods
-                for (mths) do { m ->
-                    if (m.name == "checker(1)") then {
-                        currentDialect.hasParseChecker := true
-                    }
-                    if (m.name == "astChecker(1)") then {
-                        currentDialect.hasAstChecker := true
-                    }
-                    if (m.name == "atModuleEnd(1)") then {
-                        currentDialect.hasAtEnd := true
-                    }
-                    if (m.name == "atModuleStart(1)") then {
-                        currentDialect.hasAtStart := true
+                if (mirrors.reflect(dobj).methodNames.contains("thisDialect")) then {
+                    def mths = mirrors.reflect(dobj.thisDialect).methods
+                    for (mths) do { m ->
+                        if (m.name == "parseChecker(1)") then {
+                            currentDialect.hasParseChecker := true
+                        }
+                        if (m.name == "astChecker(1)") then {
+                            currentDialect.hasAstChecker := true
+                        }
+                        if (m.name == "atEnd(1)") then {
+                            currentDialect.hasAtEnd := true
+                        }
+                        if (m.name == "atStart(1)") then {
+                            currentDialect.hasAtStart := true
+                        }
                     }
                 }
             } catch { e : RuntimeError ->
@@ -90,11 +92,11 @@ method checkDialect(moduleObject) {
     }
 }
 
-method doParseCheck(moduleObj) {
+method doParseCheck(moduleNode) {
     if (currentDialect.hasParseChecker.not) then { return }
     def CheckerFailure = Exception.refine "CheckerFailure"
     try {
-        currentDialect.moduleObject.checker(moduleObj.value)
+        currentDialect.moduleObject.thisDialect.parseChecker(moduleNode)
     } catch { e : CheckerFailure ->
         match (e.data)
             case { lp : LinePos ->
@@ -107,7 +109,7 @@ method doParseCheck(moduleObj) {
                     withSuggestions(rs.suggestions)
             }
             case { _ ->
-                errormessages.error "{e.exception}: {e.message}." 
+                errormessages.error "{e.exception}: {e.message}."
                     atLine(util.linenum)
             }
     } catch { e : Exception ->      // some unknwown Grace exception
@@ -117,11 +119,11 @@ method doParseCheck(moduleObj) {
     }
 }
 
-method doAstCheck(moduleObj) {
+method doAstCheck(moduleNode) {
     if (currentDialect.hasAstChecker.not) then { return }
     def CheckerFailure = Exception.refine "CheckerFailure"
     try {
-        currentDialect.moduleObject.astChecker(moduleObj)
+        currentDialect.moduleObject.thisDialect.astChecker(moduleNode)
     } catch { e : CheckerFailure ->
         match (e.data)
             case { lp : LinePos ->
@@ -220,7 +222,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
             } elseif { binaryFile.newer(moduleFileGrace).not } then {
                 util.log 60 verbose "{binaryFile} not newer than {moduleFileGrace}"
             }
-            compileModule (nm) inFile (moduleFileGrace.asString) 
+            compileModule (nm) inFile (moduleFileGrace.asString)
                 forDialect (isDialect) atRange (line, linePos)
         }
         importsSet.add(nm)
@@ -238,7 +240,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
                 util.log 60 verbose "{moduleFileJs} not newer than {moduleFileGrace}"
             }
             if (moduleFileGrace.exists) then {
-                compileModule (nm) inFile (moduleFileGrace.asString) 
+                compileModule (nm) inFile (moduleFileGrace.asString)
                     forDialect (isDialect) atRange (line, linePos)
             } else {
                 def thing = if (isDialect) then {"dialect"} else {"module"}
@@ -601,4 +603,3 @@ method addFreshMethod (node) to (freshlist) for (gct) is confidential {
             "fresh method result of an unexpected kind: {freshMethExpression.pretty(0)}"
     }
 }
-

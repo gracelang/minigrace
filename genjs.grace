@@ -74,7 +74,7 @@ method noteLineNumber(n)comment(c) {
 }
 
 method forceLineNumber(n)comment(c) {
-    // force the generation of code that sets the line number.  
+    // force the generation of code that sets the line number.
     // Used at the start of a method
     noteLineNumber(n)comment(c)
     if (emitPositions) then {
@@ -184,7 +184,7 @@ method compileobjtype(o, selfr, pos) {
     out("  reader_{emod}_{nmi}{myc}.def = true;")
     var isReadable := false
     for (o.annotations) do {ann->
-        if ((ann.kind == "identifier") && 
+        if ((ann.kind == "identifier") &&
             {ann.value == "confidential"}) then {
             out "  reader_{emod}_{nmi}{myc}.confidential = true;"
         }
@@ -280,7 +280,7 @@ method compileobject(o, outerRef, inheritingObject) {
     def selfr = "obj" ++ myc
     o.register := selfr
     def superConstructor =
-        if (o.inTrait) then { 
+        if (o.inTrait) then {
             "GraceTrait"
         } elseif {false == o.superclass} then {
             "GraceObject"
@@ -309,12 +309,12 @@ method compileobject(o, outerRef, inheritingObject) {
             compilemethod(e, selfr)
         }
     }
-        
+
     // compile inherits
     if (false != o.superclass) then {
         compileInherits(o.superclass) in (o, selfr)
     }
-    
+
     // compile traits
     o.usedTraits.do { t -> compileInherits(t) in (o, selfr) }
 
@@ -516,7 +516,7 @@ method compileArgumentTypeChecks(o) {
                     def dtype = compilenode(p.dtype)
                     out("if (!Grace_isTrue(callmethod({dtype}, \"match(1)\"," ++
                         "  [1], arguments[curarg])))")
-                    out "    throw new GraceExceptionPacket(TypeErrorObject," 
+                    out "    throw new GraceExceptionPacket(TypeErrorObject,"
                     out "        new GraceString(\"argument {paramnr} in {part.name} (arg list {partnr}), which corresponds to parameter {p.value}, does not have \" + "
                     out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
                 }
@@ -585,7 +585,7 @@ method compileResultTypeCheck(o, ret) onLine (lineNr) {
         def dtype = compilenode(o.dtype)
         noteLineNumber (lineNr) comment "return value"
         out "if (!Grace_isTrue(callmethod({dtype}, \"match(1)\", [1], {ret})))"
-        out "    throw new GraceExceptionPacket(TypeErrorObject," 
+        out "    throw new GraceExceptionPacket(TypeErrorObject,"
         out "        new GraceString(\"result of method {o.canonicalName} does not have \" + "
         out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
     }
@@ -982,7 +982,8 @@ method compiledialect(o) {
     out "var_prelude = do_import(\"{fn}\", {formatModname(o.value)});"
     out "this.outer = var_prelude;"
     if (xmodule.currentDialect.hasAtStart) then {
-        out "callmethod(var_prelude, \"atModuleStart(1)\", [1], "
+        out "var var_thisDialect = callmethod(var_prelude, \"thisDialect\", [0]);"
+        out "callmethod(var_thisDialect, \"atStart(1)\", [1], "
         out "  new GraceString(\"{escapestring(modname)}\"));"
     }
     o.register := "undefined"
@@ -1056,7 +1057,7 @@ method compileNativeCode(o) {
         errormessages.syntaxError "the first argument to native()code must be a string literal"
             atRange(param1.line, param1.linePos, param1.linePos)
     }
-    if (param1.value != "js") then { 
+    if (param1.value != "js") then {
         o.register := "GraceDone"
         return
     }
@@ -1232,7 +1233,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
         if (false != moduleObject.superclass) then {
             compileInherits(moduleObject.superclass) in (moduleObject, "this")
         }
-        moduleObject.usedTraits.do { t -> 
+        moduleObject.usedTraits.do { t ->
             compileInherits(t) in (moduleObject, "this")
         }
         moduleObject.methodsDo { o ->
@@ -1243,7 +1244,8 @@ method compile(moduleObject, of, rm, bt, glPath) {
         compilenode(o)
     }
     if (xmodule.currentDialect.hasAtEnd) then {
-        out("callmethod(var_prelude, \"atModuleEnd(1)\", [1], this);")
+        out "var var_thisDialect = callmethod(var_prelude, \"thisDialect\", [0]);"
+        out("callmethod(var_thisDialect, \"atEnd(1)\", [1], this);")
     }
     if (debugMode) then {
         out "stackFrames.pop();"
@@ -1251,11 +1253,11 @@ method compile(moduleObject, of, rm, bt, glPath) {
     out("return this;")
     decreaseindent
     out("\}")
-    
+
     def generatedModuleName = formatModname(modname)
     def importList = imported.map{ each -> "'{each}'" }.asList.sort
     out "{generatedModuleName}.imports = {importList};"
-    
+
     moduleObject.imports := imports.other
     xmodule.writeGctForModule(moduleObject)
 
@@ -1292,9 +1294,9 @@ method compile(moduleObject, of, rm, bt, glPath) {
 }
 
 method compileInherits(o) in (objNode, selfr) {
-    // o is an inherits node: compile it.  
+    // o is an inherits node: compile it.
     // selfr is the name of enclosing object; objNode is the enclosing AST node
-    if (o.isUse) then { 
+    if (o.isUse) then {
         compileTrait(o) in (objNode, selfr)
     } else {
         compileSuper(o, selfr)

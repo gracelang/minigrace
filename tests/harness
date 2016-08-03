@@ -108,12 +108,12 @@ do
 #   the %fail_test.grace DELETES a trailing fail_test.grace, so we get here
 #   if the test name does NOT end with fail_test
     then
-        COMMAND="GRACE_MODULE_PATH=../modules/:../ $COMPILER --make --gracelib .. --verbose 60 $tcase"
+        COMMAND="GRACE_MODULE_PATH=../modules/:../:./ $COMPILER --make --gracelib .. --verbose 60 $tcase"
 #        echo COMMAND = $COMMAND
         if eval "$COMMAND" > test-$$.log 2>&1
         then
             execname="${tcase%%.*}"
-            GRACE_MODULE_PATH=../modules/:../ GRACE_GC_DISABLE=true $EXECUTOR"$execname" > test-$$.out 2> test-$$.err
+            GRACE_MODULE_PATH=../modules/:../:./ GRACE_GC_DISABLE=true $EXECUTOR"$execname" > test-$$.out 2> test-$$.err
             RESULT=$?
             if [ -s test-$$.err ]
             then
@@ -147,7 +147,7 @@ do
         fi
     else
 #   this is a _fail_test
-        COMMAND="GRACE_MODULE_PATH=../modules/:../ $COMPILER --make --native $tcase"
+        COMMAND="GRACE_MODULE_PATH=../modules/:../:./ $COMPILER --make --native $tcase"
         if eval "$COMMAND" > test-$$.log 2>&1
         then
             echo "${NUM_TESTS} ERROR: $tcase should have failed to compile"
@@ -180,13 +180,13 @@ do
             echo "==============" >> test.log
         fi
     fi
-    rm -f test-$$.log test-$$.out test-$$.err ${tcase%%.*} *.bc *.ll *.gco *.s *.gcn *.c *.java *.class *_test.gct
+    rm -f test-$$.log test-$$.out test-$$.err ${tcase%%.*}
     if [ "$TYPE" = "tograce" ]
     then
         rm -f tg_t*
     fi
 done
-
+rm -rf *.gso.dSYM *.gso *.gct *.gcn *.c
 echo
 echo $NUM_PASS/$NUM_TESTS passed. | tee -a test.log
 if [ $NUM_UNEXPECTED_SUCCESS -ne 0 ]
