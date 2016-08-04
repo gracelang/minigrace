@@ -21,6 +21,8 @@ var auto_count := 1
 var constants := []
 var globals := []
 var output := []
+var outputFirst := []
+var outputNativeHeader := []
 var usedvars := []
 var declaredvars := []
 var bblock := "entry"
@@ -43,6 +45,12 @@ var bracketConstructor := "alloc_Lineup()"
 
 method out(s) {
     output.push(s)
+}
+method outF(s) {
+    outputFirst.push(s)
+}
+method outNH(s) {
+    outputNativeHeader.push(s)
 }
 method outprint(s) {
     util.outprint(s)
@@ -181,12 +189,12 @@ method compileobjouter(selfr, outerRef) {
     var enm := escapestring2(nm)
     out("// OBJECT OUTER DEC " ++ enm)
     out("  adddatum2({selfr}, {outerRef}, 0);")
-    outprint("Object reader_{escmodname}_{enm}_{myc}"
+    outF("Object reader_{escmodname}_{enm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
-    outprint("  struct UserObject *uo = (struct UserObject*)self;")
-    outprint("  return uo->data[0];")
-    outprint("\}")
+    outF("  struct UserObject *uo = (struct UserObject*)self;")
+    outF("  return uo->data[0];")
+    outF("\}")
     out("  addmethodreal({selfr},\"outer\", &reader_{escmodname}_{enm}_{myc});")
 }
 method compileobjtypemeth(o, selfr, pos) {
@@ -195,7 +203,7 @@ method compileobjtypemeth(o, selfr, pos) {
     var nm := o.nameString
     var enm := escapestring2(nm)
     var inm := escapeident(nm)
-    outprint("Object reader_{escmodname}_{inm}_{myc}"
+    outF("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
     var flags := "MFLAG_DEF"
@@ -204,9 +212,9 @@ method compileobjtypemeth(o, selfr, pos) {
             flags := "{flags} | MFLAG_CONFIDENTIAL"
         }
     }
-    outprint("  struct UserObject *uo = (struct UserObject *)self;")
-    outprint("  return uo->data[{pos}];")
-    outprint("\}")
+    outF("  struct UserObject *uo = (struct UserObject *)self;")
+    outF("  return uo->data[{pos}];")
+    outF("\}")
     out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {flags});")
     out("  reader{myc}->definitionModule = modulename;")
     out("  reader{myc}->definitionLine = {o.line};")
@@ -232,7 +240,7 @@ method compileobjdefdecmeth(o, selfr, pos) {
     var nm := o.name.value
     var enm := escapestring2(nm)
     var inm := escapeident(nm)
-    outprint("Object reader_{escmodname}_{inm}_{myc}"
+    outF("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
     var flags := "MFLAG_DEF"
@@ -248,9 +256,9 @@ method compileobjdefdecmeth(o, selfr, pos) {
     if (!isPublic) then {
         flags := "{flags} | MFLAG_CONFIDENTIAL"
     }
-    outprint("  struct UserObject *uo = (struct UserObject *)self;")
-    outprint("  return uo->data[{pos}];")
-    outprint("\}")
+    outF("  struct UserObject *uo = (struct UserObject *)self;")
+    outF("  return uo->data[{pos}];")
+    outF("\}")
     out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {flags});")
     out("  reader{myc}->definitionModule = modulename;")
     out("  reader{myc}->definitionLine = {o.line};")
@@ -272,12 +280,12 @@ method compileobjdefdec(o, selfr, pos) {
     var inm := escapeident(nm)
     out("// OBJECT CONST DEC " ++ enm)
     out("  adddatum2({selfr}, {val}, {pos});")
-    outprint("Object reader_{escmodname}_{inm}_{myc}"
+    outF("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
-    outprint("  struct UserObject *uo = (struct UserObject *)self;")
-    outprint("  return uo->data[{pos}];")
-    outprint("\}")
+    outF("  struct UserObject *uo = (struct UserObject *)self;")
+    outF("  return uo->data[{pos}];")
+    outF("\}")
     out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, MFLAG_DEF);")
 }
 method compileobjvardecdata(o, selfr, pos) {
@@ -293,7 +301,7 @@ method compileobjvardecmeth(o, selfr, pos) {
     var nm := o.name.value
     var enm := escapestring2(nm)
     var inm := escapeident(nm)
-    outprint("Object reader_{escmodname}_{inm}_{myc}"
+    outF("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
     var rflags := "MFLAG_CONFIDENTIAL"
@@ -310,17 +318,17 @@ method compileobjvardecmeth(o, selfr, pos) {
             wflags := "0"
         }
     }
-    outprint("  struct UserObject *uo = (struct UserObject *)self;")
-    outprint("  return uo->data[{pos}];")
-    outprint("\}")
+    outF("  struct UserObject *uo = (struct UserObject *)self;")
+    outF("  return uo->data[{pos}];")
+    outF("\}")
     out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\", &reader_{escmodname}_{inm}_{myc}, {rflags});")
-    outprint("Object writer_{escmodname}_{inm}_{myc}"
+    outF("Object writer_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
-    outprint("  struct UserObject *uo = (struct UserObject *)self;")
-    outprint("  uo->data[{pos}] = args[0];")
-    outprint("  return done;");
-    outprint("\}")
+    outF("  struct UserObject *uo = (struct UserObject *)self;")
+    outF("  uo->data[{pos}] = args[0];")
+    outF("  return done;");
+    outF("\}")
     out("  Method *writer{myc} = addmethodrealflags({selfr}, \"{enm}:=(1)\", &writer_{escmodname}_{inm}_{myc}, {wflags});")
     out("  reader{myc}->definitionModule = modulename;")
     out("  writer{myc}->definitionModule = modulename;")
@@ -339,20 +347,20 @@ method compileobjvardec(o, selfr, pos) {
     var inm := escapeident(nm)
     out("// OBJECT VAR DEC " ++ nm)
     out("  adddatum2({selfr}, {val}, {pos});")
-    outprint("Object reader_{escmodname}_{inm}_{myc}"
+    outF("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
-    outprint("  struct UserObject *uo = (struct UserObject *)self;")
-    outprint("  return uo->data[{pos}];")
-    outprint("\}")
+    outF("  struct UserObject *uo = (struct UserObject *)self;")
+    outF("  return uo->data[{pos}];")
+    outF("\}")
     out("  addmethodreal({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc});")
-    outprint("Object writer_{escmodname}_{inm}_{myc}"
+    outF("Object writer_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
-    outprint("  struct UserObject *uo = (struct UserObject *)self;")
-    outprint("  uo->data[{pos}] = args[0];")
-    outprint("  return done;");
-    outprint("\}")
+    outF("  struct UserObject *uo = (struct UserObject *)self;")
+    outF("  uo->data[{pos}] = args[0];")
+    outF("  return done;");
+    outF("\}")
     out("  addmethodreal({selfr}, \"{enm}:=(1)\", &writer_{escmodname}_{inm}_{myc});")
 }
 method compileobject(o, outerRef) {
@@ -1461,15 +1469,19 @@ method compileNativeCode(o) {
             atLine(param2.line)
     }
     def codeString = param2.value
-    out "   // start native code from line {o.line}"
-    def reg = "nat" ++ auto_count
-    auto_count := auto_count + 1
-    out "  Object {reg};"
-    out "  \{ Object result = done;"
-    out(codeString)
-    out "  {reg} = result;"
-    out "  }"
-    o.register := reg
+    if (o.nameString == "native(1)code(1)") then {
+        out "   // start native code from line {o.line}"
+        def reg = "nat" ++ auto_count
+        auto_count := auto_count + 1
+        out "  Object {reg};"
+        out "  \{ Object result = done;"
+        out(codeString)
+        out "  {reg} = result;"
+        out "  }"
+        o.register := reg
+    } elseif {o.nameString == "native(1)header(1)"} then {
+        outNH(codeString)
+    }
 }
 
 method compilenum(o) {
@@ -1558,6 +1570,8 @@ method compilenode(o) {
             if (o.nameString == "print(1)") then {
                 compilePrint(o)
             } elseif {o.nameString == "native(1)code(1)"} then {
+                compileNativeCode(o)
+            } elseif {o.nameString == "native(1)header(1)"} then {
                 compileNativeCode(o)
             } else {
                 compilecall(o, false)
@@ -1687,49 +1701,49 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     escmodname := escapeident(modname)
     runmode := rm
     buildtype := bt
-    outprint("#include <gracelib.h>")
-    outprint("#include <stdlib.h>")
-    outprint("#include <math.h>")
-    outprint("#include <float.h>")
+    outF("#include <gracelib.h>")
+    outF("#include <stdlib.h>")
+    outF("#include <math.h>")
+    outF("#include <float.h>")
     if (!util.extensions.contains("NoMain")) then {
-        outprint "#ifndef __CYGWIN__"
-        outprint "#pragma weak main"
-        outprint "#endif"
+        outF "#ifndef __CYGWIN__"
+        outF "#pragma weak main"
+        outF "#endif"
     }
-    outprint("static char compilerRevision[] = \"{buildinfo.gitrevision}\";")
-    outprint("static Object undefined;")
-    outprint("extern Object done;")
-    outprint("extern Object _prelude;")
-    outprint("extern Object ObjectType;")
-    outprint("extern Object String;")
-    outprint("extern Object Number;")
-    outprint("extern Object Boolean;")
-    outprint("extern Object Dynamic;")
-    outprint("extern Object Unknown;")
-    outprint("extern Object Block;")
-    outprint("extern Object Done;")
-    outprint("extern Object Type;")
-    outprint("extern Object GraceDefaultObject;")
-    outprint("extern Object sourceObject;")
-    outprint("static Object type_Object;")
-    outprint("static Object type_String;")
-    outprint("static Object type_Number;")
-    outprint("static Object type_Boolean;")
-    outprint("static Object type_Block;")
-    outprint("static Object type_Done;")
-    outprint("static Object type_Type;")
-    outprint("static Object argv;")
-    outprint("static Object emptyclosure;")
-    outprint("static Object prelude;")
-    outprint("static int isTailObject = 0;")
-    outprint("static Object inheritingObject = NULL;")
-    outprint("static const char modulename[] = \"{modname}\";");
-    outprint("Object module_standardGrace_init();");
-    outprint("static char *originalSourceLines[] = \{")
+    outF("static char compilerRevision[] = \"{buildinfo.gitrevision}\";")
+    outF("static Object undefined;")
+    outF("extern Object done;")
+    outF("extern Object _prelude;")
+    outF("extern Object ObjectType;")
+    outF("extern Object String;")
+    outF("extern Object Number;")
+    outF("extern Object Boolean;")
+    outF("extern Object Dynamic;")
+    outF("extern Object Unknown;")
+    outF("extern Object Block;")
+    outF("extern Object Done;")
+    outF("extern Object Type;")
+    outF("extern Object GraceDefaultObject;")
+    outF("extern Object sourceObject;")
+    outF("static Object type_Object;")
+    outF("static Object type_String;")
+    outF("static Object type_Number;")
+    outF("static Object type_Boolean;")
+    outF("static Object type_Block;")
+    outF("static Object type_Done;")
+    outF("static Object type_Type;")
+    outF("static Object argv;")
+    outF("static Object emptyclosure;")
+    outF("static Object prelude;")
+    outF("static int isTailObject = 0;")
+    outF("static Object inheritingObject = NULL;")
+    outF("static const char modulename[] = \"{modname}\";");
+    outF("Object module_StandardPrelude_init();");
+    outF("static char *originalSourceLines[] = \{")
     for (util.cLines) do {l->
-        outprint("  \"{l}\",")
+        outF("  \"{l}\",")
     }
-    outprint("  NULL\n\};")
+    outF("  NULL\n\};")
     topLevelTypes.put("String", true)
     topLevelTypes.put("Number", true)
     topLevelTypes.put("Boolean", true)
@@ -1851,7 +1865,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
             ++ "1, partcv, params, CFLAG_SELF);")
     }
     for (globals) do {e->
-        outprint(e)
+        outF(e)
     }
     var tmpo2 := output
     output := tmpo
@@ -1892,6 +1906,12 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
         out("  gracelib_stats();")
         out("  return 0;")
         out("}")
+    }
+    for (outputFirst) do { x ->
+        outprint(x)
+    }
+    for (outputNativeHeader) do { x ->
+        outprint(x)
     }
     for (topOutput) do { x ->
         outprint(x)
