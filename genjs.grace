@@ -21,6 +21,7 @@ var bblock := "entry"
 var values := []
 var outfile
 var modname := "main"
+var emod := escapeident(modname)
 var runmode := "build"
 var buildtype := "bc"
 var inBlock := false
@@ -38,6 +39,7 @@ var emitArgChecks := true
 var emitPositions := true
 var requestCall := "callmethodChecked"
 var bracketConstructor := "Lineup"
+var currentObject
 
 method increaseindent {
     indent := indent ++ "  "
@@ -66,6 +68,8 @@ method basename(filepath) {
     }
     bnm
 }
+
+method outerProp(node) { "outer_" ++ emod ++ "_" ++ node.line }
 
 method noteLineNumber(n)comment(c) {
     // remember the current line number, so that it can be generated if needed
@@ -140,7 +144,7 @@ method beginblock(s) {
     out(s ++ ":")
 }
 method compilearray(o) {
-    var myc := auto_count
+    def myc = auto_count
     auto_count := auto_count + 1
     var r
     var vals := []
@@ -156,12 +160,16 @@ method compilemember(o) {
     o.generics := false     // because they are compiled wrongly
     compilecall(o)
 }
-method compileobjouter(selfr, outerRef) {
-    var myc := auto_count
+method compileobjouter(o, outerRef) is confidential {
+    def myc = auto_count
     auto_count := auto_count + 1
+    def selfr = o.register
     var nm := escapestring("outer")
     var nmi := escapeident("outer")
     out("{selfr}.outer = {outerRef};")
+    out "{selfr}.closureKeys = {selfr}.closureKeys || [];"
+    out "{selfr}.closureKeys.push(\"{outerProp(o)}\");"
+    out "{selfr}.{outerProp(o)} = {outerRef};"
     out("var reader_{nmi}{myc} = function() \{")
     out("  return this.outer;")
     out("\};")
@@ -286,6 +294,7 @@ method compileObjectConstructor(o, outerRef) into (objectUnderConstruction) {
     decreaseindent
     out "\};"
     inBlock := origInBlock
+    currentObject := outerObject
     selfr
 }
 method compileobject(o, outerRef) {
@@ -640,7 +649,7 @@ method compilemethodtypes(func, o) {
     }
 }
 method compileif(o) {
-    var myc := auto_count
+    def myc = auto_count
     auto_count := auto_count + 1
     outUnnumbered "var if{myc} = GraceDone;"
     out("if (Grace_isTrue(" ++ compilenode(o.value) ++ ")) \{")
@@ -903,10 +912,10 @@ method compileOuterRequest(o, args) {
     out("var call{auto_count} = {requestCall}({ot}" ++
           ", \"{escapestring(o.receiver.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
-method compileSelfOuterRequest(o, args) {
-    out "// call case 3: self.outer request"
-    out("var call{auto_count} = {requestCall}(superDepth, " ++
-            "\"outer\", [0]);")
+method compileOuter(o, args) {
+    out "// call case 3: outer"
+    def oo = o.enclosingObject
+    out "var call{auto_count} = this.{outerProp(oo)};"
 }
 method compileSelfRequest(o, args) {
     out "// call case 4: self request"
@@ -939,7 +948,7 @@ method compilecall(o) {
     } elseif { receiver.isOuter } then {
         compileOuterRequest(o, args)
     } elseif { receiver.isSelf && { o.nameString == "outer" } } then {
-        compileSelfOuterRequest(o, args)
+        compileOuter(o, args)
     } elseif { receiver.isSelf } then {
         compileSelfRequest(o, args)
     } elseif { receiver.isPrelude } then {
@@ -1121,7 +1130,6 @@ method compilenode(o) {
 }
 
 method compile(moduleObject, of, rm, bt, glPath) {
-    var argv := sys.argv
     def isPrelude = util.extensions.contains("NativePrelude")
     if (util.extensions.contains "ExtendedLineups") then {
         bracketConstructor := "PrimitiveGraceList"
@@ -1149,6 +1157,10 @@ method compile(moduleObject, of, rm, bt, glPath) {
     values := moduleObject.value
     outfile := of
     modname := moduleObject.name
+    emod := escapeident(modname)
+    def selfr = "module$" ++ emod
+    moduleObject.register := selfr
+    currentObject := moduleObject
     runmode := rm
     buildtype := bt
     if (util.extensions.contains("Debug")) then {
@@ -1174,17 +1186,18 @@ method compile(moduleObject, of, rm, bt, glPath) {
     increaseindent
     out("setModuleName(\"{modname}\");")
     out "importedModules[\"{modname}\"] = this;"
+    out "var {selfr} = this;"
     out "this.definitionModule = \"{modname}\";"
     out "this.definitionLine = 0;"
     out "var var_prelude = var___95__prelude;"
         // var_prelude must be local to this function, because its value
-        // varies from module to modules.
+        // varies from module to module.
 
     if (debugMode) then {
         out "var myframe = new StackFrame(\"{modname} module\");"
         out "stackFrames.push(myframe);"
     }
-    compileobjouter("this", "var_prelude")
+    compileobjouter(moduleObject, "var_prelude")
     def imported = []
     if (isPrelude) then {  // compile components in non-standard order
         moduleObject.value.do { o ->

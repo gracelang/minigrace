@@ -35,6 +35,7 @@ function GraceObject() {       // constructor function
     this.mutable = false;
     this.definitionModule = "basic library";
     this.definitionLine = 0;
+    this.closureKeys = [];
 }
 
 function object_notEquals (argcv, o) {
@@ -88,14 +89,14 @@ function object_colonColon (argcv, other) {
 
 GraceObject.prototype = {
     methods: {
-        "isMe(1)":             object_isMe,
-        "≠(1)":                object_notEquals,
+        "isMe(1)":          object_isMe,
+        "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "asString":         object_asString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
         "debugIterator":    object_debugIterator,
-        "::(1)":               object_colonColon
+        "::(1)":            object_colonColon
     }
 //    data: {}  The prototype should NOT have a data object — data should go in the
 //    child (non-shared) object.
@@ -151,6 +152,7 @@ function Grace_allocObject(superConstructor, givenName) {
         data: {},
         className: givenName || "object",
         mutable: false,
+        closureKeys: [],
         definitionModule: "basic library",
         definitionLine: 0
     };
@@ -2086,6 +2088,7 @@ function GraceModule(name) {
     newModuleObject.methods.asString = function module_asString(argcv) {
         return new GraceString("the \"" + this.definitionModule + "\" " + this.className);
     };
+
     return newModuleObject;
 }
 
@@ -3614,6 +3617,12 @@ function clone (obj) {
     for (var attr in obj.data) {
         if (obj.data.hasOwnProperty(attr))
             copy.data[attr] = obj.data[attr];
+    }
+    let props = obj.closureKeys || []
+    copy.closureKeys = props.slice();     // makes a shallow copy
+    for (var ox = 0, len = copy.closureKeys.length; ox < len; ox++) {
+      let k = obj.closureKeys[ox];
+      copy[k] = obj[k];
     }
     return copy;
 }
