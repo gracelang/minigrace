@@ -21,7 +21,6 @@ var bblock := "entry"
 var values := []
 var outfile
 var modname := "main"
-var emod := escapeident(modname)
 var runmode := "build"
 var buildtype := "bc"
 var inBlock := false
@@ -39,7 +38,6 @@ var emitArgChecks := true
 var emitPositions := true
 var requestCall := "callmethodChecked"
 var bracketConstructor := "Lineup"
-var currentObject
 
 method increaseindent {
     indent := indent ++ "  "
@@ -268,14 +266,14 @@ method compileInitialization(o, selfr) {
 method compileObjectConstructor(o) into (objectUnderConstruction) {
     // `this` references the current object, which will be
     // the outer object of the object here being constructed
+
     var origInBlock := inBlock
-    def outerObject = currentObject
     inBlock := false
 
     if (o.register.isEmpty) then {
         o.register := "obj{auto_count}"
         auto_count := auto_count + 1
-        util.log 30 verbose "set selfr in copileObjectConstructor"
+        util.log 30 verbose "set selfr in compileObjectConstructor"
     }
     def selfr = o.register
     out "var {selfr}_init = function(that) \{";
@@ -286,13 +284,12 @@ method compileObjectConstructor(o) into (objectUnderConstruction) {
         compileTrait(t) in (o, "this")
     }
     if (false != o.superclass) then {
-        compileSuper(o.superclass, "this")
+        compileSuper(o.superclass, "that")
     }
     compileInitialization(o, "this")
     decreaseindent
     out "\};"
     inBlock := origInBlock
-    currentObject := outerObject
     selfr
 }
 method compileobject(o, outerRef) {
@@ -642,7 +639,7 @@ method compilefreshmethod(o, selfobj) {
     compileMethodPostamble(o, myc, o.canonicalName ++ "$object(_)")
     compileMetadata(o, myc, name, selfobj)
     decreaseindent
-    out "\}"
+    out "\};"
 }
 method compilemethodtypes(func, o) {
     out("{func}.paramTypes = [];")
@@ -935,8 +932,13 @@ method compileOuterRequest(o, args) {
     out("var call{auto_count} = {requestCall}({ot}" ++
           ", \"{escapestring(o.receiver.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
+<<<<<<< HEAD
 method compileOuter(o, args) {
     out "// call case 3: outer"
+=======
+method compileOuter(o) {
+    out "// call case 2: outer"
+>>>>>>> More re-work of inheritance.
     def oo = o.enclosingObject
     out "var call{auto_count} = this.{outerProp(oo)};"
 }
@@ -971,7 +973,7 @@ method compilecall(o) {
     } elseif { receiver.isOuter } then {
         compileOuterRequest(o, args)
     } elseif { receiver.isSelf && { o.nameString == "outer" } } then {
-        compileOuter(o, args)
+        compileOuter(o)
     } elseif { receiver.isSelf } then {
         compileSelfRequest(o, args)
     } elseif { receiver.isPrelude } then {
@@ -1183,7 +1185,6 @@ method compile(moduleObject, of, rm, bt, glPath) {
     emod := escapeident(modname)
     def selfr = "module$" ++ emod
     moduleObject.register := selfr
-    currentObject := moduleObject
     runmode := rm
     buildtype := bt
     if (util.extensions.contains("Debug")) then {
