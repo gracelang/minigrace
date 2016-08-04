@@ -843,6 +843,7 @@ method setupContext(moduleObject) {
     preludeScope.addName "while(1)do(1)"
     preludeScope.addName "print(1)"
     preludeScope.addName "native(1)code(1)"
+    preludeScope.addName "native(1)header(1)"
     preludeScope.addName "Exception" as(k.defdec)
     preludeScope.addName "RuntimeError" as(k.defdec)
     preludeScope.addName "NoSuchMethod" as(k.defdec)
