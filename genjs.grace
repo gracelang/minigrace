@@ -161,19 +161,10 @@ method compilemember(o) {
     compilecall(o)
 }
 method compileobjouter(o, outerRef) is confidential {
-    def myc = auto_count
-    auto_count := auto_count + 1
-    def selfr = o.register
-    var nm := escapestring("outer")
-    var nmi := escapeident("outer")
-    out("{selfr}.outer = {outerRef};")
-    out "{selfr}.closureKeys = {selfr}.closureKeys || [];"
-    out "{selfr}.closureKeys.push(\"{outerProp(o)}\");"
-    out "{selfr}.{outerProp(o)} = {outerRef};"
-    out("var reader_{nmi}{myc} = function() \{")
-    out("  return this.outer;")
-    out("\};")
-    out("{selfr}.methods[\"{nm}\"] = reader_{nmi}{myc};")
+    def outerPropName = outerProp(o)
+    out "this.closureKeys = this.closureKeys || [];"
+    out "this.closureKeys.push(\"{outerPropName}\");"
+    out "this.{outerPropName} = {outerRef};"
 }
 method compileobjdefdec(o, selfr) {
     def val = compilenode(o.value)
@@ -274,23 +265,30 @@ method compileInitialization(o, selfr) {
     }
 }
 
-method compileObjectConstructor(o, outerRef) into (objectUnderConstruction) {
+method compileObjectConstructor(o) into (objectUnderConstruction) {
+    // `this` references the current object, which will be
+    // the outer object of the object here being constructed
     var origInBlock := inBlock
+    def outerObject = currentObject
     inBlock := false
 
+    if (o.register.isEmpty) then {
+        o.register := "obj{auto_count}"
+        auto_count := auto_count + 1
+        util.log 30 verbose "set selfr in copileObjectConstructor"
+    }
     def selfr = o.register
-
     out "var {selfr}_init = function(that) \{";
     increaseindent
-    compileobjouter(selfr, outerRef)
-    installLocalAttributesOf(o) into "that"
+    compileobjouter(o, "that")
+    installLocalAttributesOf(o) into "this"
     o.usedTraits.do { t ->
-        compileTrait(t) in (o, "that")
+        compileTrait(t) in (o, "this")
     }
     if (false != o.superclass) then {
-        compileSuper(o.superclass, "that")
+        compileSuper(o.superclass, "this")
     }
-    compileInitialization(o, selfr)
+    compileInitialization(o, "this")
     decreaseindent
     out "\};"
     inBlock := origInBlock
@@ -307,8 +305,8 @@ method compileobject(o, outerRef) {
     out "var {selfr} = Grace_allocObject(null, \"{o.name}\");  // create empty object"
     out "{selfr}.definitionModule = \"{modname}\";"
     out "{selfr}.definitionLine = {o.line};"
-    def objcon = compileObjectConstructor(o, outerRef) into (selfr)
-    out "{objcon}_init.call(this, {selfr});"
+    def objcon = compileObjectConstructor(o) into (selfr)
+    out "{objcon}_init.call({selfr}, this);"
     selfr
 }
 method compileblock(o) {
@@ -385,8 +383,25 @@ method compiletypeliteral(o) {
 }
 method paramCounts(o) {
     def result = [ ]
-    for (o.signature) do { part ->
+    o.signature.do { part ->
         result.push(part.params.size)
+    }
+    result
+}
+method paramNames(o) {
+    def result = [ ]
+    o.signature.do { part ->
+        part.params.do { param ->
+            result.push(param.nameString)
+        }
+    }
+    result
+}
+method typeParamNames(o) {
+    if (false == o.typeParams) then { return [ ] }
+    def result = [ ]
+    o.typeParams.do { each ->
+        result.push(each.nameString)
     }
     result
 }
@@ -537,9 +552,9 @@ method compileFreshMethodBody(o) {
     }
     if (false != tailObject) then {
         o.body.push(tailObject)     // put tail object back
-        def objcon = compileObjectConstructor(tailObject, "this") into "inheritingObject"
-        out "{objcon}_init.call(this, inheritingObject);"
-        ret := tailObject.register
+        def objcon = compileObjectConstructor(tailObject) into "inheritingObject"
+        out "{objcon}_init.call(inheritingObject, this);"
+        ret := "inheritingObject"
     }
     compileResultTypeCheck(o, ret) onLine (lastLine)
     return ret
@@ -556,10 +571,20 @@ method compileResultTypeCheck(o, ret) onLine (lineNr) {
     }
 }
 
+method stringList(l) {
+    // answers the contents of the collection l quoted and between brackets.
+    var res := "["
+    l.do { nm ->  res := res ++ "\"" ++ nm.quoted ++ "\""}
+        separatedBy { res := res ++ ", " }
+    res ++ "]"
+}
+
 method compileMetadata(o, myc, name, selfobj) {
     out "func{myc}.paramCounts = {paramCounts(o)};"
+    out "func{myc}.paramNames = {stringList(paramNames(o))};"
+    out "func{myc}.typeParamNames = {stringList(typeParamNames(o))};"
     out "func{myc}.definitionLine = {o.line};"
-    out "func{myc}.definitionModule = \"{modname}\";"
+    out "func{myc}.definitionModule = \"{modname.quoted}\";"
     out "{selfobj}.methods[\"{name}\"] = func{myc};"
 }
 
@@ -603,7 +628,6 @@ method compilemethod(o, selfobj) {
 method compilefreshmethod(o, selfobj) {
     def myc = auto_count
     auto_count := auto_count + 1
-    def isSimpleAccessor = false
     def name = escapestring(o.nameString ++ "$object(1)")
     out "if (! {selfobj}.methods[\"{name}\"]) \{"
         // compile this method only if a method of the same name isn't already installed
@@ -619,7 +643,7 @@ method compilefreshmethod(o, selfobj) {
     compileMethodPostamble(o, myc, o.canonicalName ++ "$object(_)")
     compileMetadata(o, myc, name, selfobj)
     decreaseindent
-    out "\};"
+    out "\}"
 }
 method compilemethodtypes(func, o) {
     out("{func}.paramTypes = [];")
@@ -1283,11 +1307,6 @@ method compile(moduleObject, of, rm, bt, glPath) {
 
 method compileSuper(inhNode, selfr) {
     def sup = compilenode(inhNode.value)
-    out "var topmostSuperObject = {selfr};"
-    out "while (topmostSuperObject.superobj) \{"
-    out "    topmostSuperObject = topmostSuperObject.superobj;"
-    out "}"     // stash superobject at the top of the superchain
-    out "topmostSuperObject.superobj = {sup};"
     out "if ({sup}.data) \{"
     out "    for (var key in {sup}.data) \{"
     out "        {selfr}.data[key] = {sup}.data[key];"
