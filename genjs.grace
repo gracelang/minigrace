@@ -271,8 +271,6 @@ method compileObjectConstructor(o, outerRef) into (objectUnderConstruction) {
     inBlock := false
 
     def selfr = o.register
-    out "{selfr}.definitionModule = \"{modname}\";"
-    out "{selfr}.definitionLine = {o.line};"
 
     out "var {selfr}_init = function(that) \{";
     increaseindent
@@ -282,7 +280,7 @@ method compileObjectConstructor(o, outerRef) into (objectUnderConstruction) {
         compileTrait(t) in (o, "that")
     }
     if (false != o.superclass) then {
-        compileSuper(o, "that")
+        compileSuper(o.superclass, "that")
     }
     compileInitialization(o, selfr)
     decreaseindent
@@ -298,8 +296,10 @@ method compileobject(o, outerRef) {
     def selfr = "obj{myc}"
     o.register := selfr
     out "var {selfr} = Grace_allocObject(null, \"{o.name}\");  // create empty object"
+    out "{selfr}.definitionModule = \"{modname}\";"
+    out "{selfr}.definitionLine = {o.line};"
     def objcon = compileObjectConstructor(o, outerRef) into (selfr)
-    out "{objcon}_init({selfr});"
+    out "{objcon}_init.call(this, {selfr});"
     selfr
 }
 method compileblock(o) {
@@ -528,7 +528,8 @@ method compileFreshMethodBody(o) {
     }
     if (false != tailObject) then {
         o.body.push(tailObject)     // put tail object back
-        compileObjectConstructor(tailObject, "this") into "inheritingObject"
+        def objcon = compileObjectConstructor(tailObject, "this") into "inheritingObject"
+        out "{objcon}_init.call(this, inheritingObject);"
         ret := tailObject.register
     }
     compileResultTypeCheck(o, ret) onLine (lastLine)
@@ -585,7 +586,7 @@ method compilemethod(o, selfobj) {
     declaredvars := olddeclaredvars
     compileMetadata(o, myc, name, selfobj)
     decreaseindent
-    out "\};"
+    out "\}"
     if (o.isFresh) then {
         compilefreshmethod(o, selfobj)
     }
@@ -1205,7 +1206,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
             imported.push(o.path)
         }
         if (false != moduleObject.superclass) then {
-            compileInherits(moduleObject.superclass) in (moduleObject, "this")
+            compileSuper(moduleObject.superclass, "this")
         }
         moduleObject.usedTraits.do { t ->
             compileTrait(t) in (moduleObject, "this")
@@ -1267,18 +1268,8 @@ method compile(moduleObject, of, rm, bt, glPath) {
     if (buildtype == "run") then { runJsCode(of, glPath) }
 }
 
-method compileInherits(o) in (objNode, selfr) {
-    // o is an inherit node: compile it.
-    // selfr is the name of enclosing object; objNode is the enclosing AST node
-    if (o.isUse) then {
-        compileTrait(o) in (objNode, selfr)
-    } else {
-        compileSuper(o, selfr)
-    }
-}
-
-method compileSuper(o, selfr) {
-    def sup = compilenode(o.value)
+method compileSuper(inhNode, selfr) {
+    def sup = compilenode(inhNode.value)
     out "var topmostSuperObject = {selfr};"
     out "while (topmostSuperObject.superobj) \{"
     out "    topmostSuperObject = topmostSuperObject.superobj;"
@@ -1291,31 +1282,39 @@ method compileSuper(o, selfr) {
     out "}"
     out "if ({sup}.hasOwnProperty('_value'))"
     out "    {selfr}._value = {sup}._value;"
-    copyDownMethodsFrom (sup) to (selfr) excluding (o.exclusions)
-    o.aliases.do { each ->
+    copyDownMethodsFrom (sup) to (selfr) excluding (inhNode.exclusions)
+    inhNode.aliases.do { each ->
         out "{selfr}.methods[\"{each.newName.nameString}\"] = findMethod({sup}, \"{each.oldName.nameString}\");"
     }
-    o.exclusions.do { each ->
-        out "delete {sup}.methods[\"{each.nameString}\"];"
+    inhNode.exclusions.do { each ->
+        out "delete {sup}.methods['{each.nameString}'];"
     }
 }
 
 method copyDownMethodsFrom (sup) to (selfr) excluding (ex) {
-    def exclusionString = ex.map { m -> "\"{m.quoted}\"" }.asString
-    out "var exclusions = {exclusionString}"
-    out "for (key in {sup}.methods) \{"
-    out "    if (! {selfr}.methods[key]) \{"
-    out "        if ({exclusionString}.includes(key) \{"
-    out "            {selfr}.methods[key] = {sup}.methods[key];"
-    out "    }"
-    out "}"
+    if (ex.isEmpty) then {
+        out "for (key in {sup}.methods) \{"
+        out "    if (! {selfr}.methods[key])"
+        out "        {selfr}.methods[key] = {sup}.methods[key];"
+        out "}"
+    } else {
+        def exclusionString = list (ex.map { m -> "\"{m.quoted}\"" })
+            // converting to a list get list brackets rather then sequence brackets
+        out "var exclusions = {exclusionString}"
+        out "for (key in {sup}.methods) \{"
+        out "    if (! {selfr}.methods[key]) \{"
+        out "        if ({exclusionString}.includes(key))"
+        out "            {selfr}.methods[key] = {sup}.methods[key];"
+        out "    }"
+        out "}"
+    }
 }
 
-method compileTrait(o) in (objNode, selfr) {
-    def tObj = compilenode(o.value)
-    def tMethNames = o.providedNames -- objNode.localNames
+method compileTrait(useNode) in (objNode, selfr) {
+    def tObj = compilenode(useNode.value)
+    def tMethNames = useNode.providedNames -- objNode.localNames
 //    util.log 70 verbose "tMethNames = {tMethNames.asList.sort}"
-    o.aliases.do { each ->
+    useNode.aliases.do { each ->
         def nn = each.newName.nameString
         out("{selfr}.methods[\"{nn}\"] = " ++
             "{tObj}.methods[\"{each.oldName.nameString}\"];  // alias")
