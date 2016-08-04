@@ -266,7 +266,7 @@ method compileInitialization(o, selfr) {
     }
 }
 
-method compileObjectConstructor(o, outerRef) into (inheritingObj) {
+method compileObjectConstructor(o, outerRef) into (objectUnderConstruction) {
     var origInBlock := inBlock
     inBlock := false
 
@@ -274,20 +274,15 @@ method compileObjectConstructor(o, outerRef) into (inheritingObj) {
     out "{selfr}.definitionModule = \"{modname}\";"
     out "{selfr}.definitionLine = {o.line};"
 
-    out "var inho_{selfr} = inheritingObj;"
-    out "while (inho_{selfr}.superobj) inho_{selfr} = inho_{selfr}.superobj;"
-    out "inho_{selfr}.superobj = {selfr};"
-    out "{selfr}.data = {inheritingObj}.data;"
-    out "if ({inheritingObj}.hasOwnProperty('_value'))"
-    out "  {selfr}._value = {inheritingObj}._value;"
-
-    out "var {selfr}_init = function(objectUnderConstruction) \{";
+    out "var {selfr}_init = function(that) \{";
     increaseindent
     compileobjouter(selfr, outerRef)
-    installLocalAttributesOf(o) into (objectUnderConstruction)
-    o.traits.do { t -> compileTrait(t) in (o, objectUnderConstruction) }
+    installLocalAttributesOf(o) into "that"
+    o.usedTraits.do { t ->
+        compileTrait(t) in (o, "that")
+    }
     if (false != o.superclass) then {
-        compileInherits(o.superclass) in (o, objectUnderConstruction)
+        compileSuper(o, "that")
     }
     compileInitialization(o, selfr)
     decreaseindent
@@ -304,7 +299,7 @@ method compileobject(o, outerRef) {
     o.register := selfr
     out "var {selfr} = Grace_allocObject(null, \"{o.name}\");  // create empty object"
     def objcon = compileObjectConstructor(o, outerRef) into (selfr)
-    out "{objcon}_init(selfr);"
+    out "{objcon}_init({selfr});"
     selfr
 }
 method compileblock(o) {
@@ -568,6 +563,9 @@ method compilemethod(o, selfobj) {
     usedvars := []
     declaredvars := []
     def name = escapestring(o.nameString)
+    out "if (! {selfobj}.methods[\"{name}\"]) \{"
+        // compile this method only if a method of the same name isn't already installed
+    increaseindent
     compileMethodPreamble(o, myc, o.canonicalName)
     if (debugMode && isSimpleAccessor.not) then {
         out "var myframe = new StackFrame(\"{name}\");"
@@ -576,8 +574,7 @@ method compilemethod(o, selfobj) {
     compileTypeParameters(o) atPosition(o.signature.size)
     compileArgumentTypeChecks(o)
     if (isSimpleAccessor) then {
-        out "// {o.canonicalName} is a simple accessor - elide try ... catch"
-        out "return {compilenode(o.body.first)};"
+        out "return {compilenode(o.body.first)};  // simple accessor"
     } else {
         debugModePrefix
         out "return {compileMethodBody(o)};"
@@ -587,6 +584,8 @@ method compilemethod(o, selfobj) {
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
     compileMetadata(o, myc, name, selfobj)
+    decreaseindent
+    out "\};"
     if (o.isFresh) then {
         compilefreshmethod(o, selfobj)
     }
@@ -596,6 +595,9 @@ method compilefreshmethod(o, selfobj) {
     auto_count := auto_count + 1
     def isSimpleAccessor = false
     def name = escapestring(o.nameString ++ "$object(1)")
+    out "if (! {selfobj}.methods[\"{name}\"]) \{"
+        // compile this method only if a method of the same name isn't already installed
+    increaseindent
     compileMethodPreamble(o, myc, o.canonicalName ++ "$object(_)")
     compileParameters(o) withDebug(false)
     compileInheritingObjectParameter
@@ -606,6 +608,8 @@ method compilefreshmethod(o, selfobj) {
     debugModeSuffix
     compileMethodPostamble(o, myc, o.canonicalName ++ "$object(_)")
     compileMetadata(o, myc, name, selfobj)
+    decreaseindent
+    out "\};"
 }
 method compilemethodtypes(func, o) {
     out("{func}.paramTypes = [];")
@@ -1204,7 +1208,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
             compileInherits(moduleObject.superclass) in (moduleObject, "this")
         }
         moduleObject.usedTraits.do { t ->
-            compileInherits(t) in (moduleObject, "this")
+            compileTrait(t) in (moduleObject, "this")
         }
         moduleObject.methodsDo { o ->
             compilenode(o)
@@ -1275,19 +1279,36 @@ method compileInherits(o) in (objNode, selfr) {
 
 method compileSuper(o, selfr) {
     def sup = compilenode(o.value)
-    out "{selfr}.superobj = {sup};"
-    out "if ({sup}.data) {selfr}.data = {sup}.data;"
-    // out "delete {sup}.data;"    // to avoid a redundant reference
-    out "if ({sup}.hasOwnProperty(\"_value\"))"
+    out "var topmostSuperObject = {selfr};"
+    out "while (topmostSuperObject.superobj) \{"
+    out "    topmostSuperObject = topmostSuperObject.superobj;"
+    out "}"     // stash superobject at the top of the superchain
+    out "topmostSuperObject.superobj = {sup};"
+    out "if ({sup}.data) \{"
+    out "    for (var key in {sup}.data) \{"
+    out "        {selfr}.data[key] = {sup}.data[key];"
+    out "    }"
+    out "}"
+    out "if ({sup}.hasOwnProperty('_value'))"
     out "    {selfr}._value = {sup}._value;"
-    // out "delete {sup}._value;"  // to avoid an inconsistent copy of built-in values
-    // this breaks inheritance from booleans
+    copyDownMethodsFrom (sup) to (selfr) excluding (o.exclusions)
     o.aliases.do { each ->
         out "{selfr}.methods[\"{each.newName.nameString}\"] = findMethod({sup}, \"{each.oldName.nameString}\");"
     }
     o.exclusions.do { each ->
         out "delete {sup}.methods[\"{each.nameString}\"];"
     }
+}
+
+method copyDownMethodsFrom (sup) to (selfr) excluding (ex) {
+    def exclusionString = ex.map { m -> "\"{m.quoted}\"" }.asString
+    out "var exclusions = {exclusionString}"
+    out "for (key in {sup}.methods) \{"
+    out "    if (! {selfr}.methods[key]) \{"
+    out "        if ({exclusionString}.includes(key) \{"
+    out "            {selfr}.methods[key] = {sup}.methods[key];"
+    out "    }"
+    out "}"
 }
 
 method compileTrait(o) in (objNode, selfr) {
