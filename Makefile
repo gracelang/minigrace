@@ -12,6 +12,7 @@ DYNAMIC_STUBS := $(filter-out $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))
 STATIC_STUBS := $(filter-out $(DYNAMIC_STUBS) $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))  # currently empty
 EXTERNAL_STUBS := $(filter-out $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))
 CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c stringMap.c xmodule.c identifierresolution.c  errormessages.c
+HEADERFILES = gracelib.c gracelib.h definitions.h debugger.c
 
 # COMPILER_MODULES are the parts of the compiler that should go into the modules
 # directory on an install (in addition to ALL_LIBRARY_MODULES)
@@ -34,8 +35,10 @@ JSSOURCEFILES = $(SOURCEFILES:%.grace=js/%.js)
 KG=known-good/$(ARCH)/$(STABLE)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
+
 PRELUDESOURCEFILES = collectionsPrelude.grace standardGrace.grace
 REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace genc.grace stringMap.grace xmodule.grace identifierresolution.grace)
+ALLSOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES) $(HEADERFILES)
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 STABLE=ebebbdf31e78362af099d4a09ba52e11d415ff8e
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
@@ -48,7 +51,7 @@ WEBFILES_SIMPLE = $(filter-out js-simple/sample,$(sort js-simple/index.html js-s
 # The next 2 rules are here for their side effects: updating
 # buildinfo.grace if necessary, and creating the l1 directory
 CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
-CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi ; (cd l1 ; ln -sf $(REALSOURCEFILES:%=../%) $(PRELUDESOURCEFILES:%=../%) .))
+CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi ; (cd l1 ; ln -sf $(ALLSOURCEFILES:%=../%) .))
 
 all: minigrace-environment $(C_MODULES_GSO) $(WEBFILES)
 
@@ -139,6 +142,7 @@ echo:
 	@echo MGSOURCEFILES = $(SOURCEFILES) "\n"
 	@echo SOURCEFILES = $(SOURCEFILES) "\n"
 	@echo JSSOURCEFILES = $(JSSOURCEFILES) "\n"
+	@echo ALLSOURCEFILES = $(ALLSOURCEFILES) "\n"
 	@echo WEBFILES = $(WEBFILES) "\n"
 	@echo KG = $(KG):
 	@echo STUBS = $(STUBS)
@@ -257,8 +261,11 @@ l1/buildinfo.gct: l1/buildinfo.grace
 l1/gracelib.h:
 	cd l1 && ln -sf ../gracelib.h .
 
-l1/gracelib.o: $(KG)/gracelib.o
-	ln -f $< $@
+l1/gracelib-basic.o: l1/gracelib.c l1/gracelib.h
+	cd l1 && gcc -g -std=c99 -o gracelib-basic.o -c gracelib.c
+
+l1/gracelib.o: l1/gracelib-basic.o l1/debugger.o l1/standardGrace.gcn l1/collectionsPrelude.gcn
+	cd l1 && ld -o gracelib.o -r gracelib-basic.o standardGrace.gcn collectionsPrelude.gcn debugger.o
 
 l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(REALSOURCEFILES) l1/buildinfo.grace l1/gracelib.o l1/gracelib.h
 	cd l1 && ../$(KG)/minigrace  $(VERBOSITY) --make --native --module minigrace compiler.grace
@@ -267,10 +274,16 @@ l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=
 
 l1/%.gct: l1/%.gso
 
-l1/StandardPrelude.%: l1/standardGrace.%
+l1/StandardPrelude.grace: l1/standardGrace.grace
+	ln -f $< $@
+
+l1/StandardPrelude.gct: l1/standardGrace.gct
 	ln -f $< $@
 
 l1/standardGrace%gct l1/standardGrace%gcn: standardGrace.grace l1/collectionsPrelude.gct $(KG)/minigrace
+	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
+
+l1/StandardPrelude%gct l1/StandardPrelude%gcn: StandardPrelude.grace l1/collectionsPrelude.gct $(KG)/minigrace
 	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
 
 l1/collectionsPrelude%gct l1/collectionsPrelude%gcn: collectionsPrelude.grace $(KG)/minigrace
