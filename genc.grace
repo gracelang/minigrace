@@ -1739,7 +1739,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     outF("static int isTailObject = 0;")
     outF("static Object inheritingObject = NULL;")
     outF("static const char modulename[] = \"{modname}\";");
-    outF("Object module_StandardPrelude_init();");
+    outF("Object module_standardGrace_init();");
     outF("static char *originalSourceLines[] = \{")
     for (util.cLines) do {l->
         outF("  \"{l}\",")
