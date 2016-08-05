@@ -40,7 +40,7 @@ PRELUDESOURCEFILES = collectionsPrelude.grace standardGrace.grace
 REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace genc.grace stringMap.grace xmodule.grace identifierresolution.grace)
 ALLSOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES) $(HEADERFILES)
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
-STABLE=ebebbdf31e78362af099d4a09ba52e11d415ff8e
+STABLE=2e7432b299d4ba499027a17319654f4bcd9372c2
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 TYPE_DIALECTS = staticTypes requireTypes
 VER = $(shell ./tools/calculate-version $(STABLE))
@@ -71,7 +71,7 @@ ace-code: js/ace/ace.js
 alltests: test test.js module-test-js js/sample-dialects
 
 c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct c/Makefile mirrors.c mirrors.gct definitions.h curl.c modules/math.gso modules/unicode.gso modules/mirrors.gso modules/math.gct modules/math.gcn modules/unixFilePath.gct modules/unixFilePath.gcn
-	for f in gracelib.c gracelib.h unicode.{c,gct} unicodedata.h $(SOURCEFILES) mirrors.{c,gct} definitions.h debugger.c curl.c modules/*.gso modules/*.gct modules/*.gcn ;\
+	for f in gracelib.c gracelib.h unicode.c unicode.gct unicodedata.h $(SOURCEFILES) mirrors.c mirrors.gct definitions.h debugger.c curl.c modules/*.gso modules/*.gct modules/*.gcn ;\
     do cp -f $$f c ; done &&\
     cd c &&\
     ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude collectionsPrelude.grace &&\
@@ -264,11 +264,11 @@ l1/gracelib.h:
 l1/gracelib-basic.o: l1/gracelib.c l1/gracelib.h
 	cd l1 && gcc -g -std=c99 -o gracelib-basic.o -c gracelib.c
 
-l1/gracelib.o: l1/gracelib-basic.o l1/debugger.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn
-	cd l1 && ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn collectionsPrelude.gcn debugger.o
+l1/gracelib.o: l1/gracelib-basic.o l1/debugger.o l1/standardGrace.gcn l1/collectionsPrelude.gcn
+	cd l1 && ld -o gracelib.o -r gracelib-basic.o standardGrace.gcn collectionsPrelude.gcn debugger.o
 
 l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(REALSOURCEFILES) l1/buildinfo.grace l1/gracelib.o l1/gracelib.h
-	cd l1 && ../$(KG)/minigrace  $(VERBOSITY) --make --native --module minigrace compiler.grace
+	cd l1 && ../$(KG)/minigrace  $(VERBOSITY) --make --native --gracelib . --module minigrace compiler.grace 
 
 # The following are pattern rules, to get the "sumiltaneous build" behaviour
 
@@ -298,7 +298,7 @@ l1/mirrors.gso: $(KG)/mirrors.gso
 l1/unicode.gso: $(KG)/unicode.gso
 	cd l1 && ln -f ../$(KG)/unicode.gso .
 
-l1/unixFilePath.gct: modules/unixFilePath.grace $(KG)/minigrace l1/StandardPrelude.gct
+l1/unixFilePath.gct: modules/unixFilePath.grace $(KG)/minigrace l1/standardGrace.gct
 	$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --dir l1 $<
 
 $(C_MODULES_GSO:%.gso=%.gct): modules/%.gct: stubs/%.gct
@@ -322,7 +322,7 @@ $(LIBRARY_WO_OBJECTDRAW:%.grace=js/%.gct): js/%.gct: js/%.js
 Makefile.conf: configure stubs modules
 	./configure
 
-$(REALSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
+$(REALSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: l1/%.grace l1/standardGrace.gct $(KG)/minigrace
 	cd l1 && GRACE_MODULE_PATH=. ../$(KG)/minigrace  $(VERBOSITY) --make --noexec  $(<F)
 
 $(MGSOURCEFILES:%.grace=%.gct) $(MGSOURCEFILES:%.grace=%.gcn): $(MGSOURCEFILES:%.grace=%.gso)
@@ -464,7 +464,7 @@ $(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace standardGrace.gct l1/mi
 	cd l1 && GRACE_MODULE_PATH=. ./minigrace $(VERBOSITY) --make --noexec --dir ../stubs ../$<
 	@rm -f $(@:%.gct=%{.c,.gcn});
 
-$(STUBS:%.grace=stubs/l1/%.gct): stubs/l1/%.gct: stubs/%.grace l1/StandardPrelude.gct $(KG)/minigrace
+$(STUBS:%.grace=stubs/l1/%.gct): stubs/l1/%.gct: stubs/%.grace l1/standardGrace.gct $(KG)/minigrace
 	@rm -f $(@:%.gct=%{.c,.gcn,})
 	GRACE_MODULE_PATH=l1 $(KG)/minigrace $(VERBOSITY) --make --noexec --dir stubs/l1 $<
 	@rm -f $(@:%.gct=%{.c,.gcn});
@@ -491,7 +491,14 @@ tarball: minigrace
       mkdir minigrace-$$VER/tests ; cp tests/*.grace tests/*.out tests/harness minigrace-$$VER/tests ;\
       mkdir minigrace-$$VER/stubs ; cp stubs/*.grace minigrace-$$VER/stubs ;\
       mkdir minigrace-$$VER/modules ;\
-      cp modules/{unicode.c,unicode.gct,mirrors.c,mirrors.gct,unixFilePath.c,unixFilePath.gct,math.c,math.gct} minigrace-$$VER/modules ;\
+      cp modules/unicode.c minigrace-$$VER/modules ;\
+      cp modules/unicode.gct minigrace-$$VER/modules ;\
+      cp modules/mirrors.c minigrace-$$VER/modules ;\
+      cp modules/mirrors.gct minigrace-$$VER/modules ;\
+      cp modules/unixFilePath.c minigrace-$$VER/modules ;\
+      cp modules/unixFilePath.gct minigrace-$$VER/modules ;\
+      cp modules/math.c minigrace-$$VER/modules ;\
+      cp modules/math.gct minigrace-$$VER/modules ;\
       mkdir -p minigrace-$$VER/sample/dialects ; cp sample/dialects/*.grace sample/dialects/README sample/dialects/Makefile minigrace-$$VER/sample/dialects ;\
       cp -R README doc minigrace-$$VER ;\
       tar cjvf ../minigrace-$$VER.tar.bz2 minigrace-$$VER ;\
