@@ -7,7 +7,7 @@ include Makefile.conf
 
 .PHONY: selfhost test buildclean fullclean install
 
-STUBS := $(filter-out %Prelude.grace,$(STUBS))
+STUBS := $(filter-out standardGrace.grace collectionsPrelude.grace,$(STUBS))
 
 CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c stringMap.c xmodule.c identifierresolution.c errormessages.c identifierKinds.c
 
@@ -28,13 +28,13 @@ curl.gso: curl.c gracelib.h
 fullclean: buildclean
 	rm -f *.grace *.c *.h
 
-gracelib.o: gracelib.c StandardPrelude.c collectionsPrelude.c debugger.o
+gracelib.o: gracelib.c standardGrace.c collectionsPrelude.c debugger.o
 	gcc -std=c99 -c -o gracelib-basic.o gracelib.c
-	gcc -std=c99 -I. -c -o StandardPrelude.gcn StandardPrelude.c
+	gcc -std=c99 -I. -c -o standardGrace.gcn standardGrace.c
 	gcc -std=c99 -I. -c -o collectionsPrelude.gcn collectionsPrelude.c
-	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn collectionsPrelude.gcn debugger.o
+	ld -o gracelib.o -r gracelib-basic.o standardGrace.gcn collectionsPrelude.gcn debugger.o
 
-gUnit.gct gUnit.gcn: gUnit.grace StandardPrelude.gct minigrace
+gUnit.gct gUnit.gcn: gUnit.grace standardGrace.gct minigrace
 	./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 install: minigrace $(GRACE_DIALECTS:%.grace=%.gso)
@@ -52,7 +52,7 @@ Makefile.conf:
 $(STATIC_MODULES:modules/%.gcn): modules/%.gcn: modules/%.c gracelib.h
 	gcc -std=c99 -I. -c -o $@ $<
 
-minigrace-environment: minigrace StandardPrelude.gct gracelib.o gUnit.gct
+minigrace-environment: minigrace standardGrace.gct gracelib.o gUnit.gct
 
 mirrors.gcn: mirrors.c gracelib.h
 	gcc -std=c99 -g -c -o mirrors.gcn mirrors.c
@@ -64,7 +64,7 @@ selfhost: minigrace $(CFILES:.c=.grace) $(STUBS:%.grace=%.gct)
 # The next two rules are Static Pattern Rules.  Each is like an implicit rule
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
 
-$(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace l1/StandardPrelude.gct l1/minigrace
+$(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace l1/standardGrace.gct l1/minigrace
 	rm -rf $(@:%.gct=stubs/%{.c,.gcn,.gso})
 	GRACE_MODULE_PATH=l1 l1/minigrace $(VERBOSITY) --make --noexec --dir stubs $<
 	rm -rf $(@:%.gct=stubs/%{.c,.gcn,.gso})
@@ -96,4 +96,3 @@ uninstall:
 
 %.gso: %.c gracelib.h
 	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o $@ $<
-
