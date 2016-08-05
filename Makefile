@@ -264,8 +264,8 @@ l1/gracelib.h:
 l1/gracelib-basic.o: l1/gracelib.c l1/gracelib.h
 	cd l1 && gcc -g -std=c99 -o gracelib-basic.o -c gracelib.c
 
-l1/gracelib.o: l1/gracelib-basic.o l1/debugger.o l1/standardGrace.gcn l1/collectionsPrelude.gcn
-	cd l1 && ld -o gracelib.o -r gracelib-basic.o standardGrace.gcn collectionsPrelude.gcn debugger.o
+l1/gracelib.o: l1/gracelib-basic.o l1/debugger.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn
+	cd l1 && ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn collectionsPrelude.gcn debugger.o
 
 l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(REALSOURCEFILES) l1/buildinfo.grace l1/gracelib.o l1/gracelib.h
 	cd l1 && ../$(KG)/minigrace  $(VERBOSITY) --make --native --module minigrace compiler.grace
@@ -277,8 +277,8 @@ l1/%.gct: l1/%.gso
 l1/StandardPrelude.grace: l1/standardGrace.grace
 	ln -f $< $@
 
-l1/StandardPrelude.gct: l1/standardGrace.gct
-	ln -f $< $@
+l1/StandardPrelude%gct l1/StandardPrelude%gcn: standardGrace.grace l1/collectionsPrelude.gct $(KG)/minigrace
+	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 --module StandardPrelude $<
 
 l1/standardGrace%gct l1/standardGrace%gcn: standardGrace.grace l1/collectionsPrelude.gct $(KG)/minigrace
 	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
