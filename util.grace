@@ -299,7 +299,7 @@ method startupFailure (message) {
 
 
 method generalError(message, errlinenum, position, arr, spacePos, suggestions) {
-    if (vtagv) then {
+    if (false ≠ vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
     io.error.write("{modnamev}.grace[{errlinenum}{position}]: {message}\n")
@@ -323,7 +323,7 @@ method type_error(s) {
     if (extensionsv.contains("IgnoreTypes")) then {
         return true
     }
-    if (vtagv) then {
+    if (false ≠ vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
     io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: Type error: {s}")
@@ -332,7 +332,7 @@ method type_error(s) {
     sys.exit(2)
 }
 method semantic_error(s) {
-    if (vtagv) then {
+    if (false ≠ vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
     io.error.write "{modnamev}.grace:{linenumv}:{lineposv}: Semantic error"
