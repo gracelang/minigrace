@@ -81,13 +81,13 @@ method padl(s, l, w) {
 
 class new {
     var tokens
-    var lineNumber is writable := 1
-    var linePosition is writable  := 0
-    var startPosition is writable  := 1
-    var indentLevel is writable  := 0
-    var startLine is writable  := 1
-    var stringStart is writable
-    var unichars is writable  := 0
+    var lineNumber := 1
+    var linePosition := 0
+    var startPosition := 1
+    var indentLevel := 0
+    var startLine := 1
+    var stringStart
+    var unichars := 0
     class token {
         def line is public = lineNumber
         def indent is public = indentLevel
@@ -246,15 +246,13 @@ class new {
     }
 
     var state
-    var accum is writable  := ""
+    var accum := ""
 
-    var inStr is writable  := false
-    //var inBackticks := false
-    //var backtickIdent := false
-    var escaped is writable := false
-    var codepoint is writable := 0
-    var interpdepth is writable := 0
-    var interpString is writable := false
+    var inStr := false
+    var escaped := false
+    var codepoint := 0
+    var interpdepth := 0
+    var interpString := false
 
     method advanceTo(s) { state := s }
     method emit(t) {
