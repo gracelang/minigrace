@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
 EOT
     if gcc -o configure-$$-tmp configure-$$-tmp.c -lcurl
     then
-        other_modules=(${other_modules:+"${other_modules[@]}"} curl)
+        other_modules=${other_modules:+"${other_modules[@]}"}
         echo yes
     else
         echo no
@@ -132,7 +132,7 @@ fi
 if [ "$STATIC" ]
 then
     UNICODE_MODULE=unicode.gcn
-    STATIC_MODULES="modules/unicode.gcn modules/unixFilePath.gcn"
+    STATIC_MODULES="unicode.gcn unixFilePath.gcn"
     for mod in ${other_modules[@]}
     do
         OTHER_MODULES=(${OTHER_MODULES:+"${OTHER_MODULES[@]}"} $mod.gcn)
@@ -143,7 +143,7 @@ then
         sed -i "" 's/dlmodule("unicode")/module_unicode_init()/' minigrace.c
     fi
 else
-    STATIC_MODULES=modules/unixFilePath.gcn
+    STATIC_MODULES=unixFilePath.gcn
     checkcurl
     for mod in ${other_modules[@]}
     do
