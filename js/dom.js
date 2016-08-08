@@ -62,6 +62,9 @@ function wrapDOMObject(obj) {
                     o.methods[k + "(3)"] = wrappedFun;
                     o.methods[k + "(5)"] = wrappedFun;
                     o.methods[k + "(9)"] = wrappedFun;
+                } else if (k === "arc") {
+                    o.methods[k + "(5)"] = wrappedFun;
+                    o.methods[k + "(6)"] = wrappedFun;
                 } else {
                     o.methods[k] = wrappedFun;
                     o.methods[k + "(1)"] = wrappedFun;
@@ -319,5 +322,3 @@ if (typeof global !== "undefined") {
 gracecode_dom.imports = [];
 if (typeof gctCache !== "undefined")
 gctCache['dom'] = "classes:\nconfidential:\nfresh-methods:\nmodules:\npath:\n dom\npublic:\n document\n doesObject(1)haveProperty(1)\n draw(4)\n filledOval(2)\n filledRect(2)\n for(1)waiting(1)do(1)\n framedOval(2)\n framedRect(2)\n image\n noObject\n while(1)waiting(1)do(1)\n window\ntypes:\n";
-
-
