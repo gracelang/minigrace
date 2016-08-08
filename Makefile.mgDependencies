@@ -30,7 +30,7 @@ js/xmodule.gct: js/util.gct js/ast.gct js/errormessages.gct js/unixFilePath.gct
 standardGrace.gct: collectionsPrelude.gct
 ast.gct: util.gct identifierKinds.gct
 errormessages.gct: io.gct sys.gct util.gct
-modules/gUnit.gct: modules/mirrors.gct  modules/mirrors.gso modules/math.gct modules/math.gcn
+modules/gUnit.gct: mirrors.gct  mirrors.gso
 genc.gct: io.gct sys.gct ast.gct util.gct stringMap.gct xmodule.gct mirrors.gso errormessages.gct
 genjs.gct: io.gct sys.gct ast.gct util.gct xmodule.gct mirrors.gso errormessages.gct
 identifierresolution.gct: io.gct sys.gct ast.gct util.gct xmodule.gct stringMap.gct mirrors.gso errormessages.gct  identifierKinds.gct
