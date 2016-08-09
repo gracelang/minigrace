@@ -490,7 +490,7 @@ class create(canvasWidth, canvasHeight) {
         }
 
         method draw {
-            if(jsText != 0) then {
+            if (0 ≠ jsText) then {
                 stage.removeChild(jsText);
             }
             jsText := gr.text
@@ -739,7 +739,7 @@ class create(canvasWidth, canvasHeight) {
         }
 
         method onSubmitDo(block) {
-            if(jsInputObject != 0) then {
+            if (0 ≠ jsInputObject) then {
                 jsInputObject.onSubmit(jsInputObject, block)
             }
             submitBlock := block
