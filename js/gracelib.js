@@ -198,7 +198,7 @@ function string_at(argcv, where) {
         }
     }
     throw new GraceExceptionPacket(TypeErrorObject,
-        new GraceString("argument to 'at' on string \"" + msgstr + "\" is not an integer"));
+        new GraceString("argument to 'at(_)' on string \"" + msgstr + "\" is not an Integer"));
 }
 
 function string_curriedAt(idx) {
@@ -535,7 +535,7 @@ GraceString.prototype = {
             var n;
             if ((num.className !== 'number') || (! Number.isInteger(n = num._value))) {
                 throw new GraceExceptionPacket(TypeErrorObject,
-                    new GraceString("argument to string * method must be an integer"));
+                    new GraceString("argument to string *(_) must be an integer"));
             }
             var output = this._value;
             var requiredLength = output.length * n;
@@ -929,13 +929,13 @@ function prim_list_index(argcv, where) {
         throw new GraceExceptionPacket(BoundsErrorObject,
             new GraceString('index ' + idx + ' but list has size ' + this._value.length));
     throw new GraceExceptionPacket(TypeErrorObject,
-        new GraceString("argument to 'at' is not an integer"));
+        new GraceString("argument to 'at(_)' is not an Integer"));
 }
 function prim_list_update(argcv, where, val) {
     var idx = where._value;
     if (idx === undefined)
         throw new GraceExceptionPacket(TypeErrorObject,
-            new GraceString("argument 1 to 'at()put()' is not a Number"));
+            new GraceString("argument 1 to 'at(_)put(_)' is not a Number"));
     if (! (idx > 0 && idx <= (this._value.length + 1)))
         throw new GraceExceptionPacket(BoundsErrorObject,
             new GraceString('index ' + idx + ' but list has size ' + this._value.length));
@@ -1518,7 +1518,7 @@ GracePrimitiveArray.prototype = {
                 if (res.className === "number") return res._value;
                 throw new GraceExceptionPacket(TypeErrorObject,
                        new GraceString("compare block in primitiveArray.sort method " +
-                                       "did not return a number"));
+                                       "did not return a Number"));
             }
             this._value.sort(compareFun);
             this._value.length = origLength;
@@ -1800,14 +1800,23 @@ function checkBlockApply(numargs) {
             if ( ! Grace_isTrue(match)) {
                 var n = ix + 1;
                 var canonicalName = "apply(_";
-                for (ix = 1; ix < numargs; ix++) { canonicalName += ",_"; }
+                for (var i = 1; i < numargs; i++) { canonicalName += ",_"; }
                 canonicalName += ")";
-                throw new GraceExceptionPacket(TypeErrorObject,
-                    new GraceString("argument " + n +
-                        " to block." + canonicalName + " has wrong type."));
+                raiseTypeError("argument " + n + " to block." +
+                            canonicalName + " has wrong type.",
+                            this.paramTypes[ix], args[ix]);
             }
         }
     }
+}
+
+function raiseTypeError(msg, type, value) {
+     var mm = do_import("mirrors", gracecode_mirrors)
+     var tc = callmethod(mm, "loadDynamicModule(1)", [1], new GraceString("typeComparison"));
+     var diff = callmethod(tc, "methodsIn(1)missingFrom(1)", [1, 1], type, value);
+     var expkt = new GraceExcpetionPacket(TypeErrorObject, new GraceString(msg +
+            "\nIt's missing methods" + diff._value))
+     throw expkt
 }
 
 function GraceBlock_match(argcv, o) {
@@ -2976,8 +2985,9 @@ function gracecode_mirrors() {
                            new GraceString("can't find module " + v._value));
             }
         } else {
-            minigrace.loadModule(name, "./");try {
-            moduleFunc = eval(graceModuleName(name));
+            minigrace.loadModule(name, "./");
+            try {
+                moduleFunc = eval(graceModuleName(name));
             } catch (e) {
                 throw new GraceExceptionPacket(ImportErrorObject,
                     new GraceString("error initializing module " + v._value));
@@ -3774,6 +3784,7 @@ if (typeof global !== "undefined") {
     global.NoSuchMethodErrorObject = NoSuchMethodErrorObject;
     global.PrimitiveGraceList = PrimitiveGraceList;
     global.ProgrammingErrorObject = ProgrammingErrorObject;
+    global.raiseTypeError = raiseTypeError;
     global.ResourceExceptionObject = ResourceExceptionObject;
     global.ReturnException = ReturnException;
     global.RuntimeErrorObject = RuntimeErrorObject;
