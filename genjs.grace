@@ -172,9 +172,11 @@ method compileobjdefdec(o, selfr) {
         if (o.dtype != false) then {
             if (o.dtype.value != "Unknown") then {
                 noteLineNumber(o.line)comment("typecheck in compileobjdefdec")
-                out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match(1)\", [1], {val})))"
-                out "  throw new GraceExceptionPacket(TypeErrorObject,"
-                out "      new GraceString(\"value of def {o.name.value} is not of type {o.dtype.toGrace(0)}\"));"
+                def nm_t = compilenode(o.dtype)
+                out "if (!Grace_isTrue(callmethod({nm_t}, \"match(1)\", [1], {val})))"
+                out "    raiseTypeError("
+                out "      \"value of def {nm} is not of type {o.dtype.toGrace(0)}\","
+                out "      {nm_t}, {val});"
             }
         }
     }
@@ -191,9 +193,11 @@ method compileobjvardec(o, selfr) {
                     return true
                 }
                 noteLineNumber(o.line)comment("typecheck in compileobjvardec")
-                out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match(1)\", [1], {val})))"
-                out "  throw new GraceExceptionPacket(TypeErrorObject,"
-                out "      new GraceString(\"initial value of var {o.name.value} is not of type {o.dtype.toGrace(0)}\"));"
+                def nm_t = compilenode(o.dtype)
+                out "if (!Grace_isTrue(callmethod({nm_t}, \"match(1)\", [1], {val})))"
+                out "    raiseTypeError("
+                out "      \"value of def {nm} is not of type {o.dtype.toGrace(0)}\","
+                out "      {nm_t}, {val});"
             }
         }
     }
@@ -214,7 +218,7 @@ method create (kind) field (o) in (objr) {
         out "reader_{nmi}{myc}.confidential = true;"
     }
     if (kind == "var") then {
-        out "{objr}.methods[\"{nm}\"] = reader_{nmi}{myc};"
+    out "{objr}.methods[\"{nm}\"] = reader_{nmi}{myc};"
         out "var writer_{nmi}{myc} = function(argcv, n) \{   // writer method"
         out "    this.data[\"{nm}\"] = n;"
         out "    return GraceDone;"
@@ -480,7 +484,7 @@ method compileTypeParameters(o) atPosition(sz) {
 method compileArgumentTypeChecks(o) {
     out "setModuleName(\"{modname}\");"     // do this before noteLineNumber
     if (emitTypeChecks && o.needsArgChecks) then {
-        out "// Start argument checking"
+        out "// Start argument type-checks"
         out "curarg = 1;"
         for (o.signature.indices) do { partnr ->
             var part := o.signature.at(partnr)
@@ -492,14 +496,14 @@ method compileArgumentTypeChecks(o) {
                     def dtype = compilenode(p.dtype)
                     out("if (!Grace_isTrue(callmethod({dtype}, \"match(1)\"," ++
                         "  [1], arguments[curarg])))")
-                    out "    throw new GraceExceptionPacket(TypeErrorObject,"
-                    out "        new GraceString(\"argument {paramnr} in {part.name} (arg list {partnr}), which corresponds to parameter {p.value}, does not have \" + "
-                    out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
+                    out "    raiseTypeError("
+                    out "      \"argument {paramnr} to {part.name} (arg list {partnr}) is not of type \" +"
+                    out "      \"{p.dtype.toGrace 0}\", {dtype}, arguments[curarg]);"
                 }
                 out("curarg++;")
             }
         }
-        out "// End argument checking"
+        out "// End argument type-checks"
     }
 }
 method debugModePrefix {
@@ -562,9 +566,9 @@ method compileResultTypeCheck(o, ret) onLine (lineNr) {
         def dtype = compilenode(o.dtype)
         noteLineNumber (lineNr) comment "return value"
         out "if (!Grace_isTrue(callmethod({dtype}, \"match(1)\", [1], {ret})))"
-        out "    throw new GraceExceptionPacket(TypeErrorObject,"
-        out "        new GraceString(\"result of method {o.canonicalName} does not have \" + "
-        out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
+        out "    raiseTypeError("
+        out "        \"result of method {o.canonicalName} does not have type\" + "
+        out "        \"{o.dtype.toGrace 0}.\", {dtype}, {ret});"
     }
 }
 
@@ -738,21 +742,19 @@ method compilebind(o) {
     }
 }
 method compiledefdec(o) {
-    var nm
-    var snm
     def currentScope = o.scope
-    if (o.name.kind == "generic") then {
-        snm := o.name.value.value
+    def nm = if (o.name.kind == "generic") then {
+        o.name.value.value
     } else {
-        snm := o.name.value
+        o.name.value
     }
-    nm := snm
+    def var_nm = varf(nm)
+    declaredvars.push(nm)
     if (debugMode) then {
         out "myframe.addVar(\"{escapestring(nm)}\", function() \{return {varf(nm)}});"
     }
-    declaredvars.push(nm)
-    var val := compilenode(o.value)
-    out("var " ++ varf(nm) ++ " = " ++ val ++ ";")
+    def val = compilenode(o.value)
+    out "var {var_nm} = {val};"
     if (compilationDepth == 1) then {
         // this def is at top level, and not inside a block or method
         if (o.isReadable) then {
@@ -765,29 +767,36 @@ method compiledefdec(o) {
     if (emitTypeChecks) then {
         if (o.dtype != false) then {
             if (o.dtype.value != "Unknown") then {
-                noteLineNumber(o.line)comment("compiledefdec")
-                out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match(1)\", [1], {varf(nm)})))"
-                out "  throw new GraceExceptionPacket(TypeErrorObject,"
-                out "      new GraceString(\"value of def {snm} is not of type {o.dtype.toGrace(0)}\"));"
+                noteLineNumber(o.line)comment("type check for defdec")
+                def nm_t = compilenode(o.dtype)
+                out "if (!Grace_isTrue(callmethod({nm_t}, \"match(1)\", [1], {var_nm})))"
+                out "    raiseTypeError("
+                out "      \"value of def {nm} is not of type {o.dtype.toGrace(0)}\","
+                out "      {nm_t}, {var_nm});"
             }
         }
     }
     o.register := "GraceDone"
 }
 method compilevardec(o) {
-    var nm := o.name.value
     def currentScope = o.scope
+    def nm = if (o.name.kind == "generic") then {
+        o.name.value.value
+    } else {
+        o.name.value
+    }
+    def var_nm = varf(nm)
     declaredvars.push(nm)
     var val := o.value
     if (false != val) then {
         val := compilenode(val)
-        out("var " ++ varf(nm) ++ " = " ++ val ++ ";")
+        out "var {var_nm} = {val};"
     } else {
-        out("var " ++ varf(nm) ++ ";")
         val := "false"
+        out "var {var_nm};"
     }
     if (debugMode) then {
-        out "myframe.addVar(\"{escapestring(nm)}\", function() \{return {varf(nm)}});"
+        out "myframe.addVar(\"{escapestring(nm)}\", function() \{return {var_nm}});"
     }
     if (compilationDepth == 1) then {
         // this def is at top level, and not inside a block or method
@@ -808,10 +817,12 @@ method compilevardec(o) {
         if (o.dtype != false) then {
             if (o.dtype.value != "Unknown") then {
                 if (val != "false") then {
-                    noteLineNumber(o.line)comment("compilevardec")
-                    out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match(1)\", [1], {varf(nm)})))"
-                    out "  throw new GraceExceptionPacket(TypeErrorObject,"
-                    out "      new GraceString(\"initial value of var {o.name.value} is not of type {o.dtype.toGrace(0)}\"));"
+                    noteLineNumber(o.line)comment("type check for vardec")
+                    def nm_t = compilenode(o.dtype)
+                    out "if (!Grace_isTrue(callmethod({nm_t}, \"match(1)\", [1], {var_nm})))"
+                    out "    raiseTypeError("
+                    out "      \"initial value of var '{nm}' is not of type {o.dtype.toGrace(0)}\","
+                    out "      {nm_t}, {var_nm});"
                 }
             }
         }
@@ -1001,9 +1012,11 @@ method compiledialect(o) {
 method compileimport(o) {
     out("// Import of {o.path} as {o.nameString}")
     def currentScope = o.scope
-    var nm := escapeident(o.nameString)
-    var fn := escapestring(o.path)
-    out "if (typeof {formatModname(o.path)} == \"undefined\")"
+    def nm = escapeident(o.nameString)
+    def var_nm = varf(nm)
+    def fn = escapestring(o.path)
+    declaredvars.push(escapeident(o.nameString))
+    out("if (typeof {formatModname(o.path)} == \"undefined\")")
     out "  throw new GraceExceptionPacket(EnvironmentExceptionObject, "
     out "    new GraceString(\"could not find module {o.path}\"));"
     out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", {formatModname(o.path)});")
@@ -1021,10 +1034,11 @@ method compileimport(o) {
     if (emitTypeChecks) then {
         if (o.dtype != false) then {
             if (o.dtype.value != "Unknown") then {
-                out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match(1)\","
-                out "  [1], {varf(nm)})))"
-                out "    throw new GraceExceptionPacket(TypeErrorObject,"
-                out "          new GraceString(\"module {o.nameString} is not of type {o.dtype.toGrace(0)}\"))";
+                def nm_t = compilenode(o.dtype)
+                out "if (!Grace_isTrue(callmethod({nm_t}, \"match(1)\", [1], {var_nm})))"
+                out "    raiseTypeError("
+                out "          \"module '{o.nameString.quoted}' is not of type {o.dtype.toGrace(0)}\","
+                out "          {nm_t}, {var_nm});"
             }
         }
     }
