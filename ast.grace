@@ -1453,6 +1453,27 @@ def arrayNode is public = object {
     }
   }
 }
+class outerNode(objectNd, n) {
+    // references the object described by `objectNd`, which is `n` ≥ 1
+    // levels outside the current object
+    inherits baseNode
+    def theObject is public = objectNd
+    def levelsOut is public = n
+    method asString { "outer_{util.modname}_{theObject.line}" }
+    method pretty(depth) { asString }
+    method accept(visitor) from (as) {
+        visitor.visitOuter(self) up (as)
+    }
+    method toGrace(depth) {
+        "outer" ++ (".outer" * (levelsOut - 1))
+        // don't visit theObject, since this would introduce a cycle
+    }
+    method isOuter { true }
+    method isSelfOrOuter { true }
+    method shallowCopy {
+        outerNode(theObject, levelsOut).shallowCopyFieldsFrom(self)
+    }
+}
 def memberNode is public = object {
     method new(request, receiver) scope(s) {
         // Represents a dotted request ‹receiver›.‹request› with no arguments.
@@ -1464,7 +1485,7 @@ def memberNode is public = object {
         // Represents a dotted request ‹receiver›.‹request› with no arguments.
         inherit baseNode
         def kind is public = "member"
-        var value is public := request  // NB: value is a String, not an Identifier
+        var value:String is public := request
         var receiver is public := receiver'
         var generics is public := false
         var isSelfRequest is public := false
@@ -2744,6 +2765,7 @@ type ASTVisitor = {
     visitBlank(o) up(as) -> Boolean
     visitComment(o) up(as) -> Boolean
     visitImplicit(o) up(as) -> Boolean
+    visitOuter(o) up(as) -> Boolean
 }
 
 class baseVisitor -> ASTVisitor {
@@ -2777,6 +2799,7 @@ class baseVisitor -> ASTVisitor {
     method visitBlank(o) up(as) { visitBlank(o) }
     method visitComment(o) up(as) { visitComment(o) }
     method visitImplicit(o) up(as) { visitImplicit(o) }
+    method visitOuter(o) up(as) -> Boolean { visitOuter(o) }
 
     method visitIf(o) -> Boolean { true }
     method visitBlock(o) -> Boolean { true }
@@ -2808,6 +2831,7 @@ class baseVisitor -> ASTVisitor {
     method visitBlank(o) -> Boolean { true }
     method visitComment(o) -> Boolean { true }
     method visitImplicit(o) -> Boolean { true }
+    method visitOuter(o) -> Boolean { true }
 
     method asString { "an AST visitor" }
 }
@@ -2848,6 +2872,7 @@ class pluggableVisitor(visitation:Block2) -> ASTVisitor {
     method visitBlank(o) up(as) { visitation.apply (o, as) }
     method visitComment(o) up(as) { visitation.apply (o, as) }
     method visitImplicit(o) up(as) { visitation.apply (o, as) }
+    method visitOuter(o) up(as) { visitation.apply (o, as) }
 
     method asString { "a pluggable AST visitor" }
 }
