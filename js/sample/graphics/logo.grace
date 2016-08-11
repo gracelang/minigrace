@@ -28,6 +28,12 @@ method penUp {
 method penDown {
     turtle.penDown
 }
+method speed:=(sp) {
+    if (sp >= 1) then {
+        turtle.speed := sp.floor
+    }
+}
+
 def thisDialect is public = object {
     method atEnd(mod) {
         turtle.start
