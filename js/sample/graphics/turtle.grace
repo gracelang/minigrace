@@ -21,6 +21,8 @@ var started := false
 var maxActionsDrawn := -1
 var delay := 1
 
+var speed is public := 1
+
 var turtleAngle := 0
 
 // Each frame of the image is a step
@@ -63,21 +65,23 @@ method move(dist, lineCol, lineWidth) {
     def stageN = stages.size - 1
     def mctx = canvas.getContext("2d")
     // One frame for each unit of distance
-    for (1..dist.floor) do {i->
-        steps.push {
-            def y'' = (angle / 180 * π).cos * i
-            def x'' = (angle / 180 * π).sin * i
-            mctx.beginPath
-            mctx.strokeStyle := "rgb({lineCol.r}, {lineCol.g}, {lineCol.b})"
-            mctx.lineWidth := lineWidth
-            mctx.moveTo(startX, startY)
-            y := startY - y''
-            x := startX + x''
-            if (drawingEnabled) then {
-                mctx.lineTo(x, y)
-                mctx.stroke
+    for (1..dist.floor) do { i->
+        if ((i % speed) == 0) then {
+            steps.push {
+                def y'' = (angle / 180 * π).cos * i
+                def x'' = (angle / 180 * π).sin * i
+                mctx.beginPath
+                mctx.strokeStyle := "rgb({lineCol.r}, {lineCol.g}, {lineCol.b})"
+                mctx.lineWidth := lineWidth
+                mctx.moveTo(startX, startY)
+                y := startY - y''
+                x := startX + x''
+                if (drawingEnabled) then {
+                    mctx.lineTo(x, y)
+                    mctx.stroke
+                }
+                turtleAngle := startAngle
             }
-            turtleAngle := startAngle
         }
     }
     steps.push {
@@ -102,10 +106,12 @@ method turnRight(ang) {
     def startY = y
     def startAngle = turtleAngle
     for (0..ang.floor) do {i->
-        steps.push {
-            x := startX
-            y := startY
-            turtleAngle := startAngle + i
+        if ((i % speed) == 0) then {
+            steps.push {
+                x := startX
+                y := startY
+                turtleAngle := startAngle + i
+            }
         }
     }
     steps.push {
@@ -121,10 +127,12 @@ method turnLeft(ang) {
     def startY = y
     def startAngle = turtleAngle
     for (0..ang.floor) do {i->
-        steps.push {
-            x := startX
-            y := startY
-            turtleAngle := startAngle - i
+        if ((i % speed) == 0) then {
+            steps.push {
+                x := startX
+                y := startY
+                turtleAngle := startAngle - i
+            }
         }
     }
     steps.push {
