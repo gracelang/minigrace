@@ -162,7 +162,11 @@ class baseNode {
         // conection between the node and the symbol table that defines its scope.
         symbolTable := st
     }
-
+    method setScope(st) {
+        // sets the symboltable, and answers self, for chaining.
+        scope := st
+        self
+    }
     method shallowCopyFieldsFrom(other) {
         register := other.register
         line := other.line
@@ -1453,25 +1457,34 @@ def arrayNode is public = object {
     }
   }
 }
-class outerNode(objectNd, n) {
-    // references the object described by `objectNd`, which is `n` ≥ 1
-    // levels outside the current object
+class outerNode(nodes) {
+    // references an object outside the current object.
+    // nodes, a sequence of objectNodes, tells us which one.
+    // The object that we refer to is the one OUTSIDE nodes.last
     inherits baseNode
-    def theObject is public = objectNd
-    def levelsOut is public = n
-    method asString { "outer_{util.modname}_{theObject.line}" }
-    method pretty(depth) { asString }
+    def kind is public = "outer"
+    def theObjects is public = nodes
+    method nameString {
+        theObjects.fold { a, o -> "{a}.outer_{util.modname}_{o.line}" }
+            startingWith ""
+    }
+    method asString { "‹object outside that at line {theObjects.last.line}›" }
+    method pretty(depth) { nameString }
     method accept(visitor) from (as) {
         visitor.visitOuter(self) up (as)
+        // don't visit theObject, since this would introduce a cycle
     }
     method toGrace(depth) {
-        "outer" ++ (".outer" * (levelsOut - 1))
-        // don't visit theObject, since this would introduce a cycle
+        "outer" ++ (".outer" * (theObjects.size - 1))
     }
     method isOuter { true }
     method isSelfOrOuter { true }
     method shallowCopy {
-        outerNode(theObject, levelsOut).shallowCopyFieldsFrom(self)
+        outerNode(theObjects).shallowCopyFieldsFrom(self)
+    }
+    method map (blk) ancestors (as) {
+        var nd := shallowCopy
+        blk.apply(nd, as)
     }
 }
 def memberNode is public = object {
