@@ -144,8 +144,10 @@ method split(pathString) -> List[[String]] {
             ox := ox + 1
         }
         var item := pathString.substringFrom(ix) to(ox-1)
-        if (item.at(item.size) != "/") then { item := item ++ "/" }
-        locations.addLast (item)
+        if (item.isEmpty.not) then {
+            if (item.last != "/") then { item := item ++ "/" }
+            locations.addLast (item)
+        }
         ix := ox + 1
         ox := ix
     }
