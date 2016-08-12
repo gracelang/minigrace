@@ -1464,10 +1464,6 @@ class outerNode(nodes) {
     inherits baseNode
     def kind is public = "outer"
     def theObjects is public = nodes
-    method nameString {
-        theObjects.fold { a, o -> "{a}.outer_{util.modname}_{o.line}" }
-            startingWith ""
-    }
     method asString { "‹object outside that at line {theObjects.last.line}›" }
     method pretty(depth) { nameString }
     method accept(visitor) from (as) {

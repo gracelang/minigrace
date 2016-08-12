@@ -1008,6 +1008,10 @@ method compilecall(o) {
     o.register := "call" ++ auto_count
     auto_count := auto_count + 1
 }
+method compileOuter(o) {
+    o.theObjects.fold { a, o -> "{a}.{outerProp(o)}" }
+            startingWith "this"
+}
 method compiledialect(o) {
     out("// Dialect import of {o.value}")
     var fn := escapestring(o.value)
