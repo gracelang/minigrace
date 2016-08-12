@@ -1815,7 +1815,7 @@ function raiseTypeError(msg, type, value) {
      var tc = callmethod(mm, "loadDynamicModule(1)", [1], new GraceString("typeComparison"));
      var diff = callmethod(tc, "methodsIn(1)missingFrom(1)", [1, 1], type, value);
      var expkt = new GraceExceptionPacket(TypeErrorObject, new GraceString(msg +
-            "\nIt's missing methods" + diff._value));
+            "\nIt's missing methods " + diff._value));
      throw expkt;
 }
 
