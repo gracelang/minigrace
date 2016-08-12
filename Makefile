@@ -258,7 +258,7 @@ $(KG)/minigrace:
 	fi
 
 l1/buildinfo.gct: l1/buildinfo.grace
-	$(KG)/minigrace $(VERBOSITY) --make --noexec $<
+	GRACE_MODULE_PATH=. $(KG)/minigrace $(VERBOSITY) --make --noexec $<
 
 l1/gracelib.h:
 	cd l1 && ln -sf ../gracelib.h .
@@ -270,7 +270,7 @@ l1/gracelib.o: l1/gracelib-basic.o l1/debugger.o l1/standardGrace.gcn l1/collect
 	cd l1 && ld -o gracelib.o -r gracelib-basic.o standardGrace.gcn collectionsPrelude.gcn debugger.o
 
 l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(REALSOURCEFILES) l1/buildinfo.grace l1/gracelib.o l1/gracelib.h
-	cd l1 && ../$(KG)/minigrace  $(VERBOSITY) --make --native --gracelib . --module minigrace compiler.grace 
+	cd l1 && GRACE_MODULE_PATH=. ../$(KG)/minigrace  $(VERBOSITY) --make --native --gracelib . --module minigrace compiler.grace
 
 # The following are pattern rules, to get the "sumiltaneous build" behaviour
 
@@ -280,16 +280,16 @@ l1/StandardPrelude.grace: l1/standardGrace.grace
 	ln -f $< $@
 
 l1/StandardPrelude%gct l1/StandardPrelude%gcn: standardGrace.grace l1/collectionsPrelude.gct $(KG)/minigrace
-	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 --module StandardPrelude $<
+	GRACE_MODULE_PATH=. $(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 --module StandardPrelude $<
 
 l1/standardGrace%gct l1/standardGrace%gcn: standardGrace.grace l1/collectionsPrelude.gct $(KG)/minigrace
-	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
+	GRACE_MODULE_PATH=. $(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
 
 l1/StandardPrelude%gct l1/StandardPrelude%gcn: StandardPrelude.grace l1/collectionsPrelude.gct $(KG)/minigrace
-	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
+	GRACE_MODULE_PATH=. $(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
 
 l1/collectionsPrelude%gct l1/collectionsPrelude%gcn: collectionsPrelude.grace $(KG)/minigrace
-	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
+	GRACE_MODULE_PATH=. $(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
 
 l1/curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -I/usr/local/include -L/usr/local/lib -o $@ -shared -fPIC curl.c -lcurl
@@ -301,7 +301,7 @@ l1/unicode.gso: $(KG)/unicode.gso
 	cd l1 && ln -f ../$(KG)/unicode.gso .
 
 l1/unixFilePath.gct: modules/unixFilePath.grace $(KG)/minigrace l1/standardGrace.gct
-	$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --dir l1 $<
+	GRACE_MODULE_PATH=. $(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --dir l1 $<
 
 $(C_MODULES_GSO:%.gso=%.gct): modules/%.gct: stubs/%.gct
 	cd modules && ln -sf ../$< .
