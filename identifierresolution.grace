@@ -13,6 +13,7 @@ def completed = Singleton.named "completed"
 def inProgress = Singleton.named "inProgress"
 def undiscovered = Singleton.named "undiscovered"
 // constants used in detecting cyclic inheritance
+var useOuterNodes := true
 
 var stSerial := 100
 
@@ -221,24 +222,52 @@ class newScopeIn(parent') kind(variety') {
         variety == "method"
     }
     method resolveOuterMethod(name) fromNode (aNode) {
-        // replace name by outer.outer. ... .name,
-        // depending on where name is declared.
-        var mem := ast.identifierNode.new("self", false) scope(self)
-        withSurroundingScopesDo { s->
-            if (s.contains(name)) then {
-                if (s.variety == "dialect") then {
-                    return ast.memberNode.new(name,
-                        ast.identifierNode.new("prelude", false) scope(self)) scope(self).onSelf
+        if (useOuterNodes) then {
+            // replace name by a request with receiver self, or an outerNode
+            def outerChain = [ ]
+            withSurroundingScopesDo { s->
+                if (s.contains(name)) then {
+                    if (s.variety == "dialect") then {
+                        return ast.memberNode.new(name,
+                              ast.identifierNode.new("prelude", false)
+                                    scope(self)) scope(self).onSelf
+                    }
+                    def rcvr = if (outerChain.isEmpty) then {
+                        ast.identifierNode.new("self", false) scope(self).
+                              setPositionFrom(aNode)
+                    } else {
+                        ast.outerNode(outerChain).setScope(self).
+                              setPositionFrom(aNode)
+                    }
+                    return ast.memberNode.new(name, rcvr).setScope(self).
+                          setPositionFrom(aNode).onSelf
+                }
+                if (s.variety == "object") then {
+                    def definingObjNode = s.node
+                    if (outerChain.isEmpty.not && {outerChain.last == definingObjNode}) then {
+                        util.log 40 verbose "adding {definingObjNode} twice"
+                    } else {
+                        outerChain.addLast(s.node)
+                    }
+                }
+            }
+        } else {
+            // replace name by outer.outer. ... .name,
+            // depending on where name is declared.
+            var mem := ast.identifierNode.new("self", false) scope(self)
+            withSurroundingScopesDo { s->
+                if (s.contains(name)) then {
+                    if (s.variety == "dialect") then {
+                        return ast.memberNode.new(name,
+                            ast.identifierNode.new("prelude", false) scope(self)) scope(self).onSelf
                 } elseif { s.variety == "module" } then {
                     return ast.memberNode.new(name, thisModule) scope(self).onSelf
+                    }
+                    return ast.memberNode.new(name, mem) scope(self).onSelf
                 }
-                return ast.memberNode.new(name, mem) scope(self).onSelf
-            }
-            if (s.variety == "object") then {
-                mem := ast.memberNode.new("outer", mem) scope(self)
-            } elseif {s.variety == "class"} then {
-                mem := ast.memberNode.new("outer", mem) scope(self)
-                mem := ast.memberNode.new("outer", mem) scope(self)
+                if (s.variety == "object") then {
+                    mem := ast.memberNode.new("outer", mem) scope(self)
+                }
             }
         }
         errormessages.syntaxError "no method {aNode.canonicalName}"
@@ -262,9 +291,11 @@ class newScopeIn(parent') kind(variety') {
             }
             errormessages.syntaxError "no method {nd.canonicalName}"
                 atRange(nd.line, nd.linePos, nd.linePos + sought.size - 1)
+        } elseif {nd.kind == "outer"} then {
+            nd.theObjects.last.scope
         } elseif {nd.kind == "op"} then {
             def receiverScope = self.scopeReferencedBy(nd.left)
-            return receiverScope.scopeReferencedBy(nd.asIdentifier)
+            receiverScope.scopeReferencedBy(nd.asIdentifier)
         } elseif {nd.isCall} then { // this includes "memberNodes"
             def receiver = nd.receiver
             if (receiver.isImplicit) then {
@@ -272,10 +303,11 @@ class newScopeIn(parent') kind(variety') {
             }
             def newNd = transformCall(nd)
             def receiverScope = self.scopeReferencedBy(newNd.receiver)
-            return receiverScope.scopeReferencedBy(newNd.asIdentifier)
+            receiverScope.scopeReferencedBy(newNd.asIdentifier)
+        } else {
+            ProgrammingError.raise("{nd.nameString} is not a Call, Member, Identifier, Outer or Op node.\n"
+                    ++ nd.pretty(0))
         }
-        ProgrammingError.raise("{nd.nameString} is not a Call, Member, Identifier or op.\n"
-            ++ nd.pretty(0))
     }
     method enclosingObjectScope {
         // Answer the closest enclosing scope that describes an
@@ -360,7 +392,7 @@ util.setPosition(0, 0)
 def thisModule = ast.identifierNode.new("module()object", false)
                                        scope(moduleScope)
     // a hack to give us a way of referring to this module,
-    // other than by a chain of `outer`s.  The name is once that
+    // other than by a chain of `outer`s.  The name is one that
     // cannot occur naturally in a program
 moduleScope.addName "module()object" as (k.defdec)
 moduleScope.at "module()object" putScope(moduleScope)
@@ -1447,6 +1479,7 @@ method resolve(moduleObject) {
     setupContext(moduleObject)
     util.setPosition(0, 0)
     moduleObject.scope := moduleScope
+    if (util.target == "c") then { useOuterNodes := false }
     def preludeObject = ast.moduleNode.body([moduleObject])
         named "prelude" scope (preludeScope)
     def preludeChain = ast.ancestorChain.with(preludeObject)

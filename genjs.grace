@@ -210,23 +210,31 @@ method create (kind) field (o) in (objr) {
     var nm := escapestring(o.name.value)
     var nmi := escapeident(o.name.value)
     out "{objr}.data[\"{nm}\"] = undefined;"
+    out "if (! {objr}.methods[\"{nm}\"]) \{"
+    increaseindent
     out "var reader_{nmi}{myc} = function() \{  // reader method"
     out "    return this.data[\"{nm}\"];"
-    out "\};"
+    out "};"
     out "reader_{nmi}{myc}.{kind} = true;"
     if (o.isReadable.not) then {
         out "reader_{nmi}{myc}.confidential = true;"
     }
-    if (kind == "var") then {
     out "{objr}.methods[\"{nm}\"] = reader_{nmi}{myc};"
+    decreaseindent
+    out "};"
+    if (kind == "var") then {
+        out "if (! {objr}.methods[\"{nm}:=(1)\"]) \{"
+        increaseindent
         out "var writer_{nmi}{myc} = function(argcv, n) \{   // writer method"
         out "    this.data[\"{nm}\"] = n;"
         out "    return GraceDone;"
         out "\};"
-        out "{objr}.methods[\"{nm}:=(1)\"] = writer_{nmi}{myc};"
         if (o.isWritable.not) then {
             out "writer_{nmi}{myc}.confidential = true;"
         }
+        out "{objr}.methods[\"{nm}:=(1)\"] = writer_{nmi}{myc};"
+        decreaseindent
+        out "};"
     }
 }
 
@@ -268,7 +276,7 @@ method compileInitialization(o, selfr) {
 }
 
 method compileObjectConstructor(o) into (objectUnderConstruction) {
-    // `this` references the current object, which will be
+    // `this` references the current object, which will become
     // the outer object of the object here being constructed
 
     var origInBlock := inBlock
@@ -282,13 +290,18 @@ method compileObjectConstructor(o) into (objectUnderConstruction) {
     }
     def selfr = o.register
     out "var {selfr}_init = function(that) \{";
+        // At execution time, `that` will be the current object, which
+        // will become the `outer` of the object here being constructed,
+        // while `this` will be the object under construction.
     increaseindent
     compileobjouter(o, "that")
     installLocalAttributesOf(o) into "this"
     o.usedTraits.do { t ->
         compileTrait(t) in (o, "this")
     }
-    if (false != o.superclass) then {
+    if (false == o.superclass) then {
+        copyDownMethodsFrom "var_graceObject" to "this" excluding (emptySequence)
+    } else {
         compileSuper(o.superclass, "this")
     }
     compileInitialization(o, "this")
@@ -943,7 +956,7 @@ method compileOuterRequest(o, args) {
     def ot = compilenode(o.receiver)
     out "onSelf = true;";
     out("var call{auto_count} = {requestCall}({ot}" ++
-          ", \"{escapestring(o.receiver.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
+          ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 <<<<<<< HEAD
 method compileOuter(o, args) {
@@ -985,8 +998,6 @@ method compilecall(o) {
         compileSuperRequest(o, args)
     } elseif { receiver.isOuter } then {
         compileOuterRequest(o, args)
-    } elseif { receiver.isSelf && { o.nameString == "outer" } } then {
-        compileOuter(o)
     } elseif { receiver.isSelf } then {
         compileSelfRequest(o, args)
     } elseif { receiver.isPrelude } then {
@@ -1341,7 +1352,7 @@ method compileSuper(inhNode, selfr) {
 
 method copyDownMethodsFrom (sup) to (selfr) excluding (ex) {
     if (ex.isEmpty) then {
-        out "for (key in {sup}.methods) \{"
+        out "for (var key in {sup}.methods) \{"
         out "    if (! {selfr}.methods[key])"
         out "        {selfr}.methods[key] = {sup}.methods[key];"
         out "}"
