@@ -1,3 +1,4 @@
+#pragma noTypeChecks
 import "mirrors" as mirror
 
 method methodsIn(DesiredType) missingFrom (value) -> String {
@@ -8,7 +9,7 @@ method methodsIn(DesiredType) missingFrom (value) -> String {
         ProgrammingError.raise "{value.asDebugString} seems to have all the methods of {DesiredType}"
     } else {
         var s := ""
-        missing.do { each -> s := s ++ each } 
+        missing.do { each -> s := s ++ canonical(each) } 
             separatedBy { s := s ++ ", " }
         s
     }
@@ -21,8 +22,31 @@ method protocolOf(value) notCoveredBy (Q:Type) -> String  {
         (! m.endsWith "$object(1)") && (m != "outer")}.asList.sort
     if (missing.isEmpty.not) then {
         s := ""
-        missing.do { each -> s := s ++ each } 
+        missing.do { each -> s := s ++ canonical(each) }
             separatedBy { s := s ++ ", " }
     }
     return s
+}
+
+method canonical(name) -> String {
+    def left1 = name.indexOf "(" ifAbsent { return name }
+    var cName := ""
+    var ch
+    def nameI = name.iterator
+    while { nameI.hasNext } do {
+        ch := nameI.next
+        cName := cName ++ ch
+        if (ch == "(") then {
+            var n := nameI.next.asNumber
+            while {
+                ch := nameI.next
+                ch.startsWithDigit
+            } do {
+                n := (n * 10) + ch.asNumber
+            }
+            cName := cName ++ "_" ++ (",_" * (n-1)) ++ ")"
+            if (ch ≠ ")") then { RequestError.raise "malformed method name {name}" }
+        }
+    }
+    cName
 }
