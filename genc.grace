@@ -577,7 +577,7 @@ method compilemethod(o, selfobj, pos) {
     def npls = o.numParamLists
     if ((!o.selfclosure) && (npls > 0)) then {
         out "  if (nparts < {npls} && args)"
-        out("    graceRaise(RequestError(), \"missing argument list for {o.canonicalName} (probably "
+        out("    graceRaise(RequestError(), \"missing argument list for {o.canonicalName.quoted} (probably "
             ++ "reflection error): got %i lists, expected "
             ++ "{npls}.\", nparts);")
     }
@@ -601,7 +601,7 @@ method compilemethod(o, selfobj, pos) {
         }
         if (!o.selfclosure && (part.params.size > 0)) then {
             out "  if (argcv && argcv[{partnr - 1}] != {part.params.size})"
-            out "    graceRaise(RequestError(), \"wrong number of arguments for part {part.canonicalName}\");"
+            out "    graceRaise(RequestError(), \"wrong number of arguments for part {part.canonicalName.quoted}\");"
         }
     }
     out("  Object *selfslot = &(stackframe->slots[{slot}]);")
