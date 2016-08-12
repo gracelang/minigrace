@@ -1811,12 +1811,12 @@ function checkBlockApply(numargs) {
 }
 
 function raiseTypeError(msg, type, value) {
-     var mm = do_import("mirrors", gracecode_mirrors)
+     var mm = do_import("mirrors", gracecode_mirrors);
      var tc = callmethod(mm, "loadDynamicModule(1)", [1], new GraceString("typeComparison"));
      var diff = callmethod(tc, "methodsIn(1)missingFrom(1)", [1, 1], type, value);
-     var expkt = new GraceExcpetionPacket(TypeErrorObject, new GraceString(msg +
-            "\nIt's missing methods" + diff._value))
-     throw expkt
+     var expkt = new GraceExceptionPacket(TypeErrorObject, new GraceString(msg +
+            "\nIt's missing methods" + diff._value));
+     throw expkt;
 }
 
 function GraceBlock_match(argcv, o) {
@@ -3628,10 +3628,10 @@ function clone (obj) {
         if (obj.data.hasOwnProperty(attr))
             copy.data[attr] = obj.data[attr];
     }
-    let props = obj.closureKeys || []
+    var props = obj.closureKeys || [];
     copy.closureKeys = props.slice();     // makes a shallow copy
     for (var ox = 0, len = copy.closureKeys.length; ox < len; ox++) {
-      let k = obj.closureKeys[ox];
+      var k = obj.closureKeys[ox];
       copy[k] = obj[k];
     }
     return copy;
