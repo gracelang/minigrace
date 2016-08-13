@@ -74,9 +74,9 @@ c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct c/Makefil
 	for f in gracelib.c gracelib.h unicode.c unicode.gct unicodedata.h $(SOURCEFILES) mirrors.c mirrors.gct definitions.h debugger.c curl.c modules/*.gso modules/*.gct modules/*.gcn ;\
     do cp -f $$f c ; done &&\
     cd c &&\
-    ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude collectionsPrelude.grace &&\
-    ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude standardGrace.grace &&\
-    ../minigrace --target c --make $(VERBOSITY) --module minigrace --noexec compiler.grace &&\
+    GRACE_MODULE_PATH=. ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude collectionsPrelude.grace &&\
+    GRACE_MODULE_PATH=. ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude standardGrace.grace &&\
+    GRACE_MODULE_PATH=. ../minigrace --target c --make $(VERBOSITY) --module minigrace --noexec compiler.grace &&\
     rm -f *.gcn *.gso
 
 clean:
