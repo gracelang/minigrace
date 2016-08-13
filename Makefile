@@ -20,8 +20,8 @@ COMPILER_MODULES = standardGrace.grace collectionsPrelude.grace ast.grace util.g
 
 DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso util.gct util.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
 DIALECTS_NEED = modules/dialect util ast modules/gUnit modules/math
-WEB_DIRECTORY = public_html/ide/
-DEV_WEB_DIRECTORY = public_html/dev/ide/
+WEB_DIRECTORY ?= public_html/ide/
+DEV_WEB_DIRECTORY ?= public_html/dev/ide/
 GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 
 LIBRARY_WO_OBJECTDRAW = $(sort $(filter-out $(OBJECTDRAW), $(LIBRARY_MODULES)))
@@ -156,6 +156,7 @@ echo:
 	@echo C_MODULES_GSO = $(C_MODULES_GSO)
 	@echo GRAPHIX:%.grace=js/%.js = $(GRAPHIX:%.grace=js/%.js)
 	@echo WEBFILES_SIMPLE = $(WEBFILES_SIMPLE)
+	@echo WEB_DIRECTORY = $(WEB_DIRECTORY)
 
 fullclean: clean
 	rm -rf .git-generation-cache
