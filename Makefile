@@ -16,7 +16,7 @@ HEADERFILES = gracelib.c gracelib.h definitions.h debugger.c
 
 # COMPILER_MODULES are the parts of the compiler that should go into the modules
 # directory on an install (in addition to ALL_LIBRARY_MODULES)
-COMPILER_MODULES = standardGrace.grace collectionsPrelude.grace ast.grace util.grace identifierKinds.grace stringMap.grace
+COMPILER_MODULES = errormessages.grace standardGrace.grace collectionsPrelude.grace ast.grace util.grace identifierKinds.grace stringMap.grace
 
 DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso util.gct util.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
 DIALECTS_NEED = modules/dialect util ast modules/gUnit modules/math
@@ -208,6 +208,7 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 	install -p -m 755 gracelib.o $(OBJECT_PATH)
 	install -p -m 755 gracelib.o $(MODULE_PATH)
 	install -p -m 644 gracelib.h $(INCLUDE_PATH)
+	install -p -m 644 mirrors.gso mirrors.gct $(MODULE_PATH)
 	install -p -m 644 $(COMPILER_MODULES) $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grace=%.gct) $(MODULE_PATH)
 	install -p -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=modules/%.gct) $(LIBRARY_MODULES:%.grace=js/%.js) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gcn) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso) js/dom.js js/dom.gct $(MODULE_PATH)
 	install -p -m 644 standardGrace.gcn collectionsPrelude.gcn $(MODULE_PATH)
