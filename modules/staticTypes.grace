@@ -648,7 +648,8 @@ rule { _: ArrayLiteral ->
 def RequestError = TypeError.refine "RequestError"
 
 rule { req: Request ->
-    match (req.value) case { memb: Member ->
+    match (req.receiver)
+      case { memb: Member ->
         def rec = memb.receiver
         def rType = if (Identifier.match (rec) && (rec.value == "self")) then {
             scope.types.find "Self" butIfMissing {
@@ -1255,12 +1256,6 @@ method continue'(e, bl) -> Done is confidential {
     bl.apply (e, {
         return
     })
-}
-
-
-// Run the type rules.
-method checker (nodes) {
-    check (nodes)
 }
 
 def thisDialect is public = object {

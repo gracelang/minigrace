@@ -247,9 +247,9 @@ method runRules(node) {
 // Type checker
 
 // Checks the defined rules on the given AST.
-method check(nodes) -> Done {
+method check(module) -> Done {
     // Runs the check on the module object.
-    ast.objectNode.new(nodes, false).accept(astVisitor)
+    module.accept(astVisitor)
 }
 
 type AstNode = { kind -> String }
@@ -421,7 +421,7 @@ def astVisitor = object {
     method visitCall(node) -> Boolean {
         checkMatch(node)
 
-        match(node.value) case { memb : Member ->
+        match(node.receiver) case { memb : Member ->
             memb.receiver.accept(self)
         } case { _ -> }
 
