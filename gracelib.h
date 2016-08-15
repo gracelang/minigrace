@@ -103,6 +103,12 @@ Object callmethod4(Object, const char *,
         int, int *, Object *, int, int);
 Object callmethodself(Object receiver, const char *name,
         int nparts, int *nparamsv, Object *args);
+
+Method *findmethodsimple(Object self, const char *name);
+Method *findmethod(Object *selfp, Object *realselfp,
+        const char *name, int superdepth, int *cflags);
+Object required_method(Object self, int nparts, int *argcv,
+                       Object *argv, int flags);
 Object alloc_Boolean(int val);
 Object alloc_Octets(const char *data, int len);
 Object alloc_ConcatString(Object, Object);

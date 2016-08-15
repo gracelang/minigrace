@@ -4673,6 +4673,14 @@ Object tailcall(Object self, const char *name, int nparts, int *argcv,
 }
 
 Object sourceObject;
+
+
+Object required_method(Object self, int nparts, int *argcv,
+                           Object *argv, int flags) {
+    // this method is used as a replacement for `exculuded` methods.
+    graceRaise(NoSuchMethod(), "an 'excluded' method was not overridden");
+    return alloc_done();
+}
 Method *findmethod(Object *selfp, Object *realselfp, const char *name,
         int superdepth, int *cflags) {
     Object self = *selfp;
