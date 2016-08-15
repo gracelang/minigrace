@@ -19,7 +19,6 @@ objectdraw.grace
 rtobjectdraw.grace
 animation.grace
 js/.DS_Store
-js/StandardPrelude.js
 js/animation.js
 js/ast.js
 js/buildinfo.js
@@ -54,6 +53,7 @@ js/parser.js
 js/random_test.js
 js/requireTypes.js
 js/rtobjectdraw.js
+js/standardGrace.js
 js/staticTypes.js
 js/staticTypes_test.js
 js/stobjectdraw.js
@@ -63,8 +63,8 @@ js/util.js
 js/xmodule.js
 js/tests/test.js.log
 objectdraw/
-stubs/StandardPrelude.grace
 stubs/collectionsPrelude.grace
+stubs/standardGrace.grace
 .git-generation-cache
 modules/tests/test.log
 modules/stobjectdraw.grace
