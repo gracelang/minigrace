@@ -17,20 +17,7 @@ class sub {
         }
     }
 }
-method try_foo2 {
-    try { o.foo2 }
-      catch { ex:NoSuchMethod ->
-            print "Attempt to request confidential alias foo2\n{ex}"
-            return
-    } catch { ex:Exception ->
-            print "unexpected exception {ex}"
-            return
-    }
-    print "error: foo2 should be confidential"
-}
-
 
 def o = sub
 print (o.baz)
 print (o.bad)
-try_foo2

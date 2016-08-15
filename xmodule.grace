@@ -15,7 +15,6 @@ method builtInModules {
         list [  "sys",
                 "io",
                 "imports",
-                "StandardPrelude",
                 "standardGrace",
                 "collectionsPrelude" ]
     } else {

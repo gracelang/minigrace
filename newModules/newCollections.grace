@@ -7,7 +7,7 @@ def ConcurrentModification = ProgrammingError.refine "ConcurrentModification"
 def SizeUnknown = Exception.refine "SizeUnknown"
 
 method abstract is confidential {
-    // copied from StandardPrelude
+    // copied from standardGrace
     SubobjectResponsibility.raise "abstract method not overriden by subobject"
 }
 

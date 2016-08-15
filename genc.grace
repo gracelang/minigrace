@@ -1675,8 +1675,31 @@ method implementAliasesAndExclusionsFor(o) inheriting(e, superobj) {
 
     if (e.aliases.isEmpty && e.exclusions.isEmpty) then { return }
 
-    errormessages.error("I'm sorry, aliases and exclusions are not yet supported " ++
-        "by the C code generator.") atLine (e.line)
+    def tObj = compilenode(e.value)
+    def tMethNames = e.providedNames -- o.localNames
+    util.log 70 verbose "tMethNames = {tMethNames.asList.sort}"
+    e.aliases.do { each ->
+        def nn = each.newName.nameString
+        def methc = auto_count
+        auto_count := auto_count + 1
+        out "  Method *oldmeth{methc} = findmethodsimple({superobj},  \"{each.oldName.nameString.quoted}\");"
+        out("  Method *newmeth{methc} = addmethodrealflags(self, \"{nn.quoted}\", " ++
+              "oldmeth{methc}->func, MFLAG_CONFIDENTIAL);  // alias")
+        out "  newmeth{methc}->definitionModule = oldmeth{methc}->definitionModule;"
+        out "  newmeth{methc}->definitionLine = oldmeth{methc}->definitionLine;"
+        tMethNames.remove(nn)
+    }
+    e.exclusions.do { each ->
+        def exn = each.nameString
+        if (o.localNames.contains(exn).not) then {
+            def methc = auto_count
+            auto_count := auto_count + 1
+            out "  Method *oldmeth{methc} = findmethodsimple({superobj}, \"{exn.quoted}\");"
+            out "  oldmeth{methc}->func = required_method;"
+            out "  oldmeth{methc}->definitionModule = \"{modname.quoted}\";"
+            out "  oldmeth{methc}->definitionLine = {each.line};"
+        }
+    }
 }
 
 method compile(moduleObject, outfile, rm, bt, buildinfo) {
@@ -1738,7 +1761,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     outF("static Object prelude;")
     outF("static int isTailObject = 0;")
     outF("static Object inheritingObject = NULL;")
-    outF("static const char modulename[] = \"{modname}\";");
+    outF("static const char modulename[] = \"{modname.quoted}\";");
     outF("Object module_standardGrace_init();");
     outF("static char *originalSourceLines[] = \{")
     for (util.cLines) do {l->
@@ -1768,7 +1791,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     out("  setline(1);")
     out("  setmodule(modulename);")
     out("  setsource(originalSourceLines);")
-    var modn := "Module<{modname}>"
+    var modn := "Module<{modname.quoted}>"
     out("  setclassname(self, \"{modn}\");")
     out("  Object *var_MatchFailed = alloc_var();")
     out("  *var_MatchFailed = alloc_MatchFailed();")
@@ -1951,7 +1974,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
             }
             def runExitCode = io.spawn(cmd, []).wait
             if (runExitCode < 0) then {
-                io.error.write "minigrace: Program {modname} exited with error {-runExitCode}.\n"
+                io.error.write "minigrace: Program {modname.quoted} exited with error {-runExitCode}.\n"
                 sys.exit(4)
             }
         }

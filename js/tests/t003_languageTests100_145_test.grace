@@ -164,20 +164,20 @@ def aGraceLangTest = object {
                     }
                 }
                 class bb(x) {
-                    inherits aa(x)
+                    inherits aa(x) alias aabaz = baz
                     method bar {
                         out "B's bar"
                     }
                     method baz {
                         out "B's baz invokes..."
-                        super.baz
+                        aabaz
                     }
                 }
                 class cc(y) {
-                    inherits bb(y)
+                    inherits bb(y) alias bbbaz = baz
                     method baz {
                         out "C's baz invokes..."
-                        super.baz
+                        bbbaz
                     }
                 }
                 
