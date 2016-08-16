@@ -175,10 +175,7 @@ class baseNode {
         // hook method, to be overridden by sub-objects if desired
     }
     method basePretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
+        def spc = "  " * (depth+1)
         if ((scope.node == self) && {util.target == "symbols"}) then {
             "{line}:{linePos} {description}\n{spc}Symbols({scope.variety}): {scope}{scope.elementScopesAsString}"
         } elseif {scope.variety == "fake"} then {
@@ -277,10 +274,7 @@ def ifNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
+        def spc = "  " * (depth+1)      
         var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth+1)
         s := s ++ "\n"
@@ -301,10 +295,7 @@ def ifNode is public = object {
         s
     }
     method toGrace(depth : Number) -> String {
-        var spc := ""
-        repeat (depth) times {
-            spc := spc ++ "    "
-        }
+        def spc = "    " * depth
         var s := "if ({self.value.toGrace(0)}) then \{"
         for (self.thenblock.body) do { ix ->
             s := s ++ "\n" ++ spc ++ "    " ++ ix.toGrace(depth + 1)
@@ -385,10 +376,7 @@ def blockNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
+        def spc = "  " * (depth+1)
         var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ "Parameters:"
         for (self.params) do { mx ->
@@ -407,10 +395,7 @@ def blockNode is public = object {
         s
     }
     method toGrace(depth : Number) -> String {
-        var spc := ""
-        repeat (depth) times {
-            spc := spc ++ "    "
-        }
+        def spc = "    " * depth
         var s := "\{"
         if (self.params.size > 0) then {
             s := s ++ " "
@@ -475,10 +460,7 @@ def tryCatchNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
+        def spc = "  " * (depth+1)
         var s := "{basePretty(depth)}\n"
         s := s ++ spc ++ value.pretty(depth + 2)
         for (self.cases) do { mx ->
@@ -490,10 +472,7 @@ def tryCatchNode is public = object {
         s
     }
     method toGrace(depth : Number) -> String {
-        var spc := ""
-        for (0..(depth - 1)) do { i ->
-            spc := spc ++ "    "
-        }
+        def spc = "    " * depth
         var s := "try " ++ self.value.toGrace(depth + 1) ++ " "
         for (self.cases) do { case ->
             s := s ++ "\n" ++ spc ++ "    " ++ "catch " ++ case.toGrace(depth + 1)
@@ -538,10 +517,7 @@ def matchCaseNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
+        def spc = "  " * (depth+1)
         var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ matchee.pretty(depth + 2)
         for (self.cases) do { mx ->
@@ -553,10 +529,7 @@ def matchCaseNode is public = object {
         s
     }
     method toGrace(depth : Number) -> String {
-        var spc := ""
-        for (0..(depth - 1)) do { i ->
-            spc := spc ++ "    "
-        }
+        def spc = "    " * depth
         var s := "match(" ++ self.value.toGrace(0) ++ ")"
         for (self.cases) do { case ->
             s := s ++ "\n" ++ spc ++ "    " ++ "case " ++ case.toGrace(depth + 2)
@@ -633,10 +606,7 @@ def methodTypeNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
+        def spc = "  " * (depth+1)        
         var s := basePretty(depth) ++ "\n"
         s := "{s}{spc}Name: {value}\n"
         if (false != rtype) then {
@@ -702,11 +672,8 @@ def typeLiteralNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
-        var s := "{basePretty(depth)}\n"
+        def spc = "  " * (depth+1)
+        var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ "Types:"
         for (types) do { each ->
             s := s ++ "\n  "++ spc ++ each.pretty(depth+2)
@@ -719,10 +686,7 @@ def typeLiteralNode is public = object {
         s
     }
     method toGrace(depth : Number) -> String {
-        var spc := ""
-        for (0..(depth - 1)) do { i ->
-            spc := spc ++ "    "
-        }
+        def spc = "    " * depth
         var s := "type"
         s := s ++ " = \{"
         for (self.methods) do { each ->
@@ -795,10 +759,7 @@ def typeDecNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
+        def spc = "  " * (depth+1)
         var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ self.name.pretty(depth + 1) ++ "\n"
         if (false != typeParams) then {
@@ -813,10 +774,7 @@ def typeDecNode is public = object {
         s
     }
     method toGrace(depth : Number) -> String {
-        var spc := ""
-        for (0..(depth - 1)) do { i ->
-            spc := spc ++ "    "
-        }
+        def spc = "    " * depth
         var s := ""
         s := "type {self.name}"
         if (false != typeParams) then {
@@ -982,10 +940,7 @@ def methodNode = object {
             blk.apply(n, as)
         }
         method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
+            def spc = "  " * (depth+1)
             var s := basePretty(depth) ++ "\n"
             s := s ++ spc ++ "Name: " ++ value.pretty(depth+1) ++ "\n"
             if (false != self.dtype) then {
@@ -1027,10 +982,7 @@ def methodNode = object {
             s
         }
         method toGrace(depth : Number) -> String {
-            var spc := ""
-            for (0..(depth - 1)) do { i ->
-                spc := spc ++ "    "
-            }
+            def spc = "    " * depth
             var s := "method "
             var firstPart := true
             for (self.signature) do { part ->
@@ -1173,10 +1125,7 @@ def callNode = object {
             blk.apply(n, as)
         }
         method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
+            def spc = "  " * (depth+1)
             var s := basePretty(depth)
             s := s ++ if (isSelfRequest) then { " on self\n" } else { "\n" }
             s := s ++ spc ++ "Receiver: {receiver.pretty(depth + 1)}\n"
@@ -1410,10 +1359,7 @@ def objectNode is public = object {
         }
         method pretty(depth') {
             var depth := depth'
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
+            def spc = "  " * (depth+1)
             var s := basePretty(depth)
             s := "{s}\n{spc}Name: {self.name}"
             if (false != self.superclass) then {
@@ -1432,10 +1378,7 @@ def objectNode is public = object {
             s
         }
         method toGrace(depth : Number) -> String {
-            var spc := ""
-            for (0..(depth - 1)) do { i ->
-                spc := spc ++ "    "
-            }
+            def spc = "    " * depth
             var s := "object \{"
             if (inTrait) then { s := s ++ "   // trait" }
             if (inClass) then { s := s ++ "   // class" }
@@ -1487,10 +1430,7 @@ def arrayNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { ai ->
-            spc := spc ++ "  "
-        }
+        def spc = "  " * (depth+1)
         var s := basePretty(depth)
         for (self.value) do { ax ->
             s := s ++ "\n"++ spc ++ ax.pretty(depth+1)
@@ -1562,10 +1502,7 @@ def memberNode = object {
             blk.apply(n, as)
         }
         method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
+            def spc = "  " * (depth+1)
             var s := basePretty(depth)
             s := s ++ if (isSelfRequest) then { " on self " } else { " " }
             s := s ++ "‹" ++ self.value ++ "›\n"
@@ -1587,15 +1524,15 @@ def memberNode = object {
                 s := self.receiver.toGrace(depth) ++ "." ++ self.value
             }
             if (false != generics) then {
-                s := s ++ "<"
+                s := s ++ "⟦"
                 for (1..(generics.size - 1)) do {ix ->
-                    s := s ++ generics.at(ix).toGrace(depth + 1)
+                    s := s ++ generics.at(ix).toGrace(depth + 1) ++ ", "
                 }
-                s := s ++ generics.last.toGrace(depth + 1) ++ ">"
+                s := s ++ generics.last.toGrace(depth + 1) ++ "⟧"
             }
             s
         }
-        method asString { "{receiver}.{value}" }
+        method asString { toGrace 0 }
         method asIdentifier {
             // make and return an identifiderNode for my request
             if (fakeSymbolTable == scope) then {
@@ -1646,16 +1583,16 @@ def genericNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var s := "{basePretty(depth)}({value.pretty(depth)})<"
+        var s := "{basePretty(depth)}({value.pretty(depth)})⟦"
         args.do { each -> s := s ++ each.pretty(depth+2) }
             separatedBy { s := s ++ ", " }
-        s ++ ">"
+        s ++ "⟧"
     }
     method toGrace(depth : Number) -> String {
-        var s := nameString ++ "<"
+        var s := nameString ++ "⟦"
         args.do { each -> s := s ++ each.toGrace(0) }
             separatedBy { s := s ++ ", " }
-        s ++ ">"
+        s ++ "⟧"
     }
     method shallowCopy {
         genericNode.new(value, args).shallowCopyFieldsFrom(self)
@@ -1690,20 +1627,17 @@ def typeParametersNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
-        var s := spc ++ basePretty(depth) ++ "<"
+        def spc = "  " * (depth+1)
+        var s := spc ++ basePretty(depth) ++ "⟦"
         params.do { each -> s := s ++ each.pretty(depth+2) }
             separatedBy { s := s ++ ", " }
-        s ++ ">"
+        s ++ "⟧"
     }
     method toGrace(depth:Number) -> String {
-        var s := "<"
+        var s := "⟦"
         params.do { each -> s := "{s}{each.toGrace(depth)}" }
             separatedBy { s := s ++ ", " }
-        s ++ ">"
+        s ++ "⟧"
     }
     method shallowCopy {
         typeParametersNode.new(emptySeq).shallowCopyFieldsFrom(self)
@@ -1779,10 +1713,7 @@ def identifierNode = object {
             blk.apply(n, as)
         }
         method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
+            def spc = "  " * (depth+1)
             var s := basePretty(depth)
             if ( wildcard ) then {
                 s := s ++ " Wildcard"
@@ -1814,11 +1745,11 @@ def identifierNode = object {
                 s := s ++ " : " ++ self.dtype.toGrace(depth + 1)
             }
             if (false != generics) then {
-                s := s ++ "<"
+                s := s ++ "⟦"
                 for (1..(generics.size - 1)) do {ix ->
                     s := s ++ generics.at(ix).toGrace(depth + 1)
                 }
-                s := s ++ generics.last.toGrace(depth + 1) ++ ">"
+                s := s ++ generics.last.toGrace(depth + 1) ++ "⟧"
             }
             s
         }
@@ -1933,11 +1864,8 @@ def opNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
-        var s := "{basePretty(depth)}‹" ++ self.nameString ++ "›"
+        def spc = "  " * (depth+1)
+        var s := "{basePretty(depth)}‹{self.nameString}›"
         s := s ++ "\n"
         s := s ++ spc ++ self.left.pretty(depth + 1)
         s := s ++ "\n"
@@ -2003,10 +1931,7 @@ def bindNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
+        def spc = "  " * (depth+1)
         var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ self.dest.pretty(depth + 1)
         s := s ++ "\n"
@@ -2014,10 +1939,7 @@ def bindNode is public = object {
         s
     }
     method toGrace(depth : Number) -> String {
-        var spc := ""
-        for (0..(depth - 1)) do { i ->
-            spc := spc ++ "    "
-        }
+        def spc = "    " * depth
         var s := self.dest.toGrace(depth + 1)
         s := s ++ " := " ++ self.value.toGrace(depth + 1)
         s
@@ -2090,10 +2012,7 @@ def defDecNode = object {
             blk.apply(n, as)
         }
         method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
+            def spc = "  " * (depth+1)
             var s := basePretty(depth) ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth)
             if (false != dtype) then {
@@ -2114,10 +2033,7 @@ def defDecNode = object {
             s
         }
         method toGrace(depth : Number) -> String {
-            var spc := ""
-            for (0..(depth - 1)) do { i ->
-                spc := spc ++ "    "
-            }
+            def spc = "    " * depth
             var s := "def {self.name.toGrace(0)}"
             if ( (false != self.dtype) && {
                     self.dtype.value != "Unknown" }) then {
@@ -2205,10 +2121,7 @@ def varDecNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var spc := ""
-        for ((0..depth)) do { i ->
-            spc := spc ++ "  "
-        }
+        def spc = "  " * (depth+1)
         var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ self.name.pretty(depth + 1)
         if (false != self.dtype) then {
@@ -2225,10 +2138,7 @@ def varDecNode is public = object {
         s
     }
     method toGrace(depth : Number) -> String {
-        var spc := ""
-        repeat (depth) times {
-            spc := spc ++ "    "
-        }
+        def spc = "    " * depth
         var s := "var {self.name.toGrace(0)}"
         if ( (false != self.dtype) && {
                 self.dtype.value != "Unknown" }) then {
@@ -2309,10 +2219,7 @@ def importNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
+        def spc = "  " * (depth+1)
         var s := basePretty(depth) ++ "\n"
         s := s ++ "{spc}Path: {path}\n"
         s := s ++ "{spc}Identifier: {value}\n"
@@ -2361,10 +2268,7 @@ def dialectNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
+        def spc = "  " * (depth+1)
         var s := basePretty(depth) ++ "\n"
         s := s ++ "{spc}Path: {self.value}\n"
         s
@@ -2396,10 +2300,7 @@ def returnNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
+        def spc = "  " * (depth+1)
         var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth + 1)
         s
@@ -2456,10 +2357,7 @@ def inheritNode = object {
             blk.apply(n, as)
         }
         method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
+            def spc = "  " * (depth+1)
             var s := basePretty(depth)
             if (isUse) then { s := "{s} (use)" }
             s := s ++ "\n" ++ spc ++ self.value.pretty(depth + 1)
@@ -2525,10 +2423,7 @@ class aliasNew(n) old(o) {
     method oldName {o}
     method asString { "alias {n.nameString} = {o.nameString}" }
     method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
+        def spc = "  " * (depth+1)
         "{spc}  alias {n.pretty(depth)} = {o.pretty(depth)}"
     }
     method hash { (n.hash * 1171) + o.hash }
@@ -2619,10 +2514,7 @@ def signaturePart = object {
             blk.apply(nd, as)
         }
         method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
+            def spc = "  " * (depth+1)
             var s := "{basePretty(depth)}: {name}"
             if (params.isEmpty.not) then { s := "{s}\n{spc}Parameters:" }
             for (params) do { p ->
@@ -2692,10 +2584,7 @@ def requestPart = object {
             blk.apply(n, as)
         }
         method pretty(depth) {
-            var spc := ""
-            repeat (depth+1) times {
-                spc := spc ++ "  "
-            }
+            def spc = "  " * (depth+1)
             var s := "{basePretty(depth)}: {name}"
             s := "{s}\n{spc}Args:"
             for (args) do { a ->
@@ -2774,8 +2663,7 @@ def commentNode = object {
             if (isPartialLine) then {
                 "// (partial) {value}"
             } else {
-                var spc := ""
-                repeat (depth) times { spc := spc ++ "    " }
+                def spc = "    " * depth
                 wrap(value) to (lineLength) prefix (spc ++ "// ")
             }
         }

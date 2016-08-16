@@ -5,14 +5,14 @@ methodtypes-of:A:
  2 m1(n : Number) -> Number
  2 m2(n : Number) -> Done
  | 2
- | B<T>
+ | B⟦T⟧
  | other.C
- | other.U<T>
+ | other.U⟦T⟧
 methodtypes-of:D:
- & Collection<T>
+ & Collection⟦T⟧
  & F
  & G
-methodtypes-of:H<T>:
+methodtypes-of:H⟦T⟧:
  2 m3(x : T) -> T
 methodtypes-of:Z:
  & 3
