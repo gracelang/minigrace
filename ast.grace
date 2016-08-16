@@ -168,9 +168,13 @@ class baseNode {
         line := other.line
         linePos := other.linePos
         scope := other.scope
+        postCopy(other)
         self
     }
-    method pretty(depth) {
+    method postCopy(other) {
+        // hook method, to be overridden by sub-objects if desired
+    }
+    method basePretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
             spc := spc ++ "  "
@@ -183,6 +187,7 @@ class baseNode {
             "{line}:{linePos} {description} {scope.asDebugString}"
         }
     }
+    method pretty(depth) { basePretty(depth) }
     method deepCopy {
         self.map { each -> each } ancestors(ancestorChain.empty)
     }
@@ -276,7 +281,7 @@ def ifNode is public = object {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := super.pretty(depth) ++ "\n"
+        var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth+1)
         s := s ++ "\n"
         if (util.target == "symbols") then {
@@ -316,8 +321,7 @@ def ifNode is public = object {
     method shallowCopy {
         ifNode.new(nullNode, nullNode, nullNode).shallowCopyFieldsFrom(self)
     }
-    method shallowCopyFieldsFrom(other) {
-        super.shallowCopyFieldsFrom(other)
+    method postCopy(other) {
         handledIdentifiers := other.handledIdentifiers
         self
     }
@@ -385,7 +389,7 @@ def blockNode is public = object {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := super.pretty(depth) ++ "\n"
+        var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ "Parameters:"
         for (self.params) do { mx ->
             s := s ++ "\n  "++ spc ++ mx.pretty(depth+1)
@@ -434,8 +438,7 @@ def blockNode is public = object {
     method shallowCopy {
         blockNode.new(params, body).shallowCopyFieldsFrom(self)
     }
-    method shallowCopyFieldsFrom(other) {
-        super.shallowCopyFieldsFrom(other)
+    method postCopy(other) {
         matchingPattern := other.matchingPattern
         extraRuntimeData := other.extraRuntimeData
         self
@@ -476,7 +479,7 @@ def tryCatchNode is public = object {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "{super.pretty(depth)}\n"
+        var s := "{basePretty(depth)}\n"
         s := s ++ spc ++ value.pretty(depth + 2)
         for (self.cases) do { mx ->
             s := s ++ "\n{spc}Case:\n{spc}  {mx.pretty(depth+2)}"
@@ -539,7 +542,7 @@ def matchCaseNode is public = object {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := super.pretty(depth) ++ "\n"
+        var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ matchee.pretty(depth + 2)
         for (self.cases) do { mx ->
             s := s ++ "\n{spc}Case:\n{spc}  {mx.pretty(depth+2)}"
@@ -634,7 +637,7 @@ def methodTypeNode is public = object {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := super.pretty(depth) ++ "\n"
+        var s := basePretty(depth) ++ "\n"
         s := "{s}{spc}Name: {value}\n"
         if (false != rtype) then {
             s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth + 2)}"
@@ -703,7 +706,7 @@ def typeLiteralNode is public = object {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "{super.pretty(depth)}\n"
+        var s := "{basePretty(depth)}\n"
         s := s ++ spc ++ "Types:"
         for (types) do { each ->
             s := s ++ "\n  "++ spc ++ each.pretty(depth+2)
@@ -733,8 +736,7 @@ def typeLiteralNode is public = object {
     method shallowCopy {
         typeLiteralNode.new(emptySeq, emptySeq).shallowCopyFieldsFrom(self)
     }
-    method shallowCopyFieldsFrom(other) {
-        super.shallowCopyFieldsFrom(other)
+    method postCopy(other) {
         nominal := other.nominal
         anonymous := other.anonymous
         value := other.value
@@ -797,7 +799,7 @@ def typeDecNode is public = object {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := super.pretty(depth) ++ "\n"
+        var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ self.name.pretty(depth + 1) ++ "\n"
         if (false != typeParams) then {
             s := "{s}{spc}Type parameters:\n{typeParams.pretty(depth + 2)}\n"
@@ -984,7 +986,7 @@ def methodNode = object {
             for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
-            var s := super.pretty(depth) ++ "\n"
+            var s := basePretty(depth) ++ "\n"
             s := s ++ spc ++ "Name: " ++ value.pretty(depth+1) ++ "\n"
             if (false != self.dtype) then {
                 s := s ++ spc ++ "Returns:\n" ++ spc ++ "  "
@@ -1071,8 +1073,7 @@ def methodNode = object {
         method shallowCopy {
             methodNode.new(signature, body, dtype).shallowCopyFieldsFrom(self)
         }
-        method shallowCopyFieldsFrom(other) {
-            super.shallowCopyFieldsFrom(other)
+        method postCopy(other) {
             isFresh := other.isFresh
             selfclosure := other.selfclosure
             if (other.isBindingOccurence.not) then {
@@ -1175,7 +1176,7 @@ def callNode = object {
             for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
-            var s := super.pretty(depth)
+            var s := basePretty(depth)
             s := s ++ if (isSelfRequest) then { " on self\n" } else { "\n" }
             s := s ++ spc ++ "Receiver: {receiver.pretty(depth + 1)}\n"
             s := s ++ spc ++ "Method Name: {nameString}\n"
@@ -1222,8 +1223,7 @@ def callNode = object {
         method shallowCopy {
             callNode.new(receiver, with).shallowCopyFieldsFrom(self)
         }
-        method shallowCopyFieldsFrom(other) {
-            super.shallowCopyFieldsFrom(other)
+        method postCopy(other) {
             isPattern := other.isPattern
             isSelfRequest := other.isSelfRequest
             self
@@ -1272,9 +1272,19 @@ def moduleNode = object {
         method shallowCopy {
             moduleNode.body(emptySeq).shallowCopyFieldsFrom(self)
         }
-        method shallowCopyFieldsFrom(other) {
-            super.shallowCopyFieldsFrom(other)
+        method postCopy(other) {
             imports := other.imports
+            // copy the field of moduleNode
+
+            name := other.name
+            value := other.value
+            superclass := other.superclass
+            usedTraits := other.usedTraits
+            inClass := other.inClass
+            inTrait := other.inTrait
+            annotations := other.annotations
+            // copy the fields of objectNode — should be an alias to objectNode.postCopy
+
             self
         }
     }
@@ -1313,6 +1323,7 @@ def objectNode is public = object {
         method isTrait {
             // answers true if this object qualifies to be a trait, whether
             // or not it was declared with the trait syntax
+            
             if (inTrait) then { return true }
             if (false != superclass) then { return false }
             value.do { each ->
@@ -1401,7 +1412,7 @@ def objectNode is public = object {
             for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
-            var s := super.pretty(depth)
+            var s := basePretty(depth)
             s := "{s}\n{spc}Name: {self.name}"
             if (false != self.superclass) then {
                 s := s ++ "\n" ++ spc ++ "Superclass: " ++
@@ -1439,8 +1450,7 @@ def objectNode is public = object {
         method shallowCopy {
             objectNode.new(emptySeq, false).shallowCopyFieldsFrom(self)
         }
-        method shallowCopyFieldsFrom(other) {
-            super.shallowCopyFieldsFrom(other)
+        method postCopy(other) {
             name := other.name
             value := other.value
             superclass := other.superclass
@@ -1479,7 +1489,7 @@ def arrayNode is public = object {
         for (0..depth) do { ai ->
             spc := spc ++ "  "
         }
-        var s := super.pretty(depth)
+        var s := basePretty(depth)
         for (self.value) do { ax ->
             s := s ++ "\n"++ spc ++ ax.pretty(depth+1)
         }
@@ -1554,7 +1564,7 @@ def memberNode = object {
             for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
-            var s := super.pretty(depth)
+            var s := basePretty(depth)
             s := s ++ if (isSelfRequest) then { " on self " } else { " " }
             s := s ++ "‹" ++ self.value ++ "›\n"
             s := s ++ spc ++ receiver.pretty(depth)
@@ -1599,8 +1609,7 @@ def memberNode = object {
             memberNode.new(nameString, receiver).shallowCopyFieldsFrom(self)
         }
         method statementName { "expression" }
-        method shallowCopyFieldsFrom(other) {
-            super.shallowCopyFieldsFrom(other)
+        method postCopy(other) {
             generics := other.generics
             isSelfRequest := other.isSelfRequest
             self
@@ -1635,7 +1644,7 @@ def genericNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var s := "{super.pretty(depth)}({value.pretty(depth)})<"
+        var s := "{basePretty(depth)}({value.pretty(depth)})<"
         args.do { each -> s := s ++ each.pretty(depth+2) }
             separatedBy { s := s ++ ", " }
         s ++ ">"
@@ -1683,7 +1692,7 @@ def typeParametersNode is public = object {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := spc ++ super.pretty(depth) ++ "<"
+        var s := spc ++ basePretty(depth) ++ "<"
         params.do { each -> s := s ++ each.pretty(depth+2) }
             separatedBy { s := s ++ ", " }
         s ++ ">"
@@ -1772,7 +1781,7 @@ def identifierNode = object {
             for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
-            var s := super.pretty(depth)
+            var s := basePretty(depth)
             if ( wildcard ) then {
                 s := s ++ " Wildcard"
             } elseif { isBindingOccurrence } then {
@@ -1822,8 +1831,7 @@ def identifierNode = object {
         method shallowCopy {
             identifierNode.new(value, false).shallowCopyFieldsFrom(self)
         }
-        method shallowCopyFieldsFrom(other) {
-            super.shallowCopyFieldsFrom(other)
+        method postCopy(other) {
             wildcard := other.wildcard
             isBindingOccurrence := other.isBindingOccurrence
             isDeclaredByParent := other.isDeclaredByParent
@@ -1858,7 +1866,7 @@ def stringNode = object {
             blk.apply(n, as)
         }
         method pretty(depth) {
-            "{super.pretty(depth)}({self.value})"
+            "{basePretty(depth)}({self.value})"
         }
         method toGrace(depth : Number) -> String {
             def q = "\""
@@ -1886,7 +1894,7 @@ def numNode is public = object {
             blk.apply(n, as)
         }
         method pretty(depth) {
-            "{super.pretty(depth)}({self.value})"
+            "{basePretty(depth)}({self.value})"
         }
         method toGrace(depth : Number) -> String {
             self.value.asString
@@ -1927,7 +1935,7 @@ def opNode is public = object {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "{super.pretty(depth)}‹" ++ self.nameString ++ "›"
+        var s := "{basePretty(depth)}‹" ++ self.nameString ++ "›"
         s := s ++ "\n"
         s := s ++ spc ++ self.left.pretty(depth + 1)
         s := s ++ "\n"
@@ -1997,7 +2005,7 @@ def bindNode is public = object {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := super.pretty(depth) ++ "\n"
+        var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ self.dest.pretty(depth + 1)
         s := s ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth + 1)
@@ -2084,7 +2092,7 @@ def defDecNode = object {
             for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
-            var s := super.pretty(depth) ++ "\n"
+            var s := basePretty(depth) ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth)
             if (false != dtype) then {
                 s := s ++ "\n" ++ spc ++ "Type: " ++ self.dtype.pretty(depth + 2)
@@ -2127,8 +2135,7 @@ def defDecNode = object {
         method shallowCopy {
             defDecNode.new(name, value, dtype).shallowCopyFieldsFrom(self)
         }
-        method shallowCopyFieldsFrom(other) {
-            super.shallowCopyFieldsFrom(other)
+        method postCopy(other) {
             startToken := other.startToken
             self
         }
@@ -2200,7 +2207,7 @@ def varDecNode is public = object {
         for ((0..depth)) do { i ->
             spc := spc ++ "  "
         }
-        var s := super.pretty(depth) ++ "\n"
+        var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ self.name.pretty(depth + 1)
         if (false != self.dtype) then {
             s := s ++ "\n" ++ spc ++ "Type: "
@@ -2304,7 +2311,7 @@ def importNode is public = object {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := super.pretty(depth) ++ "\n"
+        var s := basePretty(depth) ++ "\n"
         s := s ++ "{spc}Path: {path}\n"
         s := s ++ "{spc}Identifier: {value}\n"
         if (annotations.size > 0) then {
@@ -2356,7 +2363,7 @@ def dialectNode is public = object {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := super.pretty(depth) ++ "\n"
+        var s := basePretty(depth) ++ "\n"
         s := s ++ "{spc}Path: {self.value}\n"
         s
     }
@@ -2391,7 +2398,7 @@ def returnNode is public = object {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := super.pretty(depth) ++ "\n"
+        var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth + 1)
         s
     }
@@ -2451,7 +2458,7 @@ def inheritNode = object {
             for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
-            var s := super.pretty(depth)
+            var s := basePretty(depth)
             if (isUse) then { s := "{s} (use)" }
             s := s ++ "\n" ++ spc ++ self.value.pretty(depth + 1)
             aliases.do { a ->
@@ -2494,8 +2501,7 @@ def inheritNode = object {
         method shallowCopy {
             inheritNode.new(nullNode).shallowCopyFieldsFrom(self)
         }
-        method shallowCopyFieldsFrom(other) {
-            super.shallowCopyFieldsFrom(other)
+        method postCopy(other) {
             providedNames := other.providedNames
             aliases := other.aliases
             exclusions := other.exclusions
@@ -2615,7 +2621,7 @@ def signaturePart = object {
             for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
-            var s := "{super.pretty(depth)}: {name}"
+            var s := "{basePretty(depth)}: {name}"
             if (params.isEmpty.not) then { s := "{s}\n{spc}Parameters:" }
             for (params) do { p ->
                 s := "{s}\n  {spc}{p.pretty(depth + 2)}"
@@ -2636,8 +2642,7 @@ def signaturePart = object {
             signaturePart.partName(name) params(params)
                 .shallowCopyFieldsFrom(self)
         }
-        method shallowCopyFieldsFrom(other) {
-            super.shallowCopyFieldsFrom(other)
+        method postCopy(other) {
             typeParams := other.typeParams
             lineLength := other.lineLength
             self
@@ -2689,7 +2694,7 @@ def requestPart = object {
             repeat (depth+1) times {
                 spc := spc ++ "  "
             }
-            var s := "{super.pretty(depth)}: {name}"
+            var s := "{basePretty(depth)}: {name}"
             s := "{s}\n    {spc}Args:"
             for (args) do { a ->
                 s := "{s}\n    {spc}{a.pretty(depth + 4)}"
@@ -2721,8 +2726,7 @@ def requestPart = object {
         method shallowCopy {
             requestPart.request(name) withArgs(args).shallowCopyFieldsFrom(self)
         }
-        method shallowCopyFieldsFrom(other) {
-            super.shallowCopyFieldsFrom(other)
+        method postCopy(other) {
             lineLength := other.lineLength
             self
         }
@@ -2776,8 +2780,7 @@ def commentNode = object {
         method shallowCopy {
             commentNode.new(nullNode).shallowCopyFieldsFrom(self)
         }
-        method shallowCopyFieldsFrom(other) {
-            super.shallowCopyFieldsFrom(other)
+        method postCopy(other) {
             value := other.value
             isPartialLine := other.isPartialLine
             endLine := other.endLine
