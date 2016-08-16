@@ -4,7 +4,7 @@ import "natList" as natList
 def list = natList.list
 
 class listTest.forMethod(m) {
-    inherits gU.testCaseNamed(m)
+    inherit gU.testCaseNamed(m)
     
     var oneToFive
     var evens
@@ -409,7 +409,7 @@ class listTest.forMethod(m) {
 }
 
 class typeTest.forMethod(m) {
-    inherits gU.testCaseNamed(m)
+    inherit gU.testCaseNamed(m)
     
     method testListTypeCollection {
         def witness = list<Number>.with(1, 2, 3, 4, 5, 6)

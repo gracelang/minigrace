@@ -2,7 +2,7 @@
 import "errormessages" as errormessages
 import "ast" as ast
 
-inherits prelude.methods
+inherit prelude.methods
 
 // Checker error
 
@@ -255,7 +255,7 @@ method check(module) -> Done {
 type AstNode = { kind -> String }
 
 class aPatternMatchingNode(kind : String) -> prelude.Pattern {
-    inherits BasicPattern.new
+    inherit BasicPattern.new
 
     method match(obj : Object) {
         match(obj) 
@@ -296,13 +296,13 @@ def Var is public = aPatternMatchingNode "vardec"
 def Import is public = aPatternMatchingNode "import"
 def Dialect is public = aPatternMatchingNode "dialect"
 def Return is public = aPatternMatchingNode "return"
-def Inherits is public = aPatternMatchingNode "inherits"
+def Inherits is public = aPatternMatchingNode "inherit"
 
 // Special requests patterns.
 
 class RequestOf(methodName:String) -> prelude.Pattern {
 
-    inherits prelude.BasicPattern.new
+    inherit prelude.BasicPattern.new
 
     method match(obj : Object) {
         match(obj) 
@@ -353,7 +353,7 @@ method forBody(node) {
 }
 
 def astVisitor = object {
-    inherits ast.baseVisitor
+    inherit ast.baseVisitor
 
     method checkMatch(node) -> Boolean {
         runRules(node)

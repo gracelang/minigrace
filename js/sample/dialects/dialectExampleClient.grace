@@ -1,5 +1,5 @@
 dialect "dialectExample"
-inherits prelude.methods
+inherit prelude.methods
 
 var a : Number := 23
 

@@ -48,7 +48,7 @@ class testHello {
 }
 var i := testHello
 var j := object {
-    inherits testHello
+    inherit testHello
 }
 
 testSuite {

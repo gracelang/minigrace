@@ -1,6 +1,6 @@
 import "gUnit" as gUnit
 class tryInheritance.constru {
-    inherits gUnit.testRecordFor "foobar" message "nonesense"
+    inherit gUnit.testRecordFor "foobar" message "nonesense"
     method myname {
         name
     }

@@ -8,7 +8,7 @@ class A.new(v') {
     }
 }
 class B.new(x) {
-    inherits A.new(x)
+    inherit A.new(x)
     method bar {
         print "B's bar"
     }

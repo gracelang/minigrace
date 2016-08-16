@@ -2,7 +2,7 @@ dialect "sniff"
 background ("black")
 
 object {
-    inherits circle
+    inherit circle
     colour := "yellow"
     radius := 10
     jumpTo (centre)
@@ -31,7 +31,7 @@ object {
 def ball = Δ
 
 object {
-    inherits rectangle
+    inherit rectangle
     height := 40
     width := 20
     colour := "white"
@@ -46,7 +46,7 @@ object {
 def myPaddle = Δ
 
 object {
-    inherits rectangle
+    inherit rectangle
     height := 40
     width := 20
     colour := "white"

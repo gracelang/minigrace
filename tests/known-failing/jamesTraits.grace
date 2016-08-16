@@ -12,12 +12,12 @@ class fishTrait {
 }
 
 class catFish {
-    inherits catClass
+    inherit catClass
     use catTrait
 }
 
 class fishCat {
-    inherits fishClass
+    inherit fishClass
     use catTrait
 }
 
@@ -42,7 +42,7 @@ class twoTraitsAndMove {
     }
 }
 class justInherits {
-    inherits catClass
+    inherit catClass
     method move { "young man's walk" }
 }
 class useClasses {

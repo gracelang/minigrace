@@ -385,7 +385,7 @@ class commonGraphics{
 }
 
 class shape {
-    inherits commonGraphics
+    inherit commonGraphics
 
     createJsGraphics := new
 
@@ -417,7 +417,7 @@ class shape {
 }
 
 class container {
-    inherits commonGraphics
+    inherit commonGraphics
 
     createJsGraphics := new
     method new {
@@ -442,7 +442,7 @@ class container {
 }
 
 class circle {
-    inherits shape
+    inherit shape
     var radius
     method draw(radius') {
         self.radius := radius'
@@ -459,7 +459,7 @@ class circle {
 }
 
 class rectangle {
-    inherits shape
+    inherit shape
     var height
     var width
     method draw(w, h) {
@@ -476,7 +476,7 @@ class rectangle {
 }
 
 class polyStar {
-    inherits shape
+    inherit shape
     var size is public := 20
     var sides is public := 5
     var pointSize is public := 2
@@ -499,7 +499,7 @@ class polyStar {
 }
 
 class roundRect {
-    inherits shape
+    inherit shape
     var height
     var width
     var radius is public := 15
@@ -520,7 +520,7 @@ class roundRect {
 }
 
 class ellipse {
-    inherits shape
+    inherit shape
     var height
     var width
     method draw(width', height') {
@@ -537,7 +537,7 @@ class ellipse {
 }
 
 class arc {
-    inherits shape
+    inherit shape
     var radius
     var startAngle
     var endAngle
@@ -564,7 +564,7 @@ class arc {
 }
 
 class text {
-    inherits commonGraphics
+    inherit commonGraphics
 
     var content is public := "Did you forget to set text.content?"
     var font is public := "12px Arial"
@@ -611,7 +611,7 @@ class text {
 }
 
 class line {
-    inherits shape
+    inherit shape
     var start is public := 0@0
     var end is public := 50@50
 
@@ -630,7 +630,7 @@ class line {
 }
 
 class customShape {
-    inherits shape
+    inherit shape
     var points := emptyList
     var stroke;
     var current;

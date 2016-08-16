@@ -1,13 +1,13 @@
 
 def x = object {
-    inherits true
+    inherit true
     method isAnX {
         self
     }
 }
 
 def y = object {
-    inherits false
+    inherit false
     method isAnX {
         false
     }
@@ -16,10 +16,10 @@ def y = object {
 if (x) then {
     print "OK"
 } else {
-    print "Not OK; x inherits true and should be true."
+    print "Not OK; x inherit true and should be true."
 }
 if (y) then {
-    print "Not OK; y inherits false and should be false."
+    print "Not OK; y inherit false and should be false."
 } else {
     print "OK"
 }

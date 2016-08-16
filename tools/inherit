@@ -1,0 +1,5 @@
+#! /usr/bin/env bash
+for f in "$@"
+do
+    sed -e "s/inherits/inherit/" $f > $f.$$ && mv $f.$$ $f
+done

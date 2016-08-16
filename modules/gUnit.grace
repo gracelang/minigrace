@@ -165,7 +165,7 @@ class assertion {
 }
 
 class testCaseNamed(name') -> TestCase {
-    inherits assertion
+    inherit assertion
 
     def size is public = 1
     var currentResult
@@ -351,7 +351,7 @@ class testRecordFor(testName)message(testMsg) {
 def testSuite is public = object {
 
     class withAll(initialContents) {
-        inherits collections.enumerable.TRAIT
+        inherit collections.enumerable.TRAIT
         var name is public := ""
         def tests = [ ]
         def testNames = emptySet

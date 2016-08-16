@@ -13,7 +13,7 @@ def a = object {
 def b = object {
     method new {
         object {
-            inherits a.new
+            inherit a.new
             method test2 {
                 outerB'smethod
             }

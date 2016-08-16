@@ -58,7 +58,7 @@ if (util.extensions.contains("Plugin")) then {
 if (util.target == "imports") then {
     def imps = emptySet
     def vis = object {
-        inherits ast.baseVisitor
+        inherit ast.baseVisitor
         method visitImport(o) -> Boolean {
             imps.add(o.path)
             false

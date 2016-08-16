@@ -6,7 +6,7 @@ def singluarObject = object {
 }
 
 object {
-    inherits singluarObject
+    inherit singluarObject
     print "The value answered by bar is"
     print(bar)
     print "The value answered by foo is"

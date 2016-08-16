@@ -388,7 +388,7 @@ method gctAsString(gctDict) {
 
 var methodtypes := [ ]
 def typeVisitor = object {
-    inherits ast.baseVisitor
+    inherit ast.baseVisitor
     var literalCount := 1
     method visitTypeLiteral(lit) {
         for (lit.methods) do { meth ->

@@ -2287,11 +2287,11 @@ method dodialect {
     }
 }
 
-method inheritsOrUses {
+method inheritOrUses {
     // Parses "inherit «object expression»"
 
     if (! accept "keyword") then { return }
-    if ((sym.value == "inherits") || (sym.value == "inherit") || (sym.value == "use")) then {
+    if ((sym.value == "inherit") || (sym.value == "inherit") || (sym.value == "use")) then {
         def btok = sym
         checkIndent
         next
@@ -2319,17 +2319,17 @@ method inheritsOrUses {
                 withSuggestions(suggestions)
         }
         util.setPosition(btok.line, btok.linePos)
-        def inhNode = ast.inheritsNode.new(values.pop)
+        def inhNode = ast.inheritNode.new(values.pop)
         if (btok.value == "use") then {
             inhNode.isUse := true
         }
-        while { inheritsModifier(inhNode) onLineOf(btok) } do { }
+        while { inheritModifier(inhNode) onLineOf(btok) } do { }
         values.push(inhNode)
     }
 }
 
-method inheritsModifier(node) onLineOf(startToken) {
-    // parse an alias or excludes modifier on an `inherits` clause
+method inheritModifier(node) onLineOf(startToken) {
+    // parse an alias or excludes modifier on an `inherit` clause
     if (! accept "keyword" onLineOf(startToken) ) then { 
         return false
     }
@@ -2408,7 +2408,7 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
     def usedTraits = []
     var inPreamble := true  // => processing inherit and use statements
     while {(accept("rbrace")).not && {sym.kind != "eof"}} do {
-        if (didConsume {inheritsOrUses}) then {
+        if (didConsume {inheritOrUses}) then {
             def parentNode = values.pop
             if (inPreamble) then {
                 if (parentNode.isUse) then {
@@ -2453,14 +2453,14 @@ method doclass {
     // Class declarations were formerly of the form:
     //
     //   class objName.methodName (param1, param2) {
-    //     inherits <expr>
+    //     inherit <expr>
     //     var x
     //     method y(z) { ... }
     // }
     // Now they are of the form:
     //
     // class methodName (param1, param2) {
-    //     inherits <expr>
+    //     inherit <expr>
     //     var x
     //     method y(z) { ... }
     // }
@@ -2471,7 +2471,7 @@ method doclass {
     //
     // method methodName (param1, param2) {
     //     object {
-    //         inherits <expr>
+    //         inherit <expr>
     //         var x
     //         method y(z) { ... }
     //     }
@@ -3367,7 +3367,7 @@ method parse(toks) {
         blank
         methoddec
         blank
-        ifConsume { inheritsOrUses } then {
+        ifConsume { inheritOrUses } then {
             def parentNode = values.pop
             if (parentNode.isUse) then {
                 moduleObject.usedTraits.add(parentNode)

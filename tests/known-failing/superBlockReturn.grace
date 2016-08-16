@@ -10,7 +10,7 @@ class equalityTest {
 
 method values {
     object {
-        inherits equalityTest
+        inherit equalityTest
 // To reveal the issue, it's important that the == method requests == on super.
         method ==(other) {
             print "requesting super =="

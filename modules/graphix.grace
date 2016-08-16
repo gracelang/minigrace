@@ -219,7 +219,7 @@ class create(canvasWidth, canvasHeight) {
     }
 
     class addCircle {
-        inherits shape
+        inherit shape
         var radius is public := 15
         jsShapeObject := gr.circle
         myStage:=stage
@@ -238,7 +238,7 @@ class create(canvasWidth, canvasHeight) {
     }
 
     class addRectangle {
-        inherits shape
+        inherit shape
         jsShapeObject := gr.rectangle
         var width is public := 15
         var height is public := 15
@@ -279,7 +279,7 @@ class create(canvasWidth, canvasHeight) {
     }
 
     class addPolyStar {
-        inherits shape
+        inherit shape
 
         var sz := 20
         var sides is public := 5
@@ -329,7 +329,7 @@ class create(canvasWidth, canvasHeight) {
     }
 
     class addRoundRect {
-        inherits shape
+        inherit shape
         var width is public := 15
         var height is public := 15
         var radius is public := 2
@@ -375,7 +375,7 @@ class create(canvasWidth, canvasHeight) {
     }
 
     class addEllipse {
-        inherits shape
+        inherit shape
         var width is public := 15
         var height is public := 15
 
@@ -416,7 +416,7 @@ class create(canvasWidth, canvasHeight) {
     }
 
     class addArc {
-        inherits shape
+        inherit shape
         var radius is public := 15
         var startAngle is public := 0
         var endAngle is public := 180
@@ -509,7 +509,7 @@ class create(canvasWidth, canvasHeight) {
     }
 
     class addLine {
-        inherits shape
+        inherit shape
         var start is public := 0@0
         var end is public := 50@50
 
@@ -535,7 +535,7 @@ class create(canvasWidth, canvasHeight) {
     }
 
     class addCustomShape {
-        inherits shape
+        inherit shape
         jsShapeObject := gr.customShape
         myStage := stage
 
@@ -557,7 +557,7 @@ class create(canvasWidth, canvasHeight) {
     }
 
     class addButton {
-        inherits shape
+        inherit shape
         var width is public := 40
         var height is public := 20
         var buttonShape is public := addRectangle

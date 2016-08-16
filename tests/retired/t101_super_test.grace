@@ -8,7 +8,7 @@ class A.new(v') {
     }
 }
 class B.new(x) {
-    inherits A.new(x)
+    inherit A.new(x)
     method bar {
         print "B's bar"
     }
@@ -18,7 +18,7 @@ class B.new(x) {
     }
 }
 class C.new(y) {
-    inherits B.new(y)
+    inherit B.new(y)
     method baz {
         print "C's baz invokes..."
         super.baz

@@ -8,18 +8,18 @@ method parent {
 
 method child {
     object {
-        inherits parent
+        inherit parent
         method bar { 3 }
     }
 }
 
 def a = object {
-    inherits parent
+    inherit parent
     method foo { 2 }
 }
 
 def c = object {
-    inherits child
+    inherit child
 }
 print(c.bar)
 print(a.x)

@@ -1,6 +1,6 @@
 import "gUnit" as gu
 
-inherits prelude.methods
+inherit prelude.methods
 
 def nullSuite = prelude.Singleton.named "nullSuite"
 def nullBlock = prelude.Singleton.named "nullBlock"
@@ -17,7 +17,7 @@ method numberOfErrorsToRerun:=(n:Number) {
 }
 
 def mtAssertion = object {
-    inherits gu.assertion
+    inherit gu.assertion
     var currentResult is writable := object {
         method countOneAssertion {
             print "countOneAssertion requested on dummy result"
@@ -119,7 +119,7 @@ method test(name:String) by(block:Block) {
 
 method testCaseNamed(name') setupIn(setupBlock) asTestNumber(number) -> gu.TestCase {
     object {
-        inherits gu.testCaseNamed(name')
+        inherit gu.testCaseNamed(name')
 
         method setup { 
             super.setup

@@ -14,7 +14,7 @@ class emptyness {
 }
 
 class holder(val) {
-    inherits emptyness
+    inherit emptyness
     method size { 1 }
     method value { val }
     // method isEmpty { size <= 0 }  isEmpty must be inherited to cause the segfault.

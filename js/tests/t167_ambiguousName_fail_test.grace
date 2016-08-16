@@ -7,7 +7,7 @@ method assert(cond) {
 method b { "this is b" }
 
 def o = object {
-    inherits gu.assertion
+    inherit gu.assertion
     method countOneAssertion { print "o's assert" }
     method d { "this is d" }
 

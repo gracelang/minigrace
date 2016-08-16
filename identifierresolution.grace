@@ -266,7 +266,7 @@ class newScopeIn(parent') kind(variety') {
         } elseif {nd.isCall} then { // this includes "memberNodes"
             def receiver = nd.receiver
             if (receiver.isImplicit) then {
-                util.log 60 verbose "inherits from implicit.{nd.nameString} on line {nd.line}"
+                util.log 60 verbose "inherit from implicit.{nd.nameString} on line {nd.line}"
             }
             def newNd = transformCall(nd)
             def receiverScope = self.scopeReferencedBy(newNd.receiver)
@@ -357,7 +357,7 @@ def booleanScope = newScopeIn(builtInsScope) kind "object"
 def universalScope = object {
     // The scope that defines every identifier,
     // used when we have no information about an object
-    inherits newScopeIn(emptyScope) kind("universal")
+    inherit newScopeIn(emptyScope) kind("universal")
     method hasParent { false }
     method parent { ProgrammingError.raise "universal scope has no parent" }
     method addName(n) { ProgrammingError.raise "can't add to the universal scope" }
@@ -933,7 +933,7 @@ method articleFor(str) {
 
 method buildSymbolTableFor(topNode) ancestors(topChain) {
     def symbolTableVis = object {
-        inherits ast.baseVisitor
+        inherit ast.baseVisitor
 
         method visitBind (o) up (as) {
             o.scope := as.parent.scope
@@ -1097,7 +1097,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         // body of a def or method won't have been allocated when the
         // delcaration is visited.
 
-        inherits ast.baseVisitor
+        inherit ast.baseVisitor
         method visitDefDec (o) up (as) {
             if (o.returnsObject) then {
                 o.scope.at(o.nameString)
@@ -1123,7 +1123,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
     }
 
     def inheritanceVis = object {
-        inherits ast.baseVisitor
+        inherit ast.baseVisitor
         method visitObject (o) up (as) {
             collectParentNames(o)
             true
@@ -1140,7 +1140,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
 }
 
 method collectParentNames(node) {
-    // node is an object or class; put the names that it inherits into its scope.
+    // node is an object or class; put the names that it inherit into its scope.
     // In the process, checks for a cycle in the inheritance chain.
     def nodeScope = node.scope
     if (ast.fakeSymbolTable == nodeScope) then {
@@ -1166,7 +1166,7 @@ method gatherInheritedNames(node) is confidential {
     var inheritedKind := k.inherited
     if (false == inhNode) then {
         def gO = ast.identifierNode.new("graceObject", false) scope(objScope)
-        inhNode := ast.inheritsNode.new(gO) scope(objScope)
+        inhNode := ast.inheritNode.new(gO) scope(objScope)
         superScope := graceObjectScope
         inheritedKind := k.graceObjectMethod
     } else {
@@ -1355,7 +1355,7 @@ method transformBind(bindNode) ancestors(as) {
 
 
 method transformInherits(inhNode) ancestors(as) {
-    // inhNode is (a shallow copy of) an inheritsNode.  Transform it to deal
+    // inhNode is (a shallow copy of) an inheritNode.  Transform it to deal
     // with superobject initialization and inherited names, including
     // inheritance modifiers
     def superObject = inhNode.value
@@ -1365,14 +1365,14 @@ method transformInherits(inhNode) ancestors(as) {
                     atRange(inhNode.line, inhNode.linePos, inhNode.linePos + (inhNode.statementName.size - 1))
     }
     if (superObject.isAppliedOccurenceOfIdentifier) then {
-        // this deals with "inherits true" etc.
+        // this deals with "inherit true" etc.
         def definingScope = currentScope.thatDefines(superObject.nameString)
         if (definingScope.variety == "built-in") then { return inhNode }
     }
     def superScope = currentScope.scopeReferencedBy(superObject)
     if (inhNode.isUse) then {
         // a `use` statement; no transformation necessary
-    } elseif {inhNode.inheritsFromMember} then {
+    } elseif {inhNode.inheritFromMember} then {
         def newcall = ast.callNode.new(inhNode.value.receiver, [
             ast.requestPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
             ast.requestPart.request "$object" withArgs (
@@ -1380,7 +1380,7 @@ method transformInherits(inhNode) ancestors(as) {
             ]
         ) scope(currentScope)
         inhNode.value := newcall
-    } elseif {inhNode.inheritsFromCall} then {
+    } elseif {inhNode.inheritFromCall} then {
         var superCall := inhNode.value
         superCall.with.push(ast.requestPart.request "$object"
             withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))

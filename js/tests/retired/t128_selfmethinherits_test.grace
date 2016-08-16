@@ -5,7 +5,7 @@ method x {
 }
 
 object {
-    inherits x
+    inherit x
     print(foo)
 }
 

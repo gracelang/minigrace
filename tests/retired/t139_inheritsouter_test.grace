@@ -12,7 +12,7 @@ method asString { "m" }
 
 a.new
 object {
-    inherits a.new
+    inherit a.new
     print(outer)
 }
 

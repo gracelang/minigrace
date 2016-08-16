@@ -6,7 +6,7 @@ def singluarObject = object {
 }
 
 object {
-    inherits singluarObject
+    inherit singluarObject
     print(foo)
     print(bar)
 }

@@ -1,6 +1,6 @@
 // Loop invariant dialect
 
-inherits prelude.methods
+inherit prelude.methods
 
 def InvariantFailure = Exception.refine "InvariantFailure"
 

@@ -3,7 +3,7 @@ import "unicode" as unicode
 
 def stringTest = object {
     class forMethod(m) {
-        inherits gU.testCaseNamed(m)
+        inherit gU.testCaseNamed(m)
         
         def sharpS = "ß"
         def capitalSharpS = unicode.create(0x1E9E)

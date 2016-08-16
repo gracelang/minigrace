@@ -464,9 +464,9 @@ method compileobject(o, outerRef) {
             compileobjdefdecdata(e, selfr, pos)
         } elseif { e.kind == "typedec" } then {
             compileobjdefdecdata(e, selfr, pos)
-        } elseif { e.kind == "inherits" } then {
+        } elseif { e.kind == "inherit" } then {
             // The return value is irrelevant with factory inheritance,
-            // but we save it as super for the sake of "inherits true".
+            // but we save it as super for the sake of "inherit true".
             superobj := compilenode(e.value)
             out "  struct UserObject *{selfr}_uo = (struct UserObject *){selfr};"
             out "  {selfr}_uo->super = {superobj};"
@@ -1670,7 +1670,7 @@ method linkExecutable(fnBase, buildinfo) {
 }
 
 method implementAliasesAndExclusionsFor(o) inheriting(e, superobj) {
-    // o is an object node, and e an inherits node.  e has already been
+    // o is an object node, and e an inherit node.  e has already been
     // compiled into register superobj.
 
     if (e.aliases.isEmpty && e.exclusions.isEmpty) then { return }
@@ -1852,7 +1852,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
         }
     }
     if (modname == "standardGrace") then {
-    // this has the same effect as "inherits _prelude" in the source
+    // this has the same effect as "inherit _prelude" in the source
         out("  self = setsuperobj(self, *var__prelude);")
         out("  *selfslot = self;")
     } else {

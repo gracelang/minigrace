@@ -6,7 +6,7 @@ import "sys" as sys
 
 def stringMapTest = object {
     class forMethod(meth) {
-        inherits gU.testCaseNamed(meth)
+        inherit gU.testCaseNamed(meth)
         
         def m123 = map.new
         m123.put("one", 1).put("two", 2).put("three", 3)

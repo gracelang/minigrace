@@ -5,7 +5,7 @@ method numType(n1:Number) { n1 + 2 }
 method paramType⟦T⟧(x:T) { x.asString }
 
 class typeTest.forMethod(m) {
-    inherits gU.testCaseNamed(m)
+    inherit gU.testCaseNamed(m)
 
     method testMethodNoType {
         assert (noType 8) shouldBe 9

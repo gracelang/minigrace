@@ -161,7 +161,7 @@ trait collectionFactory⟦T⟧ {
 
 class lazySequenceOver⟦T,R⟧(source: Iterable⟦T⟧)
         mappedBy(function:Block1⟦T,R⟧) → Enumerable⟦R⟧ is confidential {
-    inherits graceObject exclude == exclude asString
+    inherit graceObject exclude == exclude asString
     use enumerable⟦T⟧
     class iterator {
         def sourceIterator = source.iterator
@@ -176,7 +176,7 @@ class lazySequenceOver⟦T,R⟧(source: Iterable⟦T⟧)
 
 class lazySequenceOver⟦T⟧(source: Iterable⟦T⟧)
         filteredBy(predicate:Block1⟦T,Boolean⟧) → Enumerable⟦T⟧ is confidential {
-    inherits graceObject exclude == exclude asString
+    inherit graceObject exclude == exclude asString
     use enumerable⟦T⟧
     class iterator {
         var cache

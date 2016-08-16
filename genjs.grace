@@ -285,7 +285,7 @@ method compileobject(o, outerRef, inheritingObject) {
         } elseif {false == o.superclass} then {
             "GraceObject"
         } else {
-            "null"  // inheritance will be compiled later, when the inherits node is found
+            "null"  // inheritance will be compiled later, when the inherit node is found
         }
     out "var {selfr} = Grace_allocObject({superConstructor}, \"{o.name}\");"
     out "{selfr}.definitionModule = \"{modname}\";"
@@ -310,7 +310,7 @@ method compileobject(o, outerRef, inheritingObject) {
         }
     }
 
-    // compile inherits
+    // compile inherit
     if (false != o.superclass) then {
         compileInherits(o.superclass) in (o, selfr)
     }
@@ -1294,7 +1294,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
 }
 
 method compileInherits(o) in (objNode, selfr) {
-    // o is an inherits node: compile it.
+    // o is an inherit node: compile it.
     // selfr is the name of enclosing object; objNode is the enclosing AST node
     if (o.isUse) then {
         compileTrait(o) in (objNode, selfr)

@@ -5,7 +5,7 @@ dialect "dialect"
 import "ast" as ast
 import "util" as util
 
-inherits prelude.methods
+inherit prelude.methods
 
 // Type error.
 
@@ -266,7 +266,7 @@ def objectType = object {
 
             def hack = objectType
             return object {
-                inherits hack.fromMethods (combine)
+                inherit hack.fromMethods (combine)
 
                 method asString -> String is override {
                     "{outer} | {other}"
@@ -310,7 +310,7 @@ def objectType = object {
 
             def hack = objectType
             object {
-                inherits hack.fromMethods (combine)
+                inherit hack.fromMethods (combine)
 
                 method asString -> String is override {
                     "{outer} & {other}"
@@ -337,7 +337,7 @@ def objectType = object {
 
     class fromMethods (methods': List⟦MethodType⟧)
             withName (name: String) -> ObjectType {
-        inherits fromMethods (methods')
+        inherit fromMethods (methods')
 
         method asString is override { name }
         method ==(other) { self.isMe(other) }
@@ -360,8 +360,8 @@ def objectType = object {
 
                 return if (false ≠ lit.value) then {
                     object {
-//                        inherits oType & fromDType (intersection.last)
-                        inherits TypeIntersection.new (oType, fromDType (intersection.last))
+//                        inherit oType & fromDType (intersection.last)
+                        inherit TypeIntersection.new (oType, fromDType (intersection.last))
 
                         method asString is override { lit.value }
                     }
@@ -380,8 +380,8 @@ def objectType = object {
 
                 return if (false ≠ lit.value) then {
                     object {
-//                        inherits oType | fromDType (union.last)
-                        inherits TypeUnion.new (oType, fromDType (union.last))
+//                        inherit oType | fromDType (union.last)
+                        inherit TypeUnion.new (oType, fromDType (union.last))
                         def asString: String is public, override = lit.value
                     }
                 } else {
@@ -863,7 +863,7 @@ rule { meth: Method ->
             checkTypes (stmt)
 
             stmt.accept (object {
-                inherits ast.baseVisitor
+                inherit ast.baseVisitor
 
                 method visitReturn (ret) is override {
                     check (ret.value) matches (returnType) inMethod (name)
@@ -1097,7 +1097,7 @@ method processBody (body: List) -> ObjectType is confidential {
     def superType = if (hasInherits) then {
         def inheriting = body.first.value
         inheriting.accept (object {
-            inherits ast.baseVisitor
+            inherit ast.baseVisitor
 
             def illegal = ["self", "super"]
 

@@ -2,7 +2,7 @@ import "gUnit" as gU
 import "./math" as math
 
 class mathTests.forMethod(m) {
-    inherits gU.testCaseNamed(m)
+    inherit gU.testCaseNamed(m)
     
     method testModuleAsString {
         assert (math.asString) shouldBe "the \"math\" module"

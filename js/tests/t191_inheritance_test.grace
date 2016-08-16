@@ -5,12 +5,12 @@ class simpleExpressions {
 }
 class monadicExpressions {
     class con(n) {
-        inherits simpleExpressions.con(n)
+        inherit simpleExpressions.con(n)
     }
 }
 class outputEvaluation {
     class con(n) {
-        inherits monadicExpressions.con(n)
+        inherit monadicExpressions.con(n)
     }
 }
 

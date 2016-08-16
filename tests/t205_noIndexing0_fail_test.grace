@@ -9,7 +9,7 @@ class objWithX {
 
 def uVarTest = object {
     class forMethod(m) {
-        inherits gU.testCaseNamed(m)
+        inherit gU.testCaseNamed(m)
 
         method testIndex {
             def o = objWithX

@@ -9,7 +9,7 @@ class A.new {
 }
 
 class B.new {
-  inherits A.new
+  inherit A.new
   method b {
     print("B")
   }

@@ -26,35 +26,35 @@ def defdec = kindConstant "defdec"
 def methdec = kindConstant "method"
 def typedec = kindConstant "typedec"
 def selfDef = object {
-    inherits kindConstant "selfDef"
+    inherit kindConstant "selfDef"
     method isImplicit { true }
     method forUsers { false }
     method forGct { false }
 }
 def fromTrait = object {
-    inherits kindConstant "from a trait"
+    inherit kindConstant "from a trait"
     method isImplicit { true }
     method fromParent { true }
 }
 def inherited = object {
-    inherits kindConstant "inherited"
+    inherit kindConstant "inherited"
     method isImplicit { true }
     method fromParent { true }
 }
 def vardec = object {
-    inherits kindConstant "vardec"
+    inherit kindConstant "vardec"
     method isAssignable { true }
 }
 def parameter = object {
-    inherits kindConstant "parameter"
+    inherit kindConstant "parameter"
     method isParameter { true }
 }
 def typeparam = object {
-    inherits kindConstant "typeparam"
+    inherit kindConstant "typeparam"
     method isParameter { true }
 }
 def graceObjectMethod = object {
-    inherits kindConstant "from graceObject"
+    inherit kindConstant "from graceObject"
     method isImplicit { true }
     method forUsers { false }
     method fromParent { true }

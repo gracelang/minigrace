@@ -8,7 +8,7 @@ class A.TRAIT {
 
 method m {
     object {
-        inherits A.TRAIT
+        inherit A.TRAIT
     }
 }
 

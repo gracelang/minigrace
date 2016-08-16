@@ -106,16 +106,16 @@ method t137_parent {
 }
 method t137_child {
     object {
-        inherits t137_parent
+        inherit t137_parent
         method bar { 3 }
     }
 }
 def t137_a = object {
-    inherits t137_parent
+    inherit t137_parent
     method foo { 2 }
 }
 def t137_c = object {
-    inherits t137_child
+    inherit t137_child
 }
 def t139_a = object {
     method new {
@@ -136,7 +136,7 @@ def t142_x = object {
 
 def aGraceLangTest = object {
     class forMethod(m) {
-        inherits gU.testCaseNamed(m)
+        inherit gU.testCaseNamed(m)
 
         method setup {
             str := ""
@@ -164,7 +164,7 @@ def aGraceLangTest = object {
                     }
                 }
                 class bb(x) {
-                    inherits aa(x) alias aabaz = baz
+                    inherit aa(x) alias aabaz = baz
                     method bar {
                         out "B's bar"
                     }
@@ -174,7 +174,7 @@ def aGraceLangTest = object {
                     }
                 }
                 class cc(y) {
-                    inherits bb(y) alias bbbaz = baz
+                    inherit bb(y) alias bbbaz = baz
                     method baz {
                         out "C's baz invokes..."
                         bbbaz
@@ -206,7 +206,7 @@ def aGraceLangTest = object {
             def b = object {
                 method new {
                     object {
-                        inherits a.new
+                        inherit a.new
                         method test2 {
                             outerB'smethod
                         }
@@ -229,17 +229,17 @@ def aGraceLangTest = object {
         }
         
         class b_103 {
-            inherits a_103
+            inherit a_103
             method bar { "hello {foo}" }
         }
         
         class c_103 {
-            inherits b_103
+            inherit b_103
             method quux { "X " ++ bar }
         }
         
         class d_103 {
-            inherits c_103
+            inherit c_103
             method foo is override { "Nyssa" }
         }
 
@@ -248,7 +248,7 @@ def aGraceLangTest = object {
             quux -> String
         }
 
-        method test_103_inherits2 {
+        method test_103_inherit2 {
             def x = b_103
             assert (x.bar) shouldBe "hello world"
             def y:T_103 = c_103
@@ -304,7 +304,7 @@ def aGraceLangTest = object {
                 }
                 
                 class bb {
-                  inherits aa
+                  inherit aa
                   method b {
                     out("B")
                   }
@@ -379,17 +379,17 @@ def aGraceLangTest = object {
             }
         }
 
-        method test_114_inheritsboolean {
+        method test_114_inheritboolean {
             
             def x = object {
-                inherits true
+                inherit true
                 method isAnX {
                     self
                 }
             }
             
             def y = object {
-                inherits false
+                inherit false
                 method isAnX {
                     false
                 }
@@ -398,10 +398,10 @@ def aGraceLangTest = object {
             if (x) then {
                 out "OK"
             } else {
-                out "Not OK; x inherits true and should be true."
+                out "Not OK; x inherit true and should be true."
             }
             if (y) then {
-                out "Not OK; y inherits false and should be false."
+                out "Not OK; y inherit false and should be false."
             } else {
                 out "OK"
             }
@@ -682,7 +682,7 @@ def aGraceLangTest = object {
             assert(str) shouldBe "1.0026\n"
         }
 
-        method test_139_inheritsouter {
+        method test_139_inheritouter {
             def a = object {
                 method new {
                     object {
@@ -696,7 +696,7 @@ def aGraceLangTest = object {
                 method asString { "m" }
                 a.new
                 object {
-                    inherits a.new
+                    inherit a.new
                     out(outer)
                 }
             }

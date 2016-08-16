@@ -1,7 +1,7 @@
 import "gUnit" as gU
 
 class stringTest.forMethod(m) {
-    inherits gU.testCaseNamed(m)
+    inherit gU.testCaseNamed(m)
     def vowels = "aeiouy"
     def morevowels = "aeiouyàáâäæãåāèéêëēėęîïíīįìôöòóœøōõûüùúūÿ"
     def consonants = "bcçćčdfghjklmnpqrstvwxz"  // note: ß  missing!

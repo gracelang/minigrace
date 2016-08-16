@@ -2,7 +2,7 @@ import "gUnit" as gUnit
 
 def gUnitTest = object {
     class forMethod(name') {
-        inherits gUnit.testCaseNamed(name')
+        inherit gUnit.testCaseNamed(name')
         var log is readable
         
         method testMethod { 
@@ -48,7 +48,7 @@ def gUnitTest = object {
 def theResult = gUnit.testResult
 
 def a = object {
-    inherits gUnit.assertion
+    inherit gUnit.assertion
     method countOneAssertion {
         theResult.countOneAssertion
     }

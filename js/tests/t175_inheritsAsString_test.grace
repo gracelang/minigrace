@@ -3,7 +3,7 @@ class nameTrait(n) {
 }
 
 class boxNamed(n) {
-    inherits nameTrait(n)
+    inherit nameTrait(n)
 }
 
 print(nameTrait("Joe"))

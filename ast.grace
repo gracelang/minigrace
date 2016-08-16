@@ -204,7 +204,7 @@ class baseNode {
 }
 
 def implicit is public = object {
-    inherits baseNode
+    inherit baseNode
     line := 0
     linePos := 0
     def kind is public = "implicit"
@@ -221,7 +221,7 @@ def implicit is public = object {
 }
 
 def nullNode is public = object {
-    inherits baseNode
+    inherit baseNode
     def kind is public = "null"
     method toGrace(depth) {
         "// null"
@@ -248,7 +248,7 @@ def fakeSymbolTable = object {
 
 def ifNode is public = object {
   class new(cond, thenblock', elseblock') {
-    inherits baseNode
+    inherit baseNode
     def kind is public = "if"
     var value is public := cond
     var thenblock is public := thenblock'
@@ -325,7 +325,7 @@ def ifNode is public = object {
 }
 def blockNode is public = object {
   class new(params', body') {
-    inherits baseNode
+    inherit baseNode
     def kind is public = "block"
     def value is public = "block"
     var params is public := params'
@@ -444,7 +444,7 @@ def blockNode is public = object {
 }
 def tryCatchNode is public = object {
   class new(block, cases', finally') {
-    inherits baseNode
+    inherit baseNode
     def kind is public = "trycatch"
     var value is public := block
     var cases is public := cases'
@@ -507,7 +507,7 @@ def tryCatchNode is public = object {
 }
 def matchCaseNode is public = object {
   class new(matchee', cases', elsecase') {
-    inherits baseNode
+    inherit baseNode
     def kind is public = "matchcase"
     var value is public := matchee'
     var cases is public := cases'
@@ -574,7 +574,7 @@ def methodTypeNode is public = object {
     // signature' is an Iterable of requestPart objects, which contain
     // the parts of the name and the parameter lists.
 
-    inherits baseNode
+    inherit baseNode
     def kind is public = "methodtype"
     var signature is public := signature'
     var rtype is public := rtype'
@@ -661,7 +661,7 @@ def methodTypeNode is public = object {
 }
 def typeLiteralNode is public = object {
   class new(methods', types') {
-    inherits baseNode
+    inherit baseNode
     def kind is public = "typeliteral"
     var methods is public := methods'
     var types is public := types'
@@ -745,7 +745,7 @@ def typeLiteralNode is public = object {
 
 def typeDecNode is public = object {
   class new(name', typeValue) {
-    inherits baseNode
+    inherit baseNode
     def kind is public = "typedec"
     var name is public := name'
     var value is public := typeValue
@@ -842,7 +842,7 @@ def methodNode = object {
         // body is a sequence of statements and declarations.
         // dtype is the declared return type of the method, or false.
 
-        inherits baseNode
+        inherit baseNode
         def kind is public = "method"
         var signature is public := signature'
         var body is public := body'
@@ -1093,7 +1093,7 @@ def callNode = object {
         // Represents a method request with arguments.
         // The argument list is in `with`, as a sequence of `requestPart`s.
 
-        inherits baseNode
+        inherit baseNode
         def kind is public = "call"
         var with is public := parts            // [ argument parts ]
         var generics is public := false
@@ -1244,7 +1244,7 @@ def moduleNode = object {
         result
     }
     class body(b) {
-        inherits objectNode.new(b, false)
+        inherit objectNode.new(b, false)
         def kind is public = "module"
         def sourceLines = util.lines
         line := 0       // because the module is always implicit
@@ -1290,7 +1290,7 @@ def objectNode is public = object {
         body(b) named(n) scope(fakeSymbolTable)
     }
     class new(b, superclass') {
-        inherits baseNode
+        inherit baseNode
         def kind is public = "object"
         var value is public := b
         var superclass is public := superclass'
@@ -1457,7 +1457,7 @@ def objectNode is public = object {
 }
 def arrayNode is public = object {
   class new(values) {
-    inherits baseNode
+    inherit baseNode
     def kind is public = "array"
     var value is public := values
     method accept(visitor : ASTVisitor) from(as) {
@@ -1510,7 +1510,7 @@ def memberNode = object {
     }
     class new(request, receiver') {
         // Represents a dotted request ‹receiver›.‹request› with no arguments.
-        inherits baseNode
+        inherit baseNode
         def kind is public = "member"
         var value is public := request  // NB: value is a String, not an Identifier
         var receiver is public := receiver'
@@ -1610,7 +1610,7 @@ def memberNode = object {
 def genericNode is public = object {
   class new(base, arguments) {
     // represents an application of a parameterized type to some arguments.
-    inherits baseNode
+    inherit baseNode
     def kind is public = "generic"
     var value is public := base
         // in a generic application, `value` is the applied type
@@ -1654,7 +1654,7 @@ def genericNode is public = object {
 
 def typeParametersNode is public = object {
   class new(params') {
-    inherits baseNode
+    inherit baseNode
     def kind is public = "typeparams"
     var params is public := params'
     method asString { toGrace 0 }
@@ -1708,7 +1708,7 @@ def identifierNode = object {
     }
 
     class new(name, dtype') {
-        inherits baseNode
+        inherit baseNode
         def kind is public = "identifier"
         var value is public := name
         var wildcard is public := false
@@ -1846,7 +1846,7 @@ def stringNode = object {
     }
 
     class new(v) {
-        inherits baseNode
+        inherit baseNode
         def kind is public = "string"
         var value is public := v
         method accept(visitor : ASTVisitor) from(as) {
@@ -1874,7 +1874,7 @@ def stringNode = object {
 }
 def numNode is public = object {
     class new(val) {
-        inherits baseNode
+        inherit baseNode
         def kind is public = "num"
         var value is public := val
         method accept(visitor : ASTVisitor) from(as) {
@@ -1901,7 +1901,7 @@ def numNode is public = object {
 }
 def opNode is public = object {
   class new(op, l, r) {
-    inherits baseNode
+    inherit baseNode
     def kind is public = "op"
     def value is public = op     // a String
     var left is public := l
@@ -1969,7 +1969,7 @@ def opNode is public = object {
 def bindNode is public = object {
   class new(dest', val') {
     // an assignment, or a request of a setter-method
-    inherits baseNode
+    inherit baseNode
     def kind is public = "bind"
     var dest is public := dest'
     var value is public := val'
@@ -2026,7 +2026,7 @@ def defDecNode = object {
     }
 
     class new(name', val, dtype') {
-        inherits baseNode
+        inherit baseNode
         def kind is public = "defdec"
         var name is public := name'
         var value is public := val
@@ -2137,7 +2137,7 @@ def defDecNode = object {
 }
 def varDecNode is public = object {
   class new(name', val', dtype') {
-    inherits baseNode
+    inherit baseNode
     def kind is public = "vardec"
     var name is public := name'
     var value is public := val'
@@ -2245,7 +2245,7 @@ def varDecNode is public = object {
 }
 def importNode is public = object {
   class new(path', name', dtype') {
-    inherits baseNode
+    inherit baseNode
     def kind is public = "import"
     var value is public := name'
     var path is public := path'
@@ -2322,7 +2322,7 @@ def importNode is public = object {
 }
 def dialectNode is public = object {
   class new(path') {
-    inherits baseNode
+    inherit baseNode
     def kind is public = "dialect"
     var value is public := path'
 
@@ -2370,7 +2370,7 @@ def dialectNode is public = object {
 }
 def returnNode is public = object {
   class new(expr) {
-    inherits baseNode
+    inherit baseNode
     def kind is public = "return"
     var value is public := expr
 
@@ -2403,25 +2403,25 @@ def returnNode is public = object {
     }
   }
 }
-def inheritsNode = object {
+def inheritNode = object {
     method new(expr) scope(s) {
         def result = new(expr)
         result.scope := s
         result
     }
     class new(expr) {
-        inherits baseNode
-        def kind is public = "inherits"
+        inherit baseNode
+        def kind is public = "inherit"
         var value is public := expr
         var providedNames is public := emptySet
         var aliases is public := [ ]
         var exclusions is public := [ ]
-        var isUse is public := false  // this is a `use trait` clause, not an inherits
+        var isUse is public := false  // this is a `use trait` clause, not an inherit
 
         method isLegalInTrait { isUse }
         method isInherits { true }
-        method inheritsFromMember { value.isMember }
-        method inheritsFromCall { value.isCall }
+        method inheritFromMember { value.isMember }
+        method inheritFromCall { value.isCall }
         method isExecutable { false }
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitInherits(self) up(as)) then {
@@ -2435,7 +2435,7 @@ def inheritsNode = object {
             }
         }
         method declarationKindWithAncestors(as) {
-            // identifiers declared in an inherits statement are aliases for
+            // identifiers declared in an inherit statement are aliases for
             // methods.  We treat them as methods, because (unlike inherited names)
             // they can't be overridden by local methods.
             k.methdec
@@ -2492,7 +2492,7 @@ def inheritsNode = object {
             exclusions.push(ident)
         }
         method shallowCopy {
-            inheritsNode.new(nullNode).shallowCopyFieldsFrom(self)
+            inheritNode.new(nullNode).shallowCopyFieldsFrom(self)
         }
         method shallowCopyFieldsFrom(other) {
             super.shallowCopyFieldsFrom(other)
@@ -2533,7 +2533,7 @@ class aliasNew(n) old(o) {
 }
 def blankNode is public = object {
     class new {
-        inherits baseNode
+        inherit baseNode
         def kind is public = "blank"
         def value is public = "blank"
         method isExecutable { false }
@@ -2573,7 +2573,7 @@ def signaturePart = object {
         partName(n) params []
     }
     class partName(n) params(ps) {
-        inherits baseNode
+        inherit baseNode
         def kind is public = "signaturepart"
         var name is public := n
         var params is public := ps
@@ -2658,7 +2658,7 @@ def requestPart = object {
         result
     }
     class request(rPart) withArgs(xs) {
-        inherits baseNode
+        inherit baseNode
         def kind is public = "callwithpart"
         var name is public := rPart
         var args is public := xs
@@ -2732,7 +2732,7 @@ def requestPart = object {
 
 def commentNode = object {
     class new(val') {
-        inherits baseNode
+        inherit baseNode
         def kind is public = "comment"
         var value is public := val'
         var isPartialLine:Boolean is public := false
@@ -2961,7 +2961,7 @@ class pluggableVisitor(visitation:Block2) -> ASTVisitor {
 
 
 def patternMarkVisitor = object {
-    inherits baseVisitor
+    inherit baseVisitor
     method visitCall(c) up(as) {
         c.isPattern := true
         true
@@ -2973,7 +2973,7 @@ method findAnnotation(node, annName) {
         if ((ann.kind == "identifier") && {
             ann.value == annName }) then {
             return object {
-                inherits true
+                inherit true
                 def value is public = ann
             }
         }

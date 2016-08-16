@@ -13,7 +13,7 @@ class scp(arg) {
 }
 
 class sub {
-    inherits sc
+    inherit sc
         alias foo2 = foo
         exclude bar
         
@@ -24,7 +24,7 @@ class sub {
 }
 
 class subp {
-    inherits scp "not foo"
+    inherit scp "not foo"
         alias foo2 = foo
         exclude bar
         

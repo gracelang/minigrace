@@ -1,5 +1,5 @@
 dialect "dialect"
-inherits prelude.methods
+inherit prelude.methods
 
 // This example implements most of the requireTypes dialect.
 // It must be compiled as a dynamic module to be used.

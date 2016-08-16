@@ -109,19 +109,19 @@ class new {
 
 
     class identifierToken(s) {
-        inherits token
+        inherit token
         def kind is public = "identifier"
         def value is public = s
         def size is public = s.size
     }
     class stringToken(s) {
-        inherits token
+        inherit token
         def kind is public = "string"
         def value is public = s
         def size is public = linePosition - startPosition + 1
     }
     class multiLineStringToken(s) {
-        inherits token
+        inherit token
         def kind is public = "string"
         def value is public = s
         def size is public = s.size + 2
@@ -131,116 +131,116 @@ class new {
         method linePos is override { linePos' }
     }
     class commentToken(s) {
-        inherits token
+        inherit token
         def kind is public = "comment"
         def value is public = s
         def size is public = s.size + 2
     }
     class lBraceToken {
-        inherits token
+        inherit token
         def kind is public = "lbrace"
         def value is public = "\{"
         def size is public = 1
     }
     class rBraceToken {
-        inherits token
+        inherit token
         def kind is public = "rbrace"
         def value is public = "}"
         def size is public = 1
     }
     class lParenToken {
-        inherits token
+        inherit token
         def kind is public = "lparen"
         def value is public = "("
         def size is public = 1
     }
     class rParenToken {
-        inherits token
+        inherit token
         def kind is public = "rparen"
         def value is public = ")"
         def size is public = 1
     }
     class lSquareToken {
-        inherits token
+        inherit token
         def kind is public = "lsquare"
         def value is public = "["
         def size is public = 1
     }
     class rSquareToken {
-        inherits token
+        inherit token
         def kind is public = "rsquare"
         def value is public = "]"
         def size is public = 1
     }
     class commaToken {
-        inherits token
+        inherit token
         def kind is public = "comma"
         def value is public = ","
         def size is public = 1
     }
     class colonToken {
-        inherits token
+        inherit token
         def kind is public = "colon"
         def value is public = ":"
         def size is public = 1
     }
     class dotToken {
-        inherits token
+        inherit token
         def kind is public = "dot"
         def value is public = "."
         def size is public = 1
     }
     class numToken(v, b) {
-        inherits token
+        inherit token
         def kind is public = "num"
         def value is public = v
         def base is public = b
         def size is public = linePosition - startPosition
     }
     class keywordToken(v) {
-        inherits token
+        inherit token
         def kind is public = "keyword"
         def value is public = v
         def size is public = v.size
     }
     class opToken(v) {
-        inherits token
+        inherit token
         def kind is public = "op"
         def value is public = v
         def size is public = v.size
     }
     class arrowToken {
-        inherits token
+        inherit token
         def kind is public = "arrow"
         def value is public = "→"
         def size is public = 1
     }
     class bindToken {
-        inherits token
+        inherit token
         def kind is public = "bind"
         def value is public = ":="
         def size is public = 2
     }
     class semicolonToken {
-        inherits token
+        inherit token
         def kind is public = "semicolon"
         def value is public = ";"
         def size is public = 1
     }
     class lGenericToken {
-        inherits token
+        inherit token
         def kind is public = "lgeneric"
         def value is public = "⟦"
         def size is public = 1
     }
     class rGenericToken {
-        inherits token
+        inherit token
         def kind is public = "rgeneric"
         def value is public = "⟧"
         def size is public = 1
     }
     class eofToken {
-        inherits token
+        inherit token
         def kind is public = "eof"
         def value is public = ""
         def size is public = 0

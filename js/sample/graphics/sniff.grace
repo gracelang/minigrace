@@ -1,7 +1,7 @@
 import "dom" as dom
 import "math" as math
 
-inherits prelude.methods
+inherit prelude.methods
 
 var document
 var canvas
@@ -178,7 +178,7 @@ class drawable {
 
 method rectangle {
     object {
-        inherits drawable
+        inherit drawable
         var width := 100
         var height := 50
         var colour := "blue"
@@ -206,7 +206,7 @@ method rectangle {
 
 method circle {
     object {
-        inherits drawable
+        inherit drawable
         var radius := 25
         var colour := "green"
         method draw(ctx) {
@@ -229,7 +229,7 @@ method circle {
 
 method image {
     object {
-        inherits drawable
+        inherit drawable
         var width := 64
         var height := 64
         def imgTag = dom.document.createElement("img")
@@ -272,7 +272,7 @@ method image {
 
 method value(b) {
     object {
-        inherits drawable
+        inherit drawable
         var colour := "blue"
         var label := ""
         method draw(ctx) {

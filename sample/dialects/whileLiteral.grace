@@ -4,7 +4,7 @@
 // user when they write the condition in parentheses.
 dialect "dialect"
 import "util" as util
-inherits prelude.methods
+inherit prelude.methods
 
 print "loading whileLiteral dialect; util.lines = {util.lines}"
 

@@ -72,7 +72,7 @@ method t048_bar(n) {
 
 def aGraceLangTest = object {
     class forMethod(m) {
-        inherits gU.testCaseNamed(m)
+        inherit gU.testCaseNamed(m)
 
         method setup {
             str := ""
@@ -590,7 +590,7 @@ def aGraceLangTest = object {
             assert(str)shouldBe("Hello world!\n")
         }
 
-        method test_047_inherits {
+        method test_047_inherit {
             def obj47 = object {
                 class a(v') {
                     var v := v'
@@ -602,7 +602,7 @@ def aGraceLangTest = object {
                     }
                 }
                 class b(x) {
-                    inherits a(x)
+                    inherit a(x)
                     method bar {
                         out "b's bar"
                     }

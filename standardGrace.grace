@@ -4,7 +4,7 @@
 var isStandardGrace := true
 
 class SuccessfulMatch.new(result', bindings') {
-    inherits true
+    inherit true
     method result { result' }
     method bindings { bindings' }
     method asString {
@@ -13,7 +13,7 @@ class SuccessfulMatch.new(result', bindings') {
 }
 
 class FailedMatch.new(result') {
-    inherits false
+    inherit false
     method result { result' }
     method bindings { emptySequence }
     method asString {
@@ -77,7 +77,7 @@ class BasicPattern.new {
     }
 }
 class MatchAndDestructuringPattern.new(pat, items') {
-    inherits BasicPattern.new
+    inherit BasicPattern.new
     def pattern = pat
     def items = items'
     method match(o) {
@@ -109,14 +109,14 @@ class MatchAndDestructuringPattern.new(pat, items') {
 }
 
 class VariablePattern.new(nm) {
-    inherits BasicPattern.new
+    inherit BasicPattern.new
     method match(o) {
         SuccessfulMatch.new(o, [o])
     }
 }
 
 class BindingPattern.new(pat) {
-    inherits BasicPattern.new
+    inherit BasicPattern.new
     method match(o) {
         def bindings = [o]
         def m = pat.match(o)
@@ -131,14 +131,14 @@ class BindingPattern.new(pat) {
 }
 
 class WildcardPattern.new {
-    inherits BasicPattern.new
+    inherit BasicPattern.new
     method match(o) {
         SuccessfulMatch.new(done, [])
     }
 }
 
 class AndPattern.new(p1, p2) {
-    inherits BasicPattern.new
+    inherit BasicPattern.new
     method match(o) {
         def m1 = p1.match(o)
         if (!m1) then {
@@ -160,7 +160,7 @@ class AndPattern.new(p1, p2) {
 }
 
 class OrPattern.new(p1, p2) {
-    inherits BasicPattern.new
+    inherit BasicPattern.new
     method match(o) {
         if (p1.match(o)) then {
             return SuccessfulMatch.new(o, [])
@@ -174,7 +174,7 @@ class OrPattern.new(p1, p2) {
 
 def Singleton is public = object {
     class new {
-        inherits BasicPattern.new
+        inherit BasicPattern.new
         method match(other) {
             if (self.isMe(other)) then {
                 SuccessfulMatch.new(other, [])
@@ -185,7 +185,7 @@ def Singleton is public = object {
         method ==(other) { self.isMe(other) }
     }
     class named(printString) {
-        inherits Singleton.new
+        inherit Singleton.new
         method asString { printString }
     }
 }
@@ -210,8 +210,8 @@ class BaseType.new(name) {
 }
 
 class TypeIntersection.new(t1, t2) {
-    inherits AndPattern.new(t1, t2)
-    // inherits BaseType.new
+    inherit AndPattern.new(t1, t2)
+    // inherit BaseType.new
     method &(o) {
         TypeIntersection.new(self, o)
     }
@@ -231,8 +231,8 @@ class TypeIntersection.new(t1, t2) {
 }
 
 class TypeVariant.new(t1, t2) {
-    inherits OrPattern.new(t1, t2)
-    // inherits BaseType.new
+    inherit OrPattern.new(t1, t2)
+    // inherit BaseType.new
     method &(o) {
         TypeIntersection.new(self, o)
     }
@@ -252,8 +252,8 @@ class TypeVariant.new(t1, t2) {
 }
 
 class TypeUnion.new(t1, t2) {
-    inherits BasicPattern.new
-//    inherits BaseType.new
+    inherit BasicPattern.new
+//    inherit BaseType.new
     method &(o) {
         TypeIntersection.new(self, o)
     }
@@ -286,7 +286,7 @@ class TypeUnion.new(t1, t2) {
 }
 
 class TypeSubtraction.new(t1, t2) {
-    inherits BasicPattern.new
+    inherit BasicPattern.new
     method &(o) {
         TypeIntersection.new(self, o)
     }

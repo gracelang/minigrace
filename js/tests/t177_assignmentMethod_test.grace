@@ -5,7 +5,7 @@ class objWithX {
 }
 
 class assignmentTest.forMethod(m) {
-    inherits gU.testCaseNamed(m)
+    inherit gU.testCaseNamed(m)
     
     method testXgetsNoX {
         def o = object {
@@ -18,7 +18,7 @@ class assignmentTest.forMethod(m) {
     
     method testXgetsInheritsX {
         def o = object {
-            inherits objWithX
+            inherit objWithX
             var hx is readable := 0
             method x:= (n) { hx := n }
         }

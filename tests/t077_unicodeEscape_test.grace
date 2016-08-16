@@ -2,7 +2,7 @@ import "gUnit" as gU
 import "unicode" as u
 
 class patternTest.forMethod(m) {
-    inherits gU.testCaseNamed(m)
+    inherit gU.testCaseNamed(m)
     
     method testUnicodeEscape {
         assert "\u45EF" shouldBe "\u45ef"

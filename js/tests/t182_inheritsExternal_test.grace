@@ -5,7 +5,7 @@ import "stringMap" as stringMap
 method hook { abstract }
 
 class stringSet {
-    inherits stringMap.new
+    inherit stringMap.new
     
     method add(key) {
         put(key, true)
@@ -27,7 +27,7 @@ class stringSet {
 }
 
 class newPrelude {
-    inherits prelude.methods
+    inherit prelude.methods
     
     method compareProtocols {
         def mSelf = mirror.reflect(self).methodNames

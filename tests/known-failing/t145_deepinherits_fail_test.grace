@@ -15,7 +15,7 @@ def labeled = object {
     }
 
     class ofElementType(elementType : String) {
-        inherits fromElement("some element")
+        inherit fromElement("some element")
         var label := "foo"
     }
 
@@ -25,13 +25,13 @@ def labeled = object {
         self
     }
 //    class ofElementType(elementType : String) labeled(label' : String) {
-//        inherits ofElementType(elementType)
+//        inherit ofElementType(elementType)
 //        self.label := label'
 //    }
 }
 
 class buttonWithLabel(label' : String) {
-    inherits labeled.ofElementType("button") labeled(label')
+    inherit labeled.ofElementType("button") labeled(label')
 
     method asString {
         "a button labeled: {self.label}"

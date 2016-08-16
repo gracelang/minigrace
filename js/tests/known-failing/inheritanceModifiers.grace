@@ -4,7 +4,7 @@ class sc {
 }
 
 class sub {
-    inherits sc
+    inherit sc
         alias foo2 = foo
         exclude bar
         

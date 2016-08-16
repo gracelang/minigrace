@@ -3,7 +3,7 @@ import "gUnit" as gU
 
 def primitiveListTest = object {
     class forMethod(m) {
-        inherits gU.testCaseNamed(m)
+        inherit gU.testCaseNamed(m)
 
         def oneToFive = [1, 2, 3, 4, 5]
         def evens = [2, 4, 6, 8]

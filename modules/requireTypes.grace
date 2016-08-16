@@ -1,9 +1,9 @@
 import "ast" as ast
-inherits prelude.methods
+inherit prelude.methods
 
 def CheckerFailure = Exception.refine "CheckerFailure"
 def staticVisitor = object {
-    inherits ast.baseVisitor
+    inherit ast.baseVisitor
     method asString {
         "the requireTypes visitor"
     }

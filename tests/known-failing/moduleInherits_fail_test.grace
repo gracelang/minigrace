@@ -1,4 +1,4 @@
-inherits example
+inherit example
 
 class example {
     method one { 1 }

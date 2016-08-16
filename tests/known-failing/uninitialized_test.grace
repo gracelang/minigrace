@@ -6,7 +6,7 @@ class objWithX {
 
 def uVarTest = object {
     class forMethod(m) {
-        inherits gU.testCaseNamed(m)
+        inherit gU.testCaseNamed(m)
 
         method testSimpleUninitVarAccess {
             var a

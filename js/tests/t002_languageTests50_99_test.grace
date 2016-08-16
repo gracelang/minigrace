@@ -39,7 +39,7 @@ method t099_test'(a') {
 
 def aGraceLangTest = object {
     class forMethod(m) {
-        inherits gU.testCaseNamed(m)
+        inherit gU.testCaseNamed(m)
 
         method setup {
             str := ""

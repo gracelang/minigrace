@@ -1,7 +1,7 @@
 dialect "minitest"
 
 def empty = object {
-    inherits Singleton.new
+    inherit Singleton.new
     method asString -> String {"empty"}
 }
 

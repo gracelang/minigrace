@@ -1,4 +1,4 @@
-inherits prelude.methods
+inherit prelude.methods
 
 method Relationship⟦From, To⟧ {
     object {

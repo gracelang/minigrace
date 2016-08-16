@@ -1,7 +1,7 @@
 import "gUnit" as gU
 
 class stringTest.forMethod(m) {
-    inherits gU.testCaseNamed(m)
+    inherit gU.testCaseNamed(m)
     
     method test_concat {
         assert ("abc" ++ "def") shouldBe "abcdef"

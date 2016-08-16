@@ -3,7 +3,7 @@
 // depends on minitest can be run by the instuctor under gUnit,
 // without getting confounding results from the minitest tests.
 
-inherits prelude.methods
+inherit prelude.methods
 
 method assert(bb:Boolean) description(str:String) { }
 

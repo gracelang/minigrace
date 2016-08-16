@@ -9,7 +9,7 @@ class list⟦T⟧ {
     method empty -> List⟦T⟧  { self.withAll [ ] }
 
     class withAll(a:Iterable⟦T⟧) -> List⟦T⟧ {
-        inherits collections.indexable.TRAIT⟦T⟧
+        inherit collections.indexable.TRAIT⟦T⟧
         var sz := 0
         var jsArray := native "js" code ‹var result = [];›
         a.do { each ->
@@ -210,7 +210,7 @@ class list⟦T⟧ {
 
         method iterator {
             object {
-                inherits iterable.TRAIT
+                inherit iterable.TRAIT
                 var idx := 1
                 method asDebugString { "{asString}⟪{idx}⟫" }
                 method asString { "aListIterator" }

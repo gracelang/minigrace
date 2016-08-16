@@ -2,7 +2,7 @@ import "gUnit" as gU
 
 def bindingTest = object {
     class forMethod(m) {
-        inherits gU.testCaseNamed(m)
+        inherit gU.testCaseNamed(m)
 
         method testStringification {
             assert ((2::4).asString) shouldBe "2::4"
@@ -29,7 +29,7 @@ def bindingTest = object {
 
 def rangeTest = object {
     class forMethod(m) {
-        inherits gU.testCaseNamed(m)
+        inherit gU.testCaseNamed(m)
 
         def rangeUp = range.from 3 to 6
         def rangeDown = range.from 10 downTo 7
@@ -279,7 +279,7 @@ def rangeTest = object {
 
 def sequenceTest = object {
     class forMethod(m) {
-        inherits gU.testCaseNamed(m)
+        inherit gU.testCaseNamed(m)
 
         var oneToFive
         var evens
@@ -586,7 +586,7 @@ def sequenceTest = object {
 
 def listTest = object {
     class forMethod(m) {
-        inherits gU.testCaseNamed(m)
+        inherit gU.testCaseNamed(m)
 
         var oneToFive
         var evens
@@ -1042,7 +1042,7 @@ def listTest = object {
 
 def setTest = object {
     class forMethod(m) {
-        inherits gU.testCaseNamed(m)
+        inherit gU.testCaseNamed(m)
 
         var oneToFive
         var evens
@@ -1271,7 +1271,7 @@ def setTest = object {
 
 def dictionaryTest = object {
     class forMethod(m) {
-        inherits gU.testCaseNamed(m)
+        inherit gU.testCaseNamed(m)
 
         var oneToFive
         var evens
@@ -1607,7 +1607,7 @@ def dictionaryTest = object {
 
 def lazyEnumTest = object {
     class forMethod(m) {
-        inherits gU.testCaseNamed(m)
+        inherit gU.testCaseNamed(m)
         def oneToFive = (1..5).filter{ x -> true }
         def empty = (1..5).filter{ x -> false }
 
