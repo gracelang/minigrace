@@ -1726,10 +1726,9 @@ method callrest(acceptBlocks) {
     def lpos = meth.linePos
     var methn := meth.nameString
     def btok = sym
-    util.setPosition(sym.line, sym.linePos)
-    var signature := []
-    var part := ast.requestPart.new
-    signature.push(part)
+    def arguments = []
+    def part = ast.requestPart.new.setPositionFrom(meth)
+    arguments.push(part)
     var hadcall := false
     var tok := lastToken
     var startInd := minIndentLevel
@@ -1737,9 +1736,7 @@ method callrest(acceptBlocks) {
     if (acceptSameLine "lgeneric") then {
         genericIdents := typeArgs
     }
-    if (acceptSameLine("lparen")) then {
-        part.line := sym.line
-        part.linePos := sym.linePos
+    if (acceptSameLine "lparen") then {
         part.name := methn
         tok := sym
         hadcall := true
@@ -1753,16 +1750,16 @@ method callrest(acceptBlocks) {
         term
         var ar := values.pop
         part.args.push(ar)
-    } elseif { meth.kind == "identifier" } then {
+    } elseif { meth.isIdentifier } then {
         values.push(meth)
-    } elseif { meth.kind == "member" } then {
+    } elseif { meth.isMember } then {
         var root := meth.receiver
         var outroot := meth
-        while {root.kind == "member"} do {
+        while {root.isMember} do {
             outroot := root
             root := root.receiver
         }
-        if (root.kind == "identifier") then {
+        if (root.isIdentifier) then {
             values.push(meth)
         } else {
             meth.generics := genericIdents
@@ -1775,7 +1772,7 @@ method callrest(acceptBlocks) {
             def meth' = ast.identifierNode.new(methn, false)
             meth'.line := lnum
             meth'.linePos := lpos
-            methn := callmprest(meth', signature, tok)
+            methn := callmprest(meth', arguments, tok)
             if (meth.kind == "member") then {
                 // callmprest loses this information, so restore
                 // the member lookup (for x.between(3)and(10)-type
@@ -1791,10 +1788,12 @@ method callrest(acceptBlocks) {
         if (meth.isIdentifier) then {
             meth := ast.implicit
         } else {
-            meth := meth.receiver     // because the final "with" part duplicates
-                                // first part of the method name
+            meth := meth.receiver    // because meth's `request` part duplicates
+                                     // the first part of the method name
         }
-        def call = ast.callNode.new(meth, signature)
+        def call = ast.callNode.new(meth, arguments)
+        call.line := lnum
+        call.linePos := lpos
         call.generics := genericIdents
         values.push(call)
     } elseif {false != genericIdents} then {
@@ -1955,11 +1954,11 @@ method typeArg {
     }
 }
 
-method callmprest(meth, signature, tok) {
+method callmprest(meth, arguments, tok) {
     // Parses the rest of a multi-part method name.
     // meth is an identifierNode representing the first part of the name.
     // Returns a new identifierNode, representing the full method name,
-    // and updates signature.params with the parsed arguments.
+    // and updates the collection `arguments` with the parsed arguments.
     var methname := meth.value
     var nxt
     var lp := meth.linePos
@@ -1969,7 +1968,7 @@ method callmprest(meth, signature, tok) {
         // Each word must start on the same line as the preceding parameter
         // ended.
         part := ast.requestPart.new
-        signature.push(part)
+        arguments.push(part)
         methname := methname ++ "()"
         pushidentifier
         nxt := values.pop
