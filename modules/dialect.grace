@@ -297,7 +297,7 @@ def Var is public = aPatternMatchingNode "vardec"
 def Import is public = aPatternMatchingNode "import"
 def Dialect is public = aPatternMatchingNode "dialect"
 def Return is public = aPatternMatchingNode "return"
-def Inherits is public = aPatternMatchingNode "inherit"
+def Inherit is public = aPatternMatchingNode "inherit"
 
 // Special requests patterns.
 

@@ -1093,7 +1093,7 @@ method processBody (body: List) -> ObjectType is confidential {
     collectTypes (body)
 
     // Inheritance typing.
-    def hasInherits = (body.size > 0) && { Inherits.match (body.first) }
+    def hasInherits = (body.size > 0) && { Inherit.match (body.first) }
     def superType = if (hasInherits) then {
         def inheriting = body.first.value
         inheriting.accept (object {
