@@ -18,6 +18,7 @@ keywords.put("is", true)
 keywords.put("method", true)
 keywords.put("object", true)
 keywords.put("return", true)
+keywords.put("super", true)
 keywords.put("trait", true)
 keywords.put("type", true)
 keywords.put("use", true)
@@ -471,6 +472,16 @@ class new {
             checkSeparator(c)
             if (!isIdentifierChar(c)) then {
                 if (keywords.contains(accum)) then {
+                    if (accum == "super") then {
+                        errormessages.syntaxError(
+                            "`super` is no longer part of Grace.\n" ++
+                              "Consider using an `alias` clause on the inherit statement.")
+                              atRange(lineNumber, startPosition, linePosition-1)
+                    } elseif {accum == "inherits"} then {
+                        errormessages.syntaxError(
+                            "The reserved word `inherits` has been replaced by `inherit`.")
+                              atRange(lineNumber, startPosition, linePosition-1)
+                    }
                     emit(keywordToken(accum))
                 } else {
                     emit(identifierToken(accum))
