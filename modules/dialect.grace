@@ -8,6 +8,7 @@ inherit prelude.methods
 
 def CheckerFailure is public = Exception.refine "CheckerFailure"
 
+type List = prelude.List
 
 // Helper Map
 
@@ -27,7 +28,7 @@ class aMutableMap {
     method at(key) {
         atKey(key) do { value -> return value }
 
-        NoSuchObject.raise "no key {key} in aMutableMap"
+        prelude.NoSuchObject.raise "no key {key} in aMutableMap"
     }
 
     method at(key) put(value) -> Done {
@@ -255,7 +256,7 @@ method check(module) -> Done {
 type AstNode = { kind -> String }
 
 class aPatternMatchingNode(kind : String) -> prelude.Pattern {
-    inherit BasicPattern.new
+    inherit prelude.BasicPattern.new
 
     method match(obj : Object) {
         match(obj) 
