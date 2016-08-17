@@ -684,11 +684,6 @@ class customShape {
               this.data.createJsGraphics.graphics.closePath()
         ›
     }
-
-    method setBounds {
-        var bounds := leftMost@topMost
-        super.setBounds(bounds, rightMost - leftMost, bottomMost - topMost)
-    }
 }
 
 class tween(jsGraphicsObj, myStage) {
