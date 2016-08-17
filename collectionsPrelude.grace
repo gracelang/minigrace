@@ -246,7 +246,6 @@ class lazyConcatenation⟦T⟧(left, right) -> Enumerable⟦T⟧{
         iteratorConcat(left.iterator, right.iterator)
     }
     method asDebugString { "lazy concatenation of {left} and {right}" }
-    method asString { super.asString }
     method size { left.size + right.size }  // may raise SizeUnknown
 }
 
@@ -1919,7 +1918,7 @@ class range {
                         val := val + 1
                         return (val - 1)
                     }
-                    method asString { "{super.asString} from {upper} to {lower}" }
+                    method asString { "iterator over {outer.asString} at {val}" }
                 }
             }
             method at(ix:Number) {
@@ -2020,7 +2019,7 @@ class range {
                         val := val - 1
                         return (val + 1)
                     }
-                    method asString { "anIterator over {super.asString}" }
+                    method asString { "anIterator over {outer.asString} at {val}" }
                 }
             }
             method at(ix:Number) {
