@@ -26,6 +26,8 @@ js/collections.js
 js/collectionsPrelude.js
 js/compiler.js
 js/createJsGraphicsWrapper.js
+js/date.js
+js/date_test.js
 js/dialect.js
 js/errormessages.js
 js/gUnit.js
