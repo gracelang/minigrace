@@ -119,10 +119,10 @@ method test(name:String) by(block:Block) {
 
 method testCaseNamed(name') setupIn(setupBlock) asTestNumber(number) -> gu.TestCase {
     object {
-        inherit gu.testCaseNamed(name')
+        inherit gu.testCaseNamed(name') alias guSetup = setup
 
         method setup { 
-            super.setup
+            guSetup
             currentTestBlockForTesting := number
             currentTestInThisEvaluation := 0
             setupBlock.apply

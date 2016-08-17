@@ -3,6 +3,8 @@ import "gUnit" as gUnit
 def gUnitTest = object {
     class forMethod(name') {
         inherit gUnit.testCaseNamed(name')
+            alias tcSetup = setup
+            alias tcTeardown = teardown
         var log is readable
         
         method testMethod { 
@@ -34,12 +36,12 @@ def gUnitTest = object {
         }
 
         method setup is confidential {
-            super.setup
+            tcSetup
             log := "setup "
         }
         
         method teardown is confidential {
-            super.teardown
+            tcTeardown
             log := log ++ "teardown "
         }
     }
