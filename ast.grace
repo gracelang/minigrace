@@ -173,7 +173,7 @@ class baseNode {
     }
     method postCopy(other) {
         // hook method, to be overridden by sub-objects if desired
-    }
+        }
     method basePretty(depth) {
         def spc = "  " * (depth+1)
         if ((scope.node == self) && {util.target == "symbols"}) then {
