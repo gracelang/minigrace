@@ -40,7 +40,7 @@ PRELUDESOURCEFILES = collectionsPrelude.grace standardGrace.grace
 REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace genc.grace stringMap.grace xmodule.grace identifierresolution.grace)
 ALLSOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES) $(HEADERFILES)
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
-STABLE=2e7432b299d4ba499027a17319654f4bcd9372c2
+STABLE=21802a386d7e3614445df7ee7c1a5afde8ad45d3
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 TYPE_DIALECTS = staticTypes requireTypes
 VER = $(shell ./tools/calculate-version $(STABLE))
