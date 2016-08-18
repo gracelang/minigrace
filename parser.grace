@@ -2270,7 +2270,7 @@ method inheritOrUse {
 }
 
 method inheritModifier(node) onLineOf(startToken) {
-    // parse an alias or excludes modifier on an `inherit` clause
+    // parse an alias or exclude modifier on an `inherit` clause
     if (! accept "keyword" onLineOf(startToken) ) then { 
         return false
     }
