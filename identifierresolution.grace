@@ -605,15 +605,25 @@ method transformIdentifier(node) ancestors(as) {
     return nodeScope.resolveOuterMethod(nm) fromNode(node)
 }
 method checkForAmbiguityOf (node) definedIn (definingScope) as (kind) {
+    // The spec says:
+    // When resolving an implicit request, the usual rules of lexical scoping
+    // apply, so a definition of m in the current scope will take precedence
+    // over any definitions in enclosing scopes. However, if m is defined in
+    // the current scope by inheritance or trait use, rather than directly,
+    // and also defined directly in an enclosing scope, then an implicit
+    // request of m is ambiguous and is an error.
+    
     def currentScope = node.scope
     if (kind.fromParent.not) then { return }
-    if (currentScope.enclosingObjectScope != definingScope) then { return }
     def name = node.nameString
     def conflictingScope = definingScope.parent.thatDefines(name) ifNone {
         return
     }
     def conflictingKind = conflictingScope.kind(name)
-    if (conflictingKind.fromParent) then { return }
+    if (conflictingKind.fromParent) then {
+        return    // request is ambiguous only if name is defined
+                  // _directly_ in an enclosing scope.  
+    }
     var more := ""
     if (conflictingScope.elementLines.contains(name)) then {
         def earlierDef = conflictingScope.elementLines.get(name)
