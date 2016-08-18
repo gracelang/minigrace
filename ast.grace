@@ -2697,9 +2697,9 @@ def requestPart = object {
                 spc := spc ++ "  "
             }
             var s := "{basePretty(depth)}: {name}"
-            s := "{s}\n    {spc}Args:"
+            s := "{s}\n{spc}Args:"
             for (args) do { a ->
-                s := "{s}\n    {spc}{a.pretty(depth + 4)}"
+                s := "{s}\n  {spc}{a.pretty(depth + 3)}"
             }
             s
         }
