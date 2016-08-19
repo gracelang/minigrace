@@ -39,13 +39,13 @@ type Iterable⟦T⟧ = Object & type {
         // my size; if not known, then the result of applying action
     first -> T
         // my first element; raises BoundsError if I have none.
-    do(block1: Block1⟦T, Done⟧) -> Done
-        // an internal iterator; applies block1 to each of my elements
+    do(body: Block1⟦T, Done⟧) -> Done
+        // an internal iterator; applies body to each of my elements
     do(body:Block1⟦T, Done⟧) separatedBy(separator:Block0⟦Done⟧) -> Done
-        // an internal iterator; ; applies block1 to each of my elements, and applies separator in between
+        // an internal iterator; applies body to each of my elements, and applies separator in between
     ++(other: Iterable⟦T⟧) -> Iterable⟦T⟧
         // returns a new Iterable over the concatenation of self and other
-    fold(binaryFunction:Block2⟦T, T, T⟧) startingWith(initial:T) -> Object
+    fold(binaryFunction:Block2⟦T, T, T⟧) startingWith(initial:T) -> T
         // the left-associative fold of binaryFunction over self, starting with initial
     map⟦U⟧(function:Block1⟦T, U⟧) -> Iterable⟦U⟧
         // returns a new iterator that yields my elements mapped by function
