@@ -1,16 +1,16 @@
 inherit prelude.methods
 
-method Relationship⟦From, To⟧ {
+method relationship⟦From, To⟧ {
     object {
-        def map = dictionary []
+        def map = prelude.dictionary []
         method add(f : From, t : To) is public {
             if (!map.containsKey(f)) then {
-                map.at(f) put(set [])
+                map.at(f) put(prelude.set [])
             }
             map.at(f).add(t)
         }
         method to(t) is public {
-            def res = list []
+            def res = prelude.list []
             map.keysDo {k->
                 if (map.at(k).contains(t)) then {
                     res.add(k)
@@ -24,7 +24,7 @@ method Relationship⟦From, To⟧ {
     }
 }
 
-method ReflexiveRelationship⟦T⟧ {
-    Relationship⟦T,T⟧
+method reflexiveRelationship⟦T⟧ {
+    relationship⟦T,T⟧
 }
 

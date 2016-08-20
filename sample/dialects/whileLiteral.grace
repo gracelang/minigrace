@@ -6,16 +6,6 @@ dialect "dialect"
 import "util" as util
 inherit prelude.methods
 
-print "loading whileLiteral dialect; util.lines = {util.lines}"
-
-method atModuleStart(modname) {
-    print "at start of {modname}: util.lines = {util.lines}"
-}
-
-method atModuleEnd(mod) {
-    print "at end of {mod}: util.lines = {util.lines}"
-}
-
 rule { req: WhileRequest ->
     // The dialect dialect provides a `WhileRequest` pattern which
     // matches while()do requests.  It also provides an accessor
@@ -69,6 +59,15 @@ method reportWhile(req) {
         from(whilePart.linePos) to(whilePart.linePos + whilePart.lineLength)
 }
 
-method checker(code) {
-    check(code)
+def thisDialect = object {
+    method parseChecker(module) {
+        check(module)
+    }
+    method atModuleStart(modname) {
+        print "at start of {modname}: util.lines = {util.lines}"
+    }
+
+    method atModuleEnd(mod) {
+        print "at end of {mod}: util.lines = {util.lines}"
+    }
 }

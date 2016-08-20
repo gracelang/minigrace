@@ -1,7 +1,9 @@
 dialect "objectAssociations"
-def Attends = Relationship<Student, Course>
-def Teaches = Relationship<Course, Faculty>
-def Prerequisites = ReflexiveRelationship<Course>
+
+def attends = relationship⟦Student, Course⟧
+def teaches = relationship⟦Course, Faculty⟧
+def prerequisites = reflexiveRelationship⟦Course⟧
+
 method student(name) {
     // For simplicity's sake, represent students just by their name
     name
@@ -14,7 +16,6 @@ method course(code) {
 def james = student "james"
 def cs102 = course "cs102"
 ...
-Attends.add(james, cs102)
+attends.add(james, cs102)
 ...
-for (Attends.to(cs102)) do { each -> print(each) }
-
+for (attends.to(cs102)) do { each -> print(each) }
