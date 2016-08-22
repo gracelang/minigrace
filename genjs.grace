@@ -38,6 +38,8 @@ var emitArgChecks := true
 var emitPositions := true
 var requestCall := "callmethodChecked"
 var bracketConstructor := "Lineup"
+var emod        // the name of the module being compiled, escaped
+                // so that it is a legal identifier
 
 method increaseindent {
     indent := indent ++ "  "
@@ -280,7 +282,6 @@ method compileObjectConstructor(o) into (objectUnderConstruction) {
     // the outer object of the object here being constructed
 
     var origInBlock := inBlock
-    def outerObject = currentObject
     inBlock := false
 
     if (o.register.isEmpty) then {
@@ -953,18 +954,13 @@ method compileSuperRequest(o, args) {
 }
 method compileOuterRequest(o, args) {
     out "// call case 2: outer request"
-    def ot = compilenode(o.receiver)
+    compilenode(o.receiver)
     out "onSelf = true;";
-    out("var call{auto_count} = {requestCall}({ot}" ++
+    out("var call{auto_count} = {requestCall}({o.receiver.register}" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
-<<<<<<< HEAD
-method compileOuter(o, args) {
-    out "// call case 3: outer"
-=======
 method compileOuter(o) {
-    out "// call case 2: outer"
->>>>>>> More re-work of inheritance.
+    out "// call case 3: outer"
     def oo = o.enclosingObject
     out "var call{auto_count} = this.{outerProp(oo)};"
 }
@@ -1007,10 +1003,11 @@ method compilecall(o) {
     }
     o.register := "call" ++ auto_count
     auto_count := auto_count + 1
+    o.register
 }
 method compileOuter(o) {
-    o.theObjects.fold { a, o -> "{a}.{outerProp(o)}" }
-            startingWith "this"
+    o.register := o.theObjects.fold { a, obj -> "{a}.{outerProp(obj)}" }
+                                    startingWith "this"
 }
 method compiledialect(o) {
     out("// Dialect import of {o.value}")
@@ -1122,8 +1119,7 @@ method compilenode(o) {
     def oKind = o.kind
     if (oKind == "num") then {
         o.register := "new GraceNum(" ++ o.value ++ ")"
-    }
-    if (oKind == "string") then {
+    } elseif {oKind == "string"} then {
         // Escape characters that may not be legal in string literals
         def os = escapestring(o.value)
         out("var string" ++ auto_count ++ " = new GraceString(\""
@@ -1180,6 +1176,12 @@ method compilenode(o) {
         }
     } elseif { oKind == "op" } then {
         compileop(o)
+    } elseif { oKind == "outer" } then {
+        compileOuter(o)
+    } elseif { oKind == "blank" } then {
+        // do nothing
+    } else {
+        ProgrammingError.raise "unrecognized ast node \"{oKind}\"."
     }
     compilationDepth := compilationDepth - 1
     o.register
