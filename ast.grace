@@ -1461,7 +1461,7 @@ class outerNode(nodes) {
     // references an object outside the current object.
     // nodes, a sequence of objectNodes, tells us which one.
     // The object that we refer to is the one OUTSIDE nodes.last
-    inherits baseNode
+    inherit baseNode
     def kind is public = "outer"
     def theObjects is public = nodes
     method asString { "‹object outside that at line {theObjects.last.line}›" }
