@@ -567,6 +567,7 @@ method transformIdentifier(node) ancestors(as) {
     // This method seems to do the following:
     // - id is self => do nothing
     // - id is super => do nothing
+    // - id is outer => transform to an outerNode
     // - id is in an assignment position and a method ‹id›:=(_) is in scope => do nothing.  The enclosing bind will transform it.
     // - id is in the lexical scope: store binding occurence of id in node
     // - id is a method in an outer object scope: transform into member nodes.
@@ -599,11 +600,15 @@ method transformIdentifier(node) ancestors(as) {
         }
     }
     if (nm == "outer") then {
-        def selfId = ast.identifierNode.new("self", false) scope(nodeScope)
-        def memb = ast.memberNode.new("outer", selfId) scope(nodeScope)
-        if (as.parent.isCall) then { as.parent.onSelf }
-        return memb
-        // TODO: represent outer statically
+        if (useOuterNodes) then {
+            return ast.outerNode [nodeScope.enclosingObjectScope.node].
+                    setPositionFrom(node).setScope(nodeScope)
+        } else {
+            def selfId = ast.identifierNode.new("self", false) scope(nodeScope)
+            def memb = ast.memberNode.new("outer", selfId) scope(nodeScope)
+            if (as.parent.isCall) then { as.parent.onSelf }
+            return memb
+        }
     }
     if (nm == "self") then {
         return node
@@ -1448,7 +1453,8 @@ method transformInherits(inhNode) ancestors(as) {
 method transformCall(cNode) -> ast.AstNode {
     def methodName = cNode.nameString
     def s = cNode.scope
-    if (cNode.receiver.isImplicit) then {
+    def nominalRcvr = cNode.receiver
+    if (nominalRcvr.isImplicit) then {
         def rcvr = s.resolveOuterMethod(methodName) fromNode(cNode)
         if (rcvr.isIdentifier) then {
             util.log 60 verbose "Transformed {cNode.pretty 0} answered identifier {rcvr.nameString}"
@@ -1459,6 +1465,14 @@ method transformCall(cNode) -> ast.AstNode {
             definedIn (definingScope) as (definingScope.kind(methodName))
         cNode.receiver := rcvr.receiver
         cNode.onSelf
+    } elseif { nominalRcvr.isOuter && (cNode.nameString == "outer") } then {
+        // deal with outer.outer ..., which has been parsed into a memberNode
+        // The reciever should alrady have been converted from an identifier to
+        // and outerNode; here we add another object to that node's object list.
+        def priorOuter = nominalRcvr.theObjects.last
+        def newOuter = priorOuter.scope.parent.enclosingObjectScope.node
+        nominalRcvr.theObjects.addLast(newOuter)
+        cNode
     } else {
         cNode
     }
