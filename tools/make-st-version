@@ -5,5 +5,5 @@
 N=`grep -n ^import "$1" | tail -n 1 | cut -f1 -d:`
 head -n $N $1
 echo 'import "modules/staticTypes" as st'
-echo 'method checker(ast) { st.checker(ast) }'
+echo 'def thisDialect = st.thisDialect'
 tail -n +$(($N+1)) $1
