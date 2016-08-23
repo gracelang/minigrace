@@ -554,10 +554,8 @@ method compileMethodBody(o)  {
 method compileFreshMethodBody(o) {
     var tailObject := false
     // two cases: body ends with an object, or body ends with a clone method
-    if ((o.body.size > 0) && {o.body.last.isObject}) then {
+    if ((o.body.isEmpty.not) && {o.body.last.isObject}) then {
         tailObject := o.body.pop    // remove tail object
-        util.log 50 verbose "object name was {tailObject.name}, changed to {o.nameString}"
-        tailObject.name := o.nameString
     }
     var ret := "GraceDone"
     var lastLine := o.line

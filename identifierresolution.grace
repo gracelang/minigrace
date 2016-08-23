@@ -1096,6 +1096,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                     o.isFresh := true
                 }
             }
+            if (o.body.isEmpty.not && {o.body.last.isObject}) then {
+                o.body.last.name := o.nameString
+            }
             true
         }
         method visitMethodType (o) up (as) {
