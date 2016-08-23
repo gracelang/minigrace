@@ -266,7 +266,12 @@ MiniGrace.prototype.loadModule = function(moduleName, referencingDir) {
     }
     var found = findOnPath(fileName, [referencingDir].concat(pathdirs));
     var sourceDir = path.dirname(fs.realpathSync(found));
-    require(found);
+    try {
+        require(found);
+    } catch (e) {
+        console.warn("%s while loading file %s", e.toString(), found);
+        process.exit(-3);
+    }
     if (typeof global[graceModule] !== 'function') {
         console.error("loaded file '" + found + "', but it did not define '" +
                             graceModule + "'.");
