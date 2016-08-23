@@ -1037,7 +1037,7 @@ PrimitiveGraceList.prototype = {
                 throw new GraceExceptionPacket(BoundsErrorObject,
                     new GraceString("'removeLast' requested on list with size " +
                                                         this._value.length));
-            return this;
+            return result;
         },
         "at(1)": prim_list_index,
         "first": function list_first(argcv) {
