@@ -1353,11 +1353,23 @@ method compileSuper(inhNode, selfr) {
     out "if ({sup}.hasOwnProperty('_value'))"
     out "    {selfr}._value = {sup}._value;"
     copyDownMethodsFrom (sup) to (selfr) excluding (inhNode.exclusions)
-    inhNode.aliases.do { each ->
-        out "{selfr}.methods[\"{each.newName.nameString}\"] = findMethod({sup}, \"{each.oldName.nameString}\");"
-    }
+    compileAliases(inhNode, selfr);
     inhNode.exclusions.do { each ->
         out "delete {sup}.methods['{each.nameString}'];"
+    }
+}
+
+method compileAliases(inhNode, selfr) {
+    if (inhNode.aliases.isEmpty) then { return }
+    def parentExpr = inhNode.value.shallowCopy
+    if (parentExpr.isCall && (parentExpr.with.size > 1)) then {
+        def newPartsList = parentExpr.with.copy
+        newPartsList.removeLast     // remove the final $object(_) part
+        parentExpr.with := newPartsList
+    }
+    def superObj = compilenode(parentExpr)
+    inhNode.aliases.do { each ->
+        out "{selfr}.methods['{each.newName.nameString}'] = findMethod({superObj}, '{each.oldName.nameString}');"
     }
 }
 
