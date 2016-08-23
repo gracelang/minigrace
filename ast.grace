@@ -1465,7 +1465,7 @@ class outerNode(nodes) {
     def kind is public = "outer"
     def theObjects is public = nodes
     method asString { "‹object outside that at line {theObjects.last.line}›" }
-    method pretty(depth) { nameString }
+    method pretty(depth) { basePretty(depth) ++ asString }
     method accept(visitor) from (as) {
         visitor.visitOuter(self) up (as)
         // don't visit theObject, since this would introduce a cycle
