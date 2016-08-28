@@ -305,7 +305,7 @@ method compileObjectConstructor(o) into (objectUnderConstruction) {
     if (false == o.superclass) then {
         copyDownMethodsFrom "var_graceObject" to "this" excluding (emptySequence)
     } else {
-        compileSuper(o.superclass, "this")
+        compileInherit(o.superclass)
     }
     compileInitialization(o, "this")
     decreaseindent
@@ -1165,6 +1165,8 @@ method compilenode(o) {
         compiletypedec(o)
     } elseif { oKind == "typeliteral" } then {
         compiletypeliteral(o)
+    } elseif { oKind == "inherit" } then {
+        compileInherit(o)
     } elseif { oKind == "member" } then {
         compilemember(o)
     } elseif { oKind == "call" } then {
@@ -1282,7 +1284,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
             imported.push(o.path)
         }
         if (false != moduleObject.superclass) then {
-            compileSuper(moduleObject.superclass, "this")
+            compilenode(moduleObject.superclass)
         }
         moduleObject.usedTraits.do { t ->
             compileTrait(t) in (moduleObject, "this")
@@ -1344,34 +1346,36 @@ method compile(moduleObject, of, rm, bt, glPath) {
     if (buildtype == "run") then { runJsCode(of, glPath) }
 }
 
-method compileSuper(inhNode, selfr) {
-    def sup = compilenode(inhNode.value)
-    out "if ({sup}.data) \{"
-    out "    for (var key in {sup}.data) \{"
-    out "        {selfr}.data[key] = {sup}.data[key];"
-    out "    }"
-    out "}"
-    out "if ({sup}.hasOwnProperty('_value'))"
-    out "    {selfr}._value = {sup}._value;"
-    copyDownMethodsFrom (sup) to (selfr) excluding (inhNode.exclusions)
-    compileAliases(inhNode, selfr);
-    inhNode.exclusions.do { each ->
-        out "delete {sup}.methods['{each.nameString}'];"
+method compileInherit(inhNode) {
+    // The object under construction is `this`.
+    // Compile code to implement inheritance from inhNode
+
+    if (inhNode.aliases.isEmpty && inhNode.exclusions.isEmpty) then {
+        // simple case: apply the super constructor directly to `this`}
+        compilenode(inhNode.value)
+    } else {
+        // we create a temporary intermediate object
+        def tempObj = compileAliases(inhNode, "this")
+        copyDownMethodsFrom (tempObj) to "this" excluding (inhNode.exclusions)
+        copyDownDataFrom (tempObj) to "this"
     }
 }
 
+
 method compileAliases(inhNode, selfr) {
-    if (inhNode.aliases.isEmpty) then { return }
     def parentExpr = inhNode.value.shallowCopy
     if (parentExpr.isCall && (parentExpr.with.size > 1)) then {
         def newPartsList = parentExpr.with.copy
         newPartsList.removeLast     // remove the final $object(_) part
         parentExpr.with := newPartsList
+    } else {
+        ProgrammingError.raise "inheriting from non-call {parentExpr.pretty 0}"
     }
     def superObj = compilenode(parentExpr)
     inhNode.aliases.do { each ->
         out "{selfr}.methods['{each.newName.nameString}'] = findMethod({superObj}, '{each.oldName.nameString}');"
     }
+    superObj
 }
 
 method copyDownMethodsFrom (sup) to (selfr) excluding (ex) {
@@ -1384,13 +1388,28 @@ method copyDownMethodsFrom (sup) to (selfr) excluding (ex) {
         def exclusionString = list (ex.map { m -> "\"{m.quoted}\"" })
             // converting to a list get list brackets rather then sequence brackets
         out "var exclusions = {exclusionString}"
-        out "for (key in {sup}.methods) \{"
+        out "for (var key in {sup}.methods) \{"
         out "    if (! {selfr}.methods[key]) \{"
-        out "        if ({exclusionString}.includes(key))"
+        out "        if (! exclusions.includes(key))"
         out "            {selfr}.methods[key] = {sup}.methods[key];"
         out "    }"
         out "}"
     }
+}
+
+method copyDownDataFrom (sup) to (selfr) {
+    out "if ({sup}.data) \{"
+    out "    for (var dKey in {sup}.data) \{"
+    out "        {selfr}.data[dKey] = {sup}.data[dKey];"
+    out "    }"
+    out "}"
+    out "if ({sup}.hasOwnProperty('_value'))"
+    out "    {selfr}._value = {sup}._value;"
+    out "for (var ckix in {sup}.closureKeys) \{"
+    out "    var ck = {sup}.closureKeys[ckix];"
+    out "    {selfr}[ck] = {sup}[ck];"
+    out "    {selfr}.closureKeys.push(ck);"
+    out "}"
 }
 
 method compileTrait(useNode) in (objNode, selfr) {

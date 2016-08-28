@@ -570,7 +570,7 @@ method transformIdentifier(node) ancestors(as) {
     // - id is outer => transform to an outerNode
     // - id is in an assignment position and a method ‹id›:=(_) is in scope => do nothing.  The enclosing bind will transform it.
     // - id is in the lexical scope: store binding occurence of id in node
-    // - id is a method in an outer object scope: transform into member nodes.
+    // - id is a method in an outer object scope: transform into member nodes or requests on outerNodes
     // - id is a self-method: transform into a request on self
     // - id is not declared: generate an error message
 
@@ -1419,20 +1419,27 @@ method transformInherits(inhNode) ancestors(as) {
     // inhNode is (a shallow copy of) an inheritNode.  Transform it to deal
     // with superobject initialization and inherited names, including
     // inheritance modifiers
-    def superObject = inhNode.value
+    var superExpr := inhNode.value
     def currentScope = inhNode.scope
     if (currentScope.isObjectScope.not) then {
         errormessages.syntaxError "{inhNode.statementName} statements must be directly inside an object"
                     atRange(inhNode.line, inhNode.linePos, inhNode.linePos + (inhNode.statementName.size - 1))
     }
-    if (superObject.isAppliedOccurenceOfIdentifier) then {
-        // this deals with "inherit true" etc.
-        def definingScope = currentScope.thatDefines(superObject.nameString)
-        if (definingScope.variety == "built-in") then { return inhNode }
-    }
-    def superScope = currentScope.scopeReferencedBy(superObject)
-    if (inhNode.isUse) then {
-        // a `use` statement; no transformation necessary
+    if (superExpr.isAppliedOccurenceOfIdentifier) then {
+        def definingScope = currentScope.thatDefines(superExpr.nameString)
+        if (definingScope == currentScope) then {
+            errormessages.syntaxError "the object being inherited must be from an enclosing scope"
+                atRange(inhNode.line, superExpr.linePos,
+                superExpr.linePos + superExpr.nameString.size - 1)
+        }
+        // this deals with "inherit true" etc; identifiers from the built-in
+        // scope have not been transformed to member nodes
+        def preludeNode = ast.identifierNode.new("prelude", false) scope(currentScope)
+        def newCall = ast.callNode.new(preludeNode, [
+            ast.requestPart.request(superExpr.value) withArgs( [] ) scope(currentScope),
+            ast.requestPart.request "$object" withArgs (
+                [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope) ])
+        inhNode.value := newCall
     } elseif {inhNode.inheritFromMember} then {
         def newcall = ast.callNode.new(inhNode.value.receiver, [
             ast.requestPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
@@ -1445,10 +1452,10 @@ method transformInherits(inhNode) ancestors(as) {
         var superCall := inhNode.value
         superCall.with.push(ast.requestPart.request "$object"
             withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
-    } elseif {! util.extensions.contains "ObjectInheritance"} then {
+    } else {
         errormessages.syntaxError "inheritance must be from a freshly-created object"
-            atRange(inhNode.line, superObject.linePos,
-                superObject.linePos + superObject.nameString.size - 1)
+            atRange(inhNode.line, superExpr.linePos,
+                superExpr.linePos + superExpr.nameString.size - 1)
     }
     inhNode
 }
