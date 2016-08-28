@@ -621,12 +621,7 @@ method transformIdentifier(node) ancestors(as) {
         return ast.memberNode.new(nm, p) scope(nodeScope).onSelf
     }
     if (nodeKind.isParameter) then { return node }
-    if (nodeKind == k.typedec) then { return node }
-
-    // TODO Compatability Kludge — remove when possible
-    if (node.inTypePositionWithAncestors(as)) then { return node }
-    // the latter is necessary until .gct files distinguish types
-
+    
     if (definingScope == moduleScope) then {
         if (nodeKind == k.defdec) then { return node }
         if (nodeKind == k.typedec) then { return node }
