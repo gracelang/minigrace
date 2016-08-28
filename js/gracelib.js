@@ -3513,13 +3513,26 @@ var UninitializedVariableObject = new GraceException("UninitializedVariable", Pr
 // when it is loaded.
 //
 
+function traitObjectFromInto(obj, that) {
+    setModuleName("built-in");
+    if (obj.hasOwnProperty('_value')) {
+        that._value = obj._value;
+    }
+    for (var methName in obj.methods) {
+        if (! that.methods[methName]) {
+            that.methods[methName] = obj.methods[methName];
+        }
+    }
+    return that;
+}
+
 var Grace_prelude = new GraceModule("standardGrace");
 
-Grace_prelude.methods['true()object'] = function prelude_true_object (argcv) {
-    return GraceTrue;
+Grace_prelude.methods['true$object(1)'] = function prelude_true$object (argcv, inheritingObject) {
+    return traitObjectFromInto(GraceTrue, inheritingObject);
 };
-Grace_prelude.methods['false()object'] = function prelude_false_object (argcv) {
-    return GraceFalse;
+Grace_prelude.methods['false$object(1)'] = function prelude_false$object (argcv, inheritingObject) {
+    return traitObjectFromInto(GraceFalse, inheritingObject);
 };
 Grace_prelude.methods['Exception'] = function(argcv) {
     return ExceptionObject;
