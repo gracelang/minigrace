@@ -1231,7 +1231,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
     if (util.extensions.contains("Debug")) then {
         debugMode := true
     }
-    util.log_verbose("generating ECMAScript code.")
+    util.log_verbose("generating JavaScript code.")
     topLevelTypes.add "String"
     topLevelTypes.add "Number"
     topLevelTypes.add "Boolean"
