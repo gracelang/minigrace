@@ -107,6 +107,7 @@ do
 #   the %fail_test.grace DELETES a trailing fail_test.grace, so we get here
 #   if the test name does NOT end with fail_test
     then
+        rm -f ${tcase%%.*}.{js,gct}
         COMMAND="GRACE_MODULE_PATH=../../:../../modules/: $COMPILER --verbose 60 --target js --dir .. $tcase"
 #        echo COMMAND = $COMMAND
         if eval "$COMMAND" > test-$$.log 2>&1
@@ -170,7 +171,7 @@ do
             cat ${tcase%_test.grace}.out >> test.js.log
         fi
     fi
-    rm -f test-$$.log test-$$.out test-$$.err ${tcase%%.*}.{js,gct} ../${tcase%%.*}.{js,gct} *_test.gct
+    rm -f test-$$.log test-$$.out test-$$.err ../${tcase%%.*}.{js,gct} *_test.gct
     if [ "$TYPE" = "tograce" ]
     then
         rm -f tg_t*
