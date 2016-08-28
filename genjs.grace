@@ -1193,7 +1193,8 @@ method compilenode(o) {
 }
 
 method compile(moduleObject, of, rm, bt, glPath) {
-    def isPrelude = util.extensions.contains("NativePrelude")
+    def isPrelude = util.extensions.contains("NativePrelude") ||
+          (moduleObject.theDialect == "none")
     if (util.extensions.contains "ExtendedLineups") then {
         bracketConstructor := "PrimitiveGraceList"
     }

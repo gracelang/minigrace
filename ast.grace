@@ -1200,8 +1200,10 @@ def moduleNode is public = object {
     }
     class body(b) {
         inherit objectNode.new(b, false)
+            alias prettyPrefix(_) = basePretty(_)
         def kind is public = "module"
         def sourceLines = util.lines
+        var theDialect is public := "standardGrace"
         line := 0       // because the module is always implicit
         linePos := 0
         var imports is public := [ ]
@@ -1224,11 +1226,17 @@ def moduleNode is public = object {
                 }
             }
         }
+        method basePretty(depth) {
+            def spc = "  " * (depth+1)
+            prettyPrefix(depth) ++ "\n" ++
+                "{spc}dialect \"{theDialect}\""
+        }
         method shallowCopy {
             moduleNode.body(emptySeq).shallowCopyFieldsFrom(self)
         }
         method postCopy(other) {
             imports := other.imports
+            theDialect := other.theDialect
             // copy the field of moduleNode
 
             name := other.name

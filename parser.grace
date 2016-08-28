@@ -2229,8 +2229,16 @@ method dodialect {
             errormessages.syntaxError("a dialect statement must have the name of the dialect in quotes after the 'dialect'.")atPosition(
                 lastToken.line, errorPos)withSuggestion(suggestion)
         }
-        values.push(ast.dialectNode.new(sym.value))
-        next
+        if (values.filter{nd -> nd.kind  ≠ "blank"}.isEmpty) then {
+            def dn = ast.dialectNode.new(sym.value)
+            next
+            values.push(dn)
+            moduleObject.theDialect := dn
+        } else {
+            util.log 50 verbose "values = {values}"
+            errormessages.syntaxError("a dialect statement must be at the start of the module.")
+                  atLine(lastToken.line)
+        }
     }
 }
 
