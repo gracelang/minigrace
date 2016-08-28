@@ -6299,8 +6299,8 @@ Object grace_prelude() {
     add_Method(c, "inBrowser", &prelude_inBrowser);
     add_Method(c, "clone(1)", &prelude_clone);
     add_Method(c, "engine", &prelude_engine);
-    add_Method(c, "true(1)object(1)", &prelude_true_object);
-    add_Method(c, "false(1)object(1)", &prelude_false_object);
+    add_Method(c, "true$object(1)", &prelude_true_object);
+    add_Method(c, "false$object(1)", &prelude_false_object);
     add_Method(c, "infinity", &prelude_infinity_object);
     add_Method(c, "π", &prelude_pi_object);
     _prelude = alloc_userobj2(0, 0, c);
