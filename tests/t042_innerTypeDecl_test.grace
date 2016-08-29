@@ -1,0 +1,1 @@
+../js/tests/t042_innerTypeDecl_test.grace
