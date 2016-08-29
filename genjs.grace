@@ -166,10 +166,17 @@ method compileobjouter(o, outerRef) is confidential {
     out "this.closureKeys.push(\"{outerPropName}\");"
     out "this.{outerPropName} = {outerRef};"
 }
+method compileobjtypedec(o, selfr) {
+    def tName = escapeident(o.nameString)
+    if (o.value.kind == "typeliteral") then {o.value.name := tName }
+    def val = compilenode(o.value)
+    out "{selfr}.data.{tName} = {val};"
+}
 method compileobjdefdec(o, selfr) {
     def val = compilenode(o.value)
-    def nm = escapestring(o.name.value)
-    out "{selfr}.data[\"{nm}\"] = {val};"
+    def oName = o.name.value
+    def nm = escapeident(oName)
+    out "{selfr}.data.{nm} = {val};"
     if (emitTypeChecks) then {
         if (o.dtype != false) then {
             if (o.dtype.value != "Unknown") then {
@@ -178,7 +185,7 @@ method compileobjdefdec(o, selfr) {
                 def typeDesc = o.dtype.toGrace 0.quoted
                 out "if (!Grace_isTrue(callmethod({nm_t}, \"match(1)\", [1], {val})))"
                 out "    raiseTypeError("
-                out "      \"value of def {nm} is not of type {typeDesc}\","
+                out "      \"value of def {escapestring(oName)} is not of type {typeDesc}\","
                 out "      {nm_t}, {val});"
             }
         }
@@ -187,8 +194,9 @@ method compileobjdefdec(o, selfr) {
 method compileobjvardec(o, selfr) {
     if (false == o.value) then { return }
     def val = compilenode(o.value)
-    def nm = escapestring(o.name.value)
-    out "{selfr}.data[\"{nm}\"] = {val};"
+    def oName = o.name.value
+    def nm = escapeident(oName)
+    out "{selfr}.data.{nm} = {val};"
     if (emitTypeChecks) then {
         if (o.dtype != false) then {
             if (o.dtype.value != "Unknown") then {
@@ -200,7 +208,7 @@ method compileobjvardec(o, selfr) {
                 def typeDesc = o.dtype.toGrace 0.quoted
                 out "if (!Grace_isTrue(callmethod({nm_t}, \"match(1)\", [1], {val})))"
                 out "    raiseTypeError("
-                out "      \"value of def {nm} is not of type {typeDesc}\","
+                out "      \"value of def {escapestring(oName)} is not of type {typeDesc}\","
                 out "      {nm_t}, {val});"
             }
         }
@@ -213,11 +221,11 @@ method create (kind) field (o) in (objr) {
     auto_count := auto_count + 1
     var nm := escapestring(o.name.value)
     var nmi := escapeident(o.name.value)
-    out "{objr}.data[\"{nm}\"] = undefined;"
-    out "if (! {objr}.methods[\"{nm}\"]) \{"
+    out "{objr}.data.{nmi} = undefined;"
+    out "if (! {objr}.methods.{nmi}) \{"
     increaseindent
     out "var reader_{nmi}{myc} = function() \{  // reader method"
-    out "    return this.data[\"{nm}\"];"
+    out "    return this.data.{nmi};"
     out "};"
     out "reader_{nmi}{myc}.{kind} = true;"
     if (o.isReadable.not) then {
@@ -227,10 +235,10 @@ method create (kind) field (o) in (objr) {
     decreaseindent
     out "};"
     if (kind == "var") then {
-        out "if (! {objr}.methods[\"{nm}:=(1)\"]) \{"
+        out "if (! {objr}.methods[\"{nmi}:=(1)\"]) \{"
         increaseindent
         out "var writer_{nmi}{myc} = function(argcv, n) \{   // writer method"
-        out "    this.data[\"{nm}\"] = n;"
+        out "    this.data.{nmi} = n;"
         out "    return GraceDone;"
         out "\};"
         if (o.isWritable.not) then {
@@ -270,7 +278,7 @@ method compileInitialization(o, selfr) {
         } elseif { e.kind == "defdec" } then {
             compileobjdefdec(e, selfr)
         } elseif { e.kind == "typedec" } then {
-            compiletypedec(e)
+            compileobjtypedec(e, selfr)
         } elseif { e.kind == "object" } then {
             compileobject(e, selfr)
         } else {
@@ -389,7 +397,7 @@ method compiletypedec(o) {
 method compiletypeliteral(o) {
     def myc = auto_count
     auto_count := auto_count + 1
-    def escName = escapestring(o.value)
+    def escName = escapestring(o.name)
     out("//   Type literal ")
     out("var type{myc} = new GraceType(\"{escName}\");")
     for (o.methods) do {meth->

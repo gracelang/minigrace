@@ -198,6 +198,9 @@ method compileobjouter(selfr, outerRef) {
     out("  addmethodreal({selfr},\"outer\", &reader_{escmodname}_{enm}_{myc});")
 }
 method compileobjtypemeth(o, selfr, pos) {
+    // compile a typedec o inside the object selfr
+    // the type value will be initialized later.
+
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := o.nameString
@@ -221,12 +224,16 @@ method compileobjtypemeth(o, selfr, pos) {
 }
 method compileobjdefdecdata(o, selfr, pos) {
     var val := "undefined"
-    if (false != o.value) then {
-        if (o.value.kind == "object") then {
-            compileobject(o.value, selfr)
-            val := o.value.register
+    def rhs = o.value
+    if (false != rhs) then {
+        if (rhs.kind == "object") then {
+            compileobject(rhs, selfr)
+            val := rhs.register
         } else {
-            val := compilenode(o.value)
+            if (rhs.kind == "typeliteral") then {
+                rhs.name := o.nameString
+            }
+            val := compilenode(rhs)
         }
     }
     out("  adddatum2({selfr}, {val}, {pos});")
@@ -235,6 +242,9 @@ method compileobjdefdecdata(o, selfr, pos) {
     }
 }
 method compileobjdefdecmeth(o, selfr, pos) {
+    // compile the method for a defdec o inside the object selfr
+    // the data will be initialized later.
+
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := o.name.value
@@ -262,31 +272,6 @@ method compileobjdefdecmeth(o, selfr, pos) {
     out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {flags});")
     out("  reader{myc}->definitionModule = modulename;")
     out("  reader{myc}->definitionLine = {o.line};")
-}
-method compileobjdefdec(o, selfr, pos) {
-    var val := "undefined"
-    if (false != o.value) then {
-        if (o.value.kind == "object") then {
-            compileobject(o.value, selfr)
-            val := o.value.register
-        } else {
-            val := compilenode(o.value)
-        }
-    }
-    var myc := auto_count
-    auto_count := auto_count + 1
-    var nm := o.name.value
-    var enm := escapestring2(nm)
-    var inm := escapeident(nm)
-    out("// OBJECT CONST DEC " ++ enm)
-    out("  adddatum2({selfr}, {val}, {pos});")
-    outF("Object reader_{escmodname}_{inm}_{myc}"
-        ++ "(Object self, int nparams, int *argcv, "
-        ++ "Object* args, int flags) \{")
-    outF("  struct UserObject *uo = (struct UserObject *)self;")
-    outF("  return uo->data[{pos}];")
-    outF("\}")
-    out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, MFLAG_DEF);")
 }
 method compileobjvardecdata(o, selfr, pos) {
     var val := "undefined"
@@ -523,26 +508,27 @@ method compiletypedec(o) {
                     }
     out("// Type decl {o.name.value}")
     declaredvars.push(idName)
-    if (o.value.kind == "typeliteral") then {o.value.name := idName }
+    if (o.value.kind == "typeliteral") then { o.value.name := idName }
     compilenode(o.value)
-    out("  *var_{idName} = {o.value.register};")
+    out "  *var_{idName} = {o.value.register};"
     o.register := "done"
-    if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString)],
-            [o.name], false))  // TODO: should be TypeType
-    }
+    compilenode (ast.methodNode.new (
+          [ast.signaturePart.partName(o.nameString)],
+          [o.name],
+          false) )  // TODO: should be TypeType
 }
 method compiletypeliteral(o) {
     def myc = auto_count
     auto_count := auto_count + 1
     out("//   Type literal ")
-    out("    Object type{myc} = alloc_Type(\"{o.name}\", {o.methods.size});")
+    out("  Object type{myc} = alloc_Type(\"{o.name}\", {o.methods.size});")
     for (o.methods) do {meth->
         def mnm = escapestring2(meth.nameString)
-        out("    add_Method((ClassData)type{myc}, \"{mnm}\", NULL);")
+        out("  add_Method((ClassData)type{myc}, \"{mnm}\", NULL);")
     }
     // TODO: types in the type literal
     o.register := "type{myc}"
+    o.register
 }
 method compilemethod(o, selfobj, pos) {
     // How to deal with closures:
@@ -1405,7 +1391,6 @@ method compileimport(o) {
     }
     out("  *var_{nm} = {modg};")
     if (compilationDepth == 1) then {
-//      declaredvars.push(nm);
         def methodIdent = o.value
         methodIdent.line := o.line
         methodIdent.linePos := o.linePos

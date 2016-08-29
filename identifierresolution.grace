@@ -621,7 +621,7 @@ method transformIdentifier(node) ancestors(as) {
         return ast.memberNode.new(nm, p) scope(nodeScope).onSelf
     }
     if (nodeKind.isParameter) then { return node }
-    
+
     if (definingScope == moduleScope) then {
         if (nodeKind == k.defdec) then { return node }
         if (nodeKind == k.typedec) then { return node }
