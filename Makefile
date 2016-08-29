@@ -276,6 +276,9 @@ js/animation%gct js/animation%js: js/timer.gct objectdraw/animation.grace
 js: js/index.html js/dom.gct $(COMPILER_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES) minigrace
 	ln -f minigrace js/minigrace
 
+js/standardGraceClass%gct js/standardGraceClass%js: standardGraceClass.grace minigrace
+	./minigrace $(VERBOSITY) --target js --dir js --make $<
+
 $(KG)/minigrace:
 	if [ -e minigrace-$(VER).tar.bz2 ] ;\
 	then ./tools/tarball-bootstrap minigrace-$(VER).tar.bz2 ;\
@@ -369,7 +372,7 @@ minigrace-environment: minigrace-c-env minigrace-js-env
 
 minigrace-c-env: minigrace standardGrace.gct gracelib.o $(LIBRARY_MODULES:%.grace=modules/%.gct) .git/hooks/commit-msg
 
-minigrace-js-env: minigrace js/grace js/grace-debug standardGrace.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) $(JSSOURCEFILES:%.js=%.gct) $(TYPE_DIALECTS:%=modules/%.gso) $(TYPE_DIALECTS:%=js/%.js)
+minigrace-js-env: minigrace js/grace js/grace-debug standardGrace.gct standardGraceClass.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) $(JSSOURCEFILES:%.js=%.gct) $(TYPE_DIALECTS:%=modules/%.gso) $(TYPE_DIALECTS:%=js/%.js)
 
 module-test-js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.js) $(TYPE_DIALECTS:%=modules/%.gso)
 	modules/tests/harness_js minigrace
@@ -461,6 +464,9 @@ standardGrace%gct standardGrace%gcn: standardGrace.grace collectionsPrelude.gct 
 
 $(filter-out modules/curl.gso,$(DYNAMIC_STUBS:%.grace=modules/%.gso)): modules/%.gso: %.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
+
+standardGraceClass%gct standardGraceClass%c: standardGraceClass.grace minigrace
+	./minigrace $(VERBOSITY) --make $<
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 	ln -sf $< .

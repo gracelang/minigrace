@@ -1,8 +1,9 @@
 #pragma ExtendedLineups
+import "standardGraceClass" as sgc
 import "errormessages" as errormessages
 import "ast" as ast
 
-inherit prelude.methods
+inherit sgc.standardGrace
 
 // Checker error
 

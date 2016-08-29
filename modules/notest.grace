@@ -3,7 +3,9 @@
 // depends on minitest can be run by the instuctor under gUnit,
 // without getting confounding results from the minitest tests.
 
-inherit prelude.methods
+import "standardGraceClass" as sgc
+
+inherit sgc.standardGrace
 
 method assert(bb:Boolean) description(str:String) { }
 

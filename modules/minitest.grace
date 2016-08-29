@@ -1,6 +1,7 @@
 import "gUnit" as gu
+import "standardGraceClass" as sgc
 
-inherit prelude.methods
+inherit sgc.standardGrace
 
 def nullSuite = prelude.Singleton.named "nullSuite"
 def nullBlock = prelude.Singleton.named "nullBlock"
