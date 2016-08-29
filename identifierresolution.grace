@@ -875,9 +875,8 @@ method setupContext(moduleObject) {
     builtInsScope.addName "Block" as(k.typedec)
     builtInsScope.addName "Done" as(k.typedec)
     builtInsScope.addName "done" as(k.defdec)
-    builtInsScope.addName "true" as(k.defdec)
-    builtInsScope.addName "false" as(k.defdec)
-    builtInsScope.addName "super" as(k.defdec)
+    builtInsScope.addName "true"
+    builtInsScope.addName "false"
     builtInsScope.addName "outer" as(k.defdec)
     builtInsScope.addName "readable"
     builtInsScope.addName "writable"
@@ -1421,20 +1420,34 @@ method transformInherits(inhNode) ancestors(as) {
                     atRange(inhNode.line, inhNode.linePos, inhNode.linePos + (inhNode.statementName.size - 1))
     }
     if (superExpr.isAppliedOccurenceOfIdentifier) then {
-        def definingScope = currentScope.thatDefines(superExpr.nameString)
+        def nm = superExpr.nameString
+        def definingScope = currentScope.thatDefines(nm)
         if (definingScope == currentScope) then {
             errormessages.syntaxError "the object being inherited must be from an enclosing scope"
-                atRange(inhNode.line, superExpr.linePos,
-                superExpr.linePos + superExpr.nameString.size - 1)
+                atRange(superExpr.line, superExpr.linePos,
+                superExpr.linePos + nm.size - 1)
         }
-        // this deals with "inherit true" etc; identifiers from the built-in
-        // scope have not been transformed to member nodes
-        def preludeNode = ast.identifierNode.new("prelude", false) scope(currentScope)
-        def newCall = ast.callNode.new(preludeNode, [
-            ast.requestPart.request(superExpr.value) withArgs( [] ) scope(currentScope),
-            ast.requestPart.request "$object" withArgs (
-                [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope) ])
-        inhNode.value := newCall
+        if ((definingScope.kind(nm)) ≠ k.methdec) then {
+            errormessages.syntaxError "the object being inherited must be freshly generated from a method"
+                  atRange(superExpr.line, superExpr.linePos,
+                  superExpr.linePos + nm.size - 1)
+        }
+        def sv = definingScope.variety
+        if ((sv == "built-in") || (sv == "dialect")) then {
+            // this deals with "inherit true" etc; identifiers from the built-in
+            // scope have not been transformed to member nodes
+            def preludeName = if (sv == "built-in") then { "_prelude" }
+                                                    else { "prelude" }
+            def preludeNode = ast.identifierNode.new(preludeName, false) scope(currentScope)
+            def newCall = ast.callNode.new(preludeNode, [
+                ast.requestPart.request (nm) withArgs [] scope(currentScope),
+                ast.requestPart.request "$object" withArgs [
+                    ast.identifierNode.new("self", false) scope(currentScope)] scope(currentScope) ])
+            inhNode.value := newCall
+        } else {
+            ProgrammingError.raise ("untransformed idfentifer `{nm}` found " ++
+                "in {inhNode.statementName} statement on line {inhNode.line}")
+        }
     } elseif {inhNode.inheritFromMember} then {
         def newcall = ast.callNode.new(inhNode.value.receiver, [
             ast.requestPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
