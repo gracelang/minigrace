@@ -886,8 +886,7 @@ GraceBoolean.prototype = {
         "==(1)": function(argcv, other) {
             if (this === other)
                 return GraceTrue;
-            if (this.prototype === other.prototype &&
-                    this._value === other._value)
+            if (this._value === other._value)
                 return GraceTrue;
             return GraceFalse;
         },
@@ -898,12 +897,20 @@ GraceBoolean.prototype = {
         },
         "hash": function(argcv) {
             return new GraceNum(this._value ? 3637 : 1741);
-        }
+        },
+
+        // the following are from GraceObject
+        "isMe(1)":          object_isMe,
+        "≠(1)":             object_notEquals,
+        "basicAsString":    object_basicAsString,
+        "debugValue":       object_debugValue,
+        "debugIterator":    object_debugIterator,
+        "::(1)":            object_colonColon
     },
     className: "boolean",
     definitionModule: "basic library",
     definitionLine: 0,
-    superobj: new GraceObject()
+    superobj: null
 };
 
 var GraceTrue = new GraceBoolean(true);
