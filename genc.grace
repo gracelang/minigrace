@@ -72,7 +72,8 @@ method countbindings(l) {
     var numslots := 0
     for (l) do { n ->
         def k = n.kind
-        if ((k == "vardec") || (k == "defdec") || (k == "typedec")) then {
+        if ((k == "vardec") || (k == "defdec") ||
+            (k == "typedec") || (k == "import")) then {
             numslots := numslots + 1
         } elseif { n.kind == "if" } then {
             numslots := numslots + countnodebindings(n)
@@ -82,17 +83,19 @@ method countbindings(l) {
 }
 method definebindings(l, slot') {
     var slot := slot'
+    out "// definebindings:"
     for (l) do { n ->
         def k = n.kind
-        if ((k == "vardec") || (k == "defdec") || (k == "typedec")) then {
+        if ((k == "vardec") || (k == "defdec") ||
+            (k == "typedec") || (k == "import")) then {
             var tnm := ""
             var snm := ""
             if (n.name.kind == "generic") then {
                 tnm := escapeident(n.name.value.value)
                 snm := escapestring(n.name.value.value)
             } else {  // identifier
-                tnm := escapeident(n.name.value)
-                snm := escapestring(n.name.value)
+                tnm := escapeident(n.nameString)
+                snm := escapestring(n.nameString)
             }
             if (!declaredvars.contains(tnm)) then {
                 declaredvars.push(tnm)
@@ -104,10 +107,6 @@ method definebindings(l, slot') {
             slot := definebindings(n.thenblock.body, slot)
             slot := definebindings(n.elseblock.body, slot)
             n.handledIdentifiers := true
-        } elseif {n.kind == "import"} then {
-            var tnm := escapeident(n.nameString)
-            out "  Object *var_{tnm} = alloc_var();"
-            // TODO: why is this different from a def?  Handle annotations!
         }
     }
     slot
