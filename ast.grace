@@ -178,7 +178,8 @@ class baseNode {
     method postCopy(other) {
         // hook method, to be overridden by sub-objects if desired
         }
-    method basePretty(depth) {
+
+    method prettyPrefix(depth) {
         def spc = "  " * (depth+1)
         if ((scope.node == self) && {util.target == "symbols"}) then {
             "{line}:{linePos} {description}\n{spc}Symbols({scope.variety}): {scope}{scope.elementScopesAsString}"
@@ -188,6 +189,7 @@ class baseNode {
             "{line}:{linePos} {description} {scope.asDebugString}"
         }
     }
+    method basePretty(depth) { prettyPrefix(depth) }
     method pretty(depth) { basePretty(depth) }
     method deepCopy {
         self.map { each -> each } ancestors(ancestorChain.empty)
@@ -1200,7 +1202,6 @@ def moduleNode is public = object {
     }
     class body(b) {
         inherit objectNode.new(b, false)
-            alias prettyPrefix(_) = basePretty(_)
         def kind is public = "module"
         def sourceLines = util.lines
         var theDialect is public := "standardGrace"
