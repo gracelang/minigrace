@@ -83,7 +83,7 @@ do
     if [ "$TYPE" = "tograce" ]
     then
         # hack to allow tests that test for compilation failure
-        if ! $COMPILER --target grace --dir . $tcase > tg_$tcase 2>/dev/null
+        if ! $COMPILER --target grace --dir .. $tcase > tg_$tcase 2>/dev/null
         then
             if echo $tcase | grep -q _fail
             then
@@ -107,8 +107,8 @@ do
 #   the %fail_test.grace DELETES a trailing fail_test.grace, so we get here
 #   if the test name does NOT end with fail_test
     then
-        rm -f ${tcase%%.*}.{js,gct}
-        COMMAND="GRACE_MODULE_PATH=../:../../modules/: $COMPILER --verbose 60 --target js --dir . $tcase"
+        rm -f ${tcase%%.*}.{js,gct} ../${tcase%%.*}.{js,gct}
+        COMMAND="GRACE_MODULE_PATH=..:../..:../../modules: $COMPILER --verbose 60 --target js --dir .. $tcase"
 #        echo COMMAND = $COMMAND
         if eval "$COMMAND" > test-$$.log 2>&1
         then
