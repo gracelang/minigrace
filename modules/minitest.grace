@@ -3,6 +3,8 @@ import "standardGraceClass" as sgc
 
 inherit sgc.standardGrace
 
+def MinitestError = prelude.ProgrammingError.refine "MinitestError"
+
 def nullSuite = prelude.Singleton.named "nullSuite"
 def nullBlock = prelude.Singleton.named "nullBlock"
 
@@ -84,7 +86,7 @@ method failBecause(reason) {
 
 method testSuiteNamed (name:String) with (block:Block) {
     if (nullSuite ≠ currentTestSuiteForDialect) then {
-        Exception.raise("a testSuite cannot be created inside a testSuite")
+        MinitestError.raise "a testSuite cannot be created inside a testSuite"
     }
     currentTestSuiteForDialect := gu.testSuite.empty
     currentTestSuiteForDialect.name := name
@@ -106,7 +108,7 @@ method testSuite (block:Block) {
 
 method test(name:String) by(block:Block) {
     if (nullSuite == currentTestSuiteForDialect) then {
-        Exception.raise("a test can be created only within a testSuite")
+        MinitestError.raise "a test can be created only within a testSuite"
     }
     currentTestInThisEvaluation := currentTestInThisEvaluation + 1
     if (nullBlock ≠ currentSetupBlockForTesting) then {
