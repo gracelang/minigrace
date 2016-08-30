@@ -7,7 +7,7 @@ inherit sgc.standardGrace
 
 // Checker error
 
-def CheckerFailure is public = Exception.refine "CheckerFailure"
+def CheckerFailure is public = prelude.Exception.refine "CheckerFailure"
 
 type List = prelude.List
 

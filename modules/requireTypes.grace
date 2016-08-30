@@ -3,7 +3,8 @@ import "standardGraceClass" as sgc
 
 inherit sgc.standardGrace
 
-def CheckerFailure = Exception.refine "CheckerFailure"
+def CheckerFailure = prelude.Exception.refine "CheckerFailure"
+
 def staticVisitor = object {
     inherit ast.baseVisitor
     method asString {
