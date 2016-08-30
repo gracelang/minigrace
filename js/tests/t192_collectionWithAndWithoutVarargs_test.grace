@@ -9,7 +9,7 @@ testSuiteNamed "old and new collection factories" with {
     }
     
     test "collection withAll list construction" by {
-        def l = collections.list.withAll [1, 2, 3]
+        def l = list.withAll [1, 2, 3]
         assert(l) hasType (List)
         assert(l.size) shouldBe 3
         assert(l) shouldBe [1, 2, 3]
@@ -23,7 +23,7 @@ testSuiteNamed "old and new collection factories" with {
     }
 
     test "collection withAll sequence construction" by {
-        def l = collections.sequence.withAll [1, 2, 3]
+        def l = sequence.withAll [1, 2, 3]
         assert(l) hasType (Sequence)
         assert(l.size) shouldBe 3
         assert(l) shouldBe [1, 2, 3]
@@ -37,7 +37,7 @@ testSuiteNamed "old and new collection factories" with {
     }
 
     test "collection withAll set construction" by {
-        def l = collections.set.withAll [1, 2, 3]
+        def l = set.withAll [1, 2, 3]
         assert(l) hasType (Set)
         assert(l.size) shouldBe 3
         assert(l) shouldBe (set [1, 2, 3])
@@ -53,7 +53,7 @@ testSuiteNamed "old and new collection factories" with {
     }
 
     test "collection withAll dictionary construction" by {
-        def l = collections.dictionary.withAll ["one"::1, "two"::2, "three"::3]
+        def l = dictionary.withAll ["one"::1, "two"::2, "three"::3]
         assert(l) hasType (Dictionary)
         assert(l.size) shouldBe 3
         assert(l.at "one") shouldBe 1
