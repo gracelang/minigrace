@@ -384,7 +384,7 @@ modules/curl.gso: curl.c gracelib.h
 
 modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: modules/mirrors.gso modules/math.gso modules/dialect.gso
 
-modules/minitest.gct modules/minitest.gso modules/minitest.gcn: modules/gUnit.gso
+modules/minitest.gct modules/minitest.gso modules/minitest.gcn: modules/gUnit.gso standardGraceClass.gcn
 
 modules/rtobjectdraw.grace: modules/objectdraw.grace tools/make-rt-version
 	./tools/make-rt-version $< > $@
@@ -458,7 +458,7 @@ selftest-js: minigrace-js-env $(ALL_LIBRARY_MODULES:%.grace=../js/%.js)
 	tests/harness selftest-js/minigrace tests
 
 # must be a pattern rule to get the "simultaneous build" semantics.
-standardGrace%gct standardGrace%gcn: standardGrace.grace collectionsPrelude.gct l1/minigrace
+s%andardGrace.gct s%andardGrace.gcn: standardGrace.grace collectionsPrelude.gct l1/minigrace
 	cd l1 && GRACE_MODULE_PATH=. ./minigrace $(VERBOSITY) --make --noexec -XNoMain --dir .. ../$<
 
 # The next few rules are Static Pattern Rules.  Each is like an implicit rule
@@ -467,7 +467,7 @@ standardGrace%gct standardGrace%gcn: standardGrace.grace collectionsPrelude.gct 
 $(filter-out modules/curl.gso,$(DYNAMIC_STUBS:%.grace=modules/%.gso)): modules/%.gso: %.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
-%tandardGraceClass.gct %tandardGraceClass.c: standardGraceClass.grace minigrace
+s%andardGraceClass.gct s%andardGraceClass.gcn: standardGraceClass.grace minigrace
 	./minigrace $(VERBOSITY) --make $<
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
