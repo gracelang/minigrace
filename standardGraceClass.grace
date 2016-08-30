@@ -3,9 +3,7 @@
 
 class standardGrace {
 
-    method for (cond) do (body) { outer.for (cond) do (body) }
-
-    def ProgrammingError = outer.ProgrammingError
+    def ProgrammingError = outer.outer.ProgrammingError
 
     class SuccessfulMatch.new(result', bindings') {
         inherit true
@@ -34,14 +32,14 @@ class standardGrace {
         SubobjectResponsibility.raise "required method not overriden by subobject"
     }
 
-    method do(action)while(condition) {
+    method do (action) while (condition) {
         while {
             action.apply
             condition.apply
         } do { }
     }
 
-    method repeat(n)times(action) {
+    method repeat (n) times (action) {
         var ix := n
         while {ix > 0} do {
             ix := ix - 1

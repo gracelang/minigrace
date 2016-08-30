@@ -10,6 +10,7 @@ inherit sgc.standardGrace
 
 type List⟦T⟧ = prelude.List⟦T⟧
 
+def ProgrammingError = outer.outer.ProgrammingError
 def TypeError is public = CheckerFailure.refine "TypeError"
 
 type MethodType = {
