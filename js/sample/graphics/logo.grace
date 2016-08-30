@@ -3,7 +3,7 @@
 // using only statements of what should happen. The turtle module
 // handles the actual drawing and user interface.
 import "turtle" as turtle
-inherits prelude
+inherit prelude.methods
 type Point = prelude.Point
 
 def red is public = turtle.red
