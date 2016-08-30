@@ -3,7 +3,22 @@
 
 class standardGrace {
 
+    def BoundsError = outer.outer.BoundsError
+    def EnvironmentException = outer.outer.EnvironmentException
+    def Exception = outer.outer.Exception
+    def NoSuchMethod = outer.outer.NoSuchMethod
     def ProgrammingError = outer.outer.ProgrammingError
+    def RequestError = outer.outer.RequestError
+    def ResourceException = outer.outer.ResourceException
+    def RuntimeError = outer.outer.RuntimeError
+    def TypeError = outer.outer.TypeError
+    def UninitializedVariable = outer.outer.UninitializedVariable
+
+    def ConcurrentModification = ProgrammingError.refine "ConcurrentModification"
+    def IteratorExhausted = ProgrammingError.refine "IteratorExhausted"
+    def NoSuchObject = ProgrammingError.refine "NoSuchObject"
+    def SizeUnknown = Exception.refine "SizeUnknown"
+    def SubobjectResponsibility = ProgrammingError.refine "SubobjectResponsibility"
 
     class SuccessfulMatch.new(result', bindings') {
         inherit true
@@ -410,14 +425,6 @@ class standardGrace {
         method norm { self / self.length }
     }
 
-    def BoundsError = ProgrammingError.refine "BoundsError"
-    def IteratorExhausted = ProgrammingError.refine "IteratorExhausted"
-    def SubobjectResponsibility = ProgrammingError.refine "SubobjectResponsibility"
-    def NoSuchObject = ProgrammingError.refine "NoSuchObject"
-    def RequestError = ProgrammingError.refine "RequestError"
-    def ConcurrentModification = ProgrammingError.refine "ConcurrentModification"
-    def SizeUnknown = Exception.refine "SizeUnknown"
-    def UninitializedVariable is public = ProgrammingError.refine "UninitializedVariable"
     //
     // useful types
     //
@@ -665,7 +672,8 @@ class standardGrace {
         method asDebugString { "iteratorConcat of {left} and {right}" }
         method asString { "an iterator over a concatenation" }
     }
-    class lazyConcatenation⟦T⟧(left, right) -> Enumerable⟦T⟧{
+
+    class lazyConcatenation⟦T⟧(left, right) -> Enumerable⟦T⟧ {
         inherit enumerable.TRAIT⟦T⟧
         method iterator {
             iteratorConcat(left.iterator, right.iterator)
@@ -722,14 +730,11 @@ class standardGrace {
             return result
         }
         method map⟦R⟧(block1:Block1⟦T,R⟧) -> Enumerable⟦R⟧ {
-            lazySequenceOver(self) mappedBy(block1)
+            lazySequenceOver⟦T,R⟧(self) mappedBy(block1)
         }
         method filter(selectionCondition:Block1⟦T,Boolean⟧) -> Enumerable⟦T⟧ {
-            lazySequenceOver(self) filteredBy(selectionCondition)
+            lazySequenceOver⟦T⟧(self) filteredBy(selectionCondition)
         }
-
-        method iter { self.iterator }
-
         method asSequence {
             sequence.withAll(self)
         }
