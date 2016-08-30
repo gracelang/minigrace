@@ -268,7 +268,7 @@ js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sa
 	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
 #	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
-js/standardGrace%js js/standardGrace%gct: standardGrace.grace js/collectionsPrelude.gct minigrace
+js/%tandardGrace.js js/%tandardGrace.gct: standardGrace.grace js/collectionsPrelude.gct minigrace
 	GRACE_MODULE_PATH=modules:js ./minigrace --target js --dir js --make $(VERBOSITY) $<
 
 js/animation%gct js/animation%js: js/timer.gct objectdraw/animation.grace
@@ -304,7 +304,7 @@ l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=
 
 l1/%.gct: l1/%.gso
 
-l1/standardGrace%gct l1/standardGrace%gcn: standardGrace.grace l1/collectionsPrelude.gct $(KG)/minigrace
+l1/%tandardGrace.gct l1/%tandardGrace.gcn: standardGrace.grace l1/collectionsPrelude.gct $(KG)/minigrace
 	GRACE_MODULE_PATH=. $(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
 
 l1/collectionsPrelude%gct l1/collectionsPrelude%gcn: collectionsPrelude.grace $(KG)/minigrace
@@ -356,6 +356,8 @@ $(MGSOURCEFILES:%.grace=%.gso): %.gso: %.grace standardGrace.gct l1/minigrace
 $(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace js/standardGrace.gct minigrace
 	GRACE_MODULE_PATH=modules ./minigrace $(VERBOSITY) --make --target js --dir js $<
 
+$(MGSOURCEFILES:%.grace=js/%.gct): js/%.gct: js/%.js
+
 $(C_MODULES_GSO:modules/%.gso=%.gso): %.gso: modules/%.gso
 	ln -sf $< .
 
@@ -372,7 +374,7 @@ minigrace-environment: minigrace-c-env minigrace-js-env
 
 minigrace-c-env: minigrace standardGrace.gct gracelib.o $(LIBRARY_MODULES:%.grace=modules/%.gct) .git/hooks/commit-msg
 
-minigrace-js-env: minigrace js/grace js/grace-debug standardGrace.gct standardGraceClass.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) $(JSSOURCEFILES:%.js=%.gct) $(TYPE_DIALECTS:%=modules/%.gso) $(TYPE_DIALECTS:%=js/%.js)
+minigrace-js-env: minigrace js/grace js/grace-debug standardGrace.gct js/standardGraceClass.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) $(JSSOURCEFILES:%.js=%.gct) $(TYPE_DIALECTS:%=modules/%.gso) $(TYPE_DIALECTS:%=js/%.js)
 
 module-test-js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.js) $(TYPE_DIALECTS:%=modules/%.gso)
 	modules/tests/harness_js minigrace
@@ -465,7 +467,7 @@ standardGrace%gct standardGrace%gcn: standardGrace.grace collectionsPrelude.gct 
 $(filter-out modules/curl.gso,$(DYNAMIC_STUBS:%.grace=modules/%.gso)): modules/%.gso: %.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
-standardGraceClass%gct standardGraceClass%c: standardGraceClass.grace minigrace
+%tandardGraceClass.gct %tandardGraceClass.c: standardGraceClass.grace minigrace
 	./minigrace $(VERBOSITY) --make $<
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
