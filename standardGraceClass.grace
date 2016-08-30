@@ -2,8 +2,7 @@
 #pragma ExtendedLineups
 
 class standardGrace {
-
-    var isStandardGrace := true
+    inherit _prelude    // gets the built-in definitions from gracelib
 
     class SuccessfulMatch.new(result', bindings') {
         inherit true
