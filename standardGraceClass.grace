@@ -2,7 +2,10 @@
 #pragma ExtendedLineups
 
 class standardGrace {
-    inherit _prelude    // gets the built-in definitions from gracelib
+
+    method for (cond) do (body) { outer.for (cond) do (body) }
+
+    def ProgrammingError = outer.ProgrammingError
 
     class SuccessfulMatch.new(result', bindings') {
         inherit true
