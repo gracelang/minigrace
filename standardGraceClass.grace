@@ -1,6 +1,196 @@
 #pragma NativePrelude
 #pragma ExtendedLineups
 
+def traits = object {
+    // these definitions are at module-level to abvoid problems with outer
+    // and the c-backend
+
+    type Block1⟦Arg, Res⟧ = type {
+        apply(a:Arg) -> Res
+    }
+
+    type Block2⟦Arg1, Arg2, Res⟧ = type {
+        apply(a:Arg1, b:Arg2) -> Res
+    }
+
+    class collection⟦T⟧ {
+
+        method asString { "a collection trait" }
+        method sizeIfUnknown(action) {
+            action.apply
+        }
+        method size {
+            standardGrace.SizeUnknown.raise "this collection does not know its size"
+        }
+        method do { standardGrace.abstract }
+        method iterator { standardGrace.abstract }
+        method isEmpty {
+            // override if size is known
+            iterator.hasNext.not
+        }
+        method first {
+            def it = self.iterator
+            if (it.hasNext) then { 
+                it.next
+            } else {
+                standardGrace.BoundsError.raise "no first element in {self}"
+            }
+        }
+        method do(block1) separatedBy(block0) {
+            var firstTime := true
+            var i := 0
+            self.do { each ->
+                if (firstTime) then {
+                    firstTime := false
+                } else {
+                    block0.apply
+                }
+                block1.apply(each)
+            }
+            return self
+        }
+        method reduce(initial, blk) {
+        // deprecated; for compatibility with builtInList
+            fold(blk)startingWith(initial)
+        }
+        method fold(blk)startingWith(initial) {
+            var result := initial
+            self.do {it ->
+                result := blk.apply(result, it)
+            }
+            return result
+        }
+        method map⟦R⟧(block1:Block1⟦T,R⟧) // -> Enumerable⟦R⟧
+        {
+            standardGrace.lazySequenceOver⟦T,R⟧(self) mappedBy(block1)
+        }
+        method filter(selectionCondition:Block1⟦T,Boolean⟧) // -> Enumerable⟦T⟧
+        {
+            standardGrace.lazySequenceOver⟦T⟧(self) filteredBy(selectionCondition)
+        }
+        method >> (collFactory) {
+            collFactory.withAll(self)
+        }
+    }
+
+    class enumerable⟦T⟧ {
+        inherit traits.collection⟦T⟧
+        method iterator { standardGrace.abstract }
+        method size {
+            // override if size is known
+            standardGrace.SizeUnknown.raise "size requested on {asDebugString}"
+        }
+        method asDictionary {
+            def result = standardGrace.dictionary.empty
+            keysAndValuesDo { k, v ->
+                result.at(k) put(v)
+            }
+            return result
+        }
+        method into(existing) -> // Collection⟦T⟧
+        {
+            def selfIterator = self.iterator
+            while {selfIterator.hasNext} do {
+                existing.add(selfIterator.next)
+            }
+            existing
+        }
+        method ==(other) {
+            standardGrace.isEqual (self) toIterable (other)
+        }
+        method do(block1:Block1⟦T,Done⟧) -> Done {
+            def selfIterator = self.iterator
+            while {selfIterator.hasNext} do {
+                block1.apply(selfIterator.next)
+            }
+        }
+        method keysAndValuesDo(block2:Block2⟦Number,T,Done⟧) -> Done {
+            var ix := 0
+            def selfIterator = self.iterator
+            while {selfIterator.hasNext} do {
+                ix := ix + 1
+                block2.apply(ix, selfIterator.next)
+            }
+        }
+        method values // -> Collection⟦T⟧
+        {
+            self
+        }
+        method fold⟦R⟧(block2)startingWith(initial) -> R {
+            var res := initial
+            def selfIterator = self.iterator
+            while { selfIterator.hasNext } do {
+                res := block2.apply(res, selfIterator.next)
+            }
+            return res
+        }
+        method ++ (other) // -> Enumerable⟦T⟧
+        {
+            standardGrace.lazyConcatenation(self, other)
+        }
+        method sortedBy(sortBlock:Block2) // -> List⟦T⟧
+        {
+            standardGrace.list.withAll(self).sortBy(sortBlock:Block2)
+        }
+        method sorted  // -> List⟦T⟧
+        {
+            standardGrace.list.withAll(self).sort
+        }
+        method asString {
+            var s := "⟨"
+            do { each -> s := s ++ each.asString } separatedBy { s := s ++ ", " }
+            s ++ "⟩"
+        }
+    }
+
+    class indexable⟦T⟧ {
+        inherit traits.collection⟦T⟧
+        method at(index) { standardGrace.abstract }
+        method size { standardGrace.abstract }
+        method isEmpty { size == 0 }
+        method keysAndValuesDo(action:Block2⟦Number,T,Done⟧) -> Done {
+            def curSize = size
+            var i := 1
+            while {i <= curSize} do {
+                action.apply(i, self.at(i))
+                i := i + 1
+            }
+        }
+        method first { at(1) }
+        method second { at(2) }
+        method third { at(3) }
+        method fourth { at(4) }
+        method fifth { at(5) }
+        method last { at(size) }
+        method indices { standardGrace.range.from 1 to(size) }
+        method indexOf(sought:T)  {
+            indexOf(sought) ifAbsent { standardGrace.standardGrace.NoSuchObject.raise "collection does not contain {sought}" }
+        }
+        method indexOf(sought:T) ifAbsent(action)  {
+            keysAndValuesDo { ix, v ->
+                if (v == sought) then { return ix }
+            }
+            action.apply
+        }
+        method asDictionary {
+            def result = standardGrace.dictionary.empty
+            keysAndValuesDo { k, v ->
+                result.at(k) put(v)
+            }
+            return result
+        }
+        method into(existing) // -> Collection⟦T⟧
+        {
+            def selfIterator = self.iterator
+            while {selfIterator.hasNext} do {
+                existing.add(selfIterator.next)
+            }
+            existing
+        }
+    }
+}
+
+
 class standardGrace {
 
     def BoundsError = outer.outer.BoundsError
@@ -490,11 +680,7 @@ class standardGrace {
         addAll(xs: Iterable⟦T⟧) -> SelfType
     }
 
-    type Collection⟦T⟧ = Iterable⟦T⟧ & type {
-        asList -> List⟦T⟧
-        asSequence -> Sequence⟦T⟧
-        asSet -> Set⟦T⟧
-    }
+    type Collection⟦T⟧ = Iterable⟦T⟧
 
     type Enumerable⟦T⟧ = Collection⟦T⟧ & type {
         values -> Collection⟦T⟧
@@ -599,8 +785,8 @@ class standardGrace {
     }
 
     class lazySequenceOver⟦T,R⟧ (source: Iterable⟦T⟧)
-            mappedBy (function:Block1⟦T,R⟧) -> Enumerable⟦R⟧ is confidential {
-        inherit enumerable.TRAIT⟦T⟧
+            mappedBy (function:Block1⟦T,R⟧) -> Enumerable⟦R⟧ {
+        inherit traits.enumerable⟦T⟧
         class iterator {
             def sourceIterator = source.iterator
             method asString { "an iterator over a lazy map sequence" }
@@ -613,8 +799,8 @@ class standardGrace {
     }
 
     class lazySequenceOver⟦T⟧ (source: Iterable⟦T⟧)
-            filteredBy(predicate:Block1⟦T,Boolean⟧) -> Enumerable⟦T⟧ is confidential {
-        inherit enumerable.TRAIT⟦T⟧
+            filteredBy(predicate:Block1⟦T,Boolean⟧) -> Enumerable⟦T⟧ {
+        inherit traits.enumerable⟦T⟧
         class iterator {
             var cache
             var cacheLoaded := false
@@ -674,7 +860,7 @@ class standardGrace {
     }
 
     class lazyConcatenation⟦T⟧(left, right) -> Enumerable⟦T⟧ {
-        inherit enumerable.TRAIT⟦T⟧
+        inherit traits.enumerable⟦T⟧
         method iterator {
             iteratorConcat(left.iterator, right.iterator)
         }
@@ -682,185 +868,8 @@ class standardGrace {
         method size { left.size + right.size }  // may raise SizeUnknown
     }
 
-    class collection.TRAIT⟦T⟧ {
-        
-        method asString { "a collection TRAIT" }
-        method sizeIfUnknown(action) {
-            action.apply
-        }
-        method size {
-            SizeUnknown.raise "this collection does not know its size"
-        }
-        method do { abstract }
-        method iterator { abstract }
-        method isEmpty {
-            // override if size is known
-            iterator.hasNext.not
-        }
-        method first {
-            def it = self.iterator
-            if (it.hasNext) then { 
-                it.next
-            } else {
-                BoundsError.raise "no first element in {self}"
-            }
-        }
-        method do(block1) separatedBy(block0) {
-            var firstTime := true
-            var i := 0
-            self.do { each ->
-                if (firstTime) then {
-                    firstTime := false
-                } else {
-                    block0.apply
-                }
-                block1.apply(each)
-            }
-            return self
-        }
-        method reduce(initial, blk) {
-        // deprecated; for compatibility with builtInList
-            fold(blk)startingWith(initial)
-        }
-        method fold(blk)startingWith(initial) {
-            var result := initial
-            self.do {it ->
-                result := blk.apply(result, it)
-            }
-            return result
-        }
-        method map⟦R⟧(block1:Block1⟦T,R⟧) -> Enumerable⟦R⟧ {
-            lazySequenceOver⟦T,R⟧(self) mappedBy(block1)
-        }
-        method filter(selectionCondition:Block1⟦T,Boolean⟧) -> Enumerable⟦T⟧ {
-            lazySequenceOver⟦T⟧(self) filteredBy(selectionCondition)
-        }
-        method asSequence {
-            sequence.withAll(self)
-        }
-        method asList {
-            list.withAll(self)
-        }
-        method asSet {
-            set.withAll(self)
-        }
-        method >> (collFactory) {
-            collFactory.withAll(self)
-        }
-    }
-
-    class enumerable.TRAIT⟦T⟧ {
-        inherit collection.TRAIT⟦T⟧
-        method iterator { abstract }
-        method size {
-            // override if size is known
-            SizeUnknown.raise "size requested on {asDebugString}"
-        }
-        method asDictionary {
-            def result = dictionary.empty
-            keysAndValuesDo { k, v ->
-                result.at(k) put(v)
-            }
-            return result
-        }
-        method into(existing: Expandable⟦T⟧) -> Collection⟦T⟧ {
-            def selfIterator = self.iterator
-            while {selfIterator.hasNext} do {
-                existing.add(selfIterator.next)
-            }
-            existing
-        }
-        method ==(other) {
-            isEqual (self) toIterable (other)
-        }
-        method do(block1:Block1⟦T,Done⟧) -> Done {
-            def selfIterator = self.iterator
-            while {selfIterator.hasNext} do {
-                block1.apply(selfIterator.next)
-            }
-        }
-        method keysAndValuesDo(block2:Block2⟦Number,T,Done⟧) -> Done {
-            var ix := 0
-            def selfIterator = self.iterator
-            while {selfIterator.hasNext} do {
-                ix := ix + 1
-                block2.apply(ix, selfIterator.next)
-            }
-        }
-        method values -> Collection⟦T⟧ {
-            self
-        }
-        method fold⟦R⟧(block2)startingWith(initial) -> R {
-            var res := initial
-            def selfIterator = self.iterator
-            while { selfIterator.hasNext } do {
-                res := block2.apply(res, selfIterator.next)
-            }
-            return res
-        }
-        method ++ (other) -> Enumerable⟦T⟧ {
-            lazyConcatenation(self, other)
-        }
-        method sortedBy(sortBlock:Block2) -> List⟦T⟧ {
-            self.asList.sortBy(sortBlock:Block2)
-        }
-        method sorted -> List⟦T⟧ {
-            self.asList.sort
-        }
-        method asString {
-            var s := "⟨"
-            do { each -> s := s ++ each.asString } separatedBy { s := s ++ ", " }
-            s ++ "⟩"
-        }
-    }
-
-    class indexable.TRAIT⟦T⟧ {
-        inherit collection.TRAIT⟦T⟧
-        method at(index) { abstract }
-        method size { abstract }
-        method isEmpty { size == 0 }
-        method keysAndValuesDo(action:Block2⟦Number,T,Done⟧) -> Done {
-            def curSize = size
-            var i := 1
-            while {i <= curSize} do {
-                action.apply(i, self.at(i))
-                i := i + 1
-            }
-        }
-        method first { at(1) }
-        method second { at(2) }
-        method third { at(3) }
-        method fourth { at(4) }
-        method fifth { at(5) }
-        method last { at(size) }
-        method indices { range.from 1 to(size) }
-        method indexOf(sought:T)  {
-            indexOf(sought) ifAbsent { NoSuchObject.raise "collection does not contain {sought}" }
-        }
-        method indexOf(sought:T) ifAbsent(action:Block0)  {
-            keysAndValuesDo { ix, v ->
-                if (v == sought) then { return ix }
-            }
-            action.apply
-        }
-        method asDictionary {
-            def result = dictionary.empty
-            keysAndValuesDo { k, v ->
-                result.at(k) put(v)
-            }
-            return result
-        }
-        method into(existing: Expandable⟦T⟧) -> Collection⟦T⟧ {
-            def selfIterator = self.iterator
-            while {selfIterator.hasNext} do {
-                existing.add(selfIterator.next)
-            }
-            existing
-        }
-    }
-
     def emptySequence is confidential = object {
-        inherit indexable.TRAIT
+        inherit traits.indexable
         method size { 0 }
         method isEmpty { true }
         method at(n) { BoundsError.raise "index {n} of empty sequence" }
@@ -933,11 +942,12 @@ class standardGrace {
             if (ix == 0) then { return emptySequence }
             self.fromprimitiveArray(inner, ix)
         }
+
         method fromprimitiveArray(pArray, sz) is confidential {
             // constructs a sequence from the first sz elements of pArray
 
             object {
-                inherit indexable.TRAIT
+                inherit traits.indexable⟦T⟧
                 def size is public = sz
                 def inner = pArray
 
@@ -1014,14 +1024,14 @@ class standardGrace {
                     }
                 }
                 method sorted {
-                    asList.sortBy { l, r ->
+                    sequence.withAll(list.withAll(self).sortBy { l, r ->
                         if (l == r) then {0}
                             elseif {l < r} then {-1}
                             else {1}
-                    }.asSequence
+                    })
                 }
                 method sortedBy(sortBlock:Block2){
-                    asList.sortBy(sortBlock:Block2).asSequence
+                    sequence.withAll(list.withAll(self).sortBy(sortBlock:Block2))
                 }
             }
         }
@@ -1058,7 +1068,7 @@ class standardGrace {
             if (engine == "js") then {
               if (native "js" code ‹result = (this === superDepth) ? GraceTrue : GraceFalse;›) then {
                 return object {
-                    inherit indexable.TRAIT⟦T⟧
+                    inherit traits.indexable⟦T⟧
 
                     var mods is readable := 0
                     var sz := 0
@@ -1321,7 +1331,7 @@ class standardGrace {
 
             object {
                 // the new list object without native code
-                inherit indexable.TRAIT⟦T⟧
+                inherit traits.indexable⟦T⟧
 
                 var mods is readable := 0
                 var sizeCertain := true
@@ -1626,7 +1636,7 @@ class standardGrace {
         }
 
         class ofCapacity(cap) -> Set⟦T⟧ is confidential {
-            inherit collection.TRAIT
+            inherit traits.collection⟦T⟧
             var mods is readable := 0
             var inner := _prelude.primitiveArray.new(cap)
             var size is readable := 0
@@ -1939,7 +1949,7 @@ class standardGrace {
         }
 
         class empty -> Dictionary⟦K,T⟧ {
-            inherit collection.TRAIT⟦T⟧
+            inherit traits.collection⟦T⟧
             var mods is readable := 0
             var numBindings := 0
             var inner := _prelude.primitiveArray.new(8)
@@ -2142,7 +2152,7 @@ class standardGrace {
             method keys -> Enumerable⟦K⟧ {
                 def sourceDictionary = self
                 object {
-                    inherit enumerable.TRAIT⟦K⟧
+                    inherit traits.enumerable⟦K⟧
                     class iterator {
                         def sourceIterator = sourceDictionary.bindingsIterator
                         method hasNext { sourceIterator.hasNext }
@@ -2160,7 +2170,7 @@ class standardGrace {
             method values -> Enumerable⟦T⟧ {
                 def sourceDictionary = self
                 object {
-                    inherit enumerable.TRAIT⟦T⟧
+                    inherit traits.enumerable⟦T⟧
                     class iterator {
                         def sourceIterator = sourceDictionary.bindingsIterator
                         // should be request on outer
@@ -2179,7 +2189,7 @@ class standardGrace {
             method bindings -> Enumerable⟦T⟧ {
                 def sourceDictionary = self
                 object {
-                    inherit enumerable.TRAIT⟦T⟧
+                    inherit traits.enumerable⟦T⟧
                     method iterator { sourceDictionary.bindingsIterator }
                     // should be request on outer
                     def size is public = sourceDictionary.size
@@ -2327,7 +2337,7 @@ class standardGrace {
         }
 
         class uncheckedFrom (lower) to (upper) -> Sequence⟦Number⟧ {
-            inherit indexable.TRAIT⟦Number⟧
+            inherit traits.indexable⟦Number⟧
             def start = lower
             def stop = upper
             def size is public =
@@ -2394,7 +2404,7 @@ class standardGrace {
             }
             method sorted { self }
 
-            method sortedBy(c) { self.asList.sortBy(c) }
+            method sortedBy(c) { list.withAll(self).sortBy(c) }
 
             method keys { 1..self.size }
 
@@ -2403,20 +2413,10 @@ class standardGrace {
             method asString -> String{
                 "range.from({lower})to({upper})"
             }
-
-            method asList{
-                var result := list.empty
-                for (self) do { each -> result.add(each) }
-                result
-            }
-
-            method asSequence {
-                self
-            }
         }
 
         class from(upper)downTo(lower) -> Sequence⟦Number⟧ {
-            inherit indexable.TRAIT
+            inherit traits.indexable⟦Number⟧
             match (upper)
                 case {_:Number -> }
                 case {_ -> RequestError.raise ("upper bound {upper}" ++
@@ -2494,7 +2494,7 @@ class standardGrace {
             }
             method sorted { self.reversed }
 
-            method sortedBy(c) { self.asList.sortBy(c) }
+            method sortedBy(c) { list.withAll(self).sortBy(c) }
 
             method keys { 1..self.size }
 
@@ -2502,9 +2502,6 @@ class standardGrace {
 
             method asString -> String {
                 "range.from {upper} downTo {lower}"
-            }
-            method asSequence {
-                self
             }
         }
     }
