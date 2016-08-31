@@ -2307,7 +2307,6 @@ function gracecode_sys() {
             }
             return GraceEmptyString;
         };
-        o.methods['[]'] = o.methods['at(1)'];
         o.methods['at(1)put(1)'] = function environ_at_put(argcv, key, value) {
             if(typeof(process) !== "undefined") {
                 var kstr = safeJsString(key);
@@ -2316,7 +2315,6 @@ function gracecode_sys() {
             }
             return GraceTrue;
         };
-        o.methods['[]:=(1)'] = o.methods['at(1)put(1)'];
         o.methods['contains(1)'] = function environ_contains(argcv, searchkey) {
             if(typeof(process) !== "undefined") {
                 return (safeJsString(searchkey) in process.env) ? GraceTrue : GraceFalse;
@@ -2336,7 +2334,7 @@ function gracecode_sys() {
 }
 
 if (typeof gctCache !== "undefined")
-    gctCache['sys'] = "fresh:environ:\n self\n ≠\n basicAsString\n asDebugString\n ::\n at\n []\n []:=()put\n ==\n at()put\n !=\n contains\n asString\nmodules:\nfresh-methods:\n environ\npath:\n sys\nclasses:\npublic:\n Environment\n argv\n elapsed\n elaspedTime\n exit\n execPath\n environ\nconfidential:\n";
+    gctCache['sys'] = "fresh:environ:\n self\n ≠\n basicAsString\n asDebugString\n ::\n at\n ==(1)\n at(1)put(1)\n !=\n contains(1)\n asString\nmodules:\nfresh-methods:\n environ\npath:\n sys\nclasses:\npublic:\n Environment\n argv\n elapsed\n elaspedTime\n exit(1)\n execPath\n environ\nconfidential:\n";
 
 function gracecode_unicode() {
     this.methods['isLetter(1)'] = function unicode_isLetter(argcv, s) {
@@ -2743,24 +2741,6 @@ function gracecode_util() {
         }
         return new GraceString(s);
     };
-    this.methods['join(2)'] = function util_join(argcv, joiner, iterable) {
-        var s = "";
-        var ind = callmethod(iterable, "indices", [0]);
-        for (var i=0; i<ind._value.length; i++) {
-            if (i > 0)
-                s += ", ";
-            s += callmethod(callmethod(iterable, "at(1)", [1], new GraceNum(i + 1)),
-                    "asString", [0])._value;
-        }
-        return new GraceString(s);
-    };
-    this.methods['split(2)'] = function util_split(argcv, str, by) {
-        var r = [];
-        var pts = str._value.split(by);
-        for (var i=0; i<pts.length; i++)
-            r.push(new GraceString(pts[i]));
-        return new GraceList(r);
-    };
     this.methods.extensions = function util_extensions(argcv) {
         return extensionsMap;
     };
@@ -2817,7 +2797,7 @@ function gracecode_util() {
 }
 
 if (typeof(process) === "undefined" && typeof gctCache !== "undefined")
-    gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=\n dynamicModule\n dynamicModule:=\n importDynamic\n importDynamic:=\n jobs\n jobs:=\n cLines\n cLines:=\n lines\n lines:=\n filename\n filename:=\n errno\n errno:=\n parseargs\n previousElapsed\n previousElapsed:=\n log_verbose\n outprint\n syntaxError\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath\n file()on()orPath()otherwise\n file()onPath()otherwise\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n stringMap\n buildinfo\n sys\n io\n";
+    gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=(1)\n dynamicModule\n dynamicModule:=(1)\n importDynamic\n importDynamic:=(1)\n jobs\n jobs:=(1)\n cLines\n cLines:=(1)\n lines\n lines:=(1)\n filename\n filename:=(1)\n errno\n errno:=(1)\n parseargs\n previousElapsed\n previousElapsed:=(1)\n log_verbose\n outprint\n syntaxError\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath(1)\n file(1)on(1)orPath(1)otherwise(1)\n file(1)onPath(1)otherwise(1)\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n stringMap\n buildinfo\n sys\n io\n";
 
 var interactive_module = false;
 function gracecode_interactive() {
@@ -3179,7 +3159,7 @@ function callmethodChecked(obj, methname, argcv) {
 function canonicalMethodName(name) {
     var parts = name.split("(");
     var output = parts[0];
-    for(var i = 1; i < parts.length; i++){
+    for (var i = 1; i < parts.length; i++) {
         var part_split = parts[i].split(")");
         if(isNaN(Number(part_split[0]))){
             output += part_split[0];
