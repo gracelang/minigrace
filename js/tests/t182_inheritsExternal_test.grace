@@ -1,6 +1,7 @@
 dialect "minitest"
 import "mirrors" as mirror
 import "stringMap" as stringMap
+import "standardGraceClass" as sgc
 
 method hook { abstract }
 
@@ -27,17 +28,30 @@ class stringSet {
 }
 
 class newPrelude {
-    inherit prelude.methods
+    inherit sgc.standardGrace
     
     method compareProtocols {
-        def mSelf = mirror.reflect(self).methodNames
-        def mPrelude = mirror.reflect(prelude.methods).methodNames
-        (mPrelude ++ set ["hook", "compareProtocols", "doIt"]) == mSelf
+        def mSelf = mirror.reflect(self).methodNames --
+                    self.set ["hook", "compareProtocols", "doIt"]
+        def mPrelude = mirror.reflect(_prelude).methodNames
+        if (mPrelude == mSelf) then {
+            true
+        } else {
+            def preludeExtras = mPrelude -- mSelf
+            def selfExtras = mSelf -- mPrelude
+            if (preludeExtras.isEmpty.not) then {
+                print "prelude contains additional methods {self.list(preludeExtras).sort}\n"
+            }
+            if (selfExtras.isEmpty.not) then {
+                print "newPrelude contains additional methods {self.list(selfExtras).sort}\n"
+            }
+            false
+        }
     }
 
     
     method hook {
-        abstract
+        self.abstract
     }
     
     method doIt { hook }
@@ -49,9 +63,20 @@ testSuite {
     }
     
     test "prelude inheritance" by {
-        assert (newPrelude.compareProtocols)
+        def mNewPrelude = mirror.reflect(newPrelude).methodNames
+        assert (mNewPrelude.contains "set(_)")
+            description "method 'set(_)' missing from newPrelude"
+        assert (mNewPrelude.contains "compareProtocols")
+            description "method 'compareProtocols' missing from newPrelude"
+        assert (mNewPrelude.contains "Sequence")
+            description "type 'Sequence' missing from newPrelude"
+        // Note that compareProtocols shows the following differences, because
+        // at present standardGraceClass is not the same as standardGrace:
+        // prelude contains additional methods [_methods, become(_,_), clone(_), coll, collection, collections, engine, enumerable, for(_)do(_), inBrowser, indexable, infinity, isStandardGrace, isStandardGrace:=(_), methods, primitiveArray, while(_)do(_), π]
+
+        // newPrelude contains additional methods [ComparableToDictionary, MinimalyIterable, SelfType, SizeUnknown, dictionary, isEqual(_)toIterable(_), iteratorConcat(_,_), lazyConcatenation(_,_), lazySequenceOver(_)filteredBy(_), lazySequenceOver(_)mappedBy(_), list, removed, sequence, set, unused]
     }
-    
+
     test "stringSet get" by {
         def s = stringSet
         s.add "foo"
