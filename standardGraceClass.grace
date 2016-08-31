@@ -87,7 +87,7 @@ def traits = object {
             }
             return result
         }
-        method into(existing) -> // Collection⟦T⟧
+        method into(existing) // -> Collection⟦T⟧
         {
             def selfIterator = self.iterator
             while {selfIterator.hasNext} do {
@@ -193,22 +193,22 @@ def traits = object {
 
 class standardGrace {
 
-    def BoundsError = outer.outer.BoundsError
-    def EnvironmentException = outer.outer.EnvironmentException
-    def Exception = outer.outer.Exception
-    def NoSuchMethod = outer.outer.NoSuchMethod
-    def ProgrammingError = outer.outer.ProgrammingError
-    def RequestError = outer.outer.RequestError
-    def ResourceException = outer.outer.ResourceException
-    def RuntimeError = outer.outer.RuntimeError
-    def TypeError = outer.outer.TypeError
-    def UninitializedVariable = outer.outer.UninitializedVariable
+    def BoundsError is public = _prelude.BoundsError
+    def EnvironmentException is public = _prelude.EnvironmentException
+    def Exception is public = _prelude.Exception
+    def NoSuchMethod is public = _prelude.NoSuchMethod
+    def ProgrammingError is public = _prelude.ProgrammingError
+    def RequestError is public = _prelude.RequestError
+    def ResourceException is public = _prelude.ResourceException
+    def RuntimeError is public = _prelude.RuntimeError
+    def TypeError is public = _prelude.TypeError
+    def UninitializedVariable is public = _prelude.UninitializedVariable
 
-    def ConcurrentModification = ProgrammingError.refine "ConcurrentModification"
-    def IteratorExhausted = ProgrammingError.refine "IteratorExhausted"
-    def NoSuchObject = ProgrammingError.refine "NoSuchObject"
-    def SizeUnknown = Exception.refine "SizeUnknown"
-    def SubobjectResponsibility = ProgrammingError.refine "SubobjectResponsibility"
+    def ConcurrentModification is public = ProgrammingError.refine "ConcurrentModification"
+    def IteratorExhausted is public = ProgrammingError.refine "IteratorExhausted"
+    def NoSuchObject is public = ProgrammingError.refine "NoSuchObject"
+    def SizeUnknown is public = Exception.refine "SizeUnknown"
+    def SubobjectResponsibility is public = ProgrammingError.refine "SubobjectResponsibility"
 
     class SuccessfulMatch.new(result', bindings') {
         inherit true
@@ -1916,7 +1916,7 @@ class standardGrace {
         ==(other) -> Boolean
     }
 
-    def binding = object {
+    def binding is public = object {
         method asString { "binding class" }
 
         class key(k)value(v) {
@@ -2312,7 +2312,7 @@ class standardGrace {
         }
     }
 
-    def range = object {
+    def range is public = object {
         method from(lower)to(upper) -> Sequence⟦Number⟧ {
             match (lower)
                 case {_:Number -> }
