@@ -2806,27 +2806,21 @@ function gracecode_interactive() {
 
 function GraceMirrorMethod(o, k) {
     this.name = k;
+    this.canonicalName = canonicalMethodName(k);
     this.obj = o;
     this.superobj = new GraceObject();
 }
 GraceMirrorMethod.prototype = Grace_allocObject(GraceObject, "methodMirror");
 GraceMirrorMethod.prototype.methods['asString'] = function(argcv) {
-    return new GraceString("mirror on method '" + this.name + "'");
+    return new GraceString("mirror on method '" + this.canonicalName + "'");
 };
 GraceMirrorMethod.prototype.methods['name'] = function(argcv) {
-    return new GraceString(this.name);
+    return new GraceString(this.canonicalName);
 };
 GraceMirrorMethod.prototype.methods['partcount'] = function(argcv) {
-    var count = 1;
-    var place = 1;
-    while(place < this.name.length) {
-        if(this.name[place] === "(") {
-            count++;
-            place++;
-        }
-        place++;
-    }
-    return new GraceNum(count);
+    var count = this.name.split("(").length;
+    if (count === 1) return new GraceNum(1);
+    return new GraceNum(count - 1);
 };
 
 GraceMirrorMethod.prototype.methods['paramcounts'] = function(argcv) {
@@ -2837,16 +2831,6 @@ GraceMirrorMethod.prototype.methods['paramcounts'] = function(argcv) {
         countArray[i] = new GraceNum(theFunction.paramCounts[i]);
     }
     return new GraceList(countArray);
-};
-
-GraceMirrorMethod.prototype.methods['isVariableArity'] = function(argcv) {
-    var theFunction = this.obj.methods[this.name];
-    var l = theFunction.variableArities.length;
-    var boolArray = new Array(l);
-    for (var i = 0; i < l; i++) {
-        boolArray[i] = theFunction.variableArities[i] ? GraceTrue : GraceFalse;
-    }
-    return new GraceList(boolArray);
 };
 
 GraceMirrorMethod.prototype.methods['request(1)'] = function(argcv, argList) {
@@ -2898,11 +2882,9 @@ GraceMirrorMethod.prototype.methods['requestWithArgs(1)'] = function(argcv, argL
     return callmethod.apply(null, allArgs);
 };
 
-function methodMirror_hash (argcv) {
+GraceMirrorMethod.prototype.methods['hash'] = function methodMirror_hash (argcv) {
     return callmethod(new GraceString(this.name), "hash", [0]);
-}
-
-GraceMirrorMethod.prototype.methods['hash'] = methodMirror_hash;
+};
 
 
 function GraceMirror(subj) {       // constructor function
@@ -2918,7 +2900,7 @@ GraceMirror.prototype = {
         methods: function mirror_methods(argcv) {
             var meths = [];
             var current = this.subject;
-            while (current !== null) {
+            while (current) {
                 for (var k in current.methods)
                     meths.push(new GraceMirrorMethod(current, k));
                 current = current.superobj;
@@ -2929,9 +2911,13 @@ GraceMirror.prototype = {
         methodNames: function mirror_methodName(argcv) {
             var meths = callmethod(Grace_prelude, "emptySet", [0]);
             var current = this.subject;
-            while (current !== null) {
-                for (var k in current.methods)
-                    callmethod(meths, "add(1)", [1], new GraceString(k));
+            while (current) {
+                for (var k in current.methods) {
+                    if (! k.includes("$")) {
+                        callmethod(meths, "add(1)", [1],
+                              new GraceString(canonicalMethodName(k)));
+                    }
+                }
                 current = current.superobj;
             }
             return meths;
@@ -2943,9 +2929,9 @@ GraceMirror.prototype = {
             return new GraceMirror(this.superobj);
         },
         'getMethod(1)': function mirror_getMethod (argcv, methName) {
-            var name = methName._value;
+            var name = numericMethodName(methName._value);
             var current = this.subject;
-            while (current !== null) {
+            while (current) {
                 if (current.methods[name]) {
                     return (new GraceMirrorMethod(this.subject, name));
                 }
@@ -3173,6 +3159,18 @@ function canonicalMethodName(name) {
                 output += part_split[1];
             }
         }
+    }
+    return output;
+}
+function numericMethodName(name) {
+    var parts = name.split("(");
+    var output = parts[0];
+    for (var i = 1; i < parts.length; i++) {
+        var part_split = parts[i].split(")");
+        var underscores = part_split[0];
+        var underscoreCount = underscores.split("_").length - 1;
+        output = output + "(" + underscoreCount + ")" + part_split[1];
+            // part_split[1] will be the empty string on the final part
     }
     return output;
 }
