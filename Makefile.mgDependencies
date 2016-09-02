@@ -58,6 +58,8 @@ js/ast.js: js/util.js
 js/errormessages.js: js/util.js
 js/util.js: js/buildinfo.js js/stringMap.js
 
+%.gso: %.gct
+%.gcn: %.gct
 
 #missing dialect dependencies; required for parallel building
 modules/staticTypes.gso: modules/dialect.gso
