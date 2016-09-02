@@ -3716,6 +3716,7 @@ if (typeof global !== "undefined") {
     global.GraceTrue = GraceTrue;
     global.GraceType = GraceType;
     global.GraceUnicodePattern = GraceUnicodePattern;
+    global.importedModules = importedModules;
     global.ImportErrorObject = ImportErrorObject;
     global.Lineup = Lineup;
     global.loadDate = loadDate;

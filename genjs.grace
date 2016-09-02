@@ -719,6 +719,8 @@ method compileidentifier(o) {
         o.register := "this"
     } elseif { name == "..." } then {
         o.register := "ellipsis"
+    } elseif { name == "module()object" } then {
+        o.register := "importedModules[\"{modname}\"]"
     } elseif { name == "true" } then {
         o.register := "GraceTrue"
     } elseif { name == "false" } then {
@@ -1199,6 +1201,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
     out("function {formatModname(modname)}() \{")
     increaseindent
     out("setModuleName(\"{modname}\");")
+    out "importedModules[\"{modname}\"] = this;"
     out "this.definitionModule = \"{modname}\";"
     out "this.definitionLine = 0;"
     out "var var_prelude = var___95__prelude;"

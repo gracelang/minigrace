@@ -229,6 +229,8 @@ class newScopeIn(parent') kind(variety') {
                 if (s.variety == "dialect") then {
                     return ast.memberNode.new(name,
                         ast.identifierNode.new("prelude", false) scope(self)) scope(self).onSelf
+                } elseif { s.variety == "module" } then {
+                    return ast.memberNode.new(name, thisModule) scope(self).onSelf
                 }
                 return ast.memberNode.new(name, mem) scope(self).onSelf
             }
@@ -353,6 +355,15 @@ def preludeScope = newScopeIn(builtInsScope) kind("dialect")
 def moduleScope = newScopeIn(preludeScope) kind("module")
 def graceObjectScope = newScopeIn(emptyScope) kind("object")
 def booleanScope = newScopeIn(builtInsScope) kind "object"
+
+util.setPosition(0, 0)
+def thisModule = ast.identifierNode.new("module()object", false)
+                                       scope(moduleScope)
+    // a hack to give us a way of referring to this module,
+    // other than by a chain of `outer`s.  The name is once that
+    // cannot occur naturally in a program
+moduleScope.addName "module()object" as (k.defdec)
+moduleScope.at "module()object" putScope(moduleScope)
 
 def universalScope = object {
     // The scope that defines every identifier,

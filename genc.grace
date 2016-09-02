@@ -702,7 +702,7 @@ method compilemethod(o, selfobj, pos) {
     if (o.selfclosure) then {
         closurevars.push("self")
     }
-    var litname := escapeident("meth_{modname}_{escapestring2(nm)}")
+    def litname = escapeident("meth_{modname}_{escapestring2(nm)}")
     if (closurevars.size > 0) then {
         if (o.selfclosure) then {
             out("Object {litname}(Object realself, int nparts, int *argcv, "
@@ -836,7 +836,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
         oldout) {
     def myc = auto_count
     auto_count := auto_count + 1
-    var litname := escapeident("meth_{modname}_{escapestring2(nm)}_object")
+    def litname = escapeident("meth_{modname}_{escapestring2(nm)}_object")
     def name = o.nameString ++ "$object(1)"
     def escapedName = escapestring2(name)
     outswitchup
@@ -1021,7 +1021,8 @@ method compileif(o) {
     o.register := "if" ++ myc
 }
 method compileidentifier(o) {
-    var name := escapeident(o.value)
+    def name = o.nameString
+    def escName = escapeident(name)
     if (name == "super") then {
         def sugg = errormessages.suggestion.new
         sugg.replaceRange(o.linePos, o.linePos + 4)with "self" onLine(o.line)
@@ -1033,19 +1034,21 @@ method compileidentifier(o) {
     }
     if (name == "self") then {
         o.register := "self"
-    } elseif { name == "__compilerRevision" } then {
+    } elseif { escName == "__compilerRevision" } then {
         out("  Object var_val___compilerRevision" ++ auto_count
             ++ " = alloc_String(compilerRevision);")
         o.register := "var_val___compilerRevision" ++ auto_count
         auto_count := auto_count + 1
-    } elseif { name == "_46__46__46_" } then {
+    } elseif { name == "..." } then {
         out("  Object ellipsis{auto_count} = alloc_ellipsis();")
         o.register := "ellipsis{auto_count}"
         auto_count := auto_count + 1
+    } elseif { name == "module()object" } then {
+        o.register := "module_{escmodname}"
     } else {
-        name := escapestring2(name)
-        usedvars.push(name)
-        o.register := "*var_{name}"
+        def sEscName = escapestring2(escName)
+        usedvars.push(sEscName)
+        o.register := "*var_{sEscName}"
     }
 }
 method compilebind(o) {
@@ -1056,7 +1059,7 @@ method compilebind(o) {
         usedvars.push(nm)
         out("  *var_{nm} = {val};")
         out("  if ({val} == undefined)")
-        out("    graceRaise(ProgrammingError(), \"attempting to use an ininitilized variable\");");
+        out("    graceRaise(ProgrammingError(), \"attempting to use an uninitilized variable\");");
         auto_count := auto_count + 1
         o.register := "done"
     } else {
@@ -1074,7 +1077,7 @@ method compiledefdec(o) {
     var val := compilenode(o.value)
     out("  *var_{nm} = {val};")
     out("  if ({val} == undefined)")
-    out("    graceRaise(ProgrammingError(), \"attempting to use an ininitilized variable\");");
+    out("    graceRaise(ProgrammingError(), \"attempting to use an uninitilized variable\");");
     if (compilationDepth == 1) then {
         compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString)], [o.name], false))
         if (ast.findAnnotation(o, "parent")) then {
@@ -1763,6 +1766,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     outF("static Object inheritingObject = NULL;")
     outF("static const char modulename[] = \"{modname.quoted}\";");
     outF("Object module_standardGrace_init();");
+    outF("Object module_{escmodname};");
     outF("static char *originalSourceLines[] = \{")
     for (util.cLines) do {l->
         outF("  \"{l}\",")
@@ -1777,7 +1781,8 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     out("  int flags = 0;")
     out("  int frame = gc_frame_new();")
     out("  Object self = alloc_obj2({nummethods}, {nummethods});")
-    out "  self->class->definitionModule = modulename;"
+    out "  module_{escmodname} = self;"
+    out "  self->class->definitionModule = \"{escapestring(modname)}\";"
     out "  gc_root(self);"
     if (util.extensions.contains("NativePrelude")) then {
         out "  prelude = grace_prelude();"
@@ -1789,7 +1794,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     }
     out("  addmethod2(self, \"outer\", &grace_userobj_outer);")
     out("  setline(1);")
-    out("  setmodule(modulename);")
+    out("  setmodule(\"{escapestring(modname)}\");")
     out("  setsource(originalSourceLines);")
     var modn := "Module<{modname.quoted}>"
     out("  setclassname(self, \"{modn}\");")
@@ -1853,14 +1858,16 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     }
     if (modname == "standardGrace") then {
     // this has the same effect as "inherit _prelude" in the source
-        out("  self = setsuperobj(self, *var__prelude);")
-        out("  *selfslot = self;")
+        out "  self = setsuperobj(self, *var__prelude);"
+        out "  module_{escmodname} = self;"
+        out "  *selfslot = self;"
     } else {
         moduleObject.externalsDo { o -> compilenode(o) }
         if (false != moduleObject.superclass) then {
             def superobj = compilenode(moduleObject.superclass.value)
-            out("  self = setsuperobj(self, {superobj});")
-            out("  *selfslot = self;")
+            out "  self = setsuperobj(self, {superobj});"
+            out "  module_{escmodname} = self;"
+            out "  *selfslot = self;"
             implementAliasesAndExclusionsFor(moduleObject)
                 inheriting(moduleObject.superclass, superobj)
         }
