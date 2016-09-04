@@ -5778,6 +5778,32 @@ int find_resource(const char *name, char *buf) {
     // otherwise fail
     return 0;
 }
+char * escapeident(const char *s) {
+    // mimics escapeident(_) from genc.grace
+    // returns a static string, so it must be copied
+    int len = strlen(s);
+    static char buf[PATH_MAX];
+    int op;
+    int ip;
+    for (ip=0, op=0; ip<len; ip++, op++) {
+        unsigned c = s[ip];
+        if (((c >= 65) && (c <= 90))
+            || ((c >= 97) && (c <= 122))
+            || ((c >= 48) && (c <= 57))
+            || (c == 95)) {
+                buf[op] = c;
+        } else {
+            buf[op] = '_';
+            op++;
+            int n = sprintf(&buf[op], "%u", c);
+            op = op + n;
+            buf[op] = '_';
+        }
+    }
+    buf[op] = '\0';
+    return buf;
+}
+
 int find_gso(const char *name, char *buf) {
     char nbuf[strlen(name) + 5];
     strcpy(nbuf, name);
@@ -5787,7 +5813,6 @@ int find_gso(const char *name, char *buf) {
 Object dlmodule(const char *name) {
     int blen = PATH_MAX;
     char buf[blen];
-    char nameCopy[PATH_MAX];
     if (!find_gso(name, buf)) {
         gracedie("failed to find dynamic module '%s.gso'.\nHave you set the environment variable GRACE_MODULE_PATH?", name);
     }
@@ -5795,8 +5820,7 @@ Object dlmodule(const char *name) {
     if (!handle)
         gracedie("failed to load dynamic module '%s': %s", buf, dlerror());
     strcpy(buf, "module_");
-    strncpy(nameCopy, name, PATH_MAX);
-    strcat(buf, basename(nameCopy));
+    strcat(buf, escapeident(name));
     strcat(buf, "_init");
     Object (*init)() = dlsym(handle, buf);
     if (!init)
