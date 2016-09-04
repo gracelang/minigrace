@@ -563,11 +563,11 @@ method compilemethod(o, selfobj, pos) {
     output := []
     usedvars := []      // accumulates identifiers mentioned inside this method
     declaredvars := []
-    var myc := auto_count
+    def myc = auto_count
     auto_count := auto_count + 1
     def name = o.nameString
     def escapedName = escapestring2(name)
-    var nm := name ++ myc
+    def nm = myc ++ "_" ++ name
     var numslots := 0
     var slot := 0
     var haveTypedParams := false
