@@ -41,6 +41,12 @@ var bracketConstructor := "Lineup"
 var emod        // the name of the module being compiled, escaped
                 // so that it is a legal identifier
 
+/////////////////////////////////////////////////////////////
+//
+//  Utility methods
+//
+/////////////////////////////////////////////////////////////
+
 method increaseindent {
     indent := indent ++ "  "
 }
@@ -139,10 +145,18 @@ method escapestring(s) {
 method varf(vn) {
     "var_" ++ escapeident(vn)
 }
-method beginblock(s) {
-    bblock := "%" ++ s
-    out(s ++ ":")
+method uidWithPrefix(str) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    str ++ myc
 }
+
+/////////////////////////////////////////////////////////////
+//
+//  Compilation methods for AST nodes
+//
+/////////////////////////////////////////////////////////////
+
 method compilearray(o) {
     def myc = auto_count
     auto_count := auto_count + 1
@@ -216,28 +230,22 @@ method compileobjvardec(o, selfr) {
 }
 
 method create (kind) field (o) in (objr) {
-    // compile code that creates a field in objectUnderConstruction
+    // compile code that creates a field in `this`, the object under construction
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := escapestring(o.name.value)
     var nmi := escapeident(o.name.value)
     out "{objr}.data.{nmi} = undefined;"
-    out "if (! {objr}.methods.{nmi}) \{"
-    increaseindent
-    out "var reader_{nmi}{myc} = function() \{  // reader method"
+    out "var reader_{nmi}{myc} = function() \{  // reader method {nm}"
     out "    return this.data.{nmi};"
     out "};"
-    out "reader_{nmi}{myc}.{kind} = true;"
+    out "reader_{nmi}{myc}.is{kind.capitalized} = true;"
     if (o.isReadable.not) then {
         out "reader_{nmi}{myc}.confidential = true;"
     }
     out "{objr}.methods[\"{nm}\"] = reader_{nmi}{myc};"
-    decreaseindent
-    out "}"
     if (kind == "var") then {
-        out "if (! {objr}.methods[\"{nmi}:=(1)\"]) \{"
-        increaseindent
-        out "var writer_{nmi}{myc} = function(argcv, n) \{   // writer method"
+        out "var writer_{nmi}{myc} = function(argcv, n) \{   // writer method {nm}:=(_)"
         out "    this.data.{nmi} = n;"
         out "    return GraceDone;"
         out "\};"
@@ -245,8 +253,6 @@ method create (kind) field (o) in (objr) {
             out "writer_{nmi}{myc}.confidential = true;"
         }
         out "{objr}.methods[\"{nm}:=(1)\"] = writer_{nmi}{myc};"
-        decreaseindent
-        out "}"
     }
 }
 
@@ -287,33 +293,55 @@ method compileInitialization(o, selfr) {
     }
 }
 
-method compileObjectConstructor(o) into (objectUnderConstruction) {
-    // `this` references the current object, which will become
-    // the outer object of the object here being constructed
+method compileBuildAndInitFunctions(o) inMethod (methNode) {
+    // o is an objectNode.  In the compiled code, `this` references the current
+    // object, which will become the outer object of `selfr`, the object here
+    // being constructed
 
     var origInBlock := inBlock
     inBlock := false
 
     if (o.register.isEmpty) then {
-        o.register := "obj{auto_count}"
-        auto_count := auto_count + 1
-        util.log 30 verbose "set selfr in compileObjectConstructor"
+        ProgrammingError.raise "unset selfr in compileBuildAndInitFunctions"
     }
     def selfr = o.register
-    out "var {selfr}_init = function(that) \{";
-        // At execution time, `that` will be the current object, which
-        // will become the `outer` of the object here being constructed,
-        // while `this` will be the object under construction.
-    increaseindent
-    compileobjouter(o, "that")
-    installLocalAttributesOf(o) into "this"
-    o.usedTraits.do { t ->
-        compileTrait(t) in (o, "this")
+    def inheritsStmt = o.superclass
+    var params := ""
+    var typeParams := ""
+    if (false != methNode) then {
+        params := paramlist(methNode)
+        typeParams := typeParamlist(methNode)
     }
-    if (false == o.superclass) then {
-        copyDownMethodsFrom "var_graceObject" to "this" excluding (emptySequence)
-    } else {
-        compileInherit(o.superclass)
+    out "var {selfr}_build = function(ignore{params}, outerObj, aliases, exclusions{typeParams}) \{"
+        // At execution time, `this` will be the object under construction.
+        // `outerObj` will be the current object, which
+        // will become the `outer` of the object under construction.
+        // `aliases` and `exclusions` are JS arrays of aliases and method names,
+        // ultimately from an `inherit` statement.
+    increaseindent
+    compileobjouter(o, "outerObj")
+    if (false != inheritsStmt) then {
+        compileInherit(inheritsStmt) forClass (o.nameString)
+    }
+    o.usedTraits.do { t ->
+        compileUse(t) in (o)
+    }
+    installLocalAttributesOf(o) into "this"
+    out "for (var aix = 0, aLen = aliases.length; aix < aLen; aix++) \{"
+    out "    var oneAlias = aliases[aix];"
+    out "    this.methods[oneAlias.newName] = this.methods[oneAlias.oldName];"
+    out "};"
+    out "for (var eix = 0, eLen = exclusions.length; eix < eLen; eix ++) \{"
+    out "    var exMeth = exclusions[eix];"
+    out "    delete this.methods[exMeth];"
+    out "};"
+    decreaseindent
+    out "\};"
+    out "var {selfr}_init = function(ignore{params}{typeParams}) \{"
+        // At execution time, `this` will be the object being initialized.
+    increaseindent
+    if (false != inheritsStmt) then {
+        compileSuperInitialization(inheritsStmt)
     }
     compileInitialization(o, "this")
     decreaseindent
@@ -322,17 +350,21 @@ method compileObjectConstructor(o) into (objectUnderConstruction) {
     selfr
 }
 method compileobject(o, outerRef) {
-    // compiles an object in all contexts _except_ inside a fresh method,
-    // where it may need to add its contents to an existing object
+    // compiles an object constructor.  Generates two JavaScript functions,
+    // {o.register}_build, which creates the object and its methods and fields,
+    // and {o.register}_init, which initializes the fields.
+    // The object constructor itself is implemented by calling these functions
+    // in sequence, _except_ inside a fresh method, where it may need
+    // to add its contents to an existing object
     def myc = auto_count
     auto_count := auto_count + 1
     def selfr = "obj{myc}"
     o.register := selfr
-    out "var {selfr} = Grace_allocObject(null, \"{o.name}\");  // create empty object"
-    out "{selfr}.definitionModule = \"{modname}\";"
-    out "{selfr}.definitionLine = {o.line};"
-    def objcon = compileObjectConstructor(o) into (selfr)
-    out "{objcon}_init.call({selfr}, this);"
+    def objcon = compileBuildAndInitFunctions(o) inMethod (false)
+    def objName = "\"" ++ o.name.quoted ++ "\""
+    out "var {selfr} = emptyGraceObject({objName}, \"{modname}\", {o.line});"
+    out "{objcon}_build.call({selfr}, null, {outerRef}, [], []);"
+    out "{objcon}_init.call({selfr}, null);"
     selfr
 }
 method compileblock(o) {
@@ -446,64 +478,53 @@ method hasTypedParams(o) {
     return false
 }
 
-method compileMethodPreamble(o, myc, name) {
-    out "var func{myc} = function(argcv) \{    // method {name}"
+method compileMethodPreamble(o, funcName, name) withParams (p) {
+    out "// method {name}     (line {o.line})"
+    out "var {funcName} = function(argcv{p}) \{"
     increaseindent
-    out "var curarg = 1;"
     out "var returnTarget = invocationCount;"
     out "invocationCount++;"
 }
 
-method compileMethodPostamble(o, myc, name) {
+method compileMethodPostamble(o, funcName, name) {
     decreaseindent
     out "\};    // end of method {name}"
     if (hasTypedParams(o)) then {
-        compilemethodtypes("func{myc}", o)
+        compilemethodtypes(funcName, o)
     }
     if (o.isConfidential) then {
-        out "func{myc}.confidential = true;"
+        out "{funcName}.confidential = true;"
     }
 }
 
-method compileParameters(o) withDebug(needsDebug) {
+method compileParameterDebugFrame(o) {
     for (o.signature) do { part ->
         for (part.params) do { p ->
             def pName = p.nameString
             def varName = varf(pName)
-            out "var {varName} = arguments[curarg];"
-            out "curarg++;"
-            if (needsDebug) then {
-                out "myframe.addVar(\"{escapestring(pName)}\","
-                out "  function() \{return {varName};});"
-            }
+            out "myframe.addVar(\"{escapestring(pName)}\","
+            out "  function() \{return {varName};});"
         }
     }
 }
 
-method compileInheritingObjectParameter {
-    out "var inheritingObject = arguments[curarg];"
-    out "curarg++;"
-}
-
-method compileTypeParameters(o) atPosition(sz) {
+method compileDefaultsForTypeParameters(o) {
     if (false == o.typeParams) then { return }
     out "// Start type parameters"
     o.typeParams.do { g->
-        out "  var {varf(g.value)} = var_Unknown;"
+        def gName = varf(g.value)
+        out "if ({gName} === undefined) {gName} = var_Unknown;"
     }
-    out "if (argcv.length == {1 + sz}) \{"
     if (emitArgChecks) then {
+        out "var numArgs = arguments.length;"
+        def np = o.numParams
         def ntp = o.typeParams.size
         def s = if (ntp == 1) then { "" } else { "s" }
-        out "  if (argcv[{sz}] !== {ntp}) \{"
+        out "if ((numArgs > {np}) && (numArgs < {np + ntp})) \{"
         out "    throw new GraceExceptionPacket(RequestErrorObject, "
-        out "        new GraceString(\"method {o.canonicalName} expects {ntp} type parameter{s}, but was given \" + argcv[{sz}]));"
-        out "  \}"
+        out "        new GraceString(\"method {o.canonicalName} expects {ntp} type parameter{s}, but was given \" + (numArgs - {np})));"
+        out "\}"
     }
-    o.typeParams.do { g ->
-        out "  {varf(g.value)} = arguments[curarg++];"
-    }
-    out "\}"
     out "// End type parameters"
 }
 
@@ -511,23 +532,25 @@ method compileArgumentTypeChecks(o) {
     out "setModuleName(\"{modname}\");"     // do this before noteLineNumber
     if (emitTypeChecks && o.needsArgChecks) then {
         out "// Start argument type-checks"
-        out "curarg = 1;"
+        def isMultpart = (o.signature.size > 1)
         for (o.signature.indices) do { partnr ->
             var part := o.signature.at(partnr)
+            def partBit = if (isMultpart) then {"to `{part.name}` "} else {""}
             var paramnr := 0
             for (part.params) do { p ->
                 paramnr := paramnr + 1
+                def pName = p.value
+                def pVar = varf(pName)
                 if (emitTypeChecks && (p.dtype != false)) then {
                     noteLineNumber(o.line)comment("argument check in compilemethod")
                     def dtype = compilenode(p.dtype)
                     def typeDesc = p.dtype.toGrace 0.quoted
                     out("if (!Grace_isTrue(callmethod({dtype}, \"match(1)\"," ++
-                        "  [1], arguments[curarg])))")
-                    out "    raiseTypeError("
-                    out "      \"argument {paramnr} to {part.name} (arg list {partnr}) is not of type \" +"
-                    out "      \"{typeDesc}\", {dtype}, arguments[curarg]);"
+                        "  [1], {pVar})))")
+                    out "    raiseTypeError(\"in request of `{o.canonicalName}`, \" +"
+                    out "      \"argument {paramnr}{partBit} is not of type \" +"
+                    out "      \"{typeDesc}\", {dtype}, {pVar});"
                 }
-                out("curarg++;")
             }
         }
         out "// End argument type-checks"
@@ -549,41 +572,62 @@ method debugModeSuffix {
         out "\}"
     }
 }
+method compileMethodBodyWithTypecheck(o) {
+    def ret = compileMethodBody(o)
+    def ln = if (o.body.isEmpty) then { o.line } else { o.resultExpression.line }
+    compileResultTypeCheck(o, ret) onLine (ln)
+    ret
+}
 
-method compileMethodBody(o)  {
+method compileFreshMethod(o, selfObj) {
+    // compiles the methodNode o in a way that can be used with an `inherit`
+    // statement. _Two_ methods are generated: one to build the new object,
+    // and one to initialize it.
+    // The final (result) expression of method o may be of three kinds:
+    //   (1) an object constructor,
+    //   (2) a request on a class (which may have its own initialization),
+    //   (3) a request of a clone or a copy (which has no initialization).
+
+    def selfr = uidWithPrefix "freshFun"
     var ret := "GraceDone"
-    var lastLine := o.line
-    for (o.body) do { l ->
-        ret := compilenode(l)
-        lastLine := l.line
+    def resultExpr = o.resultExpression
+    if (resultExpr.isObject) then {     // case (1)
+        o.body.removeLast    // remove tail object
+        compileMethodBody(o)
+        o.body.addLast(resultExpr)     // put resultExpr back
+        // we have to compileBuildAndInitFunctions(resultExpr) again, even though
+        // this was already done as part of compiling the stale version of this
+        // method.  That's because the previous version is not in scope.
+        compileBuildAndInitFunctions(resultExpr) inMethod (o)
+        compileBuildMethodFromObjectConstructor(o, resultExpr, selfObj)
+        compileInitMethodFromObjectConstructor(o, resultExpr)
+    } elseif { resultExpr.isFresh } then {  // case (2)
+        o.body.removeLast    // remove tail object
+        compileMethodBody(o)
+        o.body.addLast(resultExpr)     // put resultExpr back
+        util.setPosition(resultExpr.line, resultExpr.linePos)
+        def obj = ast.identifierNode.new("inheritingObject", false)
+        def als = ast.identifierNode.new("aliases", false)
+        def exs = ast.identifierNode.new("exclusions", false)
+        resultExpr.with.addLast(ast.requestPart.request "$object"
+                        withArgs [ obj, als, exs ] )
+        def objcon = compilenode(resultExpr)
+        ret := "inheritingObject"
+        compileResultTypeCheck(o, ret) onLine (resultExpr.line)
+    } else {    // case (3)
+        compileBuildMethodFromClone(o)
+        compileNullInitMethod(o)
     }
-    if (ret != "undefined") then {  // TODO what if it is "undefined" ?
-
-    }
-    compileResultTypeCheck(o, ret) onLine (lastLine)
     return ret
 }
 
-method compileFreshMethodBody(o) {
-    var tailObject := false
-    // two cases: body ends with an object, or body ends with a clone method
-    if ((o.body.isEmpty.not) && {o.body.last.isObject}) then {
-        tailObject := o.body.pop    // remove tail object
-    }
+method compileMethodBody(methNode) {
+    // compiles the body of method represented by methNode.
+    // answers the register containing the result.
+
     var ret := "GraceDone"
-    var lastLine := o.line
-    for (o.body) do { l ->
-        ret := compilenode(l)
-        lastLine := l.line
-    }
-    if (false != tailObject) then {
-        o.body.push(tailObject)     // put tail object back
-        def objcon = compileObjectConstructor(tailObject) into "inheritingObject"
-        out "{objcon}_init.call(inheritingObject, this);"
-        ret := "inheritingObject"
-    }
-    compileResultTypeCheck(o, ret) onLine (lastLine)
-    return ret
+    methNode.body.do { nd -> ret := compilenode(nd) }
+    ret
 }
 
 method compileResultTypeCheck(o, ret) onLine (lineNr) {
@@ -606,71 +650,127 @@ method stringList(l) {
     res ++ "]"
 }
 
-method compileMetadata(o, myc, name, selfobj) {
-    out "func{myc}.paramCounts = {paramCounts(o)};"
-    out "func{myc}.paramNames = {stringList(paramNames(o))};"
-    out "func{myc}.typeParamNames = {stringList(typeParamNames(o))};"
-    out "func{myc}.definitionLine = {o.line};"
-    out "func{myc}.definitionModule = \"{modname.quoted}\";"
-    out "{selfobj}.methods[\"{name}\"] = func{myc};"
+method compileMetadata(o, funcName, name) {
+    out "{funcName}.paramCounts = {paramCounts(o)};"
+    out "{funcName}.paramNames = {stringList(paramNames(o))};"
+    out "{funcName}.typeParamNames = {stringList(typeParamNames(o))};"
+    out "{funcName}.definitionLine = {o.line};"
+    out "{funcName}.definitionModule = \"{modname.quoted}\";"
 }
 
 method compilemethod(o, selfobj) {
     def oldusedvars = usedvars
     def olddeclaredvars = declaredvars
-    def myc = auto_count
-    auto_count := auto_count + 1
-    o.register := "func{myc}"
+    def canonicalMethName = o.canonicalName
+    def funcName = uidWithPrefix "func"
+    o.register := funcName
     def isSimpleAccessor = (o.body.size == 1) && {o.body.first.isIdentifier}
     usedvars := []
     declaredvars := []
     def name = escapestring(o.nameString)
-    out "if (! {selfobj}.methods[\"{name}\"]) \{"
-        // compile this method only if a method of the same name isn't already installed
-    increaseindent
-    compileMethodPreamble(o, myc, o.canonicalName)
+    compileMethodPreamble (o, funcName, canonicalMethName)
+        withParams (paramlist(o) ++ typeParamlist(o))
     if (debugMode && isSimpleAccessor.not) then {
         out "var myframe = new StackFrame(\"{name}\");"
     }
-    compileParameters(o) withDebug(debugMode && isSimpleAccessor.not)
-    compileTypeParameters(o) atPosition(o.signature.size)
+    if (debugMode && isSimpleAccessor.not) then {
+        compileParameterDebugFrame(o)
+    }
+    compileDefaultsForTypeParameters(o)
     compileArgumentTypeChecks(o)
     if (isSimpleAccessor) then {
         out "return {compilenode(o.body.first)};  // simple accessor"
     } else {
         debugModePrefix
-        out "return {compileMethodBody(o)};"
+        out "return {compileMethodBodyWithTypecheck(o)};"
         debugModeSuffix
     }
-    compileMethodPostamble(o, myc, o.canonicalName)
+    compileMethodPostamble(o, funcName, canonicalMethName)
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
-    compileMetadata(o, myc, name, selfobj)
-    decreaseindent
-    out "\}"
+    compileMetadata(o, funcName, name)
+    out "{selfobj}.methods[\"{name}\"] = {funcName};"
     if (o.isFresh) then {
-        compilefreshmethod(o, selfobj)
+        compileFreshMethod(o, selfobj)
     }
 }
-method compilefreshmethod(o, selfobj) {
-    def myc = auto_count
-    auto_count := auto_count + 1
-    def name = escapestring(o.nameString ++ "$object(1)")
-    out "if (! {selfobj}.methods[\"{name}\"]) \{"
-        // compile this method only if a method of the same name isn't already installed
-    increaseindent
-    compileMethodPreamble(o, myc, o.canonicalName ++ "$object(_)")
-    compileParameters(o) withDebug(false)
-    compileInheritingObjectParameter
-    compileTypeParameters(o) atPosition(o.signature.size + 1)
-    compileArgumentTypeChecks(o)
+method compileBuildMethodFromObjectConstructor(methNode, objNode, outerRef) {
+    def funcName = uidWithPrefix "func"
+    def name = escapestring(methNode.nameString ++ "$build(3)")
+    def cName = methNode.canonicalName ++ "$build(_,_,_)"
+    def params = paramlist(methNode)
+    def typeParams = typeParamlist(methNode)
+    compileMethodPreamble (methNode, funcName, cName)
+        withParams (params ++ ", inheritingObject, aliases, exclusions" ++ typeParams)
+    out "{objNode.register}_build.call(inheritingObject, null{params}, {outerRef}, aliases, exclusions{typeParams});"
+    compileMethodPostamble(methNode, funcName, cName)
+    out "this.methods['{name}'] = {funcName};"
+    compileMetadata(methNode, funcName, name)
+}
+method compileInitMethodFromObjectConstructor(methNode, objNode) {
+    def funcName = uidWithPrefix "func"
+    def name = escapestring(methNode.nameString ++ "$init(1)")
+    def cName = methNode.canonicalName ++ "$init(_)"
+    compileMethodPreamble(methNode, funcName, cName)
+        withParams "{paramlist(methNode)}, ouc{typeParamlist(methNode)}"
+    if (debugMode) then {
+        compileParameterDebugFrame(methNode)
+    }
+    compileDefaultsForTypeParameters(methNode)
+    compileArgumentTypeChecks(methNode)
     debugModePrefix
-    out "return {compileFreshMethodBody(o)};"
+    out "{objNode.register}_init.call(ouc, null{paramlist(methNode)}{typeParamlist(methNode)});"
     debugModeSuffix
-    compileMethodPostamble(o, myc, o.canonicalName ++ "$object(_)")
-    compileMetadata(o, myc, name, selfobj)
-    decreaseindent
-    out "\}"
+    compileMethodPostamble(methNode, funcName, cName)
+    out "this.methods['{name}'] = {funcName};"
+    compileMetadata(methNode, funcName, name)
+}
+method compileBuildMethodFromClone(methNode) {
+    // The build method will have three additional parameters:
+    // `inheritingObject`, `aliases`, and `exclusions`.  These
+    // will be passed to it by the `inherit` statement.
+
+    def funcName = uidWithPrefix "func"
+    def name = escapestring(methNode.nameString ++ "$build(3)")
+    compileMethodPreamble(methNode, funcName, methNode.canonicalName ++ "$build(_,_,_)")
+        withParams(paramlist(methNode))
+    def tempObj = compileMethodBody(methNode)  // TODO: optimize this by
+    compileAliasesFrom (tempObj)               // re-using the components of
+    copyDownMethodsFrom (tempObj)              // tempObj, rather than copying
+    copyDownDataFrom (tempObj)
+    compileMethodPostamble(methNode, funcName, methNode.nameString ++ "$build(_,_,_)")
+    out "this.methods['{name}'] = {funcName};"
+    compileMetadata(methNode, funcName, name)
+}
+method compileNullInitMethod(methNode) {
+    // An init method must exist for each fresh method; this one does nothing
+
+    def name = escapestring(methNode.nameString ++ "$init(1)")
+    out "this.methods['{name}'] = function() \{ \};"
+}
+
+method paramlist(o) {
+    // a comma-prefixed and separated list of the parameters of
+    // described by methodnode o.
+    var result := ""
+    o.signature.do { part ->
+        part.params.do { param ->
+            result := result ++ ", {varf(param.nameString)}"
+        }
+    }
+    result
+}
+method typeParamlist(o) {
+    // a comma-prefixed and separated list of the type parameters of
+    // described by methodnode o.
+
+    var result := ""
+    if (false ≠ o.typeParams) then {
+        o.typeParams.do { each ->
+            result := result ++ ", {varf(each.nameString)}"
+        }
+    }
+    result
 }
 method compilemethodtypes(func, o) {
     out("{func}.paramTypes = [];")
@@ -963,14 +1063,14 @@ method partl(o) {
 method compileSuperRequest(o, args) {
     out "// call case 1: super request"
     def escapedName = escapestring(o.nameString)
-    out("var call{auto_count} = callmethodsuper(this" ++
+    out("var {o.register} = callmethodsuper(this" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compileOuterRequest(o, args) {
     out "// call case 2: outer request"
     compilenode(o.receiver)
     out "onSelf = true;";
-    out("var call{auto_count} = {requestCall}({o.receiver.register}" ++
+    out("var {o.register} = {requestCall}({o.receiver.register}" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compileOuter(o) {
@@ -981,12 +1081,12 @@ method compileOuter(o) {
 method compileSelfRequest(o, args) {
     out "// call case 4: self request"
     out "onSelf = true;"
-    out("var call{auto_count} = {requestCall}(this" ++
+    out("var {o.register} = {requestCall}(this" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compilePreludeRequest(o, args) {
     out "// call case 5: prelude request"
-    out("var call{auto_count} = {requestCall}(var_prelude" ++
+    out("var {o.register} = {requestCall}(var_prelude" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compileOtherRequest(o, args) {
@@ -995,12 +1095,12 @@ method compileOtherRequest(o, args) {
     if (o.isSelfRequest) then {
         out "onSelf = true;"
     }
-    out("var call{auto_count} = {requestCall}({target}" ++
+    out("var {o.register} = {requestCall}({target}" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compilecall(o) {
-    def myc = auto_count
-    auto_count := auto_count + 1
+    def calltemp = uidWithPrefix "call"
+    o.register := calltemp
     var args := []
     compileArguments(o, args)
     def receiver = o.receiver
@@ -1015,8 +1115,6 @@ method compilecall(o) {
     } else {
         compileOtherRequest(o, args)
     }
-    o.register := "call" ++ auto_count
-    auto_count := auto_count + 1
     o.register
 }
 method compileOuter(o) {
@@ -1176,7 +1274,7 @@ method compilenode(o) {
     } elseif { oKind == "typeliteral" } then {
         compiletypeliteral(o)
     } elseif { oKind == "inherit" } then {
-        compileInherit(o)
+        compileInherit(o) forClass "irrelevant"
     } elseif { oKind == "member" } then {
         compilemember(o)
     } elseif { oKind == "call" } then {
@@ -1297,7 +1395,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
             compilenode(moduleObject.superclass)
         }
         moduleObject.usedTraits.do { t ->
-            compileTrait(t) in (moduleObject, "this")
+            compileUse(t) in (moduleObject)
         }
         moduleObject.methodsDo { o ->
             compilenode(o)
@@ -1356,84 +1454,169 @@ method compile(moduleObject, of, rm, bt, glPath) {
     if (buildtype == "run") then { runJsCode(of, glPath) }
 }
 
-method compileInherit(inhNode) {
+method compileInherit(inhNode) forClass(className) {
     // The object under construction is `this`.
     // Compile code to implement inheritance from inhNode
 
-    if (inhNode.aliases.isEmpty && inhNode.exclusions.isEmpty) then {
-        // simple case: apply the super constructor directly to `this`}
-        compilenode(inhNode.value)
+    def superExpr = inhNode.value
+    if (superExpr.isCall) then {
+        compileInheritCall(superExpr)
+            forClass (className)
+            aliases (aliasList(inhNode))
+            exclusions (exclusionList(inhNode))
     } else {
+        util.log 0 verbose "Inheriting from {superExpr.toGrace 0} on line {inhNode.line}"
         // we create a temporary intermediate object
-        def tempObj = compileAliases(inhNode, "this")
+        def tempObj = compileInheritanceWithAliases(inhNode)
         copyDownMethodsFrom (tempObj) to "this" excluding (inhNode.exclusions)
-        copyDownDataFrom (tempObj) to "this"
+        copyDownDataFrom (tempObj)
+    }
+}
+method compileSuperInitialization(inheritsStmt) {
+    def superExpr = inheritsStmt.value
+    if (superExpr.isCall) then {
+        def callParts = superExpr.with
+        def lastPart = callParts.last
+        def currentScope = lastPart.scope
+        lastPart.name := "$init"
+        lastPart.args.clear
+        lastPart.args.push(ast.identifierNode.new("self", false) scope(currentScope))
+        compilecall(superExpr)
+    } else {
+        util.log 0 verbose "superExpr is {superExpr.toGrace 0} on line {inheritsStmt.line} in compileSuperInitialization"
+    }
+}
+method compileInheritCall(callNode) forClass (className) aliases (aStr) exclusions (eStr) {
+    def buildMethodName = addSuffix "$build(3)" to (callNode.nameString)
+    def target = compilenode(callNode.receiver)
+    var arglist := ""
+    callNode.with.do { part ->
+        if (! part.name.startsWith "$") then {
+            part.args.do { p -> arglist := arglist ++ ", " ++ compilenode(p) }
+        }
+    }
+    var typeArgs := ""
+    if (false != callNode.generics) then {
+        callNode.generics.do { g ->
+            typeArgs := typeArgs ++ ", " ++ compilenode(g)
+        }
+    }
+    if (callNode.isSelfRequest) then {
+        out "onSelf = true;"
+    }
+    out("{requestCall}({target}, \"{escapestring(buildMethodName)}\", [null]" ++
+        "{arglist}, this, {aStr}, {eStr}{typeArgs});  // compileInheritCall arglist = ‹{arglist}›")
+}
+
+method addSuffix (tail) to (root) {
+    def dollarIx = root.indexOf "$"
+    if (dollarIx == 0) then {
+        root ++ tail
+    } else {
+        root.substringFrom 1 to (dollarIx - 1) ++ tail
     }
 }
 
+method aliasList(inhNode) {
+    var res := "["
+    inhNode.aliases.do { a ->
+        res := res ++ "new Alias(\"{a.newName.quoted}\", \"{a.newName.quoted}\")"
+    } separatedBy {
+        res := res ++ ", "
+    }
+    res ++ "]"
+}
 
-method compileAliases(inhNode, selfr) {
+method exclusionList(inhNode) {
+    var res := "["
+    inhNode.exclusions.do { e ->
+        res := res ++ "\"{e.quoted}\""
+    } separatedBy {
+        res := res ++ ", "
+    }
+    res ++ "]"
+}
+
+method compileInheritanceWithAliases(inhNode) {
     def parentExpr = inhNode.value.shallowCopy
     if (parentExpr.isCall && (parentExpr.with.size > 1)) then {
         def newPartsList = parentExpr.with.copy
-        newPartsList.removeLast     // remove the final $object(_) part
+        newPartsList.removeLast     // remove the final $object(…) part
         parentExpr.with := newPartsList
     } else {
         ProgrammingError.raise "inheriting from non-call {parentExpr.pretty 0}"
     }
     def superObj = compilenode(parentExpr)
     inhNode.aliases.do { each ->
-        out "{selfr}.methods['{each.newName.nameString}'] = findMethod({superObj}, '{each.oldName.nameString}');"
+        out "this.methods['{each.newName.nameString}'] = findMethod({superObj}, '{each.oldName.nameString}');"
     }
     superObj
+}
+
+method compileAliasesFrom (temp) {
+    out "for (var ix = 0, aLen = var_aliases.length; ix < aLen; ix++) \{"
+    out "  var oneAlias = var_aliases[ix];"
+    out "  this.methods[oneAlias.newName] = findMethod({temp}, oneAlias.oldName);"
+    out "}"
 }
 
 method copyDownMethodsFrom (sup) to (selfr) excluding (ex) {
     if (ex.isEmpty) then {
         out "for (var key in {sup}.methods) \{"
-        out "    if (! {selfr}.methods[key])"
+        out "    if ({sup}.methods.hasOwnProperty(key) && (! {selfr}.methods[key]))"
         out "        {selfr}.methods[key] = {sup}.methods[key];"
         out "}"
     } else {
         def exclusionString = list (ex.map { m -> "\"{m.quoted}\"" })
             // converting to a list get list brackets rather then sequence brackets
-        out "var exclusions = {exclusionString}"
-        out "for (var key in {sup}.methods) \{"
-        out "    if (! {selfr}.methods[key]) \{"
+        out "var exclusions = {exclusionString};"
+        out "var meths = {sup}.methods;"
+        out "for (var key in meths) \{"
+        out "    if (meths.hasOwnProperty(key) && (! {selfr}.methods[key])) \{"
         out "        if (! exclusions.includes(key))"
-        out "            {selfr}.methods[key] = {sup}.methods[key];"
+        out "            {selfr}.methods[key] = meths[key];"
         out "    }"
         out "}"
     }
 }
 
-method copyDownDataFrom (sup) to (selfr) {
+method copyDownMethodsFrom (sup) {
+    copyDownMethodsFrom (sup) to "this" excluding (emptySequence)
+}
+
+method copyDownDataFrom (sup) {
     out "if ({sup}.data) \{"
     out "    for (var dKey in {sup}.data) \{"
-    out "        {selfr}.data[dKey] = {sup}.data[dKey];"
+    out "        if ({sup}.data.hasOwnProperty(dKey))"
+    out "            this.data[dKey] = {sup}.data[dKey];"
     out "    }"
     out "}"
     out "if ({sup}.hasOwnProperty('_value'))"
-    out "    {selfr}._value = {sup}._value;"
-    out "for (var ckix in {sup}.closureKeys) \{"
-    out "    var ck = {sup}.closureKeys[ckix];"
-    out "    {selfr}[ck] = {sup}[ck];"
-    out "    {selfr}.closureKeys.push(ck);"
+    out "    this._value = {sup}._value;"
+    out "var cks = {sup}.closureKeys";
+    out "for (var ckix = 0, ckLen = cks.length; ckix < ckLen; ckix++) \{"
+    out "    var ck = cks[ckix];"
+    out "    this[ck] = {sup}[ck];"
+    out "    this.closureKeys.push(ck);"
     out "}"
 }
 
-method compileTrait(useNode) in (objNode, selfr) {
+method compileUse(useNode) in (objNode) {
+    // The object under construction is `this`.
+    // Compile code to implement use of useNode.
+    // This differs from compileInherit because of the
+    // omission of methods from graceObject
     def tObj = compilenode(useNode.value)
     def tMethNames = useNode.providedNames -- objNode.localNames
 //    util.log 70 verbose "tMethNames = {tMethNames.asList.sort}"
     useNode.aliases.do { each ->
         def nn = each.newName.nameString
-        out("{selfr}.methods[\"{nn}\"] = " ++
+        out("this.methods[\"{nn}\"] = " ++
             "{tObj}.methods[\"{each.oldName.nameString}\"];  // alias")
         tMethNames.remove(nn)
     }
     tMethNames.do { methName ->
-        out "{selfr}.methods[\"{methName}\"] = {tObj}.methods[\"{methName}\"];"
+        out "this.methods[\"{methName}\"] = {tObj}.methods[\"{methName}\"];"
     }
 }
 
