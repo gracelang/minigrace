@@ -119,6 +119,7 @@ class baseNode {
     method isTrait { false }    // is a method that returns a trait object
     method inTrait { false }    // object in a syntactic trait definition
     method isBind { false }
+    method isReturn { false }
     method isSelf { false }
     method isSuper { false }
     method isPrelude { false }
@@ -912,6 +913,12 @@ def methodNode is public = object {
             // precondition: returnsObject
             body.last.returnedObjectScope
         }
+        method resultExpression {   // precondition: body is not empty
+            if (body.isEmpty) then { ProgrammingError.raise "method has no body" }
+            var last := body.last
+            if (last.isReturn) then { last := last.value }
+            last
+        }
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitMethod(self) up(as)) then {
                 def newChain = as.extend(self)
@@ -1054,11 +1061,13 @@ def callNode is public = object {
 
         inherit baseNode
         def kind is public = "call"
-        var with is public := parts            // [ argument parts ]
+        var with is public := parts            // [ requestPart ]
         var generics is public := false
         var isPattern is public := false
         var receiver is public := receiver'    // formerly `value`
         var isSelfRequest is public := false
+        var isTailCall is public := false      // is possibly the result of a method
+        var isFresh is public := false         // calls a fresh method
         var cachedIdentifier := uninitialized
 
         method onSelf {
@@ -1082,11 +1091,17 @@ def callNode is public = object {
         method returnsObject {
             // we recognize two special calls as returning a fresh object
             // self.copy, and prelude.clone(_)
-            if ((receiver.isImplicit || receiver.isPrelude) &&
-                  (nameString == "clone(1)")) then {return true}
-            if ((receiver.isImplicit || receiver.isSelf) &&
-                  (nameString == "copy")) then {return true}
-            return false
+            if (isCopy) then { return true }
+            if (isClone) then { return true }
+            isFresh
+        }
+        method isCopy {
+            ((receiver.isImplicit || receiver.isSelf) &&
+                (nameString == "copy"))
+        }
+        method isClone {
+            ((receiver.isImplicit || receiver.isPrelude) &&
+                  (nameString == "clone(1)"))
         }
         method returnedObjectScope {
             // precondition: returnsObject
@@ -1183,6 +1198,8 @@ def callNode is public = object {
         method postCopy(other) {
             isPattern := other.isPattern
             isSelfRequest := other.isSelfRequest
+            isTailCall := other.isTailCall
+            isFresh := other.isFresh
             self
         }
         method statementName { "request" }
@@ -1473,6 +1490,7 @@ class outerNode(nodes) {
     inherit baseNode
     def kind is public = "outer"
     def theObjects is public = nodes
+    method numberOfLevels { theObjects.size }
     method asString { "‹object outside that at line {theObjects.last.line}›" }
     method pretty(depth) { basePretty(depth) ++ asString }
     method accept(visitor) from (as) {
@@ -1507,6 +1525,7 @@ def memberNode is public = object {
         var receiver is public := receiver'
         var generics is public := false
         var isSelfRequest is public := false
+        var isTailCall is public := false
 
         method onSelf {
             isSelfRequest := true
@@ -1577,7 +1596,7 @@ def memberNode is public = object {
             if (fakeSymbolTable == scope) then {
                 ProgrammingError.raise "asIdentifier requested on {pretty 0} when scope was fake"
             }
-            def resultNode = identifierNode.new (value, false) scope (scope)
+            def resultNode = identifierNode.new (nameString, false) scope (scope)
             resultNode.inRequest := true
             resultNode.line := line
             resultNode.linePos := linePos
@@ -1590,6 +1609,7 @@ def memberNode is public = object {
         method postCopy(other) {
             generics := other.generics
             isSelfRequest := other.isSelfRequest
+            isTailCall := other.isTailCall
             self
         }
     }
@@ -1886,8 +1906,18 @@ def opNode is public = object {
     def value is public = op     // a String
     var left is public := l
     var right is public := r
+    var isTailCall is public := false      // is possibly the result of a method
+    var isSelfRequest is public := false
+
+    method onSelf {
+        isSelfRequest := true
+        self
+    }
     method isSimple { false }    // needs parens when used as reciever
     method nameString { value ++ "(1)" }
+    method canonicalName { value ++ "(_)" }
+    method receiver { left }
+    method isCall { true }
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitOp(self) up(as)) then {
             def newChain = as.extend(self)
@@ -1940,6 +1970,11 @@ def opNode is public = object {
     }
     method shallowCopy {
         opNode.new(value, nullNode, nullNode).shallowCopyFieldsFrom(self)
+    }
+    method postCopy(other) {
+        isTailCall := other.isTailCall
+        isSelfRequest := other.isSelfRequest
+        self
     }
   }
 }
@@ -2325,7 +2360,9 @@ def returnNode is public = object {
     inherit baseNode
     def kind is public = "return"
     var value is public := expr
+    var dtype is public := false  // the enclosing method's declared return type
 
+    method isReturn { true }
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitReturn(self) up(as)) then {
             def newChain = as.extend(self)
@@ -2350,6 +2387,12 @@ def returnNode is public = object {
     method shallowCopy {
         returnNode.new(nullNode).shallowCopyFieldsFrom(self)
     }
+    method returnsObject { value.returnsObject }
+    method returnedObjectScope {
+        // precondition: returns object
+        value.returnedObjectScope
+    }
+    method resultExpression { value }
   }
 }
 def inheritNode is public = object {
