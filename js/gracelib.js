@@ -159,8 +159,28 @@ function Grace_allocObject(superConstructor, givenName) {
     return resultObj;
 }
 
-function capitalize(str)
-{
+function emptyGraceObject(givenName, modname, line) {
+    return {
+        methods: {
+            "isMe(1)":          object_isMe,
+            "≠(1)":             object_notEquals,
+            "basicAsString":    object_basicAsString,
+            "asString":         object_asString,
+            "asDebugString":    object_asDebugString,
+            "debugValue":       object_debugValue,
+            "debugIterator":    object_debugIterator,
+            "::(1)":            object_colonColon
+        },
+        data: {},
+        className: givenName,
+        mutable: false,
+        closureKeys: [],
+        definitionModule: modname,
+        definitionLine: line
+    };
+}
+
+function capitalize(str) {
     return str.replace(/^.|\s\S/g, function(a) { return a.toUpperCase(); });
 }
 
@@ -3736,6 +3756,7 @@ if (typeof global !== "undefined") {
     global.dbg = dbg;
     global.dbgp = dbgp;
     global.do_import = do_import;
+    global.emptyGraceObject = emptyGraceObject;
     global.EnvironmentExceptionObject = EnvironmentExceptionObject;
     global.ExceptionObject = ExceptionObject;
     global.findMethod = findMethod;
