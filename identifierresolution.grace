@@ -118,6 +118,7 @@ class newScopeIn(parent') kind(variety') {
         elements.keysAndValuesDo(action)
     }
     method kind (n) { elements.get(n) }
+    method kind (n) ifAbsent (action) { elements.get(n) ifAbsent (action) }
     method at(n) putScope(scp) {
         elementScopes.put(n, scp)
     }
@@ -192,6 +193,17 @@ class newScopeIn(parent') kind(variety') {
         }
         return k.undefined
     }
+    method scopeInNest(nm) {
+        // answers the elementScope associated with nm, or universalScope
+        // if there is none
+
+        withSurroundingScopesDo { s->
+            if (s.contains(nm)) then {
+                return s.getScope(nm)
+            }
+        }
+        return universalScope
+    }
     method thatDefines(name) ifNone(action) {
         withSurroundingScopesDo { s->
             if (s.contains(name)) then { return s }
@@ -204,6 +216,28 @@ class newScopeIn(parent') kind(variety') {
         }
         print(self.asStringWithParents)
         ProgrammingError.raise "no scope defines {name}"
+    }
+    method receiverScope(rcvrNode) {
+        // rcvrNode is the receiver of a request. Answer the scope
+        // associated with it.  So, if the receiver is a.b.c,
+        // find the scope associated with c in the scope associated with b
+        // in the scope associated with a in this scope.  Answers
+        // universalScope if we don't have enough information to be exact.
+
+        if (rcvrNode.isIdentifier) then {
+            scopeInNest(rcvrNode.nameString)
+        } elseif { rcvrNode.isCall } then {
+            receiverScope(rcvrNode.receiver).getScope(rcvrNode.nameString)
+        } elseif { rcvrNode.isOuter } then {
+            var resultScope := rcvrNode.scope.enclosingObjectScope  // self's scope
+            repeat (rcvrNode.numberOfLevels) times {
+                resultScope := resultScope.enclosingObjectScope
+            }
+            resultScope
+        } else {
+            ProgrammingError.raise("unexpected receiver {rcvrNode.toGrace 0} " ++
+                  "on line {rcvrNode.line}")
+        }
     }
     method isInSameObjectAs (enclosingScope) {
         if (self == enclosingScope) then { return true }
@@ -382,10 +416,10 @@ class newScopeIn(parent') kind(variety') {
 
 def emptyScope = newScopeKind("empty")
 ast.nullNode.scope := emptyScope      // TODO: eliminate!
-def builtInsScope = newScopeIn(emptyScope) kind("built-in")
-def preludeScope = newScopeIn(builtInsScope) kind("dialect")
-def moduleScope = newScopeIn(preludeScope) kind("module")
-def graceObjectScope = newScopeIn(emptyScope) kind("object")
+def builtInsScope = newScopeIn(emptyScope) kind "built-in"
+def preludeScope = newScopeIn(builtInsScope) kind "dialect"
+def moduleScope = newScopeIn(preludeScope) kind "module"
+def graceObjectScope = newScopeIn(emptyScope) kind "object"
 def booleanScope = newScopeIn(builtInsScope) kind "object"
 
 util.setPosition(0, 0)
@@ -400,7 +434,7 @@ moduleScope.at "module()object" putScope(moduleScope)
 def universalScope = object {
     // The scope that defines every identifier,
     // used when we have no information about an object
-    inherit newScopeIn(emptyScope) kind("universal")
+    inherit newScopeIn(emptyScope) kind "universal"
     method hasParent { false }
     method parent { ProgrammingError.raise "universal scope has no parent" }
     method addName(n) { ProgrammingError.raise "can't add to the universal scope" }
@@ -842,7 +876,7 @@ method processGCT(gct, importedModuleScope) {
         def constrs = gct.at "constructors-of:{c}"
         def classScope = newScopeIn(importedModuleScope) kind "class"
         for (constrs) do { constr ->
-            def ns = newScopeIn(importedModuleScope) kind("object")
+            def ns = newScopeIn(importedModuleScope) kind "object"
             classScope.addName(constr)
             classScope.at(constr) putScope(ns)
             gct.at "methods-of:{c}.{constr}".do { mn ->
@@ -996,10 +1030,18 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             return true
         }
         method visitCall (o) up (as) {
-            o.scope := as.parent.scope
+            def enclosingNode = as.parent
+            o.scope := enclosingNode.scope
             def callee = o.receiver
             if (callee.kind == "identifier") then {
                 callee.inRequest := true
+            }
+            if (enclosingNode.isMethod) then {
+                if (enclosingNode.body.last == o) then {
+                    o.isTailCall := true
+                }
+            } elseif { enclosingNode.isReturn } then {
+                    o.isTailCall := true
             }
             return true
         }
@@ -1470,6 +1512,7 @@ method transformInherits(inhNode) ancestors(as) {
 
 method transformCall(cNode) -> ast.AstNode {
     def methodName = cNode.nameString
+    var result := cNode
     def s = cNode.scope
     def nominalRcvr = cNode.receiver
     if (nominalRcvr.isImplicit) then {
@@ -1483,17 +1526,30 @@ method transformCall(cNode) -> ast.AstNode {
             definedIn (definingScope) as (definingScope.kind(methodName))
         cNode.receiver := rcvr.receiver
         cNode.onSelf
+        if (definingScope.kind(methodName) == "object") then {
+            cNode.isFresh := true
+        }
     } elseif { nominalRcvr.isOuter && (cNode.nameString == "outer") } then {
         // deal with outer.outer ..., which has been parsed into a memberNode
-        // The reciever should alrady have been converted from an identifier to
-        // and outerNode; here we add another object to that node's object list.
+        // The reciever has already been converted from an identifier to an
+        // outerNode; here we add another object to that outerNode's object list.
+
         def priorOuter = nominalRcvr.theObjects.last
         def newOuter = priorOuter.scope.parent.enclosingObjectScope.node
         nominalRcvr.theObjects.addLast(newOuter)
-        cNode
+        result := nominalRcvr
     } else {
-        cNode
+        if (cNode.isTailCall) then {    // don't do this work if no one cares
+            result.isFresh := callReturnsFreshObject(cNode)
+        }
     }
+    result
+}
+
+method callReturnsFreshObject(cNode) {
+    def rcvrScope = cNode.scope.receiverScope(cNode.receiver)
+    def ansrScope = rcvrScope.getScope(cNode.nameString)
+    ansrScope.isObjectScope
 }
 
 method rewriteMatches(topNode) {
