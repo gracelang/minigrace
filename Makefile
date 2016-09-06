@@ -395,6 +395,15 @@ modules/stobjectdraw.grace: modules/objectdraw.grace tools/make-st-version
 $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
 
+# Not for normal use!   A check test of a change to
+# only the js code generator
+old-js-one: l1/minigrace
+	l1/minigrace --target js --dir js --make collectionsPrelude.grace
+	node -c js/collectionsPrelude.js
+	l1/minigrace --target js --dir js --make standardGrace.grace
+	l1/minigrace --target js --dir js --make modules/gUnit.grace
+	GRACE_MODULE_PATH=js:modules l1/minigrace js/tests/t001_languageTests0_49_test.grace --verbose --target js
+
 oldWeb: $(WEBFILES) js/sample
 	rsync -a -l -z --delete $(WEBFILES) $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z js/samples.js $(WEB_SERVER):$(WEB_DIRECTORY)
