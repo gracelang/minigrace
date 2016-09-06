@@ -2245,8 +2245,8 @@ function gracecode_io() {
     this.methods['listdir(1)'] = function (argcv, x) {
         if(typeof(process) !== "undefined") {
             var list = [];
-	    list.push(new GraceString("."));
-	    list.push(new GraceString(".."));
+    list.push(new GraceString("."));
+    list.push(new GraceString(".."));
             fs.readdirSync(safeJsString(x)).forEach(function(val, index, array) {
                 list.push(new GraceString(val));
             });
@@ -2269,7 +2269,7 @@ function gracecode_sys() {
         if(typeof(process) !== "undefined") {
             var list = [];
             process.argv.forEach(function(val, index, array) {
-		        if(index > 1)
+        if(index > 1)
                     list.push(new GraceString(val));
             });
             return new GraceList(list);
@@ -2279,7 +2279,7 @@ function gracecode_sys() {
                 new GraceString("--target"),
                 new GraceString("js")
             ]);
-	    }
+    }
     };
     this.methods.elapsed = function() {
         return new GraceNum(((new Date).getTime()/1000)-startTime);
@@ -3275,6 +3275,11 @@ function ReturnException(v, target) {
 
 ReturnException.prototype = {
     'exctype': 'return'
+};
+
+function Alias(newName, oldName) {
+    this.newName = newName;
+    this.oldName = oldName;
 };
 
 function GraceExceptionPacket(exception, message, data) {
