@@ -406,11 +406,17 @@ class new {
     def rBraceState = object {
         method consume (c){
             if (interpdepth > 0) then {
-                if (tokens.last.kind == "lbrace") then {
-                    def suggestion = errormessages.suggestion.new
-                    suggestion.deleteRange(linePosition - 1, linePosition)onLine(lineNumber)
-                    errormessages.syntaxError("a string interpolation cannot be empty.")atRange(
-                        lineNumber, tokens.last.linePos, linePosition)withSuggestion(suggestion)
+                if (tokens.last.kind == "lparen") then {
+                    def suggestion1 = errormessages.suggestion.new
+                    suggestion1.deleteRange(tokens.last.linePos, linePosition)
+                                    onLine(lineNumber)
+                    def suggestion2 = errormessages.suggestion.new
+                    suggestion2.insert "«expression»"
+                                    atPosition (tokens.last.linePos+1)
+                                    onLine(lineNumber)
+                    errormessages.syntaxError "a string interpolation cannot be empty."
+                          atRange (lineNumber, tokens.last.linePos, linePosition)
+                          withSuggestions [suggestion1, suggestion2]
                 }
                 emit (rParenToken)
                 emit (opToken("++"))
@@ -509,6 +515,7 @@ class new {
                 newLineError
             } elseif {c == "\{"} then {
                 def strToken = stringToken(accum)
+                startPosition := linePosition
                 if (!interpString) then {
                     emit(lParenToken)
                     interpString := true
