@@ -104,7 +104,7 @@ GraceObject.prototype = {
 
 function GraceTrait() {       // constructor function
     // gets its methods from the prototype.  Don't add to them!
-    this.superobj = null;
+    this.closureKeys = [];
     this.data = {};
     this.className = "graceTrait";
     this.mutable = false;
@@ -147,6 +147,7 @@ function Grace_allocObject(superConstructor, givenName) {
     // Changing the 'methods' object has different effects in the two cases!
     var sup = superConstructor ? new superConstructor() : null;
     var resultObj = {
+        closureKeys: [],
         methods: {},
         superobj: sup,
         data: {},
@@ -3300,7 +3301,7 @@ ReturnException.prototype = {
 function Alias(newName, oldName) {
     this.newName = newName;
     this.oldName = oldName;
-};
+}
 
 function GraceExceptionPacket(exception, message, data) {
     this.exception = exception;
@@ -3523,27 +3524,37 @@ var UninitializedVariableObject = new GraceException("UninitializedVariable", Pr
 // when it is loaded.
 //
 
-function traitObjectFromInto(obj, that) {
+function traitObjectFromInto(obj, that, aliases, exclusions) {
     setModuleName("built-in");
     if (obj.hasOwnProperty('_value')) {
         that._value = obj._value;
     }
     for (var methName in obj.methods) {
-        if (! that.methods[methName]) {
-            that.methods[methName] = obj.methods[methName];
-        }
+        that.methods[methName] = obj.methods[methName];
+    }
+    for (var aix in aliases) {
+        var oneAlias = aliases[aix];
+        that.methods[oneAlias.newName] = obj.methods[oneAlias.oldName];
+    }
+    for (var eix in exclusions) {
+        var exMeth = exclusions[eix];
+        delete that.methods[exMeth];
     }
     return that;
 }
 
 var Grace_prelude = new GraceModule("standardGrace");
 
-Grace_prelude.methods['true$object(1)'] = function prelude_true$object (argcv, inheritingObject) {
-    return traitObjectFromInto(GraceTrue, inheritingObject);
-};
-Grace_prelude.methods['false$object(1)'] = function prelude_false$object (argcv, inheritingObject) {
-    return traitObjectFromInto(GraceFalse, inheritingObject);
-};
+Grace_prelude.methods['true$build(3)'] =
+    function prelude_true$object (argcv, inheritingObject, aliases, exclusions) {
+        return traitObjectFromInto(GraceTrue, inheritingObject, aliases, exclusions);
+    };
+Grace_prelude.methods['false$build(3)'] =
+    function prelude_false$object (argcv, inheritingObject, aliases, exclusions) {
+        return traitObjectFromInto(GraceFalse, inheritingObject, aliases, exclusions);
+    };
+Grace_prelude.methods['true$init(1)'] = function () { };
+Grace_prelude.methods['false$init(1)'] = function () { };
 Grace_prelude.methods['Exception'] = function(argcv) {
     return ExceptionObject;
 };
