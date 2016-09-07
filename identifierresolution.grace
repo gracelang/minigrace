@@ -294,8 +294,8 @@ class newScopeIn(parent') kind(variety') {
                     if (s.variety == "dialect") then {
                         return ast.memberNode.new(name,
                             ast.identifierNode.new("prelude", false) scope(self)) scope(self).onSelf
-                } elseif { s.variety == "module" } then {
-                    return ast.memberNode.new(name, thisModule) scope(self).onSelf
+                    } elseif { s.variety == "module" } then {
+                        return ast.memberNode.new(name, thisModule) scope(self).onSelf
                     }
                     return ast.memberNode.new(name, mem) scope(self).onSelf
                 }
