@@ -1073,11 +1073,6 @@ method compileOuterRequest(o, args) {
     out("var {o.register} = {requestCall}({o.receiver.register}" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
-method compileOuter(o) {
-    out "// call case 3: outer"
-    def oo = o.enclosingObject
-    out "var call{auto_count} = this.{outerProp(oo)};"
-}
 method compileSelfRequest(o, args) {
     out "// call case 4: self request"
     out "onSelf = true;"
