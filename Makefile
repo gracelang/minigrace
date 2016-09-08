@@ -107,7 +107,8 @@ clean:
 	rm -f minigrace *.js
 	rm -fr grace-web-editor
 	rm -fr selftest selftest-js
-	rm -f tests/test-*.log js/tests/test-*.log
+	rm -f tests/test-*.log js/tests/test-*.log js/tests/*{.js,.gct}
+	rm -f tests/retired/*.{gct,gso,c,gcn} js/tests/retired/*.{js,gct}
 	cd stubs && rm -f *.gct *gcn *.gso *js *.c
 	rm Makefile.conf
 	cd sample/dialects && $(MAKE)  clean
