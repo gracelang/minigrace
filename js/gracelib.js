@@ -25,6 +25,15 @@ Array.prototype.sum = function () {
     return this.reduce(function(a,b) {return a+b;}, 0);
 };
 
+if (!Array.prototype.includes) {
+    Array.prototype.includes = function (needle) {
+        for (var i = 0, len = this.length ; i < len ; i++) {
+            if (this[i] === needle) return true;
+        }
+        return false;
+    };
+}
+
 var inBrowser = (typeof global === "undefined");
 
 function GraceObject() {       // constructor function
