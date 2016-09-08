@@ -2974,7 +2974,7 @@ GraceMirror.prototype = {
             var exceptionMsg = new GraceString("no method " +
                   canonicalMethodName(name) + " in mirror for ");
             var objDescription = callmethod(this.subject, "asString", [0]);
-            exceptionMsg = callmethod(exceptionMsg, "++", [1], objDescription);
+            exceptionMsg = callmethod(exceptionMsg, "++(1)", [1], objDescription);
             throw new GraceExceptionPacket(NoSuchMethodErrorObject, exceptionMsg);
         }
     },
