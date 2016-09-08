@@ -733,11 +733,11 @@ method compileBuildMethodFromClone(methNode) {
     def funcName = uidWithPrefix "func"
     def name = escapestring(methNode.nameString ++ "$build(3)")
     compileMethodPreamble(methNode, funcName, methNode.canonicalName ++ "$build(_,_,_)")
-        withParams(paramlist(methNode))
-    def tempObj = compileMethodBody(methNode)  // TODO: optimize this by
-    compileAliasesFrom (tempObj)               // re-using the components of
-    copyDownMethodsFrom (tempObj)              // tempObj, rather than copying
-    copyDownDataFrom (tempObj)
+        withParams( paramlist(methNode) ++ ", var_ouc, var_aliases, var_exclusions")
+    def tempObj = compileMethodBody(methNode)  // TODO: optimize this by  re-using the
+    compileAliasesFrom (tempObj)               // components of tempObj, rather than copying
+    copyDownMethodsFrom (tempObj) to "var_ouc" excludingDynamically "var_exclusions"
+    copyDownDataFrom (tempObj) to "var_ouc"
     compileMethodPostamble(methNode, funcName, methNode.nameString ++ "$build(_,_,_)")
     out "this.methods['{name}'] = {funcName};"
     compileMetadata(methNode, funcName, name)
@@ -1463,8 +1463,8 @@ method compileInherit(inhNode) forClass(className) {
         util.log 0 verbose "Inheriting from {superExpr.toGrace 0} on line {inhNode.line}"
         // we create a temporary intermediate object
         def tempObj = compileInheritanceWithAliases(inhNode)
-        copyDownMethodsFrom (tempObj) to "this" excluding (inhNode.exclusions)
-        copyDownDataFrom (tempObj)
+        copyDownMethodsFrom (tempObj) to "this" excludingStatically (inhNode.exclusions)
+        copyDownDataFrom (tempObj) to "this"
     }
 }
 method compileSuperInitialization(inheritsStmt) {
@@ -1551,11 +1551,11 @@ method compileInheritanceWithAliases(inhNode) {
 method compileAliasesFrom (temp) {
     out "for (var ix = 0, aLen = var_aliases.length; ix < aLen; ix++) \{"
     out "  var oneAlias = var_aliases[ix];"
-    out "  this.methods[oneAlias.newName] = findMethod({temp}, oneAlias.oldName);"
+    out "  var_ouc.methods[oneAlias.newName] = findMethod({temp}, oneAlias.oldName);"
     out "}"
 }
 
-method copyDownMethodsFrom (sup) to (selfr) excluding (ex) {
+method copyDownMethodsFrom (sup) to (selfr) excludingStatically (ex) {
     if (ex.isEmpty) then {
         out "for (var key in {sup}.methods) \{"
         out "    if ({sup}.methods.hasOwnProperty(key) && (! {selfr}.methods[key]))"
@@ -1565,34 +1565,34 @@ method copyDownMethodsFrom (sup) to (selfr) excluding (ex) {
         def exclusionString = list (ex.map { m -> "\"{m.quoted}\"" })
             // converting to a list get list brackets rather then sequence brackets
         out "var exclusions = {exclusionString};"
-        out "var meths = {sup}.methods;"
-        out "for (var key in meths) \{"
-        out "    if (meths.hasOwnProperty(key) && (! {selfr}.methods[key])) \{"
-        out "        if (! exclusions.includes(key))"
-        out "            {selfr}.methods[key] = meths[key];"
-        out "    }"
-        out "}"
+        copyDownMethodsFrom (sup) to (selfr) excludingDynamically (exclusionString)
     }
 }
 
-method copyDownMethodsFrom (sup) {
-    copyDownMethodsFrom (sup) to "this" excluding (emptySequence)
+method copyDownMethodsFrom (sup) to (selfr) excludingDynamically (exclusionString) {
+    out "var meths = {sup}.methods, exclusions = {exclusionString};"
+    out "for (var key in meths) \{"
+    out "    if (meths.hasOwnProperty(key) && (! {selfr}.methods[key])) \{"
+    out "        if (! exclusions.includes(key))"
+    out "            {selfr}.methods[key] = meths[key];"
+    out "    }"
+    out "}"
 }
 
-method copyDownDataFrom (sup) {
+method copyDownDataFrom (sup) to (dest) {
     out "if ({sup}.data) \{"
     out "    for (var dKey in {sup}.data) \{"
     out "        if ({sup}.data.hasOwnProperty(dKey))"
-    out "            this.data[dKey] = {sup}.data[dKey];"
+    out "            {dest}.data[dKey] = {sup}.data[dKey];"
     out "    }"
     out "}"
     out "if ({sup}.hasOwnProperty('_value'))"
-    out "    this._value = {sup}._value;"
+    out "    {dest}._value = {sup}._value;"
     out "var cks = {sup}.closureKeys";
     out "for (var ckix = 0, ckLen = cks.length; ckix < ckLen; ckix++) \{"
     out "    var ck = cks[ckix];"
-    out "    this[ck] = {sup}[ck];"
-    out "    this.closureKeys.push(ck);"
+    out "    {dest}[ck] = {sup}[ck];"
+    out "    {dest}.closureKeys.push(ck);"
     out "}"
 }
 
