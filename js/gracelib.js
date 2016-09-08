@@ -3824,6 +3824,7 @@ if (typeof global !== "undefined") {
     global.raiseTypeError = raiseTypeError;
     global.ResourceExceptionObject = ResourceExceptionObject;
     global.ReturnException = ReturnException;
+    global.RequestErrorObject = RequestErrorObject;
     global.RuntimeErrorObject = RuntimeErrorObject;
     global.setLineNumber = setLineNumber;
     global.setModuleName = setModuleName;
