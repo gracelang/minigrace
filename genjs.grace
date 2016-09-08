@@ -516,7 +516,7 @@ method compileDefaultsForTypeParameters(o) {
         out "if ({gName} === undefined) {gName} = var_Unknown;"
     }
     if (emitArgChecks) then {
-        out "var numArgs = arguments.length;"
+        out "var numArgs = arguments.length - 1;"  // subtract 1 for argcv
         def np = o.numParams
         def ntp = o.typeParams.size
         def s = if (ntp == 1) then { "" } else { "s" }
