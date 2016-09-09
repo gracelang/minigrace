@@ -14,10 +14,10 @@ method describe (methodMirror) {
 }
 
 def fooMirror = mirror.reflect(foo)
-def exampleMirror = fooMirror.getMethod "example(1)"
+def exampleMirror = fooMirror.getMethod "example(_)"
 print "got exampleMirror"
 describe(exampleMirror)
-def exampleAndMirror = mirror.reflect(foo).getMethod "example(2)and(1)"
+def exampleAndMirror = mirror.reflect(foo).getMethod "example(_,_)and(_)"
 describe(exampleAndMirror)
 def noParamsMirror = mirror.reflect(foo).getMethod "noParams"
 describe(noParamsMirror)
