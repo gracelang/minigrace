@@ -3559,11 +3559,11 @@ function traitObjectFromInto(obj, that, aliases, exclusions) {
 var Grace_prelude = new GraceModule("standardGrace");
 
 Grace_prelude.methods['true$build(3)'] =
-    function prelude_true$object (argcv, inheritingObject, aliases, exclusions) {
+    function prelude_true$build (argcv, inheritingObject, aliases, exclusions) {
         return traitObjectFromInto(GraceTrue, inheritingObject, aliases, exclusions);
     };
 Grace_prelude.methods['false$build(3)'] =
-    function prelude_false$object (argcv, inheritingObject, aliases, exclusions) {
+    function prelude_false$build (argcv, inheritingObject, aliases, exclusions) {
         return traitObjectFromInto(GraceFalse, inheritingObject, aliases, exclusions);
     };
 Grace_prelude.methods['true$init(1)'] = function () { };

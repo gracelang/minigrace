@@ -609,7 +609,7 @@ method compileFreshMethod(o, selfObj) {
         def obj = ast.identifierNode.new("inheritingObject", false)
         def als = ast.identifierNode.new("aliases", false)
         def exs = ast.identifierNode.new("exclusions", false)
-        resultExpr.with.addLast(ast.requestPart.request "$object"
+        resultExpr.with.addLast(ast.requestPart.request "$build"
                         withArgs [ obj, als, exs ] )
         def objcon = compilenode(resultExpr)
         ret := "inheritingObject"
