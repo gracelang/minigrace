@@ -341,7 +341,7 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
         // At execution time, `this` will be the object being initialized.
     increaseindent
     if (false != inheritsStmt) then {
-        compileSuperInitialization(inheritsStmt)
+        compileSuperInitialization(inheritsStmt.value)
     }
     compileInitialization(o, "this")
     decreaseindent
@@ -508,7 +508,7 @@ method compileParameterDebugFrame(o) {
     }
 }
 
-method compileDefaultsForTypeParameters(o) {
+method compileDefaultsForTypeParameters(o) extraParams (extra) {
     if (false == o.typeParams) then { return }
     out "// Start type parameters"
     o.typeParams.do { g->
@@ -516,7 +516,7 @@ method compileDefaultsForTypeParameters(o) {
         out "if ({gName} === undefined) {gName} = var_Unknown;"
     }
     if (emitArgChecks) then {
-        out "var numArgs = arguments.length - 1;"  // subtract 1 for argcv
+        out "var numArgs = arguments.length - 1 - {extra};"  // subtract 1 for argcv
         def np = o.numParams
         def ntp = o.typeParams.size
         def s = if (ntp == 1) then { "" } else { "s" }
@@ -676,7 +676,7 @@ method compilemethod(o, selfobj) {
     if (debugMode && isSimpleAccessor.not) then {
         compileParameterDebugFrame(o)
     }
-    compileDefaultsForTypeParameters(o)
+    compileDefaultsForTypeParameters(o) extraParams 0
     compileArgumentTypeChecks(o)
     if (isSimpleAccessor) then {
         out "return {compilenode(o.body.first)};  // simple accessor"
@@ -702,6 +702,8 @@ method compileBuildMethodFromObjectConstructor(methNode, objNode, outerRef) {
     def typeParams = typeParamlist(methNode)
     compileMethodPreamble (methNode, funcName, cName)
         withParams (params ++ ", inheritingObject, aliases, exclusions" ++ typeParams)
+    compileDefaultsForTypeParameters(methNode) extraParams 3
+    compileArgumentTypeChecks(methNode)
     out "{objNode.register}_build.call(inheritingObject, null{params}, {outerRef}, aliases, exclusions{typeParams});"
     compileMethodPostamble(methNode, funcName, cName)
     out "this.methods['{name}'] = {funcName};"
@@ -716,7 +718,7 @@ method compileInitMethodFromObjectConstructor(methNode, objNode) {
     if (debugMode) then {
         compileParameterDebugFrame(methNode)
     }
-    compileDefaultsForTypeParameters(methNode)
+    compileDefaultsForTypeParameters(methNode) extraParams 1
     compileArgumentTypeChecks(methNode)
     debugModePrefix
     out "{objNode.register}_init.call(ouc, null{paramlist(methNode)}{typeParamlist(methNode)});"
@@ -1467,8 +1469,7 @@ method compileInherit(inhNode) forClass(className) {
         copyDownDataFrom (tempObj) to "this"
     }
 }
-method compileSuperInitialization(inheritsStmt) {
-    def superExpr = inheritsStmt.value
+method compileSuperInitialization(superExpr) {
     if (superExpr.isCall) then {
         def callParts = superExpr.with
         def lastPart = callParts.last
@@ -1478,7 +1479,7 @@ method compileSuperInitialization(inheritsStmt) {
         lastPart.args.push(ast.identifierNode.new("self", false) scope(currentScope))
         compilecall(superExpr)
     } else {
-        util.log 0 verbose "superExpr is {superExpr.toGrace 0} on line {inheritsStmt.line} in compileSuperInitialization"
+        util.log 0 verbose "superExpr is {superExpr.toGrace 0} on line {superExpr.line} in compileSuperInitialization"
     }
 }
 method compileInheritCall(callNode) forClass (className) aliases (aStr) exclusions (eStr) {
@@ -1500,7 +1501,7 @@ method compileInheritCall(callNode) forClass (className) aliases (aStr) exclusio
         out "onSelf = true;"
     }
     out("{requestCall}({target}, \"{escapestring(buildMethodName)}\", [null]" ++
-        "{arglist}, this, {aStr}, {eStr}{typeArgs});  // compileInheritCall arglist = ‹{arglist}›")
+        "{arglist}, this, {aStr}, {eStr}{typeArgs});  // compileInheritCall")
 }
 
 method addSuffix (tail) to (root) {
