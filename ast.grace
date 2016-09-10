@@ -132,6 +132,7 @@ class baseNode {
     method isImport { false }
     method isTypeDec { false }
     method isExternal { false }
+    method isFresh { false }
     method canInherit { false }
     method returnsObject { false }
     method isImplicit { false }
@@ -1301,6 +1302,7 @@ def objectNode is public = object {
                 kind
             }
         }
+        method isFresh { true }     // the epitome of freshness!
         method isTrait {
             // answers true if this object qualifies to be a trait, whether
             // or not it was declared with the trait syntax
