@@ -1,9 +1,13 @@
 import "dom" as dom
+import "sys" as sys
 
 // These are vars to allow updating them only when "start" runs
 var document
 var canvas
 var ctx
+var theWindow
+var canvasElement
+var useCanvas
 
 class r(r')g(g')b(b') {
     def r is readable = r'
@@ -20,6 +24,9 @@ var y
 var started := false
 var maxActionsDrawn := -1
 var delay := 1
+var usePopup := false
+var windowHeight := 700
+var windowWidth := 850
 
 var speed is public := 1
 
@@ -160,6 +167,7 @@ method initialise {
         return false
     }
     document := dom.document
+
     // Activate the canvas tab if it isn't already
     //def ts = document.getElementById("tab")
     //for (0..(ts.options.length-1)) do {i->
@@ -173,10 +181,32 @@ method initialise {
         tab.click
     }
     initialised := true
-    canvas := document.getElementById("standard-canvas")
-    if (dom.noObject == canvas) then {
-        canvas := document.getElementById("graphics")
+
+    //Get the canvas:
+    //If the user requested a pop-up, use a pop-up window
+    if(usePopup) then
+    {
+      //Create the popup window for use
+      createPopupWindow
+
+    } else //Otherwise, look for the canvas
+    {
+       //Look for the canvas in the embedded web editor
+       canvas := document.getElementById("standard-canvas")
+
+       //Look for the canvas in the web IDE
+       if (dom.noObject == canvas) then {
+          canvas := document.getElementById("graphics")
+       }
+
+       //If those are not found, use a seperate window
+       if(dom.noObject == canvas) then
+       {
+            //Create the popup window for use
+            createPopupWindow
+       }
     }
+
     ctx := canvas.getContext("2d")
     ctx.lineWidth := 1
     ctx.fillStyle := "white"
@@ -184,10 +214,39 @@ method initialise {
     ctx.strokeStyle := "black"
     ctx.rect(0, 0, canvas.width, canvas.height)
     ctx.stroke
-    
-    x := 50
-    y := canvas.height - 50
+
+    //Put the cursor in the center
+    x := canvas.width/2;
+    y := canvas.height/2;
 }
+
+//Method to create a pop-up window with a canvas for graphics
+method createPopupWindow{
+     //Create the window
+     theWindow := dom.window.open("", "", "width={windowWidth}+50,height={windowHeight}+50")
+
+     //Check to make sure window is open
+     if (prelude.inBrowser && (dom.noObject == theWindow)) then {
+              print "Failed to open the graphics window.\nIs your browser blocking pop-ups?"
+              sys.exit(1)
+      }
+
+      //Set all of the window attributes
+      canvasElement := document.createElement("canvas")
+      canvasElement.width:= windowWidth
+      canvasElement.height:= windowHeight
+      canvasElement.style.alignSelf:= "center"
+      theWindow.document.body.appendChild(canvasElement)
+      theWindow.document.title:= "Logo Graphics"
+
+      //Register the window
+      if (dom.doesObject(dom.window) haveProperty("graceRegisterWindow")) then {
+          dom.window.graceRegisterWindow(theWindow)
+      }
+      //Set the canvas
+      canvas := canvasElement
+}
+
 method start {
     initialise
     // Iterate through the frames of the image and draw them,
@@ -206,4 +265,12 @@ method start {
         mctx.drawImage(backingCanvas, 0, 0)
         drawTurtle(turtleAngle)
     }
+}
+
+//API method for Logo to signal popup use
+method useCanvas(size:Point)
+{
+     usePopup := true
+     windowWidth := size.x
+     windowHeight := size.y
 }

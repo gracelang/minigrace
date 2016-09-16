@@ -4,6 +4,7 @@
 // handles the actual drawing and user interface.
 import "turtle" as turtle
 inherit prelude.methods
+type Point = prelude.Point
 
 def red is public = turtle.red
 def green is public = turtle.green
@@ -32,6 +33,12 @@ method speed:=(sp) {
     if (sp >= 1) then {
         turtle.speed := sp.floor
     }
+}
+
+//Method to create a pop-up canvas
+method createCanvas(size:Point)
+{
+     turtle.useCanvas(size)
 }
 
 def thisDialect is public = object {
