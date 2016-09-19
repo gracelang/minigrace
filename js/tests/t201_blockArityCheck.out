@@ -5,4 +5,5 @@ RequestError: block takes 1 argument but given 3.
 RequestError: block takes 4 arguments but given 3.
 GOT 3: 123 hi  lo.
 TypeError: argument 3 to block.apply(_,_,_) has wrong type.
+It's missing methods &(_), *(_), ++(_), ::(_), <(_), ==(_), >(_), _escape, asLower, asNumber, asUpper, at(_), capitalized, compare(_), contains(_), do(_), do(_)separatedBy(_), endsWith(_), fifth, filter(_), first, fold(_)startingWith(_), fourth, indexOf(_), indexOf(_)ifAbsent(_), indexOf(_)startingAt(_), indexOf(_)startingAt(_)ifAbsent(_), indices, isEmpty, iterator, keysAndValuesDo(_), last, lastIndexOf(_), lastIndexOf(_)ifAbsent(_), lastIndexOf(_)startingAt(_), lastIndexOf(_)startingAt(_)ifAbsent(_), map(_), match(_), ord, quoted, replace(_)with(_), reverseTimesNumber(_), second, size, sizeIfUnknown(_), startsWith(_), startsWithDigit, startsWithLetter, startsWithPeriod, startsWithSpace, substringFrom(_), substringFrom(_)size(_), substringFrom(_)to(_), third, trim, |(_), ≠(_), ≤(_), ≥(_)
 done
