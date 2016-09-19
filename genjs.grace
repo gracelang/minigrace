@@ -300,10 +300,11 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
     var origInBlock := inBlock
     inBlock := false
 
-    if (o.register.isEmpty) then {
-        ProgrammingError.raise "unset selfr in compileBuildAndInitFunctions"
+    if (o.register.isEmpty.not) then {
+        ProgrammingError.raise "already set selfr in compileBuildAndInitFunctions"
     }
-    def selfr = o.register
+    def selfr = uidWithPrefix "obj"
+    o.register := selfr
     def inheritsStmt = o.superclass
     var params := ""
     var typeParams := ""
@@ -355,11 +356,8 @@ method compileobject(o, outerRef) {
     // The object constructor itself is implemented by calling these functions
     // in sequence, _except_ inside a fresh method, where it may need
     // to add its contents to an existing object
-    def myc = auto_count
-    auto_count := auto_count + 1
-    def selfr = "obj{myc}"
-    o.register := selfr
     def objcon = compileBuildAndInitFunctions(o) inMethod (false)
+    def selfr = o.register
     def objName = "\"" ++ o.name.quoted ++ "\""
     out "var {selfr} = emptyGraceObject({objName}, \"{modname}\", {o.line});"
     out "{objcon}_build.call({selfr}, null, {outerRef}, [], []);"
@@ -594,9 +592,6 @@ method compileFreshMethod(o, selfObj) {
         o.body.removeLast    // remove tail object
         compileMethodBody(o)
         o.body.addLast(resultExpr)     // put resultExpr back
-        // we have to compileBuildAndInitFunctions(resultExpr) again, even though
-        // this was already done as part of compiling the stale version of this
-        // method.  That's because the previous version is not in scope.
         compileBuildAndInitFunctions(resultExpr) inMethod (o)
         compileBuildMethodFromObjectConstructor(o, resultExpr, selfObj)
         compileInitMethodFromObjectConstructor(o, resultExpr)
