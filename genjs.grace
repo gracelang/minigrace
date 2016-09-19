@@ -679,7 +679,7 @@ method compilemethod(o, selfobj) {
         debugModePrefix
         if (o.isFresh) then {
             def argList = paramlist(o)
-            out "var ouc = emptyGraceObject(\"{canonicalMethName}\", \"{modname}\", {o.line});"
+            out "var ouc = emptyGraceObject(\"{o.ilkName}\", \"{modname}\", {o.line});"
             out "{selfobj}.methods[\"{name}$build(3)\"].call(this, null{argList}, ouc, [], []);"
             out "{selfobj}.methods[\"{name}$init(1)\"].call(this, null{argList}, ouc);"
             out "return ouc;"

@@ -824,6 +824,14 @@ def methodNode is public = object {
         var isBindingOccurence is readable := true
             // the only exception is the oldMethodName in an alias clause
 
+        method ilkName {
+            // a string describing the ilk of the objects returned by this method
+            if (isFresh && {body.last.isObject}) then {
+                body.last.name
+            } else {
+                canonicalName
+            }
+        }
         method appliedOccurence {
             isBindingOccurence := false
             if (uninitialized ≠ cachedIdentifier) then {
