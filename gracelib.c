@@ -473,7 +473,6 @@ void assertClass(Object obj, ClassData cl) {
         graceRaise(TypeError(), "expected instance of %s; got %s", cl->name,
                 obj->class->name);
 }
-
 void *glmalloc(size_t s) {
     heapsize += s;
     heapcurrent += s;
@@ -494,6 +493,41 @@ void glfree(void *p) {
     heapcurrent -= *i;
     memset(i, 0, *i);
     free(i);
+}
+char* canonicalMethodName(const char *nname) {
+    // nname is a numeric method name, such as foo(1)bar(2);
+    // returns the canonical name, such as foo(_)bar(_,_).
+    int length;
+    for (int i = 0; i < strlen(nname); i++) {
+        if (nname[i] == '(') {
+            int nParams = atoi(nname + i + 1);
+            length += nParams * 2 - 1;
+            while (nname[++i] >= '0' && nname[i] <= '9') {
+            }
+        }
+        length++;
+    }
+    char *rtMe = glmalloc(sizeof(char) * (length + 1));
+    int j;
+    for (int i = 0; i < strlen(nname); i++) {
+        if (nname[i] == '(') {
+            rtMe[j] = '(';
+            j++;
+            int nParams = atoi(nname + i + 1);
+            for (int k = 0; k < nParams - 1; k++) {
+                rtMe[j] = '_';
+                rtMe[j + 1] = ',';
+                j += 2;
+            }
+            rtMe[j] = '_';
+            j++;
+            while (nname[++i] >= '0' && nname[i] <= '9') {
+            }
+        }
+        rtMe[j] = nname[i];
+        j++;
+    }
+    return rtMe;
 }
 void initprofiling() {
     start_clocks = clock();
@@ -4860,7 +4894,7 @@ start:
             && !(callflags & CFLAG_SELF)) {
         graceRaise(NoSuchMethod(),
             "requested confidential method '%s' (defined at %s:%i) from outside.",
-            name, m->definitionModule, m->definitionLine);
+            canonicalMethodName(name), m->definitionModule, m->definitionLine);
     }
     if (m != NULL && m->type != NULL && partc && argcv && argv) {
         if (!checkmethodcall(m, partc, argcv, argv))
@@ -4910,13 +4944,13 @@ start:
     }
     if (error_jump_set) {
         char buf[1024];
-        sprintf(buf, "no method '%s' in %s %s.", name,
+        sprintf(buf, "no method '%s' in %s %s.", canonicalMethodName(name),
                 self->class->name, grcstring(callmethod(self, "asString", 0, NULL, NULL)));
         currentException = alloc_ExceptionPacket(alloc_String(buf),
                 NoSuchMethod());
         longjmp(error_jump, 1);
     }
-    fprintf(stderr, "No method '%s'%s; ", name, objDesc);
+    fprintf(stderr, "No method '%s'%s; ", canonicalMethodName(name), objDesc);
     fprintf(stderr, "available methods are:\n");
     logMethodsOf(self);
     Object parent = self;
@@ -4924,11 +4958,11 @@ start:
         parent = ((struct UserObject*)parent)->super;
         logMethodsOf(parent);
     }
-//    graceRaise(NoSuchMethodError(), "no method %s in %s %s.", name, self->class->name,
+//    graceRaise(NoSuchMethodError(), "no method %s in %s %s.", canonicalMethodName(name), self->class->name,
 //             grcstring(callmethod(self, "asString", 0, NULL, NULL)));
 //    The above would identify the receiver, but if it fails, we learn less, not more
     graceRaise(NoSuchMethod(),
-               "no method '%s' in %s.", name, self->class->name);
+               "no method '%s' in %s.", canonicalMethodName(name), self->class->name);
     exit(1);
 }
 Object callmethod3(Object self, const char *name,
