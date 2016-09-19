@@ -1133,7 +1133,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 }
             }
             if (o.body.isEmpty.not && {o.body.last.isObject}) then {
-                o.body.last.name := o.nameString
+                o.body.last.name := o.canonicalName
             }
             true
         }
@@ -1147,9 +1147,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             def myParent = as.parent
             o.scope := newScopeIn(myParent.scope) kind "object"
             if (o.inTrait) then { checkTraitBody(o) }
-            if (myParent.kind == "defdec") then {
-                o.name := myParent.nameString
-            }
             true
         }
         method visitModule(o) up (as) {
