@@ -3147,9 +3147,9 @@ function callmethodChecked(obj, methname, argcv) {
         onSelf = false;
         onOuter = false;
         var args = Array.prototype.slice.call(arguments, 3);
-        for (var i=0; i<args.length; i++) {
+        for (var i=0, argslen = args.length; i<argslen; i++) {
             if (typeof args[i] === 'undefined') {
-                raiseUninitializedVariable(methname, obj);
+                raiseUninitializedVariable(i+1, methname, obj);
             }
         }
         args.unshift(argcv);
@@ -3227,9 +3227,9 @@ function raiseConfidentialMethod(name, target) {
                 "' of " + describe(target) + " from outside."));
 }
 
-function raiseUninitializedVariable(name, target) {
+function raiseUninitializedVariable(n, name, target) {
     throw new GraceExceptionPacket(UninitializedVariableObject,
-           new GraceString("uninitialised variable used as argument to '" +
+           new GraceString("uninitialised variable used as argument " + n + " to '" +
                            canonicalMethodName(name) + "' of " + describe(target) + "."));
 }
 
