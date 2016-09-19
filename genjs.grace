@@ -1602,20 +1602,10 @@ method copyDownDataFrom (sup) to (dest) {
 method compileUse(useNode) in (objNode) {
     // The object under construction is `this`.
     // Compile code to implement use of useNode.
-    // This differs from compileInherit because of the
-    // omission of methods from graceObject
-    def tObj = compilenode(useNode.value)
-    def tMethNames = useNode.providedNames -- objNode.localNames
-//    util.log 70 verbose "tMethNames = {tMethNames.asList.sort}"
-    useNode.aliases.do { each ->
-        def nn = each.newName.nameString
-        out("this.methods[\"{nn}\"] = " ++
-            "{tObj}.methods[\"{each.oldName.nameString}\"];  // alias")
-        tMethNames.remove(nn)
-    }
-    tMethNames.do { methName ->
-        out "this.methods[\"{methName}\"] = {tObj}.methods[\"{methName}\"];"
-    }
+    compileInheritCall(useNode.value)
+        forClass (objNode.nameString)
+        aliases (aliasList(useNode))
+        exclusions (exclusionList(useNode))
 }
 
 method runJsCode(of, glPath) {
