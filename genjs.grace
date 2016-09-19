@@ -681,17 +681,25 @@ method compilemethod(o, selfobj) {
         out "return {compilenode(o.body.first)};  // simple accessor"
     } else {
         debugModePrefix
+        if (o.isFresh) then {
+            def argList = paramlist(o)
+            out "var ouc = emptyGraceObject(\"{canonicalMethName}\", \"{modname}\", {o.line});"
+            out "{selfobj}.methods[\"{name}$build(3)\"].call(this, null{argList}, ouc, [], []);"
+            out "{selfobj}.methods[\"{name}$init(1)\"].call(this, null{argList}, ouc);"
+            out "return ouc;"
+        } else {
             out "return {compileMethodBodyWithTypecheck(o)};"
+        }
         debugModeSuffix
     }
     compileMethodPostamble(o, funcName, canonicalMethName)
+    if (o.isFresh) then {
+        compileFreshMethod(o, selfobj)
+    }
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
     compileMetadata(o, funcName, name)
     out "{selfobj}.methods[\"{name}\"] = {funcName};"
-    if (o.isFresh) then {
-        compileFreshMethod(o, selfobj)
-    }
 }
 method compileBuildMethodFromObjectConstructor(methNode, objNode, outerRef) {
     def funcName = uidWithPrefix "func"
@@ -1401,9 +1409,9 @@ method compile(moduleObject, of, rm, bt, glPath) {
             compileSuperInitialization(inheritsStmt.value)
         }
     }
-    moduleObject.executableComponentsDo { o ->
-        compilenode(o)
-    }
+        moduleObject.executableComponentsDo { o ->
+            compilenode(o)
+        }
     if (xmodule.currentDialect.hasAtEnd) then {
         out "var var_thisDialect = callmethod(var_prelude, \"thisDialect\", [0]);"
         out("callmethod(var_thisDialect, \"atEnd(1)\", [1], this);")
