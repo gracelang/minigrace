@@ -1,4 +1,4 @@
-math's methods are: ::(1), abs(1), acos(1), asDebugString, asString, asin(1), atan(1), basicAsString, cos(1), debugIterator, debugValue, exp(1), isMe(1), lg(1), ln(1), log10(1), pi, random, sin(1), sqrt(1), tan(1), π, ≠(1)
+math's methods are: ::(_), abs(_), acos(_), asDebugString, asString, asin(_), atan(_), basicAsString, cos(_), debugIterator, debugValue, exp(_), isMe(_), lg(_), ln(_), log10(_), pi, random, sin(_), sqrt(_), tan(_), π, ≠(_)
 asString = the "math" module
 asDebugString = the "math" module
 sin(90°) = 1
@@ -20,7 +20,7 @@ sin(90°) = 1
 cos(0°) = 1
 tan(45°) = 1
 asin(-1/2) = -30°
-acos(1/2) = 50.281777°
+acos(1/2) = 60°
 atan(1) = 45°
 π = 3.141593
 sqrt(16) = 4
