@@ -1,1 +1,26 @@
-../js/tests/t159_typeDecl.out
+type A has methods [a]
+type B has methods [b]
+type A has methods [a]
+type B has methods [b]
+(type A & type B) has methods [a, b]
+⟨2, 3, 4⟩ is a sequence
+The following list methods are not in sequence:
+    add(1)
+    addAll(1)
+    addAllFirst(1)
+    addFirst(1)
+    addLast(1)
+    at(1)put(1)
+    clear
+    copy
+    pop
+    remove(1)
+    remove(1)ifAbsent(1)
+    removeAll(1)
+    removeAll(1)ifAbsent(1)
+    removeAt(1)
+    removeFirst
+    removeLast
+    reverse
+    sort
+    sortBy(1)

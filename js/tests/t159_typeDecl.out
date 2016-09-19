@@ -1,26 +1,26 @@
-type A has methods [a]
-type B has methods [b]
-type A has methods [a]
-type B has methods [b]
-(type A & type B) has methods [a, b]
+type A has methods [a(_)]
+type B has methods [b(_)]
+type A has methods [a(_)]
+type B has methods [b(_)]
+(type A & type B) has methods [a(_), b(_)]
 ⟨2, 3, 4⟩ is a sequence
 The following list methods are not in sequence:
-    add(1)
-    addAll(1)
-    addAllFirst(1)
-    addFirst(1)
-    addLast(1)
-    at(1)put(1)
+    add(_)
+    addAll(_)
+    addAllFirst(_)
+    addFirst(_)
+    addLast(_)
+    at(_)put(_)
     clear
     copy
     pop
-    remove(1)
-    remove(1)ifAbsent(1)
-    removeAll(1)
-    removeAll(1)ifAbsent(1)
-    removeAt(1)
+    remove(_)
+    remove(_)ifAbsent(_)
+    removeAll(_)
+    removeAll(_)ifAbsent(_)
+    removeAt(_)
     removeFirst
     removeLast
     reverse
     sort
-    sortBy(1)
+    sortBy(_)

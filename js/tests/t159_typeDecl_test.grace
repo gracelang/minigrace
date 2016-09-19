@@ -1,7 +1,7 @@
 import "mirrors" as m
 
-type A = {a -> Number}
-type B = type {b -> String}
+type A = {a(n:Number) -> Number}
+type B = type {b(s:String) -> String}
 type A' = A
 type B' = B
 type C = {c -> Done }

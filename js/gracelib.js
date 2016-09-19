@@ -1720,7 +1720,7 @@ GraceType.prototype = {
         "methodNames": function type_methodNames (argcv) {
             var result = callmethod(Grace_prelude, "emptySet", [0]);
             for (var i=0; i<this.typeMethods.length; i++) {
-                var methName = this.typeMethods[i];
+                var methName = canonicalMethodName(this.typeMethods[i]);
                 callmethod(result, "add(1)", [1], new GraceString(methName));
             }
             return result;
