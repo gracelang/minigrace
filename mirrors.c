@@ -52,7 +52,7 @@ Object MirrorMethod_asString(Object self, int nparams, int *argcv, Object *argv,
 Object MirrorMethod_name(Object self, int nparams, int *argcv, Object *argv,
         int flags) {
     struct MirrorMethodObject *s = (struct MirrorMethodObject*)self;
-    return alloc_String(s->method->name);
+    return alloc_String(canonicalMethodName(s->method->name));
 }
 
 Object MirrorMethod_partcount(Object self, int nparams, int *argcv,
@@ -162,10 +162,11 @@ Object Mirror_getMethod(Object self, int nparams, int *argcv, Object *argv,
         int flags) {
     struct MirrorObject *s = (struct MirrorObject*)self;
     Object o = s->obj;
-    Method *m = findmethodsimple(o, grcstring(argv[0]));
+    char *numericName = numericMethodName(grcstring(argv[0]));
+    Method *m = findmethodsimple(o, numericName);
     if (m == NULL) {
         graceRaise(NoSuchMethod(), "method '%s' not found by mirror\n",
-                        grcstring(argv[0]));
+                        numericName);
     }
     return alloc_MirrorMethod(m, o);
 }
@@ -204,7 +205,7 @@ Object Mirror_methodNames(Object self, int nparams, int *argcv, Object *args,
     while (current != NULL) {
         c = current->class;
         for (i=0; i < c->nummethods; i++) {
-            mn = alloc_String(c->methods[i].name);
+            mn = alloc_String(canonicalMethodName(c->methods[i].name));
             callmethod(result, "add(1)", 1, partcv, &mn);
         }
         if (current->flags & OFLAG_USEROBJ) {
