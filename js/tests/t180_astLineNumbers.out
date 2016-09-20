@@ -1,4 +1,5 @@
 0:0 module
+  dialect "standardGrace"
   Name: standardInput
   1:1 typedec
     1:6 identifierBinding‹Person›
