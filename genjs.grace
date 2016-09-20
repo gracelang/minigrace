@@ -322,6 +322,15 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
         // ultimately from an `inherit` statement.
     increaseindent
     compileobjouter(o, "outerObj")
+    out "var inheritedExclusions = \{ };"
+        // this object is used to save methods already in the ouc that
+        // would be overridden by local or reused methods, were those local
+        // or reused method not excluded from the combinaiton.
+    out "for (var eix = 0, eLen = exclusions.length; eix < eLen; eix ++) \{"
+    out "    var exMeth = exclusions[eix];"
+    out "    inheritedExclusions[exMeth] = this.methods[exMeth];"
+            // some of these methods will be undefined; that's OK
+    out "};"
     if (false != inheritsStmt) then {
         compileInherit(inheritsStmt) forClass (o.nameString)
     }
@@ -333,9 +342,14 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
     out "    var oneAlias = aliases[aix];"
     out "    this.methods[oneAlias.newName] = this.methods[oneAlias.oldName];"
     out "};"
-    out "for (var eix = 0, eLen = exclusions.length; eix < eLen; eix ++) \{"
-    out "    var exMeth = exclusions[eix];"
-    out "    delete this.methods[exMeth];"
+    out "for (var exName in inheritedExclusions) \{"
+    out "    if (inheritedExclusions.hasOwnProperty(exName)) \{"
+    out "        if (inheritedExclusions[exName]) \{"
+    out "            this.methods[exName] = inheritedExclusions[exName];"
+    out "        } else \{"
+    out "            delete this.methods[exName];"
+    out "        };"
+    out "    };"
     out "};"
     decreaseindent
     out "\};"
