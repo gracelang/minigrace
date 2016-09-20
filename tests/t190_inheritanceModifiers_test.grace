@@ -52,7 +52,7 @@ testSuite {
     def p = subp
     test "alias foo2 is confidential" by {
         try { p.foo2 } catch { e:NoSuchMethod ->
-            assert (e.message.contains "requested confidential method 'foo2'") description "error message doesn't say that 'foo2' is confidential"
+            assert (e.message.contains "requested confidential method 'foo2'") description "error message doesn't say that 'foo2' is confidential; instead it says:\n{e.message}"
         } catch { e:Exception ->
             failBecause "p.foo raised {e}"
         }
