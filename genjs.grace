@@ -229,7 +229,8 @@ method compileobjvardec(o, selfr) {
 }
 
 method create (kind) field (o) in (objr) {
-    // compile code that creates a field in `this`, the object under construction
+    // compile code that creates a field, and appropriate
+    // accessor method(s), in objr, the object under construction
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := escapestring(o.name.value)
@@ -1463,16 +1464,13 @@ method compileInherit(inhNode) forClass(className) {
 
     def superExpr = inhNode.value
     if (superExpr.isCall) then {
-        compileInheritCall(superExpr)
+        compileReuseCall(superExpr)
             forClass (className)
             aliases (aliasList(inhNode))
             exclusions (exclusionList(inhNode))
     } else {
-        util.log 0 verbose "Inheriting from {superExpr.toGrace 0} on line {inhNode.line}"
-        // we create a temporary intermediate object
-        def tempObj = compileInheritanceWithAliases(inhNode)
-        copyDownMethodsFrom (tempObj) to "this" excludingStatically (inhNode.exclusions)
-        copyDownDataFrom (tempObj) to "this"
+        errormessages.syntaxError "inheritance must be from a request that yields a fresh object"
+            atLine (inhNode.line)
     }
 }
 method compileSuperInitialization(superExpr) {
@@ -1485,10 +1483,10 @@ method compileSuperInitialization(superExpr) {
         lastPart.args.push(ast.identifierNode.new("self", false) scope(currentScope))
         compilecall(superExpr)
     } else {
-        util.log 0 verbose "superExpr is {superExpr.toGrace 0} on line {superExpr.line} in compileSuperInitialization"
+        ProgrammingError.raise "superExpr is {superExpr.toGrace 0} on line {superExpr.line} in compileSuperInitialization"
     }
 }
-method compileInheritCall(callNode) forClass (className) aliases (aStr) exclusions (eStr) {
+method compileReuseCall(callNode) forClass (className) aliases (aStr) exclusions (eStr) {
     def buildMethodName = addSuffix "$build(3)" to (callNode.nameString)
     def target = compilenode(callNode.receiver)
     var arglist := ""
@@ -1507,7 +1505,7 @@ method compileInheritCall(callNode) forClass (className) aliases (aStr) exclusio
         out "onSelf = true;"
     }
     out("{requestCall}({target}, \"{escapestring(buildMethodName)}\", [null]" ++
-        "{arglist}, this, {aStr}, {eStr}{typeArgs});  // compileInheritCall")
+        "{arglist}, this, {aStr}, {eStr}{typeArgs});  // compileReuseCall")
 }
 
 method addSuffix (tail) to (root) {
@@ -1539,41 +1537,11 @@ method exclusionList(inhNode) {
     res ++ "]"
 }
 
-method compileInheritanceWithAliases(inhNode) {
-    def parentExpr = inhNode.value.shallowCopy
-    if (parentExpr.isCall && (parentExpr.with.size > 1)) then {
-        def newPartsList = parentExpr.with.copy
-        newPartsList.removeLast     // remove the final $object(…) part
-        parentExpr.with := newPartsList
-    } else {
-        ProgrammingError.raise "inheriting from non-call {parentExpr.pretty 0}"
-    }
-    def superObj = compilenode(parentExpr)
-    inhNode.aliases.do { each ->
-        out "this.methods['{each.newName.nameString}'] = findMethod({superObj}, '{each.oldName.nameString}');"
-    }
-    superObj
-}
-
 method compileAliasesFrom (temp) {
     out "for (var ix = 0, aLen = var_aliases.length; ix < aLen; ix++) \{"
     out "  var oneAlias = var_aliases[ix];"
     out "  var_ouc.methods[oneAlias.newName] = findMethod({temp}, oneAlias.oldName);"
     out "}"
-}
-
-method copyDownMethodsFrom (sup) to (selfr) excludingStatically (ex) {
-    if (ex.isEmpty) then {
-        out "for (var key in {sup}.methods) \{"
-        out "    if ({sup}.methods.hasOwnProperty(key) && (! {selfr}.methods[key]))"
-        out "        {selfr}.methods[key] = {sup}.methods[key];"
-        out "}"
-    } else {
-        def exclusionString = list (ex.map { m -> "\"{m.quoted}\"" })
-            // converting to a list get list brackets rather then sequence brackets
-        out "var exclusions = {exclusionString};"
-        copyDownMethodsFrom (sup) to (selfr) excludingDynamically (exclusionString)
-    }
 }
 
 method copyDownMethodsFrom (sup) to (selfr) excludingDynamically (exclusionString) {
@@ -1606,7 +1574,7 @@ method copyDownDataFrom (sup) to (dest) {
 method compileUse(useNode) in (objNode) {
     // The object under construction is `this`.
     // Compile code to implement use of useNode.
-    compileInheritCall(useNode.value)
+    compileReuseCall(useNode.value)
         forClass (objNode.nameString)
         aliases (aliasList(useNode))
         exclusions (exclusionList(useNode))
