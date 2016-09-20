@@ -497,37 +497,37 @@ void glfree(void *p) {
 char* canonicalMethodName(const char *nname) {
     // nname is a numeric method name, such as foo(1)bar(2);
     // returns the canonical name, such as foo(_)bar(_,_).
-    int length;
-    for (int i = 0; i < strlen(nname); i++) {
+    int length = 1;
+    int nnLen = strlen(nname);
+    for (int i = 0; i < nnLen; i++) {
         if (nname[i] == '(') {
-            int nParams = atoi(nname + i + 1);
-            length += nParams * 2 - 1;
-            while (nname[++i] >= '0' && nname[i] <= '9') {
-            }
+            int nParams = atoi(&nname[i + 1]);
+            length = length + (nParams * 2) + 1;
+            while (nname[++i] >= '0' && nname[i] <= '9') { }
         }
         length++;
     }
-    char *rtMe = glmalloc(sizeof(char) * (length + 1));
-    int j;
-    for (int i = 0; i < strlen(nname); i++) {
+    char *result = glmalloc(sizeof(char) * length);
+    int j = 0;
+    for (int i = 0; i < nnLen; i++) {
         if (nname[i] == '(') {
-            rtMe[j] = '(';
+            result[j] = '(';
             j++;
-            int nParams = atoi(nname + i + 1);
+            int nParams = atoi(&nname[i + 1]);
             for (int k = 0; k < nParams - 1; k++) {
-                rtMe[j] = '_';
-                rtMe[j + 1] = ',';
+                result[j] = '_';
+                result[j + 1] = ',';
                 j += 2;
             }
-            rtMe[j] = '_';
+            result[j] = '_';
             j++;
-            while (nname[++i] >= '0' && nname[i] <= '9') {
-            }
+            while (nname[++i] >= '0' && nname[i] <= '9') { }
         }
-        rtMe[j] = nname[i];
+        result[j] = nname[i];
         j++;
     }
-    return rtMe;
+    result[j] = '\0';
+    return result;
 }
 void initprofiling() {
     start_clocks = clock();
