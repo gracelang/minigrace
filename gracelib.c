@@ -529,6 +529,30 @@ char* canonicalMethodName(const char *nname) {
     result[j] = '\0';
     return result;
 }
+
+char* numericMethodName(const char *cname) {
+    // cname is a canonical method name, such as foo(_)bar(_,_);
+    // returns the numeric name, such as foo(1)bar(2).
+    int length = strlen(cname);
+    char *result = glmalloc(sizeof(char) * (length + 1));
+    int j = 0;
+    for (int i = 0; i < length; i++) {
+        if (cname[i] == '(') {
+            int nParams = 1;
+            i++;
+            while (cname[++i] == ',') {
+                nParams++;
+                i++;    // skip underscore
+            }
+            j = j + sprintf(&result[j], "(%d)", nParams);
+        } else {
+            result[j++] = cname[i];
+        }
+    }
+    result[j] = '\0';
+    return result;
+}
+
 void initprofiling() {
     start_clocks = clock();
     struct timeval ar;

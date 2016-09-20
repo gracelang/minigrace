@@ -212,4 +212,5 @@ void setmodule(const char *);
 void setsource(char *sl[]);
 Object grace_userobj_outer(Object, int, int*, Object*, int);
 Object grace_prelude();
-
+char* canonicalMethodName(const char *nname);
+char* numericMethodName(const char *cname);
