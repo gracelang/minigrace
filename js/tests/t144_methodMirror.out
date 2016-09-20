@@ -2,8 +2,8 @@ a = a
 a1 = a1, a2 = a2, b1 = b1
 no params
 got exampleMirror
-method example(1) has [1] parameters.
-method example(2)and(1) has [2, 1] parameters.
+method example(_) has [1] parameters.
+method example(_,_)and(_) has [2, 1] parameters.
 method noParams has [0] parameters.
 
 requests using `request`
