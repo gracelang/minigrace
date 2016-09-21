@@ -5344,7 +5344,7 @@ Object Type_methodNames(Object self, int nparts, int *argcv,
     Object emptyList = alloc_BuiltinList();
     Object result = callmethod(grace_prelude(), "set(1)", 1, partcv, &emptyList);
     for (i=0; i < t->nummethods; i++) {
-        mn = alloc_String(t->methods[i].name);
+        mn = alloc_String(canonicalMethodName(t->methods[i].name));
         callmethod(result, "add(1)", 1, partcv, &mn);
     }
     gc_unpause();
