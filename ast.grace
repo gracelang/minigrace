@@ -1230,7 +1230,7 @@ def moduleNode is public = object {
         inherit objectNode.new(b, false)
         def kind is public = "module"
         def sourceLines = util.lines
-        var theDialect is public := "standardGrace"
+        var theDialect is public := dialectNode.new "standardGrace"
         line := 0       // because the module is always implicit
         linePos := 0
         var imports is public := [ ]
@@ -1256,7 +1256,7 @@ def moduleNode is public = object {
         method basePretty(depth) {
             def spc = "  " * (depth+1)
             prettyPrefix(depth) ++ "\n" ++
-                "{spc}dialect \"{theDialect}\""
+                "{spc}{theDialect.toGrace 0}"
         }
         method shallowCopy {
             moduleNode.body(emptySeq).shallowCopyFieldsFrom(self)

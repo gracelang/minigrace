@@ -54,40 +54,36 @@ def dynamicCModules is public = set ["mirrors", "curl", "unicode"]
 def imports = util.requiredModules
 
 method checkDialect(moduleObject) {
-    moduleObject.value.do { node ->
-        if (node.isDialect) then {
-            def nm = node.moduleName
-            currentDialect.name := nm
-            checkExternalModule(node)
-            util.log 50 verbose "loading dialect for checkers."
-            try {
-                def dobj = mirrors.loadDynamicModule(node.path)
-                currentDialect.moduleObject := dobj
-                if (mirrors.reflect(dobj).methodNames.contains("thisDialect")) then {
-                    def mths = mirrors.reflect(dobj.thisDialect).methods
-                    for (mths) do { m ->
-                        if (m.name == "parseChecker(1)") then {
-                            currentDialect.hasParseChecker := true
-                        }
-                        if (m.name == "astChecker(1)") then {
-                            currentDialect.hasAstChecker := true
-                        }
-                        if (m.name == "atEnd(1)") then {
-                            currentDialect.hasAtEnd := true
-                        }
-                        if (m.name == "atStart(1)") then {
-                            currentDialect.hasAtStart := true
-                        }
-                    }
+    def node = moduleObject.theDialect
+    def nm = node.moduleName
+    currentDialect.name := nm
+    checkExternalModule(node)
+    util.log 50 verbose "loading dialect for checkers."
+    try {
+        def dobj = mirrors.loadDynamicModule(node.path)
+        currentDialect.moduleObject := dobj
+        if (mirrors.reflect(dobj).methodNames.contains("thisDialect")) then {
+            def mths = mirrors.reflect(dobj.thisDialect).methods
+            for (mths) do { m ->
+                if (m.name == "parseChecker(1)") then {
+                    currentDialect.hasParseChecker := true
                 }
-            } catch { e : RuntimeError ->
-                util.setPosition(node.line, 1)
-                e.printBacktrace
-                errormessages.error "Dialect error: dialect '{nm}' failed to load.\n{e}."
-                    atLine(node.line)
+                if (m.name == "astChecker(1)") then {
+                    currentDialect.hasAstChecker := true
+                }
+                if (m.name == "atEnd(1)") then {
+                    currentDialect.hasAtEnd := true
+                }
+                if (m.name == "atStart(1)") then {
+                    currentDialect.hasAtStart := true
+                }
             }
-            return  // there is at most one dialect
         }
+    } catch { e : RuntimeError ->
+        util.setPosition(node.line, 1)
+        e.printBacktrace
+        errormessages.error "Dialect error: dialect '{nm}' failed to load.\n{e}."
+            atLine(node.line)
     }
 }
 

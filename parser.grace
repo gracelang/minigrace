@@ -2232,7 +2232,6 @@ method dodialect {
         if (values.filter{nd -> nd.kind  ≠ "blank"}.isEmpty) then {
             def dn = ast.dialectNode.new(sym.value)
             next
-            values.push(dn)
             moduleObject.theDialect := dn
         } else {
             util.log 50 verbose "values = {values}"
