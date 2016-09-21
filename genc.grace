@@ -1331,15 +1331,14 @@ method compilecall(o, tailcall) {
 }
 
 method compiledialect(o) {
-    out("// Dialect \"{o.value}\"")
-    var snm := ""
-    for (o.value) do {c->
-        if (c == "/") then {
-            snm := ""
-        } else {
-            snm := snm ++ c
-        }
+    o.register := "done"
+    if (o.value == "standardGrace") then {
+        // because standardGrace is incorporated into gracelib.o
+        util.log 50 verbose "shortcutting import of {o.value}"
+        return
     }
+    out("// Dialect \"{o.value}\"")
+    def snm = o.moduleName
     var fn := escapestring2(o.value)
     var modg := "module_" ++ escapeident(snm)
     out("  if ({modg} == NULL)")
@@ -1355,13 +1354,12 @@ method compiledialect(o) {
     globals.push("Object {modg};")
     auto_count := auto_count + 1
     if (xmodule.currentDialect.hasAtStart) then {
-        out("  partcv[0] = 1;")
-        out("  params[0] = alloc_String(\"{escapestring(modname)}\");")
+        out("  int dialectPartcv[] = \{1};")
+        out("  Object dialectParams[] = \{alloc_String(\"{escapestring(modname)}\")};")
         out("  callmethodflags(callmethodflags(prelude, \"thisDialect\", "
             ++ "0, NULL, NULL, CFLAG_SELF), \"atStart(1)\", "
-            ++ "1, partcv, params, CFLAG_SELF);")
+            ++ "1, dialectPartcv, dialectParams, CFLAG_SELF);")
     }
-    o.register := "done"
 }
 method compileimport(o) {
     out("// Import of {o.path} as {o.nameString}")
@@ -1768,13 +1766,17 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     out "  module_{escmodname} = self;"
     out "  self->class->definitionModule = \"{escapestring(modname)}\";"
     out "  gc_root(self);"
-    if (util.extensions.contains("NativePrelude")) then {
+    def dialectNode = moduleObject.theDialect
+    def dialectName = dialectNode.value
+    if (dialectName == "none") then {
         out "  prelude = grace_prelude();"
         out "  adddatum2(self, grace_prelude(), 0);"
         out "  Object ObjectType = alloc_ObjectType();"
-    } else {
+    } elseif {dialectName == "standardGrace"} then {
         out("  prelude = module_standardGrace_init();")
         out("  adddatum2(self, prelude, 0);")
+    } else {
+        compiledialect(dialectNode)
     }
     out("  addmethod2(self, \"outer\", &grace_userobj_outer);")
     out("  setline(1);")
@@ -1846,7 +1848,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
         out "  module_{escmodname} = self;"
         out "  *selfslot = self;"
     } else {
-        moduleObject.externalsDo { o -> compilenode(o) }
+        moduleObject.importsDo { o -> compilenode(o) }
         if (false != moduleObject.superclass) then {
             def superobj = compilenode(moduleObject.superclass.value)
             out "  self = setsuperobj(self, {superobj});"

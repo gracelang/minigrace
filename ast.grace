@@ -1237,7 +1237,15 @@ def moduleNode is public = object {
 
         method isModule { true }
         method returnsObject { false }
+        method importsDo(action) {
+            value.do { o ->
+                if (o.isExternal) then { action.apply(o) }
+            }
+        }
         method externalsDo(action) {
+            if (theDialect.value ≠ "none") then {
+                action.apply(theDialect)
+            }
             value.do { o ->
                 if (o.isExternal) then { action.apply(o) }
             }
@@ -1245,6 +1253,7 @@ def moduleNode is public = object {
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitModule(self) up(as)) then {
                 def newChain = as.extend(self)
+                theDialect.accept(visitor) from (newChain)
                 if (false != self.superclass) then {
                     self.superclass.accept(visitor) from(newChain)
                 }
@@ -1252,6 +1261,15 @@ def moduleNode is public = object {
                     x.accept(visitor) from(newChain)
                 }
             }
+        }
+        method map(blk) ancestors(as) {
+            var n := shallowCopy
+            def newChain = as.extend(n)
+            n.theDialect := theDialect.map(blk) ancestors(newChain)
+            n.value := listMap(value, blk) ancestors(newChain)
+            n.superclass := maybeMap(superclass, blk) ancestors(newChain)
+            n.usedTraits := listMap(usedTraits, blk) ancestors(newChain)
+            blk.apply(n, as)
         }
         method basePretty(depth) {
             def spc = "  " * (depth+1)

@@ -412,8 +412,8 @@ method error(message)atLine(errlinenum)withSuggestions(suggestions) {
     for (1..errlinenum.asString.size) do { _ ->
         arr := arr ++ "-"
     }
-    for (1..util.lines.at(errlinenum).size) do { _ ->
-        arr := arr ++ "^"
+    if (errlinenum > 0) then {
+            arr := arr ++ ("^" * util.lines.at(errlinenum).size)
     }
     util.generalError(message, errlinenum, "", arr, false, suggestions)
 }

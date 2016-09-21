@@ -54,36 +54,41 @@ def dynamicCModules is public = set ["mirrors", "curl", "unicode"]
 def imports = util.requiredModules
 
 method checkDialect(moduleObject) {
-    def node = moduleObject.theDialect
-    def nm = node.moduleName
-    currentDialect.name := nm
-    checkExternalModule(node)
-    util.log 50 verbose "loading dialect for checkers."
-    try {
-        def dobj = mirrors.loadDynamicModule(node.path)
-        currentDialect.moduleObject := dobj
-        if (mirrors.reflect(dobj).methodNames.contains("thisDialect")) then {
-            def mths = mirrors.reflect(dobj.thisDialect).methods
-            for (mths) do { m ->
-                if (m.name == "parseChecker(1)") then {
-                    currentDialect.hasParseChecker := true
-                }
-                if (m.name == "astChecker(1)") then {
-                    currentDialect.hasAstChecker := true
-                }
-                if (m.name == "atEnd(1)") then {
-                    currentDialect.hasAtEnd := true
-                }
-                if (m.name == "atStart(1)") then {
-                    currentDialect.hasAtStart := true
+    def dialectNode = moduleObject.theDialect
+    def dmn = dialectNode.moduleName
+    currentDialect.name := dmn
+    checkExternalModule(dialectNode)
+    def dialectGct = parseGCT(dialectNode.value)
+    if ((dialectGct.at "public" ifAbsent {emptySequence}).contains "thisDialect") then {
+        util.log 50 verbose "loading dialect \"{dmn}\" for checkers."
+        try {
+            def dobj = mirrors.loadDynamicModule(dialectNode.path)
+            currentDialect.moduleObject := dobj
+            if (mirrors.reflect(dobj).methodNames.contains "thisDialect") then {
+                def mths = mirrors.reflect(dobj.thisDialect).methods
+                for (mths) do { m ->
+                    if (m.name == "parseChecker(_)") then {
+                        currentDialect.hasParseChecker := true
+                    }
+                    if (m.name == "astChecker(_)") then {
+                        currentDialect.hasAstChecker := true
+                    }
+                    if (m.name == "atEnd(_)") then {
+                        currentDialect.hasAtEnd := true
+                    }
+                    if (m.name == "atStart(_)") then {
+                        currentDialect.hasAtStart := true
+                    }
                 }
             }
+        } catch { e : RuntimeError ->
+            util.setPosition(dialectNode.line, 1)
+            e.printBacktrace
+            errormessages.error "Dialect error: dialect \"{dmn}\" failed to load.\n{e}."
+                atLine(dialectNode.line)
         }
-    } catch { e : RuntimeError ->
-        util.setPosition(node.line, 1)
-        e.printBacktrace
-        errormessages.error "Dialect error: dialect '{nm}' failed to load.\n{e}."
-            atLine(node.line)
+    } else {
+        util.log 50 verbose "no need to load dialect \"{dmn}\": it does not define `thisDialect`"
     }
 }
 
@@ -249,6 +254,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
 }
 
 method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is confidential {
+    util.log 50 verbose "adding transitive imports for {moduleName}"
     def gctData = gctCache.at(moduleName) ifAbsent {
         parseGCT(moduleName) sourceDir(directory)
     }

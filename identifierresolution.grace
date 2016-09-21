@@ -279,7 +279,7 @@ class newScopeIn(parent') kind(variety') {
                 if (s.variety == "object") then {
                     def definingObjNode = s.node
                     if (outerChain.isEmpty.not && {outerChain.last == definingObjNode}) then {
-                        util.log 40 verbose "adding {definingObjNode} twice"
+                        ProgrammingError.raise "adding {definingObjNode} twice"
                     } else {
                         outerChain.addLast(s.node)
                     }
@@ -969,33 +969,21 @@ method setupContext(moduleObject) {
     builtInsScope.at "true" putScope(booleanScope)
     builtInsScope.at "false" putScope(booleanScope)
 
-    // Historical - should be removed eventually
-    if (!util.extensions.contains("NativePrelude")) then {
-        var hadDialect := false
-        for (moduleObject.value) do {val->
-            if (val.kind == "dialect") then {
-                hadDialect := true
-                xmodule.checkExternalModule(val)
-                def gctDict = xmodule.parseGCT(val.value)
-                gctDict.at "public" ifAbsent {emptySequence}.do { mn ->
-                    preludeScope.addName(mn)
-                }
-                gctDict.at "confidential" ifAbsent {emptySequence}.do { mn ->
-                    preludeScope.addName(mn)
-                }
-                processGCT(gctDict, preludeScope)
-            }
+    if (util.extensions.contains "NativePrelude") then {
+        moduleObject.theDialect := ast.dialectNode.new "none"
+    }
+    def dialectNode = moduleObject.theDialect
+    def dialectName = dialectNode.value
+    if (dialectName ≠ "none") then {
+        xmodule.checkExternalModule(dialectNode)
+        def gctDict = xmodule.parseGCT(dialectName)
+        gctDict.at "public" ifAbsent {emptySequence}.do { mn ->
+            preludeScope.addName(mn)
         }
-        if (!hadDialect) then {
-            def gctDict = xmodule.parseGCT "standardGrace"
-            gctDict.at "public" ifAbsent{emptySequence}.do { mn ->
-                preludeScope.addName(mn)
-            }
-            gctDict.at "confidential" ifAbsent {emptySequence}.do { mn ->
-                preludeScope.addName(mn)
-            }
-            processGCT(gctDict, preludeScope)
+        gctDict.at "confidential" ifAbsent {emptySequence}.do { mn ->
+            preludeScope.addName(mn)
         }
+        processGCT(gctDict, preludeScope)
     }
 }
 

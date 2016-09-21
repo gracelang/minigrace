@@ -6,7 +6,6 @@
 
 
 import "mirrors" as mirror
-import "math" as math
 
 type Assertion = { 
     assert(bb:Boolean) description(str:String) -> Done
@@ -89,7 +88,7 @@ class assertion {
         assert ((s1 == s2).not) description "‹{s1.asDebugString}› should not be ‹{s2.asDebugString}›"
     }
     method assert(n1:Number) shouldEqual (n2:Number) within (epsilon:Number) {
-        assert (math.abs(n1 - n2) ≤ epsilon) description "‹{n1.asDebugString}› should be approximately ‹{n2.asDebugString}›"
+        assert ((n1 - n2).abs ≤ epsilon) description "‹{n1.asDebugString}› should be approximately ‹{n2.asDebugString}›"
     }
     method assert(block0) shouldRaise (desiredException) {
         var completedNormally

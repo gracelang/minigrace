@@ -1137,7 +1137,7 @@ method compileOuter(o) {
                                     startingWith "this"
 }
 method compiledialect(o) {
-    out("// Dialect import of {o.value}")
+    out "// Dialect \"{o.value}\""
     var fn := escapestring(o.value)
     out "var_prelude = do_import(\"{fn}\", {formatModname(o.value)});"
     out "this.outer = var_prelude;"
@@ -1149,7 +1149,7 @@ method compiledialect(o) {
     o.register := "undefined"
 }
 method compileimport(o) {
-    out("// Import of {o.path} as {o.nameString}")
+    out "// Import of \"{o.path}\" as {o.nameString}"
     def currentScope = o.scope
     def nm = escapeident(o.nameString)
     def var_nm = varf(nm)
@@ -1318,8 +1318,7 @@ method compilenode(o) {
 }
 
 method compile(moduleObject, of, rm, bt, glPath) {
-    def isPrelude = util.extensions.contains("NativePrelude") ||
-          (moduleObject.theDialect == "none")
+    def isPrelude = moduleObject.theDialect.value == "none"
     if (util.extensions.contains "ExtendedLineups") then {
         bracketConstructor := "PrimitiveGraceList"
     }
@@ -1388,14 +1387,8 @@ method compile(moduleObject, of, rm, bt, glPath) {
     compileobjouter(moduleObject, "var_prelude")
     def imported = []
     if (isPrelude) then {  // compile components in non-standard order
-        moduleObject.value.do { o ->
-            if (o.isMethod) then {
-                compilenode(o)
-            }
-            if (o.isExternal) then {
-                imported.push(o.path)
-            }
-        }
+        moduleObject.methodsDo { o -> compilenode(o) }
+        moduleObject.externalsDo { o -> imported.push(o.path) }
         moduleObject.value.do { o ->    // this treats importNodes as executable
             if (o.isMethod.not) then {
                 compilenode(o)
