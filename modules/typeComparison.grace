@@ -9,7 +9,7 @@ method methodsIn(DesiredType) missingFrom (value) -> String {
         ProgrammingError.raise "{value.asDebugString} seems to have all the methods of {DesiredType}"
     } else {
         var s := ""
-        missing.do { each -> s := s ++ canonical(each) } 
+        missing.do { each -> s := s ++ each }
             separatedBy { s := s ++ ", " }
         s
     }
@@ -22,7 +22,7 @@ method protocolOf(value) notCoveredBy (Q:Type) -> String  {
         (! m.contains "$") && (m != "outer")}.asList.sort
     if (missing.isEmpty.not) then {
         s := ""
-        missing.do { each -> s := s ++ canonical(each) }
+        missing.do { each -> s := s ++ each }
             separatedBy { s := s ++ ", " }
     }
     return s
@@ -37,7 +37,11 @@ method canonical(name) -> String {
         ch := nameI.next
         cName := cName ++ ch
         if (ch == "(") then {
-            var n := nameI.next.asNumber
+            ch := nameI.next
+            if (ch.startsWithDigit.not) then {
+                RequestError.raise "malformed numeric method name {name}"
+            }
+            var n := ch.asNumber
             while {
                 ch := nameI.next
                 ch.startsWithDigit
@@ -45,7 +49,7 @@ method canonical(name) -> String {
                 n := (n * 10) + ch.asNumber
             }
             cName := cName ++ "_" ++ (",_" * (n-1)) ++ ")"
-            if (ch ≠ ")") then { RequestError.raise "malformed method name {name}" }
+            if (ch ≠ ")") then { RequestError.raise "malformed numeric method name {name}" }
         }
     }
     cName
