@@ -267,6 +267,8 @@ class newScopeIn(parent') kind(variety') {
                         return ast.memberNode.new(name,
                               ast.identifierNode.new("prelude", false)
                                     scope(self)) scope(self).onSelf
+                    } elseif { s.variety == "module" } then {
+                        return ast.memberNode.new(name, thisModule) scope(self).onSelf
                     }
                     def rcvr = if (outerChain.isEmpty) then {
                         ast.identifierNode.new("self", false) scope(self).
