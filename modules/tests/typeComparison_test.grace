@@ -4,12 +4,12 @@ import "typeComparison" as tc
 testSuite {
     test "missing — List and sequence" by {
         assert (tc.methodsIn (List) missingFrom (sequence [1, 2])) shouldBe
-            "add(_), addAll(_), addAllFirst(_), addFirst(_), addLast(_), at(_)put(_), copy, pop, remove(_), remove(_)ifAbsent(_), removeAll(_), removeAll(_)ifAbsent(_), removeAt(_), removeFirst, removeLast, reverse, sort, sortBy(_)"
+            "add(_), addAll(_), addAllFirst(_), addFirst(_), addLast(_), at(_)put(_), clear, copy, pop, remove(_), remove(_)ifAbsent(_), removeAll(_), removeAll(_)ifAbsent(_), removeAt(_), removeFirst, removeLast, reverse, sort, sortBy(_)"
     }
 
     test "missing — Sequence and string" by {
         assert (tc.methodsIn (Sequence) missingFrom "x") shouldBe
-            "asDictionary, asList, asSequence, asSet, into(_), keys, reversed, sorted, sortedBy(_), values"
+            "asDictionary, into(_), keys, reversed, sorted, sortedBy(_), values"
     }
 
     test "coverage – false and Iterable" by {
