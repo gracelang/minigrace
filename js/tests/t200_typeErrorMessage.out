@@ -1,0 +1,3 @@
+Type error in apply(_,_); error message is
+argument 1 to block.apply(_,_) has wrong type.
+It's missing methods %(_), +(_), -(_), ..(_), /(_), @(_), ^(_), abs, acos, asStringDecimals(_), asin, atan, ceiling, cos, exp, floor, hashcode, inBase(_), isEven, isInteger, isNaN, isOdd, lg, ln, log10, prefix-, rounded, sgn, sin, sqrt, tan, truncated, ÷(_)
