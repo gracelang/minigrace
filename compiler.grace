@@ -31,6 +31,12 @@ if (util.target == "lex") then {
 }
 
 var moduleObject := parser.parse(tokens)
+
+if (util.extensions.contains "NativePrelude") then {
+    moduleObject.theDialect := ast.dialectNode.new "none"
+    // for backward compatibility
+}
+
 var values := moduleObject.value
 
 if (util.target == "parse") then {

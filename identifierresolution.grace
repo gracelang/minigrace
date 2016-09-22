@@ -969,9 +969,6 @@ method setupContext(moduleObject) {
     builtInsScope.at "true" putScope(booleanScope)
     builtInsScope.at "false" putScope(booleanScope)
 
-    if (util.extensions.contains "NativePrelude") then {
-        moduleObject.theDialect := ast.dialectNode.new "none"
-    }
     def dialectNode = moduleObject.theDialect
     def dialectName = dialectNode.value
     if (dialectName ≠ "none") then {
