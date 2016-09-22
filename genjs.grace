@@ -1137,14 +1137,17 @@ method compileOuter(o) {
                                     startingWith "this"
 }
 method compiledialect(o) {
-    out "// Dialect \"{o.value}\""
-    var fn := escapestring(o.value)
-    out "var_prelude = do_import(\"{fn}\", {formatModname(o.value)});"
-    out "this.outer = var_prelude;"
-    if (xmodule.currentDialect.hasAtStart) then {
-        out "var var_thisDialect = callmethod(var_prelude, \"thisDialect\", [0]);"
-        out "callmethod(var_thisDialect, \"atStart(1)\", [1], "
-        out "  new GraceString(\"{escapestring(modname)}\"));"
+    def dialectName = o.value
+    if (dialectName ≠ "none") then {
+        out "// Dialect \"{dialectName}\""
+        var fn := escapestring(dialectName)
+        out "var_prelude = do_import(\"{fn}\", {formatModname(dialectName)});"
+        out "this.outer = var_prelude;"
+        if (xmodule.currentDialect.hasAtStart) then {
+            out "var var_thisDialect = callmethod(var_prelude, \"thisDialect\", [0]);"
+            out "callmethod(var_thisDialect, \"atStart(1)\", [1], "
+            out "  new GraceString(\"{escapestring(modname)}\"));"
+        }
     }
     o.register := "undefined"
 }
