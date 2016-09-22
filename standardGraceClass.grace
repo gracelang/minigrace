@@ -1,8 +1,8 @@
-#pragma NativePrelude
 #pragma ExtendedLineups
+dialect "none"
 
 def traits = object {
-    // these definitions are at module-level to abvoid problems with outer
+    // these definitions are at module-level to avoid problems with outer
     // and the c-backend
 
     type Block1⟦Arg, Res⟧ = type {
@@ -164,7 +164,9 @@ def traits = object {
         method last { at(size) }
         method indices { standardGrace.range.from 1 to(size) }
         method indexOf(sought:T)  {
-            indexOf(sought) ifAbsent { standardGrace.standardGrace.NoSuchObject.raise "collection does not contain {sought}" }
+            indexOf(sought) ifAbsent {
+                standardGrace.NoSuchObject.raise "collection does not contain {sought}"
+            }
         }
         method indexOf(sought:T) ifAbsent(action)  {
             keysAndValuesDo { ix, v ->
