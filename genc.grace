@@ -1332,17 +1332,18 @@ method compilecall(o, tailcall) {
 
 method compiledialect(o) {
     o.register := "done"
-    if (o.value == "standardGrace") then {
+    def dialectName = o.value
+    if (dialectName == "standardGrace") then {
         // because standardGrace is incorporated into gracelib.o
         util.log 50 verbose "shortcutting import of {o.value}"
         return
     }
-    out("// Dialect \"{o.value}\"")
+    out("// Dialect \"{dialectName}\"")
     def snm = o.moduleName
-    var fn := escapestring2(o.value)
+    var fn := escapestring2(dialectName)
     var modg := "module_" ++ escapeident(snm)
     out("  if ({modg} == NULL)")
-    if (imports.static.contains(o.value)) then {
+    if (imports.static.contains(dialectName)) then {
         out("    {modg} = {modg}_init();")
     } else {
         out("    {modg} = dlmodule(\"{fn}\");")
