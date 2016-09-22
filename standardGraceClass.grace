@@ -1066,541 +1066,274 @@ class standardGrace {
             withAll(emptySequence)
         }
 
-        method withAll(a: Iterable⟦T⟧) -> List⟦T⟧ {
-            if (engine == "js") then {
-              if (native "js" code ‹result = (this === superDepth) ? GraceTrue : GraceFalse;›) then {
-                return object {
-                    inherit traits.indexable⟦T⟧
+        class withAll(a: Iterable⟦T⟧) -> List⟦T⟧ {
+            inherit traits.indexable⟦T⟧
 
-                    var mods is readable := 0
-                    var sz := 0
-                    var jsArray := native "js" code ‹result = [];›
-                    a.do { each ->
-                        native "js" code ‹this.data.jsArray.push(var_each);›
-                    }
-
-                    method size {
-                        native "js" code ‹return new GraceNum(this.data.jsArray.length);›
-                        sz
-                    }
-
-                    method at(n) {
-                        native "js" code ‹var ix = var_n._value;
-                            if ( !(ix >= 1) || !(ix <= this.data.jsArray.length)) {
-                                var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
-                                var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                                callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
-                            }
-                            return this.data.jsArray[ix - 1];›
-                    }
-
-                    method at(n)put(x) {
-                        mods := mods + 1
-                        native "js" code ‹var  ix = var_n._value;
-                            if (!(ix >= 1) || !(ix <= this.data.jsArray.length + 1)) {
-                                var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
-                                var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                                callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
-                            }
-                            this.data.jsArray[ix-1] = var_x;
-                            return this;›
-                    }
-
-                    method add(x:T) {
-                        mods := mods + 1
-                        native "js" code ‹this.data.jsArray.push(var_x);
-                            return this;›
-                    }
-
-                    method push(x) {
-                        mods := mods + 1
-                        native "js" code ‹this.data.jsArray.push(var_x);
-                            return this;›
-                    }
-
-                    method removeLast {
-                        mods := mods + 1
-                        native "js" code ‹if (this.data.jsArray.length === 0) {
-                            var msg = "you can't remove an element from an empty list";
-                            var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                            callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
-                        } else
-                            return this.data.jsArray.pop();›
-                    }
-                    method clear {
-                        mods := mods + 1
-                        native "js" code ‹this.data.jsArray = [];
-                            return this;›
-                    }
-                    method addAllFirst(l) {
-                        mods := mods + 1
-                        var ix := l.size;
-                        while {ix > 0} do {
-                            def each = l.at(ix)
-                            ix := ix - 1
-                            native "js" code ‹this.data.jsArray.unshift(var_each);›
-                        }
-                        self
-                    }
-
-                    method removeAt(n) {
-                        mods := mods + 1
-                        def removed = self.at(n)    // does the bounds check
-                        native "js" code ‹this.data.jsArray.splice(var_n._value - 1, 1);›
-                        return removed
-                    }
-
-                    method sortBy(sortBlock:Block2) {
-                        mods := mods + 1
-                        native "js" code ‹var compareFun = function compareFun(a, b) {
-                                  var res = callmethod(var_sortBlock, "apply(2)", [2], a, b);
-                                  if (res.className == "number") return res._value;
-                                  throw new GraceExceptionPacket(TypeErrorObject,
-                                         new GraceString("sort block in list.sortBy method did not return a number"));
-                              };
-                              this.data.jsArray.sort(compareFun);›
-                        self
-                    }
-                    // end of native methods
-
-
-                    method addLast(x) { push(x) }    // compatibility
-                    method addAll(l) {
-                        for (l) do { each -> push(each) }
-                        self
-                    }
-
-                    method addFirst(elem) {
-                        mods := mods + 1
-                        native "js" code ‹this.data.jsArray.unshift(var_elem);›
-                        self
-                    }                
-
-                    method removeFirst {
-                        removeAt(1)
-                    }
-
-
-                    method remove(elt:T) {
-                        def ix = self.indexOf(elt) ifAbsent {
-                            NoSuchObject.raise "list does not contain object {elt}"
-                        }
-                        removeAt(ix)
-                        self
-                    }
-
-
-                    method remove(elt:T) ifAbsent(action:Block0⟦Done⟧) {
-                        def ix = self.indexOf(elt) ifAbsent {
-                            return action.apply
-                        }
-                        removeAt(ix)
-                        self
-                    }
-
-                    method removeAll(vs: Iterable⟦T⟧) {
-                        removeAll(vs) ifAbsent { NoSuchObject.raise "list does not contain object" }
-                    }
-
-
-                    method removeAll(vs: Iterable⟦T⟧) ifAbsent(action:Block0⟦Unknown⟧)  {
-                        for (vs) do { each ->
-                            def ix = self.indexOf(each) ifAbsent { 0 }
-                            if (ix ≠ 0) then {
-                                removeAt(ix)
-                            } else {
-                                action.apply
-                            }
-                        }
-                        self
-                    }
-
-                    method pop { removeLast }
-
-                    method reversed {
-                        def result = list.empty
-                        do { each -> result.addFirst(each) }
-                        result
-                    }
-                    method reverse {
-                        mods := mods + 1
-                        var hiIx := size
-                        var loIx := 1
-                        while {loIx < hiIx} do {
-                            def hiVal = self.at(hiIx)
-                            self.at(hiIx) put (self.at(loIx))
-                            self.at(loIx) put (hiVal)
-                            hiIx := hiIx - 1
-                            loIx := loIx + 1
-                        }
-                        self
-                    }
-
-                    method ++(o) {
-                        def l = list.withAll(self)
-                        l.addAll(o)
-                    }
-
-
-                    method asString {
-                        var s := "["
-                        def curSize = self.size
-                        for (1..curSize) do { i ->
-                            s := s ++ at(i).asString
-                            if (i < curSize) then { s := s ++ ", " }
-                        }
-                        s ++ "]"
-                    }
-
-                    method asDebugString {
-                        var s := "["
-                        def curSize = self.size
-                        for (1..curSize) do { i ->
-                            s := s ++ at(i).asDebugString
-                            if (i < curSize) then { s := s ++ ", " }
-                        }
-                        s ++ "]"
-                    }
-
-                    method extend(l) { addAll(l); done }    // compatibility
-
-
-                    method contains(element) {
-                        do { each -> if (each == element) then { return true } }
-                        return false
-                    }
-
-                    method do(block1) {
-                        var i := 1
-                        def curSize = self.size
-                        while {i <= curSize} do {
-                            block1.apply(self.at(i))
-                            i := i + 1
-                        }
-                    }
-
-                    method ==(other) {
-                        isEqual (self) toIterable (other)
-                    }
-
-                    method iterator {
-                        object {
-                            var imods := mods
-                            var idx := 1
-                            method asDebugString { "{asString}⟪{idx}⟫" }
-                            method asString { "aListIterator" }
-                            method hasNext { idx <= size }
-                            method next {
-                                if (imods != mods) then {
-                                    ConcurrentModification.raise (asDebugString)
-                                }
-                                if (idx > size) then { IteratorExhausted.raise "on list" }
-                                def ret = at(idx)
-                                idx := idx + 1
-                                ret
-                            }
-                        }
-                    }
-
-                    method values {
-                        self
-                    }
-
-                    method keys {
-                        self.indices
-                    }
-
-                    method sort {
-                        mods := mods + 1
-                        sortBy { l, r ->
-                            if (l == r) then {0}
-                                elseif {l < r} then {-1}
-                                else {1}
-                        }
-                    }
-                    method sortedBy(sortBlock:Block2) {
-                        copy.sortBy(sortBlock:Block2)
-                    }
-                    method sorted {
-                        copy.sort
-                    }
-                    method copy {
-                        outer.withAll(self)
-                    }
+            var mods is readable := 0
+            var sizeCertain := true
+            // size might be uncertain if a is a lazy collection.
+            def initialSize = a.sizeIfUnknown{ sizeCertain := false ; 4 } * 2 + 1
+            var inner := _prelude.primitiveArray.new(initialSize)
+            var size is readable := 0
+            if (sizeCertain) then {
+                // common, fast path
+                for (a) do { x ->
+                    inner.at(size)put(x)
+                    size := size + 1
                 }
-              }
-            }   // end of if (engine == "js") then ...
-
-            object {
-                // the new list object without native code
-                inherit traits.indexable⟦T⟧
-
-                var mods is readable := 0
-                var sizeCertain := true
-                // size might be uncertain if a is a lazy collection.
-                def initialSize = a.sizeIfUnknown{ sizeCertain := false ; 4 } * 2 + 1
-                var inner := _prelude.primitiveArray.new(initialSize)
-                var size is readable := 0
-                if (sizeCertain) then {
-                    // common, fast path
-                    for (a) do { x ->
-                        inner.at(size)put(x)
-                        size := size + 1
+            } else {
+                // less-than-optimal path
+                var innerSize := initialSize
+                for (a) do { x ->
+                    if (innerSize <= size) then {
+                        def newInner = _prelude.primitiveArray.new(innerSize * 2)
+                        for (0..(innerSize-1)) do { i ->
+                            newInner.at (i) put (inner.at(i) )
+                        }
+                        inner := newInner
+                        innerSize := inner.size
                     }
+                    inner.at(size)put(x)
+                    size := size + 1
+                }
+            }
+            method boundsCheck(n) is confidential {
+                if ( !(n >= 1) || !(n <= size)) then {
+                    BoundsError.raise "index {n} out of bounds 1..{size}"
+                }
+            }
+            method at(n) {
+                boundsCheck(n)
+                inner.at(n-1)
+            }
+            method at(n)put(x) {
+                mods := mods + 1
+                if (n == (size+1)) then {
+                    addLast(x)
                 } else {
-                    // less-than-optimal path
-                    var innerSize := initialSize
-                    for (a) do { x ->
-                        if (innerSize <= size) then {
-                            def newInner = _prelude.primitiveArray.new(innerSize * 2)
-                            for (0..(innerSize-1)) do { i ->
-                                newInner.at (i) put (inner.at(i) )
-                            }
-                            inner := newInner
-                            innerSize := inner.size
-                        }
-                        inner.at(size)put(x)
-                        size := size + 1
-                    }
-                }
-                method boundsCheck(n) is confidential {
-                    if ( !(n >= 1) || !(n <= size)) then {
-                        BoundsError.raise "index {n} out of bounds 1..{size}"
-                    }
-                }
-                method at(n) {
                     boundsCheck(n)
-                    inner.at(n-1)
+                    inner.at(n-1)put(x)
                 }
-                method at(n)put(x) {
-                    mods := mods + 1
-                    if (n == (size+1)) then {
-                        addLast(x)
+                self
+            }
+            method add(x) {
+                mods := mods + 1
+                if (size == inner.size) then { expandTo(inner.size * 2) }
+                inner.at(size)put(x)
+                size := size + 1
+                self
+            }
+            method addAll(l) {
+                mods := mods + 1
+                if ((size + l.size) > inner.size) then {
+                    expandTo(max(size + l.size, size * 2))
+                }
+                for (l) do {each ->
+                    inner.at(size)put(each)
+                    size := size + 1
+                }
+                self
+            }
+            method push(x) {
+                mods := mods + 1
+                if (size == inner.size) then { expandTo(inner.size * 2) }
+                inner.at(size)put(x)
+                size := size + 1
+                self
+            }
+            method addLast(x) { push(x) }    // compatibility
+            method removeLast {
+                mods := mods + 1
+                def result = inner.at(size - 1)
+                size := size - 1
+                result
+            }
+            method addAllFirst(l) {
+                mods := mods + 1
+                def increase = l.size
+                if ((size + increase) > inner.size) then {
+                    expandTo(max(size + increase, size * 2))
+                }
+                for (range.from(size-1)downTo(0)) do {i->
+                    inner.at(i+increase)put(inner.at(i))
+                }
+                var insertionIndex := 0
+                for (l) do {each ->
+                    inner.at(insertionIndex)put(each)
+                    insertionIndex := insertionIndex + 1
+                }
+                size := size + increase
+                self
+            }
+            method addFirst(elt:T) {
+                mods := mods + 1
+                if ((size + 1) > inner.size) then {
+                    expandTo(size * 2)
+                }
+                for (range.from (size-1) downTo 0) do {i->
+                    inner.at (i+1) put (inner.at(i) )
+                }
+                inner.at(0)put(elt)
+                size := size + 1
+                self
+            }
+            method clear {
+                mods := mods + 1
+                inner := _prelude.primitiveArray.new(initialSize)
+                size := 0
+                self
+            }
+            method removeFirst {
+                removeAt(1)
+            }
+            method removeAt(n) {
+                mods := mods + 1
+                boundsCheck(n)
+                def removed = inner.at(n-1)
+                for (n..(size-1)) do {i->
+                    inner.at(i-1)put(inner.at(i))
+                }
+                size := size - 1
+                return removed
+            }
+
+            method remove(elt:T) {
+                def ix = self.indexOf(elt) ifAbsent {
+                    NoSuchObject.raise "list does not contain {elt}"
+                }
+                removeAt(ix)
+                self
+            }
+
+            method remove(elt:T) ifAbsent(action:Block0⟦Done⟧) {
+                def ix = self.indexOf(elt) ifAbsent {
+                    action.apply
+                    return self
+                }
+                removeAt(ix)
+                self
+            }
+
+            method removeAll(vs: Iterable⟦T⟧) {
+                removeAll(vs) ifAbsent { NoSuchObject.raise "list does not contain object" }
+                self
+            }
+            method removeAll(vs: Iterable⟦T⟧) ifAbsent(action:Block0⟦Done⟧)  {
+                for (vs) do { each ->
+                    def ix = indexOf(each) ifAbsent { 0 }
+                    if (ix ≠ 0) then {
+                        removeAt(ix)
                     } else {
-                        boundsCheck(n)
-                        inner.at(n-1)put(x)
-                    }
-                    self
-                }
-                method add(x) {
-                    mods := mods + 1
-                    if (size == inner.size) then { expandTo(inner.size * 2) }
-                    inner.at(size)put(x)
-                    size := size + 1
-                    self
-                }
-                method addAll(l) {
-                    mods := mods + 1
-                    if ((size + l.size) > inner.size) then {
-                        expandTo(max(size + l.size, size * 2))
-                    }
-                    for (l) do {each ->
-                        inner.at(size)put(each)
-                        size := size + 1
-                    }
-                    self
-                }
-                method push(x) {
-                    mods := mods + 1
-                    if (size == inner.size) then { expandTo(inner.size * 2) }
-                    inner.at(size)put(x)
-                    size := size + 1
-                    self
-                }
-                method addLast(x) { push(x) }    // compatibility
-                method removeLast {
-                    mods := mods + 1
-                    def result = inner.at(size - 1)
-                    size := size - 1
-                    result
-                }
-                method addAllFirst(l) {
-                    mods := mods + 1
-                    def increase = l.size
-                    if ((size + increase) > inner.size) then {
-                        expandTo(max(size + increase, size * 2))
-                    }
-                    for (range.from(size-1)downTo(0)) do {i->
-                        inner.at(i+increase)put(inner.at(i))
-                    }
-                    var insertionIndex := 0
-                    for (l) do {each ->
-                        inner.at(insertionIndex)put(each)
-                        insertionIndex := insertionIndex + 1
-                    }
-                    size := size + increase
-                    self
-                }
-                method addFirst(elt:T) {
-                    mods := mods + 1
-                    if ((size + 1) > inner.size) then {
-                        expandTo(size * 2)
-                    }
-                    for (range.from (size-1) downTo 0) do {i->
-                        inner.at (i+1) put (inner.at(i) )
-                    }
-                    inner.at(0)put(elt)
-                    size := size + 1
-                    self
-                }
-                method clear {
-                    mods := mods + 1
-                    inner := _prelude.primitiveArray.new(initialSize)
-                    size := 0
-                    self
-                }
-                method removeFirst {
-                    removeAt(1)
-                }
-                method removeAt(n) {
-                    mods := mods + 1
-                    boundsCheck(n)
-                    def removed = inner.at(n-1)
-                    for (n..(size-1)) do {i->
-                        inner.at(i-1)put(inner.at(i))
-                    }
-                    size := size - 1
-                    return removed
-                }
-
-                method remove(elt:T) {
-                    def ix = self.indexOf(elt) ifAbsent {
-                        NoSuchObject.raise "list does not contain {elt}"
-                    }
-                    removeAt(ix)
-                    self
-                }
-
-                method remove(elt:T) ifAbsent(action:Block0⟦Done⟧) {
-                    def ix = self.indexOf(elt) ifAbsent {
                         action.apply
-                        return self
                     }
-                    removeAt(ix)
-                    self
                 }
+                self
+            }
+            method pop { removeLast }
+            method reversed {
+                def result = list.empty
+                do { each -> result.addFirst(each) }
+                result
+            }
+            method reverse {
+                mods := mods + 1
+                var hiIx := size
+                var loIx := 1
+                while {loIx < hiIx} do {
+                    def hiVal = self.at(hiIx)
+                    self.at(hiIx) put (self.at(loIx))
+                    self.at(loIx) put (hiVal)
+                    hiIx := hiIx - 1
+                    loIx := loIx + 1
+                }
+                self
+            }
+            method ++(o) {
+                def l = list.withAll(self)
+                l.addAll(o)
+            }
+            method asString {
+                var s := "["
+                for (0..(size-1)) do {i->
+                    s := s ++ inner.at(i).asString
+                    if (i < (size-1)) then { s := s ++ ", " }
+                }
+                s ++ "]"
+            }
+            method asDebugString {
+                var s := "["
+                for (0..(size-1)) do {i->
+                    s := s ++ inner.at(i).asDebugString
+                    if (i < (size-1)) then { s := s ++ ", " }
+                }
+                s ++ "]"
+            }
+            method contains(element) {
+                do { each -> if (each == element) then { return true } }
+                return false
+            }
+            method do(block1) {
+                var i := 0
+                while {i < size} do {
+                    block1.apply(inner.at(i))
+                    i := i + 1
+                }
+            }
 
-                method removeAll(vs: Iterable⟦T⟧) {
-                    removeAll(vs) ifAbsent { NoSuchObject.raise "list does not contain object" }
-                    self
-                }
-                method removeAll(vs: Iterable⟦T⟧) ifAbsent(action:Block0⟦Done⟧)  {
-                    for (vs) do { each ->
-                        def ix = indexOf(each) ifAbsent { 0 }
-                        if (ix ≠ 0) then {
-                            removeAt(ix)
-                        } else {
-                            action.apply
+            method ==(other) {
+                isEqual (self) toIterable (other)
+            }
+            method iterator {
+                object {
+                    var imods := mods
+                    var idx := 1
+                    method asDebugString { "{asString}⟪{idx}⟫" }
+                    method asString { "aListIterator" }
+                    method hasNext { idx <= size }
+                    method next {
+                        if (imods != mods) then {
+                            ConcurrentModification.raise (asDebugString)
                         }
-                    }
-                    self
-                }
-                method pop { removeLast }
-                method reversed {
-                    def result = list.empty
-                    do { each -> result.addFirst(each) }
-                    result
-                }
-                method reverse {
-                    mods := mods + 1
-                    var hiIx := size
-                    var loIx := 1
-                    while {loIx < hiIx} do {
-                        def hiVal = self.at(hiIx)
-                        self.at(hiIx) put (self.at(loIx))
-                        self.at(loIx) put (hiVal)
-                        hiIx := hiIx - 1
-                        loIx := loIx + 1
-                    }
-                    self
-                }
-                method ++(o) {
-                    def l = list.withAll(self)
-                    l.addAll(o)
-                }
-                method asString {
-                    var s := "["
-                    for (0..(size-1)) do {i->
-                        s := s ++ inner.at(i).asString
-                        if (i < (size-1)) then { s := s ++ ", " }
-                    }
-                    s ++ "]"
-                }
-                method asDebugString {
-                    var s := "["
-                    for (0..(size-1)) do {i->
-                        s := s ++ inner.at(i).asDebugString
-                        if (i < (size-1)) then { s := s ++ ", " }
-                    }
-                    s ++ "]"
-                }
-                method contains(element) {
-                    do { each -> if (each == element) then { return true } }
-                    return false
-                }
-                method do(block1) {
-                    var i := 0
-                    while {i < size} do {
-                        block1.apply(inner.at(i))
-                        i := i + 1
+                        if (idx > size) then { IteratorExhausted.raise "on list" }
+                        def ret = at(idx)
+                        idx := idx + 1
+                        ret
                     }
                 }
-
-                method ==(other) {
-                    isEqual (self) toIterable (other)
+            }
+            method values {
+                self
+            }
+            method keys {
+                self.indices
+            }
+            method expandTo(newSize) is confidential {
+                def newInner = _prelude.primitiveArray.new(newSize)
+                for (0..(size-1)) do {i->
+                    newInner.at(i)put(inner.at(i))
                 }
-                method iterator {
-                    object {
-                        var imods := mods
-                        var idx := 1
-                        method asDebugString { "{asString}⟪{idx}⟫" }
-                        method asString { "aListIterator" }
-                        method hasNext { idx <= size }
-                        method next {
-                            if (imods != mods) then {
-                                ConcurrentModification.raise (asDebugString)
-                            }
-                            if (idx > size) then { IteratorExhausted.raise "on list" }
-                            def ret = at(idx)
-                            idx := idx + 1
-                            ret
-                        }
-                    }
+                inner := newInner
+            }
+            method sortBy(sortBlock:Block2) {
+                mods := mods + 1
+                inner.sortInitial(size) by(sortBlock)
+                self
+            }
+            method sort {
+                sortBy { l, r ->
+                    if (l == r) then {0}
+                        elseif {l < r} then {-1}
+                        else {1}
                 }
-                method values {
-                    self
-                }
-                method keys {
-                    self.indices
-                }
-                method expandTo(newSize) is confidential {
-                    def newInner = _prelude.primitiveArray.new(newSize)
-                    for (0..(size-1)) do {i->
-                        newInner.at(i)put(inner.at(i))
-                    }
-                    inner := newInner
-                }
-                method sortBy(sortBlock:Block2) {
-                    mods := mods + 1
-                    inner.sortInitial(size) by(sortBlock)
-                    self
-                }
-                method sort {
-                    sortBy { l, r ->
-                        if (l == r) then {0}
-                            elseif {l < r} then {-1}
-                            else {1}
-                    }
-                }
-                method sortedBy(sortBlock:Block2) {
-                    copy.sortBy(sortBlock:Block2)
-                }
-                method sorted {
-                    copy.sort
-                }
-                method copy {
-                    outer.withAll(self)
-                }
+            }
+            method sortedBy(sortBlock:Block2) {
+                copy.sortBy(sortBlock:Block2)
+            }
+            method sorted {
+                copy.sort
+            }
+            method copy {
+                outer.withAll(self)
             }
         }
     }
