@@ -3045,10 +3045,16 @@ function findMethod (obj, methname) {
     return meth;
 }
 
+function stripDollarSuffix(str) {
+    var dollarIx = str.indexOf("$");
+    if (dollarIx == -1) return str;
+    return str.substring(0, dollarIx);
+}
 
 function GraceCallStackToString() {
     var errorLine = this.lineNumber;
-    var errorString = this.className + "." + canonicalMethodName(this.methname);
+    var effectiveName = canonicalMethodName(stripDollarSuffix(this.methname));
+    var errorString = this.className + "." + effectiveName;
     if (typeof(errorLine) === "undefined" || errorLine === 0) {
         errorString += " in ";
     } else {
@@ -3216,9 +3222,18 @@ function raiseNoSuchMethod(name, target) {
     } else if (target.definitionModule !== "unknown") {
         targetDesc = " in " + target.definitionModule + " module";
     }
-    throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-            new GraceString("no method '" + canonicalMethodName(name) + "' on " +
-                describe(target) + "."));
+    var dollarIx = name.indexOf("$")
+    if (dollarIx == -1) {
+        throw new GraceExceptionPacket(NoSuchMethodErrorObject,
+                new GraceString("no method '" + canonicalMethodName(name) + "' on " +
+                    describe(target) + "."));
+    } else {
+        var baseName = name.substring(0, dollarIx);
+        throw new GraceExceptionPacket(ProgrammingErrorObject,
+                new GraceString("attempting to inherit from '" +
+                    canonicalMethodName(baseName) + "' on " +
+                    describe(target) + ". This is not a fresh method."));
+    }
 }
 
 function raiseConfidentialMethod(name, target) {
