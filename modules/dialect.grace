@@ -32,6 +32,9 @@ class aMutableMap {
     }
 
     method at(key) put(value) -> Done {
+        if (value.asString == "done") then {
+            prelude.ProgrammingError.raise "mutableMap: attempting to put ‹done› at key {key}"
+        }
         for(entries) do { entry ->
             if(entry.key == key) then {
                 entry.value := value
@@ -224,7 +227,7 @@ method checkTypes(node) {
 method typeOf(node) {
     checkTypes(node)
     cache.atKey(node) do { value -> return value }
-    CheckerFailure.raise "cannot type non-expression" with (node)
+    CheckerFailure.raise "cannot type non-expression {node}" with (node)
 }
 
 method runRules(node) {
@@ -238,6 +241,9 @@ method runRules(node) {
         def matched = each.match(node)
         if(matched) then {
             result := matched.result
+            if (result.asString == "done") then {
+                prelude.ProgrammingError.raise "each.match(node) has result 'done' when each == {each} and node = {node}"
+            }
             cache.at(node) put(result)
         }
     }
@@ -258,7 +264,7 @@ type AstNode = { kind -> String }
 class aPatternMatchingNode(kind : String) -> prelude.Pattern {
     inherit prelude.BasicPattern.new
 
-    method match(obj : Object) {
+    method match(obj : Object) -> prelude.MatchResult {
         match(obj) 
           case { node : AstNode ->
             if(kind == node.kind) then {
@@ -305,25 +311,24 @@ class RequestOf(methodName:String) -> prelude.Pattern {
 
     inherit prelude.BasicPattern.new
 
-    method match(obj : Object) {
+    method match(obj:Object) -> prelude.MatchResult {
         match(obj) 
-          case { node : AstNode ->
-            if((node.kind == "call") && {
-                node.value.value == methodName
-            }) then {
-                prelude.Successfulmatch.new(node, makeBindings(node))
-            } else {
-                prelude.Failedmatch.new(node)
+            case { node:AstNode ->
+                if (node.isCall && {node.canonicalName == methodName}) then {
+                    prelude.Successfulmatch.new(node, makeBindings(node))
+                } else {
+                    prelude.Failedmatch.new(node)
+                }
+            } case { _ ->
+                prelude.Failedmatch.new(obj)
             }
-          } case { _ -> prelude.Failedmatch.new(obj)
-          }
     }
 
     method makeBindings(node) { [] }
 }
 
-def WhileRequest is public = RequestOf "while()do"
-def ForRequest is public = RequestOf "for()do"
+def WhileRequest is public = RequestOf "while(_)do(_)"
+def ForRequest is public = RequestOf "for(_)do(_)"
 
 method whileCond(node) {
     // answers the condition expression from node, which must be a
