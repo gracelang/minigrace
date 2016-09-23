@@ -652,8 +652,8 @@ def RequestError = TypeError.refine "RequestError"
 
 rule { req: Request ->
     match (req.receiver)
-      case { memb: Member ->
-        def rec = memb.receiver
+      case { innerReq: Request ->
+        def rec = innerReq.receiver
         def rType = if (Identifier.match (rec) && (rec.value == "self")) then {
             scope.types.find "Self" butIfMissing {
                 prelude.Exception.raise "type of self missing" with (rec)
@@ -665,18 +665,23 @@ rule { req: Request ->
         if (rType.isUnknown) then {
             objectType.unknown
         } else {
-            def name = memb.value
+            def name = innerReq.canonicalName
 
             match (rType.getMethod (name))
                 case { (noSuchMethod) ->
                     RequestError.raise ("no method `{name}` in " ++
-                        "`{rec.toGrace (0)}` of type `{rType}`") with (memb)
+                        "`{rec.toGrace (0)}` of type `{rType}`") with (innerReq)
                 } case { meth: MethodType ->
                     check (req) against (meth)
                 }
         }
     } case { ident: Identifier ->
         find (req) atScope (scope.methods.stack.size)
+    } case { outerObj: Outer ->
+        objectType.unknown      // we should be able to do better than that!
+    } case { other: Object ->
+        print "receiver {req} is not a Request, an Identifier or an Outer node"
+        objectType.unknown
     }
 }
 
