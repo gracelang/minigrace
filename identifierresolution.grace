@@ -234,6 +234,8 @@ class newScopeIn(parent') kind(variety') {
                 resultScope := resultScope.enclosingObjectScope
             }
             resultScope
+        } elseif { rcvrNode.isConstant } then {
+            universalScope  //  TODO: deine scopes for strings and numbers
         } else {
             ProgrammingError.raise("unexpected receiver {rcvrNode.toGrace 0} " ++
                   "on line {rcvrNode.line}")

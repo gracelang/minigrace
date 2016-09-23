@@ -133,6 +133,7 @@ class baseNode {
     method isTypeDec { false }
     method isExternal { false }
     method isFresh { false }
+    method isConstant { false }
     method canInherit { false }
     method returnsObject { false }
     method isImplicit { false }
@@ -1898,6 +1899,7 @@ def stringNode is public = object {
         }
         method statementName { "expression" }
         method isDelimited { true }
+        method isConstant { true }
     }
 }
 def numNode is public = object {
@@ -1925,6 +1927,7 @@ def numNode is public = object {
         }
         method statementName { "expression" }
         method isDelimited { true }
+        method isConstant { true }
     }
 }
 def opNode is public = object {
