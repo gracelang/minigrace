@@ -1474,7 +1474,7 @@ method transformInherits(inhNode) ancestors(as) {
             ProgrammingError.raise ("untransformed idfentifer `{nm}` found " ++
                 "in {inhNode.statementName} statement on line {inhNode.line}")
         }
-    } elseif {inhNode.inheritFromMember} then {
+    } elseif {superExpr.isMember} then {
         def newcall = ast.callNode.new(inhNode.value.receiver, [
             ast.requestPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
             ast.requestPart.request "$object" withArgs (
@@ -1482,9 +1482,8 @@ method transformInherits(inhNode) ancestors(as) {
             ]
         ) scope(currentScope)
         inhNode.value := newcall
-    } elseif {inhNode.inheritFromCall} then {
-        var superCall := inhNode.value
-        superCall.with.push(ast.requestPart.request "$object"
+    } elseif {superExpr.isCall} then {
+        superExpr.with.push(ast.requestPart.request "$object"
             withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
     } else {
         errormessages.syntaxError "inheritance must be from a freshly-created object"
