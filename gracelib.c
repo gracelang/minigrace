@@ -5034,13 +5034,13 @@ Object callmethodflags(Object receiver, const char *name,
                 sizeof(return_stack[calldepth]));
     }
     if (receiver == undefined) {
-        graceRaise(ProgrammingError(), "method %s requested on uninitialized variable", name);
+        graceRaise(ProgrammingError(), "method %s requested on uninitialized variable", canonicalMethodName(name));
     }
     int n = 0;
     for (i = 0; i < nparts; i++) {
         for (j = 0; j < nparamsv[i]; j++) {
             if (args[n] == undefined)
-                graceRaise(ProgrammingError(), "uninitialized variable used as argument %i to %s.", n+1, name);
+                graceRaise(ProgrammingError(), "uninitialized variable used as argument %i to %s.", n+1, canonicalMethodName(name));
             n++;
         }
     }
