@@ -595,22 +595,20 @@ method compileMethodBodyWithTypecheck(o) {
 method compileFreshMethod(o, selfObj) {
     // compiles the methodNode o in a way that can be used with an `inherit`
     // statement. _Two_ methods are generated: one to build the new object,
-    // and one to initialize it.
+    // and one to initialize it.  The build method will also implement
+    // the statements in the body of this method that preceed the final
+    // (result) expression.
     // The final (result) expression of method o may be of three kinds:
     //   (1) an object constructor,
     //   (2) a request on a class (which may have its own initialization),
     //   (3) a request of a clone or a copy (which has no initialization).
 
-    def selfr = uidWithPrefix "freshFun"
     var ret := "GraceDone"
     def resultExpr = o.resultExpression
     if (resultExpr.isObject) then {     // case (1)
-        o.body.removeLast    // remove tail object
-        compileMethodBody(o)
-        o.body.addLast(resultExpr)     // put resultExpr back
         compileBuildAndInitFunctions(resultExpr) inMethod (o)
-        compileBuildMethodFromObjectConstructor(o, resultExpr, selfObj)
-        compileInitMethodFromObjectConstructor(o, resultExpr)
+        compileBuildMethod(o, resultExpr, selfObj)
+        compileInitMethod(o, resultExpr)
     } elseif { resultExpr.isFresh } then {  // case (2)
         o.body.removeLast    // remove tail object
         compileMethodBody(o)
@@ -638,6 +636,15 @@ method compileMethodBody(methNode) {
     var ret := "GraceDone"
     methNode.body.do { nd -> ret := compilenode(nd) }
     ret
+}
+
+method compileMethodBodyWithoutLast(methNode) {
+    def body = methNode.body
+    if (body.size > 1) then {
+        def resultExpr = body.removeLast   // remove result object
+        compileMethodBody(methNode)
+        body.addLast(resultExpr)           // put result object back
+    }
 }
 
 method compileResultTypeCheck(o, ret) onLine (lineNr) {
@@ -712,7 +719,11 @@ method compilemethod(o, selfobj) {
     compileMetadata(o, funcName, name)
     out "{selfobj}.methods[\"{name}\"] = {funcName};"
 }
-method compileBuildMethodFromObjectConstructor(methNode, objNode, outerRef) {
+method compileBuildMethod(methNode, objNode, outerRef) {
+    // the $build method for a fresh method executes the stetments in the
+    // body of the fresh method, and then calls the build function of the
+    // object constructor.
+
     def funcName = uidWithPrefix "func"
     def name = escapestring(methNode.nameString ++ "$build(3)")
     def cName = methNode.canonicalName ++ "$build(_,_,_)"
@@ -722,12 +733,15 @@ method compileBuildMethodFromObjectConstructor(methNode, objNode, outerRef) {
         withParams (params ++ ", inheritingObject, aliases, exclusions" ++ typeParams)
     compileDefaultsForTypeParameters(methNode) extraParams 3
     compileArgumentTypeChecks(methNode)
+    compileMethodBodyWithoutLast(methNode)
     out "{objNode.register}_build.call(inheritingObject, null{params}, {outerRef}, aliases, exclusions{typeParams});"
     compileMethodPostamble(methNode, funcName, cName)
     out "this.methods['{name}'] = {funcName};"
     compileMetadata(methNode, funcName, name)
 }
-method compileInitMethodFromObjectConstructor(methNode, objNode) {
+method compileInitMethod(methNode, objNode) {
+    // the $init method for a fresh method will initialize the generated object
+    // All that's necessary is to call the _init funciton of the object constructor.
     def funcName = uidWithPrefix "func"
     def name = escapestring(methNode.nameString ++ "$init(1)")
     def cName = methNode.canonicalName ++ "$init(_)"
@@ -1221,7 +1235,7 @@ method compileNativeCode(o) {
     }
     def param1 = o.with.first.args.first
     if (param1.kind != "string") then {
-        errormessages.syntaxError "the first argument to native()code must be a string literal"
+        errormessages.syntaxError "the first argument to native(_)code(_) must be a string literal"
             atRange(param1.line, param1.linePos, param1.linePos)
     }
     if (param1.value != "js") then {
@@ -1230,7 +1244,7 @@ method compileNativeCode(o) {
     }
     def param2 = o.with.second.args.first
     if (param2.kind != "string") then {
-        errormessages.syntaxError "the second argument to native()code must be a string literal"
+        errormessages.syntaxError "the second argument to native(_)code(_) must be a string literal"
             atLine(param2.line)
     }
     def codeString = param2.value
