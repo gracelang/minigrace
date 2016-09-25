@@ -38,12 +38,15 @@ OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.gr
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
 
 PRELUDESOURCEFILES = collectionsPrelude.grace standardGrace.grace
-REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace genc.grace stringMap.grace xmodule.grace identifierresolution.grace)
+REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace genc.grace stringMap.grace xmodule.grace identifierresolution.grace standardGraceClass.grace)
 ALLSOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES) $(HEADERFILES)
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 STABLE=21802a386d7e3614445df7ee7c1a5afde8ad45d3
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 TYPE_DIALECTS = staticTypes requireTypes
+TEST_DEPENDENCIES = ast lexer stringMap collectionsPrelude parser xmodule errormessages standardGrace identifierKinds standardGrace standardGraceClass
+#   these are modules used in running the full test suite
+
 VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
 WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html js/unicodedata.js js/importStandardGrace.js $(ICONS:%=js/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
@@ -141,7 +144,7 @@ dialects: gracelib.o js js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
 echo:
 	@echo MAKEFLAGS = $(MAKEFLAGS)
 	@echo CFLAGS = $(CFLAGS)
-	@echo MGSOURCEFILES = $(SOURCEFILES) "\n"
+	@echo MGSOURCEFILES = $(MGSOURCEFILES) "\n"
 	@echo SOURCEFILES = $(SOURCEFILES) "\n"
 	@echo JSSOURCEFILES = $(JSSOURCEFILES) "\n"
 	@echo ALLSOURCEFILES = $(ALLSOURCEFILES) "\n"
@@ -375,7 +378,7 @@ minigrace-environment: minigrace-c-env minigrace-js-env
 
 minigrace-c-env: minigrace standardGrace.gct gracelib.o $(LIBRARY_MODULES:%.grace=modules/%.gct) .git/hooks/commit-msg
 
-minigrace-js-env: minigrace js/grace js/grace-debug standardGrace.gct js/standardGraceClass.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) $(JSSOURCEFILES:%.js=%.gct) $(TYPE_DIALECTS:%=modules/%.gso) $(TYPE_DIALECTS:%=js/%.js)
+minigrace-js-env: minigrace js/grace js/grace-debug standardGrace.gct js/standardGraceClass.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) $(JSSOURCEFILES:%.js=%.gct) $(TYPE_DIALECTS:%=modules/%.gso) $(TYPE_DIALECTS:%=js/%.js) $(TEST_DEPENDENCIES:%=js/tests/%.js) $(TEST_DEPENDENCIES:%=js/tests/%.gct)
 
 module-test-js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.js) $(TYPE_DIALECTS:%=modules/%.gso)
 	modules/tests/harness_js minigrace
@@ -482,6 +485,12 @@ $(filter-out modules/curl.gso,$(DYNAMIC_STUBS:%.grace=modules/%.gso)): modules/%
 
 s%andardGraceClass.gct s%andardGraceClass.gcn: standardGraceClass.grace minigrace
 	./minigrace $(VERBOSITY) --make $<
+
+$(SOURCEFILES:%.grace=js/tests/%.gct): js/tests/%.gct: js/%.gct
+	cd js/tests; ln -s ../$(<F) .
+
+$(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
+	cd js/tests; ln -s ../$(<F) .
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 	ln -sf $< .
