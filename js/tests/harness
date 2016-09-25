@@ -32,7 +32,7 @@ then
     echo "  - compiler to test" >&2
     echo "  - directory containing tests (defaults to $TESTDIR)" >&2
     echo "  - command to execute compiled code (defaults to $EXECUTOR)" >&2
-    echo '  - <test file name prefix>*  ; if omitted, all tests in directory'
+    echo '  - <test file name prefix>*  ; if omitted, all tests in directory'  >&2
     exit 1
 fi
 
@@ -108,13 +108,15 @@ do
 #   if the test name does NOT end with fail_test
     then
         rm -f ${tcase%%.*}.{js,gct} ../${tcase%%.*}.{js,gct}
-        COMMAND="GRACE_MODULE_PATH=..:../..:../../modules: $COMPILER --verbose 60 --target js --dir .. $tcase"
-#        echo COMMAND = $COMMAND
+        COMMAND="GRACE_MODULE_PATH=..:../../modules $COMPILER --verbose 60 --target js --dir . $tcase"
+#        echo compilation cmd = $COMMAND
         if eval "$COMMAND" > test-$$.log 2>&1
         then
             execname="${tcase%%.*}"
 #   The %%.* _deletes_ the longest . extension.
-            GRACE_MODULE_PATH=../:../../modules/: $EXECUTOR"./$execname" > test-$$.out 2> test-$$.err
+            COMMAND="GRACE_MODULE_PATH=..:../../modules:. $EXECUTOR\"./$execname\""
+#            echo execution cmd = $COMMAND
+            eval $COMMAND > test-$$.out 2> test-$$.err
             if [ ! -s test-$$.err ]
             then
                 /bin/rm -f test-$$.err
@@ -142,7 +144,7 @@ do
         fi
     else
 #   this is a _fail_test
-        COMMAND="$COMPILER --make --target js --noexec --dir .. $tcase"
+        COMMAND="GRACE_MODULE_PATH=..:../../modules: $COMPILER --make --target js --dir . --noexec $tcase"
         if eval "$COMMAND" > test-$$.log 2>&1
         then
             echo "${NUM_TESTS} ERROR: $tcase should have failed to compile"
@@ -171,7 +173,7 @@ do
             cat ${tcase%_test.grace}.out >> test.js.log
         fi
     fi
-    rm -f test-$$.log test-$$.out test-$$.err ../${tcase%%.*}.{js,gct} *_test.gct
+    rm -f test-$$.log test-$$.out test-$$.err
     if [ "$TYPE" = "tograce" ]
     then
         rm -f tg_t*
