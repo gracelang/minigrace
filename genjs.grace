@@ -363,7 +363,6 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
     decreaseindent
     out "\};"
     inBlock := origInBlock
-    selfr
 }
 method compileobject(o, outerRef) {
     // compiles an object constructor.  Generates two JavaScript functions,
@@ -372,13 +371,13 @@ method compileobject(o, outerRef) {
     // The object constructor itself is implemented by calling these functions
     // in sequence, _except_ inside a fresh method, where it may need
     // to add its contents to an existing object
-    def objcon = compileBuildAndInitFunctions(o) inMethod (false)
-    def selfr = o.register
+    compileBuildAndInitFunctions(o) inMethod (false)
+    def objRef = o.register
     def objName = "\"" ++ o.name.quoted ++ "\""
-    out "var {selfr} = emptyGraceObject({objName}, \"{modname}\", {o.line});"
-    out "{objcon}_build.call({selfr}, null, {outerRef}, [], []);"
-    out "{objcon}_init.call({selfr}, null);"
-    selfr
+    out "var {objRef} = emptyGraceObject({objName}, \"{modname}\", {o.line});"
+    out "{objRef}_build.call({objRef}, null, {outerRef}, [], []);"
+    out "{objRef}_init.call({objRef}, null);"
+    objRef
 }
 method compileblock(o) {
     var origInBlock := inBlock
@@ -606,7 +605,6 @@ method compileFreshMethod(o, selfObj) {
     var ret := "GraceDone"
     def resultExpr = o.resultExpression
     if (resultExpr.isObject) then {     // case (1)
-        compileBuildAndInitFunctions(resultExpr) inMethod (o)
         compileBuildMethod(o, resultExpr, selfObj)
         compileInitMethod(o, resultExpr)
     } elseif { resultExpr.isFresh } then {  // case (2)
@@ -720,9 +718,11 @@ method compilemethod(o, selfobj) {
     out "{selfobj}.methods[\"{name}\"] = {funcName};"
 }
 method compileBuildMethod(methNode, objNode, outerRef) {
-    // the $build method for a fresh method executes the stetments in the
+    // the $build method for a fresh method executes the statements in the
     // body of the fresh method, and then calls the build function of the
     // object constructor.
+    // methNode represents the method being compiled, and objNode the
+    // object expression that it tail-returns.
 
     def funcName = uidWithPrefix "func"
     def name = escapestring(methNode.nameString ++ "$build(3)")
@@ -742,6 +742,8 @@ method compileBuildMethod(methNode, objNode, outerRef) {
 method compileInitMethod(methNode, objNode) {
     // the $init method for a fresh method will initialize the generated object
     // All that's necessary is to call the _init funciton of the object constructor.
+    // methNode represents the method being compiled, and objNode the
+    // object expression that it tail-returns.
     def funcName = uidWithPrefix "func"
     def name = escapestring(methNode.nameString ++ "$init(1)")
     def cName = methNode.canonicalName ++ "$init(_)"
