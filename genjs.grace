@@ -276,7 +276,7 @@ method installLocalAttributesOf(o) into (objr) {
     }
 }
 
-method compileInitialization(o, selfr) {
+method compileOwnInitialization(o, selfr) {
     o.body.do { e ->
         if (e.kind == "method") then {
         } elseif { e.kind == "vardec" } then {
@@ -298,13 +298,13 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
     // object, which will become the outer object of `selfr`, the object here
     // being constructed
 
+    // The build function adds the attributes defined by o to `this`,
+    // and returns as its result the init function, which, when called, will
+    // initialize `this`
+
     var origInBlock := inBlock
     inBlock := false
 
-    if (o.register.isEmpty.not) then {
-        ProgrammingError.raise "already set selfr in compileBuildAndInitFunctions"
-        // TODO: delete this test.
-    }
     def selfr = uidWithPrefix "obj"
     o.register := selfr
     def inheritsStmt = o.superclass
@@ -351,32 +351,35 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
     out "        };"
     out "    };"
     out "};"
-    decreaseindent
-    out "\};"
-    out "var {selfr}_init = function(ignore{params}{typeParams}) \{"
+    out "var {selfr}_init = function() \{    // init of object on line {o.line}"
         // At execution time, `this` will be the object being initialized.
     increaseindent
     if (false != inheritsStmt) then {
-        compileSuperInitialization(inheritsStmt.value)
+        compileSuperInitialization(inheritsStmt)
     }
-    compileInitialization(o, "this")
+    compileOwnInitialization(o, "this")
     decreaseindent
-    out "\};"
+    out "\};"   // end of _init function for object on line {o.line}
+    out "return {selfr}_init;   // from compileBuildAndInitFunctions(_)inMethod(_)"
+    decreaseindent
+    out "\};"   // end of build function
     inBlock := origInBlock
 }
 method compileobject(o, outerRef) {
-    // compiles an object constructor.  Generates two JavaScript functions,
+    // compiles an object constructor, in all contexts except a fresh method.
+    // Generates two JavaScript functions,
     // {o.register}_build, which creates the object and its methods and fields,
-    // and {o.register}_init, which initializes the fields.
+    // and {o.register}_init, which initializes the fields.  The _init function
+    // is returned from the build funciton, so that it can close over the context.
     // The object constructor itself is implemented by calling these functions
-    // in sequence, _except_ inside a fresh method, where it may need
-    // to add its contents to an existing object
+    // in sequence, _except_ inside a fresh method, where the object may instead
+    // need to add its contents to an existing object
     compileBuildAndInitFunctions(o) inMethod (false)
     def objRef = o.register
     def objName = "\"" ++ o.name.quoted ++ "\""
     out "var {objRef} = emptyGraceObject({objName}, \"{modname}\", {o.line});"
-    out "{objRef}_build.call({objRef}, null, {outerRef}, [], []);"
-    out "{objRef}_init.call({objRef}, null);"
+    out "var {objRef}_init = {objRef}_build.call({objRef}, null, {outerRef}, [], []);"
+    out "{objRef}_init.call({objRef});  // end of compileobject"
     objRef
 }
 method compileblock(o) {
@@ -491,8 +494,7 @@ method hasTypedParams(o) {
 }
 
 method compileMethodPreamble(o, funcName, name) withParams (p) {
-    out "// method {name}     (line {o.line})"
-    out "var {funcName} = function(argcv{p}) \{"
+    out "var {funcName} = function(argcv{p}) \{    // method {name}"
     increaseindent
     out "var returnTarget = invocationCount;"
     out "invocationCount++;"
@@ -599,14 +601,13 @@ method compileFreshMethod(o, selfObj) {
     // (result) expression.
     // The final (result) expression of method o may be of three kinds:
     //   (1) an object constructor,
-    //   (2) a request on a class (which may have its own initialization),
+    //   (2) a request on another fresh (which will have its own initialization),
     //   (3) a request of a clone or a copy (which has no initialization).
 
     var ret := "GraceDone"
     def resultExpr = o.resultExpression
     if (resultExpr.isObject) then {     // case (1)
         compileBuildMethod(o, resultExpr, selfObj)
-        compileInitMethod(o, resultExpr)
     } elseif { resultExpr.isFresh } then {  // case (2)
         o.body.removeLast    // remove tail object
         compileMethodBody(o)
@@ -700,8 +701,8 @@ method compilemethod(o, selfobj) {
         if (o.isFresh) then {
             def argList = paramlist(o)
             out "var ouc = emptyGraceObject(\"{o.ilkName}\", \"{modname}\", {o.line});"
-            out "{selfobj}.methods[\"{name}$build(3)\"].call(this, null{argList}, ouc, [], []);"
-            out "{selfobj}.methods[\"{name}$init(1)\"].call(this, null{argList}, ouc);"
+            out "var ouc_init = {selfobj}.methods[\"{name}$build(3)\"].call(this, null{argList}, ouc, [], []);"
+            out "ouc_init.call(ouc);"
             out "return ouc;"
         } else {
             out "return {compileMethodBodyWithTypecheck(o)};"
@@ -709,20 +710,19 @@ method compilemethod(o, selfobj) {
         debugModeSuffix
     }
     compileMethodPostamble(o, funcName, canonicalMethName)
+    out "this.methods[\"{name}\"] = {funcName};"
+    compileMetadata(o, funcName, name)
     if (o.isFresh) then {
         compileFreshMethod(o, selfobj)
     }
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
-    compileMetadata(o, funcName, name)
-    out "{selfobj}.methods[\"{name}\"] = {funcName};"
 }
 method compileBuildMethod(methNode, objNode, outerRef) {
     // the $build method for a fresh method executes the statements in the
     // body of the fresh method, and then calls the build function of the
-    // object constructor.
-    // methNode represents the method being compiled, and objNode the
-    // object expression that it tail-returns.
+    // object constructor.  That build function will return the _init function
+    // for the object constructor object expression that it tail-returns.
 
     def funcName = uidWithPrefix "func"
     def name = escapestring(methNode.nameString ++ "$build(3)")
@@ -734,31 +734,12 @@ method compileBuildMethod(methNode, objNode, outerRef) {
     compileDefaultsForTypeParameters(methNode) extraParams 3
     compileArgumentTypeChecks(methNode)
     compileMethodBodyWithoutLast(methNode)
-    out "{objNode.register}_build.call(inheritingObject, null{params}, {outerRef}, aliases, exclusions{typeParams});"
+    compileBuildAndInitFunctions(objNode) inMethod (methNode)
+    def objRef = objNode.register
+    out "var {objRef}_init = {objRef}_build.call(inheritingObject, null{params}, {outerRef}, aliases, exclusions{typeParams});"
+    out "return {objRef}_init;      // from compileBuildMethod"
     compileMethodPostamble(methNode, funcName, cName)
-    out "this.methods['{name}'] = {funcName};"
-    compileMetadata(methNode, funcName, name)
-}
-method compileInitMethod(methNode, objNode) {
-    // the $init method for a fresh method will initialize the generated object
-    // All that's necessary is to call the _init funciton of the object constructor.
-    // methNode represents the method being compiled, and objNode the
-    // object expression that it tail-returns.
-    def funcName = uidWithPrefix "func"
-    def name = escapestring(methNode.nameString ++ "$init(1)")
-    def cName = methNode.canonicalName ++ "$init(_)"
-    compileMethodPreamble(methNode, funcName, cName)
-        withParams "{paramlist(methNode)}, ouc{typeParamlist(methNode)}"
-    if (debugMode) then {
-        compileParameterDebugFrame(methNode)
-    }
-    compileDefaultsForTypeParameters(methNode) extraParams 1
-    compileArgumentTypeChecks(methNode)
-    debugModePrefix
-    out "{objNode.register}_init.call(ouc, null{paramlist(methNode)}{typeParamlist(methNode)});"
-    debugModeSuffix
-    compileMethodPostamble(methNode, funcName, cName)
-    out "this.methods['{name}'] = {funcName};"
+    out "this.methods[\"{name}\"] = {funcName};"
     compileMetadata(methNode, funcName, name)
 }
 method compileBuildMethodFromClone(methNode) {
@@ -775,14 +756,14 @@ method compileBuildMethodFromClone(methNode) {
     copyDownMethodsFrom (tempObj) to "var_ouc" excludingDynamically "var_exclusions"
     copyDownDataFrom (tempObj) to "var_ouc"
     compileMethodPostamble(methNode, funcName, methNode.nameString ++ "$build(_,_,_)")
-    out "this.methods['{name}'] = {funcName};"
+    out "this.methods[\"{name}\"] = {funcName};"
     compileMetadata(methNode, funcName, name)
 }
 method compileNullInitMethod(methNode) {
     // An init method must exist for each fresh method; this one does nothing
 
     def name = escapestring(methNode.nameString ++ "$init(1)")
-    out "this.methods['{name}'] = function() \{ \};"
+    out "this.methods[\"{name}\"] = function() \{ \};"
 }
 
 method paramlist(o) {
@@ -1429,7 +1410,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
             compilenode(o)
         }
         if (false != inheritsStmt) then {
-            compileSuperInitialization(inheritsStmt.value)
+            compileSuperInitialization(inheritsStmt)
         }
         moduleObject.executableComponentsDo { o ->
             compilenode(o)
@@ -1490,7 +1471,7 @@ method compileInherit(inhNode) forClass(className) {
 
     def superExpr = inhNode.value
     if (superExpr.isCall) then {
-        compileReuseCall(superExpr)
+        inhNode.register := compileReuseCall(superExpr)
             forClass (className)
             aliases (aliasList(inhNode))
             exclusions (exclusionList(inhNode))
@@ -1499,18 +1480,8 @@ method compileInherit(inhNode) forClass(className) {
             atLine (inhNode.line)
     }
 }
-method compileSuperInitialization(superExpr) {
-    if (superExpr.isCall) then {
-        def callParts = superExpr.with
-        def lastPart = callParts.last
-        def currentScope = lastPart.scope
-        lastPart.name := "$init"
-        lastPart.args.clear
-        lastPart.args.push(ast.identifierNode.new("self", false) scope(currentScope))
-        compilecall(superExpr)
-    } else {
-        ProgrammingError.raise "superExpr is {superExpr.toGrace 0} on line {superExpr.line} in compileSuperInitialization"
-    }
+method compileSuperInitialization(inheritsNode) {
+    out "{inheritsNode.register}.call(this);"
 }
 method compileReuseCall(callNode) forClass (className) aliases (aStr) exclusions (eStr) {
     def buildMethodName = addSuffix "$build(3)" to (callNode.nameString)
@@ -1530,8 +1501,10 @@ method compileReuseCall(callNode) forClass (className) aliases (aStr) exclusions
     if (callNode.isSelfRequest) then {
         out "onSelf = true;"
     }
-    out("{requestCall}({target}, \"{escapestring(buildMethodName)}\", [null]" ++
+    def initFun = uidWithPrefix "initFun"
+    out("var {initFun} = {requestCall}({target}, \"{escapestring(buildMethodName)}\", [null]" ++
         "{arglist}, this, {aStr}, {eStr}{typeArgs});  // compileReuseCall")
+    initFun     // return the register that holds the initialization function
 }
 
 method addSuffix (tail) to (root) {
@@ -1600,7 +1573,7 @@ method copyDownDataFrom (sup) to (dest) {
 method compileUse(useNode) in (objNode) {
     // The object under construction is `this`.
     // Compile code to implement use of useNode.
-    compileReuseCall(useNode.value)
+    useNode.register := compileReuseCall(useNode.value)
         forClass (objNode.nameString)
         aliases (aliasList(useNode))
         exclusions (exclusionList(useNode))
