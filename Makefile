@@ -402,14 +402,15 @@ $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 # Not for normal use!   A check test of a change to
 # only the js code generator
 old-js-one: l1/minigrace
-	l1/minigrace --target js --dir js --make collectionsPrelude.grace
-	node -c js/collectionsPrelude.js
-	l1/minigrace --target js --dir js --make standardGrace.grace
-	l1/minigrace --target js --dir js --make modules/gUnit.grace
-	GRACE_MODULE_PATH=js:modules l1/minigrace js/tests/t001_languageTests0_49_test.grace --verbose --target js
+	l1/minigrace --target js --dir js/tests --make collectionsPrelude.grace
+	node -c js/tests/collectionsPrelude.js
+	l1/minigrace --target js --dir js/tests --make standardGrace.grace
+	l1/minigrace --target js --dir js/tests --make modules/gUnit.grace
+	l1/minigrace --target js --dir js/tests --make modules/minitest.grace
+	GRACE_MODULE_PATH=js/tests:js l1/minigrace js/tests/t001_languageTests0_49_test.grace --verbose --target js
 
 old-js-two: old-js-one
-	GRACE_MODULE_PATH=js:modules l1/minigrace js/tests/t003_languageTests100_145_test.grace --verbose --target js
+	GRACE_MODULE_PATH=js/tests:js l1/minigrace js/tests/t003_languageTests100_145_test.grace --verbose --target js
 
 oldWeb: $(WEBFILES) js/sample
 	rsync -a -l -z --delete $(WEBFILES) $(WEB_SERVER):$(WEB_DIRECTORY)
@@ -487,10 +488,10 @@ s%andardGraceClass.gct s%andardGraceClass.gcn: standardGraceClass.grace minigrac
 	./minigrace $(VERBOSITY) --make $<
 
 $(SOURCEFILES:%.grace=js/tests/%.gct): js/tests/%.gct: js/%.gct
-	cd js/tests; ln -s ../$(<F) .
+	cd js/tests; ln -sf ../$(<F) .
 
 $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
-	cd js/tests; ln -s ../$(<F) .
+	cd js/tests; ln -sf ../$(<F) .
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 	ln -sf $< .
