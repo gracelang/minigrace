@@ -3222,7 +3222,7 @@ function raiseNoSuchMethod(name, target) {
     } else if (target.definitionModule !== "unknown") {
         targetDesc = " in " + target.definitionModule + " module";
     }
-    var dollarIx = name.indexOf("$")
+    var dollarIx = name.indexOf("$");
     if (dollarIx == -1) {
         throw new GraceExceptionPacket(NoSuchMethodErrorObject,
                 new GraceString("no method '" + canonicalMethodName(name) + "' on " +
