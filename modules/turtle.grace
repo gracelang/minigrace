@@ -39,7 +39,7 @@ def stages = list []
 
 method drawTurtle(angle) {
     initialise
-    def mctx = canvas.getContext("2d")
+    def mctx = canvas.getContext "2d"
     def triangleSize = 30
     def x' = x + (angle / 180 * π).sin * triangleSize / 2
     def y' = y - (angle / 180 * π).cos * triangleSize / 2
@@ -48,9 +48,9 @@ method drawTurtle(angle) {
     mctx.lineWidth := 3
     mctx.moveTo(x', y')
     mctx.lineTo(x' - ((angle - 75) / 180 * π).cos * triangleSize,
-              y' - ((angle - 75) / 180 * π).sin * triangleSize)
+          y' - ((angle - 75) / 180 * π).sin * triangleSize)
     mctx.lineTo(x' + ((angle + 75) / 180 * π).cos * triangleSize,
-              y' + ((angle + 75) / 180 * π).sin * triangleSize)
+          y' + ((angle + 75) / 180 * π).sin * triangleSize)
     mctx.lineTo(x', y')
     mctx.fill
     mctx.closePath
@@ -72,7 +72,7 @@ method move(dist, lineCol, lineWidth) {
     def stageN = stages.size - 1
     def mctx = canvas.getContext("2d")
     // One frame for each unit of distance
-    for (1..dist.floor) do { i->
+    for (1..dist.floor) do {i->
         if ((i % speed) == 0) then {
             steps.push {
                 def y'' = (angle / 180 * π).cos * i
@@ -168,43 +168,28 @@ method initialise {
     }
     document := dom.document
 
-    // Activate the canvas tab if it isn't already
-    //def ts = document.getElementById("tab")
-    //for (0..(ts.options.length-1)) do {i->
-    //    if (ts.options.item(i).value == "canvas_tab") then {
-    //        ts.selectedIndex := i
-    //        dom.window.tabswitch
-    //    }
-    //}
-    def tab = document.getElementById("tab_canvas")
+    def tab = document.getElementById "tab_canvas"
     if (dom.noObject != tab) then {
         tab.click
     }
     initialised := true
 
-    //Get the canvas:
-    //If the user requested a pop-up, use a pop-up window
-    if(usePopup) then
-    {
-      //Create the popup window for use
-      createPopupWindow
+    // Get the canvas: if the user requested a pop-up, use one
+    if (usePopup) then {
+        createPopupWindow
+    } else {
+        // Look for the canvas in the embedded web editor
+        canvas := document.getElementById "standard-canvas"
 
-    } else //Otherwise, look for the canvas
-    {
-       //Look for the canvas in the embedded web editor
-       canvas := document.getElementById("standard-canvas")
+        // Look for the canvas in the web IDE
+        if (dom.noObject == canvas) then {
+            canvas := document.getElementById "graphics"
+        }
 
-       //Look for the canvas in the web IDE
-       if (dom.noObject == canvas) then {
-          canvas := document.getElementById("graphics")
-       }
-
-       //If those are not found, use a seperate window
-       if(dom.noObject == canvas) then
-       {
-            //Create the popup window for use
+        // If these are not found, use a seperate window
+        if (dom.noObject == canvas) then {
             createPopupWindow
-       }
+        }
     }
 
     ctx := canvas.getContext("2d")
@@ -220,31 +205,30 @@ method initialise {
     y := canvas.height/2;
 }
 
-//Method to create a pop-up window with a canvas for graphics
-method createPopupWindow{
-     //Create the window
-     theWindow := dom.window.open("", "", "width={windowWidth}+50,height={windowHeight}+50")
+method createPopupWindow {
+    // create a pop-up window with a canvas for graphics
+    theWindow := dom.window.open("", "", "width={windowWidth}+50, height={windowHeight}+50")
 
-     //Check to make sure window is open
-     if (prelude.inBrowser && (dom.noObject == theWindow)) then {
-              print "Failed to open the graphics window.\nIs your browser blocking pop-ups?"
-              sys.exit(1)
-      }
+    // check to make sure window is open
+    if (prelude.inBrowser && (dom.noObject == theWindow)) then {
+        print "Failed to open the graphics window.\nIs your browser blocking pop-ups?"
+        sys.exit(1)
+    }
 
-      //Set all of the window attributes
-      canvasElement := document.createElement("canvas")
-      canvasElement.width:= windowWidth
-      canvasElement.height:= windowHeight
-      canvasElement.style.alignSelf:= "center"
-      theWindow.document.body.appendChild(canvasElement)
-      theWindow.document.title:= "Logo Graphics"
+    // set the window attributes
+    canvasElement := document.createElement "canvas"
+    canvasElement.width := windowWidth
+    canvasElement.height := windowHeight
+    canvasElement.style.alignSelf:= "center"
+    theWindow.document.body.appendChild(canvasElement)
+    theWindow.document.title := "Logo Graphics"
 
-      //Register the window
-      if (dom.doesObject(dom.window) haveProperty("graceRegisterWindow")) then {
-          dom.window.graceRegisterWindow(theWindow)
-      }
-      //Set the canvas
-      canvas := canvasElement
+    // register the window
+    if (dom.doesObject(dom.window) haveProperty "graceRegisterWindow") then {
+        dom.window.graceRegisterWindow(theWindow)
+    }
+    // set the canvas
+    canvas := canvasElement
 }
 
 method start {
@@ -252,25 +236,23 @@ method start {
     // Iterate through the frames of the image and draw them,
     // each separated in time by 10ms. dom.for()waiting()do
     // uses setTimeout internally so it runs asynchronously.
-    backingCanvas := dom.document.createElement("canvas")
+    backingCanvas := dom.document.createElement "canvas"
     backingCanvas.height := canvas.height
     backingCanvas.width := canvas.width
-    ctx := backingCanvas.getContext("2d")
-    def mctx = canvas.getContext("2d")
-    dom.for(steps) waiting(delay)do {step->
+    ctx := backingCanvas.getContext "2d"
+    def mctx = canvas.getContext "2d"
+    dom.for (steps) waiting (delay) do { step ->
         mctx.fillStyle := "white"
         mctx.fillRect(0, 0, canvas.width, canvas.height)
-
         step.apply
         mctx.drawImage(backingCanvas, 0, 0)
         drawTurtle(turtleAngle)
     }
 }
 
-//API method for Logo to signal popup use
-method useCanvas(size:Point)
-{
-     usePopup := true
-     windowWidth := size.x
-     windowHeight := size.y
+method useCanvas(size:Point) {
+    // API for Logo to signal popup use
+    usePopup := true
+    windowWidth := size.x
+    windowHeight := size.y
 }
