@@ -24,11 +24,12 @@ WEB_DIRECTORY ?= public_html/ide/
 DEV_WEB_DIRECTORY ?= public_html/dev/ide/
 GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 
-LIBRARY_WO_OBJECTDRAW = $(sort $(filter-out $(OBJECTDRAW), $(LIBRARY_MODULES)))
-# LIBRARY_WO_OBJECTDRAW is necessary because LIBRARY_MODULES is built by ./configure,
+MODULES_WO_JSONLY = $(sort $(filter-out $(JSONLY), $(LIBRARY_MODULES)))
+# MODULES_WO_JSONLY is necessary because LIBRARY_MODULES is built by ./configure,
 # and depends on the contents of the modules directory.  So LIBRARY_MODULES may or
-# may not contain OBJECTDRAW, depending on whether this is the first or subsequent make.
+# may not contain JSONLY, depending on whether this is the first or subsequent make.
 
+JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
 MGFLAGS = -XnoChecks
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
 JSSOURCEFILES = $(SOURCEFILES:%.grace=js/%.js)
@@ -47,7 +48,7 @@ VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
 WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html js/unicodedata.js js/importStandardGrace.js $(ICONS:%=js/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
 WEBFILES_SIMPLE = $(filter-out js-simple/sample,$(sort js-simple/index.html js-simple/global.css js-simple/tests js-simple/minigrace.js js-simple/tabs-simple.js js-simple/gracelib.js js-simple/dom.js js-simple/gtk.js js-simple/debugger.js js-simple/timer.js js-simple/ace  js-simple/debugger.html  js-simple/unicodedata.js js-simple/importStandardGrace.js $(ICONS:%=js-simple/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
-WEB_GRAPHICS_MODULES = js/sample/graphics/turtle.grace js/sample/graphics/logo.grace
+WEB_GRAPHICS_MODULES = modules/turtle.grace modules/logo.grace
 # The next 2 rules are here for their side effects: updating
 # buildinfo.grace if necessary, and creating the l1 directory
 CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
@@ -144,11 +145,12 @@ echo:
 	@echo JSSOURCEFILES = $(JSSOURCEFILES) "\n"
 	@echo ALLSOURCEFILES = $(ALLSOURCEFILES) "\n"
 	@echo WEBFILES = $(WEBFILES) "\n"
+	@echo JSONLY = $(JSONLY)
 	@echo KG = $(KG):
 	@echo STUBS = $(STUBS)
 	@echo OBJECTDRAW_REAL = $(OBJECTDRAW_REAL)
 	@echo ALL_LIBRARY_MODULES = $(ALL_LIBRARY_MODULES)
-	@echo LIBRARY_WO_OBJECTDRAW = $(LIBRARY_WO_OBJECTDRAW)
+	@echo MODULES_WO_JSONLY = $(MODULES_WO_JSONLY)
 	@echo DYNAMIC_STUBS = $(DYNAMIC_STUBS)
 	@echo STATIC_STUBS = $(STATIC_STUBS)
 	@echo INTERNAL_STUBS = $(INTERNAL_STUBS)
@@ -157,6 +159,7 @@ echo:
 	@echo GRAPHIX:%.grace=js/%.js = $(GRAPHIX:%.grace=js/%.js)
 	@echo WEBFILES_SIMPLE = $(WEBFILES_SIMPLE)
 	@echo WEB_DIRECTORY = $(WEB_DIRECTORY)
+	@echo WEB_GRAPHICS_MODULES = $(WEB_GRAPHICS_MODULES)
 
 fullclean: clean
 	rm -rf .git-generation-cache
@@ -188,19 +191,18 @@ gracelib.o: gracelib-basic.o debugger.o standardGrace.gcn collectionsPrelude.gcn
 
 ide: ideDeploy
 
-ideBuild: js pull-brace grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(WEB_GRAPHICS_MODULES:%.grace=%.js)
-	./tools/includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(WEB_GRAPHICS_MODULES:js/sample/graphics/%.grace=js/%.js)
+ideBuild: js pull-brace grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
+	./tools/includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	./tools/calc-IDE-version
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
 	ln -f $(filter-out js/samples.js js/tabs.js,$(filter %.js,$(WEBFILES))) grace-web-editor/js
 	ln -f $(GRAPHIX:%.grace=js/%.js) grace-web-editor/js
-	ln -f $(WEB_GRAPHICS_MODULES:%.grace=%.js) grace-web-editor/js
 
 ideDeploy: ideBuild
 	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
 	rsync -az --delete --exclude .git grace-web-editor/ $(WEB_SERVER):$(WEB_DIRECTORY)
 
-install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grace=%.gct) $(STUB_GCTS) $(STUBS:%.grace=js/%.gct) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=js/%.js) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gcn) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso) gracelib.o
+install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grace=%.gct) $(STUB_GCTS) $(STUBS:%.grace=js/%.gct) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=js/%.js) $(MODULES_WO_JSONLY:%.grace=modules/%.gcn) $(MODULES_WO_JSONLY:%.grace=modules/%.gso) gracelib.o
 	install -d -p $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -p -m 755 minigrace $(PREFIX)/bin/minigrace
 	install -p -m 755 js/grace $(PREFIX)/bin/grace
@@ -210,10 +212,25 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 	install -p -m 644 gracelib.h $(INCLUDE_PATH)
 	install -p -m 644 mirrors.gso mirrors.gct $(MODULE_PATH)
 	install -p -m 644 $(COMPILER_MODULES) $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grace=%.gct) $(MODULE_PATH)
-	install -p -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=modules/%.gct) $(LIBRARY_MODULES:%.grace=js/%.js) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gcn) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso) js/dom.js js/dom.gct $(MODULE_PATH)
+	install -p -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=modules/%.gct) $(LIBRARY_MODULES:%.grace=js/%.js) $(MODULES_WO_JSONLY:%.grace=modules/%.gcn) $(MODULES_WO_JSONLY:%.grace=modules/%.gso) js/dom.js js/dom.gct $(MODULE_PATH)
 	install -p -m 644 standardGrace.gcn collectionsPrelude.gcn $(MODULE_PATH)
 	@./tools/warnAbout PATH $(PREFIX)/bin
 	@./tools/warnAbout GRACE_MODULE_PATH $(MODULE_PATH)
+
+$(JSONLY:%.grace=modules/%.gso): modules/%.gso:
+	@echo "Can't build $@; no C version of dependencies"
+
+$(JSONLY:%.grace=modules/%.gcn): modules/%.gcn:
+	@echo "Can't build $@; no C version of dependencies"
+
+$(JSONLY:%.grace=modules/%.gct): modules/%.gct: js/%.gct
+	cd modules && ln -sf ../$< .
+
+$(JSONLY:%.grace=js/%.js): js/%.js: modules/%.grace js/dom.gct minigrace js/timer.gct
+	GRACE_MODULE_PATH=js:modules ./minigrace --target js --dir js --make $(VERBOSITY) $<
+
+$(JSONLY:%.grace=js/%.gct): js/%.gct: modules/%.grace js/dom.gct minigrace js/timer.gct
+	GRACE_MODULE_PATH=js:modules ./minigrace --target js --dir js --make $(VERBOSITY) $<
 
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
@@ -242,7 +259,7 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 js/sample-dialects js/sample-graphics: js/sample-%: js
 	$(MAKE) -C js/sample/$* VERBOSITY=$(VERBOSITY)
 
-js/sample/graphics: $(WEB_GRAPHICS_MODULES:%.grace=%.js)
+js/sample/graphics: $(WEB_GRAPHICS_MODULES:modules/%.grace=js/%.js)
 
 js/sample/graphics/%.js: js/sample/graphics/%.grace minigrace
 	cd js && GRACE_MODULE_PATH=. ../minigrace --make --target js ../$<
@@ -312,13 +329,13 @@ $(LIBRARY_MODULES:%.grace=modules/%.gct): modules/%.gct: modules/%.gso
 $(LIBRARY_MODULES:%.grace=%.gct): %.gct: modules/%.grace l1/minigrace
 	cd l1 && ./minigrace $(VERBOSITY) --make --dir .. --noexec ../$<
 
-$(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso): modules/%.gso: modules/%.grace minigrace
+$(MODULES_WO_JSONLY:%.grace=modules/%.gso): modules/%.gso: modules/%.grace minigrace
 	GRACE_MODULE_PATH=modules ./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
-$(LIBRARY_WO_OBJECTDRAW:%.grace=js/%.js): js/%.js: modules/%.grace minigrace
+$(MODULES_WO_JSONLY:%.grace=js/%.js): js/%.js: modules/%.grace minigrace
 	GRACE_MODULE_PATH=modules ./minigrace $(VERBOSITY) --make --target js --dir js $<
 
-$(LIBRARY_WO_OBJECTDRAW:%.grace=js/%.gct): js/%.gct: js/%.js
+$(MODULES_WO_JSONLY:%.grace=js/%.gct): js/%.gct: js/%.js
 
 Makefile.conf: configure stubs modules
 	./configure
@@ -369,21 +386,6 @@ modules/rtobjectdraw.grace: modules/objectdraw.grace tools/make-rt-version
 
 modules/stobjectdraw.grace: modules/objectdraw.grace tools/make-st-version
 	./tools/make-st-version $< > $@
-
-$(OBJECTDRAW:%.grace=modules/%.gso): modules/%.gso:
-	@echo "Can't build $@; no C version of dependencies"
-
-$(OBJECTDRAW:%.grace=modules/%.gcn): modules/%.gcn:
-	@echo "Can't build $@; no C version of dependencies"
-
-$(OBJECTDRAW:%.grace=modules/%.gct): modules/%.gct: js/%.gct
-	cd modules && ln -sf ../$< .
-
-$(OBJECTDRAW:%.grace=js/%.js): js/%.js: modules/%.grace js/dom.gct minigrace js/timer.gct
-	GRACE_MODULE_PATH=js:modules ./minigrace --target js --dir js --make $(VERBOSITY) $<
-
-$(OBJECTDRAW:%.grace=js/%.gct): js/%.gct: modules/%.grace js/dom.gct minigrace js/timer.gct
-	GRACE_MODULE_PATH=js:modules ./minigrace --target js --dir js --make $(VERBOSITY) $<
 
 $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .

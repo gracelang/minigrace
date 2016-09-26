@@ -42,6 +42,7 @@ js/identifierKinds.js
 js/identifierresolution.js
 js/index.html
 js/lexer.js
+js/logo.js
 js/math.js
 js/math_test.js
 js/random.js
@@ -60,6 +61,7 @@ js/staticTypes.js
 js/staticTypes_test.js
 js/stobjectdraw.js
 js/stringMap.js
+js/turtle.js
 js/unixFilePath.js
 js/util.js
 js/xmodule.js
