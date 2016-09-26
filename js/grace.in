@@ -291,14 +291,19 @@ try {
     minigrace = new MiniGrace();
     minigrace.loadModule("standardGrace", "./");
 
-    // as as special case, do_import("standardGrace", …) adds to Grace_prelude,
-    // rather than creating a new module object.
-    do_import('standardGrace', gracecode_standardGrace);
-
-    minigrace.run(process.argv[2]);
+    minigrace.trapErrors(function() {
+        // as as special case, do_import("standardGrace", …) adds to Grace_prelude,
+        // rather than creating a new module object.
+        do_import('standardGrace', gracecode_standardGrace);
+        minigrace.run(process.argv[2]);
+    });
 } catch (e) {
-    console.error(e.message);
-    console.error(e.stack);
+    if (typeof e.message === "string")
+        console.error(e.message)
+    else if (typeof e.message._value === "string")
+        console.error(e.message._value)
+    else console.error(e.message);
+    console.error(e.exitStack);
     process.exit(1);
 }
 
