@@ -15,6 +15,18 @@ def black is public = turtle.black
 var lineWidth is public := 1
 var lineColor is public := black
 
+method penWidth {
+    lineWidth
+}
+method penWidth:=(w) {
+    lineWidth := w
+}
+method penColor {
+    lineColor
+}
+method penColor:=(c) {
+    lineColor := c
+}
 method forward(dist) {
     turtle.move(dist, lineColor, lineWidth)
 }
