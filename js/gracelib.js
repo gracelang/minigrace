@@ -3670,34 +3670,46 @@ Grace_prelude.methods['_methods'] = function() {
     return l;
 };
 
-Grace_prelude.methods['clone(1)'] = function prelude_clone (argcv, obj) {
-    return clone(obj);
-};
+Grace_prelude.methods['clone(1)'] = prelude_clone;
 
-function clone (obj) {
-//   shallow copy, except up the superchain
-    var copy = new obj.constructor();
-    copy.superobj = null;
+function prelude_clone (argcv, obj) {
+    var ouc = new obj.constructor();
+    prelude_clone_build(null, obj, ouc, [], []);
+    return ouc;
+}
+Grace_prelude.methods['clone(1)$build(3)'] = prelude_clone_build;
+
+function prelude_clone_build (ignore, obj, ouc, aliases, exclusions) {
+    // shallow copy, except up the superchain
+    ouc.superobj = null;
     if (obj.superobj)
-        copy.superobj = clone(obj.superobj);
-    copy.className = obj.className;
-    copy.methods = obj.methods;
-    copy.mutable = obj.mutable;
-    copy.outer = obj.outer;
-    copy.definitionModule = obj.definitionModule;
-    copy.definitionLine = obj.definitionLine;
-    copy.data = {};
+        ouc.superobj = prelude_clone(null, obj.superobj);
+    ouc.className = obj.className;
+    ouc.methods = obj.methods;
+    ouc.mutable = obj.mutable;
+    ouc.outer = obj.outer;
+    ouc.definitionModule = obj.definitionModule;
+    ouc.definitionLine = obj.definitionLine;
+    ouc.data = {};
     for (var attr in obj.data) {
         if (obj.data.hasOwnProperty(attr))
-            copy.data[attr] = obj.data[attr];
+            ouc.data[attr] = obj.data[attr];
     }
     var props = obj.closureKeys || [];
-    copy.closureKeys = props.slice();     // makes a shallow copy
-    for (var ox = 0, len = copy.closureKeys.length; ox < len; ox++) {
-      var k = obj.closureKeys[ox];
-      copy[k] = obj[k];
+    ouc.closureKeys = props.slice();     // makes a shallow copy
+    for (var oix = 0, cLen = ouc.closureKeys.length; oix < cLen; oix++) {
+        var k = obj.closureKeys[oix];
+        ouc[k] = obj[k];
     }
-    return copy;
+    for (var aix = 0, aLen = aliases.length; aix < aLen; aix++) {
+        var oneAlias = aliases[aix];
+        ouc.methods[oneAlias.newName] = obj.methods[oneAlias.oldName];
+    }
+    for (var eix = 0, eLen = exclusions.length; eix < eLen; eix++) {
+        var exMeth = exclusions[eix];
+        delete ouc.methods[exMeth];
+    }
+    return nullFunction;                // the init function for this clone
 }
 Grace_prelude.methods['become(2)'] = function(argcv, a, b) {
     for(var k in a) {
