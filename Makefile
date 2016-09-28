@@ -272,16 +272,16 @@ js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sa
 	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
 #	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
-js/%tandardGrace.js js/%tandardGrace.gct: standardGrace.grace js/collectionsPrelude.gct minigrace
-	GRACE_MODULE_PATH=modules:js ./minigrace --target js --dir js --make $(VERBOSITY) $<
+js/s%andardGrace.js js/s%andardGrace.gct: standardGrace.grace js/collectionsPrelude.gct minigrace
+	./minigrace --target js --dir js --make $(VERBOSITY) $<
+
+js/s%andardGraceClass.gct js/s%andardGraceClass.gct: standardGraceClass.grace minigrace
+	./minigrace $(VERBOSITY) --dir js --target js --make $<
 
 js/animation%gct js/animation%js: js/timer.gct objectdraw/animation.grace
 
 js: js/index.html js/dom.gct $(COMPILER_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES) minigrace
 	ln -f minigrace js/minigrace
-
-js/standardGraceClass%gct js/standardGraceClass%js: standardGraceClass.grace minigrace
-	./minigrace $(VERBOSITY) --target js --dir js --make $<
 
 $(KG)/minigrace:
 	if [ -e minigrace-$(VER).tar.bz2 ] ;\
@@ -329,12 +329,12 @@ l1/unixFilePath.gct: modules/unixFilePath.grace $(KG)/minigrace l1/standardGrace
 $(C_MODULES_GSO:%.gso=%.gct): modules/%.gct: stubs/%.gct
 	cd modules && ln -sf ../$< .
 
-$(LIBRARY_MODULES:%.grace=modules/%.gcn): modules/%.gcn: modules/%.gso
+$(LIBRARY_MODULES:%.grace=modules/%.gcn): modules/%.gcn: modules/%.gct
 
-$(LIBRARY_MODULES:%.grace=modules/%.gct): modules/%.gct: modules/%.gso
+$(LIBRARY_MODULES:%.grace=modules/%.gso): modules/%.gso: modules/%.gct
 
-$(LIBRARY_MODULES:%.grace=%.gct): %.gct: modules/%.grace l1/minigrace
-	cd l1 && ./minigrace $(VERBOSITY) --make --dir .. --noexec ../$<
+$(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gct): modules/%.gct: modules/%.grace minigrace
+	GRACE_MODULE_PATH=modules ./minigrace $(VERBOSITY) --make --noexec $<
 
 $(MODULES_WO_JSONLY:%.grace=modules/%.gso): modules/%.gso: modules/%.grace minigrace
 	GRACE_MODULE_PATH=modules ./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
@@ -350,17 +350,17 @@ Makefile.conf: configure stubs modules
 $(REALSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: l1/%.grace l1/standardGrace.gct $(KG)/minigrace
 	cd l1 && GRACE_MODULE_PATH=. ../$(KG)/minigrace  $(VERBOSITY) --make --noexec  $(<F)
 
-$(MGSOURCEFILES:%.grace=%.gct) $(MGSOURCEFILES:%.grace=%.gcn): $(MGSOURCEFILES:%.grace=%.gso)
+$(MGSOURCEFILES:%.grace=%.gcn): $(MGSOURCEFILES:%.grace=%.gct)
 
-$(MGSOURCEFILES:%.grace=%.gcn): $(MGSOURCEFILES:%.grace=%.gso)
+$(MGSOURCEFILES:%.grace=%.gso): $(MGSOURCEFILES:%.grace=%.gct)
 
-$(MGSOURCEFILES:%.grace=%.gso): %.gso: %.grace standardGrace.gct l1/minigrace
+$(MGSOURCEFILES:%.grace=%.gct): %.gct: %.grace standardGrace.gct l1/minigrace
 	GRACE_MODULE_PATH=. l1/minigrace $(VERBOSITY) --make --noexec $<
 
-$(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace js/standardGrace.gct minigrace
-	GRACE_MODULE_PATH=modules ./minigrace $(VERBOSITY) --make --target js --dir js $<
+$(MGSOURCEFILES:%.grace=js/%.gct): js/%.gct: %.grace js/standardGrace.gct minigrace
+	GRACE_MODULE_PATH=modules:js ./minigrace $(VERBOSITY) --make --target js --dir js $<
 
-$(MGSOURCEFILES:%.grace=js/%.gct): js/%.gct: js/%.js
+#$(MGSOURCEFILES:%.grace=js/%.js): js/%.js: js/%.gct
 
 $(C_MODULES_GSO:modules/%.gso=%.gso): %.gso: modules/%.gso
 	ln -sf $< .
@@ -487,11 +487,9 @@ $(filter-out modules/curl.gso,$(DYNAMIC_STUBS:%.grace=modules/%.gso)): modules/%
 s%andardGraceClass.gct s%andardGraceClass.gcn: standardGraceClass.grace minigrace
 	./minigrace $(VERBOSITY) --make $<
 
-$(SOURCEFILES:%.grace=js/tests/%.gct): js/tests/%.gct: js/%.gct
-	cd js/tests; ln -sf ../$(<F) .
-
 $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
 	cd js/tests; ln -sf ../$(<F) .
+	cd js/tests; ln -sf ../$(<F:%.js=%.gct) .
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 	ln -sf $< .
@@ -553,9 +551,9 @@ $(TYPE_DIALECTS:%=%.gso): %.gso: $(DIALECTS_NEED:%=%.gso) $(DIALECTS_NEED:%=%.gc
 
 $(TYPE_DIALECTS:%=js/%.js): js/%.js: $(DIALECTS_NEED:%=%.gso) $(DIALECTS_NEED:%=%.gct) $(patsubst modules/%, js/%.js, $(filter modules/%,$(DIALECTS_NEED)))
 
-$(TYPE_DIALECTS:%=%.gct): %.gct: %.gso
+$(TYPE_DIALECTS:%=%.gso): %.gso: %.gct
 
-$(TYPE_DIALECTS:%=%.gcn): %.gcn: %.gso
+$(TYPE_DIALECTS:%=%.gcn): %.gcn: %.gct
 
 test.js: minigrace-js-env
 	js/tests/harness minigrace js/tests "" $(TESTS)
