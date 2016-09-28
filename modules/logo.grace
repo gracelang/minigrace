@@ -12,6 +12,10 @@ def green is public = turtle.green
 def blue is public = turtle.blue
 def black is public = turtle.black
 
+method r (r) g (g) b (b) {
+    turtle.r(r)g(g)b(b)
+}
+
 var lineWidth is public := 1
 var lineColor is public := black
 
