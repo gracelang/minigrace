@@ -593,7 +593,7 @@ method compileMethodBodyWithTypecheck(o) {
     ret
 }
 
-method compileFreshMethod(o, selfObj) {
+method compileFreshMethod(o, outerRef) {
     // compiles the methodNode o in a way that can be used with an `inherit`
     // statement. _Two_ methods are generated: one to build the new object,
     // and one to initialize it.  The build method will also implement
@@ -601,31 +601,16 @@ method compileFreshMethod(o, selfObj) {
     // (result) expression.
     // The final (result) expression of method o may be of three kinds:
     //   (1) an object constructor,
-    //   (2) a request on another fresh (which will have its own initialization),
-    //   (3) a request of a clone or a copy (which has no initialization).
+    //   (2) a request on another fresh method (which will return its init function),
+    //   (3) a request of a clone or a copy (which returns a null init function).
 
-    var ret := "GraceDone"
     def resultExpr = o.resultExpression
     if (resultExpr.isObject) then {     // case (1)
-        compileBuildMethod(o, resultExpr, selfObj)
-    } elseif { resultExpr.isFresh } then {  // case (2)
-        o.body.removeLast    // remove tail object
-        compileMethodBody(o)
-        o.body.addLast(resultExpr)     // put resultExpr back
-        util.setPosition(resultExpr.line, resultExpr.linePos)
-        def obj = ast.identifierNode.new("inheritingObject", false)
-        def als = ast.identifierNode.new("aliases", false)
-        def exs = ast.identifierNode.new("exclusions", false)
-        resultExpr.with.addLast(ast.requestPart.request "$build"
-                        withArgs [ obj, als, exs ] )
-        def objcon = compilenode(resultExpr)
-        ret := "inheritingObject"
-        compileResultTypeCheck(o, ret) onLine (resultExpr.line)
-    } else {    // case (3)
-        compileBuildMethodFromClone(o)
-        compileNullInitMethod(o)
+        compileBuildMethodFor(o) withObjCon (resultExpr) inside (outerRef)
+    } else {                            // cases (2) and (3)
+        compileBuildMethodFor(o) withFreshCall (resultExpr) inside (outerRef)
     }
-    return ret
+    return "GraceDone"
 }
 
 method compileMethodBody(methNode) {
@@ -718,7 +703,7 @@ method compilemethod(o, selfobj) {
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
 }
-method compileBuildMethod(methNode, objNode, outerRef) {
+method compileBuildMethodFor(methNode) withObjCon (objNode) inside (outerRef) {
     // the $build method for a fresh method executes the statements in the
     // body of the fresh method, and then calls the build function of the
     // object constructor.  That build function will return the _init function
@@ -737,35 +722,57 @@ method compileBuildMethod(methNode, objNode, outerRef) {
     compileBuildAndInitFunctions(objNode) inMethod (methNode)
     def objRef = objNode.register
     out "var {objRef}_init = {objRef}_build.call(inheritingObject, null{params}, {outerRef}, aliases, exclusions{typeParams});"
-    out "return {objRef}_init;      // from compileBuildMethod"
+    out "return {objRef}_init;      // from compileBuildMethodFor(_)withObjCon(_)inside(_)"
     compileMethodPostamble(methNode, funcName, cName)
     out "this.methods[\"{name}\"] = {funcName};"
     compileMetadata(methNode, funcName, name)
 }
-method compileBuildMethodFromClone(methNode) {
+method compileBuildMethodFor(methNode) withFreshCall (callExpr) inside (outerRef) {
     // The build method will have three additional parameters:
     // `inheritingObject`, `aliases`, and `exclusions`.  These
     // will be passed to it by the `inherit` statement.
 
     def funcName = uidWithPrefix "func"
     def name = escapestring(methNode.nameString ++ "$build(3)")
-    compileMethodPreamble(methNode, funcName, methNode.canonicalName ++ "$build(_,_,_)")
-        withParams( paramlist(methNode) ++ ", var_ouc, var_aliases, var_exclusions")
-    def tempObj = compileMethodBody(methNode)  // TODO: optimize this by  re-using the
-    compileAliasesFrom (tempObj)               // components of tempObj, rather than copying
-    copyDownMethodsFrom (tempObj) to "var_ouc" excludingDynamically "var_exclusions"
-    copyDownDataFrom (tempObj) to "var_ouc"
-    compileMethodPostamble(methNode, funcName, methNode.nameString ++ "$build(_,_,_)")
+    def cName = escapestring(methNode.canonicalName ++ "$build(_,_,_)")
+    compileMethodPreamble(methNode, funcName, cName)
+        withParams( paramlist(methNode) ++ ", ouc, aliases, exclusions")
+    compileMethodBodyWithoutLast(methNode)
+
+    // Now compile the call, with the three aditional arguments.
+    // TODO: refactor compilecall so that it can handle this case, as well as
+    // normal calls.
+    def calltemp = uidWithPrefix "call"
+    callExpr.register := calltemp
+    var args := []
+    compileNormalArguments(callExpr, args)
+    args.addAll ["ouc", "aliases", "exclusions"]
+    compileTypeArguments(callExpr, args)
+    compileCallToBuildMethod(callExpr) withArgs (args)
+    compileResultTypeCheck(methNode, "ouc") onLine (callExpr.line)
+    out "return {calltemp};      // from compileBuildMethodFor(_)withFreshCall(_)inside(_)"
+    compileMethodPostamble(methNode, funcName, cName)
     out "this.methods[\"{name}\"] = {funcName};"
     compileMetadata(methNode, funcName, name)
 }
-method compileNullInitMethod(methNode) {
-    // An init method must exist for each fresh method; this one does nothing
-
-    def name = escapestring(methNode.nameString ++ "$init(1)")
-    out "this.methods[\"{name}\"] = function() \{ \};"
+method compileCallToBuildMethod(callExpr) withArgs (args) {
+    util.setPosition(callExpr.line, callExpr.linePos)
+    callExpr.with.addLast(
+        ast.requestPart.request "$build"
+            withArgs [ast.nullNode, ast.nullNode, ast.nullNode]
+    )
+    def receiver = callExpr.receiver
+    if { receiver.isOuter } then {
+        compileOuterRequest(callExpr, args)
+    } elseif { receiver.isSelf } then {
+        compileSelfRequest(callExpr, args)
+    } elseif { receiver.isPrelude } then {
+        compilePreludeRequest(callExpr, args)
+    } else {
+        compileOtherRequest(callExpr, args)
+    }
+    callExpr.with.removeLast
 }
-
 method paramlist(o) {
     // a comma-prefixed and separated list of the parameters
     // described by methodnode o.
@@ -1045,17 +1052,23 @@ method compileop(o) {
     o.register := rnm ++ auto_count
     auto_count := auto_count + 1
 }
-method compileArguments(o, args) {
+method compileNormalArguments(o, args) {
     for (o.with) do { part ->
         for (part.args) do { p ->
             args.push(compilenode(p))
         }
     }
+}
+method compileTypeArguments(o, args) {
     if (false != o.generics) then {
         o.generics.do {g->
             args.push(compilenode(g))
         }
     }
+}
+method compileArguments(o, args) {
+    compileNormalArguments(o, args)
+    compileTypeArguments(o, args)
 }
 method assembleArguments(args) {
     var result := ""
@@ -1534,40 +1547,6 @@ method exclusionList(inhNode) {
         res := res ++ ", "
     }
     res ++ "]"
-}
-
-method compileAliasesFrom (temp) {
-    out "for (var ix = 0, aLen = var_aliases.length; ix < aLen; ix++) \{"
-    out "  var oneAlias = var_aliases[ix];"
-    out "  var_ouc.methods[oneAlias.newName] = findMethod({temp}, oneAlias.oldName);"
-    out "}"
-}
-
-method copyDownMethodsFrom (sup) to (selfr) excludingDynamically (exclusionString) {
-    out "var meths = {sup}.methods, exclusions = {exclusionString};"
-    out "for (var key in meths) \{"
-    out "    if (meths.hasOwnProperty(key) && (! {selfr}.methods[key])) \{"
-    out "        if (! exclusions.includes(key))"
-    out "            {selfr}.methods[key] = meths[key];"
-    out "    }"
-    out "}"
-}
-
-method copyDownDataFrom (sup) to (dest) {
-    out "if ({sup}.data) \{"
-    out "    for (var dKey in {sup}.data) \{"
-    out "        if ({sup}.data.hasOwnProperty(dKey))"
-    out "            {dest}.data[dKey] = {sup}.data[dKey];"
-    out "    }"
-    out "}"
-    out "if ({sup}.hasOwnProperty('_value'))"
-    out "    {dest}._value = {sup}._value;"
-    out "var cks = {sup}.closureKeys";
-    out "for (var ckix = 0, ckLen = cks.length; ckix < ckLen; ckix++) \{"
-    out "    var ck = cks[ckix];"
-    out "    {dest}[ck] = {sup}[ck];"
-    out "    {dest}.closureKeys.push(ck);"
-    out "}"
 }
 
 method compileUse(useNode) in (objNode) {
