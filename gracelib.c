@@ -5002,6 +5002,9 @@ Object callmethodflags(Object receiver, const char *name,
     int i, j;
     int start_calldepth = calldepth;
     int start_exceptionHandlerDepth = exceptionHandlerDepth;
+    if (receiver == NULL) {
+        graceRaise(ExceptionError(), "method %s requested on NULL receiver", canonicalMethodName(name));
+    }
     if (receiver->flags & FLAG_DEAD) {
         debug("requested method on freed object %p: %s.%s",
                 receiver, receiver->class->name, name);
