@@ -27,7 +27,7 @@ GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 MODULES_WO_JSONLY = $(sort $(filter-out $(JSONLY), $(LIBRARY_MODULES)))
 # MODULES_WO_JSONLY is necessary because LIBRARY_MODULES is built by ./configure,
 # and depends on the contents of the modules directory.  So LIBRARY_MODULES may or
-# may not contain JSONLY, depending on whether this is the first or subsequent make.
+# may not contain OBJECTDRAW, depending on whether this is the first or subsequent make.
 
 JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
 MGFLAGS = -XnoChecks
@@ -127,7 +127,7 @@ checkgenjs: l1/minigrace
         then l1/minigrace --dir js --target js --verbose ast.grace ; fi
 	jsl -nologo -conf tools/jsl.genjs.conf -process js/ast.js
 
-collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
+collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace l1/unicode.gso
 	cd l1 && GRACE_MODULE_PATH=. ./minigrace $(VERBOSITY) --make --noexec -XNoMain --dir .. --gracelib .. ../$<
 
 collectionsPrelude.gcn: collectionsPrelude.gct
@@ -217,7 +217,7 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 	install -p -m 644 gracelib.h $(INCLUDE_PATH)
 	install -p -m 644 mirrors.gso mirrors.gct $(MODULE_PATH)
 	install -p -m 644 $(COMPILER_MODULES) $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grace=%.gct) $(MODULE_PATH)
-	install -p -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=modules/%.gct) $(LIBRARY_MODULES:%.grace=js/%.js) $(MODULES_WO_JSONLY:%.grace=modules/%.gcn) $(MODULES_WO_JSONLY:%.grace=modules/%.gso) js/dom.js js/dom.gct $(MODULE_PATH)
+	install -p -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=js/%.gct) $(LIBRARY_MODULES:%.grace=js/%.js) $(MODULES_WO_JSONLY:%.grace=modules/%.gcn) $(MODULES_WO_JSONLY:%.grace=modules/%.gso) js/dom.js js/dom.gct $(MODULE_PATH)
 	install -p -m 644 standardGrace.gcn collectionsPrelude.gcn $(MODULE_PATH)
 	@./tools/warnAbout PATH $(PREFIX)/bin
 	@./tools/warnAbout GRACE_MODULE_PATH $(MODULE_PATH)
@@ -228,8 +228,8 @@ $(JSONLY:%.grace=modules/%.gso): modules/%.gso:
 $(JSONLY:%.grace=modules/%.gcn): modules/%.gcn:
 	@echo "Can't build $@; no C version of dependencies"
 
-$(JSONLY:%.grace=modules/%.gct): modules/%.gct: js/%.gct
-	cd modules && ln -sf ../$< .
+$(JSONLY:%.grace=modules/%.gct): modules/%.gct:
+	@echo "Can't build $@; no C version of dependencies"
 
 $(JSONLY:%.grace=js/%.js): js/%.js: modules/%.grace js/dom.gct minigrace js/timer.gct
 	GRACE_MODULE_PATH=js:modules ./minigrace --target js --dir js --make $(VERBOSITY) $<
@@ -321,17 +321,17 @@ l1/curl.gso: curl.c gracelib.h
 l1/mirrors.gso: $(KG)/mirrors.gso
 	cd l1 && ln -f ../$(KG)/mirrors.gso .
 
-l1/unicode.gso: $(KG)/unicode.gso
+l1/unicode.gso: unicode.c
+	gcc -g -std=c99 $(UNICODE_LDFLAGS) -I/usr/local/include -L/usr/local/lib -o $@ -shared -fPIC $<
 
 $(LIBRARY_MODULES:%.grace=modules/%.gcn): modules/%.gcn: modules/%.gso
 
 $(LIBRARY_MODULES:%.grace=modules/%.gso): modules/%.gso: modules/%.gct
 
-$(LIBRARY_MODULES:%.grace=%.gct): %.gct: modules/%.grace minigrace
+$(MODULES_WO_JSONLY:%.grace=modules/%.gct): modules/%.gct: modules/%.grace minigrace
 	GRACE_MODULE_PATH=modules ./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
-$(MODULES_WO_JSONLY:%.grace=modules/%.gso): modules/%.gso: modules/%.grace minigrace
-	GRACE_MODULE_PATH=modules ./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+$(MODULES_WO_JSONLY:%.grace=modules/%.gso): modules/%.gso: modules/%.gct
 
 $(MODULES_WO_JSONLY:%.grace=js/%.js): js/%.js: modules/%.grace minigrace
 	GRACE_MODULE_PATH=modules ./minigrace $(VERBOSITY) --make --target js --dir js $<
@@ -349,7 +349,7 @@ $(MGSOURCEFILES:%.grace=%.gcn): $(MGSOURCEFILES:%.grace=%.gct)
 $(MGSOURCEFILES:%.grace=%.gso): $(MGSOURCEFILES:%.grace=%.gct)
 
 $(MGSOURCEFILES:%.grace=%.gct): %.gct: %.grace standardGrace.gct l1/minigrace
-	GRACE_MODULE_PATH=. l1/minigrace $(VERBOSITY) --make --noexec $<
+	GRACE_MODULE_PATH=.:.. l1/minigrace $(VERBOSITY) --make --noexec $<
 
 $(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace js/standardGrace.gct minigrace
 	GRACE_MODULE_PATH=js ./minigrace $(VERBOSITY) --make --target js --dir js $<
@@ -368,7 +368,7 @@ minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) $
 
 minigrace-environment: minigrace-c-env minigrace-js-env
 
-minigrace-c-env: minigrace standardGrace.gct gracelib.o $(LIBRARY_MODULES:%.grace=modules/%.gct) .git/hooks/commit-msg
+minigrace-c-env: minigrace standardGrace.gct gracelib.o unicode.gso $(MODULES_WO_JSONLY:%.grace=modules/%.gct) .git/hooks/commit-msg
 
 minigrace-js-env: minigrace js/grace js/grace-debug standardGrace.gct js/standardGraceClass.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) $(JSSOURCEFILES:%.js=%.gct) $(TYPE_DIALECTS:%=modules/%.gso) $(TYPE_DIALECTS:%=js/%.js) $(TEST_DEPENDENCIES:%=js/tests/%.js) $(TEST_DEPENDENCIES:%=js/tests/%.gct)
 
@@ -470,7 +470,7 @@ selftest-js: minigrace-js-env $(ALL_LIBRARY_MODULES:%.grace=../js/%.js)
 	tests/harness selftest-js/minigrace tests
 
 # must be a pattern rule to get the "simultaneous build" semantics.
-s%andardGrace.gct s%andardGrace.gcn: standardGrace.grace collectionsPrelude.gct l1/minigrace
+s%andardGrace.gct s%andardGrace.gcn: standardGrace.grace collectionsPrelude.gct l1/minigrace l1/unicode.gso
 	cd l1 && GRACE_MODULE_PATH=. ./minigrace $(VERBOSITY) --make --noexec -XNoMain --dir .. ../$<
 
 # The next few rules are Static Pattern Rules.  Each is like an implicit rule
@@ -489,7 +489,7 @@ $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 	ln -sf $< .
 
-$(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace standardGrace.gct l1/minigrace
+$(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace standardGrace.gct l1/minigrace l1/unicode.gso
 	@rm -f $(@:%.gct=%{.c,.gcn,})
 	cd l1 && GRACE_MODULE_PATH=. ./minigrace $(VERBOSITY) --make --noexec --dir ../stubs ../$<
 	@rm -f $(@:%.gct=%{.c,.gcn});

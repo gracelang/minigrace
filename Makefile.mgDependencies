@@ -5,7 +5,7 @@ l1/gUnit.gct: l1/mirrors.gct l1/mirrors.gso
 l1/genc.gct: l1/io.gct l1/sys.gct l1/ast.gct l1/util.gct l1/stringMap.gct l1/xmodule.gct l1/mirrors.gct l1/mirrors.gso  l1/errormessages.gct
 l1/genjs.gct: l1/io.gct l1/sys.gct l1/ast.gct l1/util.gct l1/xmodule.gct l1/mirrors.gct l1/mirrors.gso l1/errormessages.gct
 l1/identifierresolution.gct: l1/io.gct l1/sys.gct l1/ast.gct l1/util.gct l1/xmodule.gct l1/stringMap.gct l1/mirrors.gct l1/mirrors.gso l1/errormessages.gct  l1/identifierKinds.gct
-l1/lexer.gct: l1/util.gct l1/unicode.gso l1/unicode.gct l1/errormessages.gct
+l1/lexer.gct: l1/util.gct l1/unicode.gct l1/errormessages.gct
 l1/minigrace: l1/io.gct l1/sys.gct l1/unicode.gct l1/util.gct l1/lexer.gct l1/ast.gct l1/parser.gct l1/genc.gct l1/genjs.gct l1/buildinfo.gct l1/identifierresolution.gct l1/mirrors.gct l1/mirrors.gso
 l1/parser.gct: l1/io.gct l1/ast.gct l1/util.gct l1/errormessages.gct
 l1/symbolTable.gct: l1/ast.gct l1/errormessages.gct
@@ -34,7 +34,7 @@ modules/gUnit.gct: mirrors.gct  mirrors.gso
 genc.gct: io.gct sys.gct ast.gct util.gct stringMap.gct xmodule.gct mirrors.gso errormessages.gct
 genjs.gct: io.gct sys.gct ast.gct util.gct xmodule.gct mirrors.gso errormessages.gct
 identifierresolution.gct: io.gct sys.gct ast.gct util.gct xmodule.gct stringMap.gct mirrors.gso errormessages.gct  identifierKinds.gct
-lexer.gct: util.gct unicode.gso unicode.gct errormessages.gct
+lexer.gct: util.gct unicode.gct errormessages.gct
 minigrace: io.gct sys.gct unicode.gct util.gct lexer.gct ast.gct parser.gct genc.gct genjs.gct buildinfo.gct identifierresolution.gct mirrors.gso
 parser.gct: io.gct ast.gct util.gct errormessages.gct
 symbolTable.gct: ast.gct errormessages.gct
@@ -69,7 +69,7 @@ compiler.gso: genc.gso genjs.gso lexer.gso parser.gso identifierresolution.gso
 genc.gso: xmodule.gso
 genjs.gso: xmodule.gso
 identifierresolution.gso: xmodule.gso identifierKinds.gso
-lexer.gso: unicode.gso errormessages.gso
+lexer.gso: unicode.gct errormessages.gso
 parser.gso: ast.gso errormessages.gso
 xmodule.gso: ast.gso mirrors.gso errormessages.gso
 ## GENERATED WITH: for i in stringMap errormessages buildinfo util ast; do ./tools/make-depend $i; done | sort -u | grep -v :$ | sed 's/gct/gso/g'
