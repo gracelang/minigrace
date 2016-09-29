@@ -574,6 +574,7 @@ uninstall:
 	rm -f $(OBJECT_PATH)/gracelib.o
 	rm -f $(INCLUDE_PATH)/gracelib.h
 	rm -rf $(MODULE_PATH)/*.{gct,js,grace,gcn,gso,gso.dSYM,c}
+	rm -rf $(MODULE_PATH)/gracelib.o
 
 webIde:
 	$(MAKE) ide
