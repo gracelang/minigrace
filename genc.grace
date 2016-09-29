@@ -305,7 +305,7 @@ method compileobjvardecmeth(o, selfr, pos) {
     outF("  struct UserObject *uo = (struct UserObject *)self;")
     outF("  return uo->data[{pos}];")
     outF("\}")
-    out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\", &reader_{escmodname}_{inm}_{myc}, {rflags});")
+    out("    Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\", &reader_{escmodname}_{inm}_{myc}, {rflags});")
     outF("Object writer_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
@@ -313,11 +313,11 @@ method compileobjvardecmeth(o, selfr, pos) {
     outF("  uo->data[{pos}] = args[0];")
     outF("  return done;");
     outF("\}")
-    out("  Method *writer{myc} = addmethodrealflags({selfr}, \"{enm}:=(1)\", &writer_{escmodname}_{inm}_{myc}, {wflags});")
-    out("  reader{myc}->definitionModule = modulename;")
-    out("  writer{myc}->definitionModule = modulename;")
-    out("  reader{myc}->definitionLine = {o.line};")
-    out("  writer{myc}->definitionLine = {o.line};")
+    out("    Method *writer{myc} = addmethodrealflags({selfr}, \"{enm}:=(1)\", &writer_{escmodname}_{inm}_{myc}, {wflags});")
+    out("    reader{myc}->definitionModule = modulename;")
+    out("    writer{myc}->definitionModule = modulename;")
+    out("    reader{myc}->definitionLine = {o.line};")
+    out("    writer{myc}->definitionLine = {o.line};")
 }
 method compileobjvardec(o, selfr, pos) {
     var val := "undefined"
@@ -330,14 +330,14 @@ method compileobjvardec(o, selfr, pos) {
     var enm := escapestring2(nm)
     var inm := escapeident(nm)
     out("// OBJECT VAR DEC " ++ nm)
-    out("  adddatum2({selfr}, {val}, {pos});")
+    out("    adddatum2({selfr}, {val}, {pos});")
     outF("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
     outF("  struct UserObject *uo = (struct UserObject *)self;")
     outF("  return uo->data[{pos}];")
     outF("\}")
-    out("  addmethodreal({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc});")
+    out("    addmethodreal({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc});")
     outF("Object writer_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
@@ -345,7 +345,7 @@ method compileobjvardec(o, selfr, pos) {
     outF("  uo->data[{pos}] = args[0];")
     outF("  return done;");
     outF("\}")
-    out("  addmethodreal({selfr}, \"{enm}:=(1)\", &writer_{escmodname}_{inm}_{myc});")
+    out("    addmethodreal({selfr}, \"{enm}:=(1)\", &writer_{escmodname}_{inm}_{myc});")
 }
 method compileobject(o, outerRef) {
     var origInBlock := inBlock
@@ -383,10 +383,10 @@ method compileobject(o, outerRef) {
         ++ "{numFields}, objclass{myc});")
     out("  gc_frame_newslot({selfr});")
     if (o.name != "object") then {
-        out("if (objclass{myc} == NULL) \{")
-        out("  glfree({selfr}->class->name);")
-        out("  {selfr}->class->name = \"{o.name}\";")
-        out("\}")
+        out("  if (objclass{myc} == NULL) \{")
+        out("    glfree({selfr}->class->name);")
+        out("    {selfr}->class->name = \"{o.name}\";")
+        out("  \}")
     }
     compileobjouter(selfr, outerRef)
     out("  Object oldself{myc} = self;")
@@ -412,21 +412,21 @@ method compileobject(o, outerRef) {
         if (e.kind == "method") then {
             compilemethod(e, selfr, pos)
         } elseif { e.kind == "vardec" } then {
-            out("if (objclass{myc} == NULL) \{")
+            out("  if (objclass{myc} == NULL) \{")
             compileobjvardecmeth(e, selfr, pos)
-            out("\}")
-            out("{selfr}->flags |= OFLAG_MUTABLE;")
-            out("adddatum2({selfr}, alloc_Undefined(), {pos});")
+            out("  \}")
+            out("  {selfr}->flags |= OFLAG_MUTABLE;")
+            out("  adddatum2({selfr}, alloc_Undefined(), {pos});")
         } elseif { e.kind == "defdec" } then {
-            out("if (objclass{myc} == NULL) \{")
+            out("  if (objclass{myc} == NULL) \{")
             compileobjdefdecmeth(e, selfr, pos)
-            out("\}")
-            out("adddatum2({selfr}, alloc_Undefined(), {pos});")
+            out("  \}")
+            out("  adddatum2({selfr}, alloc_Undefined(), {pos});")
         } elseif { e.kind == "typedec" } then {
-            out("if (objclass{myc} == NULL) \{")
+            out("  if (objclass{myc} == NULL) \{")
             compileobjtypemeth(e, selfr, pos)
-            out("\}")
-            out("adddatum2({selfr}, alloc_Undefined(), {pos});")
+            out("  \}")
+            out("  adddatum2({selfr}, alloc_Undefined(), {pos});")
         } else {
             pos := pos - 1
         }
