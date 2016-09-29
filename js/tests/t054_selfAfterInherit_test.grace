@@ -9,10 +9,11 @@ inherit prelude.methods
     // replaces the object under construction by the
     // inherited object.  So this inherit statment
     // is here to check that self is still correctly
-    // bound.  It is, but the asString method lies
+    // bound
 
 method three { "three " }
 method this { self }
+method asString { "the t054 module object" }
 def two = object  {
     method asString { "two " }
     method thisModule { this }  // compiles to outer.this
@@ -20,7 +21,6 @@ def two = object  {
 class count {
     method asString { "one " ++ two ++ three }
 }
-print(self)             // prints the wrong module name
-print(self.three)       // this works!
+print(self)
 print(two.thisModule)
 print(count)
