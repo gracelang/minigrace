@@ -1,8 +1,11 @@
 import "gUnit" as gU
 import "stringMap" as map
 import "unicode" as unicode
-import "math" as math
+import "random" as random
 import "sys" as sys
+
+
+def charBase = "a".ord
 
 def stringMapTest = object {
     class forMethod(meth) {
@@ -112,7 +115,7 @@ def stringMapTest = object {
         method randomStrings(n) {
             def result = emptyList
             (1..n).do { ix ->
-                if ((ix % 1000) == 0) then {
+                if ((ix % 100) == 0) then {
                     result.add(shortRandomString)
                 } else {
                     result.add(longerRandomString)
@@ -122,24 +125,24 @@ def stringMapTest = object {
 //            for (1..100) do { ix -> print "    {result.at(ix)}" }
             result
         }
+        method randomChar {
+            unicode.create((random.integerIn 0 to 25) + charBase)
+        }
+
         method shortRandomString {
             def base = "a".ord
-            if ((math.random * 27) < 1) then {
-                def ch = (math.random * 26).truncated + base
-//                print "single char '{unicode.create(ch)}'"
-                unicode.create(ch)
+            def singleCharFraction = 1/10
+            if (random.between0And1 < singleCharFraction) then {
+                randomChar
             } else {
-                def ch1 = (math.random * 26).truncated + base
-                def ch2 = (math.random * 26).truncated + base
-                unicode.create(ch1) ++ unicode.create(ch2)
+                randomChar ++ randomChar
             }
         }
         method longerRandomString {
             def base = "a".ord
             var s := ""
-            repeat ((math.random * 10).truncated + 3) times {
-                def ch = (math.random * 26).truncated + base
-                s := s ++ unicode.create(ch)
+            repeat (random.integerIn 3 to 12) times {
+                s := s ++ randomChar
             }
             s
         }

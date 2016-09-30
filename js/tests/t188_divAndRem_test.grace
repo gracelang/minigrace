@@ -1,5 +1,4 @@
 import "gUnit" as gU
-import "math" as math
 
 def divisionTest = object {
     class forMethod(meth) {
