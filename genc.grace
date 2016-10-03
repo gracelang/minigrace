@@ -1748,7 +1748,8 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     outF("static Object inheritingObject = NULL;")
     outF("static const char modulename[] = \"{modname.quoted}\";");
     outF("Object module_standardGrace_init();");
-    outF("Object module_{escmodname};");
+    outF("extern Object module_standardGrace;");
+    outF("Object module_{escmodname} = NULL;");
     outF("static char *originalSourceLines[] = \{")
     for (util.cLines) do {l->
         outF("  \"{l}\",")
@@ -1760,6 +1761,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     topLevelTypes.put("Done", true)
     topLevelTypes.put("Block", true)
     out("Object module_{escmodname}_init() \{")
+    out("  if (module_{escmodname}) return module_{escmodname};")
     out("  int flags = 0;")
     out("  int frame = gc_frame_new();")
     out("  Object self = alloc_obj2({nummethods}, {nummethods});")
