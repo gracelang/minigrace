@@ -22,7 +22,7 @@
 // A sample use might be:
 //   mirrors.reflect(1).getMethod("+").request([[2]]) == 3
 
-Object mirrors_module = NULL;
+Object module_mirrors = NULL;
 ClassData MirrorClass;
 ClassData MirrorMethodClass;
 
@@ -259,16 +259,16 @@ Object mirrors_asString() {
 
 // Create and return a Grace object with the above functions as methods.
 Object module_mirrors_init() {
-    if (mirrors_module != NULL)
-        return mirrors_module;
+    if (module_mirrors != NULL)
+        return module_mirrors;
     ClassData c = alloc_class("mirrors", 4);
     add_Method(c, "asString", &mirrors_asString);
     add_Method(c, "asDebugString", &mirrors_asString);
     add_Method(c, "reflect(1)", &mirrors_reflect);
     add_Method(c, "loadDynamicModule(1)", &mirrors_loadDynamicModule);
     Object o = alloc_newobj(0, c);
-    mirrors_module = o;
-    gc_root(mirrors_module);
+    module_mirrors = o;
+    gc_root(module_mirrors);
     return o;
 }
 
