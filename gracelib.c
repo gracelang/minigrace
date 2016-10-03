@@ -3891,6 +3891,63 @@ Object Float64_sgn(Object self, int nparams, int *argcv,
     if (*d == 0.0) return alloc_Float64(*d);
     return alloc_Float64(*d > 0 ? 1 : -1);
 }
+Object Float64_sin(Object self, int nparams, int *argcv,
+                   Object *argv, int flags) {
+    double *d = (double*)self->data;
+    return alloc_Float64(sin(*d));
+}
+Object Float64_cos(Object self, int nparams, int *argcv,
+                   Object *argv, int flags) {
+    double *d = (double*)self->data;
+    return alloc_Float64(cos(*d));
+}
+Object Float64_tan(Object self, int nparams, int *argcv,
+                   Object *argv, int flags) {
+    double *d = (double*)self->data;
+    return alloc_Float64(tan(*d));
+}
+Object Float64_asin(Object self, int nparams, int *argcv,
+                   Object *argv, int flags) {
+    double *d = (double*)self->data;
+    return alloc_Float64(asin(*d));
+}
+Object Float64_acos(Object self, int nparams, int *argcv,
+                   Object *argv, int flags) {
+    double *d = (double*)self->data;
+    return alloc_Float64(acos(*d));
+}
+Object Float64_atan(Object self, int nparams, int *argcv,
+                   Object *argv, int flags) {
+    double *d = (double*)self->data;
+    return alloc_Float64(atan(*d));
+}
+Object Float64_sqrt(Object self, int nparams, int *argcv,
+                   Object *argv, int flags) {
+    double *d = (double*)self->data;
+    return alloc_Float64(sqrt(*d));
+}
+Object Float64_lg(Object self, int nparams, int *argcv,
+                    Object *argv, int flags) {
+    double *d = (double*)self->data;
+    double log2 = log(2.0);
+    double logA = log(*d);
+    return alloc_Float64(logA/log2);
+}
+Object Float64_ln(Object self, int nparams, int *argcv,
+                    Object *argv, int flags) {
+    double *d = (double*)self->data;
+    return alloc_Float64(log(*d));
+}
+Object Float64_exp(Object self, int nparams, int *argcv,
+                    Object *argv, int flags) {
+    double *d = (double*)self->data;
+    return alloc_Float64(exp(*d));
+}
+Object Float64_log10(Object self, int nparams, int *argcv,
+                    Object *argv, int flags) {
+    double *d = (double*)self->data;
+    return alloc_Float64(log10(*d));
+}
 void Float64__mark(Object self) {
     Object *strp = (Object*)(self->data + sizeof(double));
     if (*strp != NULL)
@@ -3917,7 +3974,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 39, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 50, (void*)&Float64__mark);
         add_Method(Number, "+(1)", &Float64_Add);
         add_Method(Number, "*(1)", &Float64_Mul);
         add_Method(Number, "-(1)", &Float64_Sub);
@@ -3953,6 +4010,17 @@ Object alloc_Float64(double num) {
         add_Method(Number, "ceiling", &Float64_ceiling);
         add_Method(Number, "abs", &Float64_abs);
         add_Method(Number, "sgn", &Float64_sgn);
+        add_Method(Number, "sin", &Float64_sin);
+        add_Method(Number, "cos", &Float64_cos);
+        add_Method(Number, "tan", &Float64_tan);
+        add_Method(Number, "asin", &Float64_asin);
+        add_Method(Number, "acos", &Float64_acos);
+        add_Method(Number, "atan", &Float64_atan);
+        add_Method(Number, "sqrt", &Float64_sqrt);
+        add_Method(Number, "ln", &Float64_ln);
+        add_Method(Number, "lg", &Float64_lg);
+        add_Method(Number, "log10", &Float64_log10);
+        add_Method(Number, "exp", &Float64_exp);
         add_Method(Number, "match(1)", &literal_match);
         add_Method(Number, "|(1)", &literal_or);
         add_Method(Number, "&(1)", &literal_and);
