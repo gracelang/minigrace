@@ -20,6 +20,7 @@ type IO = Object & type {
     input -> FileStream        // answers stdin
     output -> FileStream       // answers stdout
     error -> FileStream        // answers stderr
+    ask(question:String) -> String
     open (path:String, mode:String) -> FileStream
         // opens path in mode
     system (command:String) -> Boolean
@@ -123,12 +124,18 @@ class open (fileName:String, mode:String) -> FileStream {
     method eof -> Boolean { }
     method isatty -> Boolean { }
 }
+method ask(question:String) -> String { }
+    // asks `question` interactively, and returns the answer input
+    // by the interactive user.
 method system (command:String) -> Boolean { }
-// executes command in a sub-process and answers true if it exits with 0
+    // executes command in a sub-process and answers true if it exits with 0
 method exists (path:String) -> Boolean { }
+    // retunrs true if `path` names a file in the filesystem.
 method newer (path1:String, path2:String) -> Boolean { }
+    // returns true is `path1` is a newer file than `path2`
 method spawn (executable:String, args:Iterable⟦String⟧) -> Process { }
-// forks and execv's executable, with args
+    // forks and execv's executable, with args
 method realpath (path:String) -> String { }
-// answers the canonicalized absolute pathname
+    // answers the canonicalized absolute pathname corresponding to `path`
 method listdir (dirPath:String) -> Sequence⟦String⟧ { }
+    // lists the directory `dirPath`

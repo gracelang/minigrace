@@ -2206,6 +2206,9 @@ function gracecode_io() {
     this.methods['newer(2)'] = function io_browser_newer(argcv, jsFile, sourceFile) {
         return GraceTrue;
     };
+    this.methods['ask(1)'] = function io_ask(argcv, question) {
+        return new GraceString(minigrace.ask(question._value));
+    };
     return this;
 }
 
