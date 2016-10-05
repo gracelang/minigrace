@@ -261,8 +261,11 @@ method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is 
         parseGCT(moduleName) sourceDir(directory)
     }
     if (gctData.containsKey "dialect") then {
-        def dName = gctData.at "dialect" .first
-        checkimport(dName, dName, line, linePos, true)
+        def dialects = gctData.at "dialect"
+        if (dialects.isEmpty.not) then {
+            def dName = gctData.at "dialect" .first
+            checkimport(dName, dName, line, linePos, true)
+        }
     }
     def importedModules = gctData.at "modules" ifAbsent { emptySequence }
     def m = util.modname
@@ -475,7 +478,7 @@ method buildGctFor(module) {
     def confidentials = emptyList
     def meths = emptyList
     def types = emptyList
-    var theDialect := false
+    def theDialect = module.theDialect.moduleName
     module.parentsDo { p ->
         meths.addAll(p.providedNames)
     }
@@ -535,19 +538,17 @@ method buildGctFor(module) {
                     classes.push(v.name.value)
                 }
             }
-        } elseif { v.kind == "dialect" } then {
-            theDialect := v.value
         }
     }
     gct.at "classes" put(classes.sort)
     gct.at "confidential" put(confidentials.sort)
     gct.at "modules" put(module.imports.asList.sorted)
-    gct.at "path" put [module.name]
+    gct.at "path" put [io.realpath(util.infile.pathname)]
     gct.at "public" put(meths.sort)
     gct.at "types" put(types.sort)
-    if (false != theDialect) then {
-        gct.at "dialect" put [theDialect]
-    }
+    gct.at "dialect" put (
+        if (theDialect == "none") then { [] } else { [theDialect] }
+    )
     gct
 }
 
