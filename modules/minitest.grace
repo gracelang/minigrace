@@ -1,7 +1,6 @@
 import "gUnit" as gu
-import "standardGraceClass" as sgc
 
-inherit sgc.standardGrace
+inherit prelude.methods
 
 def MinitestError = prelude.ProgrammingError.refine "MinitestError"
 
