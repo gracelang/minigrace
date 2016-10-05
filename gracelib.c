@@ -4995,6 +4995,8 @@ start:
     Object prevSourceObject = sourceObject;
     sourceObject = realself;
     Object ret = NULL;
+    int prevLinenumber = linenumber;
+    const char * prevModulename = modulename;
     if (m != NULL && (m->flags & MFLAG_REALSELFALSO)) {
         calldepth--;
         Object(*func)(Object, Object, int, int*, Object*, int);
@@ -5008,6 +5010,8 @@ start:
                     ret, self->class->name, name);
         }
     }
+    linenumber = prevLinenumber;
+    modulename = prevModulename;
     sourceObject = prevSourceObject;
     if (ret != NULL) {
         gc_frame_end(frame);
