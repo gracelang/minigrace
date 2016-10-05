@@ -5961,24 +5961,27 @@ int find_gso(const char *name, char *buf) {
     strcat(nbuf, ".gso");
     return find_resource(nbuf, buf);
 }
+Object loadModule_fromPath(const char *name, char *buf) {
+    void *handle = dlopen(buf, RTLD_LAZY | RTLD_GLOBAL);
+    if (!handle)
+    gracedie("failed to load dynamic module '%s': %s", buf, dlerror());
+    strcpy(buf, "module_");
+    strcat(buf, escapeident(name));
+    strcat(buf, "_init");
+    Object (*init)() = dlsym(handle, buf);
+    if (!init)
+    gracedie("failed to find initialiser %s in dynamic module '%s'", buf, name);
+    Object mod = init();
+    gc_root(mod);
+    return mod;
+}
 Object dlmodule(const char *name) {
     int blen = PATH_MAX;
     char buf[blen];
     if (!find_gso(name, buf)) {
         gracedie("failed to find dynamic module '%s.gso'.\nHave you set the environment variable GRACE_MODULE_PATH?", name);
     }
-    void *handle = dlopen(buf, RTLD_LAZY | RTLD_GLOBAL);
-    if (!handle)
-        gracedie("failed to load dynamic module '%s': %s", buf, dlerror());
-    strcpy(buf, "module_");
-    strcat(buf, escapeident(name));
-    strcat(buf, "_init");
-    Object (*init)() = dlsym(handle, buf);
-    if (!init)
-        gracedie("failed to find initialiser %s in dynamic module '%s'", buf, name);
-    Object mod = init();
-    gc_root(mod);
-    return mod;
+    return loadModule_fromPath(name, buf);
 }
 void gracelib_stats() {
     grace_run_shutdown_functions();
