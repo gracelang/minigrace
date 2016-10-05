@@ -366,6 +366,9 @@ type Point =  {
 
     norm -> Point
     // the unit vector (vecor of length 1) in same direction as self
+
+    hash -> Number
+    // the hash of self
 }
 
 class alwaysEqual {     // a trait
@@ -404,8 +407,23 @@ class point2Dx (x') y (y') {
     method reverseDivideNumber(n) { point2Dx (n / x) y (n / x) }
     method reverseMinusNumber(n) { point2Dx (n - x) y (n - x) }
     method norm { self / self.length }
+    method hash { hashCombine(x.hash, y.hash) }
 }
 
+method hashCombine(a, b) {
+    native "c" code ‹
+        int a = (int)(args[0]->data);
+        int b = (int)(args[1]->data);
+        int aHash = a * 1664525;
+        int bHash = (b * 1664525 - 0xA21FE89) * 3;
+        return alloc_Float64((aHash * 2) ^ bHash);›
+    native "js" code ‹
+        var a = var_a._value;
+        var b = var_b._value;
+        var aHash = a * 1664525;
+        var bHash = (b * 1664525 - 0xA21FE89) * 3;
+        return new GraceNum((aHash * 2) ^ bHash);›
+}
 import "collectionsPrelude" as coll
 // collectionsPrelude defines types using &, so it can't be imported until
 // the above definition of TypeIntersection has been executed.
