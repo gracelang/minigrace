@@ -451,26 +451,21 @@ def collection is public = collections.collection
 def enumerable is public = collections.enumerable
 def indexable is public = collections.indexable
 
-method sequence⟦T⟧(arg) {
-    collections.sequence⟦T⟧.withAll(arg)
-}
-
+method sequence⟦T⟧ { collections.sequence⟦T⟧ }
+method sequence⟦T⟧(arg) { collections.sequence⟦T⟧.withAll(arg) }
 def emptySequence is public = collections.sequence.empty
 
-method list⟦T⟧(arg) {
-    collections.list⟦T⟧.withAll(arg)
-}
-method emptyList { collections.list.empty }
+method list⟦T⟧ { collections.list⟦T⟧ }
+method list⟦T⟧(arg) { collections.list⟦T⟧.withAll(arg) }
+method emptyList⟦T⟧ { collections.list⟦T⟧.empty }
 
-method set⟦T⟧(arg) {
-    collections.set⟦T⟧.withAll(arg)
-}
-method emptySet { collections.set.empty }
+method set⟦T⟧ { collections.set⟦T⟧ }
+method set⟦T⟧(arg) { collections.set⟦T⟧.withAll(arg) }
+method emptySet⟦T⟧ { collections.set⟦T⟧.empty }
 
-method dictionary⟦K, T⟧(arg) {
-    collections.dictionary⟦K, T⟧.withAll(arg)
-}
-method emptyDictionary { collections.dictionary.empty }
+method dictionary⟦K, T⟧  { collections.dictionary⟦K, T⟧ }
+method dictionary⟦K, T⟧(arg) { collections.dictionary⟦K, T⟧.withAll(arg) }
+method emptyDictionary⟦K, T⟧ { collections.dictionary⟦K, T⟧.empty }
 
 def binding is public = collections.binding
 def range is public = collections.range
