@@ -159,8 +159,6 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     if (imports.isAlready(nm)) then {
         return
     }
-    var noSource := false
-    // noSource implies that the module is written in native code, like "unicode.c"
 
     if (prelude.inBrowser) then {
         util.file(nm ++ ".js") onPath "" otherwise { _ ->
@@ -170,15 +168,37 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         return
     }
     def gmp = sys.environ.at "GRACE_MODULE_PATH"
-    def pn = filePath.fromString(pathname).setExtension "grace"
-    def moduleFileGrace = util.file(pn) on(util.sourceDir)
+    def pn = filePath.fromString(pathname).setExtension "gct"
+    def moduleFileGct = util.file(pn) on (util.outDir)
                                 orPath (gmp) otherwise { l ->
-        noSource := true
-        pn
+        def graceFile = pn.copy.setExtension "grace"
+        def moduleFileGrace = util.file(graceFile) on(util.outDir)
+                                orPath (gmp) otherwise { m ->
+            errormessages.error("I can't find {pn.shortName} " ++
+                "or {graceFile.shortName}; looked in {m}.") atLine (line)
+        }
+        compileModule (nm) inFile (moduleFileGrace.asString)
+                forDialect (isDialect) atLine (line)
+        util.file(pn) on(util.outDir) orPath (gmp) otherwise { m ->
+            errormessages.error("I just compiled {moduleFileGrace} " ++
+                "but can't find the .gct; looked in {m}.") atLine (line)
+        }
     }
-    var moduleFileGct := moduleFileGrace.copy.setExtension ".gct"
-    if (util.sourceDir != util.outDir) then {
-        moduleFileGct.setDirectory(util.outDir)
+
+    def gctDict = gctCache.at(nm) ifAbsent {
+        parseGCT (nm) sourceDir (moduleFileGct.directory)
+    }
+    def sourceFile = filePath.fromString(gctDict.at "path" .first)
+    def sourceExists = if (sourceFile.directory.contains "stub") then {
+        false        // for binary-only modules like unicode
+    } else {
+        sourceFile.exists
+    }
+    if (sourceExists) then {
+        if (! directory (sourceFile.directory) expectedOrInPath (gmp)) then {
+            errormessages.error("Found {moduleFileGct}, but it was compiled from " ++
+                  sourceFile ++ " which is not on your GRACE_MODULE_PATH.") atLine(line)
+        }
     }
     if (util.target == "c") then {
         def moduleFileGso = moduleFileGct.copy.setExtension ".gso"
@@ -196,7 +216,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
             binaryFile := moduleFileGcn
             importsSet := imports.static
         }
-        if (noSource && binaryFile.exists.not) then {
+        if (sourceExists.not && binaryFile.exists.not) then {
             binaryFile := util.file(binaryFile) onPath (gmp) otherwise { l ->
                 errormessages.error(
                     "I can't find {pn.shortName} or {binaryFile.shortName}; looked in {l}.")
@@ -215,35 +235,33 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         util.log 100 verbose "linkfiles is {imports.linkfiles}."
         if (binaryFile.exists && {
             moduleFileGct.exists } && {
-                noSource || { binaryFile.newer(moduleFileGrace) }
+                sourceExists.not || { binaryFile.newer(sourceFile) }
             }
         ) then {
         } else {
             if ( binaryFile.exists.not ) then {
                 util.log 60 verbose "{binaryFile} does not exist"
-            } elseif { binaryFile.newer(moduleFileGrace).not } then {
-                util.log 60 verbose "{binaryFile} not newer than {moduleFileGrace}"
+            } elseif { binaryFile.newer(sourceFile).not } then {
+                util.log 60 verbose "{binaryFile} not newer than {sourceFile}"
             }
-            compileModule (nm) inFile (moduleFileGrace.asString)
-                forDialect (isDialect) atRange (line, linePos)
+            compileModule (nm) inFile (sourceFile.asString)
+                forDialect (isDialect) atLine (line)
         }
         importsSet.add(nm)
     } elseif { util.target == "js" } then {
         def moduleFileJs = moduleFileGct.copy.setExtension ".js"
         if (moduleFileJs.exists && {
             moduleFileGct.exists } && {
-                noSource || {
-                    moduleFileJs.newer(moduleFileGrace)
-                }
+                sourceExists.not || { moduleFileJs.newer(sourceFile) }
             }
         ) then {
         } else {
-            if (moduleFileJs.newer(moduleFileGrace).not) then {
-                util.log 60 verbose "{moduleFileJs} not newer than {moduleFileGrace}"
+            if (moduleFileJs.newer(sourceFile).not) then {
+                util.log 60 verbose "{moduleFileJs} not newer than {sourceFile}"
             }
-            if (moduleFileGrace.exists) then {
-                compileModule (nm) inFile (moduleFileGrace.asString)
-                    forDialect (isDialect) atRange (line, linePos)
+            if (sourceFile.exists) then {
+                compileModule (nm) inFile (sourceFile.asString)
+                    forDialect (isDialect) atLine (line)
             } else {
                 def thing = if (isDialect) then {"dialect"} else {"module"}
                 errormessages.error "Can't find {thing} {nm}"
@@ -255,6 +273,21 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     addTransitiveImports(moduleFileGct.directory, isDialect, nm, line, linePos)
 }
 
+method directory (d) expectedOrInPath (p) -> Boolean {
+    // is directory d one of the expected directories, or in the path string p
+    // The expected directories are the directory where the compiler lives, the
+    // directory where the input lives, and the current directory.
+    // All comparisons are between absolute path names.
+
+    def dr = io.realpath(d)
+    if (dr == io.realpath "./") then { return true }
+    if (dr == io.realpath(util.sourceDir)) then { return true }
+    if (dr == io.realpath(util.execDir)) then { return true }
+    filePath.split(p).do { d1 ->
+        if (dr == io.realpath(d1)) then { return true }
+    }
+    return false
+}
 method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is confidential {
     util.log 50 verbose "adding transitive imports for {moduleName}"
     def gctData = gctCache.at(moduleName) ifAbsent {
@@ -280,9 +313,9 @@ method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is 
 }
 
 method compileModule (nm) inFile (sourceFile)
-        forDialect (isDialect) atRange (line, linePos) is confidential {
+        forDialect (isDialect) atLine (line) is confidential {
     if ( prelude.inBrowser || { util.recurse.not } ) then {
-        errormessages.error "Please compile module {nm} before importing it."
+        errormessages.error "Please compile module {nm} before using it."
             atLine(line)
     }
     var slashed := false
@@ -543,7 +576,10 @@ method buildGctFor(module) {
     gct.at "classes" put(classes.sort)
     gct.at "confidential" put(confidentials.sort)
     gct.at "modules" put(module.imports.asList.sorted)
-    gct.at "path" put [io.realpath(util.infile.pathname)]
+    gct.at "path" put [
+        if (util.infile.pathname.isEmpty) then { "" }
+            else { io.realpath(util.infile.pathname) }
+    ]
     gct.at "public" put(meths.sort)
     gct.at "types" put(types.sort)
     gct.at "dialect" put (
