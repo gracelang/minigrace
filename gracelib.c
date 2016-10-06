@@ -4352,7 +4352,7 @@ Object alloc_File_from_stream(FILE *stream) {
     Object o = alloc_obj(sizeof(struct FileObject) - sizeof(struct Object), File);
     struct FileObject* so = (struct FileObject*)o;
     so->file = stream;
-    so->pathname = "(un-opened)";
+    so->pathname = "";
     return o;
 }
 Object alloc_File(const char *filename, const char *mode) {
