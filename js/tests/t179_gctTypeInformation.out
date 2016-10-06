@@ -1,5 +1,7 @@
 classes:
 confidential:
+dialect:
+ standardGrace
 fresh-methods:
 methodtypes-of:A:
  2 m1(n : Number) -> Number
@@ -21,7 +23,7 @@ methodtypes-of:Z:
  4 m5(x : Z) -> Z
 modules:
 path:
- test_179_output
+ 
 public:
  A
  D
