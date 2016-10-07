@@ -430,10 +430,12 @@ samples: sample-dialects js/sample-dialects
 selfhost-stats: minigrace-js-env
 	rm -rf selftest-js
 	mkdir -p selftest-js
-	( cd selftest-js; ln -sf $(C_MODULES_GSO:%=../%) . )
-	( cd selftest-js; ln -sf $(STUBS:%.grace=../js/%.gct) $(STUBS:%.grace=../js/%.js) . )
-	( cd selftest-js; ln -sf ../js/gracelib.js . )
-	STATS=TRUE GRACE_MODULE_PATH=js:modules time ./minigrace-js $(VERBOSITY) --make --native --module minigrace --dir selftest-js --module minigrace compiler.grace
+	cd selftest-js; ln -sf $(STUBS:%.grace=../js/%.gct) $(STUBS:%.grace=../js/%.js) .
+	cp -f $(SOURCEFILES) selftest-js    # copy makes the source file newer than the .gct
+	cd selftest-js; ln -sf ../js/gracelib.js ../js/unicodedata.js .
+	cd selftest-js; STATS=TRUE GRACE_MODULE_PATH=..:../js:../modules time ../minigrace-js $(VERBOSITY) --make --target js --module minigrace --dir generated --module minigrace compiler.grace
+# generated files go in a subdirectory, to avoid over-writing the files that
+# are being executed!
 
 selftest: minigrace-environment
 	rm -rf selftest
