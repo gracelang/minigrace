@@ -1,5 +1,7 @@
-The JS backend tarnslates Grace objetcs into JS objects.
-As of mid 2015, this translation has a number of deficiecncies:
+# The Old JS Translation
+
+The JS backend translates Grace objects into JS objects.
+As of mid 2015, this translation has a number of deficiencies:
 
  - Grace methods are stored as properties of a methods object
  - Grace superobjects are stored in the superobject property of the JS object.
@@ -7,12 +9,12 @@ As of mid 2015, this translation has a number of deficiecncies:
  - Built-in objects like strings and Numbers, where the data is stored in 
    a _value property.
    
-As a consequence, Grace method dispatch must be coded up as a gearch through the
+As a consequence, Grace method dispatch must be coded up as a search through the
 methods object, followed by a search through the methods object of the superobject,
 and so on.
 
-An other consequence is that great care must be taken not to add to of change
-the methods object of an object that actually gets its methods obejct from a 
+Another consequence is that great care must be taken not to add to of change
+the methods object of an object that actually gets its methods object from a
 prototype. If this is done accidentally, the prototype will be corrupted, 
 and all other objects that use this prototype will see the change.  
 
@@ -21,5 +23,74 @@ methods of the JS object, having mangled their name by adding a suitable prefix,
 like GR_ or ⓖ, or 𝒢.   Similarly, fields of the Grace object should be fields of
 the Javascript object.
 
-To support the non-differentation of methdos and fields, Grace zero-argument 
-functions shoudl always be compield into JS get functions.
+A more serious deficiency is that `outer` is represented as a method, and thus
+is dynamically bound.  This is wrong; `outer` must be statically bound, and an
+object that is composed using inheritance has a separate outer for each of the
+parent objects.
+
+To support the non-differentiation of methods and fields, Grace zero-argument
+functions should always be compiled into JS get functions.
+
+# New Inheritance Strategy, September 2016
+
+## Outer
+
+`outer` is now compiled as an attribute of the object with a name that depends
+on the module and the line on which the object is declared.  These outer
+attributes are installed in inheriting objects, so that each object may have
+several `outer` attributes, each with a slightly different name.  Methods access
+these outer attributes directly, so each method can have its own outer, and
+no Grace method dispatch is required.
+
+Outer chains that reference the module object are compiled specially.  Since the
+module object is always a singleton, these outer references are compiled into
+references to the appropriate module object.
+
+## Object COnstruction
+
+Object construction is implemented using methods with the $build(3) suffix.
+The three arguments to the $build part are the inheriting object, into which the
+$build(3) method installs its stuff, a JS Array of aliases, and a JS Array
+of exclusions.  The $build(3) method makes the appropriate changes to
+inheriting object.  It implements inheritance by first calling the $build method
+of any object that it is inheriting from.
+
+## Object Initialization
+
+Every $build method returns a JS init function that is specialized to initialize
+the object just built.  The build method gets the arguments of the fresh object;
+these are captured in the generated init method.  This is unfortunately rather
+slow, since JS closures seem not to be optimized.
+
+A fresh method x(1) is compiled into a method x(1)$build(3), as well as a method x(1).
+In non-inheritance contexts, the code will request x(1), which is implemented by
+
+    * constructing a new graceObject (call it ouc, for object under construction)
+    * passing ouc to $build, which modified ouc, and then
+    * initializing ouc using the init function.
+
+In inheritance contexts, the code will request x(1)$build(3) with appropriate extra
+arguments.
+
+To support this, object constructors are also compiled in two ways.
+They generate a _build function, which is similar to the $build method of a
+fresh method, and which returns an _init function.   They also generate
+an ordinary JS function, which is used in non-inheritance contexts, and which is
+implemented by passing a new graceObject to the _build function.
+The register of the objectNode refers to this ordinary function; the _build function
+can be named by adding the suffix _build.
+
+Thus, the compiled form of a Grace object is a flat JavaScript object.  The
+inheritance chain is compiled away, and need not be searched at runtime.
+
+## Inheriting from "special" methods
+
+prelude.clone is treated as a fresh method, as are true and false.   They have
+hand-built $build(3) variants in the standard library, which are called by the
+compiled code just like the generted $buidl(3) variants for other fresh methods.
+Thus, from the persepctive of code-generation, they don't really need to be
+"special".  However, the .gct mechanism does not yet classify them as fresh, so
+these are still special cases in identifierresolution.
+
+
+
