@@ -330,7 +330,7 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
     out "    var exMeth = exclusions[eix];"
     out "    inheritedExclusions[exMeth] = this.methods[exMeth];"
             // some of these methods will be undefined; that's OK
-    out "};"
+    out "}"
     if (false != inheritsStmt) then {
         compileInherit(inheritsStmt) forClass (o.nameString)
     }
@@ -341,16 +341,16 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
     out "for (var aix = 0, aLen = aliases.length; aix < aLen; aix++) \{"
     out "    var oneAlias = aliases[aix];"
     out "    this.methods[oneAlias.newName] = this.methods[oneAlias.oldName];"
-    out "};"
+    out "}"
     out "for (var exName in inheritedExclusions) \{"
     out "    if (inheritedExclusions.hasOwnProperty(exName)) \{"
     out "        if (inheritedExclusions[exName]) \{"
     out "            this.methods[exName] = inheritedExclusions[exName];"
     out "        } else \{"
     out "            delete this.methods[exName];"
-    out "        };"
-    out "    };"
-    out "};"
+    out "        }"
+    out "    }"
+    out "}"
     out "var {selfr}_init = function() \{    // init of object on line {o.line}"
         // At execution time, `this` will be the object being initialized.
     increaseindent
@@ -511,13 +511,16 @@ method compileMethodPostamble(o, funcName, name) {
     }
 }
 
-method compileParameterDebugFrame(o) {
-    for (o.signature) do { part ->
-        for (part.params) do { p ->
-            def pName = p.nameString
-            def varName = varf(pName)
-            out "myframe.addVar(\"{escapestring(pName)}\","
-            out "  function() \{return {varName};});"
+method compileParameterDebugFrame(o, name) {
+    if (debugMode) then {
+        out "var myframe = new StackFrame(\"{name}\");"
+        for (o.signature) do { part ->
+            for (part.params) do { p ->
+                def pName = p.nameString
+                def varName = varf(pName)
+                out "myframe.addVar(\"{escapestring(pName)}\","
+                out "  function() \{return {varName};});"
+            }
         }
     }
 }
@@ -662,52 +665,67 @@ method compileMetadata(o, funcName, name) {
 method compilemethod(o, selfobj) {
     def oldusedvars = usedvars
     def olddeclaredvars = declaredvars
+    o.register := uidWithPrefix "func"
+    if ((o.body.size == 1) && {o.body.first.isIdentifier}) then {
+        compileSimpleAccessor(o)
+    } else {
+        compileNormalMethod(o, selfobj)
+    }
+    usedvars := oldusedvars
+    declaredvars := olddeclaredvars
+}
+
+method compileSimpleAccessor(o) {
+    def oldEmitPositions = emitPositions
+    emitPositions := false
     def canonicalMethName = o.canonicalName
-    def funcName = uidWithPrefix "func"
-    o.register := funcName
-    def isSimpleAccessor = (o.body.size == 1) && {o.body.first.isIdentifier}
+    def funcName = o.register
+    def name = escapestring(o.nameString)
+    def ident = o.body.first
+    def p = paramlist(o) ++ typeParamlist(o)
+    out "var {funcName} = function(argcv{p}) \{     // accessor method {name}"
+    increaseindent
+    out "return {compilenode(o.body.first)};"
+    compileMethodPostamble(o, funcName, canonicalMethName)
+    out "this.methods[\"{name}\"] = {funcName};"
+    compileMetadata(o, funcName, name)
+    emitPositions := oldEmitPositions
+}
+
+method compileNormalMethod(o, selfobj) {
+    def canonicalMethName = o.canonicalName
+    def funcName = o.register
     usedvars := []
     declaredvars := []
     def name = escapestring(o.nameString)
     compileMethodPreamble (o, funcName, canonicalMethName)
         withParams (paramlist(o) ++ typeParamlist(o))
-    if (debugMode && isSimpleAccessor.not) then {
-        out "var myframe = new StackFrame(\"{name}\");"
-    }
-    if (debugMode && isSimpleAccessor.not) then {
-        compileParameterDebugFrame(o)
-    }
+    compileParameterDebugFrame(o, name)
     compileDefaultsForTypeParameters(o) extraParams 0
     compileArgumentTypeChecks(o)
-    if (isSimpleAccessor) then {
-        out "return {compilenode(o.body.first)};  // simple accessor"
+    debugModePrefix
+    if (o.isFresh) then {
+        def argList = paramlist(o)
+        out "var ouc = emptyGraceObject(\"{o.ilkName}\", \"{modname}\", {o.line});"
+        out "var ouc_init = {selfobj}.methods[\"{name}$build(3)\"].call(this, null{argList}, ouc, [], []);"
+        out "ouc_init.call(ouc);"
+        out "return ouc;"
     } else {
-        debugModePrefix
-        if (o.isFresh) then {
-            def argList = paramlist(o)
-            out "var ouc = emptyGraceObject(\"{o.ilkName}\", \"{modname}\", {o.line});"
-            out "var ouc_init = {selfobj}.methods[\"{name}$build(3)\"].call(this, null{argList}, ouc, [], []);"
-            out "ouc_init.call(ouc);"
-            out "return ouc;"
-        } else {
-            out "return {compileMethodBodyWithTypecheck(o)};"
-        }
-        debugModeSuffix
+        out "return {compileMethodBodyWithTypecheck(o)};"
     }
+    debugModeSuffix
     compileMethodPostamble(o, funcName, canonicalMethName)
     out "this.methods[\"{name}\"] = {funcName};"
     compileMetadata(o, funcName, name)
     if (o.isFresh) then {
         compileFreshMethod(o, selfobj)
     }
-    usedvars := oldusedvars
-    declaredvars := olddeclaredvars
 }
 method compileBuildMethodFor(methNode) withObjCon (objNode) inside (outerRef) {
     // the $build method for a fresh method executes the statements in the
     // body of the fresh method, and then calls the build function of the
     // object constructor.  That build function will return the _init function
-    // for the object constructor object expression that it tail-returns.
+    // for the object expression that it tail-returns.
 
     def funcName = uidWithPrefix "func"
     def name = escapestring(methNode.nameString ++ "$build(3)")
