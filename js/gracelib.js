@@ -3062,7 +3062,7 @@ function GraceCallStackToString() {
     return errorString + this.moduleName;
 }
 
-function callmethod(obj, methname, argcv) {
+function callmethod(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
     var meth = obj.methods[methname];
     var origModuleName = moduleName;
     var origLineNumber = lineNumber;
@@ -3077,9 +3077,7 @@ function callmethod(obj, methname, argcv) {
         }
         onSelf = false;
         onOuter = false;
-        var args = Array.prototype.slice.call(arguments, 3);
-        args.unshift(argcv);
-        var ret = meth.apply(obj, args);
+        var ret = meth.call(obj, argcv, a, b, c, d, e, f, g, h, i, j);
     } catch(e) {
         if (e.exctype === 'return') {
             if (e.target == returnTarget) {
@@ -3102,7 +3100,7 @@ function callmethod(obj, methname, argcv) {
     return ret;
 }
 
-function callmethodChecked(obj, methname, argcv) {
+function callmethodChecked(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
     if (! obj)
         throw new GraceExceptionPacket(UninitializedVariableObject,
                 new GraceString("requested method '" + methname + "' on uninitialised variable."));
@@ -3120,14 +3118,12 @@ function callmethodChecked(obj, methname, argcv) {
         }
         onSelf = false;
         onOuter = false;
-        var args = Array.prototype.slice.call(arguments, 3);
-        for (var i=0, argslen = args.length; i<argslen; i++) {
-            if (typeof args[i] === 'undefined') {
-                raiseUninitializedVariable(i+1, methname, obj);
+        for (var i=3, argslen = arguments.length; i<argslen; i++) {
+            if (typeof arguments[i] === 'undefined') {
+                raiseUninitializedArgument(i-2, methname, obj);
             }
         }
-        args.unshift(argcv);
-        var ret = meth.apply(obj, args);
+        var ret = meth.call(obj, argcv, a, b, c, d, e, f, g, h, i, j);
     } catch(e) {
         if (e.exctype === 'return') {
             if (e.target == returnTarget) {
@@ -3209,7 +3205,7 @@ function raiseConfidentialMethod(name, target) {
                 "' of " + describe(target) + " from outside."));
 }
 
-function raiseUninitializedVariable(n, name, target) {
+function raiseUninitializedArgument(n, name, target) {
     throw new GraceExceptionPacket(UninitializedVariableObject,
            new GraceString("uninitialised variable used as argument " + n + " to '" +
                            canonicalMethodName(name) + "' of " + describe(target) + "."));
