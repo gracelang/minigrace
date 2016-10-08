@@ -3063,15 +3063,11 @@ function GraceCallStackToString() {
 }
 
 function callmethod(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
-    var meth = obj.methods[methname];
     var origModuleName = moduleName;
     var origLineNumber = lineNumber;
     var returnTarget = invocationCount;  // will be incremented by invoked method
-    if (typeof(meth) !== "function") {
-        onSelf = false;
-        raiseNoSuchMethod(methname, obj);
-    }
     try {
+        var meth = obj.methods[methname];
         if (meth.confidential && !onSelf) {
             raiseConfidentialMethod(methname, obj);
         }
@@ -3091,6 +3087,11 @@ function callmethod(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
                 lineNumber: origLineNumber,
                 toString: GraceCallStackToString
             });
+        } else if (!obj) {
+            throw new GraceExceptionPacket(UninitializedVariableObject,
+                new GraceString("requested method '" + methname + "' on uninitialised variable."));
+        } else if (typeof(obj.methods[methname]) !== "function") {
+            raiseNoSuchMethod(methname, obj);
         }
         throw e;
     } finally {
