@@ -3218,21 +3218,25 @@ function describe(obj) {
     // information, as in "done done".
     // Because this method is used within callmethod, it's important that the
     // implementation doesn't use callmethod, or infinite recursion may result.
-    var objString;
+    var objString = "";
+    var classString = "object";
+    var shortClassString = "object";
     try {
         var m = findMethod(obj, "asString");
         objString = m.call(obj, [0])._value;
     } catch (e) {
-        objString = "";
     }
-    var classString = obj.className;
-    var dotIx = classString.lastIndexOf(".");
-    var shortClassString = (dotIx == -1) ? classString : classString.substring(dotIx+1);
-    if ((classString == "object") || (objString.includes(shortClassString))) {
-        return objString;
+    try {
+        classString = obj.className;
+        var dotIx = classString.lastIndexOf(".");
+        shortClassString = (dotIx == -1) ? classString : classString.substring(dotIx+1);
+    } catch (e) {
     }
     if (objString === "") {
         return classString + " (without working asString method)";
+    }
+    if ((classString == "object") || (objString.includes(shortClassString))) {
+        return objString;
     }
     return classString + " " + objString;
 }
