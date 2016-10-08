@@ -1,7 +1,6 @@
 // declare global variables used to monitor execution:
 window.minigrace = {};
 window.sourceObject = null;
-window.superDepth = null;
 window.invocationCount = 0;
 window.onOuter = false;
 window.onSelf = false;
@@ -193,9 +192,8 @@ MiniGrace.prototype.run = function() {
         Grace_prelude.methods["while()do"].safe = this.breakLoops;
     this.trapErrors(function() {
         if(document.getElementById("debugtoggle").checked) {
-            superDepth = new GraceModule(this.modname);
             GraceDebugger.cache.start();
-            GraceDebugger.that = superDepth;
+            GraceDebugger.that = new GraceModule(this.modname);
             GraceDebugger.run(theModuleFunc, GraceDebugger.that);
         } else {
             do_import(this.modname, theModuleFunc);

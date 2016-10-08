@@ -124,8 +124,7 @@ function wrapGraceObject(o) {
             }
             var ret;
             minigrace.trapErrors(function() {
-                superDepth = o.receiver;
-                ret = wrapGraceObject(o.real.apply(superDepth, args));
+                ret = wrapGraceObject(o.real.apply(o.receiver, args));
             });
             return ret;
         };
