@@ -7,6 +7,7 @@ import "unixFilePath" as unixFilePath
 import "xmodule" as xmodule
 import "mirrors" as mirrors
 import "errormessages" as errormessages
+import "identifierKinds" as k
 
 var indent := ""
 var verbosity := 30
@@ -35,7 +36,7 @@ var emitTypeChecks := true
 var emitUndefinedChecks := true
 var emitArgChecks := true
 var emitPositions := true
-var requestCall := "callmethodChecked"
+var requestCall := "callmethod"
 var bracketConstructor := "Lineup"
 var emod        // the name of the module being compiled, escaped
                 // so that it is a legal identifier
@@ -685,7 +686,10 @@ method compileSimpleAccessor(o) {
     def p = paramlist(o) ++ typeParamlist(o)
     out "var {funcName} = function(argcv{p}) \{     // accessor method {name}"
     increaseindent
-    out "return {compilenode(o.body.first)};"
+    if ( emitUndefinedChecks ) then {
+        compileCheckForUndefinedIdentifier(ident)
+    }
+    out "return {compilenode(ident)};"
     compileMethodPostamble(o, funcName, canonicalMethName)
     out "this.methods[\"{name}\"] = {funcName};"
     compileMetadata(o, funcName, name)
@@ -1038,41 +1042,31 @@ method compilematchcase(o) {
     o.register := "matchres" ++ myc
 }
 method compileop(o) {
-    var right := compilenode(o.right)
-    auto_count := auto_count + 1
-    var rnm := "opresult"
-    if (o.value == "*") then {
-        rnm := "prod"
+    def left = compilenode(o.left)
+    def opRight = o.right
+    if ( opRight.isIdentifier && emitUndefinedChecks ) then {
+        compileCheckForUndefinedIdentifier(opRight)
     }
-    if (o.value == "/") then {
-        rnm := "quotient"
-    }
-    if (o.value == "-") then {
-        rnm := "diff"
-    }
-    if (o.value == "%") then {
-        rnm := "modulus"
-    }
-    if ((o.left.kind == "identifier") && {o.left.value == "super"}) then {
-        out("var " ++ rnm ++ auto_count ++ " = callmethodsuper(this"
-            ++ ", \"" ++ escapestring(o.nameString) ++ "\", [1], " ++ right ++ ");")
-    } else {
-        var left := compilenode(o.left)
-        auto_count := auto_count + 1
-        if (emitArgChecks) then {
-            out("var " ++ rnm ++ auto_count ++ " = callmethodChecked(" ++ left
-                ++ ", \"" ++ escapestring(o.nameString) ++ "\", [1], " ++ right ++ ");")
-        } else {
-            out("var " ++ rnm ++ auto_count ++ " = callmethod(" ++ left
-                ++ ", \"" ++ escapestring(o.nameString) ++ "\", [1], " ++ right ++ ");")
-        }
-    }
-    o.register := rnm ++ auto_count
-    auto_count := auto_count + 1
+    def right = compilenode(opRight)
+    def opSym = o.value
+    def rnm =   if (opSym == "+") then { "sum"
+                } elseif {opSym == "*"} then { "prod"
+                } elseif {opSym == "-"} then { "diff"
+                } elseif {(opSym == "/") || (opSym == "÷")} then { "quotient"
+                } elseif {o.value == "%"} then { "modulus"
+                } else { "opresult"
+                }
+    def register = uidWithPrefix(rnm)
+    out("var {register} = callmethod({left}, \"" ++
+          "{escapestring(o.nameString)}\", [1], {right});")
+    o.register := register
 }
 method compileNormalArguments(o, args) {
     for (o.with) do { part ->
         for (part.args) do { p ->
+            if ( p.isIdentifier && emitUndefinedChecks ) then {
+                compileCheckForUndefinedIdentifier(p)
+            }
             args.push(compilenode(p))
         }
     }
@@ -1095,6 +1089,18 @@ method assembleArguments(args) {
     }
     result
 }
+method compileCheckForUndefinedIdentifier(id) {
+    // id is an identiferNode.   If it is possible that this identifier is
+    // undefined, emit a check.
+    def name = id.nameString
+    def definingScope = id.scope.thatDefines(name)
+    if (definingScope.variety == "built-in") then { return }
+    def idKind = definingScope.kind(name)
+    if (((idKind == k.defdec) && definingScope.isObjectScope) ||
+            (idKind == k.vardec)) then {
+        out "if ({varf(name)} === undefined) raiseUninitializedVariable(\"{name}\");"
+    }
+}
 method partl(o) {
     var result := ""
     for (o.with.indices) do { partnr ->
@@ -1108,23 +1114,15 @@ method partl(o) {
     }
     result
 }
-method compileSuperRequest(o, args) {
-    out "// call case 1: super request"
-    def escapedName = escapestring(o.nameString)
-    out("var {o.register} = callmethodsuper(this" ++
-          ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
-}
 method compileOuterRequest(o, args) {
     out "// call case 2: outer request"
     compilenode(o.receiver)
-    out "onSelf = true;";
-    out("var {o.register} = {requestCall}({o.receiver.register}" ++
+    out("var {o.register} = selfRequest({o.receiver.register}" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compileSelfRequest(o, args) {
     out "// call case 4: self request"
-    out "onSelf = true;"
-    out("var {o.register} = {requestCall}(this" ++
+    out("var {o.register} = selfRequest(this" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compilePreludeRequest(o, args) {
@@ -1135,10 +1133,8 @@ method compilePreludeRequest(o, args) {
 method compileOtherRequest(o, args) {
     out "// call case 6: other requests"
     def target = compilenode(o.receiver)
-    if (o.isSelfRequest) then {
-        out "onSelf = true;"
-    }
-    out("var {o.register} = {requestCall}({target}" ++
+    def cm = if (o.isSelfRequest) then { "selfRequest" } else { requestCall }
+    out("var {o.register} = {cm}({target}" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compilecall(o) {
@@ -1147,9 +1143,7 @@ method compilecall(o) {
     var args := []
     compileArguments(o, args)
     def receiver = o.receiver
-    if (receiver.isSuper) then {
-        compileSuperRequest(o, args)
-    } elseif { receiver.isOuter } then {
+    if ( receiver.isOuter ) then {
         compileOuterRequest(o, args)
     } elseif { receiver.isSelf } then {
         compileSelfRequest(o, args)
@@ -1529,11 +1523,9 @@ method compileReuseCall(callNode) forClass (className) aliases (aStr) exclusions
             typeArgs := typeArgs ++ ", " ++ compilenode(g)
         }
     }
-    if (callNode.isSelfRequest) then {
-        out "onSelf = true;"
-    }
+    def cm = if (callNode.isSelfRequest) then { "selfRequest" } else { requestCall }
     def initFun = uidWithPrefix "initFun"
-    out("var {initFun} = {requestCall}({target}, \"{escapestring(buildMethodName)}\", [null]" ++
+    out("var {initFun} = {cm}({target}, \"{escapestring(buildMethodName)}\", [null]" ++
         "{arglist}, this, {aStr}, {eStr}{typeArgs});  // compileReuseCall")
     initFun     // return the register that holds the initialization function
 }
