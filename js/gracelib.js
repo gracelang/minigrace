@@ -592,8 +592,7 @@ GraceString.prototype = {
         },
         "map(1)": function string_map(argcv, function1) {
             var collections = callmethod(var___95__prelude, "collections", [0]);
-            onSelf = true;
-            return callmethod(collections,
+            return selfRequest(collections,
                         "lazySequenceOver(1)mappedBy(1)", [1, 1], this, function1);
         },
         "filter(1)": function string_filter(argcv, predicate1) {
@@ -1194,8 +1193,7 @@ PrimitiveGraceList.prototype = {
         },
         "==(1)": function(argcv, other) {
             var collections = callmethod(var___95__prelude, "collections", [0]);
-            onSelf = true;
-            return callmethod(collections,
+            return selfRequest(collections,
                         "isEqual(1)toIterable(1)", [1, 1], this, other);
         },
         "≠(1)": function(argcv, other) {
@@ -1238,14 +1236,12 @@ PrimitiveGraceList.prototype = {
         "keys": list_indices,
         "map(1)": function list_map(argcv, function1) {
             var collections = callmethod(var___95__prelude, "collections", [0]);
-            onSelf = true;
-            return callmethod(collections,
+            return selfRequest(collections,
                         "lazySequenceOver(1)mappedBy(1)", [1, 1], this, function1);
         },
         "filter(1)": function list_filter(argcv, predicate1) {
             var collections = callmethod(var___95__prelude, "collections", [0]);
-            onSelf = true;
-            return callmethod(collections,
+            return selfRequest(collections,
                         "lazySequenceOver(1)filteredBy(1)", [1, 1], this, predicate1);
         },
         "fold(1)startingWith(1)": function(argcv, block, initial) {
@@ -1387,8 +1383,7 @@ Lineup.prototype = {
         },
         "==(1)": function(argcv, other) {
             var collections = callmethod(var___95__prelude, "collections", [0]);
-            onSelf = true;
-            return callmethod(collections,
+            return selfRequest(collections,
                         "isEqual(1)toIterable(1)", [1, 1], this, other);
         },
         "≠(1)": function(argcv, other) {
@@ -1421,14 +1416,12 @@ Lineup.prototype = {
         },
         "map(1)": function list_map(argcv, function1) {
             var collections = callmethod(var___95__prelude, "collections", [0]);
-            onSelf = true;
-            return callmethod(collections,
+            return selfRequest(collections,
                         "lazySequenceOver(1)mappedBy(1)", [1, 1], this, function1);
         },
         "filter(1)": function list_filter(argcv, predicate1) {
             var collections = callmethod(var___95__prelude, "collections", [0]);
-            onSelf = true;
-            return callmethod(collections,
+            return selfRequest(collections,
                         "lazySequenceOver(1)filteredBy(1)", [1, 1], this, predicate1);
         },
         "fold(1)startingWith(1)": function(argcv, block, initial) {
@@ -1608,7 +1601,7 @@ function Grace_isTrue(o) {
 }
 
 function Grace_print(obj) {
-    var s = callmethodChecked(obj, "asString", [0]);
+    var s = callmethod(obj, "asString", [0]);
     minigrace.stdout_write(s._value + "\n");
     return GraceDone;
 }
@@ -1619,7 +1612,7 @@ function Grace_errorPrint(obj) {
             var s = callmethod(obj, "asString", [0]);
             minigrace.stderr_write(s._value);
         } catch (e) {
-            minigrace.stderr_write("can't stringify object " + obj);
+            minigrace.stderr_write(describe(obj));
         }
     } finally {
         if (! inBrowser) minigrace.stderr_write("\n");
@@ -2622,14 +2615,12 @@ function gracecode_util() {
         var meth_isAlready = function(argcv) {    // method isAlready(1)
             var var_moduleName = arguments[1];
             setModuleName("util");
-            onSelf = true;
-            var staticv = callmethod(this, "static", [0]);
+            var staticv = selfRequest(this, "static", [0]);
             var sc = callmethod(staticv, "contains(1)", [1], var_moduleName);
             if (Grace_isTrue(sc)) {
                 return GraceTrue;
             }
-            onSelf = true;
-            var otherv = callmethod(this, "other", [0]);
+            var otherv = selfRequest(this, "other", [0]);
             return callmethod(otherv, "contains(1)", [1], var_moduleName);
         };
         meth_isAlready.paramCounts = [1];
@@ -3068,11 +3059,9 @@ function callmethod(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
     var returnTarget = invocationCount;  // will be incremented by invoked method
     try {
         var meth = obj.methods[methname];
-        if (meth.confidential && !onSelf) {
+        if (meth.confidential) {
             raiseConfidentialMethod(methname, obj);
         }
-        onSelf = false;
-        onOuter = false;
         var ret = meth.call(obj, argcv, a, b, c, d, e, f, g, h, i, j);
     } catch(e) {
         if (e.exctype === 'return') {
@@ -3101,29 +3090,12 @@ function callmethod(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
     return ret;
 }
 
-function callmethodChecked(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
-    if (! obj)
-        throw new GraceExceptionPacket(UninitializedVariableObject,
-                new GraceString("requested method '" + methname + "' on uninitialised variable."));
-    var meth = obj.methods[methname];
+function selfRequest(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
     var origModuleName = moduleName;
     var origLineNumber = lineNumber;
     var returnTarget = invocationCount;  // will be incremented by invoked method
-    if (typeof(meth) !== "function") {
-        raiseNoSuchMethod(methname, obj);
-    }
     try {
-        if (meth.confidential && !onSelf) {
-            onSelf = false;
-            raiseConfidentialMethod(methname, obj);
-        }
-        onSelf = false;
-        onOuter = false;
-        for (var i=3, argslen = arguments.length; i<argslen; i++) {
-            if (typeof arguments[i] === 'undefined') {
-                raiseUninitializedArgument(i-2, methname, obj);
-            }
-        }
+        var meth = obj.methods[methname];
         var ret = meth.call(obj, argcv, a, b, c, d, e, f, g, h, i, j);
     } catch(e) {
         if (e.exctype === 'return') {
@@ -3138,6 +3110,11 @@ function callmethodChecked(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
                 lineNumber: origLineNumber,
                 toString: GraceCallStackToString
             });
+        } else if (!obj) {
+            throw new GraceExceptionPacket(UninitializedVariableObject,
+                new GraceString("requested method '" + methname + "' on uninitialised variable."));
+        } else if (typeof(obj.methods[methname]) !== "function") {
+            raiseNoSuchMethod(methname, obj);
         }
         throw e;
     } finally {
@@ -3146,6 +3123,7 @@ function callmethodChecked(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
     }
     return ret;
 }
+
 function canonicalMethodName(name) {
     var parts = name.split("(");
     var output = parts[0];
@@ -3210,6 +3188,11 @@ function raiseUninitializedArgument(n, name, target) {
     throw new GraceExceptionPacket(UninitializedVariableObject,
            new GraceString("uninitialised variable used as argument " + n + " to '" +
                            canonicalMethodName(name) + "' of " + describe(target) + "."));
+}
+
+function raiseUninitializedVariable(name) {
+    throw new GraceExceptionPacket(UninitializedVariableObject,
+           new GraceString("attempt to read uninitialised variable {name}."));
 }
 
 function describe(obj) {
@@ -3770,7 +3753,6 @@ var var_done = GraceDone;
 if (typeof global !== "undefined") {
     global.Alias = Alias;
     global.callmethod = callmethod;
-    global.callmethodChecked = callmethodChecked;
     global.classType = classType;
     global.dbg = dbg;
     global.dbgp = dbgp;
@@ -3830,10 +3812,12 @@ if (typeof global !== "undefined") {
     global.PrimitiveGraceList = PrimitiveGraceList;
     global.ProgrammingErrorObject = ProgrammingErrorObject;
     global.raiseTypeError = raiseTypeError;
+    global.raiseUninitializedVariable = raiseUninitializedVariable;
     global.ResourceExceptionObject = ResourceExceptionObject;
     global.ReturnException = ReturnException;
     global.RequestErrorObject = RequestErrorObject;
     global.RuntimeErrorObject = RuntimeErrorObject;
+    global.selfRequest = selfRequest;
     global.setLineNumber = setLineNumber;
     global.setModuleName = setModuleName;
     global.StackFrame = StackFrame;
