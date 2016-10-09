@@ -10,7 +10,7 @@ type ABC = A & B & C
 type ABC' = A | B | C
 
 method showType(T) {
-    print "{T} has methods {T.methodNames.asList.sort}"
+    print "{T} has methods {list(T.methodNames).sort}"
 }
 
 showType(A)
@@ -28,6 +28,6 @@ match (seq)
 def sm = m.reflect(seq).methodNames
 print "The following list methods are not in sequence:"
 def missing = List.methodNames -- sm
-for (missing.asList.sort) do { 
+list(missing).sort.do {
     each -> print "    {each}"
 }

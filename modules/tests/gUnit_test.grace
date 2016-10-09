@@ -65,7 +65,7 @@ oneTest.run(theResult)
 print "oneTest.log = {oneTest.log}"
 print "theResult.summary = {theResult.summary}"
 
-print "theResult.failedTestNames = {theResult.failedTestNames.asList.sort}"
+print "theResult.failedTestNames = {list(theResult.failedTestNames).sort}"
 print "theResult.erroredTestNames = {theResult.erroredTestNames}"
 
 print "Failed:"

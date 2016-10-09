@@ -2,7 +2,7 @@ import "moth" as math
 import "mirrors" as mi
 def mm = mi.reflect(math)
 print "module's methods are: "
-for (mm.methodNames.asList.sort) do { each ->
+list(mm.methodNames).sort.do { each ->
     print "    {each}"
 }
 

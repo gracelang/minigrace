@@ -2482,7 +2482,7 @@ def inheritNode is public = object {
                 s := "{s} exclude {e} "
             }
             if (providedNames.isEmpty.not) then {
-                s := s ++ "\n{spc}Provided names: {providedNames.asList.sort}"
+                s := s ++ "\n{spc}Provided names: {list(providedNames).sort}"
             }
             s
         }

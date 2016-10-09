@@ -34,8 +34,8 @@ def stringMapTest = object {
             assert ((m12Str == "map.new[two::2, one::1]")  || (m12Str == "map.new[one::1, two::2]"))
                 description "m12.asString == {m12Str}"
         }
-        method testAsList {
-            def m123List = m123.asList
+        method testBindings {
+            def m123List = m123.bindings
             assert (m123List.size) shouldBe 3
             assert (m123List.contains("one"::1)) 
                 description "{m123List} does not contain \"one\"::1"

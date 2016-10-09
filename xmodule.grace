@@ -407,9 +407,9 @@ method parseGCT(moduleName) sourceDir(dir) is confidential {
 
 method writeGCT(modname, dict) is confidential {
     def fp = io.open("{util.outDir}{modname}.gct", "w")
-    dict.bindings.asList.sortBy(keyCompare).do { b ->
+    list(dict.bindings).sortBy(keyCompare).do { b ->
         fp.write "{b.key}:\n"
-        b.value.asList.sort.do { v ->
+        list(b.value).sort.do { v ->
             fp.write " {v}\n"
         }
     }
@@ -423,9 +423,9 @@ method writeGctForModule(moduleObject) {
 
 method gctAsString(gctDict) {
     var ret := ""
-    gctDict.bindings.asList.sortBy(keyCompare).do { b ->
+    list(gctDict.bindings).sortBy(keyCompare).do { b ->
         ret := ret ++ "{b.key}:\n"
-        b.value.asList.sort.do { v ->
+        list(b.value).sort.do { v ->
             ret := ret ++ " {v}\n"
         }
     }
@@ -581,7 +581,7 @@ method buildGctFor(module) {
     }
     gct.at "classes" put(classes.sort)
     gct.at "confidential" put(confidentials.sort)
-    gct.at "modules" put(module.imports.asList.sorted)
+    gct.at "modules" put(list(module.imports).sorted)
     gct.at "path" put [
         if (util.infile.pathname.isEmpty) then { "" }
             else { io.realpath(util.infile.pathname) }

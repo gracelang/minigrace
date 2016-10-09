@@ -53,7 +53,10 @@ def primitiveListTest = object {
             assert(isEqual)
             deny(oneToFive != list [1, 2, 3, 4, 5])
         }
-
+        method testListClear {
+            var toClear := [1, 2, 3]
+            assert (toClear.clear) shouldBe ([ ])
+        }
         method testListOneToFiveDo {
             var element := 1
             oneToFive.do { each ->
@@ -109,26 +112,26 @@ def primitiveListTest = object {
 
         method testElementAssign {
             def naN = "foo".asNumber
-            oneToFive.at(1) put 11
+            oneToFive.at 1 put 11
             assert (oneToFive.at(1)) shouldBe 11
-            oneToFive.at(2) put 12
+            oneToFive.at 2 put 12
             assert (oneToFive.at(2)) shouldBe 12
             assert (oneToFive.at(3)) shouldBe 3
             assert {evens.at(6) put 10} shouldRaise (BoundsError)
             assert {evens.at(0) put 0} shouldRaise (BoundsError)
             assert {evens.at(naN) put 0} shouldRaise (BoundsError)
             assert (assign21at2.asString) shouldBe ([11, 21, 3, 4, 5].asString)
-                //  equality on primitive lists is object identity, so we compare strings
+                // equality of primitive lists is object identity, so compare strings
         }
 
-        method assign21at2 { oneToFive.at(2) put 21 }
+        method assign21at2 { oneToFive.at 2 put 21 }
 
         method testListAtPutExtend {
             assert (empty.at 1 put 99) shouldBe (list [99])
-            oneToFive.at(6) put 6
+            oneToFive.at 6 put 6
             assert (oneToFive.at 6) shouldBe 6
-            oneToFive.at(7) put 7
-            assert (oneToFive.at(7)) shouldBe 7
+            oneToFive.at 7 put 7
+            assert (oneToFive.at 7) shouldBe 7
             assert (oneToFive) shouldBe (1..7)
         }
         method testListPop {
@@ -152,11 +155,30 @@ def primitiveListTest = object {
             assert (evens.first) shouldBe (0)
             assert (evens.second) shouldBe (2)
         }
+        method testAddAll {
+            assert (evens.addAll(oneToFive)) shouldBe [2, 4, 6, 8, 1, 2, 3, 4, 5]
+            assert (evens) shouldBe [2, 4, 6, 8, 1, 2, 3, 4, 5]
+        }
+        method testAddFirst {
+            def l = [ 5 ]
+            assert (l.addFirst 4) shouldBe [4, 5]
+            assert (l.addFirst 3) shouldBe [3, 4, 5]
+            assert (l.addFirst 2) shouldBe [2, 3, 4, 5]
+            assert (l.addFirst 1) shouldBe [1, 2, 3, 4, 5]
+        }
 //        method testListRemoveFirst {
 //            def removed = oneToFive.removeFirst
 //            assert (removed) shouldBe (1)
 //            assert (oneToFive.size) shouldBe (4)
 //            assert (oneToFive) shouldBe [2, 3, 4, 5]
+//        }
+//        method testListRemoveValue {
+//            def l = [3, 5, 7]
+//            assert (l) shouldBe (list [3, 5, 7])
+//            l.remove 3
+//            assert (l) shouldBe (list [5, 7])
+//            l.remove 5.remove 7
+//            assert (l) shouldBe (list [ ])
 //        }
         method testListChaining {
             oneToFive.at(1)put(11).at(2)put(12).at(3)put(13)
@@ -227,7 +249,7 @@ def primitiveListTest = object {
             def lst = oneToFive ++ evens
             def siz = oneToFive.size + evens.size
             assert (lst.indices) shouldBe (1..siz)
-            assert (lst.indices) shouldBe (lst.keys.asSequence)
+            assert (lst.indices) shouldBe (sequence(lst.keys))
         }
 
         method testListFold {
@@ -281,6 +303,12 @@ def primitiveListTest = object {
 
         method testListMapEvens {
             assert(evens.map{x -> x + 1}.into(emptyList)) shouldBe [3, 5, 7, 9]
+        }
+
+        method testListMapEvensIntoList {
+            def result = evens.map{x -> x + 1}.into(emptyList)
+            assert(result) shouldBe (list [3, 5, 7, 9])
+            assert(result) hasType (List)
         }
 
         method testListMapEvensInto {
@@ -345,32 +373,6 @@ def primitiveListTest = object {
             assert (iter.next) shouldBe 2
             assert (iter.next) shouldBe 3
             assert {iter.next} shouldRaise (IteratorExhausted)
-        }
-        method testAsList {
-            def l = oneToFive.asList
-            assert (l) hasType (List)
-            assert (l) shouldBe (list [1, 2, 3, 4, 5])
-        }
-        method testAsSet {
-            def s = oneToFive.asSet
-            assert (s) hasType (Set)
-            assert (s) shouldBe (set [1, 2, 3, 4, 5])
-        }
-        method testAsSequence {
-            def s = oneToFive.asSequence
-            assert (s) hasType (Sequence)
-            assert (s) shouldBe (sequence [1, 2, 3, 4, 5])
-        }
-        method testAddAll {
-            assert (evens.addAll(oneToFive)) shouldBe [2, 4, 6, 8, 1, 2, 3, 4, 5]
-            assert (evens) shouldBe [2, 4, 6, 8, 1, 2, 3, 4, 5]
-        }
-        method testAddFirst {
-            def l = [ 5 ]
-            assert (l.addFirst 4) shouldBe [4, 5]
-            assert (l.addFirst 3) shouldBe [3, 4, 5]
-            assert (l.addFirst 2) shouldBe [2, 3, 4, 5]
-            assert (l.addFirst 1) shouldBe [1, 2, 3, 4, 5]
         }
     }
 }

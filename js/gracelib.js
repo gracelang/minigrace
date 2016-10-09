@@ -1194,7 +1194,7 @@ PrimitiveGraceList.prototype = {
         "==(1)": function(argcv, other) {
             var collections = callmethod(var___95__prelude, "collections", [0]);
             return selfRequest(collections,
-                        "isEqual(1)toIterable(1)", [1, 1], this, other);
+                        "isEqual(1)toCollection(1)", [1, 1], this, other);
         },
         "≠(1)": function(argcv, other) {
             var t = callmethod(this, "==(1)", [1], other);
@@ -1384,7 +1384,7 @@ Lineup.prototype = {
         "==(1)": function(argcv, other) {
             var collections = callmethod(var___95__prelude, "collections", [0]);
             return selfRequest(collections,
-                        "isEqual(1)toIterable(1)", [1, 1], this, other);
+                        "isEqual(1)toCollection(1)", [1, 1], this, other);
         },
         "≠(1)": function(argcv, other) {
             var t = callmethod(this, "==(1)", [1], other);

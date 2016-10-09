@@ -19,7 +19,7 @@ method relationship⟦From, To⟧ {
             res
         }
         method from(f) is public {
-            map.at(f).asList
+            list(map.at(f))
         }
     }
 }

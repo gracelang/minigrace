@@ -1354,7 +1354,7 @@ Object BuiltinList_equals(Object self, int nparts, int *argcv,
     requestArgs[0] = self;
     requestArgs[1] = other;
     Object collections = callmethod(_prelude, "collections", 0, NULL, NULL);
-    return callmethod(collections, "isEqual(1)toIterable(1)", 2, partcv, requestArgs);
+    return callmethod(collections, "isEqual(1)toCollection(1)", 2, partcv, requestArgs);
 }
 Object BuiltinList_map(Object self, int nparts, int *argcv,
         Object *args, int flags) {

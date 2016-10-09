@@ -213,7 +213,7 @@ class new {
             }
         }
     }
-    method asList {
+    method bindings {
         // the contents of this stringMap as a list of bindings
         def result = emptyList
         native "js" code ‹

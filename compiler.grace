@@ -70,10 +70,9 @@ if (util.target == "imports") then {
             false
         }
     }
-    for (values) do {v->
-        v.accept(vis)
-    }
-    for (imps.asList.sort) do {im->
+    moduleObject.accept(vis)
+
+    list(imps).sort.do { im ->
         util.outprint(im)
     }
     util.outfile.close

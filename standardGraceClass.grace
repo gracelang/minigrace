@@ -1622,7 +1622,7 @@ class standardGrace {
             }
             method ** (other) {
             // set intersection
-                (filter {each -> other.contains(each)}).asSet
+                set.withAll(filter {each -> other.contains(each)})
             }
             method isSubset(s2: Set⟦T⟧) {
                 self.do{ each ->

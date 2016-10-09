@@ -150,7 +150,7 @@ class newScopeIn(parent') kind(variety') {
             if (each.hasParent) then { result := result ++ "➞" }
         }
         result := result ++  "):\n    "
-        elements.asList.sortBy(keyOrdering).do { each ->
+        elements.bindings.sortBy(keyOrdering).do { each ->
             result := "{result} {each.key}({kind(each.key)}) "
         }
         result ++ "\n"
@@ -161,12 +161,12 @@ class newScopeIn(parent') kind(variety') {
     method elementScopesAsString {
         def referencedScopes = emptySet
         var result := "\n    [elementScopes:"
-        elementScopes.asList.sortBy(keyOrdering).do { each ->
+        elementScopes.bindings.sortBy(keyOrdering).do { each ->
             result := "{result} {each.key}➞{each.value.asDebugString}"
             referencedScopes.add (each.value)
         }
         result := result ++ "]\n____________\n"
-        referencedScopes.asList
+        list(referencedScopes)
             .sortBy { a, b -> a.serialNumber.compare(b.serialNumber) }
                 .do { each -> result := result ++ each.asString }
         result ++ "____________\n"

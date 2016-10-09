@@ -238,7 +238,7 @@ def primitiveListTest = object {
             def lst = oneToFive ++ evens
             def siz = oneToFive.size + evens.size
             assert (lst.indices) shouldBe (1..siz)
-            assert (lst.indices) shouldBe (lst.keys.asSequence)
+            assert (lst.indices) shouldBe (sequence(lst.keys))
         }
 
         method testListFold {
@@ -363,21 +363,6 @@ def primitiveListTest = object {
             assert (iter.next) shouldBe 2
             assert (iter.next) shouldBe 3
             assert {iter.next} shouldRaise (IteratorExhausted)
-        }
-        method testAsList {
-            def l = oneToFive.asList
-            assert (l) hasType (List)
-            assert (l) shouldBe (list [1, 2, 3, 4, 5])
-        }
-        method testAsSet {
-            def s = oneToFive.asSet
-            assert (s) hasType (Set)
-            assert (s) shouldBe (set [1, 2, 3, 4, 5])
-        }
-        method testAsSequence {
-            def s = oneToFive.asSequence
-            assert (s) hasType (Sequence)
-            assert (s) shouldBe (sequence [1, 2, 3, 4, 5])
         }
     }
 }

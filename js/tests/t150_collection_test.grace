@@ -115,7 +115,7 @@ def rangeTest = object {
             def elements = emptyList
             for (rangeUp) do {each -> elements.add(each)}
             assert (elements) shouldBe (list [3, 4, 5, 6])
-            assert (rangeUp.asList) shouldBe (list [3, 4, 5, 6])
+            assert (list.withAll(rangeUp)) shouldBe (list [3, 4, 5, 6])
         }
         method testRangeElementsUpWithFold {
             def elements = rangeUp.fold {acc, each -> acc.add(each)}
@@ -229,22 +229,6 @@ def rangeTest = object {
                 description("Range = list with a different size.")
             assert(rangeDown != [10,9,8,5])
                 description("Range = list with different contents")
-        }
-        method testRangeUpListConversion {
-            assert(rangeUp.asList == list [3,4,5,6])
-            assert(rangeUp.asList) hasType (List)
-        }
-        method testRangeUpSequenceConversion {
-            assert(rangeUp.asSequence == sequence [3,4,5,6])
-            assert(rangeUp.asSequence) hasType (Sequence)
-        }
-        method testRangeDownListConversion {
-            assert(rangeDown.asList == list [10,9,8,7])
-            assert(rangeDown.asList) hasType (List)
-        }
-        method testRangeDownSequenceConversion {
-            assert(rangeDown.asSequence == sequence [10,9,8,7])
-            assert(rangeDown.asSequence) hasType (Sequence)
         }
         method testRangeDownAt {
             def naN = "foo".asNumber
@@ -502,28 +486,8 @@ def sequenceTest = object {
             assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1}.into (emptyList))
                 shouldBe (list [11, 13, 15])
         }
-
-        method testSequenceToList1to5 {
-            assert (oneToFive.asList) shouldBe (list [1, 2, 3, 4, 5])
-            assert (oneToFive.asList) hasType (List)
-        }
-
-        method testSequenceToListEmpty {
-            assert (empty.asList) shouldBe (emptyList)
-            assert (empty.asList) hasType (List)
-        }
-
-        method testSequenceToSet1to5 {
-            assert (oneToFive.asSet) shouldBe (set [1, 2, 3, 4, 5])
-            assert (oneToFive.asSet) hasType (Set)
-        }
-
-        method testSequenceToSetEmpty {
-            assert (empty.asSet) shouldBe (emptySet)
-            assert (empty.asSet) hasType (Set)
-        }
         method testSequenceToSetDuplicates {
-            def theSet = sequence [1,1,2,2,4].asSet
+            def theSet = set(sequence [1,1,2,2,4])
             assert (theSet) shouldBe (set [1, 2, 4])
             assert (theSet) hasType (Set)
         }
@@ -863,7 +827,7 @@ def listTest = object {
             def lst = oneToFive ++ evens
             def siz = oneToFive.size + evens.size
             assert (lst.indices) shouldBe (1..siz)
-            assert (lst.indices) shouldBe (lst.keys.asSequence)
+            assert (lst.indices) shouldBe (sequence(lst.keys))
         }
 
         method testListFold {
@@ -952,26 +916,22 @@ def listTest = object {
         }
 
         method testListToSequence1to5 {
-            assert (oneToFive.asSequence) shouldBe (sequence [1, 2, 3, 4, 5])
-            assert (oneToFive.asSequence) hasType (Sequence)
+            assert (sequence(oneToFive)) shouldBe (sequence [1, 2, 3, 4, 5])
         }
 
         method testListToSequenceEmpty {
-            assert (empty.asSequence) shouldBe (emptySequence)
-            assert (empty.asSequence) hasType (Sequence)
+            assert (sequence(empty)) shouldBe (emptySequence)
         }
 
         method testListToSet1to5 {
-            assert (oneToFive.asSet) shouldBe (set [1, 2, 3, 4, 5])
-            assert (oneToFive.asSet) hasType (Set)
+            assert (set(oneToFive)) shouldBe (set [1, 2, 3, 4, 5])
         }
 
         method testListToSetEmpty {
-            assert (empty.asSet) shouldBe (emptySet)
-            assert (empty.asSet) hasType (Set)
+            assert (set(empty)) shouldBe (emptySet)
         }
         method testListToSetDuplicates {
-            def theSet = list [1,1,2,2,4].asSet
+            def theSet = set(list [1,1,2,2,4])
             assert (theSet) shouldBe (set [1, 2, 4])
             assert (theSet) hasType (Set)
         }
@@ -1551,7 +1511,7 @@ def dictionaryTest = object {
         }
 
         method testDictionaryMapAndFilter {
-            assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1}.asSet)
+            assert(set(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1}))
                 shouldBe (set [11, 13, 15])
         }
         method testDictionaryBindings {
@@ -1597,7 +1557,7 @@ def dictionaryTest = object {
                 (sequence ["one"])
         }
         method testDictionaryBindingsEvens {
-            assert(evens.bindings.asSet) shouldBe
+            assert(set(evens.bindings)) shouldBe
                 (set ["two"::2, "four"::4, "six"::6, "eight"::8])
         }
         method testDictionarySortedOnValues {
@@ -1724,7 +1684,7 @@ def lazyEnumTest = object {
             assert (empty) shouldBe (emptySequence)
         }
         method testLazyFailFast {
-            def o25List = oneToFive.asList
+            def o25List = list.withAll(oneToFive)
             def o25Iter = o25List.iterator
             def first = o25Iter.next
             assert (first) shouldBe 1

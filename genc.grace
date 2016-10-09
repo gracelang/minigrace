@@ -1662,7 +1662,7 @@ method implementAliasesAndExclusionsFor(o) inheriting(e, superobj) {
 
     def tObj = compilenode(e.value)
     def tMethNames = e.providedNames -- o.localNames
-    util.log 70 verbose "tMethNames = {tMethNames.asList.sort}"
+    util.log 70 verbose "tMethNames = {list(tMethNames).sort}"
     e.aliases.do { each ->
         def nn = each.newName.nameString
         def methc = auto_count

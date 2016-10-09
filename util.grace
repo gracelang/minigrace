@@ -143,7 +143,7 @@ method parseargs(buildinfo) {
 
                         if (targetv == "help") then {
                             io.error.write "Valid targets:\n"
-                            targets.asList.sort.do { t ->
+                            list(targets).sort.do { t ->
                                 io.error.write "  {t}\n"
                             }
                             sys.exit(0)

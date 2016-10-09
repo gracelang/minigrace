@@ -143,8 +143,8 @@ class assertion {
         var s := ""
         def vMethods = set(mirror.reflect(value).methodNames)
         def qMethods = set(Q.methodNames)
-        def missing = (vMethods -- qMethods).filter{m -> 
-            (! m.endsWith "()object") && (m != "outer")}.asSet
+        def missing = set((vMethods -- qMethods).filter{m ->
+            (! m.endsWith "()object") && (m != "outer")})
         if (missing.isEmpty.not) then {
             s := "{Q.asDebugString} is missing "
             missing.do { each -> s := s ++ each } 
@@ -292,13 +292,13 @@ class testResult {
         var output := summary
         if (numberOfFailures > 0) then {
             output := output ++ "\nFailures:"
-            for (failSet.asList.sort) do { each ->
+            for (list(failSet).sort) do { each ->
                 output := output ++ "\n    " ++ each
             }
         }
         if (numberOfErrors > 0) then {
             output := output ++ "\nErrors:"
-            for (errorSet.asList.sort) do { each ->
+            for (list(errorSet).sort) do { each ->
                 output := output ++ "\n    " ++ each
             }
         }
@@ -314,7 +314,7 @@ class testResult {
     }
     
     method erroredTestNames {
-        errorSet.map{each -> each.name}.asList.sort
+        list(errorSet.map{each -> each.name}).sort
     }
     
     method numberOfFailures {
@@ -326,7 +326,7 @@ class testResult {
     }
     
     method failedTestNames {
-        failSet.map{each -> each.name}.asList.sort
+        list(failSet.map{each -> each.name}).sort
     }
     
     method numberRun {
