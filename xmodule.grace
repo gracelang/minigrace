@@ -286,6 +286,12 @@ method directory (d) expectedOrInPath (p) -> Boolean {
     filePath.split(p).do { d1 ->
         if (dr == io.realpath(d1)) then { return true }
     }
+    def pathdirs = filePath.split(p).map { each -> io.realpath(each) }
+    util.log 50 verbose("directory(_)expectedOrInPath(_) returning false.\n " ++
+        "Looking for {dr}\nTried ./ = {io.realpath "./"}\n" ++
+        "    sourceDir = {io.realpath(util.sourceDir)}\n" ++
+        "    execDir = {io.realpath(util.execDir)}\n" ++
+        "    PATH dirs = {pathdirs}\n")
     return false
 }
 method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is confidential {
