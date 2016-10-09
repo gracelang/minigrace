@@ -74,7 +74,7 @@ testSuite {
         // at present standardGraceClass is not the same as standardGrace:
         // prelude contains additional methods [_methods, become(_,_), clone(_), coll, collection, collections, engine, enumerable, for(_)do(_), inBrowser, indexable, infinity, isStandardGrace, isStandardGrace:=(_), methods, primitiveArray, while(_)do(_), π]
 
-        // newPrelude contains additional methods [ComparableToDictionary, MinimalyIterable, SelfType, SizeUnknown, dictionary, isEqual(_)toIterable(_), iteratorConcat(_,_), lazyConcatenation(_,_), lazySequenceOver(_)filteredBy(_), lazySequenceOver(_)mappedBy(_), list, removed, sequence, set, unused]
+        // newPrelude contains additional methods [ComparableToDictionary, MinimalyIterable, SelfType, SizeUnknown, dictionary, isEqual(_)toCollection(_), iteratorConcat(_,_), lazyConcatenation(_,_), lazySequenceOver(_)filteredBy(_), lazySequenceOver(_)mappedBy(_), list, removed, sequence, set, unused]
     }
 
     test "stringSet get" by {
