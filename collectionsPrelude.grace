@@ -27,7 +27,7 @@ type Block2⟦S,T,R⟧ = type {
 
 type SelfType = Unknown     // becuase it's not yet in the language
 
-type Iterable⟦T⟧ = Object & type {
+type Collection⟦T⟧ = Object & type {
     iterator -> Iterator⟦T⟧
         // the iterator on which I am based
     isEmpty -> Boolean
@@ -43,26 +43,22 @@ type Iterable⟦T⟧ = Object & type {
         // an internal iterator; applies body to each of my elements
     do(body:Block1⟦T, Done⟧) separatedBy(separator:Block0⟦Done⟧) -> Done
         // an internal iterator; applies body to each of my elements, and applies separator in between
-    ++(other: Iterable⟦T⟧) -> Iterable⟦T⟧
-        // returns a new Iterable over the concatenation of self and other
+    ++(other: Collection⟦T⟧) -> Collection⟦T⟧
+        // returns a new Collection over the concatenation of self and other
     fold(binaryFunction:Block2⟦T, T, T⟧) startingWith(initial:T) -> T
         // the left-associative fold of binaryFunction over self, starting with initial
-    map⟦U⟧(function:Block1⟦T, U⟧) -> Iterable⟦U⟧
+    map⟦U⟧(function:Block1⟦T, U⟧) -> Collection⟦U⟧
         // returns a new iterator that yields my elements mapped by function
-    filter(condition:Block1⟦T,Boolean⟧) -> Iterable⟦T⟧
+    filter(condition:Block1⟦T,Boolean⟧) -> Collection⟦T⟧
         // returns a new iterator that yields those of my elements for which condition holds
 }
 
-type Expandable⟦T⟧ = Iterable⟦T⟧ & type {
+type Expandable⟦T⟧ = Collection⟦T⟧ & type {
     add(x: T) -> SelfType
-    addAll(xs: Iterable⟦T⟧) -> SelfType
+    addAll(xs: Collection⟦T⟧) -> SelfType
 }
 
-type Collection⟦T⟧ = Iterable⟦T⟧ & type {
-    asList -> List⟦T⟧
-    asSequence -> Sequence⟦T⟧
-    asSet -> Set⟦T⟧
-}
+type Iterable⟦T⟧ = Collection⟦T⟧    // for backward compatibility
 
 type Enumerable⟦T⟧ = Collection⟦T⟧ & type {
     values -> Collection⟦T⟧
@@ -91,9 +87,9 @@ type Sequence⟦T⟧ = Enumerable⟦T⟧ & type {
 
 type List⟦T⟧ = Sequence⟦T⟧ & type {
     add(x: T) -> List⟦T⟧
-    addAll(xs: Iterable⟦T⟧) -> List⟦T⟧
+    addAll(xs: Collection⟦T⟧) -> List⟦T⟧
     addFirst(x: T) -> List⟦T⟧
-    addAllFirst(xs: Iterable⟦T⟧) -> List⟦T⟧
+    addAllFirst(xs: Collection⟦T⟧) -> List⟦T⟧
     addLast(x: T) -> List⟦T⟧    // same as add
     at(ix:Number) put(v:T) -> List⟦T⟧
     clear -> List⟦T⟧
@@ -102,11 +98,11 @@ type List⟦T⟧ = Sequence⟦T⟧ & type {
     removeLast -> T
     remove(v:T)
     remove(v:T) ifAbsent(action:Block0⟦Done⟧)
-    removeAll(vs: Iterable⟦T⟧)
-    removeAll(vs: Iterable⟦T⟧) ifAbsent(action:Block0⟦Unknown⟧)
+    removeAll(vs: Collection⟦T⟧)
+    removeAll(vs: Collection⟦T⟧) ifAbsent(action:Block0⟦Unknown⟧)
     pop -> T
     ++(o: List⟦T⟧) -> List⟦T⟧
-    addAll(l: Iterable⟦T⟧) -> List⟦T⟧
+    addAll(l: Collection⟦T⟧) -> List⟦T⟧
     copy -> List⟦T⟧
     sort -> List⟦T⟧
     sortBy(sortBlock:Block2⟦T,T,Number⟧) -> List⟦T⟧
@@ -117,7 +113,7 @@ type List⟦T⟧ = Sequence⟦T⟧ & type {
 type Set⟦T⟧ = Collection⟦T⟧ & type {
     size -> Number
     add(x:T) -> SelfType
-    addAll(elements: Iterable⟦T⟧) -> SelfType
+    addAll(elements: Collection⟦T⟧) -> SelfType
     remove(x: T) -> Set⟦T⟧
     remove(x: T) ifAbsent(block: Block0⟦Done⟧) -> Set⟦T⟧
     clear -> Set⟦T⟧
@@ -129,9 +125,9 @@ type Set⟦T⟧ = Collection⟦T⟧ & type {
     -- (other:Set⟦T⟧) -> Set⟦T⟧
     ++ (other:Set⟦T⟧) -> Set⟦T⟧
     isSubset(s2: Set⟦T⟧) -> Boolean
-    isSuperset(s2: Iterable⟦T⟧) -> Boolean
-    removeAll(elems: Iterable⟦T⟧)
-    removeAll(elems: Iterable⟦T⟧)ifAbsent(action:Block0⟦Done⟧) -> Set⟦T⟧
+    isSuperset(s2: Collection⟦T⟧) -> Boolean
+    removeAll(elems: Collection⟦T⟧)
+    removeAll(elems: Collection⟦T⟧)ifAbsent(action:Block0⟦Done⟧) -> Set⟦T⟧
     into(existing: Expandable⟦Unknown⟧) -> Collection⟦Unknown⟧
 }
 
@@ -143,9 +139,9 @@ type Dictionary⟦K,T⟧ = Collection⟦T⟧ & type {
     at(key:K)ifAbsent(action:Block0⟦Unknown⟧) -> Unknown
     at(key:K)put(value:T) -> Dictionary⟦K,T⟧
     at(k:K) -> T
-    removeAllKeys(keys: Iterable⟦K⟧) -> Dictionary⟦K,T⟧
+    removeAllKeys(keys: Collection⟦K⟧) -> Dictionary⟦K,T⟧
     removeKey(key:K) -> Dictionary⟦K,T⟧
-    removeAllValues(removals: Iterable⟦T⟧) -> Dictionary⟦K,T⟧
+    removeAllValues(removals: Collection⟦T⟧) -> Dictionary⟦K,T⟧
     removeValue(v:T) -> Dictionary⟦K,T⟧
     clear -> Dictionary⟦K,T⟧
     keys -> Enumerable⟦K⟧
@@ -166,7 +162,7 @@ type Iterator⟦T⟧ = type {
     next -> T
 }
 
-class lazySequenceOver⟦T,R⟧ (source: Iterable⟦T⟧)
+class lazySequenceOver⟦T,R⟧ (source: Collection⟦T⟧)
         mappedBy (function:Block1⟦T,R⟧) -> Enumerable⟦R⟧ is confidential {
     inherit enumerable.TRAIT⟦T⟧
     class iterator {
@@ -180,7 +176,7 @@ class lazySequenceOver⟦T,R⟧ (source: Iterable⟦T⟧)
     method asDebugString { "a lazy sequence mapping over {source}" }
 }
 
-class lazySequenceOver⟦T⟧ (source: Iterable⟦T⟧)
+class lazySequenceOver⟦T⟧ (source: Collection⟦T⟧)
         filteredBy(predicate:Block1⟦T,Boolean⟧) -> Enumerable⟦T⟧ is confidential {
     inherit enumerable.TRAIT⟦T⟧
     class iterator {
@@ -302,18 +298,8 @@ class collection.TRAIT⟦T⟧ {
     method filter(selectionCondition:Block1⟦T,Boolean⟧) -> Enumerable⟦T⟧ {
         lazySequenceOver(self) filteredBy(selectionCondition)
     }
-
     method iter { self.iterator }
 
-    method asSequence {
-        sequence.withAll(self)
-    }
-    method asList {
-        list.withAll(self)
-    }
-    method asSet {
-        set.withAll(self)
-    }
 }
 
 class enumerable.TRAIT⟦T⟧ {
@@ -338,7 +324,7 @@ class enumerable.TRAIT⟦T⟧ {
         existing
     }
     method ==(other) {
-        isEqual (self) toIterable (other)
+        isEqual (self) toCollection (other)
     }
     method do(block1:Block1⟦T,Done⟧) -> Done {
         def selfIterator = self.iterator
@@ -369,10 +355,10 @@ class enumerable.TRAIT⟦T⟧ {
         lazyConcatenation(self, other)
     }
     method sortedBy(sortBlock:Block2) -> List⟦T⟧ {
-        self.asList.sortBy(sortBlock:Block2)
+        list.withAll(self).sortBy(sortBlock:Block2)
     }
     method sorted -> List⟦T⟧ {
-        self.asList.sort
+        list.withAll(self).sort
     }
     method asString {
         var s := "⟨"
@@ -439,13 +425,13 @@ def emptySequence is confidential = object {
     method values { self }
     method keysAndValuesDo(block2) { done }
     method reversed { self }
-    method ++(other: Iterable) { sequence.withAll(other) }
+    method ++(other: Collection) { sequence.withAll(other) }
     method asString { "⟨⟩" }
     method contains(element) { false }
     method do(block1) { done }
     method ==(other) {
         match (other)
-            case {o: Iterable ->
+            case {o: Collection ->
                 o.isEmpty
             }
             case {_ ->
@@ -470,7 +456,7 @@ class sequence⟦T⟧ {
         emptySequence
     }
 
-    method withAll(arg: Iterable⟦T⟧) {
+    method withAll(arg: Collection⟦T⟧) {
         var sizeCertain := true
         // size might be uncertain if arg is a lazy collection.
         def forecastSize = arg.sizeIfUnknown {
@@ -545,7 +531,7 @@ class sequence⟦T⟧ {
                 }
                 outer.fromprimitiveArray(freshArray, size)
             }
-            method ++(other: Iterable) {
+            method ++(other: Collection) {
                 sequence.withAll(lazyConcatenation(self, other))
             }
             method asString {
@@ -568,7 +554,7 @@ class sequence⟦T⟧ {
                 }
             }
             method ==(other) {
-                isEqual (self) toIterable (other)
+                isEqual (self) toCollection (other)
             }
             method iterator {
                 object {
@@ -585,14 +571,14 @@ class sequence⟦T⟧ {
                 }
             }
             method sorted {
-                asList.sortBy { l, r ->
+                sequence.withAll(list.withAll(self).sortBy { l, r ->
                     if (l == r) then {0}
                         elseif {l < r} then {-1}
                         else {1}
-                }.asSequence
+                })
             }
             method sortedBy(sortBlock:Block2){
-                asList.sortBy(sortBlock:Block2).asSequence
+                sequence.withAll(list.withAll(self).sortBy(sortBlock:Block2))
             }
         }
     }
@@ -602,7 +588,7 @@ type MinimalyIterable = type {
     iterator -> Iterator
 }
 
-method isEqual(left) toIterable(right) {
+method isEqual(left) toCollection(right) {
     if (MinimalyIterable.match(right)) then {
         def leftIter = left.iterator
         def rightIter = right.iterator
@@ -625,7 +611,7 @@ class list⟦T⟧ {
         withAll(emptySequence)
     }
 
-    method withAll(a: Iterable⟦T⟧) -> List⟦T⟧ {
+    method withAll(a: Collection⟦T⟧) -> List⟦T⟧ {
         object {
             inherit indexable.TRAIT⟦T⟧
 
@@ -774,11 +760,11 @@ class list⟦T⟧ {
                 self
             }
 
-            method removeAll(vs: Iterable⟦T⟧) {
+            method removeAll(vs: Collection⟦T⟧) {
                 removeAll(vs) ifAbsent { NoSuchObject.raise "list does not contain object" }
                 self
             }
-            method removeAll(vs: Iterable⟦T⟧) ifAbsent(action:Block0⟦Done⟧)  {
+            method removeAll(vs: Collection⟦T⟧) ifAbsent(action:Block0⟦Done⟧)  {
                 for (vs) do { each ->
                     def ix = indexOf(each) ifAbsent { 0 }
                     if (ix ≠ 0) then {
@@ -845,7 +831,7 @@ class list⟦T⟧ {
             }
 
             method ==(other) {
-                isEqual (self) toIterable (other)
+                isEqual (self) toCollection (other)
             }
             method iterator {
                 object {
@@ -924,7 +910,7 @@ class set⟦T⟧ {
 
     method asString { "a set factory" }
 
-    method withAll(a: Iterable⟦T⟧) -> Set⟦T⟧ {
+    method withAll(a: Collection⟦T⟧) -> Set⟦T⟧ {
         def cap = max (a.sizeIfUnknown{2} * 3 + 1, 8)
         def result = ofCapacity (cap)
         a.do { x -> result.add(x) }
@@ -1159,7 +1145,7 @@ class set⟦T⟧ {
             }
         }
         method ==(other) {
-            if (Iterable.match(other)) then {
+            if (Collection.match(other)) then {
                 var otherSize := 0
                 other.do { each ->
                     otherSize := otherSize + 1
@@ -1191,7 +1177,7 @@ class set⟦T⟧ {
         }
         method ** (other) {
         // set intersection
-            (filter {each -> other.contains(each)}).asSet
+            set.withAll((filter {each -> other.contains(each)}))
         }
         method isSubset(s2: Set⟦T⟧) {
             self.do{ each ->
@@ -1200,7 +1186,7 @@ class set⟦T⟧ {
             return true
         }
 
-        method isSuperset(s2: Iterable⟦T⟧) {
+        method isSuperset(s2: Collection⟦T⟧) {
             s2.do{ each ->
                 if (self.contains(each).not) then { return false }
             }
@@ -1246,7 +1232,7 @@ class dictionary⟦K,T⟧ {
 
     method asString { "a dictionary factory" }
 
-    method withAll(initialBindings: Iterable⟦Binding⟦K,T⟧⟧) -> Dictionary⟦K,T⟧ {
+    method withAll(initialBindings: Collection⟦Binding⟦K,T⟧⟧) -> Dictionary⟦K,T⟧ {
         def result = empty
         for (initialBindings) do { b -> result.add(b) }
         result
@@ -1724,11 +1710,11 @@ class range {
                 sequence.withAll(lazyConcatenation(self, other))
             }
             method ==(other) {
-                isEqual (self) toIterable (other)
+                isEqual (self) toCollection (other)
             }
             method sorted { self }
 
-            method sortedBy(c) { self.asList.sortBy(c) }
+            method sortedBy(c) { list.withAll(self).sortBy(c) }
 
             method keys { 1..self.size }
 
@@ -1736,16 +1722,6 @@ class range {
 
             method asString -> String{
                 "range.from({lower})to({upper})"
-            }
-
-            method asList{
-                var result := list.empty
-                for (self) do { each -> result.add(each) }
-                result
-            }
-
-            method asSequence {
-                self
             }
         }
     }
@@ -1825,11 +1801,11 @@ class range {
                 sequence.withAll(lazyConcatenation(self, other))
             }
             method ==(other) {
-                isEqual (self) toIterable (other)
+                isEqual (self) toCollection (other)
             }
             method sorted { self.reversed }
 
-            method sortedBy(c) { self.asList.sortBy(c) }
+            method sortedBy(c) { list.withAll(self).sortBy(c) }
 
             method keys { 1..self.size }
 
@@ -1837,9 +1813,6 @@ class range {
 
             method asString -> String {
                 "range.from {upper} downTo {lower}"
-            }
-            method asSequence {
-                self
             }
         }
     }
