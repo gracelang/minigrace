@@ -34,8 +34,10 @@ type IO = Object & type {
         // answers the names of the files in the directory at dirPath
     changeDirectory (dirPath:String)
     env -> Dictionary⟦String,String⟧
-        // answers a Dictionary maping names of environment variables to
+        // answers a Dictionary mapping names of environment variables to
         // their values
+    spawn (executable:String, args:Iterable⟦String⟧) -> Process
+        // creates a new Process `executable` using `args` as the command-line arguments
 }
 
 type Process = Object & type {
