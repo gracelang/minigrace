@@ -954,6 +954,12 @@ method doif {
                         def suggestion = errormessages.suggestion.new
                         def closingBrace = findClosingBrace(btok, false)
                         if(closingBrace.found.not) then {
+                            if (sym.kind == "eof") then {
+                                errormessages.syntaxError("end of program " ++
+                                    "found while searching for the '}' to close " ++
+                                      "an 'else' statement.")
+                                        atPosition(sym.line, sym.linePos)
+                            }
                             if(closingBrace.tok == lastToken) then {
                                 suggestion.insert("}")afterToken(lastToken)
                             } else {
