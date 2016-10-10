@@ -12,9 +12,10 @@ function unwrapDOMObject(obj) {
 
 function wrapDOMFunction(obj, fn) {
     return function(argcv) {
-        var args = Array.prototype.slice.call(arguments, 1);
-        for (var i=0; i<args.length; i++)
-            args[i] = wrapGraceObject(args[i]);
+        var args = [];
+        var numArgs = argcv.sum();
+        for (var i=1; i <= numArgs; i++)
+            args.push(wrapGraceObject(arguments[i]));
         return wrapDOMObject(obj[fn].apply(obj, args));
     };
 }
