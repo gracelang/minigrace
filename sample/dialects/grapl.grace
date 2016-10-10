@@ -1,4 +1,4 @@
-import "math" as math
+import "random" as random
 
 type Vector = {
     data
@@ -240,9 +240,9 @@ method n(n') {
             def ret = vector
             def used = set []
             for (1..n') do {i->
-                var num := 1 + (math.random * o).truncated
+                var num := 1 + (random.between0And1 * o).truncated
                 while {used.contains(num)} do {
-                    num := 1 + (math.random * o).truncated
+                    num := 1 + (random.between0And1 * o).truncated
                 }
                 used.add(num)
                 ret.data.push(num)

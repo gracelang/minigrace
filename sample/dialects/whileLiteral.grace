@@ -4,7 +4,12 @@
 // user when they write the condition in parentheses.
 dialect "dialect"
 import "util" as util
-inherit prelude.methods
+import "standardGraceClass" as sgc
+inherit sgc.standardGrace
+
+method while(cond)do(block) {
+    _prelude.while(cond)do(block)
+}
 
 rule { req: WhileRequest ->
     // The dialect dialect provides a `WhileRequest` pattern which
@@ -13,7 +18,7 @@ rule { req: WhileRequest ->
     if (whileCond(req).kind != "block") then {
         try {
             reportWhile(req)
-        } catch { e:Exception ->
+        } catch { e:prelude.Exception ->
             print "reportWhile raised {e}"
             e.printBacktrace
         }
@@ -21,8 +26,8 @@ rule { req: WhileRequest ->
 }
 
 method reportWhile(req) {
-    // Get a reference to the entire condition 'part' of the request.
-    // We will use this to generate the suggestion of replacing the
+    // req is an entire `while(_)do(_)` request.
+    // Generate the suggestion of replacing the
     // parentheses with braces, if applicable.
     def whilePart = req.with.first
     print "whilePart = {whilePart.pretty(0)}"
@@ -59,7 +64,7 @@ method reportWhile(req) {
         from(whilePart.linePos) to(whilePart.linePos + whilePart.lineLength)
 }
 
-def thisDialect = object {
+def thisDialect is public = object {
     method parseChecker(module) {
         check(module)
     }
