@@ -1271,7 +1271,6 @@ method continue'(e, bl) -> Done is confidential {
 }
 
 def thisDialect is public = object {
-    method parseChecker (moduleObj) { check (moduleObj) }
     method astChecker (moduleObj) { check (moduleObj) }
     method atStart { print "module start" }
     method atEnd { print "module end" }
