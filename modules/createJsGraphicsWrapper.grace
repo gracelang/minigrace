@@ -170,7 +170,7 @@ class eventListener {
 
 class stage(width', height') {
     var mystage := new (width', height')
-    createClearButton(self)
+    createClearButton
     var createJsGraphics
     var stageListener := eventListener
     var timedEventBlock := { }
@@ -198,24 +198,31 @@ class stage(width', height') {
         ›
     }
 
-    method createClearButton(myStage) {
+    method createClearButton {
         native "js" code ‹
               var stage = this.data.mystage;
               var container = new createjs.Container();
               var text = new createjs.Text("clear", "12px Arial", "black");
               text.x = 5;
               text.y = 3;
+              function removeRecursively(c) {
+                c.removeAllEventListeners();
+                var subs = c.children;
+                if (! subs) return;
+                for (var ix = 0, len = subs.length; ix < len; ix++)
+                    removeRecursively(subs[ix]);
+                c.removeAllChildren();
+              }
               container.x = stage.canvas.width - 35;
               var rect = new createjs.Shape();
               rect.graphics.beginFill("lightgrey").drawRect(0, 0, 35, 20);
               container.addChild(rect);
               container.addChild(text);
               container.addEventListener("click", function(event) {
-                  stage.removeAllEventListeners();
-                  stage.removeAllChildren();
+                  removeRecursively(stage);
                   stage.enableDOMEvents(false);
                   stage.update();
-                  callmethod(var_myStage, "clearTimeout", [0]);
+                  callmethod(stage, "clearTimeout", [0]);
                   createjs.Ticker.removeAllEventListeners();
         });
         stage.addChild(container);

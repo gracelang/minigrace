@@ -191,6 +191,7 @@ class create(canvasWidth, canvasHeight) {
     method clear {
         stage.removeAllChildren
         stage.removeAllEventListeners
+        stage.createClearButton
         stage.update
     }
 
