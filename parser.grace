@@ -359,7 +359,7 @@ method errorMissingAnnotation {
     suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
     suggestions.push(suggestion)
     errormessages.syntaxError("one or more annotations separated by commas must follow 'is'.")
-        atRange(lastToken.line, lastToken.linePos + lastToken.size + 1)
+        atRange(lastToken.line, lastToken.linePos, lastToken.linePos + lastToken.size - 1)
         withSuggestions(suggestions)
 }
 
@@ -416,7 +416,7 @@ method typeexpression {
             def suggestion = errormessages.suggestion.new
             suggestion.insert(")")afterToken(lastToken)
             errormessages.syntaxError "a type expression beginning with a '(' must end with a ')'."
-                atRange(lastToken.line, lastToken.linePos + lastToken.size)
+                atRange(lastToken.line, lastToken.linePos, lastToken.linePos + lastToken.size - 1)
                 withSuggestion(suggestion)
         }
         statementToken := prevStatementToken
