@@ -224,7 +224,7 @@ method compileobjdefdec(o, selfr, pos) {
                 noteLineNumber(o.line)comment("typecheck in compileobjdefdec")
                 out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match(1)\", [1], {val})))"
                 out "  throw new GraceExceptionPacket(TypeErrorObject,"
-                out "      new GraceString(\"value of def '{o.name.value}' is not of type {o.dtype.toGrace(0)}\"));"
+                out "      new GraceString(\"value of def {o.name.value} is not of type {o.dtype.toGrace(0)}\"));"
             }
         }
     }
@@ -267,7 +267,7 @@ method compileobjvardec(o, selfr, pos) {
                 noteLineNumber(o.line)comment("typecheck in compileobjvardec")
                 out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match(1)\", [1], {val})))"
                 out "  throw new GraceExceptionPacket(TypeErrorObject,"
-                out "      new GraceString(\"initial value of var '{o.name.value}' is not of type {o.dtype.toGrace(0)}\"));"
+                out "      new GraceString(\"initial value of var {o.name.value} is not of type {o.dtype.toGrace(0)}\"));"
             }
         }
     }
@@ -295,7 +295,7 @@ method compileobject(o, outerRef, inheritingObject) {
         out "while (inho{myc}.superobj) inho{myc} = inho{myc}.superobj;"
         out "inho{myc}.superobj = {selfr};"
         out "{selfr}.data = inheritingObject.data;"
-        out "if (inheritingObject.hasOwnProperty('_value'))"
+        out "if (inheritingObject.hasOwnProperty(\"_value\"))"
         out "  {selfr}._value = inheritingObject._value;"
     }
     compileobjouter(selfr, outerRef)
@@ -772,7 +772,7 @@ method compiledefdec(o) {
                 noteLineNumber(o.line)comment("compiledefdec")
                 out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match(1)\", [1], {varf(nm)})))"
                 out "  throw new GraceExceptionPacket(TypeErrorObject,"
-                out "      new GraceString(\"value of def '{snm}' is not of type {o.dtype.toGrace(0)}\"));"
+                out "      new GraceString(\"value of def {snm} is not of type {o.dtype.toGrace(0)}\"));"
             }
         }
     }
@@ -809,7 +809,7 @@ method compilevardec(o) {
                     noteLineNumber(o.line)comment("compilevardec")
                     out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match(1)\", [1], {varf(nm)})))"
                     out "  throw new GraceExceptionPacket(TypeErrorObject,"
-                    out "      new GraceString(\"initial value of var '{o.name.value}' is not of type {o.dtype.toGrace(0)}\"));"
+                    out "      new GraceString(\"initial value of var {o.name.value} is not of type {o.dtype.toGrace(0)}\"));"
                 }
             }
         }
@@ -995,9 +995,9 @@ method compileimport(o) {
     def currentScope = o.scope
     var nm := escapeident(o.nameString)
     var fn := escapestring(o.path)
-    out("if (typeof {formatModname(o.path)} == 'undefined')")
+    out "if (typeof {formatModname(o.path)} == \"undefined\")"
     out "  throw new GraceExceptionPacket(EnvironmentExceptionObject, "
-    out "    new GraceString('could not find module {o.path}'));"
+    out "    new GraceString(\"could not find module {o.path}\"));"
     out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", {formatModname(o.path)});")
     def methodIdent = o.value
     def accessor = (ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(currentScope)],
@@ -1258,7 +1258,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
     out("\}")
 
     def generatedModuleName = formatModname(modname)
-    def importList = imported.map{ each -> "'{each}'" }.asList.sort
+    def importList = imported.map{ each -> "\"{each}\"" }.asList.sort
     out "{generatedModuleName}.imports = {importList};"
 
     moduleObject.imports := imports.other
@@ -1267,7 +1267,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
     def gct = xmodule.parseGCT(modname)
     def gctText = xmodule.gctAsString(gct)
     out "if (typeof gctCache !== \"undefined\")"
-    out "  gctCache['{escapestring(basename(modname))}'] = \"{escapestring(gctText)}\";"
+    out "  gctCache[\"{escapestring(basename(modname))}\"] = \"{escapestring(gctText)}\";"
     out "if (typeof originalSourceLines !== \"undefined\") \{"
     out "  originalSourceLines[\"{modname}\"] = ["
     def sourceLines = util.cLines
@@ -1311,15 +1311,15 @@ method compileSuper(o, selfr) {
     out "{selfr}.superobj = {sup};"
     out "if ({sup}.data) {selfr}.data = {sup}.data;"
     // out "delete {sup}.data;"    // to avoid a redundant reference
-    out "if ({sup}.hasOwnProperty('_value'))"
+    out "if ({sup}.hasOwnProperty(\"_value\"))"
     out "    {selfr}._value = {sup}._value;"
     // out "delete {sup}._value;"  // to avoid an inconsistent copy of built-in values
     // this breaks inheritance from booleans
     o.aliases.do { each ->
-        out "{selfr}.methods['{each.newName.nameString}'] = findMethod({sup}, '{each.oldName.nameString}');"
+        out "{selfr}.methods[\"{each.newName.nameString}\"] = findMethod({sup}, \"{each.oldName.nameString}\");"
     }
     o.exclusions.do { each ->
-        out "delete {sup}.methods['{each.nameString}'];"
+        out "delete {sup}.methods[\"{each.nameString}\"];"
     }
 }
 
@@ -1329,12 +1329,12 @@ method compileTrait(o) in (objNode, selfr) {
 //    util.log 70 verbose "tMethNames = {tMethNames.asList.sort}"
     o.aliases.do { each ->
         def nn = each.newName.nameString
-        out("{selfr}.methods['{nn}'] = " ++
-            "{tObj}.methods['{each.oldName.nameString}'];  // alias")
+        out("{selfr}.methods[\"{nn}\"] = " ++
+            "{tObj}.methods[\"{each.oldName.nameString}\"];  // alias")
         tMethNames.remove(nn)
     }
     tMethNames.do { methName ->
-        out "{selfr}.methods['{methName}'] = {tObj}.methods['{methName}'];"
+        out "{selfr}.methods[\"{methName}\"] = {tObj}.methods[\"{methName}\"];"
     }
 }
 
