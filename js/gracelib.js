@@ -215,6 +215,12 @@ function string_hash(argcv) {
     return this._hash;
 }
 
+function string_indices(argcv) {
+    var size = this._value.length;
+    return callmethod(GraceRangeClass(), "uncheckedFrom(1)to(1)", [1, 1],
+                      new GraceNum(1), new GraceNum(size));
+}
+
 GraceString.prototype = {
     methods: {
         "++(1)": function(argcv, other) {
@@ -478,10 +484,8 @@ GraceString.prototype = {
             return new GraceNum(this._value.charCodeAt(0));
         },
         "hash": string_hash,
-        "indices": function string_indices(argcv) {
-            var size = this._value.length;
-            return callmethod(GraceRangeClass(), "uncheckedFrom(1)to(1)", [1, 1], new GraceNum(1), new GraceNum(size));
-        },
+        "indices": string_indices,
+        "keys": string_indices,
         "asNumber": function string_asNumber(argcv) {
             return new GraceNum(+this._value);
         },
