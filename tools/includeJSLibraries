@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-
+BACKGROUND=""
 for i in $*; do
     if [[ $i =~ .*\.js$ ]] &&
        [ $i != "js/tabs.js" ]; then
-        BACKGROUND=${BACKGROUND}"  window.importScripts(\"../$i\");"
-        INDEX=${INDEX}"    <script src=\"$i\" type=\"text/javascript\"></script>"
+        BACKGROUND=${BACKGROUND}"  window.importScripts(\"../$i\");\n"
+        INDEX=${INDEX}"    <script src=\"$i\" type=\"text/javascript\"></script>\n"
     fi
 done
-cat grace-web-editor/scripts/background.in.js | sed -e 's|JAVASCRIPT_SRC_FILES|'"$BACKGROUND"'|' >grace-web-editor/scripts/background.js
-cat grace-web-editor/index.in.html | sed -e 's|JAVASCRIPT_SRC_FILES|'"$INDEX"'|' >grace-web-editor/index.html
+echo -e "${BACKGROUND}" > tools/jsltemp-file
+sed -e '\#// JAVASCRIPT_SRC_FILES#r tools/jsltemp-file' grace-web-editor/scripts/background.in.js > grace-web-editor/scripts/background.js
+echo -e "${INDEX}" > tools/jsltemp-file
+sed -e '/JAVASCRIPT_SRC_FILES/r tools/jsltemp-file' grace-web-editor/index.in.html > grace-web-editor/index.html
+rm -f tools/jsltemp-file
