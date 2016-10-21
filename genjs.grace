@@ -168,29 +168,6 @@ method compileobjouter(selfr, outerRef) {
     out("\};")
     out("{selfr}.methods[\"{nm}\"] = reader_{emod}_{nmi}{myc};")
 }
-method compileobjtype(o, selfr, pos) {
-    var val := "undefined"
-    var myc := auto_count
-    auto_count := auto_count + 1
-    var nm := escapestring(o.value)
-    var nmi := escapeident(o.value)
-    def emod = escapeident(modname)
-    o.anonymous := true
-    val := compilenode(o)
-    out(selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
-    out("    var reader_{emod}_{nmi}{myc} = function() \{")
-    out("    return this.data[\"" ++ nm ++ "\"];")
-    out("  \};")
-    out("  reader_{emod}_{nmi}{myc}.def = true;")
-    var isReadable := false
-    for (o.annotations) do {ann->
-        if ((ann.kind == "identifier") &&
-            {ann.value == "confidential"}) then {
-            out "  reader_{emod}_{nmi}{myc}.confidential = true;"
-        }
-    }
-    out "{selfr}.methods[\"{nm}\"] = reader_{emod}_{nmi}{myc};"
-}
 method compileobjdefdec(o, selfr, pos) {
     var val := "undefined"
     if (false != o.value) then {
@@ -215,9 +192,6 @@ method compileobjdefdec(o, selfr, pos) {
         out "reader_{emod}_{nmi}{myc}.confidential = true;"
     }
     out "{selfr}.methods[\"{nm}\"] = reader_{emod}_{nmi}{myc};"
-    if (ast.findAnnotation(o, "parent")) then {
-        out "  {selfr}.superobj = {val};"
-    }
     if (emitTypeChecks) then {
         if (o.dtype != false) then {
             if (o.dtype.value != "Unknown") then {
@@ -759,12 +733,13 @@ method compiledefdec(o) {
     var val := compilenode(o.value)
     out("var " ++ varf(nm) ++ " = " ++ val ++ ";")
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(currentScope)],
-            [o.name], false) scope(currentScope))
-        if (ast.findAnnotation(o, "parent")) then {
-            out("this.superobj = {val};")
+        // this def is at top level, and not inside a block or method
+        if (o.isReadable) then {
+            util.setPosition(o.line, o.linePos)
+            compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(currentScope)],
+                [o.name], false) scope(currentScope))
+            out("this.methods[\"{nm}\"].debug = \"def\";")
         }
-        out("this.methods[\"{nm}\"].debug = \"def\";")
     }
     if (emitTypeChecks) then {
         if (o.dtype != false) then {
@@ -794,13 +769,19 @@ method compilevardec(o) {
         out "myframe.addVar(\"{escapestring(nm)}\", function() \{return {varf(nm)}});"
     }
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(currentScope)],
-            [o.name], false) scope(currentScope))
-        def paramID = ast.identifierNode.new("_var_assign_tmp", false)
-        compilenode(ast.methodNode.new(
-            [ast.signaturePart.partName(o.nameString ++ ":=") params( [paramID] ) scope(currentScope)],
-            [ast.bindNode.new(o.name, paramID)], false)  scope(currentScope))
-        out("this.methods[\"{nm}\"].debug = \"var\";")
+        // this def is at top level, and not inside a block or method
+        util.setPosition(o.line, o.linePos)
+        if (o.isReadable) then {
+            compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(currentScope)],
+                [o.name], false) scope(currentScope))
+            out("this.methods[\"{nm}\"].debug = \"var\";")
+        }
+        if (o.isWritable) then {
+            def paramID = ast.identifierNode.new("rhs", false)
+            compilenode(ast.methodNode.new(
+                [ast.signaturePart.partName(o.nameString ++ ":=") params( [paramID] ) scope(currentScope)],
+                [ast.bindNode.new(o.name, paramID)], false)  scope(currentScope))
+        }
     }
     if (emitTypeChecks) then {
         if (o.dtype != false) then {
