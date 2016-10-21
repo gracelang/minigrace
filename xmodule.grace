@@ -27,7 +27,7 @@ method builtInModules {
     }
 }
 
-def currentDialect = object {
+def currentDialect is public = object {
     var name is public := "standardGrace"
     var moduleObject is public := _prelude
     // TODO: this isn't quite right: should be the prelude

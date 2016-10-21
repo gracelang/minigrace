@@ -1,12 +1,12 @@
 #pragma NativePrelude
 
-def BoundsError = ProgrammingError.refine "BoundsError"
-def IteratorExhausted = ProgrammingError.refine "IteratorExhausted"
-def SubobjectResponsibility = ProgrammingError.refine "SubobjectResponsibility"
-def NoSuchObject = ProgrammingError.refine "NoSuchObject"
-def RequestError = ProgrammingError.refine "RequestError"
-def ConcurrentModification = ProgrammingError.refine "ConcurrentModification"
-def SizeUnknown = Exception.refine "SizeUnknown"
+def BoundsError is public = ProgrammingError.refine "BoundsError"
+def IteratorExhausted is public = ProgrammingError.refine "IteratorExhausted"
+def SubobjectResponsibility is public = ProgrammingError.refine "SubobjectResponsibility"
+def NoSuchObject is public = ProgrammingError.refine "NoSuchObject"
+def RequestError is public = ProgrammingError.refine "RequestError"
+def ConcurrentModification is public = ProgrammingError.refine "ConcurrentModification"
+def SizeUnknown is public = Exception.refine "SizeUnknown"
 
 method abstract is confidential {
     // copied from standardGrace
@@ -1477,7 +1477,7 @@ type Binding⟦K,T⟧ = {
     ==(other) -> Boolean
 }
 
-def binding = object {
+def binding is public = object {
     method asString { "binding class" }
 
     class key(k)value(v) {

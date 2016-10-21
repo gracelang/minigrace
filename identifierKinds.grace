@@ -21,39 +21,39 @@ class kindConstant(name) {
     method ==(other) { self.isMe(other) }
 }
 
-def undefined = kindConstant "undefined"
-def defdec = kindConstant "defdec"
-def methdec = kindConstant "method"
-def typedec = kindConstant "typedec"
-def selfDef = object {
+def undefined is public = kindConstant "undefined"
+def defdec is public = kindConstant "defdec"
+def methdec is public = kindConstant "method"
+def typedec is public = kindConstant "typedec"
+def selfDef is public = object {
     inherit kindConstant "selfDef"
     method isImplicit { true }
     method forUsers { false }
     method forGct { false }
 }
-def fromTrait = object {
+def fromTrait is public = object {
     inherit kindConstant "from a trait"
     method isImplicit { true }
     method fromParent { true }
 }
-def inherited = object {
+def inherited is public = object {
     inherit kindConstant "inherited"
     method isImplicit { true }
     method fromParent { true }
 }
-def vardec = object {
+def vardec is public = object {
     inherit kindConstant "vardec"
     method isAssignable { true }
 }
-def parameter = object {
+def parameter is public = object {
     inherit kindConstant "parameter"
     method isParameter { true }
 }
-def typeparam = object {
+def typeparam is public = object {
     inherit kindConstant "typeparam"
     method isParameter { true }
 }
-def graceObjectMethod = object {
+def graceObjectMethod is public = object {
     inherit kindConstant "from graceObject"
     method isImplicit { true }
     method forUsers { false }

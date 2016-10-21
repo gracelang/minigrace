@@ -36,7 +36,7 @@ method maybeListMap(n, b) ancestors(as) is confidential {
     }
 }
 
-def ancestorChain = object {
+def ancestorChain is public = object {
     class empty {
         method isEmpty { true }
         method asString { "ancestorChain ▫" }
@@ -232,7 +232,7 @@ def nullNode is public = object {
     method == (other) { self.isMe(other) }
 }
 
-def fakeSymbolTable = object {
+def fakeSymbolTable is public = object {
     var node is public := nullNode
     method asString { "the fakeSymbolTable" }
     method addNode (n) as (kind) {
@@ -788,7 +788,7 @@ def typeDecNode is public = object {
   }
 }
 
-def methodNode = object {
+def methodNode is public = object {
     method new(signature, body, dtype) scope(s) {
         def result = new(signature, body, dtype)
         result.scope := s
@@ -1035,7 +1035,7 @@ def methodNode = object {
         }
     }
 }
-def callNode = object {
+def callNode is public = object {
     method new(receiver, parts) scope(s) {
         def result = new(receiver, parts)
         result.scope := s
@@ -1182,7 +1182,7 @@ def callNode = object {
         method statementName { "request" }
     }
 }
-def moduleNode = object {
+def moduleNode is public = object {
     method body(b) named(n) scope(s) {
         def result = body(b)
         result.name := n
@@ -1453,7 +1453,7 @@ def arrayNode is public = object {
     }
   }
 }
-def memberNode = object {
+def memberNode is public = object {
     method new(request, receiver) scope(s) {
         // Represents a dotted request ‹receiver›.‹request› with no arguments.
         def result = new(request, receiver)
@@ -1644,7 +1644,7 @@ def typeParametersNode is public = object {
     }
   }
 }
-def identifierNode = object {
+def identifierNode is public = object {
 
     method new(name, dtype) scope(s) {
         def result = new(name, dtype)
@@ -1779,7 +1779,7 @@ def identifierNode = object {
 def typeType is public = identifierNode.new("Type", false)
 def unknownType is public = identifierNode.new("Unknown", typeType)
 
-def stringNode = object {
+def stringNode is public = object {
     method new(v) scope(s) {
         def result = new(v)
         result.scope := s
@@ -1950,7 +1950,7 @@ def bindNode is public = object {
     method statementName { "assignment or assigment request" }
   }
 }
-def defDecNode = object {
+def defDecNode is public = object {
     method new(name', val, dtype') scope(s) {
         def result = new(name', val, dtype')
         result.scope := s
@@ -2313,7 +2313,7 @@ def returnNode is public = object {
     }
   }
 }
-def inheritNode = object {
+def inheritNode is public = object {
     method new(expr) scope(s) {
         def result = new(expr)
         result.scope := s
@@ -2458,7 +2458,7 @@ def blankNode is public = object {
         }
     }
 }
-def signaturePart = object {
+def signaturePart is public = object {
     method new {
         partName "" params []
     }
@@ -2547,7 +2547,7 @@ def signaturePart = object {
     }
 }
 
-def requestPart = object {
+def requestPart is public = object {
     method new {
         request "" withArgs( [] )
     }
@@ -2625,7 +2625,7 @@ def requestPart = object {
     }
 }
 
-def commentNode = object {
+def commentNode is public = object {
     class new(val') {
         inherit baseNode
         def kind is public = "comment"

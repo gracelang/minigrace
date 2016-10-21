@@ -1,8 +1,6 @@
 #pragma NativePrelude
 #pragma ExtendedLineups
 
-var isStandardGrace := true
-
 class SuccessfulMatch.new(result', bindings') {
     inherit true
     method result { result' }
