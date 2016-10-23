@@ -14,10 +14,10 @@ class r(r')g(g')b(b') {
     def g is readable = g'
     def b is readable = b'
 }
-def black = r 0 g 0 b 0
-def blue = r 0 g 0 b 255
-def green = r 0 g 255 b 0
-def red = r 255 g 0 b 0
+def black is public = r 0 g 0 b 0
+def blue is public = r 0 g 0 b 255
+def green is public = r 0 g 255 b 0
+def red is public = r 255 g 0 b 0
 
 var x
 var y
