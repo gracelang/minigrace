@@ -263,6 +263,7 @@ method tokenOnLineOfLastOr (other) {
     if (sym.indent > lastIndent) then { return true }   // continuation last
     if (other.line == sym.line) then { return true }
     if (sym.indent > other.indent) then { return true } // continuation of other
+    return false
 }
 method didConsume(aParsingBlock) {
     // True if executing aParsingBlock consumes at least one token.
