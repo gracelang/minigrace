@@ -2562,10 +2562,16 @@ method methoddec {
                 statement
                 s := values.pop
             }
-            if(sym.kind != "rbrace") then {
+            if (sym.kind != "rbrace") then {
                 def suggestion = errormessages.suggestion.new
                 def closingBrace = findClosingBrace(btok, false)
-                if(closingBrace.found.not) then {
+                if (closingBrace.found.not) then {
+                    if (sym.kind == "eof") then {
+                        errormessages.syntaxError("end of program " ++
+                            "found while searching for the '}' to close " ++
+                              "a method declaration.")
+                                atPosition(sym.line, sym.linePos)
+                    }
                     if(closingBrace.tok == sym) then {
                         suggestion.insert("}")afterToken(lastToken)
                     } else {
