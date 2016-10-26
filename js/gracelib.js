@@ -1970,7 +1970,7 @@ GraceIterator.prototype.methods.next = function() {
 };
 
 var stdout = Grace_allocObject(GraceObject, "stdout");
-stdout.methods.write = function(junk, s) {
+stdout.methods["write(1)"] = function(argcv, s) {
     minigrace.stdout_write(s._value);
 };
 stdout.methods.isatty = function() {

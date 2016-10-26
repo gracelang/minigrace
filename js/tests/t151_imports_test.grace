@@ -1,10 +1,11 @@
+import "io" as io
 import "math" as math
 import "mirrors" as mi
 def mm = mi.reflect(math)
-print "math's methods are: "
-for (mm.methodNames.asList.sort) do { each ->
-    print "    {each}"
-}
+io.output.write "math's methods are: "
+mm.methodNames.asList.sort.do { each ->
+    io.output.write (each)
+} separatedBy { io.output.write ", " }
 print ""
 print "asString = {math.asString}"
 print "asDebugString = {math.asDebugString}"
