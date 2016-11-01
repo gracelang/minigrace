@@ -118,9 +118,11 @@ method weeks(n) -> Date {
     days(7 * n)
 }    
 
-method timeZoneOffset -> Number {
-    // the offset between local time and UTC, in munites.
-    native "js" code "return new GraceNum(new Date().getTimezoneOffset());"
+method timeZoneOffset -> Date {
+    // the offset between local time and UTC, as a Date.
+    def minutesOffset =
+        native "js" code "result = new GraceNum(new Date().getTimezoneOffset());"
+    minutes(minutesOffset)
 }
 
 class now {
