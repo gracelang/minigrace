@@ -1185,7 +1185,11 @@ PrimitiveGraceList.prototype = {
             return res;
         },
         "++(1)": function(argcv, other) {
-            var l = this._value.concat(other._value);
+            var otherIter = callmethod(other, "iterator", [0]);
+            var l = this._value.slice();    // copy of the embedded js list
+            while (Grace_isTrue(callmethod(otherIter, "hasNext", [0]))) {
+                l.push(callmethod(otherIter, "next", [0]));
+            }
             return new PrimitiveGraceList(l);
         },
         "asSet": function list_asSet(argcv) {
@@ -1361,8 +1365,12 @@ Lineup.prototype = {
             return res;
         },
         "++(1)": function(argcv, other) {
-            var l = this._value.concat(other._value);
-            return new PrimitiveGraceList(l);
+            var otherIter = callmethod(other, "iterator", [0]);
+            var l = this._value.slice();    // copy of the embedded js list
+            while (Grace_isTrue(callmethod(otherIter, "hasNext", [0]))) {
+                l.push(callmethod(otherIter, "next", [0]));
+            }
+            return new Lineup(l);
         }
     },
     className: "lineup",
