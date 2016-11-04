@@ -146,12 +146,12 @@ def primitiveListTest = object {
             assert (empty.add(9)) shouldBe [9]
             assert (evens.add(10)) shouldBe [2, 4, 6, 8, 10]
         }
-//        method testListAddFirst {
-//            assert (evens.addFirst(0)) shouldBe [0, 2, 4, 6, 8]
-//            assert (evens.size) shouldBe (5)
-//            assert (evens.first) shouldBe (0)
-//            assert (evens.second) shouldBe (2)
-//        }
+        method testListAddFirst {
+            assert (evens.addFirst(0)) shouldBe [0, 2, 4, 6, 8]
+            assert (evens.size) shouldBe (5)
+            assert (evens.first) shouldBe (0)
+            assert (evens.second) shouldBe (2)
+        }
 //        method testListRemoveFirst {
 //            def removed = oneToFive.removeFirst
 //            assert (removed) shouldBe (1)
@@ -328,6 +328,16 @@ def primitiveListTest = object {
             def iter = [1, 1, 2, 2, 4].iterator
             while { iter.hasNext } do { accum.add(iter.next) }
             assert (accum) shouldBe (set [1, 2, 4])
+        }
+        method testCollectionConcat {
+            def result = evens ++ oneToFive
+            assert (result) shouldBe [2, 4, 6, 8, 1, 2, 3, 4, 5]
+            assert {result.reverse} shouldRaise (NoSuchMethod)
+        }
+        method testListConcat {
+            def result = evens ++ list(oneToFive)
+            assert (result) shouldBe [2, 4, 6, 8, 1, 2, 3, 4, 5]
+            assert {result.reverse} shouldRaise (NoSuchMethod)
         }
         method testListIteratorRaisesExhausted {
             def iter = [1, 2, 3].iterator

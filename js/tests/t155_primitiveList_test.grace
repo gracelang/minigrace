@@ -290,8 +290,17 @@ def primitiveListTest = object {
             assert (empty.map{x -> x * x}.into(emptyList)) shouldBe (emptyList)
         }
 
-        method testListMapEvens {
-            assert(evens.map{x -> x + 1}.into(emptyList)) shouldBe [3, 5, 7, 9]
+        method testListMapEvensIntoCollection {
+            def result = evens.map{x -> x + 1}.into(empty)
+            assert(result) shouldBe [3, 5, 7, 9]
+            assert(result) hasType (Collection)
+            result.unshift 0    // checks that its really a lineup
+        }
+
+        method testListMapEvensIntoList {
+            def result = evens.map{x -> x + 1}.into(emptyList)
+            assert(result) shouldBe (list [3, 5, 7, 9])
+            assert(result) hasType (List)
         }
 
         method testListMapEvensInto {
@@ -339,6 +348,14 @@ def primitiveListTest = object {
             def iter = [1, 1, 2, 2, 4].iterator
             while { iter.hasNext } do { accum.add(iter.next) }
             assert (accum) shouldBe (set [1, 2, 4])
+        }
+        method testCollectionConcat {
+            def result = evens ++ oneToFive
+            assert (result) shouldBe [2, 4, 6, 8, 1, 2, 3, 4, 5]
+        }
+        method testListConcat {
+            def result = evens ++ list(oneToFive)
+            assert (result) shouldBe [2, 4, 6, 8, 1, 2, 3, 4, 5]
         }
         method testListIteratorRaisesExhausted {
             def iter = [1, 2, 3].iterator
