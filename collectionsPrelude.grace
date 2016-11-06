@@ -830,9 +830,13 @@ class list⟦T⟧ {
                 }
 
                 method do(block1) {
+                    def iMods = mods
                     var i := 1
                     def curSize = self.size
                     while {i <= curSize} do {
+                        if (iMods ≠ mods) then {
+                            ConcurrentModification.raise (asDebugString)
+                        }
                         block1.apply(self.at(i))
                         i := i + 1
                     }
@@ -844,13 +848,13 @@ class list⟦T⟧ {
 
                 method iterator {
                     object {
-                        var imods := mods
+                        def iMods = mods
                         var idx := 1
                         method asDebugString { "{asString}⟪{idx}⟫" }
                         method asString { "aListIterator" }
                         method hasNext { idx <= size }
                         method next {
-                            if (imods != mods) then {
+                            if (iMods ≠ mods) then {
                                 ConcurrentModification.raise (asDebugString)
                             }
                             if (idx > size) then { IteratorExhausted.raise "on list" }
@@ -1098,8 +1102,12 @@ class list⟦T⟧ {
                 return false
             }
             method do(block1) {
+                def iMods = mods
                 var i := 0
                 while {i < size} do {
+                    if (iMods ≠ mods) then {
+                        ConcurrentModification.raise (asDebugString)
+                    }
                     block1.apply(inner.at(i))
                     i := i + 1
                 }
@@ -1110,13 +1118,13 @@ class list⟦T⟧ {
             }
             method iterator {
                 object {
-                    var imods := mods
+                    def iMods = mods
                     var idx := 1
                     method asDebugString { "{asString}⟪{idx}⟫" }
                     method asString { "aListIterator" }
                     method hasNext { idx <= size }
                     method next {
-                        if (imods != mods) then {
+                        if (iMods != mods) then {
                             ConcurrentModification.raise (asDebugString)
                         }
                         if (idx > size) then { IteratorExhausted.raise "on list" }
@@ -1362,10 +1370,14 @@ class set⟦T⟧ {
             }
         }
         method do(block1) {
+            def iMods = mods
             var i := 0
             var found := 0
             var candidate
             while {found < size} do {
+                if (iMods != mods) then {
+                    ConcurrentModification.raise (outer.asDebugString)
+                }
                 candidate := inner.at(i)
                 if ((unused != candidate) && (removed != candidate)) then {
                     found := found + 1
@@ -1376,7 +1388,7 @@ class set⟦T⟧ {
         }
         method iterator {
             object {
-                var imods:Number := mods
+                def iMods = mods
                 var count := 1
                 var idx := -1
                 method hasNext { size >= count }
@@ -1385,8 +1397,8 @@ class set⟦T⟧ {
                     def innerSize = inner.size
                     while {
                         idx := idx + 1
-                        if (imods != mods) then {
-                            ConcurrentModification.raise (outer.asString)
+                        if (iMods != mods) then {
+                            ConcurrentModification.raise (outer.asDebugString)
                         }
                         if (idx >= innerSize) then {
                             IteratorExhausted.raise "iterator over {outer.asString}"
@@ -1583,6 +1595,17 @@ class dictionary⟦K,T⟧ {
             }
             self
         }
+        method removeKey(k:K) ifAbsent (action:Block0⟦Unknown⟧) {
+            mods := mods + 1
+            var t := findPosition(k)
+            if (inner.at(t).key == k) then {
+                inner.at(t)put(removed)
+                numBindings := numBindings - 1
+            } else {
+                action.apply
+            }
+            self
+        }
         method removeAllValues(removals) {
             mods := mods + 1
             for (0..(inner.size-1)) do {i->
@@ -1762,13 +1785,13 @@ class dictionary⟦K,T⟧ {
         method iterator -> Iterator⟦T⟧ { values.iterator }
         class bindingsIterator -> Iterator⟦Binding⟦K, T⟧⟧ {
             // this should be confidential, but can't be until `outer` is fixed.
-            def imods:Number = mods
+            def iMods = mods
             var count := 1
             var idx := 0
             var elt
             method hasNext { size >= count }
             method next {
-                if (imods != mods) then {
+                if (iMods != mods) then {
                     ConcurrentModification.raise (outer.asString)
                 }
                 if (size < count) then { IteratorExhausted.raise "over {outer.asString}" }
@@ -1808,7 +1831,11 @@ class dictionary⟦K,T⟧ {
             }
         }
         method keysDo(block1) {
-            for (0..(inner.size-1)) do {i->
+            def iMods = mods
+            for (0..(inner.size-1)) do { i ->
+                if (iMods ≠ mods) then {
+                    ConcurrentModification.raise (asDebugString)
+                }
                 def a = inner.at(i)
                 if ((unused ≠ a) && (removed ≠ a)) then {
                     block1.apply(a.key)
@@ -1816,7 +1843,11 @@ class dictionary⟦K,T⟧ {
             }
         }
         method valuesDo(block1) {
-            for (0..(inner.size-1)) do {i->
+            def iMods = mods
+            for (0..(inner.size-1)) do { i ->
+                if (iMods ≠ mods) then {
+                    ConcurrentModification.raise (asDebugString)
+                }
                 def a = inner.at(i)
                 if ((unused ≠ a) && (removed ≠ a)) then {
                     block1.apply(a.value)

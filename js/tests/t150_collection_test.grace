@@ -1019,18 +1019,47 @@ def listTest = object {
             assert(evens.asDictionary) shouldBe
                 (dictionary [1::2, 2::4, 3::6, 4::8])
         }
+        method testListFailFastDoRemove {
+          assert {
+              oneToFive.do { each ->
+                  if (each == 3) then { oneToFive.remove(each) }
+              }
+          } shouldRaise (ConcurrentModification)
+        }
+        method testListFailFastDoNothing {
+          def iter2 = oneToFive.iterator
+          assert {
+            oneToFive.do { each -> }
+          } shouldntRaise (ConcurrentModification)
+        }
+        method testListFailFastDoAddLast {
+          assert {
+            oneToFive.do { each ->
+                if (oneToFive.last ≠ 0) then {
+                    // without this check, a bad implementation will loop forever
+                    oneToFive.addLast 0
+                }
+            }
+          } shouldRaise (ConcurrentModification)
+        }
+        method testListFailFastDoAtPut {
+          assert {
+            oneToFive.do { each ->
+                oneToFive.at 1 put 1
+            }
+          } shouldRaise (ConcurrentModification)
+        }
         method testListFailFastIterator {
-          def input = list [1, 2, 3, 4, 5]
-          def iter = input.iterator
-          input.at(3)put(6)
+          def iter = oneToFive.iterator
+          oneToFive.at(3)put(6)
           assert {iter.next} shouldRaise (ConcurrentModification)
-          def iter2 = input.iterator
+          def iter2 = oneToFive.iterator
           assert {iter2.next} shouldntRaise (ConcurrentModification)
-          def iter3 = input.iterator
-          input.remove(2)
+          def iter3 = oneToFive.iterator
+          oneToFive.remove(2)
           assert {iter3.next} shouldRaise (ConcurrentModification)
-          def iter4 = input.iterator
-          input.removeAt(1)
+          def iter4 = oneToFive.iterator
+          oneToFive.removeAt(1)
           assert {iter4.next} shouldRaise (ConcurrentModification)
         }
         method testListClear {
@@ -1251,16 +1280,42 @@ def setTest = object {
         method testSetIntersection {
             assert (oneToFive ** evens) shouldBe (set [2, 4])
         }
-        method testSetFailFastIterator {
-            def input = set [1, 5, 3, 2, 4]
-            def iter = input.iterator
-            input.add(6)
+        method testSetFailFastIteratorAdd {
+            def iter = oneToFive.iterator
+            oneToFive.add(6)
             assert {iter.next} shouldRaise (ConcurrentModification)
-            def iter2 = input.iterator
+        }
+        method testSetFailFastIteratorNormal {
+            def iter2 = oneToFive.iterator
             assert {iter2.next} shouldntRaise (ConcurrentModification)
-            def iter3 = input.iterator
-            input.remove(2)
+        }
+        method testSetFailFastIteratorRemove {
+            def iter3 = oneToFive.iterator
+            oneToFive.remove(2)
             assert {iter3.next} shouldRaise (ConcurrentModification)
+        }
+        method testSetFailFastDoRemove {
+          assert {
+              oneToFive.do { each ->
+                  if (each == 3) then { oneToFive.remove(each) }
+              }
+          } shouldRaise (ConcurrentModification)
+        }
+        method testSetFailFastDoNothing {
+          def iter2 = oneToFive.iterator
+          assert {
+            oneToFive.do { each -> }
+          } shouldntRaise (ConcurrentModification)
+        }
+        method testSetFailFastDoAddLast {
+          assert {
+            oneToFive.do { each ->
+                if (! oneToFive.contains 0) then {
+                    // without this check, a bad implementation will loop forever
+                    oneToFive.add 0
+                }
+            }
+          } shouldRaise (ConcurrentModification)
         }
         method testSetClear {
             var toClear := set [1, 2, 3]
@@ -1553,49 +1608,92 @@ def dictionaryTest = object {
             assert(evens.bindings.sortedBy{b1, b2 -> b1.key.compare(b2.key)})
                 shouldBe (sequence ["eight"::8, "four"::4, "six"::6, "two"::2])
         }
+        method testDictionaryFailFastValuesDoRemoveKey {
+            assert {
+                oneToFive.valuesDo { v ->
+                    oneToFive.removeKey "one" ifAbsent {}
+                }
+            } shouldRaise (ConcurrentModification)
+        }
+        method testDictionaryFailFastValuesDoRemoveValue {
+            assert {
+                oneToFive.valuesDo { v ->
+                    oneToFive.removeValue 1 ifAbsent {}
+                }
+            } shouldRaise (ConcurrentModification)
+        }
+        method testDictionaryFailFastValuesDoAtPut {
+            assert {
+                oneToFive.valuesDo { v ->
+                    if (! oneToFive.containsKey "zero") then {
+                        oneToFive.at "zero" put 0
+                    }
+                }
+            } shouldRaise (ConcurrentModification)
+        }
+        method testDictionaryFailFastKeysDoRemoveKey {
+            assert {
+                oneToFive.keysDo { k ->
+                    oneToFive.removeKey "one" ifAbsent {}
+                }
+            } shouldRaise (ConcurrentModification)
+        }
+        method testDictionaryFailFastKeysDoRemoveValye {
+            assert {
+                oneToFive.keysDo { k ->
+                    oneToFive.removeValue 1 ifAbsent {}
+                }
+            } shouldRaise (ConcurrentModification)
+        }
+        method testDictionaryFailFastKeysDoAtPut {
+            assert {
+                oneToFive.keysDo { k ->
+                    if (! oneToFive.containsKey "zero") then {
+                        oneToFive.at "zero" put 0
+                    }
+                }
+            } shouldRaise (ConcurrentModification)
+        }
         method testDictionaryFailFastIteratorValues {
-            def input = dictionary ["one"::1, "five"::5, "three"::3, "two"::2, "four"::4]
-            def iter = input.iterator
-            input.at "three" put(100)
+            def iter = oneToFive.iterator
+            oneToFive.at "three" put(100)
             assert {iter.next} shouldRaise (ConcurrentModification)
-            def iter2 = input.iterator
-            input.at "three"
+            def iter2 = oneToFive.iterator
+            oneToFive.at "three"
             assert {iter2.next} shouldntRaise (ConcurrentModification)
-            def iter3 = input.iterator
-            input.removeValue(2)
+            def iter3 = oneToFive.iterator
+            oneToFive.removeValue(2)
             assert {iter3.next} shouldRaise (ConcurrentModification)
-            def iter4 = input.iterator
-            input.removeKey("four")
+            def iter4 = oneToFive.iterator
+            oneToFive.removeKey("four")
             assert {iter4.next} shouldRaise (ConcurrentModification)
         }
         method testDictionaryFailFastIteratorKeys {
-            def input = dictionary ["one"::1, "five"::5, "three"::3, "two"::2, "four"::4]
-            def iter = input.keys.iterator
-            input.at "three" put(100)
+            def iter = oneToFive.keys.iterator
+            oneToFive.at "three" put(100)
             assert {iter.next} shouldRaise (ConcurrentModification)
-            def iter2 = input.keys.iterator
-            input.at "three"
+            def iter2 = oneToFive.keys.iterator
+            oneToFive.at "three"
             assert {iter2.next} shouldntRaise (ConcurrentModification)
-            def iter3 = input.keys.iterator
-            input.removeValue(2)
+            def iter3 = oneToFive.keys.iterator
+            oneToFive.removeValue(2)
             assert {iter3.next} shouldRaise (ConcurrentModification)
-            def iter4 = input.keys.iterator
-            input.removeKey("four")
+            def iter4 = oneToFive.keys.iterator
+            oneToFive.removeKey("four")
             assert {iter4.next} shouldRaise (ConcurrentModification)
         }
         method testDictionaryFailFastIteratorBindings {
-            def input = dictionary ["one"::1, "five"::5, "three"::3, "two"::2, "four"::4]
-            def iter = input.bindings.iterator
-            input.at "three" put(100)
+            def iter = oneToFive.bindings.iterator
+            oneToFive.at "three" put(100)
             assert {iter.next} shouldRaise (ConcurrentModification)
-            def iter2 = input.bindings.iterator
-            input.at "three"
+            def iter2 = oneToFive.bindings.iterator
+            oneToFive.at "three"
             assert {iter2.next} shouldntRaise (ConcurrentModification)
-            def iter3 = input.bindings.iterator
-            input.removeValue(2)
+            def iter3 = oneToFive.bindings.iterator
+            oneToFive.removeValue(2)
             assert {iter3.next} shouldRaise (ConcurrentModification)
-            def iter4 = input.bindings.iterator
-            input.removeKey("four")
+            def iter4 = oneToFive.bindings.iterator
+            oneToFive.removeKey("four")
             assert {iter4.next} shouldRaise (ConcurrentModification)
         }
         method testDictionaryClear {
