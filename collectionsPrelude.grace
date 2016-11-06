@@ -612,6 +612,274 @@ class list⟦T⟧ {
     }
 
     method withAll(a: Collection⟦T⟧) -> List⟦T⟧ {
+        if (engine == "js") then {
+          if (native "js" code ‹result = (this === superDepth) ? GraceTrue : GraceFalse;›) then {
+            return object {
+                inherit indexable.TRAIT⟦T⟧
+
+                var mods is readable := 0
+                var sz := 0
+                var jsArray := native "js" code ‹result = [];›
+                a.do { each ->
+                    native "js" code ‹this.data.jsArray.push(var_each);›
+                }
+
+                method size {
+                    native "js" code ‹return new GraceNum(this.data.jsArray.length);›
+                    sz
+                }
+
+                method at(n) {
+                    native "js" code ‹var ix = var_n._value;
+                        if ( !(ix >= 1) || !(ix <= this.data.jsArray.length)) {
+                            var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
+                            var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
+                            callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
+                        }
+                        return this.data.jsArray[ix - 1];›
+                }
+
+                method at(n)put(x) {
+                    mods := mods + 1
+                    native "js" code ‹var  ix = var_n._value;
+                        if (!(ix >= 1) || !(ix <= this.data.jsArray.length + 1)) {
+                            var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
+                            var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
+                            callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
+                        }
+                        this.data.jsArray[ix-1] = var_x;
+                        return this;›
+                }
+
+                method add(x:T) {
+                    mods := mods + 1
+                    native "js" code ‹this.data.jsArray.push(var_x);
+                        return this;›
+                }
+
+                method push(x) {
+                    mods := mods + 1
+                    native "js" code ‹this.data.jsArray.push(var_x);
+                        return this;›
+                }
+
+                method removeLast {
+                    mods := mods + 1
+                    native "js" code ‹if (this.data.jsArray.length === 0) {
+                        var msg = "you can't remove an element from an empty list";
+                        var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
+                        callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
+                    } else
+                        return this.data.jsArray.pop();›
+                }
+                method clear {
+                    mods := mods + 1
+                    native "js" code ‹this.data.jsArray = [];
+                        return this;›
+                }
+                method addAllFirst(l) {
+                    mods := mods + 1
+                    var ix := l.size;
+                    while {ix > 0} do {
+                        def each = l.at(ix)
+                        ix := ix - 1
+                        native "js" code ‹this.data.jsArray.unshift(var_each);›
+                    }
+                    self
+                }
+
+                method removeAt(n) {
+                    mods := mods + 1
+                    def removed = self.at(n)    // does the bounds check
+                    native "js" code ‹this.data.jsArray.splice(var_n._value - 1, 1);›
+                    return removed
+                }
+
+                method sortBy(sortBlock:Block2) {
+                    mods := mods + 1
+                    native "js" code ‹var compareFun = function compareFun(a, b) {
+                              var res = callmethod(var_sortBlock, "apply(2)", [2], a, b);
+                              if (res.className == "number") return res._value;
+                              throw new GraceExceptionPacket(TypeErrorObject,
+                                     new GraceString("sort block in list.sortBy method did not return a number"));
+                          };
+                          this.data.jsArray.sort(compareFun);›
+                    self
+                }
+                // end of native methods
+
+
+                method addLast(x) { push(x) }    // compatibility
+                method addAll(l) {
+                    for (l) do { each -> push(each) }
+                    self
+                }
+
+                method addFirst(elem) {
+                    mods := mods + 1
+                    native "js" code ‹this.data.jsArray.unshift(var_elem);›
+                    self
+                }                
+
+                method removeFirst {
+                    removeAt(1)
+                }
+
+
+                method remove(elt:T) {
+                    def ix = self.indexOf(elt) ifAbsent {
+                        NoSuchObject.raise "list does not contain object {elt}"
+                    }
+                    removeAt(ix)
+                    self
+                }
+
+
+                method remove(elt:T) ifAbsent(action:Block0⟦Done⟧) {
+                    def ix = self.indexOf(elt) ifAbsent {
+                        return action.apply
+                    }
+                    removeAt(ix)
+                    self
+                }
+
+                method removeAll(vs: Iterable⟦T⟧) {
+                    removeAll(vs) ifAbsent { NoSuchObject.raise "list does not contain object" }
+                }
+
+
+                method removeAll(vs: Iterable⟦T⟧) ifAbsent(action:Block0⟦Unknown⟧)  {
+                    for (vs) do { each ->
+                        def ix = self.indexOf(each) ifAbsent { 0 }
+                        if (ix ≠ 0) then {
+                            removeAt(ix)
+                        } else {
+                            action.apply
+                        }
+                    }
+                    self
+                }
+
+                method pop { removeLast }
+
+                method reversed {
+                    def result = list.empty
+                    do { each -> result.addFirst(each) }
+                    result
+                }
+                method reverse {
+                    mods := mods + 1
+                    var hiIx := size
+                    var loIx := 1
+                    while {loIx < hiIx} do {
+                        def hiVal = self.at(hiIx)
+                        self.at(hiIx) put (self.at(loIx))
+                        self.at(loIx) put (hiVal)
+                        hiIx := hiIx - 1
+                        loIx := loIx + 1
+                    }
+                    self
+                }
+
+                method ++(o) {
+                    def l = list.withAll(self)
+                    l.addAll(o)
+                }
+
+
+                method asString {
+                    var s := "["
+                    def curSize = self.size
+                    for (1..curSize) do { i ->
+                        s := s ++ at(i).asString
+                        if (i < curSize) then { s := s ++ ", " }
+                    }
+                    s ++ "]"
+                }
+
+                method asDebugString {
+                    var s := "["
+                    def curSize = self.size
+                    for (1..curSize) do { i ->
+                        s := s ++ at(i).asDebugString
+                        if (i < curSize) then { s := s ++ ", " }
+                    }
+                    s ++ "]"
+                }
+
+                method extend(l) { addAll(l); done }    // compatibility
+
+
+                method contains(element) {
+                    do { each -> if (each == element) then { return true } }
+                    return false
+                }
+
+                method do(block1) {
+                    def iMods = mods
+                    var i := 1
+                    def curSize = self.size
+                    while {i <= curSize} do {
+                        if (iMods ≠ mods) then {
+                            ConcurrentModification.raise (asDebugString)
+                        }
+                        block1.apply(self.at(i))
+                        i := i + 1
+                    }
+                }
+
+                method ==(other) {
+                    isEqual (self) toIterable (other)
+                }
+
+                method iterator {
+                    object {
+                        def iMods = mods
+                        var idx := 1
+                        method asDebugString { "{asString}⟪{idx}⟫" }
+                        method asString { "aListIterator" }
+                        method hasNext { idx <= size }
+                        method next {
+                            if (iMods ≠ mods) then {
+                                ConcurrentModification.raise (asDebugString)
+                            }
+                            if (idx > size) then { IteratorExhausted.raise "on list" }
+                            def ret = at(idx)
+                            idx := idx + 1
+                            ret
+                        }
+                    }
+                }
+
+                method values {
+                    self
+                }
+
+                method keys {
+                    self.indices
+                }
+
+                method sort {
+                    mods := mods + 1
+                    sortBy { l, r ->
+                        if (l == r) then {0}
+                            elseif {l < r} then {-1}
+                            else {1}
+                    }
+                }
+                method sortedBy(sortBlock:Block2) {
+                    copy.sortBy(sortBlock:Block2)
+                }
+                method sorted {
+                    copy.sort
+                }
+                method copy {
+                    outer.withAll(self)
+                }
+            }
+          }
+        }   // end of if (engine == "js") then ...
+
         object {
             inherit indexable.TRAIT⟦T⟧
 
