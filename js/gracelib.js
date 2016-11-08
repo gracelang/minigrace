@@ -1830,16 +1830,13 @@ function checkBlockApply(numargs) {
             new GraceString("block takes " + this.numParams + " argument" +
                 plural + " but given " + nArgs + "."));
     }
-    var match;
-    if (this.pattern) {
-        match = callmethod(this.pattern, "match(1)", [1], args[0]);
-        if ( ! Grace_isTrue(match)) {
-            throw new GraceExceptionPacket(TypeErrorObject,
-                new GraceString("argument to block.apply(_) has wrong type."));
-        }
-    } else if (this.paramTypes) {
+    if (this.guard.apply(this.receiver, args)) return;
+    if (n === 1) {
+        throw new GraceExceptionPacket(TypeErrorObject,
+            new GraceString("argument to block.apply(_) has wrong type."));
+    } else {
         for (var ix = 0; ix < this.paramTypes.length; ix++) {
-            match = callmethod(this.paramTypes[ix], "match(1)", [1], args[ix]);
+            var match = callmethod(this.paramTypes[ix], "match(1)", [1], args[ix]);
             if ( ! Grace_isTrue(match)) {
                 var n = ix + 1;
                 var canonicalName = "apply(_";
@@ -1863,7 +1860,7 @@ function raiseTypeError(msg, type, value) {
 }
 
 function GraceBlock_match(argcv, o) {
-    if (!this.pattern) {
+    if (!this.guard) {
         if (argcv.length !== 1 || argcv[0] !== 1) {
             throw new GraceExceptionPacket(ProgrammingErrorObject,
                     new GraceString("block is not a matching block"));
@@ -1871,10 +1868,8 @@ function GraceBlock_match(argcv, o) {
         var rv1 = callmethod(this, "apply(1)", [1], o);
         return new GraceSuccessfulMatch(rv1);
     }
-    var match = callmethod(this.pattern, "match(1)", [1], o);
-    if (Grace_isTrue(match)) {
-        var bindings = callmethod(match, "bindings", [0]);
-        var rv2 = callmethod(this, "applyIndirectly(1)", [1], bindings);
+    if (this.guard(o)) {
+        var rv2 = callmethod(this, "apply(1)", [1], o);
         return new GraceSuccessfulMatch(rv2);
     }
     return new GraceFailedMatch(o);
@@ -3166,9 +3161,10 @@ function raiseNoSuchMethod(name, target) {
     }
     var dollarIx = name.indexOf("$");
     if (dollarIx == -1) {
-        throw new GraceExceptionPacket(NoSuchMethodErrorObject,
+        var ex = new GraceExceptionPacket(NoSuchMethodErrorObject,
                 new GraceString("no method '" + canonicalMethodName(name) + "' on " +
                     describe(target) + "."));
+        throw ex;
     } else {
         var baseName = name.substring(0, dollarIx);
         throw new GraceExceptionPacket(ProgrammingErrorObject,
@@ -3233,9 +3229,9 @@ function tryCatch(obj, cases, finallyblock) {
     } catch (e) {
         if (e.exctype === 'graceexception') {
             for (var i = 0; i < cases.length; i++) {
-                ret = callmethod(cases[i], "match(1)", [1], e);
-                if (Grace_isTrue(ret))
-                    return callmethod(ret, "result", [0]);
+                var eachCase = cases[i];
+                if (eachCase.guard.call(eachCase.receiver, e))
+                    return callmethod(cases[i], "apply(1)", [0], e);
             }
             throw e;
         } else {
@@ -3254,17 +3250,16 @@ function tryCatch(obj, cases, finallyblock) {
     return ret;
 }
 
-function matchCase(obj, cases, elsecase) {
+function matchCase(obj, cases) {
     setModuleName("match()case()...");
-    for (var i = 0; i<cases.length; i++) {
-        var ret = callmethod(cases[i], "match(1)", [1], obj);
-        if (Grace_isTrue(ret))
-            return callmethod(ret, "result", [0]);
+    for (var i = 0, len = cases.length; i<len; i++) {
+        var eachCase = cases[i];
+        if (eachCase.guard.call(eachCase.receiver, obj)) {
+            return eachCase.real.call(eachCase.receiver, obj);
+        }
     }
-    if (elsecase !== false)
-        return callmethod(elsecase, "apply", [0]);
     callmethod(ProgrammingErrorObject, "raise(1)", [1],
-               new GraceString ("non-exhaustive match in match()case()…."));
+          new GraceString ("non-exhaustive match in match()case()…."));
     return GraceDone;       // should never happen
 }
 
@@ -3638,9 +3633,6 @@ function prelude_clone_build (ignore, obj, ouc, aliases, exclusions) {
     ouc.className = obj.className;
     ouc.methods = obj.methods;
     ouc.mutable = obj.mutable;
-    ouc.outer = obj.outer;
-    ouc.definitionModule = obj.definitionModule;
-    ouc.definitionLine = obj.definitionLine;
     ouc.data = {};
     for (var attr in obj.data) {
         if (obj.data.hasOwnProperty(attr))

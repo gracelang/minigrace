@@ -13,10 +13,16 @@ var statementIndent := 0
 var tokens := false
 var moduleObject
 var comments := emptyList   // so we can request `removeAt`
+
 var auto_count := 0
+method newWildcard {
+    // returns a new name for a wildcard identifier
+    auto_count := auto_count + 1
+    return "__" ++ auto_count
+}
+
 def noBlocks = false
 def blocksOK = true
-var braceIsType := false
 
 
 def values = [ ]
@@ -300,9 +306,8 @@ method pushidentifier {
     util.setPosition(sym.line, sym.linePos)
     var o := ast.identifierNode.new(sym.value, false)
     if (o.value == "_") then {
-        o.value := "__" ++ auto_count
+        o.value := newWildcard
         o.wildcard := true
-        auto_count := auto_count + 1
     }
     values.push(o)
     next
@@ -439,6 +444,35 @@ method newIf(cond, thenList, elseList) {
     ast.ifNode.new(cond, thenBlock, elseBlock)
 }
 
+method reportSyntaxError(message) before (expectedTokens) {
+    def suggestions = [ ]
+    var suggestion := errormessages.suggestion.new
+    def nextTok = findNextValidToken (expectedTokens)
+    if(nextTok == sym) then {
+        suggestion.insert(" «expression»")afterToken(lastToken)
+    } else {
+        suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with(" «expression»")
+    }
+    suggestions.push(suggestion)
+    suggestion := errormessages.suggestion.new
+    suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
+    suggestions.push(suggestion)
+    errormessages.syntaxError(message)
+        atPosition(sym.line, sym.linePos)
+        withSuggestions(suggestions)
+}
+
+method reportMissingArrow {
+    def suggestion = errormessages.suggestion.new
+    if((sym.kind == "bind") || (sym.value == "=")) then {
+        suggestion.replaceToken(sym)with("->")
+    } else {
+        suggestion.insert(" ->")afterToken(lastToken)
+    }
+    errormessages.syntaxError("in a block with parameters, the parameters must be followed by '->'")
+        atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
+}
+
 method block {
     // Parses a block.  Since a block is (a) treated as a statement, and
     // (b) may have statements inside, we save and restore the setting of the
@@ -451,86 +485,52 @@ method block {
         def minInd = statementIndent + 2
         def oldStatementToken = statementToken
         def oldStatementIndent = statementIndent
-        var expr1
+        var thisParam
         var params := [ ]
         var body := [ ]
         var havearrow := true
         var found := false
-        var isMatchingBlock := false
         statementToken := sym
-        if (sym.kind == "lparen") then {
-            isMatchingBlock := true
-        }
+        var isMatchingBlock := false
+        var paramIsPattern := sym.kind == "lparen"
         // Parsing the expression ‹(a)› will return an identifierNode‹a› .
-        // The paren lets us distinguish parameter ‹a› from pattern ‹(a)› .
+        // Checking for a paren lets us distinguish parameter from pattern.
         ifConsume {expression(blocksOK)} then {
-            if (accept("comma") || accept("arrow") || accept("colon")) then {
-                // This block has parameters or patterns
-                expr1 := values.pop
-                if (accept "colon") then {
-                    // We allow an expression here for the case of v : T
-                    // patterns, where T may be "Pair(hd, tl)" or similar.
-                    next
-                    braceIsType := true
-                    if(didConsume({expression(blocksOK)}).not) then {
-                        def suggestions = [ ]
-                        var suggestion := errormessages.suggestion.new
-                        def nextTok = findNextValidToken( ["arrow", "rbrace"] )
-                        if(nextTok == sym) then {
-                            suggestion.insert(" «expression»")afterToken(lastToken)
-                        } else {
-                            suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with(" «expression»")
-                        }
-                        suggestions.push(suggestion)
-                        suggestion := errormessages.suggestion.new
-                        suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
-                        suggestions.push(suggestion)
-                        errormessages.syntaxError("a block must have an expression after the ':'.")
-                            atPosition(sym.line, sym.linePos)
-                            withSuggestions(suggestions)
-                    }
-                    braceIsType := false
-                    expr1.dtype := values.pop
-                }
-                params.push(expr1)
-                if (isMatchingBlock.not && expr1.isIdentifier) then {
-                    expr1.isBindingOccurrence := true
-                } else {
+            if (accept "comma" || accept "arrow" || accept "colon") then {
+                // this block has a parameters
+                thisParam := values.pop
+                if (paramIsPattern || thisParam.isIdentifier.not) then {
                     isMatchingBlock := true
+                    paramIsPattern := true
+                    thisParam := ast.identifierNode.new(newWildcard, thisParam)
+                    thisParam.wildcard := true
                 }
-                if (isMatchingBlock && {accept("comma")}) then {
-                    def suggestions = [ ]
-                    var suggestion
-                    def arrow = findNextToken({ t -> t.kind == "arrow" })
-                    if(false != arrow) then {
-                        suggestion := errormessages.suggestion.new
-                        suggestion.deleteTokenRange(sym, arrow.prev)
-                        suggestions.push(suggestion)
+                thisParam.isBindingOccurrence := true
+                if (paramIsPattern && accept "colon") then {
+                    reportSyntaxError("a block parameter that's an  expression is assumed to mean " ++
+                          "_:‹expr›, and so cannot be followed by a colon") before ["arrow", "comma"]
+                }
+                if (accept "colon") then {
+                    // We allow an expression for v: <PatternExpression>
+                    next
+                    if(didConsume {expression(blocksOK)} .not) then {
+                        reportSyntaxError "a block parameter must have an expression after the ':'." before ["arrow", "rbrace"]
                     }
-                    suggestion := errormessages.suggestion.new
-                    suggestion.replaceToken(sym)leading(true)trailing(false)with(" |")
-                    suggestions.push(suggestion)
-                    errormessages.syntaxError("a matching block may only have one parameter.")atRange(
-                        sym.line, sym.linePos, sym.linePos)withSuggestions(suggestions)
+                    thisParam.dtype := values.pop
                 }
+                params.push(thisParam)
+
                 while {accept("comma")} do {
                     // Keep doing the above for the rest of the parameters.
                     next
                     pushidentifier
-                    expr1 := values.pop
-                    expr1.isBindingOccurrence := true
-                    expr1.dtype := optionalTypeAnnotation
-                    params.push(expr1)
+                    thisParam := values.pop
+                    thisParam.isBindingOccurrence := true
+                    thisParam.dtype := optionalTypeAnnotation
+                    params.push(thisParam)
                 }
                 if ((accept("arrow")).not) then {
-                    def suggestion = errormessages.suggestion.new
-                    if((sym.kind == "bind") || (sym.value == "=")) then {
-                        suggestion.replaceToken(sym)with("->")
-                    } else {
-                        suggestion.insert(" ->")afterToken(lastToken)
-                    }
-                    errormessages.syntaxError("a block must have one or more parameters followed by '->' and an expression.")
-                        atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
+                    reportMissingArrow
                 }
                 next
             } elseif { accept "semicolon" } then {

@@ -383,6 +383,26 @@ method compileobject(o, outerRef) {
     out "{objRef}_init.call({objRef});  // end of compileobject"
     objRef
 }
+method compileGuard(o, paramList) {
+    def matchFun = uidWithPrefix "matches"
+    out "var {matchFun} = function({paramList}) \{"
+    increaseindent
+    out "setModuleName(\"{modname}\");" 
+    noteLineNumber(o.line) comment "block matches function"
+    o.params.do { p ->
+        def pName = varf(p.value)
+        if (p.dtype != false) then {
+            def dtype = compilenode(p.dtype)
+            out "if (!Grace_isTrue(callmethod({dtype}, \"match(1)\", [1], {pName})))"
+            out "    return false;"
+        }
+    }
+    out "return true;"
+    decreaseindent
+    out "};"
+    matchFun
+}
+
 method compileblock(o) {
     var origInBlock := inBlock
     inBlock := true
@@ -390,10 +410,6 @@ method compileblock(o) {
     def nParams = o.params.size
     auto_count := auto_count + 1
     out "var block{myc} = new GraceBlock(this, {o.line}, {nParams});"
-    if (false != o.matchingPattern) then {
-        def pat = compilenode(o.matchingPattern)
-        out "block{myc}.pattern = {pat};"
-    }
     var paramList := ""
     var paramTypes :=  [ ]
     var paramsAreTyped := false
@@ -411,9 +427,11 @@ method compileblock(o) {
             paramList := paramList ++ ", " ++ varf(each.value)
         }
     }
-    if (paramsAreTyped && emitTypeChecks) then {
+    if (paramsAreTyped) then {
         out "block{myc}.paramTypes = {paramTypes};"
     }
+
+    out "block{myc}.guard = {compileGuard(o, paramList)};"
     out "block{myc}.real = function({paramList}) \{"
     increaseindent
     var ret := "GraceDone"

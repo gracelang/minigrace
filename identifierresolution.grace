@@ -1557,8 +1557,12 @@ method resolve(moduleObject) {
         named "prelude" scope (preludeScope)
     def preludeChain = ast.ancestorChain.with(preludeObject)
 
-    def patternMatchModule = rewriteMatches(moduleObject)
-    util.log_verbose "pattern-match rewriting done."
+    def patternMatchModule =
+          if ((util.target == "c") || (util.target == "patterns")) then {
+        rewriteMatches(moduleObject)
+    } else {
+        moduleObject
+    }
 
     if (util.target == "patterns") then {
         util.outprint "====================================="
