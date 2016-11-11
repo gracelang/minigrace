@@ -1075,7 +1075,17 @@ class new {
         tokens := object {
             var first is readable := false
             var last is readable := false
-            var size' := 0
+            var size is readable := 0
+
+            method savePosition {
+                return [first, last, size]
+            }
+
+            method restorePosition(saved) {
+                first := saved.first
+                last := saved.second
+                size := saved.third
+            }
 
             method push(t) {
                 if(first == false) then {
@@ -1086,7 +1096,7 @@ class new {
                     t.prev := last
                     last := t
                 }
-                size' := size' + 1
+                size := size + 1
             }
 
             method pop {
@@ -1096,7 +1106,7 @@ class new {
                     if(last == false) then {
                         first := false
                     }
-                    size' := size' - 1
+                    size := size - 1
                     popped
                 }
             }
@@ -1108,34 +1118,21 @@ class new {
                     if(first == false) then {
                         last := false
                     }
-                    size' := size' - 1
+                    size := size - 1
                     polled
                 }
             }
 
-            method size {
-                size' + 0
-            }
-
-            method iter {
-                object {
-                    var n := first
-                    method havemore {
-                        n != false
-                    }
-                    method hasNext {
-                        n != false
-                    }
-                    method next {
-                        def ret = n
-                        n := n.next
-                        ret
-                    }
+            class iterator {
+                var n := first
+                method hasNext {
+                    n != false
                 }
-            }
-
-            method iterator {
-                iter
+                method next {
+                    def ret = n
+                    n := n.next
+                    ret
+                }
             }
 
             method do(action) {
