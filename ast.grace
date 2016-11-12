@@ -134,6 +134,7 @@ class baseNode {
     method isExternal { false }
     method isFresh { false }
     method isConstant { false }
+    method isNonBlank { true }
     method canInherit { false }
     method returnsObject { false }
     method isImplicit { false }
@@ -2554,6 +2555,7 @@ def blankNode is public = object {
         def value is public = "blank"
         method isExecutable { false }
         method isLegalInTrait { true }
+        method isNonBlank { false }
 
         method accept(visitor : ASTVisitor) from(as) {
             visitor.visitBlank(self) up(as)
