@@ -1284,12 +1284,29 @@ method compileNativeCode(o) {
     out "   // end native code insertion"
 }
 
+method stripLeadingZeros(str) {
+    // returns str without ang leading zeros
+    if (str.first ≠ "0") then { return str }
+    var leading := true
+    var result := ""
+    str.do { ch ->
+        if ((leading && (ch ≠ "0"))) then {
+            leading := false
+            result := result ++ ch
+        } elseif {leading.not} then {
+            result := result ++ ch
+        }
+    }
+    if (result.isEmpty) then { return "0" }
+    return result
+}
+
 method compilenode(o) {
     compilationDepth := compilationDepth + 1
     noteLineNumber(o.line)comment "compilenode {o.kind}"
     def oKind = o.kind
     if (oKind == "num") then {
-        o.register := "new GraceNum(" ++ o.value ++ ")"
+        o.register := "new GraceNum(" ++ stripLeadingZeros(o.value) ++ ")"
     } elseif {oKind == "string"} then {
         // Escape characters that may not be legal in string literals
         def os = escapestring(o.value)
