@@ -640,7 +640,9 @@ method compilemethod(o, selfobj, pos) {
         }
     }
     for (o.body) do { l ->
-        ret := compilenode(l)
+        if (l.isNonBlank) then {
+            ret := compilenode(l)
+        }
     }
     if (false != tailObject) then {
         o.body.push(tailObject)        // put tail object back
@@ -953,7 +955,9 @@ method compileifexpr(o) {
     def thenList = o.thenblock.body
     definebindings(thenList, 0)
     for (thenList) do { l->
-        tret := compilenode(l)
+        if (l.isNonBlank) then {
+            tret := compilenode(l)
+        }
     }
     out("    gc_frame_newslot({tret});")
     out("    if{myc} = {tret};")
@@ -965,7 +969,9 @@ method compileifexpr(o) {
         out("  gc_frame_newslot((Object)stackframe);")
         definebindings(elseList, 0)
         for (elseList) do { l->
-            fret := compilenode(l)
+            if (l.isNonBlank) then {
+                fret := compilenode(l)
+            }
         }
         out("    gc_frame_newslot({fret});")
         out("    if{myc} = {fret};")
@@ -995,7 +1001,7 @@ method compileif(o) {
     out("    if{myc} = {tret};")
     out("  \} else \{")
     def elseList = o.elseblock.body
-    if (elseList.size > 0) then {
+    if (elseList.isEmpty.not) then {
         for (elseList) do { l->
             fret := compilenode(l)
         }
@@ -1484,6 +1490,8 @@ method compilenum(o) {
     auto_count := auto_count + 1
 }
 method compilenode(o) {
+    def oKind = o.kind
+    if (oKind == "blank") then { return "blank" }
     compilationDepth := compilationDepth + 1
     if (linenum != o.line) then {
         linenum := o.line
@@ -1492,7 +1500,6 @@ method compilenode(o) {
         out("  setmodule(modulename);")
         out("  setsource(originalSourceLines);")
     }
-    def oKind = o.kind
     out "// starting to compile {oKind} node (depth = {compilationDepth})"
     if (oKind == "num") then {
         compilenum(o)
