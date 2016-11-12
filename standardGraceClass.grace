@@ -130,7 +130,7 @@ def traits = object {
         }
         method sortedBy(sortBlock:Block2) // -> List⟦T⟧
         {
-            standardGrace.list.withAll(self).sortBy(sortBlock:Block2)
+            standardGrace.list.withAll(self).sortBy(sortBlock)
         }
         method sorted  // -> List⟦T⟧
         {
@@ -1033,7 +1033,7 @@ class standardGrace {
                     })
                 }
                 method sortedBy(sortBlock:Block2){
-                    sequence.withAll(list.withAll(self).sortBy(sortBlock:Block2))
+                    sequence.withAll(list.withAll(self).sortBy(sortBlock))
                 }
             }
         }
@@ -1327,7 +1327,7 @@ class standardGrace {
                 }
             }
             method sortedBy(sortBlock:Block2) {
-                copy.sortBy(sortBlock:Block2)
+                copy.sortBy(sortBlock)
             }
             method sorted {
                 copy.sort

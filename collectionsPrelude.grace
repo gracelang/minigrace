@@ -355,7 +355,7 @@ class enumerable.TRAIT⟦T⟧ {
         lazyConcatenation(self, other)
     }
     method sortedBy(sortBlock:Block2) -> List⟦T⟧ {
-        list.withAll(self).sortBy(sortBlock:Block2)
+        list.withAll(self).sortBy(sortBlock)
     }
     method sorted -> List⟦T⟧ {
         list.withAll(self).sort
@@ -578,7 +578,7 @@ class sequence⟦T⟧ {
                 })
             }
             method sortedBy(sortBlock:Block2){
-                sequence.withAll(list.withAll(self).sortBy(sortBlock:Block2))
+                sequence.withAll(list.withAll(self).sortBy(sortBlock))
             }
         }
     }
@@ -877,7 +877,7 @@ class list⟦T⟧ {
                 }
             }
             method sortedBy(sortBlock:Block2) {
-                copy.sortBy(sortBlock:Block2)
+                copy.sortBy(sortBlock)
             }
             method sorted {
                 copy.sort
