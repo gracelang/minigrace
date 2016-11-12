@@ -2553,7 +2553,7 @@ def blankNode is public = object {
         def kind is public = "blank"
         def value is public = "blank"
         method isExecutable { false }
-
+        method isLegalInTrait { true }
 
         method accept(visitor : ASTVisitor) from(as) {
             visitor.visitBlank(self) up(as)
