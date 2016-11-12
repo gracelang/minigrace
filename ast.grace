@@ -1238,6 +1238,7 @@ def moduleNode is public = object {
         var imports is public := [ ]
 
         method isModule { true }
+        method isTrait { false }
         method returnsObject { false }
         method importsDo(action) {
             value.do { o ->
