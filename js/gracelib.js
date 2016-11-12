@@ -1731,7 +1731,7 @@ GraceType.prototype = {
             return result;
         }
     },
-    className: "type",
+    className: "Type",
     definitionModule: "basic library",
     definitionLine: 0
 };
@@ -1842,9 +1842,19 @@ function checkBlockApply(numargs) {
                 var canonicalName = "apply(_";
                 for (var i = 1; i < numargs; i++) { canonicalName += ",_"; }
                 canonicalName += ")";
-                raiseTypeError("argument " + n + " to block." +
-                            canonicalName + " has wrong type.",
-                            this.paramTypes[ix], args[ix]);
+                var argDesc = (numargs === 1) ? "argument" : "argument " + n ;
+                if (this.paramTypes[ix].className.startsWith("Type")) {
+                    // startsWith("Type") catches TypeIntersection, TypeUnion,
+                    // etc, as well as class "Type" itself.
+                    raiseTypeError(argDesc + " to block." +
+                                canonicalName + " has wrong type.",
+                                this.paramTypes[ix], args[ix]);
+                } else {
+                    throw new GraceExceptionPacket(RequestErrorObject,
+                       new GraceString(argDesc + " to block." +
+                           canonicalName + " does not match pattern."));
+                }
+
             }
         }
     }
