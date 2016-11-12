@@ -1852,11 +1852,16 @@ function checkBlockApply(numargs) {
 
 function raiseTypeError(msg, type, value) {
      var mm = do_import("mirrors", gracecode_mirrors);
-     var tc = callmethod(mm, "loadDynamicModule(1)", [1], new GraceString("typeComparison"));
-     var diff = callmethod(tc, "methodsIn(1)missingFrom(1)", [1, 1], type, value);
-     var expkt = new GraceExceptionPacket(TypeErrorObject, new GraceString(msg +
-            "\nIt's missing methods " + diff._value));
-     throw expkt;
+     var diff = "";
+     try {
+         var tc = callmethod(mm, "loadDynamicModule(1)", [1], new GraceString("typeComparison"));
+         var missing = callmethod(tc, "methodsIn(1)missingFrom(1)", [1, 1], type, value);
+         diff = "\nIt's missing methods " + missing._value;
+     } catch (e) {
+         // if something goes wrong while generating the message, just give up
+     }
+     var ex = new GraceExceptionPacket(TypeErrorObject, new GraceString(msg + diff));
+     throw ex;
 }
 
 function GraceBlock_match(argcv, o) {
