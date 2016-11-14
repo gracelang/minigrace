@@ -29,6 +29,8 @@ void debugger();
 
 Object Float64_asString(Object, int nparts, int *argcv,
         Object*, int flags);
+Object Float64_asStringDecimals(Object, int nparts, int *argcv,
+        Object*, int flags);
 Object Float64_Add(Object, int nparts, int *argcv,
         Object*, int flags);
 Object Object_asString(Object, int nparts, int *argcv,
@@ -3882,6 +3884,7 @@ Object alloc_Float64(double num) {
         add_Method(Number, "..(1)", &Float64_Range);
         add_Method(Number, "asString", &Float64_asString);
         add_Method(Number, "asDebugString", &Object_asDebugString);
+        add_Method(Number, "asStringDecimals(1)", &Float64_asStringDecimals);
         add_Method(Number, "::(1)", &Object_bind);
         add_Method(Number, "asInteger32", &Float64_asInteger32);
         add_Method(Number, "prefix-", &Float64_Negate);
@@ -3938,6 +3941,21 @@ Object Float64_asString(Object self, int nparts, int *argcv,
     Object str = alloc_String(s);
     *strp = str;
     return str;
+}
+Object Float64_asStringDecimals(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    double num = *(double*)self->data;
+    double decimals_arg = *(double*)args[0]->data;
+    int decimals = decimals_arg;
+    if (num == INFINITY)
+        return alloc_String("infinity");
+    if (num == -INFINITY)
+        return alloc_String("-infinity");
+    if ((decimals < 0) || (decimals > 20))
+        graceRaise(RequestError(), "argument to asStringDecimals(_) must be between 0 and 20");
+    char s[1024];
+    sprintf(s, "%1.*f", decimals, num);
+    return alloc_String(s);
 }
 Object Boolean_asString(Object self, int nparts, int *argcv,
         Object *args, int flags) {

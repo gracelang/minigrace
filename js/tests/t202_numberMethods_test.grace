@@ -39,4 +39,32 @@ testSuite {
         assert ((2^62).isInteger) description "2^62 is not an Integer"
         deny (((2^48)+ 0.5).isInteger) description "2^48 + 0.5 is an Integer"
     }
+    test "decimal digits 10" by {
+        def n = 17.123456789012345678909
+        assert (n.asStringDecimals 10) shouldBe "17.1234567890"
+    }
+    test "decimal digits 6 rounds" by {
+        def n = 17.123456789012345678909
+        assert (n.asStringDecimals 6) shouldBe "17.123457"  // should round
+    }
+    test "decimal digits 10 rounds" by {
+        def n = 17.12345678999
+        assert (n.asStringDecimals 10) shouldBe "17.1234567900"  // should round
+    }
+    test "decimal digits 14" by {
+        def n = 17.123456789012345678909
+        assert (n.asStringDecimals 14) shouldBe "17.12345678901234"
+    }
+    test "decimal digits 20" by {
+        def n = 17.123456789
+        def s = n.asStringDecimals 20
+        assert (s.startsWith "17.12345678")
+            description "{n.asDebugString} with 20 decimals is {s}"
+        assert (s.size == (20 + 3))
+            description "{n.asDebugString} with 20 decimals is {s}, which is of size {s.size}"
+    }
+    test "decimal digits 21" by {
+        def n = 17.123456789
+        assert { n.asStringDecimals 21 } shouldRaise (RequestError)
+    }
 }

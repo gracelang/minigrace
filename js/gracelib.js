@@ -700,6 +700,18 @@ GraceNum.prototype = {
         "asDebugString": function(argcv) {
             return new GraceString("" + this._value);
         },
+        "asStringDecimals(1)": function (argcv, other) {
+            var num = this._value;
+            if (num === Infinity)
+                return new GraceString("infinity");
+            if (num === -Infinity)
+                return new GraceString("-infinity");
+            var d = other._value
+            if ((d < 0) || (d > 20))
+                throw new GraceExceptionPacket(RequestErrorObject,
+                    new GraceString("argument to asStringDecimals(_) must be between 0 and 20"));
+            return new GraceString(num.toFixed(d));
+        },
         "==(1)": function(argcv, other) {
             // Do NOT test for identity, because then NaN == NaN !
             if (this.className === other.className &&
