@@ -706,7 +706,7 @@ GraceNum.prototype = {
                 return new GraceString("infinity");
             if (num === -Infinity)
                 return new GraceString("-infinity");
-            var d = other._value
+            var d = other._value;
             if ((d < 0) || (d > 20))
                 throw new GraceExceptionPacket(RequestErrorObject,
                     new GraceString("argument to asStringDecimals(_) must be between 0 and 20"));
