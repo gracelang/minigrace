@@ -1,3 +1,4 @@
+#pragma ExtendedLineups
 import "dom" as dom
 import "sys" as sys
 
@@ -33,7 +34,7 @@ var speed is public := 1
 var turtleAngle := 0
 
 // Each frame of the image is a step
-def steps = list []
+def steps = []
 // Each discrete movement command is a stage
 def stages = list []
 
