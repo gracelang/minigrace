@@ -94,6 +94,12 @@ MiniGrace.prototype.trapErrors = function(func) {
     try {
         func();
     } catch (e) {
+        var eStr = e.toString();
+        if ((eStr === "RangeError: Maximum call stack size exceeded") ||    // Chrome
+            (eStr === "InternalError: too much recursion") ) {              // Firefox
+            e = new GraceExceptionPacket(new GraceException("TooMuchRecursion", ProgrammingErrorObject),
+                   new GraceString("Does one of your methods request execution of itself without limit?"));
+        }
         if (e.exctype == 'graceexception') {
             this.exception = e;
             callmethod(e, "printBacktrace", [0]);
