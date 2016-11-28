@@ -31,7 +31,12 @@ var windowWidth := 850
 
 var speed is public := 1
 
-var turtleAngle := 0
+var turtleAngle is readable := 0
+
+method turtlePosition {
+    initialise
+    x@y
+}
 
 // Each frame of the image is a step
 def steps = []
@@ -115,37 +120,37 @@ method turnRight(ang) {
             steps.push {
                 x := startX
                 y := startY
-                turtleAngle := startAngle + i
+                turtleAngle := (startAngle + i) % 360
             }
         }
     }
     steps.push {
         x := startX
         y := startY
-        turtleAngle := startAngle + ang
+        turtleAngle := (startAngle + ang) % 360
     }
-    turtleAngle := turtleAngle + ang
+    turtleAngle := (turtleAngle + ang) % 360
 }
 method turnLeft(ang) {
     initialise
     def startX = x
     def startY = y
     def startAngle = turtleAngle
-    for (0..ang.floor) do {i->
+    for (0..ang.floor) do { i ->
         if ((i % speed) == 0) then {
             steps.push {
                 x := startX
                 y := startY
-                turtleAngle := startAngle - i
+                turtleAngle := (startAngle - i) % 360
             }
         }
     }
     steps.push {
         x := startX
         y := startY
-        turtleAngle := startAngle - ang
+        turtleAngle := (startAngle - ang) % 360
     }
-    turtleAngle := turtleAngle - ang
+    turtleAngle := (turtleAngle - ang) % 360
 }
 method penUp {
     initialise

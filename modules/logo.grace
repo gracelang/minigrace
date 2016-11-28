@@ -11,6 +11,11 @@ def red is public = turtle.red
 def green is public = turtle.green
 def blue is public = turtle.blue
 def black is public = turtle.black
+def yellow is public = turtle.r 255 g 255 b 0
+def white is public = turtle.r 255 g 255 b 255
+def magenta is public = turtle.r 255 g 0 b 255
+def cyan is public = turtle.r 0 g 255 b 255
+def sienna is public = turtle.r 160 g 82 b 45
 
 method r (r) g (g) b (b) {
     turtle.r(r)g(g)b(b)
@@ -51,6 +56,9 @@ method speed:=(sp) {
         turtle.speed := sp.floor
     }
 }
+method position { turtle.turtlePosition }
+method angle { turtle.turtleAngle }
+
 method createCanvas(size:Point) {
     // Creates a canvas in a pop-up window
      turtle.useCanvas(size)
