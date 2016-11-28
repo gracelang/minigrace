@@ -3232,6 +3232,12 @@ function tryCatch(obj, cases, finallyblock) {
             }
             throw e;
         } else {
+            var eStr = e.toString();
+            if ((eStr === "RangeError: Maximum call stack size exceeded") ||    // Chrome
+                (eStr === "InternalError: too much recursion") ) {              // Firefox
+                e = new GraceExceptionPacket(new GraceException("TooMuchRecursion", ProgrammingErrorObject),
+                       new GraceString("Does one of your methods request execution of itself without limit?"));
+            }
             throw e;
         }
     } finally {
