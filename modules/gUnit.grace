@@ -224,7 +224,7 @@ class testCaseNamed(name') -> TestCase {
             def frameDescription = bt.pop
             print("  called from " ++ frameDescription)
             if (frameDescription.contains(testName)) then { return }
-            if (frameDescription.contains "testCaseNamed()setupIn()asTestNumber")
+            if (frameDescription.contains "test(_)by(_)")
                     then {  
                 // this is for minitest, where the name won't be on the stack
                 return
