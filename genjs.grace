@@ -1368,8 +1368,6 @@ method compilenode(o) {
         compileop(o)
     } elseif { oKind == "outer" } then {
         compileOuter(o)
-    } elseif { oKind == "blank" } then {
-        // do nothing
     } else {
         ProgrammingError.raise "unrecognized ast node \"{oKind}\"."
     }

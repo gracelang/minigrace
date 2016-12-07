@@ -4,7 +4,6 @@ import "ast" as ast
 import "util" as util
 import "errormessages" as errormessages
 
-var blankLocation := 0
 var lastLine := 0
 var lastIndent := 0
 var indentFreePass := false
@@ -74,10 +73,6 @@ var previousCommentToken := lastToken
 var statementToken := lastToken     // the token starting the current statement
 var comment := false
 
-method noteBlank {
-    blankLocation := sym.line - 1
-}
-
 var firstCallOfNext := true
 
 method next {
@@ -89,7 +84,6 @@ method next {
         lastLine := lastToken.line
         lastIndent := lastToken.indent
         sym := tokens.poll
-        if (sym.line > (lastLine + 1)) then { noteBlank }
         pushComments
         util.setPosition(sym.line, sym.linePos)
     } else {
@@ -393,24 +387,6 @@ method errorMissingAnnotation {
     errormessages.syntaxError("one or more annotations separated by commas must follow 'is'.")
         atRange(lastToken.line, lastToken.linePos, lastToken.linePos + lastToken.size - 1)
         withSuggestions(suggestions)
-}
-
-method blank {
-    if (blankLocation == 0) then {
-        if ( sym.line <= (lastToken.line + 1) ) then { return }
-        if ( sym.line <= (previousCommentToken.line + 1) ) then { return }
-    }
-    pushComments
-    if ((values.size == 0) || 
-            ((values.size > 0) && { values.last.kind != "blank" })) then {
-        if (blankLocation > 0) then {
-            util.setPosition(blankLocation, 0)
-            blankLocation := 0
-        } else {
-            util.setPosition(sym.line - 1, 0)
-        }
-        values.push(ast.blankNode.new)
-    }
 }
 
 method dotypeterm {
@@ -2182,7 +2158,7 @@ method dodialect {
             errormessages.syntaxError("a dialect statement must have the name of the dialect in quotes after the 'dialect'.")atPosition(
                 lastToken.line, errorPos)withSuggestion(suggestion)
         }
-        if (values.filter{nd -> nd.kind  ≠ "blank"}.isEmpty) then {
+        if (values.isEmpty) then {
             def dn = ast.dialectNode.new(sym.value)
             next
             moduleObject.theDialect := dn
@@ -2317,7 +2293,7 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
     def usedTraits = []
     var inPreamble := true  // => processing inherit and use statements
     while {(accept("rbrace")).not && {sym.kind != "eof"}} do {
-        blank
+        pushComments
         if (didConsume {inheritOrUse}) then {
             def parentNode = values.pop
             if (inPreamble) then {
@@ -3003,7 +2979,7 @@ method statement {
     statementIndent := sym.indent
     statementToken := sym
     def btok = sym
-    blank
+    pushComments
     checkIndent
     if (accept "keyword") then {
         if (sym.value == "var") then {
@@ -3081,7 +3057,6 @@ method pushComments {
     while { 
         previousCommentToken := sym
         sym := tokens.poll
-        if (sym.line > (previousCommentToken.line + 1)) then { noteBlank }
         accept "comment"
     } do {
         util.setPosition(sym.line, sym.linePos)
@@ -3100,7 +3075,7 @@ method pushComments {
 method reconcileComments {
     // Should be requested after a new node that represents a "syntactic unit"
     // to which comments can be attached is pushed onto `values`
-    // Finds comments associated with that node, remove thems from comments
+    // Finds comments associated with that node, removes them from comments
     // stack, and puts them in that node's comments attribute.
 
     pushComments
@@ -3248,9 +3223,9 @@ method parse(toks) {
     }
     var oldlength := tokens.size
     while {tokens.size > 0} do {
-        blank
+        pushComments
         methoddec
-        blank
+        pushComments
         if (didConsume { inheritOrUse }) then {
             def parentNode = values.pop
             if (parentNode.isUse) then {
@@ -3265,7 +3240,7 @@ method parse(toks) {
             }
         }
         statement
-        blank
+        pushComments
         if (tokens.size == oldlength) then {
             def suggestion = errormessages.suggestion.new
             suggestion.deleteToken(sym)
@@ -3277,6 +3252,6 @@ method parse(toks) {
         oldlength := tokens.size
     }
     statement
-    blank
+    pushComments
     return moduleObject
 }

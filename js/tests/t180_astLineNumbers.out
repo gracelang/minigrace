@@ -20,7 +20,6 @@
               3:3 signaturepart: name
 
 
-  5:0 blank
   6:1 method
     Name: 6:7 identifierBinding‹person(2)›
     Signature:

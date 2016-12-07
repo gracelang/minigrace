@@ -134,7 +134,6 @@ class baseNode {
     method isExternal { false }
     method isFresh { false }
     method isConstant { false }
-    method isNonBlank { true }
     method canInherit { false }
     method returnsObject { false }
     method isImplicit { false }
@@ -2549,31 +2548,6 @@ class aliasNew(n) old(o) {
             case { _ -> false }
     }
 }
-def blankNode is public = object {
-    class new {
-        inherit baseNode
-        def kind is public = "blank"
-        def value is public = "blank"
-        method isExecutable { false }
-        method isLegalInTrait { true }
-        method isNonBlank { false }
-
-        method accept(visitor : ASTVisitor) from(as) {
-            visitor.visitBlank(self) up(as)
-        }
-        method map(blk) ancestors(as) {
-            var n := shallowCopy
-            def newChain = as.extend(n)
-            blk.apply(n, as)
-        }
-        method nameString { "" }
-        method asString { "blank" }
-        method toGrace(depth : Number) -> String { "" }
-        method shallowCopy {
-            blankNode.new.shallowCopyFieldsFrom(self)
-        }
-    }
-}
 def signaturePart is public = object {
     method new {
         partName "" params []
@@ -2789,6 +2763,7 @@ def commentNode is public = object {
         method postCopy(other) {
             value := other.value
             isPartialLine := other.isPartialLine
+            isPreceededByBlankLine := other.isPreceededByBlankLine
             endLine := other.endLine
             self
         }
@@ -2857,7 +2832,6 @@ type ASTVisitor = {
     visitReturn(o) up(as) -> Boolean
     visitInherits(o) up(as) -> Boolean
     visitDialect(o) up(as) -> Boolean
-    visitBlank(o) up(as) -> Boolean
     visitComment(o) up(as) -> Boolean
     visitImplicit(o) up(as) -> Boolean
     visitOuter(o) up(as) -> Boolean
@@ -2891,7 +2865,6 @@ class baseVisitor -> ASTVisitor {
     method visitReturn(o) up(as) { visitReturn(o) }
     method visitInherits(o) up(as) { visitInherits(o) }
     method visitDialect(o) up(as) { visitDialect(o) }
-    method visitBlank(o) up(as) { visitBlank(o) }
     method visitComment(o) up(as) { visitComment(o) }
     method visitImplicit(o) up(as) { visitImplicit(o) }
     method visitOuter(o) up(as) -> Boolean { visitOuter(o) }
@@ -2923,7 +2896,6 @@ class baseVisitor -> ASTVisitor {
     method visitReturn(o) -> Boolean { true }
     method visitInherits(o) -> Boolean { true }
     method visitDialect(o) -> Boolean { true }
-    method visitBlank(o) -> Boolean { true }
     method visitComment(o) -> Boolean { true }
     method visitImplicit(o) -> Boolean { true }
     method visitOuter(o) -> Boolean { true }
@@ -2964,7 +2936,6 @@ class pluggableVisitor(visitation:Block2) -> ASTVisitor {
     method visitReturn(o) up(as) { visitation.apply (o, as) }
     method visitInherits(o) up(as) { visitation.apply (o, as) }
     method visitDialect(o) up(as) { visitation.apply (o, as) }
-    method visitBlank(o) up(as) { visitation.apply (o, as) }
     method visitComment(o) up(as) { visitation.apply (o, as) }
     method visitImplicit(o) up(as) { visitation.apply (o, as) }
     method visitOuter(o) up(as) { visitation.apply (o, as) }

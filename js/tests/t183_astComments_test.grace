@@ -74,13 +74,19 @@ testSuiteNamed "comment tests" with {
             description "first.comments doesn't include Post-comment def x"
     }
     test "blanks" by {
-        def blankNodes = nodes.filter { each -> each.kind == "blank" }
-        def blankLineNums = blankNodes.map { each -> each.line }
-        def emptyLineNums = emptyList
+        def blankLineNums = emptyList
         input.keysAndValuesDo { n, s ->
-            if (s == "") then { emptyLineNums.push(n) }
+            if (s.isEmpty) then { blankLineNums.add(n) }
         }
-        assert (blankLineNums) shouldBe (emptyLineNums)
+        def preCommentNodes = nodes.filter { n ->
+            ( false ≠ n.comments ) && {
+                n.comments.value.asLower.startsWith "pre-comment" }
+        }
+        preCommentNodes.do { each ->
+            assert (blankLineNums.contains(each.comments.line - 1))
+                description ("node {each} is not preceeded by a blank line\n" ++
+                "pre-comments = {preCommentNodes}; blanks = {blankLineNums}")
+        }
     }
     test "var y" by {
         def varNodes = nodes.filter { each -> each.kind == "vardec" }

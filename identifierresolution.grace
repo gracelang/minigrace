@@ -1170,7 +1170,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitVarDec(o) up (as) { o.scope := as.parent.scope ; true }
         method visitReturn(o) up (as) { o.scope := as.parent.scope ; true }
         method visitDialect(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitBlank(o) up (as) { o.scope := as.parent.scope ; true }
         method visitCommentNode(o) up (as) { o.scope := as.parent.scope ; true }
     }   // end of symbolTableVis
 
