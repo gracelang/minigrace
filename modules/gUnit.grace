@@ -369,6 +369,10 @@ def testSuite is public = object {
             }
             tests.push(e)
         }
+
+        method testAt(index) {
+            tests.at(index)
+        }
         
         method run(result) {
             for (tests) do { each -> each.run(result) }
