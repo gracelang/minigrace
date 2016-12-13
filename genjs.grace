@@ -571,7 +571,7 @@ method compileArgumentTypeChecks(o) {
         def isMultpart = (o.signature.size > 1)
         for (o.signature.indices) do { partnr ->
             var part := o.signature.at(partnr)
-            def partBit = if (isMultpart) then {"to `{part.name}` "} else {""}
+            def partBit = if (isMultpart) then {" to `{part.name}` "} else {""}
             var paramnr := 0
             for (part.params) do { p ->
                 paramnr := paramnr + 1
