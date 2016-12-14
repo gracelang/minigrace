@@ -1100,20 +1100,33 @@ var GraceHighlightRules = function() {
         ],
         "string" : [
             {
-                token : "escape",
-                regex : '\\\\"',
-            }, {
                 token : "string",
+                regex : /\\\\"$/,  // matches string \\"
                 merge : true,
-                regex : '"',
+                next  : "start"
+            }, {
+                token : "string.invalid",
+                regex : /\\"$/,
+                next : "start"
+            }, {
+                token : "string.escape",
+                regex : /(?:\\[n\\lrt{}"_])|(?:\\u[0-9a-fA-F]{4})|(?:\\U[0-9a-fA-F}{6}])+/,
+                merge : true
+            }, {
+                token : "string.invalid",
+                regex : /(([^\\]\\")|[^"])*$/,
                 next : "start"
             }, {
                 token : "string.invalid",
-                regex : '[^"\\\\]*$',
+                regex : /\\/
+            }, {
+                token : "string",
+                merge : true,
+                regex : /"/,
                 next : "start"
             }, {
                 token : "string",
-                regex : '[^"\\\\]+',
+                regex : /(?:[^\\"])+/,
                 merge : true
             }
         ],
