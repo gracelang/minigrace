@@ -1076,7 +1076,6 @@ method prefixop {
         }
         dotrest(blocksOK)
         callrest(blocksOK)
-        postfixsquare
         def rcvr = values.pop
         def call = ast.callNode.new(rcvr,
             [ ast.requestPart.request("prefix" ++ op) withArgs( [] ) ] )
@@ -1486,18 +1485,7 @@ method expression(acceptBlocks) {
     if (values.size > sz) then {
         dotrest(acceptBlocks)
         callrest(acceptBlocks)
-        postfixsquare
         valueexpressionrest
-    }
-}
-
-method postfixsquare {
-    if (acceptWithoutSpaces("lsquare")) then {
-        def opening = sym
-        next
-        errormessages.syntaxError("'[ ... ]' without preceding space is no longer part of Grace. " ++
-            "For a collection, add a space.  For an indexing operation, use `at(_)` or `at(_)put(_)`.")
-                atPosition(opening.line, opening.linePos)
     }
 }
 
@@ -1661,7 +1649,6 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
         // list.
         dotrest(acceptBlocks)
         callrest(acceptBlocks)
-        postfixsquare
         tmp := values.pop
         terms.push(tmp)
     }
