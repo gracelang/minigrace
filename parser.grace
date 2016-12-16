@@ -1491,39 +1491,12 @@ method expression(acceptBlocks) {
     }
 }
 
-// Accept postcircumfix square brackets (as in x[y]) and replace the
-// preceding expression with an index node into itself.
 method postfixsquare {
     if (acceptWithoutSpaces("lsquare")) then {
         def opening = sym
         next
-        def expr = values.pop
-        if (didNotConsume {expression(blocksOK)}) then {
-            def suggestions = [ ]
-            var suggestion := errormessages.suggestion.new
-            def nextTok = findNextValidToken( ["rsquare"] )
-            if (nextTok == sym) then {
-                suggestion.insert("«index»")afterToken(lastToken)
-            } else {
-                suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«index»")
-            }
-            suggestions.push(suggestion)
-            if (nextTok.kind == "rsquare") then {
-                suggestion := errormessages.suggestion.new
-                suggestion.deleteTokenRange(lastToken, nextTok)leading(true)trailing(false)
-                suggestions.push(suggestion)
-            }
-            errormessages.syntaxError("a '[' in an expression must be followed by another expression and a ']'.")atPosition(
-                sym.line, sym.linePos)withSuggestions(suggestions)
-        }
-        if (sym.kind != "rsquare") then {
-            def suggestion = errormessages.suggestion.new
-            suggestion.insert("]")afterToken(lastToken)
-            errormessages.syntaxError("a '[' in an expression must be followed by another expression and a ']'.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
-        }
-        errormessages.syntaxError("'[ ... ]' without preceeding space is no longer part of Grace. " ++
-            "For a Lineup, add a space.  For an indexing operation, use `at(_)` or `at(_)put(_)`.")
+        errormessages.syntaxError("'[ ... ]' without preceding space is no longer part of Grace. " ++
+            "For a collection, add a space.  For an indexing operation, use `at(_)` or `at(_)put(_)`.")
                 atPosition(opening.line, opening.linePos)
     }
 }
@@ -2121,7 +2094,7 @@ method doarray {
                     suggestion := errormessages.suggestion.new
                     suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
                     suggestions.push(suggestion)
-                    errormessages.syntaxError("a Lineup must contain zero or more expressions separated by commas.")
+                    errormessages.syntaxError("a collection must contain zero or more expressions separated by commas.")
                         atPosition(sym.line, sym.linePos) withSuggestions(suggestions)
                 }
             }
@@ -2131,7 +2104,7 @@ method doarray {
         if (sym.kind != "rsquare") then {
             def suggestion = errormessages.suggestion.new
             suggestion.insert("]")afterToken(lastToken)
-            errormessages.syntaxError("a Lineup beginning with a '[' must end with a ']'.")atPosition(
+            errormessages.syntaxError("a collection beginning with a '[' must end with a ']'.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
         }
         var o := ast.arrayNode.new(params)
