@@ -1149,7 +1149,7 @@ method trycatch {
         return
     }
     def localmin = minIndentLevel
-    def catchTok = sym
+    def tryTok = sym
     next
     if (accept "lbrace") then {
         block
@@ -1158,12 +1158,12 @@ method trycatch {
             def suggestion = errormessages.suggestion.new
             // Look ahead for a rbrace, rparen, or catch.
             def nextTok = findNextToken({ t -> (t.kind == "rbrace")
-                || ((t.kind == "rparen") && (t.line == catchTok.line))
+                || ((t.kind == "rparen") && (t.line == tryTok.line))
                 || ((t.kind == "identifier") && (t.value == "catch")) })
             if (false == nextTok) then {
-                suggestion.insert(" \{}")afterToken(catchTok)
+                suggestion.insert(" \{}")afterToken(tryTok)
             } elseif { nextTok.kind == "rbrace" } then {
-                suggestion.insert(" \{")afterToken(catchTok)
+                suggestion.insert(" \{")afterToken(tryTok)
             } elseif { nextTok.kind == "rparen" } then {
                 if (nextTok == sym) then {
                     suggestion.insert("(«expression»")afterToken(lastToken)andTrailingSpace(true)
@@ -1171,11 +1171,11 @@ method trycatch {
                     suggestion.insert("(")afterToken(lastToken)andTrailingSpace(true)
                 }
             } elseif { nextTok.kind == "identifier" } then {
-                suggestion.insert(" \{")afterToken(catchTok)
+                suggestion.insert(" \{")afterToken(tryTok)
                 suggestion.insert("\} ")beforeToken(nextTok)
             }
-            errormessages.syntaxError("a catch statement must have either a block or an expression in parentheses after the 'catch'.")atPosition(
-                catchTok.line, catchTok.linePos + catchTok.size + 1)withSuggestion(suggestion)
+            errormessages.syntaxError("a try(_)catch(_) statement must have either a block or an expression in parentheses after the 'try'.")atPosition(
+                tryTok.line, tryTok.linePos + tryTok.size + 1)withSuggestion(suggestion)
         }
         next
         if (didNotConsume {expression(blocksOK)}) then {
@@ -1186,7 +1186,7 @@ method trycatch {
             } else {
                 suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression»")
             }
-            errormessages.syntaxError("a catch statement must have either a block or an expression in parentheses after the 'catch'.")atPosition(
+            errormessages.syntaxError("a try(_)catch(_) statement must have either a block or an expression in parentheses after the 'try'.")atPosition(
                 sym.line, sym.linePos)withSuggestion(suggestion)
         }
         if (sym.kind != "rparen") then {
@@ -1245,12 +1245,12 @@ method trycatch {
                 suggestion.insert(" \{")afterToken(lastToken)
                 suggestions.push(suggestion)
             }
-            errormessages.syntaxError("a try-catch statement must have either a matching block or an expression in parentheses after the 'catch'.")atPosition(
+            errormessages.syntaxError("a try(_)catch(_) statement must have either a matching block or an expression in parentheses after the 'catch'.")atPosition(
                 sym.line, sym.linePos)withSuggestions(suggestions)
         }
         cases.push(values.pop)
     }
-    if (accept("identifier")onLineOf(catchTok) && (sym.value == "case")) then {
+    if (accept("identifier")onLineOf(tryTok) && (sym.value == "case")) then {
         def suggestion = errormessages.suggestion.new
         suggestion.replaceToken(sym)with("catch")
         errormessages.syntaxError("a try-catch statement starts with a "
@@ -1273,7 +1273,7 @@ method trycatch {
                 } else {
                     suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression»")
                 }
-                errormessages.syntaxError("a catch statement must have either a block or an expression in parentheses after the 'finally'.")atPosition(
+                errormessages.syntaxError("a try(_)catch(_)…finally(_) statement must have either a block or an expression in parentheses after the 'finally'.")atPosition(
                     sym.line, sym.linePos)withSuggestion(suggestion)
             }
             if (sym.kind != "rparen") then {
@@ -1303,12 +1303,12 @@ method trycatch {
                 suggestion.insert(" \{")afterToken(lastToken)
                 suggestions.push(suggestion)
             }
-            errormessages.syntaxError("a try-finally statement must have either a block or an expression in parentheses after the 'finally'.")atPosition(
+            errormessages.syntaxError("a try(_)catch(_)…finally(_) statement must have either a block or an expression in parentheses after the 'finally'.")atPosition(
                 sym.line, sym.linePos)withSuggestions(suggestions)
         }
         finally := values.pop
     }
-    util.setPosition(catchTok.line, catchTok.linePos)
+    util.setPosition(tryTok.line, tryTok.linePos)
     values.push(ast.tryCatchNode.new(mainblock, cases, finally))
     minIndentLevel := localmin
 }
