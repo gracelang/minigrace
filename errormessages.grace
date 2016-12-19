@@ -390,7 +390,7 @@ method syntaxError(message)atPosition(errlinenum, errpos)withSuggestions(suggest
         arr := arr ++ "-"
     }
     arr := arr ++ "^"
-    util.syntaxError(message, errlinenum, ":({errpos})", arr, false, suggestions)
+    util.syntaxError(message, errlinenum, ":{errpos}", arr, false, suggestions)
 }
 
 method error(message) atPosition(errlinenum, errpos)
@@ -400,7 +400,7 @@ method error(message) atPosition(errlinenum, errpos)
         arr := arr ++ "-"
     }
     arr := arr ++ "^"
-    util.generalError(message, errlinenum, ":({errpos})", arr, false, suggestions)
+    util.generalError(message, errlinenum, ":{errpos}", arr, false, suggestions)
 }
 
 method error(message) {
