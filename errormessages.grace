@@ -336,6 +336,17 @@ method min3(a, b, c) is confidential {
 
 
 // Methods to actually display an error message and suggestions, then exit.
+
+method syntaxError (message) atRange (r) {
+    syntaxError (message) atRange (r) withSuggestions []
+}
+
+method syntaxError (message) atRange (r) withSuggestions (s) {
+    syntaxError (message)
+          atRange (r.start.line, r.start.column, r.end.column)
+          withSuggestions (s)
+}
+
 method syntaxError(message)atRange(errlinenum, startpos, endpos) {
     syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions([])
 }
