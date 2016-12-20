@@ -95,9 +95,8 @@ class newScopeIn(parent') kind(variety') {
                 ++ " on line {elementLines.get(ndName)}"
         }
         errormessages.syntaxError("'{nd.canonicalName}' cannot be"
-            ++ " redeclared because it is already declared"
-            ++ more ++ " as well as here at line {nd.line}.")
-            atRange(nd.line, nd.linePos, nd.linePos + ndName.size - 1)
+            ++ " redeclared because it is already declared" ++ more )
+            atRange(nd.range)
     }
     method contains (n) {
         elements.contains(n)
@@ -309,7 +308,7 @@ class newScopeIn(parent') kind(variety') {
             }
         }
         errormessages.syntaxError "no method {aNode.canonicalName}"
-                atRange(aNode.line, aNode.linePos, aNode.linePos + name.size - 1)
+                atRange(aNode.range)
     }
     method scopeReferencedBy(nd:ast.AstNode) {
         // Finds the scope referenced by astNode nd.
@@ -328,7 +327,7 @@ class newScopeIn(parent') kind(variety') {
                 }
             }
             errormessages.syntaxError "no method {nd.canonicalName}"
-                atRange(nd.line, nd.linePos, nd.linePos + sought.size - 1)
+                  atRange (nd.range)
         } elseif {nd.kind == "outer"} then {
             nd.theObjects.last.scope
         } elseif {nd.kind == "op"} then {
@@ -406,14 +405,13 @@ class newScopeIn(parent') kind(variety') {
             errormessages.syntaxError("'{ident.canonicalName}' cannot be "
                 ++ "redeclared because it is already declared in "
                 ++ "{description} scope{more}.")
-                atRange(ident.line, ident.linePos, ident.linePos + name.size - 1)
+                atRange(ident.range)
                 withSuggestions(suggs)
         } else {
             errormessages.syntaxError("'{ident.canonicalName}' cannot be "
                 ++ "redeclared because it is already declared in "
                 ++ "{description} scope{more}. Use a different name.")
-                atRange(ident.line, ident.linePos,
-                    ident.linePos + name.size - 1)
+                atRange(ident.range)
         }
     }
 }
@@ -596,7 +594,7 @@ method rewritematchblock(blk) {
 
 method transformIdentifier(node) ancestors(as) {
     // node is a (copy of an) ast node that represents an applied occurence of
-    // an identifer id.   This implies that node is a leaf in the ast.
+    // an identifer id.
     // This method may or may not transform node into another ast.
     // There is no spec for what this method should do.  The code below
     // was developed by addding and removing particular cases until
@@ -612,12 +610,7 @@ method transformIdentifier(node) ancestors(as) {
     // - id is a self-method: transform into a request on self
     // - id is not declared: generate an error message
 
-    // Some clauses are flagged "TODO Compatability Kludge — remove when possible"
-    // This means that APB put them there to produce an AST close enough to the
-    // former identifier resolution pass to keep the C code generator (genc) happy.
-    // They may represent things that APB doesn't understand, or bugs in genc
-
-    var nm := node.nameString
+    def nm = node.nameString
     def nodeScope = node.scope
     def nmGets = nm ++ ":=(1)"
     util.setPosition(node.line, node.linePos)
@@ -714,13 +707,13 @@ method checkForAmbiguityOf (node) definedIn (definingScope) as (kind) {
     }
     util.log 60 verbose "currentScope = {currentScope}\n defines {name} as {kind}\nconflictingScope = {conflictingScope}\n defines {name} as {conflictingKind}"
     errormessages.syntaxError "{node.canonicalName} is both {kind}, and defined in an enclosing scope{more}."
-        atRange(node.line, node.linePos, node.linePos + name.size - 1)
+        atRange(node.range)
 }
 method checkForReservedName(node) {
     def ns = node.nameString
     if (reserved.contains(ns)) then {
         errormessages.syntaxError "{ns} is a reserved name and cannot be re-declared."
-            atRange(node.line, node.linePos, node.linePos + ns.size - 1)
+            atRange(node.range)
     }
 }
 
@@ -764,7 +757,9 @@ method reportUndeclaredIdentifier(node) {
         }
     }
     var highlightLength := node.value.size
-    if (node.value.replace "()" with "XX" != node.value) then {
+    if (node.value.contains "(") then {
+        util.log 10 verbose "node {node.value} on line {node.line} contains parens"
+        // apb: I think that this case can never happen
         var i := 0
         var found := false
         for (node.value) do {c->
@@ -787,13 +782,13 @@ method reportUndeclaredIdentifier(node) {
             suggestion.append " do \{ aVarName -> \}" onLine(node.line)
             suggestions.push(suggestion)
         }
-        errormessages.syntaxError "unknown method '{node.canonicalName}'. This may be a spelling mistake or an attempt to access a method in another scope.{extra}"
-            atRange(node.line, node.linePos, node.linePos +
-                highlightLength - 1)
-            withSuggestions(suggestions)
+        errormessages.syntaxError ("unknown variable or method '{node.canonicalName}'. " ++
+              "This may be a spelling mistake or an attempt to access a method in another scope.{extra}")
+              atRange (node.range) withSuggestions (suggestions)
     }
-    errormessages.syntaxError("unknown variable or method '{node.canonicalName}'. This may be a spelling mistake or an attempt to access a variable in another scope.")atRange(
-        node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
+    errormessages.syntaxError("unknown variable or method '{node.canonicalName}'. " ++
+          "This may be a spelling mistake or an attempt to access a variable in another scope.")
+          atRange (node.range) withSuggestions (suggestions)
 }
 method reportAssignmentTo(node) declaredInScope(scp) {
     // Report a syntax error for an illegal assignment
@@ -808,11 +803,11 @@ method reportAssignmentTo(node) declaredInScope(scp) {
     if (kind == k.selfDef) then {
         errormessages.syntaxError("'{name}' cannot be re-bound; " ++
               "it always refers to the current object.")
-              atRange(node.line, node.linePos, node.linePos + name.size - 1)
+              atRange(node.range)
     } elseif { reserved.contains(name) } then {
         errormessages.syntaxError("'{name}' is a reserved name and " ++
               "cannot be re-bound.")
-              atRange(node.line, node.linePos, node.linePos + name.size - 1)
+              atRange(node.range)
     } elseif { kind == k.defdec } then {
         if (scp.elementTokens.contains(name)) then {
             def tok = scp.elementTokens.get(name)
@@ -828,26 +823,26 @@ method reportAssignmentTo(node) declaredInScope(scp) {
             } else {
                 errormessages.syntaxError("'{name}' cannot be changed " ++
                     "because it was declared as a '{tok.value}'{more}.")
-                    atRange(node.line, node.linePos, node.linePos + name.size - 1)
+                    atRange(node.range)
             }
         }
         errormessages.syntaxError("'{name}' cannot be changed "
             ++ "because it was declared with 'def'{more}. "
             ++ "To make it a variable, use 'var' in the declaration")
-            atRange(node.line, node.linePos, node.linePos + name.size - 1)
+            atRange(node.range)
             withSuggestions(suggestions)
     } elseif { kind == k.typedec } then {
         errormessages.syntaxError("'{name}' cannot be re-bound "
             ++ "because it is declared as a type{more}.")
-            atRange(node.line, node.linePos, node.linePos + name.size - 1)
+            atRange(node.range)
     } elseif { kind.isParameter } then {
         errormessages.syntaxError("'{name}' cannot be re-bound "
             ++ "because it is declared as a parameter{more}.")
-            atRange(node.line, node.linePos, node.linePos + name.size - 1)
+            atRange(node.range)
     } elseif { kind == k.methdec } then {
         errormessages.syntaxError("'{name}' cannot be re-bound "
             ++ "because it is declared as a method{more}.")
-            atRange(node.line, node.linePos, node.linePos + name.size - 1)
+            atRange(node.range)
     }
 }
 
@@ -1069,7 +1064,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 }
             } elseif {o.wildcard} then {
                 errormessages.syntaxError("'_' cannot be used in an expression")
-                    atRange(o.line, o.linePos, o.linePos)
+                    atRange(o.range)
             }
             true
         }
@@ -1089,13 +1084,13 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 if (as.parent.canUse.not) then {
                     errormessages.syntaxError("use statements must " ++
                         "be inside an object, class, or trait")
-                        atRange(o.line, o.linePos, o.linePos + 3)
+                        atRange(o.range)
                 }
             } else {
                 if (as.parent.canInherit.not) then {
                     errormessages.syntaxError("inherit statements must " ++
                         "be inside an object or class; a trait cannot inherit")
-                        atRange(o.line, o.linePos, o.linePos + 7)
+                        atRange(o.range)
                 }
             }
             true
@@ -1108,7 +1103,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 // declarations.  Why does it do so?  Because of the old
                 // "dotted" class syntax, wherein a class decl was actually a def.
                 errormessages.syntaxError("class declarations are permitted only" ++
-                    " inside an object") atRange(o.line, o.linePos, o.linePos + 4)
+                    " inside an object") atRange(o.range)
             }
             def ident = o.asIdentifier
             checkForReservedName(ident)
@@ -1233,7 +1228,7 @@ method collectParentNames(node) {
     }
     if (nodeScope.inheritedNames == inProgress) then {
         errormessages.syntaxError "cyclic inheritance or trait use"
-            atRange(node.line, node.linePos, node.linePos)
+            atRange(node.line, node.linePos, node.linePos + 4)
     }
     nodeScope.inheritedNames := inProgress
     gatherInheritedNames(node)
@@ -1280,16 +1275,14 @@ method gatherInheritedNames(node) is confidential {
         } else {
             errormessages.syntaxError("can't define an alias for {old} " ++
                 "because it is not present in the inherited object")
-                atRange(a.oldName.line, a.oldName.linePos,
-                        a.oldName.linePos + old.size - 1)
+                atRange(a.oldName.range)
         }
     }
     inhNode.exclusions.do { exId ->
         inhNode.providedNames.remove(exId.nameString) ifAbsent {
             errormessages.syntaxError("can't exclude {exId.canonicalName} " ++
                 "because it is not present in the inherited object")
-                atRange(exId.line, exId.linePos,
-                        exId.linePos + exId.nameString.size - 1)
+                atRange(exId.range)
         }
     }
 }
@@ -1323,16 +1316,14 @@ method gatherUsedNames(objNode) is confidential {
             } else {
                 errormessages.syntaxError("can't define an alias for " ++
                     "{old} because it is not present in the trait")
-                    atRange(a.oldName.line, a.oldName.linePos,
-                            a.oldName.linePos + old.size - 1)
+                    atRange(a.oldName.range)
             }
         }
         t.exclusions.do { exId ->
             t.providedNames.remove(exId.nameString) ifAbsent {
                 errormessages.syntaxError("can't exclude {exId.canonicalName} " ++
                     "because it is not available in the trait")
-                    atRange(exId.line, exId.linePos,
-                            exId.linePos + exId.nameString.size - 1)
+                    atRange(exId.range)
             }
         }
         t.providedNames.do { methName ->
@@ -1444,20 +1435,18 @@ method transformInherits(inhNode) ancestors(as) {
     def currentScope = inhNode.scope
     if (currentScope.isObjectScope.not) then {
         errormessages.syntaxError "{inhNode.statementName} statements must be directly inside an object"
-                    atRange(inhNode.line, inhNode.linePos, inhNode.linePos + (inhNode.statementName.size - 1))
+                    atRange(inhNode.range)
     }
     if (superExpr.isAppliedOccurenceOfIdentifier) then {
         def nm = superExpr.nameString
         def definingScope = currentScope.thatDefines(nm)
         if (definingScope == currentScope) then {
             errormessages.syntaxError "the object being inherited must be from an enclosing scope"
-                atRange(superExpr.line, superExpr.linePos,
-                superExpr.linePos + nm.size - 1)
+                atRange(superExpr.range)
         }
         if ((definingScope.kind(nm)) ≠ k.methdec) then {
             errormessages.syntaxError "the object being inherited must be freshly generated from a method"
-                  atRange(superExpr.line, superExpr.linePos,
-                  superExpr.linePos + nm.size - 1)
+                  atRange(superExpr.range)
         }
         def sv = definingScope.variety
         if ((sv == "built-in") || (sv == "dialect")) then {
@@ -1488,8 +1477,7 @@ method transformInherits(inhNode) ancestors(as) {
             withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
     } else {
         errormessages.syntaxError "inheritance must be from a freshly-created object"
-            atRange(inhNode.line, superExpr.linePos,
-                superExpr.linePos + superExpr.nameString.size - 1)
+            atRange(inhNode.range)
     }
     inhNode
 }

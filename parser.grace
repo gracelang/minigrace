@@ -89,7 +89,7 @@ method next {
     } else {
         errormessages.syntaxError("unexpectedly found the end of the input. " 
             ++ "This is often caused by a missing '\}'")
-            atRange(sym.line, sym.linePos, sym.linePos)
+            atPosition(sym.line, sym.linePos)
     }
 }
 
@@ -1793,7 +1793,7 @@ method parseArgumentsFor(meth) into (part) acceptBlocks (acceptBlocks) {
     var tok := lastToken
     if (acceptSameLine "lparen") then {
         tok := sym
-        parenthesizedArgs(part)
+        parenthesizedArgs(part) startingWith (tok)
         true
     } elseif { acceptBlocks.not && { accept "lbrace" onLineOf (statementToken) } } then {
         false
@@ -1807,7 +1807,7 @@ method parseArgumentsFor(meth) into (part) acceptBlocks (acceptBlocks) {
     }
 }
 
-method parenthesizedArgs(part) {
+method parenthesizedArgs(part) startingWith (tok) {
     next
     if (didConsume {expression(blocksOK)}) then {
         while {accept "comma"} do {
@@ -1827,7 +1827,7 @@ method parenthesizedArgs(part) {
                 suggestion := errormessages.suggestion.new
                 suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
                 suggestions.push(suggestion)
-                errormessages.syntaxError("a method request must have an expression after a ','.")
+                errormessages.syntaxError("an argument list must have an expression after a ','.")
                       atPosition(sym.line, sym.linePos)
                       withSuggestions(suggestions)
             }
@@ -1838,9 +1838,10 @@ method parenthesizedArgs(part) {
         checkBadOperators
         def suggestion = errormessages.suggestion.new
         suggestion.insert(")")afterToken(lastToken)
-        errormessages.syntaxError("a method request beginning with a '(' must end with a ')'.")
-              atPosition(lastToken.line, lastToken.linePos + lastToken.size)
-              withSuggestion(suggestion)
+        def rng = ast.start (ast.line (tok.line) column (tok.linePos))
+                        end (ast.line (lastToken.line) column (lastToken.linePos + lastToken.size))
+        errormessages.syntaxError "an argument list beginning with a '(' must end with a ')'."
+              atRange (rng) withSuggestion (suggestion)
     }
     if (sym.line == part.line) then {
         part.lineLength := sym.linePos - part.linePos
@@ -3154,8 +3155,10 @@ method checkUnexpectedTokenAfterStatement {
                 suggestion.deleteTokenRange(sym, nextTok.prev)leading(true)trailing(false)
                 suggestions.push(suggestion)
             }
-            errormessages.syntaxError "multiple statements must be separated by a newline or a semicolon. This is often caused by missing parentheses."
-                  atPosition(sym.line, sym.linePos) withSuggestions (suggestions)
+            errormessages.syntaxError(
+                  "multiple statements must be separated by a newline or a semicolon. " ++
+                    "This is often caused by unbalanced parentheses.")
+                  atPosition (sym.line, sym.linePos) withSuggestions (suggestions)
         }
     }
 }
@@ -3196,7 +3199,7 @@ method parse(toks) {
                 errormessages.syntaxError("'inherit' must come " ++
                     "before 'use' in a module.")
                     atRange(parentNode.line, parentNode.linePos,
-                    parentNode.linePos + 7)
+                    parentNode.linePos + 6)
             }
         }
         statement
