@@ -49,10 +49,20 @@ class line (l:Number) column (c:Number) -> Position {
     method < (other:Position) -> Boolean {
         (other ≥ self).not
     }
+    method asString { "{line}:{column}" }
 }
 class start (s:Position) end (e:Position) -> Range {
     def start is public = s
     def end is public = e
+    method asString {
+        if (start.line == end.line) then {
+            "{start}-{end.column}"
+        } elseif { end.line == noPosition } then {
+            start.asString
+        } else {
+            "{start}-{end}"
+        }
+    }
 }
 def noPosition is public = line 0 column 0
 def emptyRange is public = start (noPosition) end (noPosition)
@@ -258,11 +268,11 @@ class baseNode {
     method prettyPrefix(depth) {
         def spc = "  " * (depth+1)
         if ((scope.node == self) && {util.target == "symbols"}) then {
-            "{line}:{linePos} {description}\n{spc}Symbols({scope.variety}): {scope}{scope.elementScopesAsString}"
+            "{range} {description}\n{spc}Symbols({scope.variety}): {scope}{scope.elementScopesAsString}"
         } elseif {scope.variety == "fake"} then {
-            "{line}:{linePos} {description}"
+            "{range} {description}"
         } else {
-            "{line}:{linePos} {description} {scope.asDebugString}"
+            "{range} {description} {scope.asDebugString}"
         }
     }
     method basePretty(depth) { prettyPrefix(depth) }
@@ -2580,6 +2590,7 @@ def returnNode is public = object {
         def spc = "  " * (depth+1)
         var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth + 1)
+        if (false ≠ dtype) then { s := "{s} (type {dtype.toGrace 0})" }
         s
     }
     method toGrace(depth : Number) -> String {
