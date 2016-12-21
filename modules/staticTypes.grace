@@ -992,19 +992,17 @@ rule { defd: Def | Var ->
     scope.variables.at (name) put (defType)
 
     defd.annotations.do { ann ->
-        if (ann.value == "public") then {
+        if (defd.isReadable) then {
             scope.methods.at (name) put (aMethodType.member (name) ofType (defType))
+        }
 
-            if (defd.kind == "vardec") then {
-                def name' = name ++ ":="
-                def param = aParam.withName (name) ofType (defType)
-                def sig = [mixPartNamed (name') parameters ([param])]
+        if (defd.isWritable) then {
+            def name' = name ++ ":="
+            def param = aParam.withName (name) ofType (defType)
+            def sig = [mixPartNamed (name') parameters ([param])]
 
-                scope.methods.at (name')
-                    put (aMethodType.signature (sig) returnType (objectType.done))
-            }
-
-            return
+            scope.methods.at (name')
+                put (aMethodType.signature (sig) returnType (objectType.done))
         }
     }
     objectType.done
