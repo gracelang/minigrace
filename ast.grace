@@ -2548,7 +2548,13 @@ def returnNode is public = object {
     var value is public := expr
     var dtype is public := false  // the enclosing method's declared return type
 
-    method end { value.end }
+    method end {
+        if (noPosition ≠ value.end) then {
+            value.end
+        } else {
+            line (line) column (linePos + 5)
+        }
+    }
     method isReturn { true }
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitReturn(self) up(as)) then {

@@ -2770,6 +2770,7 @@ method doreturn {
             retval := values.pop
         } else {
             retval := ast.identifierNode.new("done", false)
+            retval.end := ast.noPosition
         }
         util.setPosition(retTok.line, retTok.linePos)
         var o := ast.returnNode.new(retval)
