@@ -62,7 +62,7 @@ method positionOfNext (needle:String) after (pos:Position) {
     var lineNr := pos.line - 1
     var startSearch := pos.column + 1
     var found := 0
-    while (found == 0) do {
+    while { found == 0 } do {
         lineNr := lineNr + 1
         if (lineNr > sourceLines.size) then {
             return noPosition
@@ -116,6 +116,14 @@ def ancestorChain is public = object {
                 a := a.forebears
             }
             s ++ "▫"
+        }
+        method suchThat(cond) ifAbsent (action) {
+            var a := self
+            while { a.isEmpty.not } do {
+                if (cond.apply(a.parent)) then { return a.parent }
+                a := a.forebears
+            }
+            action.apply
         }
         method extend(n) { cons(n) onto(self) }
     }
