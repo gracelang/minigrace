@@ -129,7 +129,7 @@ MiniGrace.prototype.trapErrors = function(func) {
             e = new GraceExceptionPacket(new GraceException("TooMuchRecursion", ProgrammingErrorObject),
                    new GraceString("Does one of your methods request execution of itself without limit?"));
         }
-        if (e.exctype == 'graceexception') {
+        if (e.exctype === "graceexception") {
             var stderr_write = this.stderr_write;
             var i;
             this.exception = e;
@@ -167,6 +167,10 @@ MiniGrace.prototype.trapErrors = function(func) {
                     });
                 }
             }
+        } else if (e.exctype === "return") {
+            this.stderr_write("ProgrammingError: you are attempting to return " +
+                "from a method that has already returned, at line " +
+                lineNumber + " of " + moduleName);
         } else if (e != "SystemExit") {
             this.stderr_write("Internal error around line " +
                 lineNumber + " of " + moduleName + ": " + e);
