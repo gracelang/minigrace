@@ -271,10 +271,10 @@ class newScopeIn(parent') kind(variety') {
                     }
                     def rcvr = if (outerChain.isEmpty) then {
                         ast.identifierNode.new("self", false) scope(self).
-                              setPositionFrom(aNode)
+                              setStart(ast.noPosition)
                     } else {
                         ast.outerNode(outerChain).setScope(self).
-                              setPositionFrom(aNode)
+                              setStart(ast.noPosition)
                     }
                     return ast.memberNode.new(name, rcvr).setScope(self).
                           setPositionFrom(aNode).onSelf

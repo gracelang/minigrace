@@ -67,18 +67,14 @@ class start (s:Position) end (e:Position) -> Range {
 def noPosition is public = line 0 column 0
 def emptyRange is public = start (noPosition) end (noPosition)
 
-method positionOfNext (needle:String) after (pos:Position) {
+method positionOfNext (needle:String) after (pos:Position) -> Position {
     def sourceLines = util.lines
-    var lineNr := pos.line - 1
-    var startSearch := pos.column + 1
-    var found := 0
+    var lineNr := pos.line
+    var found := sourceLines.at(lineNr).indexOf (needle) startingAt (pos.column + 1)
     while { found == 0 } do {
         lineNr := lineNr + 1
-        if (lineNr > sourceLines.size) then {
-            return noPosition
-        }
-        found := sourceLines.at(lineNr).indexOf (needle) startingAt (startSearch)
-        startSearch := 1    
+        if (lineNr > sourceLines.size) then { return noPosition }
+        found := sourceLines.at(lineNr).indexOf (needle)
     }
     line (lineNr) column (found)
 }
@@ -177,13 +173,18 @@ class baseNode {
         linePos := c
         self
     }
-    method setPositionFrom (token) {
-        line := token.line
-        linePos := token.linePos
+    method setPositionFrom (tokenOrNode) {
+        line := tokenOrNode.line
+        linePos := tokenOrNode.linePos
+        self
+    }
+    method setStart(p: Position) {
+        line := p.line
+        linePos := p.column
         self
     }
     method start { line (line) column (linePos) }
-    method end { line (line) column (linePos + self.value.size - 1) }
+    method end -> Position { line (line) column (linePos + self.value.size - 1) }
     method range { start (start) end (end) }
     method kind { abstract }
     method ==(other) { self.isMe(other) }       // for usesAsType
@@ -359,7 +360,7 @@ def ifNode is public = object {
             elseblock.accept(visitor) from(newChain)
         }
     }
-    method end { elseblock.end }
+    method end -> Position { elseblock.end }
     method map(blk) ancestors(as) {
         var n := shallowCopy
         def newChain = as.extend(n)
@@ -448,7 +449,7 @@ def blockNode is public = object {
     method parametersDo(b) {
         params.do(b)
     }
-    method end {
+    method end -> Position {
         if (body.size > 0) then { return body.end }
         if (params.isEmpty) then {
             positionOfNext "}" after (start)
@@ -541,7 +542,7 @@ def tryCatchNode is public = object {
     var cases is public := cases'
     var finally is public := finally'
     method isSimple { false }  // needs parens when used as reciever
-    method end {
+    method end -> Position {
         if (false ≠ finally) then { return finally.end }
         if (cases.isEmpty.not) then { return cases.last.end }
         return value.end
@@ -602,7 +603,7 @@ def matchCaseNode is public = object {
     var cases is public := cases'
     var elsecase is public := elsecase'
     method isSimple { false }  // needs parens when used as reciever
-    method end {
+    method end -> Position {
         if (false ≠ elsecase) then { return elsecase.end }
         if (cases.isEmpty.not) then { return cases.last.end }
         return value.end
@@ -669,7 +670,7 @@ def methodTypeNode is public = object {
     var typeParams is public := false
     var cachedIdentifier := uninitialized
 
-    method end {
+    method end -> Position {
         if (false ≠ rtype) then { return rtype.end }
         signature.last.end
     }
@@ -771,7 +772,7 @@ def typeLiteralNode is public = object {
     method declarationKindWithAncestors(as) { k.typedec }
     method isExecutable { false }
 
-    method end {
+    method end -> Position {
         def tEnd = if (types.isEmpty) then {noPosition} else {types.last.end}
         def mEnd = if (methods.isEmpty) then {noPosition} else {methods.last.end}
         positionOfNext "}" after (max(tEnd, mEnd))
@@ -843,7 +844,7 @@ def typeDecNode is public = object {
     var annotations is public := [ ]
     var typeParams is public := false
 
-    method end { value.end }
+    method end -> Position { value.end }
     method isLegalInTrait { true }
     method isTypeDec { true }
     method scope:=(st) {
@@ -941,7 +942,7 @@ def methodNode is public = object {
         var isBindingOccurence is readable := true
             // the only exception is the oldMethodName in an alias clause
 
-        method end {
+        method end -> Position {
             if (body.isEmpty.not) then {
                 return positionOfNext "}" after (body.last.end)
             }
@@ -1205,7 +1206,7 @@ def callNode is public = object {
         var isFresh is public := false         // calls a fresh method
         var cachedIdentifier := uninitialized
 
-        method end { with.last.end }
+        method end -> Position { with.last.end }
         method onSelf {
             // mark as a self-request.  Answers self for chaining.
             isSelfRequest := true
@@ -1362,7 +1363,9 @@ def moduleNode is public = object {
         linePos := 0
         var imports is public := [ ]
 
-        method end { line (util.lines.size) column (util.lines.last.size) }
+        method end -> Position {
+            line (util.lines.size) column (util.lines.last.size)
+        }
         method isModule { true }
         method isTrait { false }
         method returnsObject { false }
@@ -1448,9 +1451,9 @@ def objectNode is public = object {
         var myLocalNames := false
         var annotations is public := [ ]
 
-        method end {
+        method end -> Position {
             if (value.isEmpty.not) then {
-                return positionOfNext "}" after (value.last)
+                return positionOfNext "}" after (value.last.end)
             }
             def iEnd = if (false == superclass) then { noPosition } else { superclass.end }
             def tEnd = if (usedTraits.isEmpty) then { noPosition } else { usedTraits.end }
@@ -1614,7 +1617,7 @@ def arrayNode is public = object {
     inherit baseNode
     def kind is public = "array"
     var value is public := values
-    method end {
+    method end -> Position {
         if (value.isEmpty) then {
             positionOfNext "]" after (start)
         } else {
@@ -1685,6 +1688,9 @@ class outerNode(nodes) {
         var nd := shallowCopy
         blk.apply(nd, as)
     }
+    def end is public = if (line == 0) then { noPosition } else {
+        line (line) column (linePos + 4)
+    }
 }
 def memberNode is public = object {
     method new(request, receiver) scope(s) {
@@ -1702,7 +1708,7 @@ def memberNode is public = object {
         var generics is public := false
         var isSelfRequest is public := false
         var isTailCall is public := false
-        method end {
+        method end -> Position {
             def col = if (receiver.isImplicit) then {
                 linePos + request.size - 1
             } else {
@@ -1806,7 +1812,7 @@ def genericNode is public = object {
         // in a generic application, `value` is the applied type
         // e.g. in List⟦Number⟧, value is Identifier‹List›
     var args is public := arguments
-    method end { positionOfNext "⟧" after (args.last) }
+    method end -> Position { positionOfNext "⟧" after (args.last) }
     method nameString { value.nameString }
     method asString { toGrace 0 }
     method accept(visitor : ASTVisitor) from(as) {
@@ -2040,7 +2046,7 @@ def stringNode is public = object {
         inherit baseNode
         def kind is public = "string"
         var value is public := v
-        method end { line (line) column (linePos + (toGrace 0).size - 1) }
+        method end -> Position { line (line) column (linePos + (toGrace 0).size - 1) }
         method accept(visitor : ASTVisitor) from(as) {
             visitor.visitString(self) up(as)
         }
@@ -2180,7 +2186,7 @@ def bindNode is public = object {
     var dest is public := dest'
     var value is public := val'
 
-    method end { value.end }
+    method end -> Position { value.end }
     method nameString { value ++ ":=(1)" }
     method canonicalName { value ++ ":=(_)" }
     method isBind { true }
@@ -2236,7 +2242,7 @@ def defDecNode is public = object {
         var annotations is public := [ ]
         var startToken is public := false
 
-        method end { value.end }
+        method end -> Position { value.end }
         method isPublic {
             // defs are confidential by default
             if (annotations.size == 0) then { return false }
@@ -2340,7 +2346,7 @@ def varDecNode is public = object {
     def nameString is public = name.value
     var annotations is public := [ ]
 
-    method end {
+    method end -> Position {
         if (false ≠ value) then { return value.end }
         if (annotations.isEmpty.not) then { return annotations.last.end }
         if (false ≠ dtype) then { return dtype.end }
@@ -2446,7 +2452,7 @@ def importNode is public = object {
     var path is public := path'
     var annotations is public := [ ]
     var dtype is public := dtype'
-    method end { value.end }
+    method end -> Position { value.end }
     method isImport { true }
     method isExternal { true }
     method isExecutable { false }
@@ -2519,7 +2525,7 @@ def dialectNode is public = object {
     def kind is public = "dialect"
     var value is public := path'
 
-    method end { line (line) column (util.lines.at(line).size) }
+    method end -> Position { line (line) column (util.lines.at(line).size) }
     method isDialect { true }
     method isExternal { true }
     method isExecutable { false }
@@ -2566,7 +2572,7 @@ def returnNode is public = object {
     var value is public := expr
     var dtype is public := false  // the enclosing method's declared return type
 
-    method end {
+    method end -> Position {
         if (noPosition ≠ value.end) then {
             value.end
         } else {
@@ -2622,7 +2628,7 @@ def inheritNode is public = object {
         var exclusions is public := [ ]
         var isUse is public := false  // this is a `use trait` clause, not an inherit
 
-        method end { value.end }
+        method end -> Position { value.end }
         method isLegalInTrait { isUse }
         method isInherits { true }
         method inheritFromMember { value.isMember }
@@ -2754,7 +2760,7 @@ def signaturePart is public = object {
         var typeParams is public := false
         var lineLength is public := 0
 
-        method end {
+        method end -> Position {
             if (params.isEmpty.not) then {
                 return positionOfNext ")" after (params.last.end)
             }
@@ -2844,7 +2850,7 @@ def requestPart is public = object {
         var typeArgs := emptySeq
         var lineLength is public := 0
 
-        method end {
+        method end -> Position {
             if (args.isEmpty.not) then {
                 return args.last.end  // there may or may not be a following `)`
             }
@@ -2923,7 +2929,7 @@ def commentNode is public = object {
         var isPreceededByBlankLine is public := false
         var endLine is public := util.linenum
 
-        method end { line (endLine) column (util.lines.at(endLine).size) }
+        method end -> Position { line (endLine) column (util.lines.at(endLine).size) }
         method isComment { true }
         method isLegalInTrait { true }
         method isExecutable { false }
