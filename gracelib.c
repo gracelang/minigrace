@@ -1893,7 +1893,7 @@ int getutf8charlen(const char *s) {
         return 1;
     if ((s[0] & 64) == 0) {
         // Unexpected continuation byte, error
-        gracedie("Unexpected continuation byte starting character: %x",
+        gracedie("Unexpected UTF-8 combination starting with 16x%x",
                 (int)(s[0] & 255));
     }
     if ((s[0] & 32) == 0)
@@ -1924,12 +1924,12 @@ int getutf8char(const char *s, char buf[5]) {
             } else
                 cp = (cp << 6) | (c & 63);
             if ((c == 192) || (c == 193) || (c > 244)) {
-                gracedie("Invalid byte in UTF-8 sequence: %x at position %i",
+                gracedie("Invalid byte in UTF-8 sequence: 16x%x at position %i",
                         c, i);
             }
             if ((i > 0) && ((c & 192) != 128)) {
                 gracedie("Invalid byte in UTF-8 sequence, expected continuation "
-                        "byte: %x at position %i", c, i);
+                        "byte: 16x%x at position %i", c, i);
             }
         } else
             buf[i] = 0;
@@ -2611,20 +2611,20 @@ Object String_indexOf_startingAt(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     const char *sstr = grcstring(self);
     const char *needle = grcstring(args[0]);
-    int st = integerfromAny(args[1]) - 1;
+    int startChar = integerfromAny(args[1]) - 1;
     if (needle[0] == '\0') {
-        return alloc_Float64(1 + st);
+        return alloc_Float64(1 + startChar);
     }
     if (sstr[0] == '\0') {
         return alloc_Float64(0);
     }
-    int realSt = 0;
+    int startIx = 0;
     int j = 0;
-    while (j < st) {
-        realSt += getutf8charlen(sstr + j);
+    while (j < startChar) {
+        startIx += getutf8charlen(sstr + startIx);
         ++j;
     }
-    int bufferIndex = indexOf_shift(sstr, needle, realSt);
+    int bufferIndex = indexOf_shift(sstr, needle, startIx);
     if (bufferIndex == -1) {
         return alloc_Float64(0);
     }
