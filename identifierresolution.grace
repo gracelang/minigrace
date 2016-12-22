@@ -1151,6 +1151,15 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.scope := newScopeIn(as.parent.scope) kind "type"
             true
         }
+        method visitReturn(o) up (as) {
+            o.scope := as.parent.scope;
+            def enclosingMethodNode = as.suchThat { n -> n.isMethod } ifAbsent {
+                errormessages.syntaxError "`return` statements must be inside methods"
+                    atRange(o.range)
+            }
+            o.dtype := enclosingMethodNode.dtype
+            true
+        }
         method visitTypeParameters(o) up (as) { o.scope := as.parent.scope ; true }
         method visitIf(o) up (as) { o.scope := as.parent.scope ; true }
         method visitMatchCase(o) up (as) { o.scope := as.parent.scope ; true }
@@ -1163,7 +1172,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitNum(o) up (as) { o.scope := as.parent.scope ; true }
         method visitOp(o) up (as) { o.scope := as.parent.scope ; true }
         method visitVarDec(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitReturn(o) up (as) { o.scope := as.parent.scope ; true }
         method visitDialect(o) up (as) { o.scope := as.parent.scope ; true }
         method visitCommentNode(o) up (as) { o.scope := as.parent.scope ; true }
     }   // end of symbolTableVis
