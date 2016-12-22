@@ -1889,6 +1889,7 @@ Object alloc_PrimitiveArrayClassObject() {
     return o;
 }
 int getutf8charlen(const char *s) {
+    // the number of bytes that form the unicode char staring at s
     if ((s[0] & 128) == 0)
         return 1;
     if ((s[0] & 64) == 0) {
@@ -2640,20 +2641,20 @@ Object String_indexOf_startingAt_ifAbsent(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     const char *sstr = grcstring(self);
     const char *needle = grcstring(args[0]);
-    int st = integerfromAny(args[1]) - 1;
+    int startChar = integerfromAny(args[1]) - 1;
     if (needle[0] == '\0') {
-        return alloc_Float64(1 + st);
+        return alloc_Float64(1 + startChar);
     }
     if (sstr[0] == '\0') {
         return callmethod(args[2], "apply", 0, NULL, NULL);
     }
-    int realSt = 0;
+    int startIx = 0;
     int j = 0;
-    while (j < st) {
-        realSt += getutf8charlen(sstr + j);
+    while (j < startChar) {
+        startIx += getutf8charlen(sstr + startIx);
         ++j;
     }
-    int bufferIndex = indexOf_shift(sstr, needle, realSt);
+    int bufferIndex = indexOf_shift(sstr, needle, startIx);
     if (bufferIndex == -1) {
         return callmethod(args[2], "apply", 0, NULL, NULL);
     }
@@ -2787,7 +2788,7 @@ Object String_lastIndexOf_startingAt_ifAbsent(Object self, int nparts, int *argc
         Object *args, int flags) {
     char *sstr = grcstring(self);
     const char *needle = grcstring(args[0]);
-    int st = integerfromAny(args[1]);
+    int startChar = integerfromAny(args[1]);
     if (needle[0] == '\0') {
         int sz = strlen(sstr);
         return alloc_Float64(sz + 1);
@@ -2797,7 +2798,7 @@ Object String_lastIndexOf_startingAt_ifAbsent(Object self, int nparts, int *argc
     }
     int realEnd = 0;
     int j = 0;
-    while (j < st && realEnd < strlen(sstr)) {
+    while (j < startChar && realEnd < strlen(sstr)) {
         realEnd += getutf8charlen(sstr + j);
         ++j;
     }

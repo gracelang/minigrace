@@ -69,6 +69,7 @@ class stringTest.forMethod(m) {
         assert (concatLetters.indexOf("q") ifAbsent{"absent"}) shouldBe ("absent")
     }
     method testIndexOf {
+        assert (vowels.indexOf "a") shouldBe 1
         assert (vowels.indexOf "iou") shouldBe 3
         assert (vowels.indexOf "y") shouldBe (vowels.size)
         assert (morevowels.indexOf "ÿ") shouldBe (morevowels.size)
@@ -92,6 +93,7 @@ class stringTest.forMethod(m) {
     }
     method testIndexOfStartingAtIfAbsent {
         def vowels4 = vowels * 4
+        assert (vowels4.indexOf "a" startingAt 1 ifAbsent { 0 }) shouldBe 1
         assert (vowels4.indexOf "iou" startingAt 0 ifAbsent { 0 }) shouldBe 3
         assert (vowels4.indexOf "iou" startingAt 4 ifAbsent { 0 }) shouldBe 9
         assert (vowels4.indexOf "iou" startingAt 10 ifAbsent { 0 }) shouldBe 15
@@ -103,11 +105,30 @@ class stringTest.forMethod(m) {
     method testIndexOfStartingAt {
         def vowels4 = vowels * 4
         assert (vowels4.indexOf "iou" startingAt 0) shouldBe 3
+        assert (vowels4.indexOf "iou" startingAt 3) shouldBe 3
         assert (vowels4.indexOf "iou" startingAt 4) shouldBe 9
         assert (vowels4.indexOf "iou" startingAt 10) shouldBe 15
         assert (vowels4.indexOf "iou" startingAt 16) shouldBe 21
         assert (vowels4.indexOf "iou" startingAt 22) shouldBe 0
     }
+    method testIndexOfStartingAtWith2byteChars {
+        def yen = "¥ is a two-byte char"    // ¥ = U+00A5 = C2 A5
+        assert (yen.indexOf "¥" startingAt 1 ifAbsent { 0 }) shouldBe 1
+        assert (yen.indexOf " " startingAt 1 ifAbsent { 0 }) shouldBe 2
+        assert (yen.indexOf " " startingAt 3 ifAbsent { 0 }) shouldBe 5
+    }
+    method testIndexOfStartingAtWith3byteChars {
+        def text = "→€ are both three-byte chars"  // → = U+2192 = UTF-8 E2 86 92
+            // € = U+20AC = UTF-8 E2 82 AC
+        assert (text.indexOf " " startingAt 0 ifAbsent { 0 }) shouldBe 3
+        assert (text.indexOf " " startingAt 4 ifAbsent { 0 }) shouldBe 7
+    }
+//    method testIndexOfStartingAtWith4byteChars {
+// This test fails on JS becuase the ES representation of 4-byte Unicode is broken
+//        def ageanCheck = "𐄂 is a four-byte char"   // U+10102 = UTF-8 F0 90 84 82
+//        assert (ageanCheck.indexOf " " startingAt 0 ifAbsent { 0 }) shouldBe 2
+//        assert (ageanCheck.indexOf " " startingAt 3 ifAbsent { 0 }) shouldBe 5
+//   }
     method testLastIndexOfStartingAt {
         def vowels4 = vowels * 4
         assert (vowels4.lastIndexOf "iou" startingAt 8 ifAbsent { 0 }) shouldBe 3
