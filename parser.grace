@@ -1770,7 +1770,7 @@ method callrest(acceptBlocks) {
             def argsFound = parseArgumentsFor(meth) into (namePart) acceptBlocks (acceptBlocks)
             if (argsFound.not) then {
                 def suggestion = errormessages.suggestion.new
-                suggestion.insert "(‹exression›)" afterToken (lastToken)
+                suggestion.insert "(‹expression›)" afterToken (lastToken)
                 errormessages.syntaxError("a multi-part method request must end with an argument list," ++
                     " which must be parenthesized, unless it is self-delimiting.")
                         atPosition(sym.line, sym.linePos) withSuggestion (suggestion)
