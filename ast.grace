@@ -947,6 +947,7 @@ def methodNode is public = object {
 
         method end -> Position {
             if (body.isEmpty.not) then {
+                if (usesClassSyntax) then { return body.last.end }
                 return positionOfNext "}" after (body.last.end)
             }
             if (false ≠ dtype) then {
@@ -1712,12 +1713,12 @@ def memberNode is public = object {
         var isSelfRequest is public := false
         var isTailCall is public := false
         method end -> Position {
-            def col = if (receiver.isImplicit) then {
-                linePos + request.size - 1
+            def reqPos = if (receiver.isImplicit) then {
+                start
             } else {
-                receiver.end.column + request.size
+                positionOfNext (request) after (receiver.end)
             }
-            line (line) column (col)
+            line (reqPos.line) column (reqPos.column + request.size - 1)
         }
         method onSelf {
             isSelfRequest := true
