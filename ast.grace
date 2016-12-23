@@ -63,6 +63,9 @@ class start (s:Position) end (e:Position) -> Range {
             "{start}-{end}"
         }
     }
+    method == (other) {
+        (start == other.start) && (end == other.end)
+    }
 }
 def noPosition is public = line 0 column 0
 def emptyRange is public = start (noPosition) end (noPosition)
@@ -2109,6 +2112,8 @@ def opNode is public = object {
     var isTailCall is public := false      // is possibly the result of a method
     var isSelfRequest is public := false
 
+    method start -> Position { left.start }
+    method end -> Position { right.end }
     method onSelf {
         isSelfRequest := true
         self
