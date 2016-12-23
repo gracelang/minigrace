@@ -184,10 +184,6 @@ grace-web-editor/index.html: pull-web-editor grace-web-editor/index.in.html
 grace-web-editor/scripts/setup.js: pull-web-editor $(filter-out %/setup.js,$(wildcard grace-web-editor/scripts/*.js)) $(wildcard grace-web-editor/scripts/*/*.js)
 	cd grace-web-editor; npm install
 
-graceWebIde:
-#   make sure that the user who does this can log in as user grace
-	$(MAKE) WEB_SERVER=grace@cs.pdx.edu ide
-
 gracelib-basic.o: gracelib.c gracelib.h
 	gcc -g -std=c99 -o gracelib-basic.o -c gracelib.c
 
