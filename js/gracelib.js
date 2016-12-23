@@ -3082,8 +3082,8 @@ function callmethod(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
             e.exitStack.unshift({
                 className: obj.className,
                 methname: methname,
-                moduleName: origModuleName,
-                lineNumber: origLineNumber,
+                moduleName: moduleName,
+                lineNumber: lineNumber,
                 toString: GraceCallStackToString
             });
         } else if (!obj) {
@@ -3116,8 +3116,8 @@ function selfRequest(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
             e.exitStack.unshift({
                 className: obj.className,
                 methname: methname,
-                moduleName: origModuleName,
-                lineNumber: origLineNumber,
+                moduleName: moduleName,
+                lineNumber: lineNumber,
                 toString: GraceCallStackToString
             });
         } else if (!obj) {
