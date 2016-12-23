@@ -1,54 +1,54 @@
-0:0 module
+0:0-12:1 module
   dialect "standardGrace"
   Name: standardInput
-  1:1 typedec
-    1:6 identifierBinding‹Person›
-    Value:1:15 typeliteral
+  1:1-4:1 typedec
+    1:6-11 identifierBinding‹Person›
+    Value:1:15-4:1 typeliteral
         Types:
         Methods:
-          2:3 methodtype
+          2:3-15 methodtype
             Name: identifierBinding‹age›
             Returns:
-              2:10 identifier‹Number›
+              2:10-15 identifier‹Number›
             Signature:
-              2:3 signaturepart: age
-          3:3 methodtype
+              2:3-5 signaturepart: age
+          3:3-16 methodtype
             Name: identifierBinding‹name›
             Returns:
-              3:11 identifier‹String›
+              3:11-16 identifier‹String›
             Signature:
-              3:3 signaturepart: name
+              3:3-6 signaturepart: name
 
 
-  6:1 method
-    Name: 6:7 identifierBinding‹person(2)›
+  6:1-12:1 method
+    Name: 6:7-13:9 identifierBinding‹person(2)›
     Signature:
       Part: person
         Parameters:
-          6:14 identifierBinding‹name'›
-          6:21 identifierBinding‹age'›
+          6:14-18 identifierBinding‹name'›
+          6:21-24 identifierBinding‹age'›
     Body:
-      6:1 object (class)
+      6:1-12:1 object (class)
         Name: person(_,_)
-        7:3 defdec
-          7:7 identifierBinding‹name›
-          Value: 7:24 identifier‹name'›
-          Annotations: 7:15 identifier‹public›
-        8:3 defdec
-          8:7 identifierBinding‹age›
-          Value: 8:23 identifier‹age'›
-          Annotations: 8:14 identifier‹public›
-        9:3 method
-          Name: 9:10 identifierBinding‹getShoeSize›
+        7:3-28 defdec
+          7:7-10 identifierBinding‹name›
+          Value: 7:24-28 identifier‹name'›
+          Annotations: 7:15-20 identifier‹public›
+        8:3-26 defdec
+          8:7-9 identifierBinding‹age›
+          Value: 8:23-26 identifier‹age'›
+          Annotations: 8:14-19 identifier‹public›
+        9:3-11:3 method
+          Name: 9:10-13:11 identifierBinding‹getShoeSize›
           Signature:
             Part: getShoeSize
               Parameters:
           Body:
-            10:5 return
-              10:19 op‹+(1)›
-                10:19 op‹*(1)›
-                  10:19 member ‹size›
-                    10:14 identifier‹name›
-                  10:31 member ‹size›
-                    10:26 identifier‹name›
-                10:39 identifier‹age›
+            10:5-41 return
+              10:19-41 op‹+(1)›
+                10:19-34 op‹*(1)›
+                  10:19-22 member ‹size›
+                    10:14-17 identifier‹name›
+                  10:31-34 member ‹size›
+                    10:26-29 identifier‹name›
+                10:39-41 identifier‹age›
