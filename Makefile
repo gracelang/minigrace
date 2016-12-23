@@ -20,7 +20,7 @@ COMPILER_MODULES = errormessages.grace standardGrace.grace collectionsPrelude.gr
 
 DIALECT_DEPENDENCIES = mirrors.gct mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso util.gct util.gso modules/gUnit.gct modules/gUnit.gso
 DIALECTS_NEED = modules/dialect util ast modules/gUnit
-WEB_DIRECTORY = public_html/ide/
+WEB_DIRECTORY ?= public_html/ide/
 DEV_WEB_DIRECTORY = public_html/dev/ide/
 GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 
