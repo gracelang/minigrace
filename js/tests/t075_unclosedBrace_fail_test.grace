@@ -110,9 +110,8 @@ class aSet.new -> NumberSet {
        //}
        // Save the union of the sets
       rep := newRep
-     }
- 
-   // A method that calculates the intersection of two sets
+    }
+    // A method that calculates the intersection of two sets
     method intersection (s: aSet.new) -> Done {
      
       // Create a new list to store the result of the intersection
