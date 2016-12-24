@@ -3339,23 +3339,23 @@ GraceExceptionPacket.prototype = {
         },
         "printBacktrace": function(argcv) {
             var exceptionName = callmethod(callmethod(this, "exception", [0]), "asString", [0]);
-            var lineNumber = callmethod(this, "lineNumber", [0]);
-            var moduleName = callmethod(this, "moduleName", [0]);
+            var ln = callmethod(this, "lineNumber", [0]);
+            var mn = callmethod(this, "moduleName", [0]);
             var errMsg = callmethod(exceptionName, "++(1)", [1], new GraceString(" on line "));
-            errMsg = callmethod(callmethod(errMsg, "++(1)", [1], lineNumber), "++(1)", [1], new GraceString(" of "));
-            errMsg = callmethod(callmethod(errMsg, "++(1)", [1], moduleName), "++(1)", [1], new GraceString(": "));
+            errMsg = callmethod(callmethod(errMsg, "++(1)", [1], ln), "++(1)", [1], new GraceString(" of "));
+            errMsg = callmethod(callmethod(errMsg, "++(1)", [1], mn), "++(1)", [1], new GraceString(": "));
             errMsg = callmethod(errMsg, "++(1)", [1], callmethod(this, "message", [0]));
             Grace_errorPrint(errMsg);
             var bt = callmethod(this, "backtrace", [0]);
             var prefix = new GraceString("  raised at ");
-            var cf = new GraceString("  called from ");
+            var cf = new GraceString("  requested from ");
             while (callmethod(bt, "size", [0])._value > 0) {
                 Grace_errorPrint(callmethod(prefix, "++(1)", [1],
                         callmethod(bt, "pop", [0])));
                 prefix = cf;
             }
             Grace_errorPrint(callmethod(prefix, "++(1)", [1],
-                        new GraceString("execution environment.")));
+                  new GraceString("line " + lineNumber + " of module " + moduleName + ".")));
         },
         "reraise": function exception_reraise(argcv) {
             throw this;
