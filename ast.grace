@@ -267,7 +267,7 @@ class baseNode {
     }
     method postCopy(other) {
         // hook method, to be overridden by sub-objects if desired
-        }
+    }
 
     method prettyPrefix(depth) {
         def spc = "  " * (depth+1)
@@ -2609,7 +2609,11 @@ def returnNode is public = object {
         "return " ++ self.value.toGrace(depth)
     }
     method shallowCopy {
-        returnNode.new(nullNode).shallowCopyFieldsFrom(self)
+        returnNode.new(value).shallowCopyFieldsFrom(self)
+    }
+    method postCopy(other) {
+        dtype := other.dtype
+        self
     }
     method returnsObject { value.returnsObject }
     method returnedObjectScope {
