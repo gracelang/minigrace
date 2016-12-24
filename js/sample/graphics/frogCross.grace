@@ -40,7 +40,7 @@ class frog.atX(highwayCenterX:Number)   below(highwayBottom:Number)
         isAlive := false
         ouch := textAt((canvas.width/2-50) @ (canvas.height - 20))
             with ("OUCH!") on (canvas)
-        ouch.color := color.red
+        ouch.color := colorGen.red
         ouch.fontSize := 32
     }
     
@@ -175,12 +175,12 @@ def froggerGame: GraphicApplication = object {
         // Draw the solid dividing lines
         def topLine:Graphic = filledRectAt(topLaneStart) 
             size(highwayLength@lineWidth) on (canvas)
-        topLine.color := color.yellow
+        topLine.color := colorGen.yellow
         
         def bottomLaneStart:Point = topLaneStart+ (0 @ (lineWidth + lineSpacing))
         def bottomLine:Graphic = filledRectAt(bottomLaneStart)
             size(highwayLength@lineWidth) on (canvas)
-        bottomLine.color := color.yellow
+        bottomLine.color := colorGen.yellow
     }
     
     method drawPassingLine(y:Number)-> Done {
@@ -190,7 +190,7 @@ def froggerGame: GraphicApplication = object {
         while {x < highwayRight} do {
             // Draw the next dash
             dash := filledRectAt(x @ y) size (dashLength@lineWidth) on (canvas)
-            dash.color := color.white
+            dash.color := colorGen.white
             x := x + dashLength + dashSpacing
         }
     }
