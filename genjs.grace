@@ -192,14 +192,14 @@ method compileTypeCheck(expectedType, val, complaint, lineNumber) {
     // expectedType is an astNode representing the type expression;
     // value the register that
     if (emitTypeChecks) then {
-        if (false ≠ expectedType) then {
+        if ((false ≠ expectedType) && ("never returns" ≠ val)) then {
             if ((expectedType.value ≠ "Unknown") && (expectedType.value ≠ "Done")) then {
                 def nm_t = compilenode(expectedType)
                 noteLineNumber(lineNumber) comment "typecheck"
                 def typeDesc = expectedType.toGrace 0.quoted
                 out "if (!Grace_isTrue(callmethod({nm_t}, \"match(1)\", [1], {val})))"
                 out "    raiseTypeError("
-                out "      \"{complaint} does not conform to type {typeDesc}.\","
+                out "      \"{complaint} is not of type {typeDesc}.\","
                 out "      {nm_t}, {val});"
             }
         }
@@ -239,8 +239,11 @@ method create (kind) field (o) in (objr) {
     out "{objr}.methods[\"{nm}\"] = reader_{nmi}{myc};"
     if (kind == "var") then {
         out "var writer_{nmi}{myc} = function(argcv, n) \{   // writer method {nm}:=(_)"
-        out "    this.data.{nmi} = n;"
-        out "    return GraceDone;"
+        increaseindent
+        compileTypeCheck(o.dtype, "n", "argument to {nm}:=(_)", 0)
+        out "this.data.{nmi} = n;"
+        out "return GraceDone;"
+        decreaseindent
         out "\};"
         if (o.isWritable.not) then {
             out "writer_{nmi}{myc}.confidential = true;"
@@ -430,7 +433,7 @@ method compileblock(o) {
     for (o.body) do {l->
         ret := compilenode(l)
     }
-    out("return " ++ ret ++ ";")
+    if ("never returns" ≠ ret) then { out("return " ++ ret ++ ";") }
     decreaseindent
     out("\};")
     o.register := "block" ++ myc
@@ -713,7 +716,10 @@ method compileNormalMethod(o, selfobj) {
         out "ouc_init.call(ouc);"
         out "return ouc;"
     } else {
-        out "return {compileMethodBodyWithTypecheck(o)};"
+        def result = compileMethodBodyWithTypecheck(o)
+        if ("never returns" ≠ result) then {
+            out "return {result};"
+        }
     }
     debugModeSuffix
     compileMethodPostamble(o, funcName, canonicalMethName)
@@ -849,25 +855,25 @@ method compileif(o) {
     auto_count := auto_count + 1
     outUnnumbered "var if{myc} = GraceDone;"
     out("if (Grace_isTrue(" ++ compilenode(o.value) ++ ")) \{")
-    var tret := "undefined"
-    var fret := "undefined"
+    var tret := "GraceDone"
     increaseindent
     def thenList = o.thenblock.body
     for (thenList) do { l->
         tret := compilenode(l)
     }
-    if (tret != "undefined") then {
+    if (tret != "never returns") then {
         out("if" ++ myc ++ " = " ++ tret ++ ";")
     }
     decreaseindent
     def elseList = o.elseblock.body
+    var fret := "GraceDone"
     if (elseList.size > 0) then {
         out("\} else \{")
         increaseindent
         for (elseList) do { l->
             fret := compilenode(l)
         }
-        if (fret != "undefined") then {
+        if (fret != "never returns") then {
             out("if" ++ myc ++ " = " ++ fret ++ ";")
         }
         decreaseindent
@@ -1170,7 +1176,7 @@ method compiledialect(o) {
             out "  new GraceString(\"{escapestring(modname)}\"));"
         }
     }
-    o.register := "undefined"
+    o.register := "GraceDone"
 }
 method compileimport(o) {
     out "// Import of \"{o.path}\" as {o.nameString}"
@@ -1207,17 +1213,18 @@ method compileimport(o) {
         }
     }
     out "setModuleName(\"{modname}\");"
-    o.register := "undefined"
+    o.register := "GraceDone"
 }
 method compilereturn(o) {
+    o.register := "never returns"
     var reg := compilenode(o.value)
+    if ("never returns" == reg) then { return }
     compileTypeCheck(o.dtype, reg, "return value", o.line)
     if (inBlock) then {
         out("throw new ReturnException(" ++ reg ++ ", returnTarget);")
     } else {
         out("return " ++ reg ++ ";")
     }
-    o.register := "undefined"
 }
 method compilePrint(o) {
     var args := []
@@ -1231,10 +1238,9 @@ method compilePrint(o) {
         errormessages.syntaxError "method print takes a single argument"
             atRange(o.line, o.linePos, o.linePos + 4)
     } else {
-        out("var call" ++ auto_count ++ " = Grace_print(" ++ args.first ++ ");")
+        out ("Grace_print(" ++ args.first ++ ");")
     }
-    o.register := "call" ++ auto_count
-    auto_count := auto_count + 1
+    o.register := "GraceDone"
 }
 method compileNativeCode(o) {
     if(o.with.size != 2) then {
