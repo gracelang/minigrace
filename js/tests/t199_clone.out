@@ -1,1 +1,12 @@
-../../tests/t199_clone.out
+19:5-10 identifier‹wombat›
+    Type: 1:1-7 identifier‹Unknown›
+        Type: 1:1-4 identifier‹Type›
+19:5-10 identifier‹wombat›
+    Type: 1:1-7 identifier‹Unknown›
+        Type: 1:1-4 identifier‹Type›
+19:5-10 identifier‹wombat›
+    Type: 1:1-7 identifier‹Unknown›
+        Type: 1:1-4 identifier‹Type›
+19:5-10 identifier‹wombat›
+    Type: 1:1-7 identifier‹Unknown›
+        Type: 1:1-4 identifier‹Type›
