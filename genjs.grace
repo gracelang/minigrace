@@ -186,47 +186,37 @@ method compileobjtypedec(o, selfr) {
     def val = compilenode(o.value)
     out "{selfr}.data.{tName} = {val};"
 }
-method compileobjdefdec(o, selfr) {
-    def val = compilenode(o.value)
-    def oName = o.name.value
-    def nm = escapeident(oName)
-    out "{selfr}.data.{nm} = {val};"
+method compileTypeCheck(expectedType, val, complaint, lineNumber) {
+    // expectedType is an astNode representing the type expression;
+    // value the register that
     if (emitTypeChecks) then {
-        if (o.dtype != false) then {
-            if (o.dtype.value != "Unknown") then {
-                noteLineNumber(o.line)comment("typecheck in compileobjdefdec")
-                def nm_t = compilenode(o.dtype)
-                def typeDesc = o.dtype.toGrace 0.quoted
+        if (expectedType != false) then {
+            if (expectedType.value != "Unknown") then {
+                noteLineNumber(lineNumber) comment "typecheck"
+                def nm_t = compilenode(expectedType)
+                def typeDesc = expectedType.toGrace 0.quoted
                 out "if (!Grace_isTrue(callmethod({nm_t}, \"match(1)\", [1], {val})))"
                 out "    raiseTypeError("
-                out "      \"value of def {escapestring(oName)} is not of type {typeDesc}\","
+                out "      \"{complaint} does not conform to type {typeDesc}\","
                 out "      {nm_t}, {val});"
             }
         }
     }
+}
+method compileobjdefdec(o, selfr) {
+    def val = compilenode(o.value)
+    def oName = o.name.value
+    def nm = escapeident(oName)
+    compileTypeCheck(o.dtype, val, "value bound to {escapestring(oName)}", o.line)
+    out "{selfr}.data.{nm} = {val};"
 }
 method compileobjvardec(o, selfr) {
     if (false == o.value) then { return }
     def val = compilenode(o.value)
     def oName = o.name.value
     def nm = escapeident(oName)
+    compileTypeCheck(o.dtype, val, "value assigned to {escapestring(oName)}", o.line)
     out "{selfr}.data.{nm} = {val};"
-    if (emitTypeChecks) then {
-        if (o.dtype != false) then {
-            if (o.dtype.value != "Unknown") then {
-                if (val == "undefined") then {
-                    return true
-                }
-                noteLineNumber(o.line)comment("typecheck in compileobjvardec")
-                def nm_t = compilenode(o.dtype)
-                def typeDesc = o.dtype.toGrace 0.quoted
-                out "if (!Grace_isTrue(callmethod({nm_t}, \"match(1)\", [1], {val})))"
-                out "    raiseTypeError("
-                out "      \"value of def {escapestring(oName)} is not of type {typeDesc}\","
-                out "      {nm_t}, {val});"
-            }
-        }
-    }
 }
 
 method create (kind) field (o) in (objr) {
@@ -657,10 +647,10 @@ method compileResultTypeCheck(o, ret) onLine (lineNr) {
     if (emitTypeChecks && (false ≠ o.dtype)) then {
         def dtype = compilenode(o.dtype)
         def typeDesc = o.dtype.toGrace 0.quoted
-        noteLineNumber (lineNr) comment "return value"
+        noteLineNumber (lineNr) comment "typecheck of method result"
         out "if (!Grace_isTrue(callmethod({dtype}, \"match(1)\", [1], {ret})))"
         out "    raiseTypeError("
-        out "        \"result of method {o.canonicalName} does not have type\" + "
+        out "        \"result of method {o.canonicalName} does not conform to type \" + "
         out "        \"{typeDesc}.\", {dtype}, {ret});"
     }
 }
@@ -1230,6 +1220,7 @@ method compileimport(o) {
 }
 method compilereturn(o) {
     var reg := compilenode(o.value)
+    compileTypeCheck(o.dtype, reg, "return value", o.line)
     if (inBlock) then {
         out("throw new ReturnException(" ++ reg ++ ", returnTarget);")
     } else {
