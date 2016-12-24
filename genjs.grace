@@ -79,8 +79,10 @@ method outerProp(node) { "outer_" ++ emod ++ "_" ++ node.line }
 
 method noteLineNumber(n)comment(c) {
     // remember the current line number, so that it can be generated if needed
-    priorLineSeen := n
-    priorLineComment := c
+    if (n ≠ 0) then {
+        priorLineSeen := n
+        priorLineComment := c
+    }
 }
 
 method forceLineNumber(n)comment(c) {
@@ -190,14 +192,14 @@ method compileTypeCheck(expectedType, val, complaint, lineNumber) {
     // expectedType is an astNode representing the type expression;
     // value the register that
     if (emitTypeChecks) then {
-        if (expectedType != false) then {
-            if (expectedType.value != "Unknown") then {
-                noteLineNumber(lineNumber) comment "typecheck"
+        if (false ≠ expectedType) then {
+            if ((expectedType.value ≠ "Unknown") && (expectedType.value ≠ "Done")) then {
                 def nm_t = compilenode(expectedType)
+                noteLineNumber(lineNumber) comment "typecheck"
                 def typeDesc = expectedType.toGrace 0.quoted
                 out "if (!Grace_isTrue(callmethod({nm_t}, \"match(1)\", [1], {val})))"
                 out "    raiseTypeError("
-                out "      \"{complaint} does not conform to type {typeDesc}\","
+                out "      \"{complaint} does not conform to type {typeDesc}.\","
                 out "      {nm_t}, {val});"
             }
         }
@@ -601,7 +603,7 @@ method debugModeSuffix {
 method compileMethodBodyWithTypecheck(o) {
     def ret = compileMethodBody(o)
     def ln = if (o.body.isEmpty) then { o.line } else { o.resultExpression.line }
-    compileResultTypeCheck(o, ret) onLine (ln)
+    compileTypeCheck(o.dtype, ret, "result of method {o.canonicalName}", ln)
     ret
 }
 
@@ -640,18 +642,6 @@ method compileMethodBodyWithoutLast(methNode) {
         def resultExpr = body.removeLast   // remove result object
         compileMethodBody(methNode)
         body.addLast(resultExpr)           // put result object back
-    }
-}
-
-method compileResultTypeCheck(o, ret) onLine (lineNr) {
-    if (emitTypeChecks && (false ≠ o.dtype)) then {
-        def dtype = compilenode(o.dtype)
-        def typeDesc = o.dtype.toGrace 0.quoted
-        noteLineNumber (lineNr) comment "typecheck of method result"
-        out "if (!Grace_isTrue(callmethod({dtype}, \"match(1)\", [1], {ret})))"
-        out "    raiseTypeError("
-        out "        \"result of method {o.canonicalName} does not conform to type \" + "
-        out "        \"{typeDesc}.\", {dtype}, {ret});"
     }
 }
 
@@ -779,7 +769,8 @@ method compileBuildMethodFor(methNode) withFreshCall (callExpr) inside (outerRef
     args.addAll ["ouc", "aliases", "exclusions"]
     compileTypeArguments(callExpr, args)
     compileCallToBuildMethod(callExpr) withArgs (args)
-    compileResultTypeCheck(methNode, "ouc") onLine (callExpr.line)
+    compileTypeCheck(methNode.dtype, "ouc",
+          "result of method {methNode.canonicalName}", callExpr.line)
     out "return {calltemp};      // from compileBuildMethodFor(_)withFreshCall(_)inside(_)"
     compileMethodPostamble(methNode, funcName, cName)
     out "this.methods[\"{name}\"] = {funcName};"
