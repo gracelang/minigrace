@@ -2769,7 +2769,7 @@ method doreturn {
             }
             retval := values.pop
         } else {
-            retval := ast.identifierNode.new("done", false)
+            retval := ast.identifierNode.new("done", false).setStart(ast.noPosition)
             retval.end := ast.noPosition
         }
         util.setPosition(retTok.line, retTok.linePos)
