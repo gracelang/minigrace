@@ -30,7 +30,7 @@ method tryReturnExceptional -> Number {
     }
 }
 
-method tryOKFinally -> Number {
+method tryOKFinally -> Number | String {
     try {
         5
     } catch {e: ProgrammingError ->
@@ -40,7 +40,7 @@ method tryOKFinally -> Number {
     }
 }
 
-method tryExceptionalFinally -> Number {
+method tryExceptionalFinally -> Number | String {
     try {
         ProgrammingError.raise "an error occurred"
     } catch {e: ProgrammingError ->
@@ -50,7 +50,7 @@ method tryExceptionalFinally -> Number {
     }
 }
 
-method tryReturnOKFinally -> Number {
+method tryReturnOKFinally -> Number | String {
     try {
         return 5
     } catch {e: ProgrammingError ->
@@ -60,7 +60,7 @@ method tryReturnOKFinally -> Number {
     }
 }
 
-method tryReturnExceptionalFinally -> Number {
+method tryReturnExceptionalFinally -> Number | String {
     try {
         ProgrammingError.raise "an error occurred"
     } catch {e: ProgrammingError ->
@@ -70,7 +70,7 @@ method tryReturnExceptionalFinally -> Number {
     }
 }
 
-method tryOKFinallyReturns -> Number {
+method tryOKFinallyReturns -> Number | String {
     try {
         5
     } catch {e: ProgrammingError ->
@@ -80,7 +80,7 @@ method tryOKFinallyReturns -> Number {
     }
 }
 
-method tryExceptionalFinallyReturns -> Number {
+method tryExceptionalFinallyReturns -> Number | String {
     try {
         ProgrammingError.raise "an error occurred"
     } catch {e: ProgrammingError ->
@@ -90,7 +90,7 @@ method tryExceptionalFinallyReturns -> Number {
     }
 }
 
-method tryReturnOKFinallyReturns -> Number {
+method tryReturnOKFinallyReturns -> Number | String {
     try {
         return 5
     } catch {e: ProgrammingError ->
@@ -100,7 +100,7 @@ method tryReturnOKFinallyReturns -> Number {
     }
 }
 
-method tryReturnExceptionalFinallyReturns -> Number {
+method tryReturnExceptionalFinallyReturns -> Number | String {
     try {
         ProgrammingError.raise "an error occurred"
     } catch {e: ProgrammingError ->
