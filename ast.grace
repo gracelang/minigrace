@@ -2597,6 +2597,7 @@ def returnNode is public = object {
         var n := shallowCopy
         def newChain = as.extend(n)
         n.value := value.map(blk) ancestors(newChain)
+        n.dtype := maybeMap(dtype, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
