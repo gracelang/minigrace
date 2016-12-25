@@ -73,6 +73,7 @@ def emptyRange is public = start (noPosition) end (noPosition)
 method positionOfNext (needle:String) after (pos:Position) -> Position {
     def sourceLines = util.lines
     var lineNr := pos.line
+    if (lineNr == 0) then { return noPosition }
     var found := sourceLines.at(lineNr).indexOf (needle) startingAt (pos.column + 1)
     while { found == 0 } do {
         lineNr := lineNr + 1
@@ -453,11 +454,11 @@ def blockNode is public = object {
         params.do(b)
     }
     method end -> Position {
-        if (body.size > 0) then { return body.end }
+        if (body.size > 0) then { return body.last.end }
         if (params.isEmpty) then {
             positionOfNext "}" after (start)
         } else {
-            positionOfNext "}" after (params.last)
+            positionOfNext "}" after (params.last.end)
         }
     }
     method accept(visitor : ASTVisitor) from(as) {
@@ -1816,7 +1817,7 @@ def genericNode is public = object {
         // in a generic application, `value` is the applied type
         // e.g. in List⟦Number⟧, value is Identifier‹List›
     var args is public := arguments
-    method end -> Position { positionOfNext "⟧" after (args.last) }
+    method end -> Position { positionOfNext "⟧" after (args.last.end) }
     method nameString { value.nameString }
     method asString { toGrace 0 }
     method accept(visitor : ASTVisitor) from(as) {
