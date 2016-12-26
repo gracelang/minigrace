@@ -403,6 +403,7 @@ old-js-one: l1/minigrace
 old-js-two: old-js-one
 	GRACE_MODULE_PATH=js/tests:js l1/minigrace js/tests/t003_languageTests100_145_test.grace --verbose --target js
 
+oldWeb : WEB_DIRECTORY = public_html/minigrace/js
 oldWeb: $(WEBFILES) js/sample
 	rsync -a -l -z --delete $(WEBFILES) $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z js/samples.js $(WEB_SERVER):$(WEB_DIRECTORY)
