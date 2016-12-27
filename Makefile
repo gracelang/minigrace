@@ -38,13 +38,13 @@ OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.gr
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
 
 PRELUDESOURCEFILES = collectionsPrelude.grace standardGrace.grace
-REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace genc.grace stringMap.grace unixFilePath.grace xmodule.grace identifierresolution.grace standardGraceClass.grace)
+REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace genc.grace stringMap.grace unixFilePath.grace xmodule.grace identifierresolution.grace)
 ALLSOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES) $(HEADERFILES)
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 STABLE=21802a386d7e3614445df7ee7c1a5afde8ad45d3
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 TYPE_DIALECTS = staticTypes requireTypes
-TEST_DEPENDENCIES = ast lexer stringMap collectionsPrelude parser xmodule errormessages standardGrace identifierKinds standardGrace standardGraceClass
+TEST_DEPENDENCIES = ast lexer stringMap collectionsPrelude parser xmodule errormessages standardGrace identifierKinds standardGrace
 #   these are modules used in running the full test suite
 
 VER = $(shell ./tools/calculate-version $(STABLE))
@@ -272,9 +272,6 @@ js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sa
 js/s%andardGrace.js js/s%andardGrace.gct: standardGrace.grace js/collectionsPrelude.gct minigrace
 	./minigrace --target js --dir js --make $(VERBOSITY) $<
 
-js/s%andardGraceClass.gct js/s%andardGraceClass.gct: standardGraceClass.grace minigrace
-	./minigrace $(VERBOSITY) --dir js --target js --make $<
-
 js/animation%gct js/animation%js: js/timer.gct objectdraw/animation.grace
 
 js: js/index.html js/dom.gct $(COMPILER_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES) minigrace
@@ -366,7 +363,7 @@ minigrace-environment: minigrace-c-env minigrace-js-env
 
 minigrace-c-env: minigrace standardGrace.gct gracelib.o unicode.gso $(MODULES_WO_JSONLY:%.grace=modules/%.gct) .git/hooks/commit-msg
 
-minigrace-js-env: minigrace js/grace js/grace-debug standardGrace.gct js/standardGraceClass.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) $(JSSOURCEFILES:%.js=%.gct) $(TYPE_DIALECTS:%=modules/%.gso) $(TYPE_DIALECTS:%=js/%.js) $(TEST_DEPENDENCIES:%=js/tests/%.js) $(TEST_DEPENDENCIES:%=js/tests/%.gct)
+minigrace-js-env: minigrace js/grace js/grace-debug standardGrace.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) $(JSSOURCEFILES:%.js=%.gct) $(TYPE_DIALECTS:%=modules/%.gso) $(TYPE_DIALECTS:%=js/%.js) $(TEST_DEPENDENCIES:%=js/tests/%.js) $(TEST_DEPENDENCIES:%=js/tests/%.gct)
 
 mirrors.gso: mirrors.c
 	gcc -g -I. -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
@@ -379,7 +376,7 @@ modules/curl.gso: curl.c gracelib.h
 
 modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: mirrors.gso
 
-modules/minitest.gct modules/minitest.gso modules/minitest.gcn: modules/gUnit.gso standardGraceClass.gcn
+modules/minitest.gct modules/minitest.gso modules/minitest.gcn: modules/gUnit.gso
 
 modules/rtobjectdraw.grace: modules/objectdraw.grace tools/make-rt-version
 	./tools/make-rt-version $< > $@
@@ -475,9 +472,6 @@ s%andardGrace.gct s%andardGrace.gcn: standardGrace.grace collectionsPrelude.gct 
 
 $(filter-out modules/curl.gso,$(DYNAMIC_STUBS:%.grace=modules/%.gso)): modules/%.gso: %.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
-
-s%andardGraceClass.gct s%andardGraceClass.gcn: standardGraceClass.grace minigrace
-	./minigrace $(VERBOSITY) --make $<
 
 $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
 	cd js/tests; ln -sf ../$(<F) .
