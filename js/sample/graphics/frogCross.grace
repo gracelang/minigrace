@@ -1,5 +1,6 @@
 dialect "objectdraw"
 import "animation" as animator
+import "random" as random
 
 type Frog = {
     overlaps(other:Graphic2D)->Boolean
@@ -111,7 +112,7 @@ class laneFiller.centerY(y: Number)
     
      // helper method to generate random gap between cars
     method randGapGenerator -> Number is confidential {
-        randomIntFrom(3 * carWidth / speed') to (5 * carWidth / speed')
+        random.integerIn(3 * carWidth / speed') to (5 * carWidth / speed')
     }
     
     method start -> Done {
@@ -206,8 +207,8 @@ def froggerGame: GraphicApplication = object {
     
     // set up numLanes lanes
     for(1..numLanes) do {lane ->
-        def laneSpeed = randomNumberFrom(0.033)to(0.1)
-        def randInt: Number = randomIntFrom(1)to(2)
+        def laneSpeed = random.between 0.033 and 0.1
+        def randInt: Number = random.integerIn 1 to 2
         def url:String = if (randInt == 1) then {
             "http://www.cs.pomona.edu/~kim/CSC051GF14/Images/jeep_right.png"
             } else {
