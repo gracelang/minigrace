@@ -1,16 +1,24 @@
 import "random" as random
 
 type Vector = {
-    data
-    <-
+    data -> Collection
+    <-(v) -> Vector
+    +(v) -> Vector
+    *(v) -> Vector
 }
 class vector {
     var data is readable := list []
+    method size { data.size }
+    method sizeIfUnknown(b) { data.size }
+    method do (action) { data.do (action) }
     method <-(v) {
         match(v)
             case {n : Number -> data := list [v]}
             case {v' : Vector -> data := v'.data }
-            case {_ -> data := list (v)}
+            case {c : Collection -> data := list (c)}
+            case {u ->
+                        ProgrammingError.raise "found unexpected value {u}"
+            }
         self
     }
     method ←(v) {
@@ -151,6 +159,9 @@ class vector {
                         if (d == d') then {
                             found := 1
                         }
+                    }
+                    case { u ->
+                        ProgrammingError.raise "found unexpected value {u}"
                     }
             }
             tmp.data.push(found)

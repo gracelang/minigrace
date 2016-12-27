@@ -10,5 +10,4 @@ print "Lotto numbers: { L ⇊ (⍋(L ← (n 6 ? 40))) }"
 
 // Calculate primes up to 20
 print "numbers up to 20: { (T ← (n 1 ↓ ι 20)) }"
-print "primes up to 20: { (~(T∊(T∘·*T))) / T }"
-
+print "primes up to 20: { (~(T∊(T∘⋅*T))) / T }"
