@@ -4,13 +4,11 @@ dialect "dialect"
 
 import "ast" as ast
 import "util" as util
-import "standardGraceClass" as sgc
 
-inherit sgc.standardGrace
+inherit prelude.methods
 
 type List⟦T⟧ = prelude.List⟦T⟧
 
-// def ProgrammingError = outer.ProgrammingError  // won't work with C-backend
 def ProgrammingError = _prelude.ProgrammingError
 def TypeError is public = CheckerFailure.refine "TypeError"
 

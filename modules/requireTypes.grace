@@ -1,7 +1,5 @@
 import "ast" as ast
-import "standardGraceClass" as sgc
-
-inherit sgc.standardGrace
+inherit prelude.methods
 
 def CheckerFailure = prelude.Exception.refine "CheckerFailure"
 

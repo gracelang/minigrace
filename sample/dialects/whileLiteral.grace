@@ -4,8 +4,8 @@
 // user when they write the condition in parentheses.
 dialect "dialect"
 import "util" as util
-import "standardGraceClass" as sgc
-inherit sgc.standardGrace
+
+inherit prelude.methods
 
 method while(cond)do(block) {
     _prelude.while(cond)do(block)
