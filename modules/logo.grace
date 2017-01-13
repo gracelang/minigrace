@@ -61,7 +61,7 @@ method angle { turtle.turtleAngle }
 
 method createCanvas(size:Point) {
     // Creates a canvas in a pop-up window
-     turtle.useCanvas(size)
+    turtle.useCanvas(size)
 }
 def thisDialect is public = object {
     method atEnd(mod) {
