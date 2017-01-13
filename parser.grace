@@ -2901,9 +2901,8 @@ method checkIndent {
         if ((sym.linePos - 1) != minIndentLevel) then {
             def suggestions = [ ]
             var suggestion := errormessages.suggestion.new
-            for(1..(minIndentLevel - (sym.linePos - 1))) do { _ ->
-                suggestion.insert " " atPosition 1 onLine(sym.line)
-            }
+            def correctIndent = " " * (minIndentLevel - (sym.linePos - 1))
+            suggestion.insert (correctIndent) atPosition 1 onLine(sym.line)
             suggestions.push(suggestion)
             suggestion := errormessages.suggestion.new
             // Find the indent level for the opening brace.
@@ -2918,16 +2917,10 @@ method checkIndent {
                   "at least {minIndentLevel}. This is often caused by a missing '}'.")
                   atPosition(sym.line, sym.linePos)withSuggestions(suggestions)
         }
-    } elseif { sym.indent > (minIndentLevel + 1) } then {
+    } elseif { sym.indent > minIndentLevel } then {
+        // The lexer rejects indentation changes of 1, so we don't
+        // need to check for that error here.
         minIndentLevel := sym.indent
-    } elseif { (sym.indent - lastIndent).abs == 1 } then {
-        def m1 = "the indentation for this line can't differ "
-        def m2 = "from that of the previous line by 1.\n  To start a block, or "
-        def m3 = "to signal a continuation line, increase the indent by 2 or more. "
-        def m4 = "To end a block, or end the continuation, decrease the indent "
-        def m5 = "to the prior level. Otherwise, use the same indent as the previous line."
-        def msg = m1 ++ m2 ++ m3 ++ m4 ++ m5
-        errormessages.syntaxError(msg) atPosition(sym.line, sym.linePos)
     }
 }
 

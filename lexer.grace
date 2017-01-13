@@ -1094,6 +1094,16 @@ class new {
                 } else {
                     last.next := t
                     t.prev := last
+                    if ((t.indent - last.indent).abs == 1) then {
+                        def m1 = "the indentation for this line can't differ "
+                        def m2 = "from that of the previous line by 1.\n  To start a block, or "
+                        def m3 = "continue a statement on the next line line, indent by 2 or more. "
+                        def m4 = "To end a block, or end the continuation, decrease the indent "
+                        def m5 = "to the prior level. "
+                        def m6 = "Otherwise, use the same indentation as the previous line."
+                        def msg = m1 ++ m2 ++ m3 ++ m4 ++ m5 ++ m6
+                        errormessages.syntaxError(msg) atRange(t.line, 1, t.indent)
+                    }
                     last := t
                 }
                 size := size + 1
