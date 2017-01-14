@@ -340,7 +340,9 @@ method min3(a, b, c) is confidential {
 method syntaxError (message) atRange (r) {
     syntaxError (message) atRange (r) withSuggestions []
 }
-
+method syntaxError (message) atRange (r) withSuggestion (s) {
+    syntaxError (message) atRange (r) withSuggestions [s]
+}
 method syntaxError (message) atRange (r) withSuggestions (s) {
     syntaxError (message)
           atRange (r.start.line, r.start.column, r.end.column)
