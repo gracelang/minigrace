@@ -231,34 +231,12 @@ method acceptWithoutSpaces (t) {
     (sym.kind == t) && 
         (lastLine == sym.line) && (sym.linePos == (lastToken.linePos + lastToken.size))
 }
-method acceptAfterSpaces (t) {
-    // True if the current token is a t, and is separated from the previous token
-    // by one or more spaces, or a continuation line.
-
-    if (sym.kind != t) then { return false }
-    if (lastLine == sym.line) then {
-        return sym.linePos != (lastToken.linePos + lastToken.size)
-    }
-    return sym.linePos == (sym.indent + 1)
-}
 method accept (t) onLineOf (other) {
     // True if the current token is a t, and it is on the same logical
     // line as other (either because it's on the same physical
     // line, or because it's on an indented continuation line).
     (sym.kind == t) && ((other.line == sym.line) ||
         (sym.indent > other.indent))
-}
-method acceptAfterSpaces (t) onLineOf (other) {
-    // True if the current token is a t, is on the same logical line as other,
-    // and is separated from the previous token by one or more spaces, 
-    // or a continuation line.
-
-    if (sym.kind != t) then { return false }
-    if (sym.line == other.line) then {
-        return sym.linePos != (lastToken.linePos + lastToken.size)
-    } else {
-        return sym.linePos == (sym.indent + 1)
-    }
 }
 method accept (t) onLineOfLastOr (other) {
     // True if the current token is a t, and it is on the same logical
@@ -275,7 +253,7 @@ method acceptArgumentOnLineOf(tok) {
     if (accept "string" onLineOf(tok)) then { return true }
     if (accept "num" onLineOf(tok)) then { return true }
     if (accept "lbrace" onLineOf(tok)) then { return true }
-    if (acceptAfterSpaces "lsquare" onLineOf(tok)) then { return true }
+    if (accept "lsquare" onLineOf(tok)) then { return true }
     if (accept "identifier" onLineOf(tok)) then { 
         return (sym.value == "true") || (sym.value == "false")
     }
@@ -1435,9 +1413,7 @@ method term {
         dotypeLiteral
     } elseif { accept "lbrace" } then {
         block
-    } elseif { acceptAfterSpaces "lsquare" } then {
-        doarray
-    } elseif { (lastToken.kind != "identifier") && (accept "lsquare") } then {
+    } elseif { accept "lsquare" } then {
         doarray
     } elseif { accept "op" } then {
         // Prefix operator
@@ -3078,13 +3054,6 @@ method checkBadOperators {
         def sugg = errormessages.suggestion.new
         sugg.insert("=")afterToken(sym)
         errormessages.syntaxError("use '==' to test equality, not '='.")
-            atRange(sym.line, sym.linePos, sym.linePos)
-            withSuggestion(sugg)
-    }
-    if (sym.kind == "rgeneric") then {
-        def sugg = errormessages.suggestion.new
-        sugg.insert(" ")beforeToken(sym)
-        errormessages.syntaxError("the '>' operator must be preceded by a space.")
             atRange(sym.line, sym.linePos, sym.linePos)
             withSuggestion(sugg)
     }
