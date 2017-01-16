@@ -37,15 +37,15 @@ def primitiveListTest = object {
         }
 
         method testListInequalityEmpty {
-            deny(empty == list [1])
-            assert(empty != list [1])
+            deny(empty == list[1])
+            assert(empty != list[1])
             deny(empty == 3)
             deny(empty == evens)
         }
 
         method testListInequalityFive {
-            deny(oneToFive == list [1, 2, 3, 4, 6])
-            assert(oneToFive != list [1, 2, 3, 4, 6])
+            deny(oneToFive == list[1, 2, 3, 4, 6])
+            assert(oneToFive != list[1, 2, 3, 4, 6])
         }
 
         method testListEqualityFive {
