@@ -1479,6 +1479,7 @@ method transformInherits(inhNode) ancestors(as) {
                 [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope)
             ]
         ) scope(currentScope)
+        newcall.isSelfRequest := superExpr.isSelfRequest
         inhNode.value := newcall
     } elseif {superExpr.isCall} then {
         superExpr.with.push(ast.requestPart.request "$object"
