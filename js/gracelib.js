@@ -3191,7 +3191,8 @@ function raiseNoSuchMethod(name, target) {
 
 function raiseConfidentialMethod(name, target) {
     throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-            new GraceString("requested confidential method '" + canonicalMethodName(name) +
+            new GraceString("requested confidential method '" +
+                stripDollarSuffix(canonicalMethodName(name)) +
                 "' of " + describe(target) + " from outside."));
 }
 
