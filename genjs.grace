@@ -366,7 +366,7 @@ method compileobject(o, outerRef) {
     // Generates two JavaScript functions,
     // {o.register}_build, which creates the object and its methods and fields,
     // and {o.register}_init, which initializes the fields.  The _init function
-    // is returned from the build funciton, so that it can close over the context.
+    // is returned from the _build funciton, so that it can close over the context.
     // The object constructor itself is implemented by calling these functions
     // in sequence, _except_ inside a fresh method, where the object may instead
     // need to add its contents to an existing object
@@ -1530,6 +1530,7 @@ method compileSuperInitialization(inheritsNode) {
     out "{inheritsNode.register}.call(this);"
 }
 method compileReuseCall(callNode) forClass (className) aliases (aStr) exclusions (eStr) {
+    noteLineNumber (callNode.line) comment "reuse call"
     def buildMethodName = addSuffix "$build(3)" to (callNode.nameString)
     def target = compilenode(callNode.receiver)
     var arglist := ""
