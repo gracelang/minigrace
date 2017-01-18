@@ -2627,9 +2627,13 @@ method methodsignature(sameline) {
         }
     }
     if (accept "arrow") then {
-        // Return dtype
+        // parse the return type
         next
-        typeexpression
+        if (didNotConsume {typeexpression} ) then {
+            errormessages.syntaxError("after an arrow, write the method's return " ++
+                  "type. If you don't want to state the return type, omit the arrow.")
+                  atRange(sym.line, sym.linePos, sym.linePos + sym.size - 1)
+        }
         result.dtype := values.pop
     }
     result
