@@ -1,0 +1,1 @@
+../../js/tests/t012_module_confidential_test.grace
