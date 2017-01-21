@@ -8,7 +8,6 @@ var util = require('util');
 
 global.minigrace = {};
 global.sourceObject = null;
-global.superDepth = {methods:{}, data: {}, className: process.argv[1]};
 global.invocationCount = 0;
 global.onOuter = false;
 global.onSelf = false;
@@ -42,50 +41,6 @@ function MiniGrace() {
         return "";
     };
 }
-
-MiniGrace.prototype.compile = function(grace_code) {
-
-    // Change stdin to read from code.
-    var old_stdin_read = this.stdin_read;
-    this.stdin_read = function() {
-        return grace_code;
-    };
-    
-    // Change stdout to store generated output.
-    var old_stdout_write = this.stdout_write;
-    this.stdout_write = function(value) {
-        this.generated_output += value;
-    };
-    this.generated_output = "";
-    
-    this.compileError = false;
-    extensionsMap = callmethod(var_HashMap, "new", [0]);
-
-    if (this.debugMode) {
-        callmethod(extensionsMap, "put", [2], new GraceString("Debug"), new GraceString("yes"));
-    }
-    try {
-        gracecode_compiler.call(Grace_allocModule(":user:"));
-    } catch (e) {
-        if (e == "ErrorExit") {
-            this.compileError = true;
-        } else if (e == "SystemExit") {
-            // pass
-        } else if (e.exctype == 'graceexception') {
-            this.compileError = true;
-            this.stderr_write("Internal compiler error at line " + 
-                e.lineNumber + " of " + e.moduleName + ": " + 
-                e.exception.name + ": " + e.message._value + "\n");
-            callmethod(e, "printBacktrace", [0]);
-        } else {
-            throw e;
-        }
-    } finally {
-        // Change the stdin and stdout back.
-        this.stdin_read = old_stdin_read;
-        this.stdout_write = old_stdout_write;
-    }
-};
 
 MiniGrace.prototype.trapErrors = function(func) {
     this.exception = null;
