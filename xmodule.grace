@@ -282,7 +282,7 @@ method directory (d) expectedOrInPath (p) -> Boolean {
     def dr = io.realpath(d)
     if (dr == io.realpath "./") then { return true }
     if (dr == io.realpath(util.sourceDir)) then { return true }
-    if (dr == io.realpath(util.execDir)) then { return true }
+    if (dr == io.realpath(sys.execPath)) then { return true }
     filePath.split(p).do { d1 ->
         if (dr == io.realpath(d1)) then { return true }
     }
@@ -290,7 +290,7 @@ method directory (d) expectedOrInPath (p) -> Boolean {
     util.log 50 verbose("directory(_)expectedOrInPath(_) returning false.\n " ++
         "Looking for {dr}\nTried ./ = {io.realpath "./"}\n" ++
         "    sourceDir = {io.realpath(util.sourceDir)}\n" ++
-        "    execDir = {io.realpath(util.execDir)}\n" ++
+        "    execDir = {io.realpath(sys.execPath)}\n" ++
         "    PATH dirs = {pathdirs}\n")
     return false
 }
