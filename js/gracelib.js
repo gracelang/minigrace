@@ -2342,7 +2342,7 @@ function gracecode_sys() {
         if (typeof process === "undefined") {
             throw "SystemExit";
         } else {
-            process.exit(code);
+            process.exit(code._value);
         }
     };
     this.methods.execPath = function() {
