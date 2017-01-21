@@ -1,4 +1,4 @@
-#! /usr/bin/env bash -f
+#!/usr/bin/env bash
 
 Dependents=$(awk 'BEGIN { ORS = " " }
     /^import / { print substr($2, 2, length($2)-2)

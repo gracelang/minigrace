@@ -1,4 +1,4 @@
-#! /usr/bin/env bash -f
+#!/usr/bin/env bash
 
 absolutePath(){
     [[ -d $1 ]] && { cd "$1"; echo "$(pwd -P)"; } ||
