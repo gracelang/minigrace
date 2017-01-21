@@ -108,7 +108,7 @@ do
 #   if the test name does NOT end with fail_test
     then
         rm -f ${tcase%%.*}.{js,gct} ../${tcase%%.*}.{js,gct}
-        COMMAND="GRACE_MODULE_PATH=..:../../modules $COMPILER --verbose 60 --target js --dir . $tcase"
+        COMMAND="GRACE_MODULE_PATH=..:../..:../../modules $COMPILER --verbose 60 --target js --dir . $tcase"
 #        echo compilation cmd = $COMMAND
         if eval "$COMMAND" > test-$$.log 2>&1
         then
