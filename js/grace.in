@@ -240,17 +240,24 @@ MiniGrace.prototype.loadModule = function(moduleName, referencingDir) {
     }
 };
 
+function abspath(file) {
+    if (path.isAbsolute(file)) return file;
+    return path.join(process.cwd(), file);
+}
+
 try {
     require(findOnPath("gracelib.js", pathdirs));
     require(findOnPath("unicodedata.js", pathdirs));
     minigrace = new MiniGrace();
     minigrace.loadModule("standardGrace", "./");
+    var executable = process.argv[2];
+    minigrace.execFile = abspath(executable);
 
     minigrace.trapErrors(function() {
         // as as special case, do_import("standardGrace", …) adds to Grace_prelude,
         // rather than creating a new module object.
         do_import('standardGrace', gracecode_standardGrace);
-        minigrace.run(process.argv[2]);
+        minigrace.run(executable);
     });
 } catch (e) {
     if (typeof e.message === "string")

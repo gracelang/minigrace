@@ -2346,7 +2346,13 @@ function gracecode_sys() {
         }
     };
     this.methods.execPath = function() {
-        return new GraceString(".");
+        if (typeof minigrace.execFile === "undefined") {
+            return new GraceString(".");
+        }
+        var execFile = minigrace.execFile;
+        var slashIx = execFile.lastIndexOf("/");
+        var execDir = execFile.substring(0, slashIx + 1);  //includes the trailing /
+        return new GraceString(execDir);
     };
     this.methods.environ = function() {
         var o = Grace_allocObject(GraceObject, "environmentObject");
