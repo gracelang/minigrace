@@ -96,10 +96,13 @@ MiniGrace.prototype.trapErrors = function(func) {
                     });
                 }
             }
-        } else if (e != "SystemExit") {
+        } else if (e === "SystemExit") {
+            process.exit(1);
+        } else {
             this.stderr_write("Internal error around line " + getLineNumber() + 
                 " of " + getModuleName() + ": " + e + "\n");
             throw e;
+            process.exit(2);
         }
     } finally {
         if (Grace_prelude.methods["while()do"])
