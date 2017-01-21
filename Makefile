@@ -536,6 +536,9 @@ $(TYPE_DIALECTS:%=%.gcn): %.gcn: %.gct
 test.js: minigrace-js-env
 	js/tests/harness minigrace js/tests "" $(TESTS)
 
+test.js.js: minigrace-js-env
+	js/tests/harness minigrace-js js/tests "" $(TESTS)
+
 test: minigrace-c-env modules/minitest.gso
 	tests/harness minigrace tests "" $(TESTS)
 
