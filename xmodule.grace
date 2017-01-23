@@ -29,7 +29,7 @@ method builtInModules {
 
 def currentDialect is public = object {
     var name is public := "standardGrace"
-    var moduleObject is public := _prelude
+    var moduleObject is public := prelude
     // TODO: this isn't quite right: should be the prelude
     // on the GRACE_MODULE_PATH of this compilation
     var hasParseChecker is public := false

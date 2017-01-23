@@ -463,7 +463,7 @@ class sequence⟦T⟧ {
             sizeCertain := false
             8
         }
-        var inner := _prelude.primitiveArray.new(forecastSize)
+        var inner := prelude.primitiveArray.new(forecastSize)
         var innerSize := inner.size
         var ix := 0
         if (sizeCertain) then {
@@ -476,7 +476,7 @@ class sequence⟦T⟧ {
             // less-than-optimal path
             for (arg) do { elt ->
                 if (innerSize <= ix) then {
-                    def newInner = _prelude.primitiveArray.new(innerSize * 2)
+                    def newInner = prelude.primitiveArray.new(innerSize * 2)
                     for (0..(innerSize-1)) do { i ->
                         newInner.at(i)put(inner.at(i))
                     }
@@ -523,7 +523,7 @@ class sequence⟦T⟧ {
                 }
             }
             method reversed {
-                def freshArray = _prelude.primitiveArray.new(size)
+                def freshArray = prelude.primitiveArray.new(size)
                 var ix := size - 1
                 do { each ->
                     freshArray.at (ix) put(each)
@@ -619,7 +619,7 @@ class list⟦T⟧ {
             var sizeCertain := true
             // size might be uncertain if a is a lazy collection.
             def initialSize = a.sizeIfUnknown{ sizeCertain := false ; 4 } * 2 + 1
-            var inner := _prelude.primitiveArray.new(initialSize)
+            var inner := prelude.primitiveArray.new(initialSize)
             var size is readable := 0
             if (sizeCertain) then {
                 // common, fast path
@@ -632,7 +632,7 @@ class list⟦T⟧ {
                 var innerSize := initialSize
                 for (a) do { x ->
                     if (innerSize <= size) then {
-                        def newInner = _prelude.primitiveArray.new(innerSize * 2)
+                        def newInner = prelude.primitiveArray.new(innerSize * 2)
                         for (0..(innerSize-1)) do { i ->
                             newInner.at (i) put (inner.at(i) )
                         }
@@ -725,7 +725,7 @@ class list⟦T⟧ {
             }
             method clear {
                 mods := mods + 1
-                inner := _prelude.primitiveArray.new(initialSize)
+                inner := prelude.primitiveArray.new(initialSize)
                 size := 0
                 self
             }
@@ -858,7 +858,7 @@ class list⟦T⟧ {
                 self.indices
             }
             method expandTo(newSize) is confidential {
-                def newInner = _prelude.primitiveArray.new(newSize)
+                def newInner = prelude.primitiveArray.new(newSize)
                 for (0..(size-1)) do {i->
                     newInner.at(i)put(inner.at(i))
                 }
@@ -924,7 +924,7 @@ class set⟦T⟧ {
     class ofCapacity(cap) -> Set⟦T⟧ is confidential {
         inherit collection.TRAIT
         var mods is readable := 0
-        var inner := _prelude.primitiveArray.new(cap)
+        var inner := prelude.primitiveArray.new(cap)
         var size is readable := 0
         (0..(cap - 1)).do { i ->
             inner.at (i) put (unused)
@@ -981,7 +981,7 @@ class set⟦T⟧ {
         }
         method clear {
             mods := mods + 1
-            inner := _prelude.primitiveArray.new(cap)
+            inner := prelude.primitiveArray.new(cap)
             size := 0
             self
         }
@@ -1134,7 +1134,7 @@ class set⟦T⟧ {
             def n = c * 2
             def oldInner = inner
             size := 0
-            inner := _prelude.primitiveArray.new(n)
+            inner := prelude.primitiveArray.new(n)
             for (0..(inner.size-1)) do {i->
                 inner.at(i)put(unused)
             }
@@ -1242,7 +1242,7 @@ class dictionary⟦K,T⟧ {
         inherit collection.TRAIT⟦T⟧
         var mods is readable := 0
         var numBindings := 0
-        var inner := _prelude.primitiveArray.new(8)
+        var inner := prelude.primitiveArray.new(8)
         for (0..(inner.size-1)) do { i ->
             inner.at(i)put(unused)
         }
@@ -1367,7 +1367,7 @@ class dictionary⟦K,T⟧ {
             self
         }
         method clear {
-            inner := _prelude.primitiveArray.new(8)
+            inner := prelude.primitiveArray.new(8)
             numBindings := 0
             mods := mods + 1
             for (0..(inner.size-1)) do { i ->
@@ -1527,7 +1527,7 @@ class dictionary⟦K,T⟧ {
             def c = inner.size
             def n = c * 2
             def oldInner = inner
-            inner := _prelude.primitiveArray.new(n)
+            inner := prelude.primitiveArray.new(n)
             for (0..(n - 1)) do {i->
                 inner.at(i)put(unused)
             }
@@ -1684,7 +1684,7 @@ class range {
                     if (intElem != elem) then {return false}
                     if (intElem < start) then {return false}
                     if (intElem > stop) then {return false}
-                } catch { ex:_prelude.Exception -> return false }
+                } catch { ex:prelude.Exception -> return false }
                 return true
             }
             method do(block1) {
@@ -1775,7 +1775,7 @@ class range {
                     if (intElem != elem) then {return false}
                     if (intElem > start) then {return false}
                     if (intElem < stop) then {return false}
-                } catch { ex:_prelude.Exception -> return false }
+                } catch { ex:prelude.Exception -> return false }
                 return true
             }
             method do(block1) {

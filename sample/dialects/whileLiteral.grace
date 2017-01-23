@@ -8,7 +8,7 @@ import "util" as util
 inherit prelude.methods
 
 method while(cond)do(block) {
-    _prelude.while(cond)do(block)
+    prelude.while(cond)do(block)
 }
 
 rule { req: WhileRequest ->
