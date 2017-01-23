@@ -1263,6 +1263,14 @@ def callNode is public = object {
             }
         }
 
+        method numArgs {
+            with.fold { acc, part -> acc + part.args.size } startingWith 0
+        }
+
+        method numTypeArgs {
+            if (false == generics) then { 0 } else { generics.size }
+        }
+
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitCall(self) up(as)) then {
                 def newChain = as.extend(self)
@@ -1733,6 +1741,11 @@ def memberNode is public = object {
         method with { emptySeq }
         method arguments { emptySeq }
         method argumentsDo { }
+        method numArgs { 0 }
+        method numTypeArgs {
+            if (false == generics) then { 0 } else { generics.size }
+        }
+
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitMember(self) up(as)) then {
                 def newChain = as.extend(self)
@@ -1743,7 +1756,6 @@ def memberNode is public = object {
             }
         }
         method isSelfOrOuter {
-            if (value ≠ "outer") then { return false }
             receiver.isSelfOrOuter
         }
         method map(blk) ancestors(as) {
@@ -2125,6 +2137,11 @@ def opNode is public = object {
     method canonicalName { value ++ "(_)" }
     method receiver { left }
     method isCall { true }
+    method arguments { [ right ] }
+    method argumentsDo(action) { action.apply(right) }
+    method numArgs { 1 }
+    method numTypeArgs { 0 }
+
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitOp(self) up(as)) then {
             def newChain = as.extend(self)

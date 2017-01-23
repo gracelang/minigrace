@@ -9,6 +9,8 @@ import "mirrors" as mirrors
 import "errormessages" as errormessages
 import "identifierKinds" as k
 
+def maxArgsToRequest = 10
+
 var indent := ""
 var verbosity := 30
 var pad1 := 1
@@ -36,7 +38,6 @@ var emitTypeChecks := true
 var emitUndefinedChecks := true
 var emitArgChecks := true
 var emitPositions := true
-var requestCall := "callmethod"
 var bracketConstructor := "Lineup"
 var emod        // the name of the module being compiled, escaped
                 // so that it is a legal identifier
@@ -197,7 +198,7 @@ method compileTypeCheck(expectedType, val, complaint, lineNumber) {
                 def nm_t = compilenode(expectedType)
                 noteLineNumber(lineNumber) comment "typecheck"
                 def typeDesc = expectedType.toGrace 0.quoted
-                out "if (!Grace_isTrue(callmethod({nm_t}, \"match(1)\", [1], {val})))"
+                out "if (!Grace_isTrue(request({nm_t}, \"match(1)\", [1], {val})))"
                 out "    raiseTypeError("
                 out "      \"{complaint} is not of type {typeDesc}.\","
                 out "      {nm_t}, {val});"
@@ -388,7 +389,7 @@ method compileGuard(o, paramList) {
         def pName = varf(p.value)
         if (p.dtype != false) then {
             def dtype = compilenode(p.dtype)
-            out "if (!Grace_isTrue(callmethod({dtype}, \"match(1)\", [1], {pName})))"
+            out "if (!Grace_isTrue(request({dtype}, \"match(1)\", [1], {pName})))"
             out "    return false;"
         }
     }
@@ -576,7 +577,7 @@ method compileArgumentTypeChecks(o) {
                     noteLineNumber(o.line)comment("argument check in compilemethod")
                     def dtype = compilenode(p.dtype)
                     def typeDesc = p.dtype.toGrace 0.quoted
-                    out("if (!Grace_isTrue(callmethod({dtype}, \"match(1)\"," ++
+                    out("if (!Grace_isTrue(request({dtype}, \"match(1)\"," ++
                         "  [1], {pVar})))")
                     out "    raiseTypeError(\"in request of `{o.canonicalName}`, \" +"
                     out "      \"argument {paramnr}{partBit} is not of type \" +"
@@ -947,7 +948,7 @@ method compiledefdec(o) {
                 noteLineNumber(o.line)comment("type check for defdec")
                 def nm_t = compilenode(o.dtype)
                 def typeDesc = o.dtype.toGrace 0.quoted
-                out "if (!Grace_isTrue(callmethod({nm_t}, \"match(1)\", [1], {var_nm})))"
+                out "if (!Grace_isTrue(request({nm_t}, \"match(1)\", [1], {var_nm})))"
                 out "    raiseTypeError("
                 out "      \"value of def {nm} is not of type {typeDesc}\","
                 out "      {nm_t}, {var_nm});"
@@ -998,7 +999,7 @@ method compilevardec(o) {
                     noteLineNumber(o.line)comment("type check for vardec")
                     def nm_t = compilenode(o.dtype)
                     def typeDesc = o.dtype.toGrace 0.quoted
-                    out "if (!Grace_isTrue(callmethod({nm_t}, \"match(1)\", [1], {var_nm})))"
+                    out "if (!Grace_isTrue(request({nm_t}, \"match(1)\", [1], {var_nm})))"
                     out "    raiseTypeError("
                     out "      \"initial value of var '{nm}' is not of type {typeDesc}\","
                     out "      {nm_t}, {var_nm});"
@@ -1062,7 +1063,7 @@ method compileop(o) {
                 } else { "opresult"
                 }
     def register = uidWithPrefix(rnm)
-    out("var {register} = callmethod({left}, \"" ++
+    out("var {register} = request({left}, \"" ++
           "{escapestring(o.nameString)}\", [1], {right});")
     o.register := register
 }
@@ -1122,24 +1123,34 @@ method partl(o) {
 method compileOuterRequest(o, args) {
     out "// call case 2: outer request"
     compilenode(o.receiver)
-    out("var {o.register} = selfRequest({o.receiver.register}" ++
-          ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
+    def numArgs = o.numArgs + o.numTypeArgs
+    def extra = if (numArgs > maxArgsToRequest) then { "WithArgs" } else { "" }
+    out("var {o.register} = selfRequest{extra}({o.receiver.register}" ++
+          ", \"{escapestring(o.nameString)}\"" ++
+          ", [{partl(o)}]{assembleArguments(args)});")
 }
+
 method compileSelfRequest(o, args) {
     out "// call case 4: self request"
-    out("var {o.register} = selfRequest(this" ++
+    def numArgs = o.numArgs + o.numTypeArgs
+    def extra = if (numArgs > maxArgsToRequest) then { "WithArgs" } else { "" }
+    out("var {o.register} = selfRequest{extra}(this" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compilePreludeRequest(o, args) {
     out "// call case 5: prelude request"
-    out("var {o.register} = {requestCall}(var_prelude" ++
+    def numArgs = o.numArgs + o.numTypeArgs
+    def extra = if (numArgs > maxArgsToRequest) then { "WithArgs" } else { "" }
+    out("var {o.register} = request{extra}(var_prelude" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compileOtherRequest(o, args) {
     out "// call case 6: other requests"
     def target = compilenode(o.receiver)
-    def cm = if (o.isSelfRequest) then { "selfRequest" } else { requestCall }
-    out("var {o.register} = {cm}({target}" ++
+    def cm = if (o.isSelfRequest) then { "selfRequest" } else { "request" }
+    def numArgs = o.numArgs + o.numTypeArgs
+    def extra = if (numArgs > maxArgsToRequest) then { "WithArgs" } else { "" }
+    out("var {o.register} = {cm}{extra}({target}" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compilecall(o) {
@@ -1171,8 +1182,8 @@ method compiledialect(o) {
         out "var_prelude = do_import(\"{fn}\", {formatModname(dialectName)});"
         out "this.outer = var_prelude;"
         if (xmodule.currentDialect.hasAtStart) then {
-            out "var var_thisDialect = callmethod(var_prelude, \"thisDialect\", [0]);"
-            out "callmethod(var_thisDialect, \"atStart(1)\", [1], "
+            out "var var_thisDialect = selfRequest(var_prelude, \"thisDialect\", [0]);"
+            out "selfRequest(var_thisDialect, \"atStart(1)\", [1], "
             out "  new GraceString(\"{escapestring(modname)}\"));"
         }
     }
@@ -1205,7 +1216,7 @@ method compileimport(o) {
             if (o.dtype.value != "Unknown") then {
                 def nm_t = compilenode(o.dtype)
                 def typeDesc = o.dtype.toGrace 0.quoted
-                out "if (!Grace_isTrue(callmethod({nm_t}, \"match(1)\", [1], {var_nm})))"
+                out "if (!Grace_isTrue(request({nm_t}, \"match(1)\", [1], {var_nm})))"
                 out "    raiseTypeError("
                 out "          \"module '{o.nameString.quoted}' is not of type {typeDesc}\","
                 out "          {nm_t}, {var_nm});"
@@ -1373,7 +1384,6 @@ method compile(moduleObject, of, rm, bt, glPath) {
         emitUndefinedChecks := false
         emitArgChecks := false
         emitPositions := false
-        requestCall := "callmethod"
     }
     if (util.extensions.contains "noTypeChecks") then {
         emitTypeChecks := false
@@ -1386,7 +1396,6 @@ method compile(moduleObject, of, rm, bt, glPath) {
     }
     if (util.extensions.contains "noLineNumbers") then {
         emitPositions := false
-        requestCall := "callmethod"
     }
     outfile := of
     modname := moduleObject.name
@@ -1463,8 +1472,8 @@ method compile(moduleObject, of, rm, bt, glPath) {
         }
     }
     if (xmodule.currentDialect.hasAtEnd) then {
-        out "var var_thisDialect = callmethod(var_prelude, \"thisDialect\", [0]);"
-        out("callmethod(var_thisDialect, \"atEnd(1)\", [1], this);")
+        out "var var_thisDialect = selfRequest(var_prelude, \"thisDialect\", [0]);"
+        out("selfRequest(var_thisDialect, \"atEnd(1)\", [1], this);")
     }
     if (debugMode) then {
         out "stackFrames.pop();"
@@ -1545,10 +1554,14 @@ method compileReuseCall(callNode) forClass (className) aliases (aStr) exclusions
             typeArgs := typeArgs ++ ", " ++ compilenode(g)
         }
     }
-    def cm = if (callNode.isSelfRequest) then { "selfRequest" } else { requestCall }
+    def numArgs = callNode.numArgs + callNode.numTypeArgs + 3
+    // why +3?  Becuase of the 3 args to $build(3).  In fact, it should
+    // be +2, because of the $object(1) suffix that is replaced by $build(3)
+    def req = if (callNode.isSelfRequest) then { "selfRequest" } else { "request" }
+    def extra = if (numArgs > maxArgsToRequest) then { "WithArgs" } else { "" }
     def initFun = uidWithPrefix "initFun"
-    out("var {initFun} = {cm}({target}, \"{escapestring(buildMethodName)}\", [null]" ++
-        "{arglist}, this, {aStr}, {eStr}{typeArgs});  // compileReuseCall")
+    out("var {initFun} = {req}{extra}({target}, \"{escapestring(buildMethodName)}\"" ++
+          ", [null]{arglist}, this, {aStr}, {eStr}{typeArgs});  // compileReuseCall")
     initFun     // return the register that holds the initialization function
 }
 

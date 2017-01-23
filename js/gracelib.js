@@ -3069,7 +3069,7 @@ function GraceCallStackToString() {
     return errorString + this.moduleName;
 }
 
-function callmethod(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
+function request(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
     var origModuleName = moduleName;
     var origLineNumber = lineNumber;
     var returnTarget = invocationCount;  // will be incremented by invoked method
@@ -3106,6 +3106,47 @@ function callmethod(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
     return ret;
 }
 
+var callmethod = request;       // for backward compatibility
+
+function requestWithArgs(obj, methname, argcv) {
+    // allow unlimited arguments using reflection
+    var origModuleName = moduleName;
+    var origLineNumber = lineNumber;
+    var returnTarget = invocationCount;  // will be incremented by invoked method
+    try {
+        var meth = obj.methods[methname];
+        if (meth.confidential) {
+            raiseConfidentialMethod(methname, obj);
+        }
+        var args = Array.prototype.slice.call(arguments, 2);
+        var ret = meth.apply(obj, args);
+    } catch(e) {
+        if (e.exctype === 'return') {
+            if (e.target == returnTarget) {
+                return e.returnvalue;
+            }
+        } else if (e.exctype === 'graceexception') {
+            e.exitStack.unshift({
+                className: obj.className,
+                methname: methname,
+                moduleName: moduleName,
+                lineNumber: lineNumber,
+                toString: GraceCallStackToString
+            });
+        } else if (!obj) {
+            throw new GraceExceptionPacket(UninitializedVariableObject,
+                new GraceString("requested method '" + methname + "' on uninitialised variable."));
+        } else if (typeof(obj.methods[methname]) !== "function") {
+            raiseNoSuchMethod(methname, obj);
+        }
+        throw e;
+    } finally {
+        setModuleName(origModuleName);
+        setLineNumber(origLineNumber);
+    }
+    return ret;
+}
+
 function selfRequest(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
     var origModuleName = moduleName;
     var origLineNumber = lineNumber;
@@ -3113,6 +3154,42 @@ function selfRequest(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
     try {
         var meth = obj.methods[methname];
         var ret = meth.call(obj, argcv, a, b, c, d, e, f, g, h, i, j);
+    } catch(e) {
+        if (e.exctype === 'return') {
+            if (e.target == returnTarget) {
+                return e.returnvalue;
+            }
+        } else if (e.exctype === 'graceexception') {
+            e.exitStack.unshift({
+                className: obj.className,
+                methname: methname,
+                moduleName: moduleName,
+                lineNumber: lineNumber,
+                toString: GraceCallStackToString
+            });
+        } else if (!obj) {
+            throw new GraceExceptionPacket(UninitializedVariableObject,
+                new GraceString("requested method '" + methname + "' on uninitialised variable."));
+        } else if (typeof(obj.methods[methname]) !== "function") {
+            raiseNoSuchMethod(methname, obj);
+        }
+        throw e;
+    } finally {
+        setModuleName(origModuleName);
+        setLineNumber(origLineNumber);
+    }
+    return ret;
+}
+
+function selfRequestWithArgs(obj, methname, argcv) {
+    // allow unlimited arguments using reflection
+    var origModuleName = moduleName;
+    var origLineNumber = lineNumber;
+    var returnTarget = invocationCount;  // will be incremented by invoked method
+    try {
+        var meth = obj.methods[methname];
+        var args = Array.prototype.slice.call(arguments, 2);
+        var ret = meth.apply(obj, args);
     } catch(e) {
         if (e.exctype === 'return') {
             if (e.target == returnTarget) {
@@ -3827,11 +3904,14 @@ if (typeof global !== "undefined") {
     global.ProgrammingErrorObject = ProgrammingErrorObject;
     global.raiseTypeError = raiseTypeError;
     global.raiseUninitializedVariable = raiseUninitializedVariable;
+    global.request = request;
+    global.requestWithArgs = requestWithArgs;
     global.ResourceExceptionObject = ResourceExceptionObject;
     global.ReturnException = ReturnException;
     global.RequestErrorObject = RequestErrorObject;
     global.RuntimeErrorObject = RuntimeErrorObject;
     global.selfRequest = selfRequest;
+    global.selfRequestWithArgs = selfRequestWithArgs;
     global.setLineNumber = setLineNumber;
     global.setModuleName = setModuleName;
     global.StackFrame = StackFrame;
