@@ -46,13 +46,9 @@ def staticVisitor = object {
         true
     }
 }
-method checker(values) is public {
-    print "starting checker"
-    for (values) do {v->
-        v.accept(staticVisitor)
-    }
-}
 
 def thisDialect is public = object {
-    method parseChecker (moduleObj) { checker (moduleObj.body) }
+    method parseChecker (moduleObj) {
+        moduleObj.accept(staticVisitor)
+    }
 }
