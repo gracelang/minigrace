@@ -205,7 +205,7 @@ ideDeploy: ideBuild
 
 install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grace=%.gct) $(STUB_GCTS) $(STUBS:%.grace=js/%.gct) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=js/%.js) $(MODULES_WO_JSONLY:%.grace=modules/%.gcn) $(MODULES_WO_JSONLY:%.grace=modules/%.gso) gracelib.o
 	install -d -p $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
-	install -p -m 755 minigrace $(PREFIX)/bin/minigrace
+	install -p -m 755 minigrace minigrace-js $(PREFIX)/bin/
 	install -p -m 755 js/grace $(PREFIX)/bin/grace
 	install -p -m 755 $(C_MODULES_GSO) $(STUB_GCTS) js/gracelib.js js/unicodedata.js $(MODULE_PATH)
 	install -p -m 755 gracelib.o $(OBJECT_PATH)
