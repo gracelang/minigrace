@@ -115,7 +115,7 @@ method doParseCheck(moduleNode) {
                     atLine(util.linenum)
             }
     } catch { e : Exception ->      // some unknwown Grace exception
-        e.printBacktrace
+        printBacktrace (e) asFarAs "thisDialect.parseChecker"
         errormessages.error("Unexpected exception raised by parse checker for " ++
             "dialect '{currentDialect.name}'.\n{e.exception}: {e.message}")
     }
@@ -138,11 +138,26 @@ method doAstCheck(moduleNode) {
                     withSuggestions(rs.suggestions)
             }
             case { _ -> }
-        errormessages.error("{e.exception}: {e.message}.")atPosition(util.linenum, 0)
+                errormessages.error("{e.exception}: {e.message}.")
+                    atLine(util.linenum)
     } catch { e : Exception ->      // some unknwown Grace exception
-        e.printBacktrace
+        printBacktrace (e) asFarAs "thisDialect.astChecker"
         errormessages.error("Unexpected exception raised by AST checker for " ++
             "dialect '{currentDialect.name}'.\n{e.exception}: {e.message}")
+    }
+}
+
+method printBacktrace(exceptionPacket) asFarAs (methodName) {
+    def ex = exceptionPacket.exception
+    def msg = exceptionPacket.message
+    def lineNr = exceptionPacket.lineNumber
+    def mod = exceptionPacket.moduleName
+    io.error.write "{ex} on line {lineNr} of {mod}: {msg}\n"
+    def bt = exceptionPacket.backtrace
+    while {bt.size > 0} do {
+        def frameDescription = bt.pop
+        io.error.write "  requested from {frameDescription}\n"
+        if (frameDescription.contains(methodName)) then { return }
     }
 }
 
