@@ -181,6 +181,9 @@ grace-web-editor/index.html: pull-web-editor grace-web-editor/index.in.html
 	./tools/includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	./tools/calc-IDE-version
 
+grace-web-editor/scripts/background.js: pull-web-editor grace-web-editor/scripts/background.in.js
+	./tools/includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
+
 grace-web-editor/scripts/setup.js: pull-web-editor $(filter-out %/setup.js,$(wildcard grace-web-editor/scripts/*.js)) $(wildcard grace-web-editor/scripts/*/*.js)
 	cd grace-web-editor; npm install
 
