@@ -1387,13 +1387,15 @@ class conflictForMethodName(nm) from(srcs) {
     def sources is public = srcs
 }
 
-method readableStringFrom(xs:Sequence) {
+method readableStringFrom(xs:Collection) {
     var result := ""
-    xs.keysAndValuesDo { ix, v ->
+    var count := xs.size
+    xs.do { v ->
         result := result ++ v.asString
-        if (ix == (xs.size - 1)) then {
+        count := count - 1
+        if (count == 1) then {
             result := result ++ " and "
-        } elseif { ix < (xs.size - 1) } then {
+        } elseif { count > 1 } then {
             result := result ++ ", "
         }
     }
