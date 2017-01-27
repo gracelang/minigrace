@@ -194,12 +194,6 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     } else {
         sourceFile.exists
     }
-    if (sourceExists) then {
-        if (! directory (sourceFile.directory) expectedOrInPath (gmp)) then {
-            errormessages.error("Found {moduleFileGct}, but it was compiled from " ++
-                  sourceFile ++ " which is not on your GRACE_MODULE_PATH.") atLine(line)
-        }
-    }
     if (util.target == "c") then {
         def moduleFileGso = moduleFileGct.copy.setExtension ".gso"
         def moduleFileGcn = moduleFileGct.copy.setExtension ".gcn"
