@@ -162,11 +162,10 @@ method printBacktrace(exceptionPacket) asFarAs (methodName) {
 }
 
 method checkExternalModule(node) {
-    checkimport(node.moduleName, node.path,
-        node.line, node.linePos, node.isDialect)
+    checkimport(node.moduleName, node.path, node.isDialect, node.range)
 }
 
-method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
+method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
     if (builtInModules.contains(nm)) then {
         imports.other.add(nm)
         return
@@ -178,7 +177,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     if (prelude.inBrowser) then {
         util.file(nm ++ ".js") onPath "" otherwise { _ ->
             errormessages.error "Please compile module {nm} before importing it."
-                atRange(line, linePos, linePos + nm.size - 1)
+                atRange(sourceRange)
         }
         return
     }
@@ -190,13 +189,13 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         def moduleFileGrace = util.file(graceFile) on(util.outDir)
                                 orPath (gmp) otherwise { m ->
             errormessages.error("I can't find {pn.shortName} " ++
-                "or {graceFile.shortName}; looked in {m}.") atLine (line)
+                "or {graceFile.shortName}; looked in {m}.") atRange (sourceRange)
         }
         compileModule (nm) inFile (moduleFileGrace.asString)
-                forDialect (isDialect) atLine (line)
+                forDialect (isDialect) atRange (sourceRange)
         util.file(pn) on(util.outDir) orPath (gmp) otherwise { m ->
             errormessages.error("I just compiled {moduleFileGrace} " ++
-                "but can't find the .gct; looked in {m}.") atLine (line)
+                "but can't find the .gct; looked in {m}.") atRange (sourceRange)
         }
     }
 
@@ -229,13 +228,13 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
             binaryFile := util.file(binaryFile) onPath (gmp) otherwise { l ->
                 errormessages.error(
                     "I can't find {pn.shortName} or {binaryFile.shortName}; looked in {l}.")
-                    atLine(line)
+                    atRange(sourceRange)
             }
             moduleFileGct.setDirectory(binaryFile.directory)
             if (moduleFileGct.exists.not) then {
                 errormessages.error("I found {binaryFile}, but neither " ++
                     "{moduleFileGct} nor source.")
-                    atLine(line)
+                    atRange(sourceRange)
             }
         }
         if (needsDynamic.not) then {
@@ -254,7 +253,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
                 util.log 60 verbose "{binaryFile} not newer than {sourceFile}"
             }
             compileModule (nm) inFile (sourceFile.asString)
-                forDialect (isDialect) atLine (line)
+                forDialect (isDialect) atRange (sourceRange)
         }
         importsSet.add(nm)
     } elseif { util.target == "js" } then {
@@ -270,16 +269,16 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
             }
             if (sourceFile.exists) then {
                 compileModule (nm) inFile (sourceFile.asString)
-                    forDialect (isDialect) atLine (line)
+                    forDialect (isDialect) atRange (sourceRange)
             } else {
                 def thing = if (isDialect) then {"dialect"} else {"module"}
                 errormessages.error "Can't find {thing} {nm}"
-                    atLine(line)
+                    atRange(sourceRange)
             }
         }
         imports.other.add(nm)
     }
-    addTransitiveImports(moduleFileGct.directory, isDialect, nm, line, linePos)
+    addTransitiveImports(moduleFileGct.directory, isDialect, nm, sourceRange)
 }
 
 method directory (d) expectedOrInPath (p) -> Boolean {
@@ -303,7 +302,7 @@ method directory (d) expectedOrInPath (p) -> Boolean {
         "    PATH dirs = {pathdirs}\n")
     return false
 }
-method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is confidential {
+method addTransitiveImports(directory, isDialect, moduleName, sourceRange) is confidential {
     util.log 50 verbose "adding transitive imports for {moduleName}"
     def gctData = gctCache.at(moduleName) ifAbsent {
         parseGCT(moduleName) sourceDir(directory)
@@ -312,7 +311,7 @@ method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is 
         def dialects = gctData.at "dialect"
         if (dialects.isEmpty.not) then {
             def dName = gctData.at "dialect" .first
-            checkimport(dName, dName, line, linePos, true)
+            checkimport(dName, dName, true, sourceRange)
         }
     }
     def importedModules = gctData.at "modules" ifAbsent { emptySequence }
@@ -320,18 +319,18 @@ method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is 
     if (importedModules.contains(m)) then {
         errormessages.error("Cyclic import detected: '{m}' is imported "
             ++ "by '{moduleName}', which is imported by '{m}' (and so on).")
-            atLine(line)
+            atRange(sourceRange)
     }
     importedModules.do { each ->
-        checkimport(each, each, line, linePos, isDialect)
+        checkimport(each, each, isDialect, sourceRange)
     }
 }
 
 method compileModule (nm) inFile (sourceFile)
-        forDialect (isDialect) atLine (line) is confidential {
+        forDialect (isDialect) atRange (sourceRange) is confidential {
     if ( prelude.inBrowser || { util.recurse.not } ) then {
         errormessages.error "Please compile module {nm} before using it."
-            atLine(line)
+            atRange (sourceRange)
     }
     var slashed := false
     for (sys.argv.first) do {letter ->
@@ -376,7 +375,7 @@ method compileModule (nm) inFile (sourceFile)
     def exitCode = io.spawn("bash", ["-c", cmd]).status
     if (exitCode != 0) then {
         errormessages.error "Failed to compile imported module {nm} ({exitCode})."
-            atLine(line)
+            atRange (sourceRange)
     }
 }
 

@@ -294,7 +294,7 @@ method pushnum {
 method pushstring {
     // Push the current token onto the output stack as a string
     var o := ast.stringNode.new(sym.value)
-    o.size := sym.size
+    o.end := ast.line (sym.line) column (sym.linePos + sym.size - 1)
     values.push(o)
     next
 }
@@ -2097,7 +2097,7 @@ method dodialect {
                 lastToken.line, errorPos)withSuggestion(suggestion)
         }
         if (values.isEmpty) then {
-            def dn = ast.dialectNode.new(sym.value)
+            def dn = ast.dialectNode.fromToken(sym)
             next
             moduleObject.theDialect := dn
         } else {
@@ -2668,7 +2668,7 @@ method doimport {
     // Accept an import statement, which has the form
     //      import ‹string› as ‹identifier›:‹type expression› is ‹annotation›
     if (acceptKeyword "import") then {
-        def importline = sym.line
+        def importSym = sym
         next
         if (sym.kind != "string") then {
             var suggestion := errormessages.suggestion.new
@@ -2713,8 +2713,7 @@ method doimport {
         def name = values.pop
         name.isBindingOccurrence := true
         def dtype = optionalTypeAnnotation
-        util.setline(importline)
-        def o = ast.importNode.new(p.value, name, dtype)
+        def o = ast.importNode.new(p.value, name, dtype).setPositionFrom(importSym)
         def anns = doannotation
         if (false != anns) then { o.annotations.addAll(anns) }
         values.push(o)

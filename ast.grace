@@ -1372,8 +1372,8 @@ def moduleNode is public = object {
         def kind is public = "module"
         def sourceLines = util.lines
         var theDialect is public := dialectNode.new "standardGrace"
-        line := 0       // because the module is always implicit
-        linePos := 0
+        theDialect.setStart(noPosition)     // dialect is implicit
+        setStart(noPosition)                // so is the module
         var imports is public := [ ]
 
         method end -> Position {
@@ -2063,8 +2063,9 @@ def stringNode is public = object {
         inherit baseNode
         def kind is public = "string"
         var value is public := v
-        var size is public := v.size + 2  // for the quotes
-        method end -> Position { line (line) column (linePos + size - 1) }
+        var end is public := line (line) column (linePos + v.size + 1)
+            // +1 to allow for quotes
+
         method accept(visitor : ASTVisitor) from(as) {
             visitor.visitString(self) up(as)
         }
@@ -2083,6 +2084,10 @@ def stringNode is public = object {
         method asString { "string {toGrace 0}" }
         method shallowCopy {
             stringNode.new(value).shallowCopyFieldsFrom(self)
+        }
+        method postCopy(other) {
+            end := other.end
+            self
         }
         method statementName { "expression" }
         method isDelimited { true }
@@ -2545,12 +2550,17 @@ def importNode is public = object {
   }
 }
 def dialectNode is public = object {
-  class new(path') {
+  method fromToken(stringTok) {
+    def result = new(stringTok.value)
+    result.end := line (stringTok.line) column (stringTok.linePos + stringTok.size - 1)
+    result
+  }
+  class new(pathString) {
     inherit baseNode
     def kind is public = "dialect"
-    var value is public := path'
+    var value is public := pathString
+    var end is public := noPosition
 
-    method end -> Position { line (line) column (util.lines.at(line).size) }
     method isDialect { true }
     method isExternal { true }
     method isExecutable { false }
@@ -2587,6 +2597,10 @@ def dialectNode is public = object {
     }
     method shallowCopy {
         dialectNode.new(value).shallowCopyFieldsFrom(self)
+    }
+    method postCopy(other) {
+        end := other.end
+        self
     }
   }
 }

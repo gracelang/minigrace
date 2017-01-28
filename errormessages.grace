@@ -369,6 +369,9 @@ method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions(
     util.syntaxError(message, errlinenum, ":{loc}", arr, false, suggestions)
 }
 
+method error (message) atRange (r) {
+    error (message) atRange (r.start.line, r.start.column, r.end.column)
+}
 method error(message)atRange(errlinenum, startpos, endpos)withSuggestions(suggestions) {
     var loc := if(startpos == endpos) then {startpos.asString} else { "{startpos}-{endpos}" }
     var arr := "----"
