@@ -2063,7 +2063,8 @@ def stringNode is public = object {
         inherit baseNode
         def kind is public = "string"
         var value is public := v
-        method end -> Position { line (line) column (linePos + (toGrace 0).size - 1) }
+        var size is public := v.size + 2  // for the quotes
+        method end -> Position { line (line) column (linePos + size - 1) }
         method accept(visitor : ASTVisitor) from(as) {
             visitor.visitString(self) up(as)
         }

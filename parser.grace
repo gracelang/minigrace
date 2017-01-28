@@ -294,6 +294,7 @@ method pushnum {
 method pushstring {
     // Push the current token onto the output stack as a string
     var o := ast.stringNode.new(sym.value)
+    o.size := sym.size
     values.push(o)
     next
 }
