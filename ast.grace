@@ -1621,7 +1621,7 @@ def objectNode is public = object {
             self
         }
         method asString {
-            "object {nameString}"
+            kind ++ " " ++ nameString
         }
     }
 }
