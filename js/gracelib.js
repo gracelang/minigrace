@@ -2727,32 +2727,26 @@ function gracecode_util() {
     this.methods['generalError(6)'] = function util_generalError(argcv, message, errlinenum, position, arr, spacePos, suggestions) {
         minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value +
             position._value + "]: " + message._value);
+        if (errlinenum._value > 0) {
+            if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [0])._value > 1))
+                minigrace.stderr_write("  " + (errlinenum._value - 1) + ": " +
+                    callmethod(this._lines, "at(1)",
+                        [1], new GraceNum(errlinenum._value - 1))._value);
 
-        if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [0])._value > 1))
-            minigrace.stderr_write("  " + (errlinenum._value - 1) + ": " +
-                callmethod(this._lines, "at(1)",
-                    [1], new GraceNum(errlinenum._value - 1))._value);
-
-        if (callmethod(this._lines, "size", [0])._value >= errlinenum._value) {
-            var line = callmethod(this._lines, "at(1)", [1], new GraceNum(errlinenum._value))._value;
-            if (spacePos._value !== false) {
-                minigrace.stderr_write("  " + errlinenum._value + ": " +
-                    line.substring(0, spacePos._value - 1) + " " +
-                    line.substring(spacePos._value - 1));
-            } else {
+            if (callmethod(this._lines, "size", [0])._value >= errlinenum._value) {
+                var line = callmethod(this._lines, "at(1)", [1], new GraceNum(errlinenum._value))._value;
                 minigrace.stderr_write("  " + errlinenum._value + ": " + line);
+                minigrace.stderr_write(arr._value);
             }
-            minigrace.stderr_write(arr._value);
+
+            if (errlinenum._value <
+                    callmethod(this._lines, "size", [0])._value)
+                minigrace.stderr_write("  " + (errlinenum._value + 1) + ": " +
+                      callmethod(this._lines, "at(1)", [1],
+                            new GraceNum(errlinenum._value + 1))._value);
         }
-
-        if (errlinenum._value <
-                callmethod(this._lines, "size", [0])._value)
-            minigrace.stderr_write("  " + (errlinenum._value + 1) + ": " +
-                  callmethod(this._lines, "at(1)", [1],
-                        new GraceNum(errlinenum._value + 1))._value);
-
         var numsuggestions = callmethod(suggestions, "size", [0]);
-        if(numsuggestions._value > 0) {
+        if (numsuggestions._value > 0) {
             for(var i=1; i <= numsuggestions._value; i++) {
                 minigrace.stderr_write("\nDid you mean:");
                 var suggestion = callmethod(suggestions, "at(1)", [1], new GraceNum(i));
