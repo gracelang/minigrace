@@ -3294,9 +3294,14 @@ function describe(obj) {
     var classString = "object";
     var shortClassString = "object";
     try {
+        var origModuleName = moduleName;    // because the asString method
+        var origLineNumber = lineNumber;    // will change them
         var m = findMethod(obj, "asString");
         objString = m.call(obj, [0])._value;
     } catch (e) {
+    } finally {
+        setModuleName(origModuleName);
+        setLineNumber(origLineNumber);
     }
     try {
         classString = obj.className;
