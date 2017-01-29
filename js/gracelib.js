@@ -2720,11 +2720,11 @@ function gracecode_util() {
     // - arr: The string used to draw an arrow showing the position of the error.
     // - spacePos: The position in the error line that a space should be inserted, or false.
     // - suggestions: A (possibly empty) list of suggestions to correct the error.
-    this.methods['syntaxError(6)'] = function util_syntaxError(argcv, message, errlinenum, position, arr, spacePos, suggestions) {
-        callmethod(this, "generalError(6)", [6], new GraceString("Syntax error: " + message._value), errlinenum,
-            position, arr, spacePos, suggestions);
+    this.methods['syntaxError(5)'] = function util_syntaxError(argcv, message, errlinenum, position, arr, suggestions) {
+        callmethod(this, "generalError(5)", [5], new GraceString("Syntax error: " + message._value), errlinenum,
+            position, arr, suggestions);
     };
-    this.methods['generalError(6)'] = function util_generalError(argcv, message, errlinenum, position, arr, spacePos, suggestions) {
+    this.methods['generalError(5)'] = function util_generalError(argcv, message, errlinenum, position, arr, suggestions) {
         minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value +
             position._value + "]: " + message._value);
         if (errlinenum._value > 0) {

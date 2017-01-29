@@ -275,17 +275,15 @@ method outprint(s) {
 }
 
 
-method syntaxError(message, errlinenum, position, arr, spacePos, suggestions) {
+method syntaxError(message, errlinenum, position, arr, suggestions) {
     // Used by various wrapper methods in the errormessages module.
     // The parameters mean:
     //   - message: The text of the error message.
     //   - errlinenum: The line number on which the error occurred.
     //   - position: A string used to show the position of the error in the error message.
     //   - arr: The string used to draw an arrow showing the position of the error.
-    //   - spacePos: The position in the error line that a space should be inserted, or false.
     //   - suggestions: A (possibly empty) list of suggestions to correct the error.
-    generalError("Syntax error: {message}", errlinenum, position, arr, spacePos,
-        suggestions)
+    generalError("Syntax error: {message}", errlinenum, position, arr, suggestions)
 }
 
 method startupFailure (message) {
@@ -298,7 +296,7 @@ method startupFailure (message) {
 }
 
 
-method generalError(message, errlinenum, position, arr, spacePos, suggestions) {
+method generalError(message, errlinenum, position, arr, suggestions) {
     if (false ≠ vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }

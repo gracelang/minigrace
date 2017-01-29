@@ -384,7 +384,7 @@ method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions(
     for (startpos..endpos) do { _ ->
         arr := arr ++ "^"
     }
-    util.syntaxError(message, errlinenum, ":{loc}", arr, false, suggestions)
+    util.syntaxError(message, errlinenum, ":{loc}", arr, suggestions)
 }
 
 method error (message) atRange (r) {
@@ -399,7 +399,7 @@ method error(message)atRange(errlinenum, startpos, endpos)withSuggestions(sugges
     for (startpos..endpos) do { _ ->
         arr := arr ++ "^"
     }
-    util.generalError(message, errlinenum, ":{loc}", arr, false, suggestions)
+    util.generalError(message, errlinenum, ":{loc}", arr, suggestions)
 }
 
 method error(message) atRange(errlinenum, startpos, endpos) {
@@ -424,7 +424,7 @@ method syntaxError(message)atPosition(errlinenum, errpos)withSuggestions(suggest
         arr := arr ++ "-"
     }
     arr := arr ++ "^"
-    util.syntaxError(message, errlinenum, ":{errpos}", arr, false, suggestions)
+    util.syntaxError(message, errlinenum, ":{errpos}", arr, suggestions)
 }
 
 method error(message) atPosition(errlinenum, errpos)
@@ -434,11 +434,11 @@ method error(message) atPosition(errlinenum, errpos)
         arr := arr ++ "-"
     }
     arr := arr ++ "^"
-    util.generalError(message, errlinenum, ":{errpos}", arr, false, suggestions)
+    util.generalError(message, errlinenum, ":{errpos}", arr, suggestions)
 }
 
 method error(message) {
-    util.generalError(message, 0, "", "", false, [])
+    util.generalError(message, 0, "", "", [])
 }
 
 method error(message)atLine(errlinenum)withSuggestions(suggestions) {
@@ -449,7 +449,7 @@ method error(message)atLine(errlinenum)withSuggestions(suggestions) {
     if (errlinenum > 0) then {
             arr := arr ++ ("^" * util.lines.at(errlinenum).size)
     }
-    util.generalError(message, errlinenum, "", arr, false, suggestions)
+    util.generalError(message, errlinenum, "", arr, suggestions)
 }
 
 method error(message)atLine(errlinenum) {
@@ -472,5 +472,5 @@ method syntaxError(message)atLine(errlinenum)withSuggestions(suggestions) {
     for (1..util.lines.at(errlinenum).size) do { _ ->
         arr := arr ++ "^"
     }
-    util.syntaxError(message, errlinenum, "", arr, false, suggestions)
+    util.syntaxError(message, errlinenum, "", arr, suggestions)
 }
