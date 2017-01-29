@@ -277,6 +277,24 @@ def suggestion is public = object {
   }
 }
 
+method readableStringFrom(xs:Collection) {
+    // returns a string describing the contents of xs,
+    // separating items with commas and the word "and"
+    var result := ""
+    var count := xs.size
+    xs.do { v ->
+        result := result ++ v.asString
+        count := count - 1
+        if (count == 1) then {
+            if (xs.size > 2) then { result := result ++ "," }
+            result := result ++ " and "
+        } elseif { count > 1 } then {
+            result := result ++ ", "
+        }
+    }
+    result
+}
+
 method name (p:String) matches (t:String) within (k:Number) {
     // This is algorithm EDP from Jokinen, Jorma, Tarhio and Ukkinen:
     // "A comparison of Approximate String Matching Algorithms"

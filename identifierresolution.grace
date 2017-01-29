@@ -1373,7 +1373,7 @@ method checkForConflicts(objNode, traitMethods) {
         maxSourceLine := each.sources.fold {a, s -> max(a, s.line) }
               startingWith(maxSourceLine)
         message := message ++ "method `{each.methodName}` is defined in " ++
-              readableStringFrom(sourceList) ++ ".\n    "
+              errormessages.readableStringFrom(sourceList) ++ ".\n    "
     }
     if (maxSourceLine == 0) then {
         errormessages.error(message)
@@ -1385,21 +1385,6 @@ method checkForConflicts(objNode, traitMethods) {
 class conflictForMethodName(nm) from(srcs) {
     def methodName is public = nm
     def sources is public = srcs
-}
-
-method readableStringFrom(xs:Collection) {
-    var result := ""
-    var count := xs.size
-    xs.do { v ->
-        result := result ++ v.asString
-        count := count - 1
-        if (count == 1) then {
-            result := result ++ " and "
-        } elseif { count > 1 } then {
-            result := result ++ ", "
-        }
-    }
-    result
 }
 
 method transformBind(bindNode) ancestors(as) {

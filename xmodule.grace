@@ -188,14 +188,16 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
         def graceFile = pn.copy.setExtension "grace"
         def moduleFileGrace = util.file(graceFile) on(util.outDir)
                                 orPath (gmp) otherwise { m ->
+            def rm = errormessages.readableStringFrom(m)
             errormessages.error("I can't find {pn.shortName} " ++
-                "or {graceFile.shortName}; looked in {m}.") atRange (sourceRange)
+                "or {graceFile.shortName}; looked in {rm}.") atRange (sourceRange)
         }
         compileModule (nm) inFile (moduleFileGrace.asString)
                 forDialect (isDialect) atRange (sourceRange)
         util.file(pn) on(util.outDir) orPath (gmp) otherwise { m ->
+            def rm = errormessages.readableStringFrom(m)
             errormessages.error("I just compiled {moduleFileGrace} " ++
-                "but can't find the .gct; looked in {m}.") atRange (sourceRange)
+                "but can't find the .gct; looked in {rm}.") atRange (sourceRange)
         }
     }
 
@@ -226,8 +228,9 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
         }
         if (sourceExists.not && binaryFile.exists.not) then {
             binaryFile := util.file(binaryFile) onPath (gmp) otherwise { l ->
+                def rl = errormessages.readableStringFrom(l)
                 errormessages.error(
-                    "I can't find {pn.shortName} or {binaryFile.shortName}; looked in {l}.")
+                    "I can't find {pn.shortName} or {binaryFile.shortName}; looked in {rl}.")
                     atRange(sourceRange)
             }
             moduleFileGct.setDirectory(binaryFile.directory)
@@ -391,7 +394,8 @@ method parseGCT(moduleName) sourceDir(dir) is confidential {
     def sought = filePath.fromString(moduleName).setExtension ".gct"
     def filename = util.file(sought) on(dir)
       orPath(sys.environ.at "GRACE_MODULE_PATH") otherwise { l ->
-        util.log 80 verbose "Can't find file {sought} for module {moduleName}; looked in {l}."
+        def rl = errormessages.readableStringFrom(l)
+        util.log 80 verbose "Can't find file {sought} for module {moduleName}; looked in {rl}."
         gctCache.at(moduleName) put(gctData)
         return gctData
     }
@@ -401,10 +405,10 @@ method parseGCT(moduleName) sourceDir(dir) is confidential {
         def line = tfp.getline
         if (line.size > 0) then {
             if (line.at(1) != " ") then {
-                key := line.substringFrom 1 to(line.size-1)
+                key := line.substringFrom 1 to (line.size-1)
                 gctData.at(key) put [ ]
             } else {
-                gctData.at(key).addLast(line.substringFrom 2 to(line.size))
+                gctData.at(key).addLast(line.substringFrom 2 to (line.size))
             }
         }
     }
