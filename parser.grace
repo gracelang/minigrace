@@ -3123,9 +3123,10 @@ method checkUnexpectedTokenAfterStatement {
                 suggestions.push(suggestion)
             }
             errormessages.syntaxError(
-                  "multiple statements must be separated by a newline or a semicolon. " ++
-                    "This is often caused by unbalanced parentheses.")
-                  atPosition (sym.line, sym.linePos) withSuggestions (suggestions)
+                "multiple statements must be separated by a newline or a semicolon. " ++
+                  "This error is often caused by unbalanced parentheses, " ++
+                    "or by omitting part a of a method name.")
+                      atPosition (sym.line, sym.linePos) withSuggestions (suggestions)
         }
     }
 }
