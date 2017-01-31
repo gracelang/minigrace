@@ -989,6 +989,7 @@ def methodNode is public = object {
                 cachedIdentifier.line := signature.first.line
                 cachedIdentifier.linePos := signature.first.linePos
                 cachedIdentifier.isBindingOccurrence := isBindingOccurence
+                cachedIdentifier.end := signature.last.end
                 cachedIdentifier.canonicalName := canonicalName
             }
             cachedIdentifier
