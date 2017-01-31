@@ -374,7 +374,7 @@ def ifNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        def spc = "  " * (depth+1)      
+        def spc = "  " * (depth+1)
         var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth+1)
         s := s ++ "\n"
@@ -729,7 +729,7 @@ def methodTypeNode is public = object {
         blk.apply(n, as)
     }
     method pretty(depth) {
-        def spc = "  " * (depth+1)        
+        def spc = "  " * (depth+1)
         var s := basePretty(depth) ++ "\n"
         s := "{s}{spc}Name: {value}\n"
         if (false != rtype) then {
@@ -1918,10 +1918,19 @@ def identifierNode is public = object {
         result
     }
 
+    var wildcardCount := 0
+    method wildcard(dtype) {
+        wildcardCount := wildcardCount + 1
+        def idNode = new("__{wildcardCount}", dtype)
+        idNode.wildcard := true
+        idNode.end := line (idNode.line) column (idNode.linePos)
+        idNode
+    }
+
     class new(name', dtype') {
         inherit baseNode
         def kind is public = "identifier"
-        var name is public := name'
+        var value is public := name'
         var wildcard is public := false
         var dtype is public := dtype'
         var isBindingOccurrence is public := false
@@ -1931,9 +1940,9 @@ def identifierNode is public = object {
         var isDeclaredByParent is public := false
         var end:Position is public := line (line) column (linePos + value.size - 1)
 
-        method value { name }
-        method value:=(nu) {
-            name := nu
+        method name { value }
+        method name:=(nu) {
+            value := nu
             end := line (line) column (linePos + nu.size - 1)
         }
         method nameString { value }
@@ -2034,7 +2043,7 @@ def identifierNode is public = object {
             }
         }
         method shallowCopy {
-            identifierNode.new(value, false).shallowCopyFieldsFrom(self)
+            identifierNode.new(value, dtype).shallowCopyFieldsFrom(self)
         }
         method postCopy(other) {
             wildcard := other.wildcard
@@ -2043,6 +2052,7 @@ def identifierNode is public = object {
             isAssigned := other.isAssigned
             inRequest := other.inRequest
             end := other.end
+            canonicalName := other.canonicalName
             self
         }
         method statementName { "expression" }

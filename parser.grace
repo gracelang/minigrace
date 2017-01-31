@@ -14,12 +14,6 @@ var moduleObject
 var comments := emptyList   // so we can request `removeAt`
 
 var auto_count := 0
-method newWildcard {
-    // returns a new name for a wildcard identifier
-    auto_count := auto_count + 1
-    return "__" ++ auto_count
-}
-
 def noBlocks = false
 def blocksOK = true
 
@@ -303,10 +297,10 @@ method pushstring {
 // false means that this identifier has not been assigned a dtype (yet).
 method pushidentifier {
     util.setPosition(sym.line, sym.linePos)
-    var o := ast.identifierNode.new(sym.value, false)
-    if (o.value == "_") then {
-        o.value := newWildcard
-        o.wildcard := true
+    def o = if (sym.value == "_") then {
+        ast.identifierNode.wildcard(false)
+    } else {
+        ast.identifierNode.new(sym.value, false)
     }
     values.push(o)
     next
@@ -536,9 +530,8 @@ method blockParameter(params) -> Boolean {
             var thisParam := values.pop
             if (paramIsPattern || thisParam.isIdentifier.not) then {
                 paramIsPattern := true
-                thisParam := ast.identifierNode.new(newWildcard, thisParam)
+                thisParam := ast.identifierNode.wildcard(thisParam)
                     // put the pattern in the type field
-                thisParam.wildcard := true
             }
             thisParam.isBindingOccurrence := true
             if (paramIsPattern && accept "colon") then {
