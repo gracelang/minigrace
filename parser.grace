@@ -1534,8 +1534,10 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
             suggestion.insert(")")afterToken(lastToken.prev)
             suggestion.insert("(")beforeToken(lastToken.prev.prev.prev)
             suggestions.push(suggestion)
-            errormessages.syntaxError("an expression containing both arithmetic and non-arithmetic operators requires parentheses.")atPosition(
-                lastToken.prev.line, lastToken.prev.linePos)withSuggestions(suggestions)
+            errormessages.syntaxError("an expression containing both arithmetic " ++
+                  "and non-arithmetic operators requires parentheses.") atRange (
+                  lastToken.prev.prev.prev.line, lastToken.prev.prev.prev.linePos,
+                  lastToken.linePos) withSuggestions (suggestions)
         }
         opdtype := o
         while {(ops.size > 0) && (prec <= toprec(ops))} do {
