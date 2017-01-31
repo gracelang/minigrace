@@ -1,0 +1,2 @@
+#!/bin/bash
+ls js/tests/*fail_test.grace | GRACE_MODULE_PATH=js:modules xargs -n1 ./minigrace --target js >& failresults2
