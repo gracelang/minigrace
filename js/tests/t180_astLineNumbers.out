@@ -21,7 +21,7 @@
 
 
   6:1-12:1 method
-    Name: 6:7-13:9 identifierBinding‹person(2)›
+    Name: 6:7-25 identifierBinding‹person(2)›
     Signature:
       Part: person
         Parameters:
@@ -39,7 +39,7 @@
           Value: 8:23-26 identifier‹age'›
           Annotations: 8:14-19 identifier‹public›
         9:3-11:3 method
-          Name: 9:10-13:11 identifierBinding‹getShoeSize›
+          Name: 9:10-20 identifierBinding‹getShoeSize›
           Signature:
             Part: getShoeSize
               Parameters:
