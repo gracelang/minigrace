@@ -207,7 +207,10 @@ ideDeploy: ideBuild
 	rsync -az --delete --exclude .git grace-web-editor/ $(WEB_SERVER):$(WEB_DIRECTORY)
 
 install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grace=%.gct) $(COMPILER_MODULES:%.grace=%.gso) $(COMPILER_MODULES:%.grace=%.gcn) $(STUB_GCTS) $(STUBS:%.grace=js/%.gct) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=js/%.js) $(MODULES_WO_JSONLY:%.grace=modules/%.gcn) $(MODULES_WO_JSONLY:%.grace=modules/%.gso) gracelib.o
-	install -d -p $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
+	test -d $(PREFIX)/bin || install -d $(PREFIX)/bin
+	test -d $(MODULE_PATH) || install -d $(MODULE_PATH)
+	test -d $(OBJECT_PATH)  || install -d $(OBJECT_PATH)
+	test -d $(INCLUDE_PATH) || install -d $(INCLUDE_PATH)
 	install -p -m 755 minigrace minigrace-js grace grace-debug $(PREFIX)/bin/
 	install -p -m 755 $(C_MODULES_GSO) $(STUB_GCTS) js/gracelib.js js/unicodedata.js $(MODULE_PATH)
 	install -p -m 755 gracelib.o $(OBJECT_PATH)
