@@ -10,4 +10,5 @@ script:
   - make test || ( cat tests/test.log ; exit 1)
   - ([ -e ./minigrace ] && ( make test.js || ( cat js/tests/test.js.log ; exit 1 )))
   - ([ -e ./minigrace ] && ( make test.js.js || ( cat js/tests/test.js.log ; exit 1 )))
+  - make install
 sudo: false
