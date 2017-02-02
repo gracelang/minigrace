@@ -1,5 +1,7 @@
 language:
   - c
+env:
+  - PREFIX=/usr/local
 compiler:
   - clang
 install:
