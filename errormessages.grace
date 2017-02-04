@@ -356,7 +356,12 @@ method min3(a, b, c) is confidential {
 // Methods to actually display an error message and suggestions, then exit.
 
 method syntaxError (message) atRange (r) {
-    syntaxError (message) atRange (r) withSuggestions []
+    def more = if (r.start.line < r.end.line) then {
+        "  Did you intend to continue this statement on the next line?"
+    } else {
+        ""
+    }
+    syntaxError (message ++ more) atRange (r) withSuggestions []
 }
 method syntaxError (message) atRange (r) withSuggestion (s) {
     syntaxError (message) atRange (r) withSuggestions [s]

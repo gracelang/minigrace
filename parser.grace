@@ -67,8 +67,6 @@ var previousCommentToken := lastToken
 var statementToken := lastToken     // the token starting the current statement
 var comment := false
 
-var firstCallOfNext := true
-
 method next {
     // Advance to the next token in the stream, assigning it to sym.
     // Put the position in the input into util module variables.
@@ -85,6 +83,20 @@ method next {
             ++ "This is often caused by a missing '\}'")
             atPosition(sym.line, sym.linePos)
     }
+}
+
+method indentHasIncreased {
+    // returns true if sym is on a line that is a continuation of the previous line
+    def symIndent = sym.indent
+    if (symIndent == 0) then {
+        return false        // this ensures that there will be a previous symbol
+                            // on a prior line, and we won't hit start of input.
+    }
+    def symLine = sym.line
+    var s := sym
+    do { s := s.prev } while { s.line == symLine }
+    if { s.kind == "lbrace" } then { return false }
+    return s.indent < symIndent
 }
 
 method saveParsePosition {
@@ -1743,8 +1755,12 @@ method callrest(acceptBlocks) {
             if (argsFound.not) then {
                 def suggestion = errormessages.suggestion.new
                 suggestion.insert "(‹expression›)" afterToken (lastToken)
+                def more = if (indentHasIncreased) then {
+                    "  The indentation indicates that this is a continuation of" ++
+                        " the previous line.  Is that what you intended?"
+                } else { "" }
                 errormessages.syntaxError("a multi-part method request must end with an argument list," ++
-                    " which must be parenthesized, unless it is self-delimiting.")
+                    " which must be parenthesized, unless it is self-delimiting." ++ more)
                         atPosition(sym.line, sym.linePos) withSuggestion (suggestion)
             }
             argumentParts.addLast(namePart)
