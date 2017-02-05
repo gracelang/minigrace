@@ -366,6 +366,16 @@ minigrace-dynamic: l1/minigrace $(SOURCEFILES)
 minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) $(C_MODULES_GSO:%.gso=%.gct) gracelib.o unixFilePath.gct
 	GRACE_MODULE_PATH=. l1/minigrace --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
 
+minigrace-js: pull-js js/gracelib.js js/buildinfo.gct $(STUBS:%.grace=%.gct) $(STUBS:%.grace=%.gct) $(C_MODULES_GSO:%.gso=%.gct) unixFilePath.gct
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
+
+
+js/buildinfo.gct: javascript-compiler/buildinfo.grace
+	GRACE_MODULE_PATH=. javascript-compiler/minigrace-js $(VERBOSITY) --make --noexec $<
+
+js/gracelib.js:
+	cd javascript-compiler && ln -sf ../gracelib.js .
+
 minigrace-environment: minigrace-c-env minigrace-js-env
 
 minigrace-c-env: minigrace standardGrace.gct gracelib.o unicode.gso $(MODULES_WO_JSONLY:%.grace=modules/%.gct) .git/hooks/commit-msg
@@ -414,6 +424,10 @@ oldWeb: $(WEBFILES) js/sample
 	rsync -a -l -z js/sample $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z sample $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z js/sample/graphics/ $(WEB_SERVER):$(WEB_DIRECTORY)
+
+pull-js:
+	npm install
+	cp -R node_modules/minigrace/ javascript-compiler/
 
 pull-web-editor:
 	@if [ -e grace-web-editor ] ; \
