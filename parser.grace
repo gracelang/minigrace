@@ -86,17 +86,16 @@ method next {
 }
 
 method indentHasIncreased {
-    // returns true if sym is on a line that is a continuation of the previous line
-    def symIndent = sym.indent
-    if (symIndent == 0) then {
+    // is lastToken on a line that is a continuation of the previous line?
+
+    if (lastIndent == 0) then {
         return false        // this ensures that there will be a previous symbol
                             // on a prior line, and we won't hit start of input.
     }
-    def symLine = sym.line
-    var s := sym
-    do { s := s.prev } while { s.line == symLine }
+    var s := sym.prev
+    do { s := s.prev } while { s.line == lastLine }
     if { s.kind == "lbrace" } then { return false }
-    return s.indent < symIndent
+    return s.indent < lastIndent
 }
 
 method saveParsePosition {
