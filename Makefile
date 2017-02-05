@@ -427,6 +427,7 @@ oldWeb: $(WEBFILES) js/sample
 
 pull-js:
 	npm install
+	mkdir -p javascript-compiler/
 	cp -R node_modules/minigrace/ javascript-compiler/
 
 pull-web-editor:
@@ -588,6 +589,35 @@ uninstall:
 
 webIde:
 	$(MAKE) ide
+
+quick-compile: pull-js
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler collectionsPrelude.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js --make --noexec --dir javascript-compiler standardGrace.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler stubs/curl.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler stubs/dom.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler stubs/io.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js --make --noexec --dir javascript-compiler stubs/mirrors.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler stubs/sys.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler stubs/timer.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler stubs/unicode.grace
+	cd javascript-compiler/ && ld -o gracelib.o -r gracelib-basic.o standardGrace.gcn collectionsPrelude.gcn debugger.o
+	cp javascript-compiler/gsoModules/* ./
+	cp javascript-compiler/gracelib.o ./
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec buildinfo.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  stringMap.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  unixFilePath.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  util.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  errormessages.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  lexer.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  identifierKinds.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  ast.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  parser.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  xmodule.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  genc.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  genjs.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  identifierresolution.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --native --gracelib javascript-compiler/ --module minigrace compiler.grace
+	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --native --module minigrace  --gracelib . compiler.grace
 
 .git/hooks/commit-msg: tools/validate-commit-message
 	@ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
