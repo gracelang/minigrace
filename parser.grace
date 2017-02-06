@@ -94,7 +94,8 @@ method indentHasIncreased {
     }
     var s := sym.prev
     do { s := s.prev } while { s.line == lastLine }
-    if { s.kind == "lbrace" } then { return false }
+    if ( s.kind == "lbrace" ) then { return false }
+    if ( s.kind == "comment" ) then { return false }
     return s.indent < lastIndent
 }
 
@@ -299,7 +300,7 @@ method pushnum {
 method pushstring {
     // Push the current token onto the output stack as a string
     var o := ast.stringNode.new(sym.value)
-    o.end := ast.line (sym.line) column (sym.linePos + sym.size - 1)
+    o.end := ast.line (sym.line) column (sym.endPos)
     values.push(o)
     next
 }
@@ -327,8 +328,9 @@ method checkAnnotation(ann) {
                     while {tok.value != ":"} do { tok := tok.prev }
                     def suggestion = errormessages.suggestion.new
                     suggestion.deleteTokenRange(tok, tok.next)leading(true)trailing(false)
-                    errormessages.syntaxError("an argument to an annotation cannot have a type.")atRange(
-                        tok.line, tok.linePos, tok.next.linePos + tok.next.size - 1)withSuggestion(suggestion)
+                    errormessages.syntaxError("an argument to an annotation cannot have a type.")
+                          atRange(tok.line, tok.linePos, tok.next.endPos)
+                          withSuggestion(suggestion)
                 }
             }
         }
@@ -369,7 +371,7 @@ method errorMissingAnnotation {
     suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
     suggestions.push(suggestion)
     errormessages.syntaxError("one or more annotations separated by commas must follow 'is'.")
-        atRange(lastToken.line, lastToken.linePos, lastToken.linePos + lastToken.size - 1)
+        atRange(lastToken.line, lastToken.linePos, lastToken.endPos)
         withSuggestions(suggestions)
 }
 
@@ -408,7 +410,7 @@ method typeexpression {
             def suggestion = errormessages.suggestion.new
             suggestion.insert(")")afterToken(lastToken)
             errormessages.syntaxError "a type expression beginning with a '(' must end with a ')'."
-                atRange(lastToken.line, lastToken.linePos, lastToken.linePos + lastToken.size - 1)
+                atRange(lastToken.line, lastToken.linePos, lastToken.endPos)
                 withSuggestion(suggestion)
         }
         statementToken := prevStatementToken
@@ -806,7 +808,7 @@ method doif {
                         } else {
                             //checkInvalidExpression
                             suggestion.replaceTokenRange(sym, nextTok.prev)leading(false)trailing(true)with("«expression»")
-                            errormessages.syntaxError("4: An elseif statement must have an expression in braces after the 'elseif'.")atRange(
+                            errormessages.syntaxError("(4) an elseif statement must have an expression in braces after the 'elseif'.")atRange(
                                 sym.line, sym.linePos, nextTok.linePos - 1)withSuggestion(suggestion)
                         }
                     }
@@ -1157,8 +1159,10 @@ method trycatch {
                 suggestion.insert(" \{")afterToken(tryTok)
                 suggestion.insert("\} ")beforeToken(nextTok)
             }
-            errormessages.syntaxError("a try(_)catch(_) statement must have either a block or an expression in parentheses after the 'try'.")atPosition(
-                tryTok.line, tryTok.linePos + tryTok.size + 1)withSuggestion(suggestion)
+            errormessages.syntaxError("a try(_)catch(_) statement must have " ++
+                "a block or an expression in parentheses after the 'try'.")
+                atPosition(tryTok.line, tryTok.endPos + 1)
+                withSuggestion(suggestion)
         }
         next
         if (didNotConsume {expression(blocksOK)}) then {
@@ -1169,15 +1173,17 @@ method trycatch {
             } else {
                 suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression»")
             }
-            errormessages.syntaxError("a try(_)catch(_) statement must have either a block or an expression in parentheses after the 'try'.")atPosition(
-                sym.line, sym.linePos)withSuggestion(suggestion)
+            errormessages.syntaxError("a try(_)catch(_) statement must have " ++
+                "a block or an expression in parentheses after the 'try'.")
+                atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
         }
         if (sym.kind != "rparen") then {
             checkBadOperators
             def suggestion = errormessages.suggestion.new
             suggestion.insert(")")afterToken(lastToken)
-            errormessages.syntaxError("an expression beginning with a '(' must end with a ')'.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+            errormessages.syntaxError("an expression beginning with a '(' must end with a ')'.")
+                atPosition(lastToken.line, lastToken.linePos + lastToken.size)
+                withSuggestion(suggestion)
         }
         next
     }
@@ -1666,7 +1672,7 @@ method dotrest(acceptBlocks) {
         next
         if (accept "identifier") then {
             util.setPosition(sym.line, sym.linePos)
-            var dro := ast.memberNode.new(sym.value, lookuptarget)
+            def dro = ast.memberNode.new(sym.value, lookuptarget)
             values.push(dro)
             next
             if (accept "dot") then {
@@ -1755,12 +1761,15 @@ method callrest(acceptBlocks) {
                 def suggestion = errormessages.suggestion.new
                 suggestion.insert "(‹expression›)" afterToken (lastToken)
                 def more = if (indentHasIncreased) then {
-                    "  The indentation indicates that this is a continuation of" ++
-                        " the previous line.  Is that what you intended?"
+                    "  The indentation tells me that this is a continuation of" ++
+                        " the previous line; is that what you intended?"
                 } else { "" }
+                def reqStart = ast.line (lnum) column (lpos)
+                def reqEnd = ast.line (lastToken.line) column (lastToken.endPos)
+                def reqRange = ast.start (reqStart) end (reqEnd)
                 errormessages.syntaxError("a multi-part method request must end with an argument list," ++
-                    " which must be parenthesized, unless it is self-delimiting." ++ more)
-                        atPosition(sym.line, sym.linePos) withSuggestion (suggestion)
+                    " either parenthesized or self-delimiting." ++ more)
+                        atRange(reqRange) withSuggestion (suggestion)
             }
             argumentParts.addLast(namePart)
         }
@@ -2103,8 +2112,9 @@ method dodialect {
                 suggestion.insert(" \"«dialect name»\"")afterToken(lastToken)
                 errorPos := lastToken.linePos + lastToken.size + 1
             }
-            errormessages.syntaxError("a dialect statement must have the name of the dialect in quotes after the 'dialect'.")atPosition(
-                lastToken.line, errorPos)withSuggestion(suggestion)
+            errormessages.syntaxError("a dialect statement must have the name " ++
+                "of the dialect in quotes after the word 'dialect'.")
+                atPosition(lastToken.line, errorPos)withSuggestion(suggestion)
         }
         if (values.isEmpty) then {
             def dn = ast.dialectNode.fromToken(sym)
@@ -2268,7 +2278,7 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
         } else {
             errormessages.syntaxError("unexpected symbol '{sym.value}' in body " ++
                 "of of {constructName}")
-                atRange(sym.line, sym.linePos, sym.linePos + sym.value.size - 1)
+                atRange(sym.line, sym.linePos, sym.endPos)
         }
     }
     def body = values
@@ -2643,7 +2653,7 @@ method methodsignature(sameline) {
         if (didNotConsume {typeexpression} ) then {
             errormessages.syntaxError("after an arrow, write the method's return " ++
                   "type. If you don't want to state the return type, omit the arrow.")
-                  atRange(sym.line, sym.linePos, sym.linePos + sym.size - 1)
+                  atRange(sym.line, sym.linePos, sym.endPos)
         }
         result.dtype := values.pop
     }
@@ -2754,8 +2764,10 @@ method doreturn {
                     suggestion.deleteTokenRange(sym, nextTok.prev)leading(true)trailing(false)
                 }
                 suggestions.push(suggestion)
-                errormessages.syntaxError("a return statement must have either an expression or a new-line after 'return'.")atRange(
-                    sym.line, sym.linePos, sym.linePos + sym.size - 1)withSuggestions(suggestions)
+                errormessages.syntaxError ("a return statement must have " ++
+                    "an expression or a newline after the word 'return'.")
+                    atRange (sym.line, sym.linePos, sym.endPos)
+                    withSuggestions (suggestions)
             }
             retval := values.pop
         } else {
@@ -3123,7 +3135,7 @@ method checkUnexpectedTokenAfterStatement {
             def nextTok = findNextValidToken( ["rbrace"] )
             if (nextTok == sym) then {
                 suggestion := errormessages.suggestion.new
-                suggestion.addLine(lastToken.line, util.lines.at(lastToken.line).substringFrom(1)to(lastToken.linePos + lastToken.size - 1))
+                suggestion.addLine(lastToken.line, util.lines.at(lastToken.line).substringFrom(1)to(lastToken.endPos))
                 def newLine = util.lines.at(sym.line).substringFrom(sym.linePos)to(util.lines.at(sym.line).size)
                 suggestion.addLine(lastToken.line + 0.1, newLine)
                 suggestions.push(suggestion)
@@ -3185,10 +3197,10 @@ method parse(toks) {
         if (tokens.size == oldlength) then {
             def suggestion = errormessages.suggestion.new
             suggestion.deleteToken(sym)
-            errormessages.syntaxError("invalid statement. This is often " ++
+            errormessages.syntaxError ("invalid statement. This is often " ++
                 "caused by an extra '}', ')', or ']'.")
-                atRange(sym.line, sym.linePos, sym.linePos + sym.size - 1)
-                withSuggestion(suggestion)
+                atRange (sym.line, sym.linePos, sym.endPos)
+                withSuggestion (suggestion)
         }
         oldlength := tokens.size
     }
