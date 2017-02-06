@@ -195,7 +195,7 @@ gracelib.o: gracelib-basic.o debugger.o standardGrace.gcn collectionsPrelude.gcn
 
 ide: ideDeploy
 
-ideBuild: js pull-brace grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
+ideBuild: js pull-brace grace-web-editor/scripts/setup.js grace-web-editor/scripts/background.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	./tools/includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	./tools/calc-IDE-version
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
