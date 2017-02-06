@@ -84,6 +84,7 @@ MiniGrace.prototype.compile = function(grace_code) {
     } catch (e) {
         if (e == "ErrorExit") {
             this.compileError = true;
+            this.stderr_write("Compilation terminated.");
         } else if (e == "SystemExit") {
             // pass
         } else if (e.exctype == 'graceexception') {
@@ -104,6 +105,7 @@ MiniGrace.prototype.compile = function(grace_code) {
                 this.stderr_write(message);
                 callmethod(e, "printBacktrace", [0]);
             }
+            this.stderr_write("Compilation terminated.");
         } else {
             throw e;
         }
@@ -127,7 +129,7 @@ MiniGrace.prototype.trapErrors = function(func) {
         if ((eStr === "RangeError: Maximum call stack size exceeded") ||    // Chrome
             (eStr === "InternalError: too much recursion") ) {              // Firefox
             e = new GraceExceptionPacket(new GraceException("TooMuchRecursion", ProgrammingErrorObject),
-                   new GraceString("Does one of your methods request execution of itself without limit?"));
+                   new GraceString("does one of your methods request execution of itself without limit?"));
         }
         if (e.exctype === "graceexception") {
             var stderr_write = this.stderr_write;
