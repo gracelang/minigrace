@@ -357,7 +357,7 @@ method min3(a, b, c) is confidential {
 
 method syntaxError (message) atRange (r) {
     def more = if (r.start.line < r.end.line) then {
-        "  Did you intend to continue this statement on the next line?"
+        "  This statement spans multiple lines; is that what you intended?"
     } else {
         ""
     }
@@ -368,7 +368,7 @@ method syntaxError (message) atRange (r) withSuggestion (s) {
 }
 method syntaxError (message) atRange (r) withSuggestions (s) {
     syntaxError (message)
-          atRange (r.start.line, r.start.column, r.end.column)
+          atRange (r.start.line, r.start.column, r.end.line, r.end.column)
           withSuggestions (s)
 }
 
@@ -390,6 +390,26 @@ method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions(
         arr := arr ++ "^"
     }
     util.syntaxError(message, errlinenum, ":{loc}", arr, suggestions)
+}
+
+method syntaxError (message)
+          atRange (startline, startpos, endline, endpos)
+          withSuggestions (suggestions) {
+
+    // this variant allows for range to start and end on different lines.
+    def loc = if (startline == endline) then {
+        if (startpos == endpos)
+              then { startpos.asString }
+              else { "{startpos}-{endpos}" }
+    } else { "{startpos}-{endline}:{endpos}" }
+    var arr := "----"
+    for (2..(startpos + startline.asString.size)) do { _ ->
+        arr := arr ++ "-"
+    }
+    for (startpos..endpos) do { _ ->
+        arr := arr ++ "^"
+    }
+    util.syntaxError(message, startline, ":{loc}", arr, suggestions)
 }
 
 method error (message) atRange (r) {
