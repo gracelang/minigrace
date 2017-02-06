@@ -307,6 +307,9 @@ class newScopeIn(parent') kind(variety') {
                 }
             }
         }
+        if (aNode.nameString == "explOde(1)") then {
+            ProgrammingError.raise "the compiler exploded."
+        }
         errormessages.syntaxError "no method {aNode.canonicalName}."
                 atRange(aNode.range)
     }
@@ -325,6 +328,9 @@ class newScopeIn(parent') kind(variety') {
                 if (s.contains(sought)) then {
                     return s.getScope(sought)
                 }
+            }
+            if (nd.nameString == "explOde(1)") then {
+                ProgrammingError.raise "the compiler exploded."
             }
             errormessages.syntaxError "no method {nd.canonicalName}."
                   atRange (nd.range)
