@@ -234,7 +234,7 @@ method parseargs(buildinfo) {
         if (infilev.isatty) then {
             print("minigrace {buildinfo.gitgeneration} / "
                 ++ buildinfo.gitrevision)
-            print "Copyright © 2011-2015 rests with the authors."
+            print "Copyright © 2011-2017 rests with the authors."
             print("This is free software with absolutely no warranty. "
                 ++ "Say minigrace.w for details.")
             print ""
