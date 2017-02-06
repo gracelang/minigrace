@@ -307,7 +307,7 @@ class newScopeIn(parent') kind(variety') {
                 }
             }
         }
-        errormessages.syntaxError "no method {aNode.canonicalName}"
+        errormessages.syntaxError "no method {aNode.canonicalName}."
                 atRange(aNode.range)
     }
     method scopeReferencedBy(nd:ast.AstNode) {
@@ -326,7 +326,7 @@ class newScopeIn(parent') kind(variety') {
                     return s.getScope(sought)
                 }
             }
-            errormessages.syntaxError "no method {nd.canonicalName}"
+            errormessages.syntaxError "no method {nd.canonicalName}."
                   atRange (nd.range)
         } elseif {nd.kind == "outer"} then {
             nd.theObjects.last.scope
@@ -1154,7 +1154,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitReturn(o) up (as) {
             o.scope := as.parent.scope;
             def enclosingMethodNode = as.suchThat { n -> n.isMethod } ifAbsent {
-                errormessages.syntaxError "`return` statements must be inside methods"
+                errormessages.syntaxError "`return` statements must be inside methods."
                     atRange(o.range)
             }
             o.dtype := enclosingMethodNode.dtype
@@ -1235,7 +1235,7 @@ method collectParentNames(node) {
         return
     }
     if (nodeScope.inheritedNames == inProgress) then {
-        errormessages.syntaxError "cyclic inheritance or trait use"
+        errormessages.syntaxError "cyclic inheritance or trait use."
             atRange(node.line, node.linePos, node.linePos + 4)
     }
     nodeScope.inheritedNames := inProgress
@@ -1429,18 +1429,18 @@ method transformInherits(inhNode) ancestors(as) {
     var superExpr := inhNode.value
     def currentScope = inhNode.scope
     if (currentScope.isObjectScope.not) then {
-        errormessages.syntaxError "{inhNode.statementName} statements must be directly inside an object"
+        errormessages.syntaxError "{inhNode.statementName} statements must be directly inside an object."
                     atRange(inhNode.range)
     }
     if (superExpr.isAppliedOccurenceOfIdentifier) then {
         def nm = superExpr.nameString
         def definingScope = currentScope.thatDefines(nm)
         if (definingScope == currentScope) then {
-            errormessages.syntaxError "the object being inherited must be from an enclosing scope"
+            errormessages.syntaxError "the object being inherited must be from an enclosing scope."
                 atRange(superExpr.range)
         }
         if ((definingScope.kind(nm)) ≠ k.methdec) then {
-            errormessages.syntaxError "the object being inherited must be freshly generated from a method"
+            errormessages.syntaxError "the object being inherited must be freshly generated from a method."
                   atRange(superExpr.range)
         }
         def sv = definingScope.variety
@@ -1472,7 +1472,7 @@ method transformInherits(inhNode) ancestors(as) {
         superExpr.with.push(ast.requestPart.request "$object"
             withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
     } else {
-        errormessages.syntaxError "inheritance must be from a freshly-created object"
+        errormessages.syntaxError "inheritance must be from a freshly-created object."
             atRange(inhNode.range)
     }
     inhNode
