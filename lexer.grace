@@ -98,13 +98,17 @@ class new {
         var prev is public := false
 
         method ==(other) {
-            if (other == false) then {
+            if (false == other) then {
                 false
             } else {
                 (other.line == line) && (other.linePos == linePos)
             }
         }
         method asString { "({line}:{linePos}){self.kind} {self.value}" }
+        method value { abstract }
+        method size { abstract }
+        method kind { abstract }
+        method endPos { linePos + size - 1 }
     }
 
 
@@ -129,6 +133,8 @@ class new {
         def linePos' = stringStart
         method line is override { line' }
         method linePos is override { linePos' }
+        method endLine { lineNumber }
+        method endPos is override { linePosition }
     }
     class commentToken(s) {
         inherit token
@@ -1169,11 +1175,11 @@ class new {
                     linePosition := linePosition + 1
                     def bigraph = ch ++ nextCh
                     if (bigraph == ">=") then { state.consume "≥"
-                    } elseif { bigraph == "<=" } then { state.consume("≤")
-                    } elseif { bigraph == "!=" } then { state.consume("≠")
-                    } elseif { bigraph == "[[" } then { state.consume("⟦")
-                    } elseif { bigraph == "]]" } then { state.consume("⟧")
-                    } elseif { bigraph == "->" } then { state.consume("→")
+                    } elseif { bigraph == "<=" } then { state.consume "≤"
+                    } elseif { bigraph == "!=" } then { state.consume "≠"
+                    } elseif { bigraph == "[[" } then { state.consume "⟦"
+                    } elseif { bigraph == "]]" } then { state.consume "⟧"
+                    } elseif { bigraph == "->" } then { state.consume "→"
                     } else {
                         linePosition := linePosition - 1
                         state.consume(ch)
