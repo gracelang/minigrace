@@ -3490,10 +3490,13 @@ GraceException.prototype = {
                                               // also to avoid infinite regress
             if (o.className !== 'Exception') return GraceFalse;
             if (o.name !== this.name) return GraceFalse;
-            return GraceTrue;
+            return callmethod(this.parent, "==(1)", [1], o.parent);
         },
         "&(1)": function(argcv, o) {
             return new GraceAndPattern(this, o);
+        },
+        "name": function(argcv) {
+            return new GraceString(this.name);
         },
         "asString": function(argcv) {
             return new GraceString(this.name);
