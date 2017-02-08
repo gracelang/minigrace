@@ -1147,18 +1147,12 @@ method compilematchcase(o) {
         params.push([i, e])
         i := i + 1
     }
-    var elsecase := "NULL"
-    if (false != o.elsecase) then {
-        elsecase := compilenode(o.elsecase)
-        out("  gc_frame_newslot({elsecase});")
-    }
     for (params) do {ie->
         def idx = ie.first
         def e = ie.second
         out("  params[{idx}] = {e};")
     }
-    out("  Object matchres{myc} = matchCase({matchee}, params, {cases.size},"
-        ++ "{elsecase});")
+    out("  Object matchres{myc} = matchCase({matchee}, params, {cases.size});")
     out("  gc_frame_end(frame{myc});")
     o.register := "matchres" ++ myc
 }

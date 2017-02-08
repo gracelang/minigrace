@@ -5144,7 +5144,7 @@ Object alloc_MatchFailed() {
     }
     return MatchFailed;
 }
-Object matchCase(Object matchee, Object *cases, int ncases, Object elsecase) {
+Object matchCase(Object matchee, Object *cases, int ncases, ...) {
     int i;
     int partcv[] = {1};
     for (i=0; i<ncases; i++) {
@@ -5152,9 +5152,7 @@ Object matchCase(Object matchee, Object *cases, int ncases, Object elsecase) {
         if (istrue(ret))
             return callmethod(ret, "result", 0, NULL, NULL);
     }
-    if (elsecase)
-        return callmethod(elsecase, "apply(1)", 1, partcv, &matchee);
-    graceRaise(ProgrammingError(), "non-exhaustive match in match()case()….");
+    graceRaise(ProgrammingError(), "non-exhaustive match in match(_)case(_)….");
     return done;        // will never happen, but keeps C compiler quiet
 }
 Object tryCatch(Object block, Object *caseList, int ncases,

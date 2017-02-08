@@ -1350,7 +1350,6 @@ method matchcase {
     }
     next
     def cases = []
-    var elsecase := false
     while {accept("identifier") && (sym.value == "case")} do {
         next
         if (accept "lbrace") then {
@@ -1401,7 +1400,7 @@ method matchcase {
         cases.push(values.pop)
     }
     util.setPosition(matchTok.line, matchTok.linePos)
-    values.push(ast.matchCaseNode.new(matchee, cases, elsecase))
+    values.push(ast.matchCaseNode.new(matchee, cases))
     minIndentLevel := localmin
 }
 // Accept a term. Terms consist only of single syntactic units and

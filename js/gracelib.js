@@ -3349,7 +3349,7 @@ function tryCatch(obj, cases, finallyblock) {
 }
 
 function matchCase(obj, cases) {
-    setModuleName("match()case()...");
+    setModuleName("match()case()…");
     for (var i = 0, len = cases.length; i<len; i++) {
         var eachCase = cases[i];
         if (eachCase.guard.call(eachCase.receiver, obj)) {
@@ -3357,7 +3357,7 @@ function matchCase(obj, cases) {
         }
     }
     callmethod(ProgrammingErrorObject, "raise(1)", [1],
-          new GraceString ("non-exhaustive match in match()case()…."));
+          new GraceString ("non-exhaustive match in match(_)case(_)…."));
     return GraceDone;       // should never happen
 }
 

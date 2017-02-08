@@ -116,7 +116,7 @@ Object alloc_Undefined();
 Object alloc_done();
 Object alloc_ellipsis();
 Object alloc_MatchFailed();
-Object matchCase(Object, Object*, int, Object);
+Object matchCase(Object, Object*, int, ...);
 Object tryCatch(Object, Object*, int, Object);
 Object catchCase(Object, Object*, int, Object);
 Object alloc_Integer32(int);
