@@ -663,9 +663,10 @@ def matchCaseNode is public = object {
 }
 def methodTypeNode is public = object {
   class new(signature', rtype') {
-    // Represents the signature of a method in a type literal
-    // signature' is an Iterable of requestPart objects, which contain
-    // the parts of the name and the parameter lists.
+    // Represents the signature of a method in a type literal.
+    // signature' is a collection of signaturePart objects, which
+    // contain the parts of this method's name and the parameter lists;
+    // rtype' is the return type of this method, or false if not specified.
 
     inherit baseNode
     def kind is public = "methodtype"
