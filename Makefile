@@ -590,7 +590,7 @@ uninstall:
 webIde:
 	$(MAKE) ide
 
-quick-compile: pull-js
+quick-compile: pull-js js/grace-debug js/gracelib.js
 	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler collectionsPrelude.grace
 	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js --make --noexec --dir javascript-compiler standardGrace.grace
 	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler stubs/curl.grace
