@@ -37,6 +37,8 @@ type Collection⟦T⟧ = Object & type {
         // may raise SizeUnknown.
     sizeIfUnknown(action: Block0⟦Number⟧)
         // my size; if not known, then the result of applying action
+    == (other) -> Boolean
+        // other and self have the same size, and contain the same elements.
     first -> T
         // my first element; raises BoundsError if I have none.
     do(body: Block1⟦T, Done⟧) -> Done
