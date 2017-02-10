@@ -310,7 +310,7 @@ class newScopeIn(parent') kind(variety') {
         if (aNode.nameString == "explOde(1)") then {
             ProgrammingError.raise "the compiler exploded."
         }
-        errormessages.syntaxError "no method {aNode.canonicalName}."
+        errormessages.syntaxError "there is no method {aNode.canonicalName}."
                 atRange(aNode.range)
     }
     method scopeReferencedBy(nd:ast.AstNode) {
