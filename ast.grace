@@ -1200,8 +1200,22 @@ def callNode is public = object {
         var isTailCall is public := false      // is possibly the result of a method
         var isFresh is public := false         // calls a fresh method
         var cachedIdentifier := uninitialized
+        var endPos is public := noPosition
 
-        method end -> Position { with.last.end }
+        method end -> Position {
+            if (endPos == noPosition) then {
+                if (with.first.name.startsWith "prefix") then {
+                    util.log 60 verbose "guessing at end of {pretty 1} with {receiver.end}"
+                    receiver.end
+                } else {
+                    util.log 60 verbose "guessing at end of {pretty 1} with {with.last.end}"
+                    with.last.end
+                }
+            } else {
+                endPos
+            }
+        }
+        method end:=(newPos) { endPos := newPos }
         method onSelf {
             // mark as a self-request.  Answers self for chaining.
             isSelfRequest := true
@@ -1340,6 +1354,7 @@ def callNode is public = object {
             isSelfRequest := other.isSelfRequest
             isTailCall := other.isTailCall
             isFresh := other.isFresh
+            endPos := other.endPos
             self
         }
         method statementName { "request" }

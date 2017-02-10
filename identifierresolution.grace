@@ -1406,6 +1406,7 @@ method transformBind(bindNode) ancestors(as) {
         def part = ast.requestPart.request(nmGets) withArgs [bindNode.value]
                 scope(currentScope)
         def newCall = ast.callNode.new(dest.receiver, [part]) scope(currentScope)
+        newCall.end := bindNode.value.end
         if (dest.receiver.isSelfOrOuter) then {
             newCall.onSelf
         }
@@ -1418,7 +1419,9 @@ method transformBind(bindNode) ancestors(as) {
                 def rcvr = currentScope.resolveOuterMethod(nmGets) fromNode(bindNode).receiver
                 def part = ast.requestPart.request(nm ++ ":=")
                         withArgs [ bindNode.value ] scope(currentScope)
-                return ast.callNode.new(rcvr, [ part ]) scope(currentScope)
+                def newCall = ast.callNode.new(rcvr, [ part ]) scope(currentScope)
+                newCall.end := bindNode.value.end
+                return newCall
             } else {
                 util.log 20 verbose "bind check 2 failed"
             }
@@ -1432,7 +1435,7 @@ method transformInherits(inhNode) ancestors(as) {
     // inhNode is (a shallow copy of) an inheritNode.  Transform it to deal
     // with superobject initialization and inherited names, including
     // inheritance modifiers
-    var superExpr := inhNode.value
+    def superExpr = inhNode.value
     def currentScope = inhNode.scope
     if (currentScope.isObjectScope.not) then {
         errormessages.syntaxError "{inhNode.statementName} statements must be directly inside an object."
@@ -1460,20 +1463,22 @@ method transformInherits(inhNode) ancestors(as) {
                 ast.requestPart.request (nm) withArgs [] scope(currentScope),
                 ast.requestPart.request "$object" withArgs [
                     ast.identifierNode.new("self", false) scope(currentScope)] scope(currentScope) ])
+            newCall.end := superExpr.end
             inhNode.value := newCall
         } else {
             ProgrammingError.raise ("untransformed idfentifer `{nm}` found " ++
                 "in {inhNode.statementName} statement on line {inhNode.line}")
         }
     } elseif {superExpr.isMember} then {
-        def newcall = ast.callNode.new(inhNode.value.receiver, [
+        def newCall = ast.callNode.new(inhNode.value.receiver, [
             ast.requestPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
             ast.requestPart.request "$object" withArgs (
                 [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope)
             ]
         ) scope(currentScope)
-        newcall.isSelfRequest := superExpr.isSelfRequest
-        inhNode.value := newcall
+        newCall.isSelfRequest := superExpr.isSelfRequest
+        newCall.end := superExpr.end
+        inhNode.value := newCall
     } elseif {superExpr.isCall} then {
         superExpr.with.push(ast.requestPart.request "$object"
             withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))

@@ -1064,6 +1064,8 @@ method prefixop {
         def rcvr = values.pop
         def call = ast.callNode.new(rcvr,
             [ ast.requestPart.request("prefix" ++ op) withArgs( [] ) ] )
+        call.end := ast.line (lastLine) column (lastToken.endPos)
+        util.log 60 verbose "call of prefix {op} ends at {call.endPos}"
         values.push(call)
         minIndentLevel := startIndent
     }
@@ -1772,6 +1774,9 @@ method callrest(acceptBlocks) {
             }
             argumentParts.addLast(namePart)
         }
+        meth.end := ast.line (lastLine) column (lastToken.endPos)
+        // we do this indside the if, because outside meth might be an
+        // identifierNode or a memberNode
     }
     meth.generics := genericIdents
     values.push(meth)
