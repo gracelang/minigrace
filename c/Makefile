@@ -20,13 +20,13 @@ buildinfo.grace: Makefile.conf
 	mv buildinfo.grace.new buildinfo.grace
 
 buildclean:
-	rm -rf *.gcn *.gct *.gso minigrace unicode.gso gracelib.o bin Makefile.conf
+	rm -rf *.gcn *.gct *.gso *.gso.dSYM minigrace gracelib.o bin Makefile.conf
 
 curl.gso: curl.c gracelib.h
 	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o curl.gso curl.c -lcurl
 
 fullclean: buildclean
-	rm -f *.grace *.c *.h
+	rm -rf *.grace *.c *.h
 
 gracelib.o: gracelib.c standardGrace.c collectionsPrelude.c debugger.o
 	gcc -std=c99 -c -o gracelib-basic.o gracelib.c

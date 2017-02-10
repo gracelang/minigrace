@@ -75,13 +75,14 @@ ace-code: js/ace/ace.js
 alltests: test test.js module-test-js js/sample-dialects
 
 c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct c/Makefile mirrors.c mirrors.gct definitions.h curl.c modules/unicode.gso modules/mirrors.gso unixFilePath.gct unixFilePath.gcn
-	for f in gracelib.c gracelib.h unicode.{c,gct} unicodedata.h $(SOURCEFILES) mirrors.{c,gct} definitions.h debugger.c curl.c modules/*.gso modules/*.gct modules/*.gcn ;\
+	for f in gracelib.c gracelib.h unicode.c unicode.gct modules/unicode.gso unicodedata.h $(SOURCEFILES) mirrors.c mirrors.gct modules/mirrors.gso definitions.h debugger.c curl.c ;\
     do cp -f $$f c ; done &&\
+    cp minigrace c/ &&\
     cd c &&\
-    GRACE_MODULE_PATH=. ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude collectionsPrelude.grace &&\
-    GRACE_MODULE_PATH=. ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude standardGrace.grace &&\
-    GRACE_MODULE_PATH=. ../minigrace --target c --make $(VERBOSITY) --module minigrace --noexec compiler.grace &&\
-    rm -f *.gcn *.gso
+    GRACE_MODULE_PATH=. ./minigrace --source $(VERBOSITY) -XNoMain -XNativePrelude collectionsPrelude.grace &&\
+    GRACE_MODULE_PATH=. ./minigrace --source $(VERBOSITY) -XNoMain -XNativePrelude standardGrace.grace &&\
+    GRACE_MODULE_PATH=. ./minigrace --source $(VERBOSITY) --module minigrace compiler.grace &&\
+    rm -rf *.gcn *.gso *.gso.dSYM minigrace
 
 clean:
 	rm -f gracelib.o gracelib-basic.o standardInput{.grace,.gct,.gcn,.gso,.o,}
@@ -513,11 +514,18 @@ tarball: minigrace
 	sed -e 's/DISTRIB=tree/DISTRIB=tarball/' < configure > c/configure
 	chmod 755 c/configure
 	VER=$$(tools/calculate-version) ;\
-      mkdir minigrace-$$VER ; cp -R c/* gUnit.grace minigrace-$$VER ;\
-      mkdir minigrace-$$VER/tests ; cp tests/*.grace tests/*.out tests/harness minigrace-$$VER/tests ;\
-      mkdir minigrace-$$VER/stubs ; cp stubs/*.grace minigrace-$$VER/stubs ;\
-      mkdir minigrace-$$VER/modules ; cp modules/*.grace minigrace-$$VER/modules ;\
-      cp {unicode.c,unicode.gct,mirrors.c,mirrors.gct,unixFilePath.c,unixFilePath.gct} minigrace-$$VER ;\
+      mkdir minigrace-$$VER ;\
+      cp -R c/* minigrace-$$VER ;\
+      mkdir minigrace-$$VER/tests ;\
+      cp tests/*.grace tests/*.out tests/harness minigrace-$$VER/tests ;\
+      mkdir minigrace-$$VER/stubs ;\
+      cp stubs/*.grace minigrace-$$VER/stubs ;\
+      mkdir minigrace-$$VER/modules ;\
+      cp modules/unicode.c minigrace-$$VER/modules ;\
+      cp modules/unicode.gct minigrace-$$VER/modules ;\
+      cp modules/mirrors.c minigrace-$$VER/modules ;\
+      cp modules/mirrors.gct minigrace-$$VER/modules ;\
+      cp modules/*.grace minigrace-$$VER/modules ;\
       cp -R README doc minigrace-$$VER ;\
       tar cjvf ../minigrace-$$VER.tar.bz2 minigrace-$$VER ;\
       chmod a+r ../minigrace-$$VER.tar.bz2 ;\
