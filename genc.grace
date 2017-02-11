@@ -1206,7 +1206,7 @@ method compileop(o) {
 }
 method compileArguments(o, args) {
     var i := 0
-    for (o.with) do { part ->
+    for (o.parts) do { part ->
         for (part.args) do { p ->
             var r := compilenode(p)
             args.push(r)
@@ -1216,19 +1216,19 @@ method compileArguments(o, args) {
     if (args.size > paramsUsed) then {
         paramsUsed := args.size
     }
-    if (o.with.size > partsUsed) then {
-        partsUsed := o.with.size
+    if (o.parts.size > partsUsed) then {
+        partsUsed := o.parts.size
     }
-    var nparts := o.with.size
+    var nparts := o.parts.size
     if (false != o.generics) then {
-        if (partsUsed == o.with.size) then {
+        if (partsUsed == o.parts.size) then {
             partsUsed := partsUsed + 1
         }
         if (paramsUsed < (args.size + o.generics.size)) then {
             paramsUsed := paramsUsed + o.generics.size
         }
         nparts := nparts + 1
-        out("  partcv[{o.with.size}] = {o.generics.size};")
+        out("  partcv[{o.parts.size}] = {o.generics.size};")
         i := args.size
         o.generics.do {g->
             out("  params[{i}] = {compilenode(g)};")
@@ -1244,8 +1244,8 @@ method assembleArguments(o, args) {
         out "  params[{i}] = {arg};"
         i := i + 1
     }
-    for (o.with.indices) do { partnr ->
-        out "  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};"
+    for (o.parts.indices) do { partnr ->
+        out "  partcv[{partnr - 1}] = {o.parts.at(partnr).args.size};"
     }
 }
 method compileSuperRequest(o, args, nparts) {
@@ -1416,7 +1416,7 @@ method compilereturn(o) {
 }
 method compilePrint(o) {
     var args := []
-    for (o.with.first.args) do { prm ->
+    for (o.parts.first.args) do { prm ->
         var r := compilenode(prm)
         args.push(r)
     }
@@ -1431,11 +1431,11 @@ method compilePrint(o) {
     auto_count := auto_count + 1
 }
 method compileNativeCode(o) {
-    if(o.with.size != 2) then {
+    if(o.parts.size != 2) then {
         errormessages.syntaxError "method native()code takes two arguments"
             atRange(o.line, o.linePos, o.linePos + 5)
     }
-    def param1 = o.with.first.args.first
+    def param1 = o.parts.first.args.first
     if (param1.kind != "string") then {
         errormessages.syntaxError "the first argument to native()code must be a string literal"
             atRange(param1.line, param1.linePos, param1.linePos)
@@ -1444,7 +1444,7 @@ method compileNativeCode(o) {
         o.register := "done"
         return
     }
-    def param2 = o.with.second.args.first
+    def param2 = o.parts.second.args.first
     if (param2.kind != "string") then {
         errormessages.syntaxError "the second argument to native()code must be a string literal"
             atLine(param2.line)

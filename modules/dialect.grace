@@ -334,28 +334,28 @@ def ForRequest is public = RequestOf "for(_)do(_)"
 method whileCond(node) {
     // answers the condition expression from node, which must be a
     // a callNode calling "while(_)do(_)"
-    def sig = node.with
+    def sig = node.parts
     sig.first.args.first
 }
 
 method whileBody(node) {
     // answers the body expression from node, which must be a
     // a callNode calling "while(_)do(_)"
-    def sig = node.with
+    def sig = node.parts
     sig.second.args.first
 }
 
 method forCollection(node) {
     // answers the collection expression from node, which must be a
     // a callNode calling "for(_)do(_)"
-    def sig = node.with
+    def sig = node.parts
     sig.first.args.first
 }
 
 method forBody(node) {
     // answers the body expression from node, which must be a
     // a callNode calling "for(_)do(_)"
-    def sig = node.with
+    def sig = node.parts
     sig.second.args.first
 }
 
@@ -432,7 +432,7 @@ def astVisitor = object {
             memb.receiver.accept(self)
         } case { _ -> }
 
-        for(node.with) do { part ->
+        for(node.parts) do { part ->
             for(part.args) do { arg ->
                 arg.accept(self)
             }

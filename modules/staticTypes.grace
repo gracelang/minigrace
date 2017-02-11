@@ -690,7 +690,7 @@ method check (req: Request)
         against (meth: MethodType) -> ObjectType is confidential {
     def name = meth.name
 
-    prelude.for (meth.signature) and (req.with) do { part, args' ->
+    prelude.for (meth.signature) and (req.parts) do { part, args' ->
         def params = part.parameters
         def args   = args'.args
 

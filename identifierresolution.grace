@@ -480,7 +480,7 @@ method rewritematchblockterm(arg) {
     if (arg.kind == "call") then {
         def bindings = []
         def subpats = []
-        for (arg.with) do { part ->
+        for (arg.parts) do { part ->
             for (part.args) do { a ->
                 def tmp = rewritematchblockterm(a)
                 subpats.push(tmp.first)
@@ -1480,7 +1480,7 @@ method transformInherits(inhNode) ancestors(as) {
         newCall.end := superExpr.end
         inhNode.value := newCall
     } elseif {superExpr.isCall} then {
-        superExpr.with.push(ast.requestPart.request "$object"
+        superExpr.parts.push(ast.requestPart.request "$object"
             withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
     } else {
         errormessages.syntaxError "inheritance must be from a freshly-created object."

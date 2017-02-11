@@ -785,7 +785,7 @@ method compileBuildMethodFor(methNode) withFreshCall (callExpr) inside (outerRef
 }
 method compileCallToBuildMethod(callExpr) withArgs (args) {
     util.setPosition(callExpr.line, callExpr.linePos)
-    callExpr.with.addLast(
+    callExpr.parts.addLast(
         ast.requestPart.request "$build"
             withArgs [ast.nullNode, ast.nullNode, ast.nullNode]
     )
@@ -799,7 +799,7 @@ method compileCallToBuildMethod(callExpr) withArgs (args) {
     } else {
         compileOtherRequest(callExpr, args)
     }
-    callExpr.with.removeLast
+    callExpr.parts.removeLast
 }
 method paramlist(o) {
     // a comma-prefixed and separated list of the parameters
@@ -1064,7 +1064,7 @@ method compileop(o) {
     o.register := register
 }
 method compileNormalArguments(o, args) {
-    for (o.with) do { part ->
+    for (o.parts) do { part ->
         for (part.args) do { p ->
             if ( p.isIdentifier && emitUndefinedChecks ) then {
                 compileCheckForUndefinedIdentifier(p)
@@ -1105,9 +1105,9 @@ method compileCheckForUndefinedIdentifier(id) {
 }
 method partl(o) {
     var result := ""
-    for (o.with.indices) do { partnr ->
-        result := result ++ o.with.at(partnr).args.size
-        if (partnr < o.with.size) then {
+    for (o.parts.indices) do { partnr ->
+        result := result ++ o.parts.at(partnr).args.size
+        if (partnr < o.parts.size) then {
             result := result ++ ", "
         }
     }
@@ -1235,7 +1235,7 @@ method compilereturn(o) {
 }
 method compilePrint(o) {
     var args := []
-    for (o.with) do { part ->
+    for (o.parts) do { part ->
         for (part.args) do { prm ->
             var r := compilenode(prm)
             args.push(r)
@@ -1250,11 +1250,11 @@ method compilePrint(o) {
     o.register := "GraceDone"
 }
 method compileNativeCode(o) {
-    if(o.with.size != 2) then {
+    if(o.parts.size != 2) then {
         errormessages.syntaxError "method native()code takes two arguments"
             atRange(o.line, o.linePos, o.linePos + 5)
     }
-    def param1 = o.with.first.args.first
+    def param1 = o.parts.first.args.first
     if (param1.kind != "string") then {
         errormessages.syntaxError "the first argument to native(_)code(_) must be a string literal"
             atRange(param1.line, param1.linePos, param1.linePos)
@@ -1263,7 +1263,7 @@ method compileNativeCode(o) {
         o.register := "GraceDone"
         return
     }
-    def param2 = o.with.second.args.first
+    def param2 = o.parts.second.args.first
     if (param2.kind != "string") then {
         errormessages.syntaxError "the second argument to native(_)code(_) must be a string literal"
             atLine(param2.line)
@@ -1539,7 +1539,7 @@ method compileReuseCall(callNode) forClass (className) aliases (aStr) exclusions
     def buildMethodName = addSuffix "$build(3)" to (callNode.nameString)
     def target = compilenode(callNode.receiver)
     var arglist := ""
-    callNode.with.do { part ->
+    callNode.parts.do { part ->
         if (! part.name.startsWith "$") then {
             part.args.do { p -> arglist := arglist ++ ", " ++ compilenode(p) }
         }

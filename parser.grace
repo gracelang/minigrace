@@ -326,7 +326,7 @@ method pushidentifier {
 
 method checkAnnotation(ann) {
     if (ann.kind == "call") then {
-        for (ann.with) do {p->
+        for (ann.parts) do {p->
             for (p.args) do {a->
                 if ((a.kind == "identifier") && {false != a.dtype}) then {
                     var tok := sym

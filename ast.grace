@@ -1185,14 +1185,14 @@ def callNode is public = object {
         result.scope := s
         result
     }
-    class new(receiver', parts) {
+    class new(receiver', parts') {
         // requested as callNode.new(receiver':AstNode, parts:List)
         // Represents a method request with arguments.
-        // The argument list is in `with`, as a sequence of `requestPart`s.
+        // The argument list is in `parts`, as a sequence of `requestPart`s.
 
         inherit baseNode
         def kind is public = "call"
-        var with is public := parts            // [ requestPart ]
+        var parts is public := parts'            // [ requestPart ]
         var generics is public := false
         var isPattern is public := false
         var receiver is public := receiver'    // formerly `value`
@@ -1204,12 +1204,12 @@ def callNode is public = object {
 
         method end -> Position {
             if (endPos == noPosition) then {
-                if (with.first.name.startsWith "prefix") then {
+                if (parts.first.name.startsWith "prefix") then {
                     util.log 60 verbose "guessing at end of {pretty 1} with {receiver.end}"
                     receiver.end
                 } else {
-                    util.log 60 verbose "guessing at end of {pretty 1} with {with.last.end}"
-                    with.last.end
+                    util.log 60 verbose "guessing at end of {pretty 1} with {parts.last.end}"
+                    parts.last.end
                 }
             } else {
                 endPos
@@ -1224,12 +1224,12 @@ def callNode is public = object {
 
         method nameString {
             // the name of the method being requested, in numeric form
-            with.fold { acc, each -> acc ++ each.nameString } startingWith ""
+            parts.fold { acc, each -> acc ++ each.nameString } startingWith ""
         }
 
         method canonicalName {
             // the name of the method being requested, in underscore form
-            with.fold { acc, each -> acc ++ each.canonicalName }
+            parts.fold { acc, each -> acc ++ each.canonicalName }
                 startingWith ""
         }
 
@@ -1255,20 +1255,20 @@ def callNode is public = object {
         }
         method arguments {
             def result = [ ]
-            for (self.with) do { part ->
+            for (parts) do { part ->
                 for (part.args) do { arg -> result.push(arg) }
             }
             result
         }
 
         method argumentsDo(action) {
-            for (self.with) do { part ->
+            for (parts) do { part ->
                 for (part.args) do { arg -> action.apply(arg) }
             }
         }
 
         method numArgs {
-            with.fold { acc, part -> acc + part.args.size } startingWith 0
+            parts.fold { acc, part -> acc + part.args.size } startingWith 0
         }
 
         method numTypeArgs {
@@ -1279,7 +1279,7 @@ def callNode is public = object {
             if (visitor.visitCall(self) up(as)) then {
                 def newChain = as.extend(self)
                 self.receiver.accept(visitor) from(newChain)
-                for (self.with) do { part ->
+                for (self.parts) do { part ->
                     for (part.args) do { arg ->
                         arg.accept(visitor) from(newChain)
                     }
@@ -1295,7 +1295,7 @@ def callNode is public = object {
             var n := shallowCopy
             def newChain = as.extend(n)
             n.receiver := receiver.map(blk) ancestors(newChain)
-            n.with := listMap(with, blk) ancestors(newChain)
+            n.parts := listMap(parts, blk) ancestors(newChain)
             n.generics := maybeListMap(generics, blk) ancestors(newChain)
             blk.apply(n, as)
         }
@@ -1312,7 +1312,7 @@ def callNode is public = object {
                 }
             }
             s := s ++ spc ++ "Parts:"
-            for (self.with) do { part ->
+            for (self.parts) do { part ->
                 s := s ++ "\n  " ++ spc ++ part.pretty(depth + 2)
             }
             s
@@ -1326,7 +1326,7 @@ def callNode is public = object {
                     s := "({receiver.toGrace (depth + 1)})."
                 }
             }
-            with.do { part -> s := s ++ part.toGrace(depth + 1) }
+            parts.do { part -> s := s ++ part.toGrace(depth + 1) }
                 separatedBy { s := s ++ " " }
             s
         }
@@ -1340,14 +1340,14 @@ def callNode is public = object {
                 }
                 cachedIdentifier := identifierNode.new(nameString, false) scope (scope)
                 cachedIdentifier.inRequest := true
-                cachedIdentifier.line := with.first.line
-                cachedIdentifier.linePos := with.first.linePos
+                cachedIdentifier.line := parts.first.line
+                cachedIdentifier.linePos := parts.first.linePos
             }
             cachedIdentifier
         }
         method asString { "call {receiver.pretty(0)}" }
         method shallowCopy {
-            callNode.new(receiver, with).shallowCopyFieldsFrom(self)
+            callNode.new(receiver, parts).shallowCopyFieldsFrom(self)
         }
         method postCopy(other) {
             isPattern := other.isPattern
@@ -1743,7 +1743,7 @@ def memberNode is public = object {
         method isMember { true }
         method isCall { true }
 
-        method with { emptySeq }
+        method parts { emptySeq }
         method arguments { emptySeq }
         method argumentsDo { }
         method numArgs { 0 }

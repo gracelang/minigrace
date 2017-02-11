@@ -29,7 +29,7 @@ method reportWhile(req) {
     // req is an entire `while(_)do(_)` request.
     // Generate the suggestion of replacing the
     // parentheses with braces, if applicable.
-    def whilePart = req.with.first
+    def whilePart = req.parts.first
     print "whilePart = {whilePart.pretty(0)}"
     print "util.lines = {util.lines}"
     print "whilePart.lineLength = {whilePart.lineLength}"
