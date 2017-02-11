@@ -222,6 +222,12 @@ method acceptKeyword (kw) {
     return sym.value == kw
 }
 
+method acceptKeyword (kw1) or (kw2) {
+    if (sym.kind != "keyword") then { return false }
+    if (sym.value == kw1) then { return true }
+    return sym.value == kw2
+}
+
 method acceptSameLine (t) {
     // True if the current token is a t, and it is on the same logical
     // line (either because it's on the same physical line, or because
@@ -381,7 +387,7 @@ method dotypeterm {
         generic
         dotrest(noBlocks)
     } else {
-        if (acceptKeyword "type") then {
+        if (acceptKeyword "type" or "interface") then {
             dotypeLiteral
         }
     }
@@ -1421,7 +1427,7 @@ method term {
         identifier
     } elseif { acceptKeyword "object" } then {
         doobject
-    } elseif { acceptKeyword "type" } then {
+    } elseif { acceptKeyword "type" or "interface" } then {
         dotypeLiteral
     } elseif { accept "lbrace" } then {
         block
@@ -2814,9 +2820,10 @@ method domethodtype {
 }
 
 method dotypeLiteral {
-    // parses a type literal between braces, with optional leading 'type' keyword.
+    // parses a type literal between braces, with optional leading
+    // 'type' or 'interface' keyword.
     def typeLiteralTok = sym
-    if (acceptKeyword "type") then {
+    if (acceptKeyword "type" or "interface") then {
         next
         if (!accept("lbrace")) then {
             def suggestion = errormessages.suggestion.new
