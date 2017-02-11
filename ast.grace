@@ -1204,7 +1204,7 @@ def callNode is public = object {
 
         method end -> Position {
             if (endPos == noPosition) then {
-                if (parts.first.name.startsWith "prefix") then {
+                if (isRequestOfPrefixOperator) then {
                     util.log 60 verbose "guessing at end of {pretty 1} with {receiver.end}"
                     receiver.end
                 } else {
@@ -1216,6 +1216,7 @@ def callNode is public = object {
             }
         }
         method end:=(newPos) { endPos := newPos }
+        method isRequestOfPrefixOperator { parts.first.name.startsWith "prefix" }
         method onSelf {
             // mark as a self-request.  Answers self for chaining.
             isSelfRequest := true
@@ -1318,6 +1319,10 @@ def callNode is public = object {
             s
         }
         method toGrace(depth : Number) -> String {
+            if (isRequestOfPrefixOperator) then {
+                def opSymbol = parts.first.name.substringFrom 7
+                return "{opSymbol} {self.receiver.toGrace 0}"
+            }
             var s := ""
             if (receiver.isImplicit.not) then {
                 if (receiver.isSimple) then {
@@ -1785,13 +1790,7 @@ def memberNode is public = object {
             s
         }
         method toGrace(depth : Number) -> String {
-            var s := ""
-            if (self.value.substringFrom(1)to(6) == "prefix") then {
-                s := self.value.substringFrom(7)to(value.size)
-                s := s ++ " " ++ self.receiver.toGrace(0)
-            } else {
-                s := self.receiver.toGrace(depth) ++ "." ++ self.value
-            }
+            var s := self.receiver.toGrace(depth) ++ "." ++ self.value
             if (false != generics) then {
                 s := s ++ "⟦"
                 for (1..(generics.size - 1)) do {ix ->
