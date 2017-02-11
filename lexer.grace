@@ -201,7 +201,7 @@ class new {
         def kind is public = "num"
         def value is public = v
         def base is public = b
-        def size is public = linePosition - startPosition
+        def size is public = linePosition - startPosition + 1
     }
     class keywordToken(v) {
         inherit token
