@@ -6,7 +6,7 @@
   , "minigrace"
   ]
 , "dependencies":
-  { "minigrace": "1.0.6"}
+  { "minigrace": "VERSION"}
 , "contributors":
   [ { "name": "Andrew P. Black"
     , "email": "black@cs.pdx.edu"
