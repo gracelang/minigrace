@@ -176,6 +176,13 @@ fulltest: gencheck clean selftest selftest-js module-test-js
 gencheck:
 	X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache
 
+get-npm-kg:
+	@echo "Downloading known-good js compiler from NPM... VERSION=$(NPM_STABLE)"
+	sed -e 's/VERSION/$(NPM_STABLE)/g' package.in.json > package.json
+	npm install
+	mkdir -p js-kg/
+	cp -R node_modules/minigrace/ js-kg/
+
 gracedoc: tools/gracedoc
 
 grace-web-editor/index.html: pull-web-editor grace-web-editor/index.in.html
@@ -424,11 +431,6 @@ oldWeb: $(WEBFILES) js/sample
 	rsync -a -l -z sample $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z js/sample/graphics/ $(WEB_SERVER):$(WEB_DIRECTORY)
 
-pull-js:
-	npm install
-	mkdir -p javascript-compiler/
-	cp -R node_modules/minigrace/ javascript-compiler/
-
 pull-web-editor:
 	@if [ -e grace-web-editor ] ; \
        then printf "grace-web-editor: " ; cd grace-web-editor; git pull ; \
@@ -443,6 +445,8 @@ pull-brace: pull-web-editor
 	@if [ -e grace-web-editor/brace ] ; \
        then printf "grace-web-editor/brace: " ; cd grace-web-editor/brace; git pull ; \
        else git clone https://github.com/gracelang/brace/ grace-web-editor/brace ; fi
+
+push-npm-update:
 
 sample-dialects: $(DIALECT_DEPENDENCIES)
 	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
@@ -589,34 +593,42 @@ uninstall:
 webIde:
 	$(MAKE) ide
 
-quick-compile: pull-js js/grace-debug js/gracelib.js
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler collectionsPrelude.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js --make --noexec --dir javascript-compiler standardGrace.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler stubs/curl.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler stubs/dom.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler stubs/io.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js --make --noexec --dir javascript-compiler stubs/mirrors.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler stubs/sys.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler stubs/timer.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec --dir javascript-compiler stubs/unicode.grace
-	cd javascript-compiler/ && ld -o gracelib.o -r gracelib-basic.o standardGrace.gcn collectionsPrelude.gcn debugger.o
-	cp javascript-compiler/gsoModules/* ./
-	cp javascript-compiler/gracelib.o ./
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js  --make --noexec buildinfo.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  stringMap.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  unixFilePath.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  util.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  errormessages.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  lexer.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  identifierKinds.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  ast.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  parser.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  xmodule.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  genc.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  genjs.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --noexec  identifierresolution.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --native --gracelib javascript-compiler/ --module minigrace compiler.grace
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js   --make --native --module minigrace  --gracelib . compiler.grace
+js-kg/collectionsPrelude.gct: collectionsPrelude.grace js-kg/minigrace-js
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir $(@D) $(<F)
+
+js-kg/standardGrace.gct: standardGrace.grace collectionsPrelude.gct js-kg/minigrace-js
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir $(@D) $(<F)
+
+$(SOURCEFILES:%.grace=js-kg/%.gct): js-kg/%.gct:
+
+quick-compile: js/grace-debug js/gracelib.js
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir js-kg collectionsPrelude.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js --make --noexec --dir js-kg standardGrace.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir js-kg stubs/curl.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir js-kg stubs/dom.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir js-kg stubs/io.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js --make --noexec --dir js-kg stubs/mirrors.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir js-kg stubs/sys.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir js-kg stubs/timer.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir js-kg stubs/unicode.grace
+	cd js-kg/ && ld -o gracelib.o -r gracelib-basic.o standardGrace.gcn collectionsPrelude.gcn debugger.o
+	cp js-kg/gsoModules/* ./
+	cp js-kg/gracelib.o ./
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec buildinfo.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  stringMap.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  unixFilePath.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  util.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  errormessages.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  lexer.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  identifierKinds.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  ast.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  parser.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  xmodule.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  genc.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  genjs.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  identifierresolution.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --native --gracelib js-kg/ --module minigrace compiler.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --native --module minigrace  --gracelib . compiler.grace
 
 .git/hooks/commit-msg: tools/validate-commit-message
 	@ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
