@@ -963,6 +963,11 @@ def methodNode is public = object {
         method numParams {
             signature.fold { acc, p -> acc + p.numParams } startingWith 0
         }
+        method parametersDo(b) {
+            signature.do { part ->
+                part.params.do { each -> b.apply(each) }
+            }
+        }
         method endPos {
             def lastPart = signature.last
             lastPart.linePos + lastPart.name.size - 1
