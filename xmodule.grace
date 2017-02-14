@@ -102,16 +102,20 @@ method doParseCheck(moduleNode) {
     } catch { e : CheckerFailure ->
         match (e.data)
             case { lp : LinePos ->
-                errormessages.error "{e.exception}: {e.message}."
+                errormessages.error "Dialect {currentDialect.name}: {e.message}."
                     atPosition(e.data.line, e.data.linePos)
             }
             case { rs : RangeSuggestions ->
-                errormessages.error("{e.exception}: {e.message}.")
+                errormessages.error "Dialect {currentDialect.name}: {e.message}."
                     atRange(rs.line, rs.posStart, rs.posEnd)
                     withSuggestions(rs.suggestions)
             }
+            case { n : ast.AstNode ->
+                errormessages.error "Dialect {currentDialect.name}: {e.message}."
+                    atRange(n.range)
+            }
             case { _ ->
-                errormessages.error "{e.exception}: {e.message}."
+                errormessages.error "Dialect {currentDialect.name}: {e.message}."
                     atLine(util.linenum)
             }
     } catch { e : Exception ->      // some unknwown Grace exception
