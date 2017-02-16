@@ -3464,7 +3464,7 @@ GraceException.prototype = {
             return new GraceException(nm._value, this);
         },
         "raise(1)": function(argcv, msg) {
-            throw new GraceExceptionPacket(this, msg, new GraceObject());
+            throw new GraceExceptionPacket(this, msg, new GraceString("no data"));
         },
         "raise(1)with(1)": function(argcv, msg, data) {
             throw new GraceExceptionPacket(this, msg, data);
