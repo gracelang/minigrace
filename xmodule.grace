@@ -7,6 +7,11 @@ import "mirrors" as mirrors
 import "errormessages" as errormessages
 import "unixFilePath" as filePath
 
+
+def CheckerFailure = Exception.refine "CheckerFailure"
+def DialectError is public = prelude.Exception.refine "DialectError"
+    //must correspond to what is defined in "dialect"
+
 def gctCache = emptyDictionary
 def keyCompare = { a, b -> a.key.compare(b.key) }
 
@@ -83,7 +88,7 @@ method checkDialect(moduleObject) {
                     }
                 }
             }
-        } catch { e : RuntimeError ->
+        } catch { e:Exception ->
             util.setPosition(dialectNode.line, 1)
             e.printBacktrace
             errormessages.error "Dialect error: dialect \"{dmn}\" failed to load.\n{e}."
@@ -96,29 +101,11 @@ method checkDialect(moduleObject) {
 
 method doParseCheck(moduleNode) {
     if (currentDialect.hasParseChecker.not) then { return }
-    def CheckerFailure = Exception.refine "CheckerFailure"
     try {
         currentDialect.moduleObject.thisDialect.parseChecker(moduleNode)
-    } catch { e : CheckerFailure ->
-        match (e.data)
-            case { lp : LinePos ->
-                errormessages.error "Dialect {currentDialect.name}: {e.message}."
-                    atPosition(e.data.line, e.data.linePos)
-            }
-            case { rs : RangeSuggestions ->
-                errormessages.error "Dialect {currentDialect.name}: {e.message}."
-                    atRange(rs.line, rs.posStart, rs.posEnd)
-                    withSuggestions(rs.suggestions)
-            }
-            case { n : ast.AstNode ->
-                errormessages.error "Dialect {currentDialect.name}: {e.message}."
-                    atRange(n.range)
-            }
-            case { _ ->
-                errormessages.error "Dialect {currentDialect.name}: {e.message}."
-                    atLine(util.linenum)
-            }
-    } catch { e : Exception ->      // some unknwown Grace exception
+    } catch { e:CheckerFailure | DialectError ->
+        reportDialectError(e)
+    } catch { e:Exception ->      // some unknown Grace exception
         printBacktrace (e) asFarAs "thisDialect.parseChecker"
         errormessages.error("Unexpected exception raised by parse checker for " ++
             "dialect '{currentDialect.name}'.\n{e.exception}: {e.message}")
@@ -127,28 +114,36 @@ method doParseCheck(moduleNode) {
 
 method doAstCheck(moduleNode) {
     if (currentDialect.hasAstChecker.not) then { return }
-    def CheckerFailure = Exception.refine "CheckerFailure"
     try {
         currentDialect.moduleObject.thisDialect.astChecker(moduleNode)
-    } catch { e : CheckerFailure ->
-        match (e.data)
-            case { lp : LinePos ->
-                errormessages.error "{e.exception}: {e.message}."
-                    atPosition(e.data.line, e.data.linePos)
-            }
-            case { rs : RangeSuggestions ->
-                errormessages.error("{e.exception}: {e.message}.")
-                    atRange(rs.line, rs.posStart, rs.posEnd)
-                    withSuggestions(rs.suggestions)
-            }
-            case { _ -> }
-                errormessages.error("{e.exception}: {e.message}.")
-                    atLine(util.linenum)
-    } catch { e : Exception ->      // some unknwown Grace exception
+    } catch { e:CheckerFailure | DialectError ->
+        reportDialectError(e)
+    } catch { e:Exception ->      // some unknown Grace exception
         printBacktrace (e) asFarAs "thisDialect.astChecker"
         errormessages.error("Unexpected exception raised by AST checker for " ++
             "dialect '{currentDialect.name}'.\n{e.exception}: {e.message}")
     }
+}
+
+method reportDialectError(ex) {
+    match (ex.data)
+        case { rs:RangeSuggestions ->
+            errormessages.error "Dialect {currentDialect.name}: {ex.message}."
+                atRange(rs)
+                withSuggestions(rs.suggestions)
+        }
+        case { r:ast.Range ->  //  inlcudes ast.AstNode
+            errormessages.error "Dialect {currentDialect.name}: {ex.message}."
+                atRange(r)
+        }
+        case { p:ast.Position ->
+            errormessages.error "Dialect {currentDialect.name}: {ex.message}."
+                atPosition(p.line, p.column)
+        }
+        case { _ ->
+            errormessages.error "Dialect {currentDialect.name}: {ex.message}."
+                atLine(util.linenum)
+        }
 }
 
 method printBacktrace(exceptionPacket) asFarAs (methodName) {

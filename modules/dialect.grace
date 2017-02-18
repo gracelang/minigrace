@@ -7,6 +7,7 @@ inherit prelude.methods
 // Checker error
 
 def CheckerFailure is public = prelude.Exception.refine "CheckerFailure"
+def DialectError is public = prelude.Exception.refine "DialectError"
 
 type List = prelude.List
 
@@ -122,38 +123,45 @@ method rule(block) -> Done {
     rules.push(block)
 }
 
-// Short fail-with-message
 
-// Will be updated with each node examined
-var currentLine := 0
-method fail(message) {
-    CheckerFailure.raise (message) with (object {
-        def line is public = currentLine
-        def linePos is public = 1
-    })
+var currentLine := 0        // Will be updated with each node examined
+
+method fail (message) {
+    // short fail-with-message; gives source line only
+
+    DialectError.raise (message) with (ast.line(currentLine) column 0)
 }
-method fail(message)at(p) {
-    CheckerFailure.raise (message) with (p)
+
+method fail (message) at (rng:ast.Range) {
+    // fail, using the source-file range rng for the error message
+    // Note that, since ast.AstNode conforms to ast.Range, the second
+    // argument can be an AstNode.
+
+    DialectError.raise (message) with (rng)
 }
-method fail(message)from(startPos)to(endPos)suggest(sugg) {
+method fail (message) from (startCol) to (endCol) {
+    // fail, with a source range
+
+    def rng = ast.start (ast.line(currentLine) column(startCol))
+                  end (ast.line(currentLine) column(endCol))
+    DialectError.raise (message) with (rng)
+}
+
+method fail(message) from (startCol) to (endCol) suggest (sugg) {
+    // fail, with an object that contains a source range and a suggestion
+
     def o = object {
-        def line is public = currentLine
-        def posStart is public = startPos
-        def posEnd is public = endPos
+        inherit ast.start (ast.line(currentLine) column(startCol))
+                end (ast.line(currentLine) column(endCol))
         def suggestions is public = [sugg]
     }
-    CheckerFailure.raise (message) with (o)
+    DialectError.raise (message) with (o)
 }
-method fail(message)from(startPos)to(endPos) {
-    def o = object {
-        def line is public = currentLine
-        def posStart is public = startPos
-        def posEnd is public = endPos
-        def suggestions is public = []
-    }
-    CheckerFailure.raise (message) with (o)
-}
-method fail(msg)when(pat) {
+
+method fail (msg) when (pat) -> Done {
+    // adds a rule the the list of active rules.  The rule will fail when
+    // applied to a node x such that pat.match(x), and pat.apply(x) is true
+
     rule { x ->
         def mat = pat.match(x)
         if (mat && {mat.result}) then {
@@ -161,10 +169,14 @@ method fail(msg)when(pat) {
         }
     }
 }
+
 method createSuggestion {
     errormessages.suggestion.new
 }
+
 method when(pat)error(msg) {
+    // alternate syntax for fail (msg) when (pat)
+
     fail(msg)when(pat)
 }
 
@@ -227,7 +239,7 @@ method checkTypes(node) {
 method typeOf(node) {
     checkTypes(node)
     cache.atKey(node) do { value -> return value }
-    CheckerFailure.raise "cannot type non-expression {node}" with (node)
+    DialectError.raise "cannot type non-expression {node}" with (node)
 }
 
 method runRules(node) {
@@ -237,12 +249,13 @@ method runRules(node) {
     currentLine := node.line
 
     var result := prelude.FailedMatch.new(node)
-    for(rules) do { each ->
+    for (rules) do { each ->
         def matched = each.match(node)
         if(matched) then {
             result := matched.result
             if (result.asString == "done") then {
-                prelude.ProgrammingError.raise "each.match(node) has result 'done' when each == {each} and node = {node}"
+                prelude.ProgrammingError.raise
+                    "rule.match(node) has result 'done' when rule is {each} and node = {node}"
             }
             cache.at(node) put(result)
         }
