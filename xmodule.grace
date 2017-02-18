@@ -465,13 +465,13 @@ def typeVisitor = object {
                             } else {
                                 mtstr := mtstr ++ p.value
                             }
-                            mtstr := mtstr ++ " : " ++ ast.unknownType.value
+                            mtstr := mtstr ++ ":" ++ ast.unknownType.value
                             if (false != p.generics) then {
-                                mtstr := mtstr ++ "<"
+                                mtstr := mtstr ++ "⟦"
                                 for (1..(p.generics.size - 1)) do {ix ->
-                                    mtstr := mtstr ++ p.generics.at(ix).toGrace(1)
+                                    mtstr := mtstr ++ p.generics.at(ix).toGrace(1) ++ ", "
                                 }
-                                mtstr := mtstr ++ p.generics.last.toGrace(1) ++ ">"
+                                mtstr := mtstr ++ p.generics.last.toGrace(1) ++ "⟧"
                             }
                         }
                         if (pnr < part.params.size) then {
@@ -482,7 +482,7 @@ def typeVisitor = object {
                 }
             }
             if (meth.rtype != false) then {
-                mtstr := mtstr ++ " -> " ++ meth.rtype.toGrace(1)
+                mtstr := mtstr ++ " → " ++ meth.rtype.toGrace(1)
             }
             methodtypes.push(mtstr)
         }

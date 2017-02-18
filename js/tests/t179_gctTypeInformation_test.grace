@@ -12,7 +12,7 @@ def input = list [
     "    m1(n:Number) -> Number",
     "    m2(n:Number) -> Done",
     "\}",
-    "type D = Collection⟦T⟧ & F & G",
+    "type D = Dictionary⟦K, T⟧ & F & G",
     "type H⟦T⟧ = type \{",
     "    m3(x:T) -> T",
     "\}",

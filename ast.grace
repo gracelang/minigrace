@@ -2038,12 +2038,12 @@ def identifierNode is public = object {
                 s := self.value
             }
             if (false != self.dtype) then {
-                s := s ++ " : " ++ self.dtype.toGrace(depth + 1)
+                s := s ++ ":" ++ self.dtype.toGrace(depth + 1)
             }
             if (false != generics) then {
                 s := s ++ "⟦"
                 for (1..(generics.size - 1)) do {ix ->
-                    s := s ++ generics.at(ix).toGrace(depth + 1)
+                    s := s ++ generics.at(ix).toGrace(depth + 1) ++ ", "
                 }
                 s := s ++ generics.last.toGrace(depth + 1) ++ "⟧"
             }
