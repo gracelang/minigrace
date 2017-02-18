@@ -143,13 +143,15 @@ def emptySeq = emptySequence
 
 type AstNode = type {
     kind -> String
-        // Used for pseudo-instanceof tests.
+        // Used for pseudo-instanceof tests, and for printing
     register -> String
-        // Used in the code generator on to name the resulting object
+        // Used in the code generator to name the resulting object
     line -> Number
-        // The source line the node came from
+        // The source line the node came from; the first line is 1
     line:=(ln:Number)
+    column -> Number
     linePos -> Number
+        // linePos and column are aliases; the first column is 1
     linePos:=(lp:Number)
     scope -> SymbolTable
         // The symbolTable for names defined in this node and its sub-nodes
@@ -158,8 +160,11 @@ type AstNode = type {
     comments -> AstNode
         // Comments associated with this node
     range -> Range
+        // The source range represented by this node
     start -> Position
+        // The start of the source range represented by this node
     end -> Position
+        // The end of the source range represented by this node
 }
 
 type SymbolTable = Unknown
@@ -187,6 +192,7 @@ class baseNode {
         linePos := p.column
         self
     }
+    method column { linePos }   // so that AstNode conforms to Position
     method start { line (line) column (linePos) }
     method end -> Position { line (line) column (linePos + self.value.size - 1) }
     method range { start (start) end (end) }
