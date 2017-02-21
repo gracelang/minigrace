@@ -675,9 +675,17 @@ def methodTypeNode is public = object {
     }
 
     method nameString {
+        // the name of the method being defined, in numeric form
         signature.fold { acc, each -> acc ++ each.nameString }
             startingWith ""
     }
+
+    method canonicalName {
+        // the name of the method being defined, in underscore form
+        signature.fold { acc, each -> acc ++ each.canonicalName }
+            startingWith ""
+    }
+
     method value {
         if (uninitialized == cachedIdentifier) then {
             cachedIdentifier := identifierNode.new(nameString, false)
@@ -2838,13 +2846,13 @@ def signaturePart is public = object {
             }
             return line (line) column (linePos + name.size - 1)
         }
+        method numParams { params.size }
         method nameString {
             if (params.isEmpty) then {return name}
             name ++ "(" ++ params.size ++ ")"
         }
-        method numParams { params.size }
         method canonicalName {
-            if (params.size == 0) then {return name}
+            if (params.isEmpty) then {return name}
             var underScores := ""
             params.do { _ -> underScores := underScores ++ "_" }
                 separatedBy { underScores := underScores ++ "," }
