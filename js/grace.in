@@ -254,7 +254,9 @@ try {
     minigrace = new MiniGrace();
     minigrace.loadModule("standardGrace", "./");
     var executable = process.argv[2];
-    minigrace.execFile = abspath(executable);
+    if (! executable.endsWith(".js")) executable = executable + ".js";
+    var exFile = findOnPath(executable, pathdirs);
+    minigrace.execFile = abspath(exFile);
 
     minigrace.trapErrors(function() {
         // as as special case, do_import("standardGrace", …) adds to Grace_prelude,
