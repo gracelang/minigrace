@@ -7,5 +7,5 @@ absolutePath(){
 
 HERE=`absolutePath $0`
 HERE=`dirname ${HERE}`
-echo "${HERE}/grace ${HERE}/js/compiler.js $*"
-${HERE}/grace ${HERE}/js/compiler.js $*
+echo "${HERE}/grace compiler.js $*"
+${HERE}/grace compiler.js $*
