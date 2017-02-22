@@ -16,8 +16,7 @@ HEADERFILES = gracelib.c gracelib.h definitions.h debugger.c
 
 # COMPILER_MODULES are the parts of the compiler that should go into the modules
 # directory on an install (in addition to ALL_LIBRARY_MODULES)
-COMPILER_MODULES = errormessages.grace standardGrace.grace collectionsPrelude.grace ast.grace util.grace identifierKinds.grace stringMap.grace unixFilePath.grace
-
+COMPILER_MODULES = $(REALSOURCEFILES)
 DIALECT_DEPENDENCIES = mirrors.gct mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso util.gct util.gso modules/gUnit.gct modules/gUnit.gso
 DIALECTS_NEED = modules/dialect util ast modules/gUnit
 WEB_DIRECTORY ?= public_html/ide/
