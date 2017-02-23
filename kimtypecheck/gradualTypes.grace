@@ -69,16 +69,19 @@ def aMethodType = object {
             def returnType : ObjectType is public = rType
 
             var name : String is readable := ""
+            var nameString : String is readable := ""
             var show : String := ""
 
             def fst = signature.at(1)
 
             if(fst.parameters.size == 0) then {
                 name := fst.name
+                nameString := fst.name
                 show := name
             } else {
                 for(signature) do { part ->
                     name := "{name}{part.name}()"
+                    nameString := "{nameString}{part.name}({part.parameters.size})"
                     show := "{show}{part.name}("
                     var once := false
                     for(part.parameters) do { param ->
@@ -93,6 +96,11 @@ def aMethodType = object {
 
                 name := name.substringFrom(1) to(name.size - 2)
             }
+            
+//            io.error.write "name of method is {name}"
+//            io.error.write "nameString of method is {nameString}"
+            
+
 
             show := "{show} -> {returnType}"
 
@@ -307,7 +315,7 @@ def anObjectType = object {
 
         method getMethod(name : String) -> MethodType | noSuchMethod {
             for(methods) do { meth ->
-                if(meth.name == name) then {
+                if(meth.nameString == name) then {
                     return meth
                 }
             }
@@ -1003,12 +1011,12 @@ method addVar(name : String) ofType(oType : ObjectType) is confidential {
 def ObjectError = TypeError.refine("ObjectError")
 
 rule { obj : ObjectLiteral ->
-    io.error.write "processing object {obj.value}"
+//    io.error.write "processing object {obj.value}"
     scope.enter { processBody(list(obj.value)) }
 }
 
 rule {mod : Module → 
-    io.error.write "processing module {mod.value}"
+//    io.error.write "processing module {mod.value}"
     scope.enter {processBody(list(mod.value)) }
 }
 
@@ -1033,34 +1041,37 @@ rule { _ : ArrayLiteral ->
 def RequestError = TypeError.refine("Request TypeError")
 
 rule { req : Request ->
-    match(req.receiver) case { memb : Member ->
-        // rec.memb
-        def rec = memb.receiver
+    def rec = req.receiver
         
-        // Type of receiver
-        def rType = if(Identifier.match(rec) && (rec.value == "self")) then {
-            scope.types.find("Self") butIfMissing {
-                prelude.Exception.raise "type of self missing" with(rec)
-            }
-        } else {
-            typeOf(rec)
+    def rType = if(Identifier.match(rec) && (rec.value == "self")) then {
+        def ts = scope.types.find("Self") butIfMissing {
+            prelude.Exception.raise "type of self missing" with(rec)
         }
+        io.error.write "type of self: {ts}"
+        ts
+    } else {
+        io.error.write "rec is {rec.toGrace 0}"
+        typeOf(rec)
+    }
+    
+    io.error.write("type of receiver is {rType}")
 
-        if(rType.isDynamic) then {
-            anObjectType.dynamic
-        } else {
-
-            def name = memb.value
-
-            match(rType.getMethod(name)) case { (noSuchMethod) ->
-                RequestError.raise("no such method '{name}' in " ++
-                    "`{rec.toGrace(0)}` of type '{rType}' in type '{rType.methods}'") with(memb)
-            } case { meth : MethodType ->
-                check(req) against(meth)
-            }
+    if(rType.isDynamic) then {
+        anObjectType.dynamic
+    } else { 
+    
+        def name = req.nameString
+        io.error.write "name is {name}"
+    
+        match(rType.getMethod(name)) 
+          case { (noSuchMethod) ->
+            RequestError.raise("no such method '{name}' in " ++
+                "`{rec.toGrace(0)}` of type '{rType}' in type '{rType.methods}'") 
+                    with(req)
+        } case { meth : MethodType ->
+            check(req) against(meth)
         }
-    } case { ident : Identifier ->
-        find(req) atScope(scope.methods.stack.size)
+    
     }
 }
 
@@ -1068,11 +1079,15 @@ rule { req : Request ->
 // the declaration
 method check(req : Request)
         against(meth : MethodType) -> ObjectType is confidential {
-    def name = meth.name
+    def name = meth.name   // CHANGE TO NAMESTRING
+    io.error.write "name of method being checked is {meth}"
+    io.error.write "checking {req.parts}"
+    io.error.write "on receiver {req.receiver}"
 
-    for(meth.signature) and(req.parts) do { part, args' ->
-        def params = part.parameters
-        def args   = args'.args
+    for(meth.signature) and(req.parts) do { sigPart, reqPart ->
+        def params = sigPart.parameters
+        def args   = reqPart.args
+        io.error.write "params = {params}, args = {args}"
 
         def pSize = params.size
         def aSize = args.size
@@ -1085,11 +1100,10 @@ method check(req : Request)
                 // Can we get beyond the final argument?
                 req.value
             }
-            io.error.write "aSize is {aSize} while pSize is {pSize}"
 
             RequestError
                 .raise("too {which} arguments to method part " ++
-                    "'{part.name}', expected {pSize} but got {aSize}") 
+                    "'{sigPart.name}', expected {pSize} but got {aSize}") 
                     with(where)
         }
 
@@ -1105,7 +1119,7 @@ method check(req : Request)
             }
         }
     }
-
+    io.error.write "GT: finished check on {name}"
     return meth.returnType
 }
 
@@ -1132,10 +1146,8 @@ method find(req : Request) atScope(i : Number) -> ObjectType is confidential {
 }
 
 rule { memb : Member ->
-    typeOf(ast.callNode.new(memb, [object {
-        def name is public = memb.value
-        def args is public = list[]
-    }]))
+    typeOf(ast.callNode.new(memb.receiver, 
+        list[ast.requestPart.request(memb.nameString) withArgs(emptySequence)]))
 }
 
 rule { op : Operator ->
@@ -1361,7 +1373,7 @@ rule { meth : Method ->
             }
         } else {
             def lastNode = meth.body.last
-            io.error.write "processing lastNode: {lastNode}"
+//            io.error.write "processing lastNode: {lastNode}"
             if(Return.match(lastNode).not) then {
                 def lastType = typeOf(lastNode)
                 if(lastType.isConsistentSubtypeOf(returnType).not) then {
@@ -1370,7 +1382,6 @@ rule { meth : Method ->
                         "expression of type '{lastType}'") with (lastNode)
                 }
             }
-            io.error.write "passed match"
         }
     }
 

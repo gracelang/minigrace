@@ -158,7 +158,7 @@ method fail(msg)when(pat) {
     rule { x ->
         def mat = pat.match(x)
         if (mat && {mat.result}) then {
-            fail(msg)
+            fail (msg) at (x)
         } else {
             false
         }
@@ -228,6 +228,7 @@ method checkTypes(node) {
 }
 
 method typeOf(node) {
+    io.error.write "typeOf({node}) in dialect2"
     checkTypes(node)
     cache.atKey(node) do { value -> return value }
     CheckerFailure.raise "cannot type non-expression {node}" with (node)
@@ -238,16 +239,14 @@ method runRules(node) {
     // if there is no successful match, returns FailedMatch(node).
     cache.atKey(node) do { value -> return value }
     currentLine := node.line
-    io.error.write "processing {node} at {node.line}"
-    var result := prelude.FailedMatch.new(node)
+    io.error.write "d2:runRules: processing {node} at {node.line}"
+    var result := false //prelude.FailedMatch.new(node)
     for(rules) do { each ->
         def matched = each.match(node)
         if(matched) then {
-            io.error.write "matched {each}"
+            io.error.write "matched {each}\n"
             result := matched.result
             if (result.asString == "done") then {
-// DEBUG
-//                return true
                 prelude.ProgrammingError.raise 
                    "each.match(node) has result 'done' when each == {each} and node = {node}"
             }
@@ -271,15 +270,15 @@ type AstNode = { kind -> String }
 class aPatternMatchingNode(kind : String) -> prelude.Pattern {
     inherit prelude.BasicPattern.new
 
-    method match(obj : Object) -> prelude.MatchResult {
+    method match(obj : Object) -> prelude.MatchResult | false {
         match(obj) 
           case { node : AstNode ->
             if(kind == node.kind) then {
-                prelude.SuccessfulMatch.new(node, outer.list[])
+                prelude.SuccessfulMatch.new(node, outer.emptySequence)
             } else {
-                prelude.FailedMatch.new(node)
+                false
             }
-          } case { _ -> prelude.FailedMatch.new(obj) }
+          } case { _ -> false }
     }
 }
 
@@ -404,10 +403,8 @@ def astVisitor = object {
     method visitMethodType(node) -> Boolean {
         runRules(node)
 
-        for(node.signature) do { part ->
-            for(part.params) do { param ->
-                runRules(aParameter.fromNode(param))
-            }
+        node.parametersDo { param ->
+            runRules(aParameter.fromNode(param))
         }
 
         return false
@@ -420,10 +417,8 @@ def astVisitor = object {
     method visitMethod(node) -> Boolean {
         runRules(node)
 
-        for(node.signature) do { part ->
-            for(part.params) do { param ->
-                runRules(aParameter.fromNode(param))
-            }
+        node.parametersDo { param ->
+            runRules(aParameter.fromNode(param))
         }
 
         for(node.body) do { stmt ->
@@ -434,16 +429,12 @@ def astVisitor = object {
     }
 
     method visitCall(node) -> Boolean {
-        checkMatch(node)
+        runRules(node)
 
-        match(node.receiver) case { memb : Member ->
-            memb.receiver.accept(self)
-        } case { _ -> }
-
-        for(node.parts) do { part ->
-            for(part.args) do { arg ->
-                arg.accept(self)
-            }
+        node.receiver.accept(self)
+        
+        node.argumentsDo { arg ->
+            arg.accept(self)
         }
 
         return false
@@ -526,6 +517,8 @@ def aTypeAnnotation is confidential = object {
         def line is public = node.line
         def linePos is public = node.linePos
         method == (o) { self.isMe(o) }
+        method toGrace(n) { value.toGrace(n) }
+        method asString { toGrace 0 }
     }
 }
 
@@ -537,6 +530,8 @@ def aParameter is confidential = object {
         def line is public = node.line
         def linePos is public = node.linePos
         method == (o) { self.isMe(o) }
+        method toGrace(n) { "{value}:{dtype}" }
+        method asString { toGrace 0 }
     }
 }
 
