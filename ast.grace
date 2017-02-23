@@ -1751,23 +1751,26 @@ def memberNode is public = object {
         var isSelfRequest is public := false
         var isTailCall is public := false
         method end -> Position {
-            def reqPos = if (receiver.isImplicit) then {
-                start
-            } else {
-                positionOfNext (request) after (receiver.end)
-            }
             line (reqPos.line) column (reqPos.column + request.size - 1)
         }
         method onSelf {
             isSelfRequest := true
             self
         }
+        method reqPos is confidential {
+            // the position of the start of the ‹request› in this ‹receiver›.‹request›
+            if (receiver.isImplicit) then {
+                start
+            } else {
+                positionOfNext (request) after (receiver.end)
+            }
+        }
         method nameString { value }
         method canonicalName { value }
         method isMember { true }
         method isCall { true }
 
-        method parts { emptySeq }
+        method parts { list [requestPart.request(nameString).setStart(reqPos)] }
         method arguments { emptySeq }
         method argumentsDo { }
         method numArgs { 0 }
@@ -2911,9 +2914,8 @@ def signaturePart is public = object {
 }
 
 def requestPart is public = object {
-    method new {
-        request "" withArgs( [] )
-    }
+    method new { request "" withArgs [] }
+    method request(name) { request(name) withArgs [] }
     method request(name) withArgs(argList) scope (s) {
         def result = request(name) withArgs(argList)
         result.scope := s
