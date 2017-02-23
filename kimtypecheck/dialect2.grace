@@ -228,7 +228,6 @@ method checkTypes(node) {
 }
 
 method typeOf(node) {
-    io.error.write "typeOf({node}) in dialect2"
     checkTypes(node)
     cache.atKey(node) do { value -> return value }
     CheckerFailure.raise "cannot type non-expression {node}" with (node)
@@ -239,12 +238,10 @@ method runRules(node) {
     // if there is no successful match, returns FailedMatch(node).
     cache.atKey(node) do { value -> return value }
     currentLine := node.line
-    io.error.write "d2:runRules: processing {node} at {node.line}"
     var result := false //prelude.FailedMatch.new(node)
     for(rules) do { each ->
         def matched = each.match(node)
         if(matched) then {
-            io.error.write "matched {each}\n"
             result := matched.result
             if (result.asString == "done") then {
                 prelude.ProgrammingError.raise 

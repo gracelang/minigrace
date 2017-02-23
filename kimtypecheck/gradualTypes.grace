@@ -97,11 +97,6 @@ def aMethodType = object {
                 name := name.substringFrom(1) to(name.size - 2)
             }
             
-//            io.error.write "name of method is {name}"
-//            io.error.write "nameString of method is {nameString}"
-            
-
-
             show := "{show} -> {returnType}"
 
             // Mask unknown fields in corresponding methods
@@ -1011,12 +1006,10 @@ method addVar(name : String) ofType(oType : ObjectType) is confidential {
 def ObjectError = TypeError.refine("ObjectError")
 
 rule { obj : ObjectLiteral ->
-//    io.error.write "processing object {obj.value}"
     scope.enter { processBody(list(obj.value)) }
 }
 
 rule {mod : Module → 
-//    io.error.write "processing module {mod.value}"
     scope.enter {processBody(list(mod.value)) }
 }
 
@@ -1044,24 +1037,19 @@ rule { req : Request ->
     def rec = req.receiver
         
     def rType = if(Identifier.match(rec) && (rec.value == "self")) then {
-        def ts = scope.types.find("Self") butIfMissing {
+        scope.types.find("Self") butIfMissing {
             prelude.Exception.raise "type of self missing" with(rec)
         }
-        io.error.write "type of self: {ts}"
-        ts
     } else {
-        io.error.write "rec is {rec.toGrace 0}"
         typeOf(rec)
     }
     
-    io.error.write("type of receiver is {rType}")
 
     if(rType.isDynamic) then {
         anObjectType.dynamic
     } else { 
     
         def name = req.nameString
-        io.error.write "name is {name}"
     
         match(rType.getMethod(name)) 
           case { (noSuchMethod) ->
@@ -1080,14 +1068,10 @@ rule { req : Request ->
 method check(req : Request)
         against(meth : MethodType) -> ObjectType is confidential {
     def name = meth.name   // CHANGE TO NAMESTRING
-    io.error.write "name of method being checked is {meth}"
-    io.error.write "checking {req.parts}"
-    io.error.write "on receiver {req.receiver}"
 
     for(meth.signature) and(req.parts) do { sigPart, reqPart ->
         def params = sigPart.parameters
         def args   = reqPart.args
-        io.error.write "params = {params}, args = {args}"
 
         def pSize = params.size
         def aSize = args.size
@@ -1119,7 +1103,6 @@ method check(req : Request)
             }
         }
     }
-    io.error.write "GT: finished check on {name}"
     return meth.returnType
 }
 
@@ -1336,7 +1319,6 @@ rule { meth : Method ->
     def mType = aMethodType.fromNode(meth)
     def returnType = mType.returnType
     
-    io.error.write "return type of method is {returnType}"
 
     scope.enter {
         for(meth.signature) do { part ->
@@ -1345,7 +1327,6 @@ rule { meth : Method ->
                     put(anObjectType.fromDType(param.dtype))
             }
         }
-        io.error.write("meth.body is {meth.body}")
         
         collectTypes(list(meth.body))
 
@@ -1373,7 +1354,6 @@ rule { meth : Method ->
             }
         } else {
             def lastNode = meth.body.last
-//            io.error.write "processing lastNode: {lastNode}"
             if(Return.match(lastNode).not) then {
                 def lastType = typeOf(lastNode)
                 if(lastType.isConsistentSubtypeOf(returnType).not) then {
@@ -1934,5 +1914,4 @@ def thisDialect is public = object {
     method astChecker (moduleObj) { check (moduleObj) }
     method atStart { io.error.write "module start" }
     method atEnd { io.error.write "module end" }
-    io.error.write "in dialect"
 }
