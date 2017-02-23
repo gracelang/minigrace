@@ -267,7 +267,7 @@ type AstNode = { kind -> String }
 class aPatternMatchingNode(kind : String) -> prelude.Pattern {
     inherit prelude.BasicPattern.new
 
-    method match(obj : Object) -> prelude.MatchResult | false {
+    method match(obj : Object) → prelude.MatchResult | false {
         match(obj) 
           case { node : AstNode ->
             if(kind == node.kind) then {
@@ -276,6 +276,16 @@ class aPatternMatchingNode(kind : String) -> prelude.Pattern {
                 false
             }
           } case { _ -> false }
+    }
+}
+
+class booleanPattern(predicate) → prelude.MatchResult | false {
+    method match(obj) {
+        if (predicate.apply(obj)) then { 
+            prelude.SuccessfulMatch.new(obj, outer.emptySequence)
+        } else {
+            false
+        }
     }
 }
 
@@ -288,13 +298,13 @@ def MethodSignature is public = aPatternMatchingNode "methodtype"
 def TypeLiteral is public = aPatternMatchingNode "typeliteral"
 def TypeDeclaration is public = aPatternMatchingNode "typedec"
 def TypeAnnotation is public = aPatternMatchingNode "dtype"
+def Member is public = aPatternMatchingNode "member"
 def Method is public = aPatternMatchingNode "method"
 def Parameter is public = aPatternMatchingNode "parameter"
-def Request is public = aPatternMatchingNode "call"
+def Request is public = booleanPattern { x → x.isCall }
 def Class is public = aPatternMatchingNode "class"
 def ObjectLiteral is public = aPatternMatchingNode "object"
 def ArrayLiteral is public = aPatternMatchingNode "array"
-def Member is public = aPatternMatchingNode "member"
 def Generic is public = aPatternMatchingNode "generic"
 def Identifier is public = aPatternMatchingNode "identifier"
 def OctetsLiteral is public = aPatternMatchingNode "octets"
@@ -379,7 +389,7 @@ def astVisitor = object {
         runRules(node)
 
         for(node.params) do { param ->
-            runRules(aParameter.fromNode(param))
+            runRules(parameterFromNode(param))
         }
 
         for(node.body) do { stmt ->
@@ -401,7 +411,7 @@ def astVisitor = object {
         runRules(node)
 
         node.parametersDo { param ->
-            runRules(aParameter.fromNode(param))
+            runRules(parameterFromNode(param))
         }
 
         return false
@@ -415,7 +425,7 @@ def astVisitor = object {
         runRules(node)
 
         node.parametersDo { param ->
-            runRules(aParameter.fromNode(param))
+            runRules(parameterFromNode(param))
         }
 
         for(node.body) do { stmt ->
@@ -507,28 +517,9 @@ def astVisitor = object {
 
 }
 
-def aTypeAnnotation is confidential = object {
-    class fromNode(node) -> TypeAnnotation {
-        def kind is public = "dtype"
-        def value is public = node
-        def line is public = node.line
-        def linePos is public = node.linePos
-        method == (o) { self.isMe(o) }
-        method toGrace(n) { value.toGrace(n) }
-        method asString { toGrace 0 }
-    }
+class parameterFromNode(node) -> Parameter is confidential {
+    inherit ast.identifierNode.new(node.name,node.dtype)
+    method kind { "parameter" }
 }
 
-def aParameter is confidential = object {
-    class fromNode(node) -> Parameter {
-        def kind is public = "parameter"
-        def value is public = node.value
-        def dtype is public = node.dtype
-        def line is public = node.line
-        def linePos is public = node.linePos
-        method == (o) { self.isMe(o) }
-        method toGrace(n) { "{value}:{dtype}" }
-        method asString { toGrace 0 }
-    }
-}
 

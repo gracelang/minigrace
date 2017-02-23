@@ -5,7 +5,6 @@ dialect "dialect2"
 
 import "ast" as ast 
 import "xmodule" as xmodule
-import "js/dom" as dom
 import "io" as io
 
 inherit prelude.methods
@@ -55,7 +54,7 @@ type MixPart = {
     parameters -> List⟦Param⟧
 }
 
-class aMixPart.withName(name' : String)
+class aMixPartWithName(name' : String)
         parameters(parameters' : List⟦Param⟧) -> MixPart {
     def name : String is public = name'
     def parameters : List⟦Param⟧ is public = parameters'
@@ -72,9 +71,9 @@ def aMethodType = object {
             var nameString : String is readable := ""
             var show : String := ""
 
-            def fst = signature.at(1)
+            def fst = signature.first
 
-            if(fst.parameters.size == 0) then {
+            if (fst.parameters.isEmpty) then {
                 name := fst.name
                 nameString := fst.name
                 show := name
@@ -121,7 +120,7 @@ def aMethodType = object {
                             }
                         }
                         restrictParts.push(
-                            aMixPart.withName(part.name)parameters(restrictParams))
+                            aMixPartWithName(part.name)parameters(restrictParams))
                     } else {
                         restrictParts.push(part)
                     }
@@ -172,7 +171,7 @@ def aMethodType = object {
     }
 
     method member(name : String) ofType(rType : ObjectType) -> MethodType {
-        signature(list[aMixPart.withName(name) parameters(list[])]) returnType(rType)
+        signature(list[aMixPartWithName(name) parameters(list[])]) returnType(rType)
     }
         
     // Parses a methodtype line from a gct file into a MethodType object.
@@ -227,11 +226,11 @@ def aMethodType = object {
                 par := mstr.indexOf("(")startingAt(lst)
                 fst := lst + 1
                 lst := par - 1
-                parts.add(aMixPart.withName(partName)parameters(partParams))
+                parts.add(aMixPartWithName(partName)parameters(partParams))
             }
         } else {
             var partName := mstr.substringFrom(fst)to(mstr.indexOf(" ->") - 1)
-            parts.add(aMixPart.withName(partName)parameters(list[]))
+            parts.add(aMixPartWithName(partName)parameters(list[]))
         }
 
         fst := mstr.indexOf("-> ")startingAt(lst) + 3
@@ -254,7 +253,7 @@ def aMethodType = object {
                         ofType(anObjectType.fromDType(param.dtype)))
                 }
 
-                signature.push(aMixPart.withName(part.name) parameters(params))
+                signature.push(aMixPartWithName(part.name) parameters(params))
             }
 
             def rType = match(meth) case { m : Method | Class ->
@@ -266,7 +265,7 @@ def aMethodType = object {
             return signature(signature)
                 returnType(anObjectType.fromDType(rType))
         } case { defd : Def | Var ->
-            def signature = list[aMixPart.withName(defd.name.value) parameters(list[])]
+            def signature = list[aMixPartWithName(defd.name.value) parameters(list[])]
             def dtype = anObjectType.fromDType(defd.dtype)
             return signature(signature) returnType(dtype)
         } case { _ ->
@@ -594,7 +593,8 @@ def anObjectType = object {
 
     method fromDType(dtype) -> ObjectType {
         
-        match(dtype) case { (false) ->
+        match(dtype) 
+          case { (false) ->
             dynamic
         } case { typeDec : TypeDeclaration ->
 //        TODO: re-write this code to understand the syntax of type expressions
@@ -651,7 +651,7 @@ def anObjectType = object {
             anObjectType.string
         } case { num : NumberLiteral ->
             anObjectType.number
-        }case { _ ->
+        } case { _ ->
             ProgrammingError.raise "No case for node of kind {dtype.kind}" with(dtype)
         }
     }
@@ -668,7 +668,7 @@ def anObjectType = object {
         def apply = bType.getMethod("apply")
 
         match(apply) case { (noSuchMethod) ->
-            TypeError.raise ("the expression `{block.toGrace(0)}` of " ++
+            TypeError.raise ("the expression `{stripNewLines(block.toGrace(0))}` of " ++
                 "type '{bType}' does not satisfy the type 'Block'") with(block)
         } case { meth : MethodType ->
             return meth.returnType
@@ -717,7 +717,7 @@ def anObjectType = object {
 
     method blockTaking(params : List⟦Parameter⟧)
             returning(rType : ObjectType) -> ObjectType {
-        def signature = list[aMixPart.withName("apply") parameters(params)]
+        def signature = list[aMixPartWithName("apply") parameters(params)]
         def meths = list[aMethodType.signature(signature) returnType(rType)]
 
         fromMethods(meths) withName("Block")
@@ -729,7 +729,7 @@ def anObjectType = object {
 
     method addTo(oType : ObjectType) name(name' : String)
             returns(rType : ObjectType) -> Done is confidential {
-        def signature = list[aMixPart.withName(name') parameters(list[])]
+        def signature = list[aMixPartWithName(name') parameters(list[])]
         oType.methods.push(aMethodType.signature(signature) returnType(rType))
     }
 
@@ -741,7 +741,7 @@ def anObjectType = object {
             parameters.push(aParam.ofType(ptype))
         }
 
-        def signature = list[aMixPart.withName(name') parameters(parameters)]
+        def signature = list[aMixPartWithName(name') parameters(parameters)]
 
         oType.methods.push(aMethodType.signature(signature) returnType(rType))
     }
@@ -751,7 +751,7 @@ def anObjectType = object {
             -> Done is confidential {
         def parameters = list[aParam.ofType(ptype)]
 
-        def signature = list[aMixPart.withName(name') parameters(parameters)]
+        def signature = list[aMixPartWithName(name') parameters(parameters)]
 
         oType.methods.push(aMethodType.signature(signature) returnType(rType))
     }
@@ -769,7 +769,7 @@ def anObjectType = object {
          }
          def signature = list[]
          for (1 .. name.size) do {i ->
-             signature.push(aMixPart.withName (name.at(i)) parameters (parts.at(i)))
+             signature.push(aMixPartWithName (name.at(i)) parameters (parts.at(i)))
          }
          oType.methods.push (aMethodType.signature (signature) returnType (rType))
     }
@@ -1054,7 +1054,7 @@ rule { req : Request ->
         match(rType.getMethod(name)) 
           case { (noSuchMethod) ->
             RequestError.raise("no such method '{name}' in " ++
-                "`{rec.toGrace(0)}` of type '{rType}' in type '{rType.methods}'") 
+                "`{stripNewLines(rec.toGrace(0))}` of type '{rType}' in type '{rType.methods}'") 
                     with(req)
         } case { meth : MethodType ->
             check(req) against(meth)
@@ -1097,7 +1097,7 @@ method check(req : Request)
 
             if(typeOf(arg).isConsistentSubtypeOf(pType).not) then {
                 RequestError.raise("the expression " ++
-                    "`{arg.toGrace(0)}` of type '{aType}' does not " ++
+                    "`{stripNewLines(arg.toGrace(0))}` of type '{aType}' does not " ++
                     "satisfy the type of parameter '{param}' in the " ++
                     "method '{name}'") with(arg)
             }
@@ -1128,11 +1128,6 @@ method find(req : Request) atScope(i : Number) -> ObjectType is confidential {
     }
 }
 
-rule { memb : Member ->
-    typeOf(ast.callNode.new(memb.receiver, 
-        list[ast.requestPart.request(memb.nameString) withArgs(emptySequence)]))
-}
-
 rule { op : Operator ->
     def rec = op.left
     def rType = typeOf(rec)
@@ -1140,11 +1135,11 @@ rule { op : Operator ->
     if(rType.isDynamic) then {
         anObjectType.dynamic
     } else {
-        def name = op.value
+        def name = op.nameString
         
         match(rType.getMethod(name)) case { (noSuchMethod) ->
             RequestError.raise("no such method '{name}' in " ++
-                "`{rec.toGrace(0)}` of type '{rType}'") with (op)
+                "`{stripNewLines(rec.toGrace(0))}` of type '{rType}'") with (op)
         } case { meth : MethodType ->
             def arg = op.right
             def params = meth.signature.first.parameters
@@ -1164,7 +1159,7 @@ rule { op : Operator ->
                 
                 if(typeOf(arg).isConsistentSubtypeOf(pType).not) then {
                     RequestError.raise("the expression " ++
-                        "`{arg.toGrace(0)}` does not satisfy the type of " ++
+                        "`{stripNewLines(arg.toGrace(0))}` does not satisfy the type of " ++
                         "parameter '{param}' in the method '{name}'") with (arg)
                 }
             }
@@ -1208,7 +1203,7 @@ rule { op : Operator ->
 rule { req : If ->
     def cond = req.value
     if(typeOf(cond).isConsistentSubtypeOf(anObjectType.boolean).not) then {
-        RequestError.raise("the expression `{cond.toGrace(0)}` does not " ++
+        RequestError.raise("the expression `{stripNewLines(cond.toGrace(0))}` does not " ++
             "satisfy the type 'Boolean' for an 'if' condition'") with (cond)
     }
 
@@ -1395,57 +1390,6 @@ rule { ret : Return ->
 def ClassError = TypeError.refine("Class TypeError")
 
 
-// No longer in use -- translated to object definition
-//rule { cls : Class ->
-//    io.error.write "starting class {cls}"
-//    def name = cls.name.value
-//    io.error.write "starting class with {cls}"
-//    for (cls.signature) do {s->
-//        for (s.params) do {p->
-//            if ((p.kind == "identifier") && {p.wildcard.not} && {p.decType.value=="Unknown"}) then {
-//                CheckerFailure.raise("no type given to declaration"
-//                    ++ " of parameter '{p.value}'") with (p)
-//            }
-//        }
-//    }
-//    if (cls.dtype==false) then {
-//        ClassError.raise("the class '{name}' does not declare a return type") with (cls)
-//    } 
-//    def dType = anObjectType.fromDType(cls.dtype)
-////    var x := scope.types.find(cls.dtype.value)butIfMissing("hi")
-//    def cType = scope.enter {
-//        for(cls.signature) do { part ->
-//            for(part.params) do { param ->
-//                scope.variables.at(param.value)
-//                    put(anObjectType.fromDType(param.dtype))
-//            }
-//        }
-//
-//        def aType = processBody(cls.value)
-//        if(aType.isDynamic) then {
-//            anObjectType.dynamic
-//        } else {
-//            if(aType.isConsistentSubtypeOf(dType).not) then {
-//                ClassError.raise("the class '{name}' declares a result " ++
-//                    "of type '{dType}', but constructs an object of type " ++
-//                    "'{aType}'") with (cls)
-//            }
-//            aType
-//        }
-//    }
-//
-//    scope.variables.at(name)
-//        put(anObjectType.fromMethods([aMethodType.fromNode(cls)]))
-//
-//    if(dType.isDynamic) then {
-//        // Class type inference.
-//        cType
-//    } else {
-//        dType
-//    }
-//}
-
-
 // Def and var declarations.
 
 def DefError = TypeError.refine("Def TypeError")
@@ -1468,28 +1412,24 @@ rule { defd : Def | Var ->
             defType := vType
         } 
         if(vType.isConsistentSubtypeOf(defType).not) then {
-            DefError.raise("the expression `{value.toGrace(0)}` of type " ++
-                "'{vType}' does not satisfy the type of {defd.kind} " ++
+            DefError.raise("the expression `{stripNewLines(value.toGrace(0))}` of type " ++
+                "'{vType}' does not have type {defd.kind} " ++
                 "annotation '{defType}'") with (value)
         }
     }
 
-    def name = defd.name.value
+    def name = defd.nameString
     scope.variables.at(name) put(defType)
 
-    for(defd.annotations) do { ann ->
-        if(ann.value == "public") then {
-            scope.methods.at(name) put(aMethodType.member(name) ofType(defType))
-
-            if(defd.kind == "vardec") then {
-                def name' = name ++ ":="
-                def param = aParam.withName(name) ofType(defType)
-                def sig = [aMixPart.withName(name') parameters([param])]
-
-                scope.methods.at(name')
-                    put(aMethodType.signature(sig) returnType(anObjectType.done))
-            }
-        }
+    if (defd.isReadable) then { 
+        scope.methods.at(name) put(aMethodType.member(name) ofType(defType))
+    }
+    if (defd.isWritable) then {
+        def name' = name ++ ":=(1)"
+        def param = aParam.withName(name) ofType(defType)
+        def sig = list[aMixPartWithName(name') parameters(list[param])]
+        scope.methods.at(name')
+            put(aMethodType.signature(sig) returnType(anObjectType.done))
     }
     anObjectType.done   // added but ???
 }
@@ -1498,10 +1438,9 @@ rule { bind : Bind ->
     def dest = bind.dest
 
     match (dest) case { _ : Member ->
-        var nm := dest.value
-        if ((nm.size < 2).orElse{nm.substringFrom(nm.size - 1)to(nm.size)
-            != ":="}) then {
-            nm := nm ++ ":="
+        var nm := dest.nameString
+        if (! nm.endsWith ":=(1)") then {
+            nm := nm ++ ":=(1)"
         }
         // rec.memb
         def rec = dest.in
@@ -1515,15 +1454,17 @@ rule { bind : Bind ->
             typeOf(rec)
         }
 
-        if(rType.isDynamic) then {
+        if (rType.isDynamic) then {
             anObjectType.dynamic
         } else {
 
-            match(rType.getMethod(nm)) case { (noSuchMethod) ->
+            match(rType.getMethod(nm)) 
+              case { (noSuchMethod) ->
                 RequestError.raise("no such method '{nm}' in " ++
-                    "`{rec.toGrace(0)}` of type '{rType}'") with(dest)
+                    "`{stripNewLines(rec.toGrace(0))}` of type '{rType}'") with (bind)
             } case { meth : MethodType ->
-                def req = ast.callNode.new(dest, [ast.callWithPart.new(dest.value, [bind.value])])
+                def req = ast.callNode.new(dest, 
+                    list [ast.callWithPart.new(dest.value, list [bind.value])])
                 check(req) against(meth)
             }
         }
@@ -1537,7 +1478,7 @@ rule { bind : Bind ->
         if(vType.isConsistentSubtypeOf(dType).not) then {
             DefError.raise("the expression `{stripNewLines(value.toGrace(0))}` of type " ++
                 "'{vType}' does not satisfy the type '{dType}' of " ++
-                "`{dest.toGrace(0)}`") with (value)
+                "`{stripNewLines(dest.toGrace(0))}`") with (value)
         }
     }
    
@@ -1758,8 +1699,20 @@ method processBody(body : List) -> ObjectType is confidential {
                     scope.variables.at(mType.name) put(mType.returnType)
                 }
             } case { defd : Def | Var ->
-                if(isPublic(defd)) then {
+                if(defd.isReadable) then {
                     def mType = aMethodType.fromNode(defd)
+                    allMethods.push(mType)
+                    publicMethods.push(mType)
+                }
+                if(defd.isWritable) then {
+                    def name' = defd.nameString ++ ":=" //(1)"
+                    def dType = anObjectType.fromDType(defd.dtype)
+                    def param = aParam.withName(defd.nameString) ofType(dType)
+                    def sig = list[aMixPartWithName(name') parameters(list[param])]
+ 
+                    def mType = aMethodType.signature(sig) returnType(anObjectType.done)
+                    scope.methods.at(name')
+                        put(mType)
                     allMethods.push(mType)
                     publicMethods.push(mType)
                 }
@@ -1912,6 +1865,4 @@ method stripNewLines(str) -> String is confidential {
 
 def thisDialect is public = object {
     method astChecker (moduleObj) { check (moduleObj) }
-    method atStart { io.error.write "module start" }
-    method atEnd { io.error.write "module end" }
 }
