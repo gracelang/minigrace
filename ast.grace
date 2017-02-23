@@ -1369,7 +1369,7 @@ def callNode is public = object {
             }
             cachedIdentifier
         }
-        method asString { "call {receiver.pretty(0)}" }
+        method asString { "call {toGrace 0}" }
         method shallowCopy {
             callNode.new(receiver, parts).shallowCopyFieldsFrom(self)
         }
