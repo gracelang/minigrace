@@ -2174,11 +2174,17 @@ def opNode is public = object {
         isSelfRequest := true
         self
     }
+    method opPos is confidential {
+        // the position of the start of the ‹op› in this ‹left› ‹op› ‹right›
+        positionOfNext (value) after (left.end)
+    }
     method isSimple { false }    // needs parens when used as reciever
     method nameString { value ++ "(1)" }
     method canonicalName { value ++ "(_)" }
     method receiver { left }
     method isCall { true }
+
+    method parts { list [requestPart.request (value) withArgs [right] .setStart(opPos)] }
     method arguments { [ right ] }
     method argumentsDo(action) { action.apply(right) }
     method numArgs { 1 }
