@@ -350,7 +350,7 @@ class testRecordFor(testName)message(testMsg) {
 def testSuite is public = object {
 
     class withAll(initialContents) {
-        inherit collections.enumerable.TRAIT
+        use collections.enumerable
         var name is public := ""
         def tests = [ ]
         def testNames = emptySet

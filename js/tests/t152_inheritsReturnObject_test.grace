@@ -1,4 +1,4 @@
-class A.TRAIT {
+trait a {
     method map { 
         object {
             method asString { "a map" }
@@ -8,9 +8,9 @@ class A.TRAIT {
 
 method m {
     object {
-        inherit A.TRAIT
+        use a
     }
 }
 
 print "m.map = {m.map}"
-print "A.trait.map = {A.TRAIT.map}"
+print "a.map = {a.map}"

@@ -166,7 +166,7 @@ type Iterator⟦T⟧ = type {
 
 class lazySequenceOver⟦T,R⟧ (source: Collection⟦T⟧)
         mappedBy (function:Block1⟦T,R⟧) -> Enumerable⟦R⟧ is confidential {
-    inherit enumerable.TRAIT⟦T⟧
+    use enumerable⟦T⟧
     class iterator {
         def sourceIterator = source.iterator
         method asString { "an iterator over a lazy map sequence" }
@@ -180,7 +180,7 @@ class lazySequenceOver⟦T,R⟧ (source: Collection⟦T⟧)
 
 class lazySequenceOver⟦T⟧ (source: Collection⟦T⟧)
         filteredBy(predicate:Block1⟦T,Boolean⟧) -> Enumerable⟦T⟧ is confidential {
-    inherit enumerable.TRAIT⟦T⟧
+    use enumerable⟦T⟧
     class iterator {
         var cache
         var cacheLoaded := false
@@ -239,7 +239,7 @@ class iteratorConcat⟦T⟧(left:Iterator⟦T⟧, right:Iterator⟦T⟧) {
     method asString { "an iterator over a concatenation" }
 }
 class lazyConcatenation⟦T⟧(left, right) -> Enumerable⟦T⟧{
-    inherit enumerable.TRAIT⟦T⟧
+    use enumerable⟦T⟧
     method iterator {
         iteratorConcat(left.iterator, right.iterator)
     }
@@ -247,9 +247,9 @@ class lazyConcatenation⟦T⟧(left, right) -> Enumerable⟦T⟧{
     method size { left.size + right.size }  // may raise SizeUnknown
 }
 
-class collection.TRAIT⟦T⟧ {
+trait collection⟦T⟧ {
     
-    method asString { "a collection TRAIT" }
+    method asString { "a collection trait" }
     method sizeIfUnknown(action) {
         action.apply
     }
@@ -304,8 +304,8 @@ class collection.TRAIT⟦T⟧ {
 
 }
 
-class enumerable.TRAIT⟦T⟧ {
-    inherit collection.TRAIT⟦T⟧
+trait enumerable⟦T⟧ {
+    use collection⟦T⟧
     method iterator { abstract }
     method size {
         // override if size is known
@@ -369,8 +369,8 @@ class enumerable.TRAIT⟦T⟧ {
     }
 }
 
-class indexable.TRAIT⟦T⟧ {
-    inherit collection.TRAIT⟦T⟧
+trait indexable⟦T⟧ {
+    use collection⟦T⟧
     method at(index) { abstract }
     method size { abstract }
     method isEmpty { size == 0 }
@@ -419,7 +419,7 @@ method max(a,b) is confidential {       // copied from standard prelude
 }
 
 def emptySequence is confidential = object {
-    inherit indexable.TRAIT
+    use indexable
     method size { 0 }
     method isEmpty { true }
     method at(n) { BoundsError.raise "index {n} of empty sequence" }
@@ -496,7 +496,7 @@ class sequence⟦T⟧ {
         // constructs a sequence from the first sz elements of pArray
 
         object {
-            inherit indexable.TRAIT
+            use indexable
             def size is public = sz
             def inner = pArray
 
@@ -607,7 +607,7 @@ method isEqual(left) toCollection(right) {
 
 class list⟦T⟧ {
     
-    method asString { "a list factory" }
+    method asString { "the list class" }
     
     method empty -> List⟦T⟧ {
         withAll(emptySequence)
@@ -615,7 +615,7 @@ class list⟦T⟧ {
 
     method withAll(a: Collection⟦T⟧) -> List⟦T⟧ {
         object {
-            inherit indexable.TRAIT⟦T⟧
+            use indexable⟦T⟧
 
             var mods is readable := 0
             var sizeCertain := true
@@ -910,7 +910,7 @@ def removed = object {
 
 class set⟦T⟧ {
 
-    method asString { "a set factory" }
+    method asString { "a set class" }
 
     method withAll(a: Collection⟦T⟧) -> Set⟦T⟧ {
         def cap = max (a.sizeIfUnknown{2} * 3 + 1, 8)
@@ -924,7 +924,7 @@ class set⟦T⟧ {
     }
 
     class ofCapacity(cap) -> Set⟦T⟧ is confidential {
-        inherit collection.TRAIT
+        use collection⟦T⟧
         var mods is readable := 0
         var inner := prelude.primitiveArray.new(cap)
         var size is readable := 0
@@ -1209,7 +1209,7 @@ type Binding⟦K,T⟧ = {
 }
 
 def binding is public = object {
-    method asString { "binding class" }
+    method asString { "the binding class" }
 
     class key(k)value(v) {
         method key {k}
@@ -1232,7 +1232,7 @@ type ComparableToDictionary⟦K,T⟧ = type {
 
 class dictionary⟦K,T⟧ {
 
-    method asString { "a dictionary factory" }
+    method asString { "a dictionary class" }
 
     method withAll(initialBindings: Collection⟦Binding⟦K,T⟧⟧) -> Dictionary⟦K,T⟧ {
         def result = empty
@@ -1241,7 +1241,7 @@ class dictionary⟦K,T⟧ {
     }
 
     class empty -> Dictionary⟦K,T⟧ {
-        inherit collection.TRAIT⟦T⟧
+        use collection⟦T⟧
         var mods is readable := 0
         var numBindings := 0
         var inner := prelude.primitiveArray.new(8)
@@ -1455,7 +1455,7 @@ class dictionary⟦K,T⟧ {
         method keys -> Enumerable⟦K⟧ {
             def sourceDictionary = self
             object {
-                inherit enumerable.TRAIT⟦K⟧
+                use enumerable⟦K⟧
                 class iterator {
                     def sourceIterator = sourceDictionary.bindingsIterator
                     method hasNext { sourceIterator.hasNext }
@@ -1473,7 +1473,7 @@ class dictionary⟦K,T⟧ {
         method values -> Enumerable⟦T⟧ {
             def sourceDictionary = self
             object {
-                inherit enumerable.TRAIT⟦T⟧
+                use enumerable⟦T⟧
                 class iterator {
                     def sourceIterator = sourceDictionary.bindingsIterator
                     // should be request on outer
@@ -1492,7 +1492,7 @@ class dictionary⟦K,T⟧ {
         method bindings -> Enumerable⟦T⟧ {
             def sourceDictionary = self
             object {
-                inherit enumerable.TRAIT⟦T⟧
+                use enumerable⟦T⟧
                 method iterator { sourceDictionary.bindingsIterator }
                 // should be request on outer
                 def size is public = sourceDictionary.size
@@ -1649,7 +1649,7 @@ class range {
 
     method uncheckedFrom (lower) to (upper) -> Sequence⟦Number⟧ {
         object {
-            inherit indexable.TRAIT⟦Number⟧
+            use indexable⟦Number⟧
             def start = lower
             def stop = upper
             def size is public =
@@ -1729,7 +1729,7 @@ class range {
     }
     method from(upper)downTo(lower) -> Sequence⟦Number⟧ {
         object {
-            inherit indexable.TRAIT
+            use indexable⟦Number⟧
             match (upper)
                 case {_:Number -> }
                 case {_ -> RequestError.raise ("upper bound {upper}" ++
@@ -1759,7 +1759,7 @@ class range {
                         val := val - 1
                         return (val + 1)
                     }
-                    method asString { "anIterator over {outer.asString} at {val}" }
+                    method asString { "an iterator over {outer.asString} at {val}" }
                 }
             }
             method at(ix:Number) {

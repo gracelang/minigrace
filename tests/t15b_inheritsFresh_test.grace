@@ -1,10 +1,10 @@
 import "gUnit" as gUnit
-class tryInheritance.constru {
+class tryInheritance {
     inherit gUnit.testRecordFor "foobar" message "nonesense"
     method myname {
         name
     }
 }
 
-def o = tryInheritance.constru
+def o = tryInheritance
 print (o.myname)

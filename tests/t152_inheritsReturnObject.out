@@ -1,2 +1,1 @@
-m.map = a map
-A.trait.map = a map
+../js/tests/t152_inheritsReturnObject.out
