@@ -1423,7 +1423,7 @@ method transformBind(bindNode) ancestors(as) {
                 def rcvr = currentScope.resolveOuterMethod(nmGets) fromNode(bindNode).receiver
                 def part = ast.requestPart.request(nm ++ ":=")
                         withArgs [ bindNode.value ] scope(currentScope)
-                def newCall = ast.callNode.new(rcvr, [ part ]) scope(currentScope)
+                def newCall = ast.callNode.new(rcvr, [ part ]) scope(currentScope).onSelf
                 newCall.end := bindNode.value.end
                 return newCall
             } else {
