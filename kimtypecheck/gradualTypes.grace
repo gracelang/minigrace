@@ -1036,7 +1036,7 @@ def RequestError = TypeError.refine("Request TypeError")
 rule { req : Request ->
     def rec = req.receiver
         
-    def rType = if(Identifier.match(rec) && (rec.value == "self")) then {
+    def rType = if(rec.isIdentifier && {rec.nameString == "self"}) then {
         scope.types.find("Self") butIfMissing {
             prelude.Exception.raise "type of self missing" with(rec)
         }
