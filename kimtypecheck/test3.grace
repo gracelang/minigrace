@@ -10,7 +10,7 @@ type A = {
     sf:= (n: Number) → Done
 }
 
-var y:Number := 16
+var y:Number is public := 16
 
 def obj: A = object {
         var sf: Number is public := 12
@@ -25,19 +25,33 @@ obj.p(23)
 method c → A {
     object {
         var sf: Number is public := 12
-        method p(n: Number) → Number {n}
+        method p(n: Number) → Number {n + 1}
         method q → String {"d"}
     }
 }
 
-c.q
+class cc → A {
+    var sf: Number is public := 12
+    method p(n: Number) → Number {n + 1}
+    method q → String {"d"}
+}
+
+def co: A = cc
+co.sf
+co.sf := 5
+print "co.sf = {co.sf}"
+
+print "{c.q}"
 
 print (c.p (17))
 
 def d: A = c
 print(d.sf)
 d.sf := 12
-print(d.sf)
+def xy: Number = d.sf - 47
+print(xy)
+
+print (1 + c.p(11))
 
 
 

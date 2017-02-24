@@ -1128,46 +1128,46 @@ method find(req : Request) atScope(i : Number) -> ObjectType is confidential {
     }
 }
 
-rule { op : Operator ->
-    def rec = op.left
-    def rType = typeOf(rec)
-
-    if(rType.isDynamic) then {
-        anObjectType.dynamic
-    } else {
-        def name = op.nameString
-        
-        match(rType.getMethod(name)) case { (noSuchMethod) ->
-            RequestError.raise("no such method '{name}' in " ++
-                "`{stripNewLines(rec.toGrace(0))}` of type '{rType}'") with (op)
-        } case { meth : MethodType ->
-            def arg = op.right
-            def params = meth.signature.first.parameters
-
-            if(params.size == 0) then {
-                RequestError.raise("the definition of operator method " ++
-                    "{name} is missing parameters") with (op)
-            }
-
-            def param = params.first
-            def pType = param.typeAnnotation
-            
-            match (arg) case { _:TypeLiteral ->
-                // do nothing, for now, since we get a CheckerFailure error
-                // if we call typeOf on a TypeLiteral
-            } case { _ ->
-                
-                if(typeOf(arg).isConsistentSubtypeOf(pType).not) then {
-                    RequestError.raise("the expression " ++
-                        "`{stripNewLines(arg.toGrace(0))}` does not satisfy the type of " ++
-                        "parameter '{param}' in the method '{name}'") with (arg)
-                }
-            }
-
-            meth.returnType
-        }
-    }
-}
+//rule { op : Operator ->
+//    def rec = op.left
+//    def rType = typeOf(rec)
+//
+//    if(rType.isDynamic) then {
+//        anObjectType.dynamic
+//    } else {
+//        def name = op.nameString
+//        
+//        match(rType.getMethod(name)) case { (noSuchMethod) ->
+//            RequestError.raise("no such method '{name}' in " ++
+//                "`{stripNewLines(rec.toGrace(0))}` of type '{rType}'") with (op)
+//        } case { meth : MethodType ->
+//            def arg = op.right
+//            def params = meth.signature.first.parameters
+//
+//            if(params.size == 0) then {
+//                RequestError.raise("the definition of operator method " ++
+//                    "{name} is missing parameters") with (op)
+//            }
+//
+//            def param = params.first
+//            def pType = param.typeAnnotation
+//            
+//            match (arg) case { _:TypeLiteral ->
+//                // do nothing, for now, since we get a CheckerFailure error
+//                // if we call typeOf on a TypeLiteral
+//            } case { _ ->
+//                
+//                if(typeOf(arg).isConsistentSubtypeOf(pType).not) then {
+//                    RequestError.raise("the expression " ++
+//                        "`{stripNewLines(arg.toGrace(0))}` does not satisfy the type of " ++
+//                        "parameter '{param}' in the method '{name}'") with (arg)
+//                }
+//            }
+//
+//            meth.returnType
+//        }
+//    }
+//}
 
 //rule { index : Index ->
 //    def rec = index.value
