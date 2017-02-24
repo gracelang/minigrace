@@ -538,7 +538,7 @@ method buildGctFor(module) {
                 meths.push(v.name.value)
             }
             if (v.isWritable) then {
-                meths.push(v.name.value ++ ":=")
+                meths.push(v.name.value ++ ":=(1)")
             }
         } elseif {v.kind == "method"} then {
             if (v.isPublic) then {
@@ -610,7 +610,8 @@ method addFreshMethodsOf (moduleObject) to (gct) is confidential {
     // This is done in a separate pass after public information is in the gct,
     // because of the special treatment of prelude.clone
     // TODO: doesn't this just duplicate what's in 'classes' ? No: 'classes'
-    // lists only classes declared inside a def'd object constructer.
+    // lists only classes declared inside a def'd object constructor, i.e.,
+    // something simulating he old "dotted" class
     def freshmeths = [ ]
     for (moduleObject.value) do { node->
         if (node.isClass) then {

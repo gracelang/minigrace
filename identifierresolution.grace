@@ -1065,6 +1065,10 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                                 ProgrammingError.raise "object scope not in method scope"
                             }
                         }
+                    } elseif {scope.isObjectScope && (kind == k.vardec)} then {
+                        util.log 60 verbose "found var field {o.name} at line {o.line}"
+                        util.setPosition(o.line, o.linePos)
+                        scope.addName (o.nameString ++ ":=(1)") as (k.methdec)
                     }
                     scope.addNode(o) as (kind)
                 }
