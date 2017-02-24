@@ -1446,7 +1446,7 @@ rule { bind : Bind ->
         def rec = dest.in
 
         // Type of receiver
-        def rType = if(Identifier.match(rec) && (rec.value == "self")) then {
+        def rType = if(Identifier.match(rec) && {rec.value == "self"}) then {
             scope.types.find("Self") butIfMissing {
                 prelude.Exception.raise "type of self missing" with(rec)
             }
