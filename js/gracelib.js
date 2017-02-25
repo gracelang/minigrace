@@ -2917,6 +2917,9 @@ GraceMirrorMethod.prototype.methods['requestWithArgs(1)'] = function(argcv, argL
                 new GraceString("'requestWithArgs(_)' requires one argument (a list of arguments)"));
     }
     var theFunction = this.obj.methods[this.name];
+    if (typeof theFunction !== "function") {
+        dealWithNoMethod(this.name, this.subject, argList);
+    }
     var paramcv = theFunction.paramCounts;
     var np = theFunction.paramNames.length;
     var ntp = theFunction.typeParamNames.length;
@@ -2939,6 +2942,25 @@ GraceMirrorMethod.prototype.methods['hash'] = function methodMirror_hash (argcv)
     return callmethod(new GraceString(this.name), "hash", [0]);
 };
 
+function mirror_getMethod (argcv, methName) {
+    var name = numericMethodName(methName._value);
+    var current = this.subject;
+    if (current.methods[name]) {
+        return (new GraceMirrorMethod(this.subject, name));
+    }
+    var exceptionMsg = new GraceString("no method " +
+          canonicalMethodName(name) + " in mirror for ");
+    var objDescription = callmethod(this.subject, "asString", [0]);
+    exceptionMsg = callmethod(exceptionMsg, "++(1)", [1], objDescription);
+    throw new GraceExceptionPacket(NoSuchMethodErrorObject, exceptionMsg);
+}
+
+function mirror_NoSuchMethodHandler (argcv, handlerBlock) {
+    // sets up handlerBlock (a Block with 2 arguments) to be applied
+    // when a requested method is not found.
+    this.subject.noSuchMethodHandler = handlerBlock;
+    return GraceDone;
+}
 
 function GraceMirror(subj) {       // constructor function
     this.subject = subj;
@@ -2979,18 +3001,10 @@ GraceMirror.prototype = {
             }
             return meths;
         },
-        'getMethod(1)': function mirror_getMethod (argcv, methName) {
-            var name = numericMethodName(methName._value);
-            var current = this.subject;
-            if (current.methods[name]) {
-                return (new GraceMirrorMethod(this.subject, name));
-            }
-            var exceptionMsg = new GraceString("no method " +
-                  canonicalMethodName(name) + " in mirror for ");
-            var objDescription = callmethod(this.subject, "asString", [0]);
-            exceptionMsg = callmethod(exceptionMsg, "++(1)", [1], objDescription);
-            throw new GraceExceptionPacket(NoSuchMethodErrorObject, exceptionMsg);
-        }
+        'getMethod(1)': mirror_getMethod,
+        'onMethod(1)': mirror_getMethod,
+        'whenNoMethodDo(1)': mirror_NoSuchMethodHandler,
+        subject: this.subject
     },
     className: 'objectMirror'
 };
@@ -3090,7 +3104,12 @@ function request(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
             throw new GraceExceptionPacket(UninitializedVariableObject,
                 new GraceString("requested method '" + methname + "' on uninitialised variable."));
         } else if (typeof(obj.methods[methname]) !== "function") {
-            raiseNoSuchMethod(methname, obj);
+            var argsGL = callmethod(Grace_prelude, "emptyList", [0]);
+            var argsLength = arguments.length;
+            for (var ix = 3; ix < argsLength; ix++) {
+                callmethod(argsGL, "push(1)", [1], arguments[ix]);
+            }
+            dealWithNoMethod(methname, obj, argsGL);
         }
         throw e;
     } finally {
@@ -3131,7 +3150,12 @@ function requestWithArgs(obj, methname, argcv) {
             throw new GraceExceptionPacket(UninitializedVariableObject,
                 new GraceString("requested method '" + methname + "' on uninitialised variable."));
         } else if (typeof(obj.methods[methname]) !== "function") {
-            raiseNoSuchMethod(methname, obj);
+            var argsGL = callmethod(Grace_prelude, "emptyList", [0]);
+            var argsLength = arguments.length;
+            for (var ix = 3; ix < argsLength; ix++) {
+                callmethod(argsGL, "push(1)", [1], arguments[ix]);
+            }
+            dealWithNoMethod(methname, obj, argsGL);
         }
         throw e;
     } finally {
@@ -3165,7 +3189,12 @@ function selfRequest(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
             throw new GraceExceptionPacket(UninitializedVariableObject,
                 new GraceString("requested method '" + methname + "' on uninitialised variable."));
         } else if (typeof(obj.methods[methname]) !== "function") {
-            raiseNoSuchMethod(methname, obj);
+            var argsGL = callmethod(Grace_prelude, "emptyList", [0]);
+            var argsLength = arguments.length;
+            for (var ix = 3; ix < argsLength; ix++) {
+                callmethod(argsGL, "push(1)", [1], arguments[ix]);
+            }
+            dealWithNoMethod(methname, obj, argsGL);
         }
         throw e;
     } finally {
@@ -3201,7 +3230,12 @@ function selfRequestWithArgs(obj, methname, argcv) {
             throw new GraceExceptionPacket(UninitializedVariableObject,
                 new GraceString("requested method '" + methname + "' on uninitialised variable."));
         } else if (typeof(obj.methods[methname]) !== "function") {
-            raiseNoSuchMethod(methname, obj);
+            var argsGL = callmethod(Grace_prelude, "emptyList", [0]);
+            var argsLength = arguments.length;
+            for (var ix = 3; ix < argsLength; ix++) {
+                callmethod(argsGL, "push(1)", [1], arguments[ix]);
+            }
+            dealWithNoMethod(methname, obj, argsG);
         }
         throw e;
     } finally {
@@ -3243,7 +3277,7 @@ function numericMethodName(name) {
     }
     return output;
 }
-function raiseNoSuchMethod(name, target) {
+function dealWithNoMethod(name, target, argList) {
     var targetDesc = "";
     if (target.definitionLine && target.definitionModule !== "unknown") {
         targetDesc = " in object at " + target.definitionModule +
@@ -3253,16 +3287,25 @@ function raiseNoSuchMethod(name, target) {
     }
     var dollarIx = name.indexOf("$");
     if (dollarIx == -1) {
-        var ex = new GraceExceptionPacket(NoSuchMethodErrorObject,
+        if (target.noSuchMethodHandler) {
+            return callmethod(target.noSuchMethodHandler, "apply(2)", name, argList);
+        } else {
+            throw new GraceExceptionPacket(NoSuchMethodErrorObject,
                 new GraceString("no method '" + canonicalMethodName(name) + "' on " +
                     describe(target) + "."));
-        throw ex;
+        }
     } else {
         var baseName = name.substring(0, dollarIx);
-        throw new GraceExceptionPacket(ProgrammingErrorObject,
+        if (typeof target.methods[baseName] === "function") {
+            throw new GraceExceptionPacket(ProgrammingErrorObject,
                 new GraceString("attempting to inherit from '" +
                     canonicalMethodName(baseName) + "' on " +
                     describe(target) + ". This is not a fresh method."));
+        } else {
+            throw new GraceExceptionPacket(NoSuchMethodErrorObject,
+                new GraceString("no method '" + canonicalMethodName(baseName) + "' on " +
+                    describe(target) + "."));
+        }
     }
 }
 
