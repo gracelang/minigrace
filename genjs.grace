@@ -225,31 +225,37 @@ method compileobjvardec(o, selfr) {
 method create (kind) field (o) in (objr) {
     // compile code that creates a field, and appropriate
     // accessor method(s), in objr, the object under construction
-    var myc := auto_count
-    auto_count := auto_count + 1
-    var nm := escapestring(o.name.value)
-    var nmi := escapeident(o.name.value)
-    out "{objr}.data.{nmi} = undefined;"
-    out "var reader_{nmi}{myc} = function() \{  // reader method {nm}"
-    out "    return this.data.{nmi};"
-    out "};"
-    out "reader_{nmi}{myc}.is{kind.capitalized} = true;"
-    if (o.isReadable.not) then {
-        out "reader_{nmi}{myc}.confidential = true;"
+    def nm = escapestring(o.name.value)
+    def nmi = escapeident(o.name.value)
+    def fun = uidWithPrefix "reader" ++ "_" ++ nmi
+    def fieldName = if (compilationDepth == 1) then {
+        out "    // create {kind} field: cDepth = {compilationDepth}"
+        "var_" ++ nmi
+    } else {
+        out "{objr}.data.{nmi} = undefined;"
+        "{objr}.data." ++ nmi
     }
-    out "{objr}.methods[\"{nm}\"] = reader_{nmi}{myc};"
+    out "var {fun} = function() \{  // reader method {nm}"
+    out "    return {fieldName};"
+    out "};"
+    out "{fun}.is{kind.capitalized} = true;"
+    if (o.isReadable.not) then {
+        out "{fun}.confidential = true;"
+    }
+    out "{objr}.methods[\"{nm}\"] = {fun};"
     if (kind == "var") then {
-        out "var writer_{nmi}{myc} = function(argcv, n) \{   // writer method {nm}:=(_)"
+        def wFun = uidWithPrefix "writer_{nmi}"
+        out "var {wFun} = function(argcv, n) \{   // writer method {nm}:=(_)"
         increaseindent
         compileTypeCheck(o.dtype, "n", "argument to {nm}:=(_)", 0)
-        out "this.data.{nmi} = n;"
+        out "{fieldName} = n;"
         out "return GraceDone;"
         decreaseindent
         out "\};"
         if (o.isWritable.not) then {
-            out "writer_{nmi}{myc}.confidential = true;"
+            out "{wFun}.confidential = true;"
         }
-        out "{objr}.methods[\"{nm}:=(1)\"] = writer_{nmi}{myc};"
+        out "{objr}.methods[\"{nm}:=(1)\"] = {wFun};"
     }
 }
 
@@ -934,13 +940,7 @@ method compiledefdec(o) {
     def val = compilenode(o.value)
     out "var {var_nm} = {val};"
     if (compilationDepth == 1) then {
-        // this def is at top level, and not inside a block or method
-        if (o.isReadable) then {
-            util.setPosition(o.line, o.linePos)
-            compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(currentScope)],
-                [o.name], false) scope(currentScope))
-            out("this.methods[\"{nm}\"].debug = \"def\";")
-        }
+        create "def" field (o) in "this"
     }
     if (emitTypeChecks) then {
         if (o.dtype != false) then {
@@ -978,19 +978,7 @@ method compilevardec(o) {
         out "myframe.addVar(\"{escapestring(nm)}\", function() \{return {var_nm}});"
     }
     if (compilationDepth == 1) then {
-        // this def is at top level, and not inside a block or method
-        util.setPosition(o.line, o.linePos)
-        if (o.isReadable) then {
-            compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(currentScope)],
-                [o.name], false) scope(currentScope))
-            out("this.methods[\"{nm}\"].debug = \"var\";")
-        }
-        if (o.isWritable) then {
-            def paramID = ast.identifierNode.new("rhs", false)
-            compilenode(ast.methodNode.new(
-                [ast.signaturePart.partName(o.nameString ++ ":=") params( [paramID] ) scope(currentScope)],
-                [ast.bindNode.new(o.name, paramID)], false)  scope(currentScope))
-        }
+        create "var" field (o) in "this"
     }
     if (emitTypeChecks) then {
         if (o.dtype != false) then {
