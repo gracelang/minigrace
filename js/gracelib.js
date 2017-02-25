@@ -2918,7 +2918,7 @@ GraceMirrorMethod.prototype.methods['requestWithArgs(1)'] = function(argcv, argL
     }
     var theFunction = this.obj.methods[this.name];
     if (typeof theFunction !== "function") {
-        dealWithNoMethod(this.name, this.subject, argList);
+        return dealWithNoMethod(this.name, this.subject, argList);
     }
     var paramcv = theFunction.paramCounts;
     var np = theFunction.paramNames.length;
@@ -3109,7 +3109,7 @@ function request(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
             for (var ix = 3; ix < argsLength; ix++) {
                 callmethod(argsGL, "push(1)", [1], arguments[ix]);
             }
-            dealWithNoMethod(methname, obj, argsGL);
+            return dealWithNoMethod(methname, obj, argsGL);
         }
         throw e;
     } finally {
@@ -3155,7 +3155,7 @@ function requestWithArgs(obj, methname, argcv) {
             for (var ix = 3; ix < argsLength; ix++) {
                 callmethod(argsGL, "push(1)", [1], arguments[ix]);
             }
-            dealWithNoMethod(methname, obj, argsGL);
+            return dealWithNoMethod(methname, obj, argsGL);
         }
         throw e;
     } finally {
@@ -3194,7 +3194,7 @@ function selfRequest(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
             for (var ix = 3; ix < argsLength; ix++) {
                 callmethod(argsGL, "push(1)", [1], arguments[ix]);
             }
-            dealWithNoMethod(methname, obj, argsGL);
+            return dealWithNoMethod(methname, obj, argsGL);
         }
         throw e;
     } finally {
@@ -3235,7 +3235,7 @@ function selfRequestWithArgs(obj, methname, argcv) {
             for (var ix = 3; ix < argsLength; ix++) {
                 callmethod(argsGL, "push(1)", [1], arguments[ix]);
             }
-            dealWithNoMethod(methname, obj, argsG);
+            return dealWithNoMethod(methname, obj, argsG);
         }
         throw e;
     } finally {
@@ -3288,7 +3288,8 @@ function dealWithNoMethod(name, target, argList) {
     var dollarIx = name.indexOf("$");
     if (dollarIx == -1) {
         if (target.noSuchMethodHandler) {
-            return callmethod(target.noSuchMethodHandler, "apply(2)", name, argList);
+            return callmethod(target.noSuchMethodHandler, "apply(2)", [2],
+                new GraceString(name), argList);
         } else {
             throw new GraceExceptionPacket(NoSuchMethodErrorObject,
                 new GraceString("no method '" + canonicalMethodName(name) + "' on " +
