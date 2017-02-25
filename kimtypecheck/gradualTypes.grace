@@ -9,6 +9,7 @@ import "io" as io
 
 inherit prelude.methods
 
+
 // -------------------------------------------------------------------
 // Type declarations for type representations to use for type checking
 // -------------------------------------------------------------------
@@ -196,21 +197,25 @@ def aMethodType = object {
             while {par > 0} do {
                 //Collect the signature part name
                 var partName := mstr.substringFrom(fst)to(lst)
+                io.error.write "partName: {partName}"
+       
                 var partParams := list.empty
                 fst := lst + 2
                 lst := fst
                 var multiple := true
                 while {multiple} do {
-                    while {mstr.at(lst) != " "} do {
+                    while {mstr.at(lst) != ":"} do {
                         lst := lst + 1
                     }
+                 
                     var paramName := mstr.substringFrom(fst)to(lst - 1)
-                    
-                    fst := lst + 3
+                    io.error.write "paramName: {paramName}"
+                    fst := lst + 1
                     while {(mstr.at(lst) != ")") && (mstr.at(lst) != ",") && (mstr.at(lst) != "<")} do {
                         lst := lst + 1
                     }
                     var paramType := mstr.substringFrom(fst)to(lst - 1)
+                    io.error.write "paramType = {paramType}"
                     if (mstr.at(lst)==",") then {
                         fst := lst + 2
                         lst := fst
@@ -229,14 +234,19 @@ def aMethodType = object {
                 parts.add(aMixPartWithName(partName)parameters(partParams))
             }
         } else {
-            var partName := mstr.substringFrom(fst)to(mstr.indexOf(" ->") - 1)
+            var partName := mstr.substringFrom(fst)to(mstr.indexOf(" →") - 1)
+            io.error.write "partName = {partName}"
             parts.add(aMixPartWithName(partName)parameters(list[]))
         }
 
-        fst := mstr.indexOf("-> ")startingAt(lst) + 3
+        fst := mstr.indexOf("→ ")startingAt(1) + 2
+        if (fst < 1) then {
+            io.error.write "no arrow in method type {mstr}"
+        }
         ret := mstr.substringFrom(fst)to(mstr.size)
+        io.error.write "ret = {ret}"
         def rType = anObjectType.fromIdentifier(ast.identifierNode.new(ret, false))
-
+        io.error.write "rType = {rType}"
         aMethodType.signature(parts) returnType(rType)
     }
 
@@ -600,9 +610,8 @@ def anObjectType = object {
 //        TODO: re-write this code to understand the syntax of type expressions
 //          and type declarations, which are not the same!
             anObjectType.fromDType(typeDec.value)
-
+            
         } case { typeLiteral : TypeLiteral ->
-                      // added list on next line
             def typeMethods : List⟦MethodType⟧ = list(typeLiteral.methods)
             def typeName : String = typeLiteral.name
             def meths = list[]
@@ -646,7 +655,8 @@ def anObjectType = object {
             //TODO: figure out what to do here!
             anObjectType.fromIdentifier(generic.value)
         } case { memb : Member ->
-            scope.types.find("{memb.in.value}.{memb.value}") butIfMissing {dynamic}
+            io.error.write "653GT: {memb.receiver.value}.{memb.value}"
+            scope.types.find("{memb.receiver.value}.{memb.value}") butIfMissing {dynamic}
         } case { str : StringLiteral ->
             anObjectType.string
         } case { num : NumberLiteral ->
@@ -1366,7 +1376,7 @@ rule { meth : Method ->
 
     scope.methods.at(name) put(mType)
     
-    anObjectType.done    // added
+    anObjectType.done
 
 }
 
@@ -1431,7 +1441,7 @@ rule { defd : Def | Var ->
         scope.methods.at(name')
             put(aMethodType.signature(sig) returnType(anObjectType.done))
     }
-    anObjectType.done   // added but ???
+    anObjectType.done   
 }
 
 rule { bind : Bind ->
@@ -1545,6 +1555,7 @@ rule { imp : Import ->
           }
         }
     }
+    anObjectType.done
     //scope.variables.at(imp.nameString) put(anObjectType.dynamic)
 }
 
@@ -1683,8 +1694,13 @@ method processBody(body : List) -> ObjectType is confidential {
         superType
     } else {
         // Collect the method types to add the two self types.
-        def publicMethods = list[]
-        def allMethods = list[]
+        def isParam = aParam.withName("other") ofType (anObjectType.base)
+        def part = aMixPartWithName("isMe")parameters(list[isParam])
+
+        def isMeMeth = aMethodType.signature(list[part]) returnType(anObjectType.boolean)
+        
+        def publicMethods = list[isMeMeth]
+        def allMethods = list[isMeMeth]
 
         for(body) do { stmt ->
             match(stmt) case { meth : Method ->
