@@ -432,6 +432,7 @@ def preludeScope = newScopeIn(builtInsScope) kind "dialect"
 def moduleScope = newScopeIn(preludeScope) kind "module"
 def graceObjectScope = newScopeIn(emptyScope) kind "object"
 def booleanScope = newScopeIn(builtInsScope) kind "object"
+def varFieldDecls = []   // a list of declarations of var fields
 
 util.setPosition(0, 0)
 def thisModule = ast.identifierNode.new("module()object", false)
@@ -861,7 +862,7 @@ method resolveIdentifiers(topNode) {
     // bottom-up, so by the time a node is mapped, all of its
     // descendents have already been mapped.
 
-    topNode.map { node, as ->
+    def newModule = topNode.map { node, as ->
         if ( node.isAppliedOccurenceOfIdentifier ) then {
             transformIdentifier(node) ancestors(as)
         } elseif { node.isCall } then {
@@ -876,6 +877,26 @@ method resolveIdentifiers(topNode) {
             node
         }
     } ancestors (ast.ancestorChain.empty)
+    addAssignmentMethodsToSymbolTable
+    newModule
+}
+
+method addAssignmentMethodsToSymbolTable {
+    // Adds the ‹var›(_):= methods for var fields to the symbol table, so that
+    // they will be inserted into the gct file.  This is delayed until after
+    // identifiers have been resolved, so that assignments to module-level
+    // var fields are _not_ resolved into requests on the ‹var›(_):= method,
+    // but are compiled as simple assignments (which are more efficient). Note
+    // that module-level var fields that are not public don't get (_):= methods
+
+    varFieldDecls.do { decl ->
+        def dScope = decl.scope
+        def nameGets = decl.nameString ++ ":=(_)"
+        if (dScope.isModuleScope.not || decl.isPublic) then {
+            util.setPosition(decl.line, decl.linePos)
+            dScope.addName(nameGets) as (k.methdec)  // will complain if already declared
+        }
+    }
 }
 
 method processGCT(gct, importedModuleScope) {
@@ -1078,9 +1099,11 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                             }
                         }
                     } elseif {scope.isObjectScope && (kind == k.vardec)} then {
-                        util.log 60 verbose "found var field {o.name} at line {o.line}"
-                        util.setPosition(o.line, o.linePos)
-                        scope.addName (o.nameString ++ ":=(1)") as (k.methdec)
+                        varFieldDecls.add(as.parent)
+                        // Why not just add the :=(_) now?
+                        // Because we want some field assignments to be compiled as
+                        // direct assignments, and hence have to distinguish
+                        // programmer-writen :=(_) methods from synthetic ones.
                     }
                     scope.addNode(o) as (kind)
                 }
