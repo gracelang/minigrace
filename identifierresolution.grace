@@ -256,6 +256,9 @@ class newScopeIn(parent') kind(variety') {
     method isMethodScope {
         variety == "method"
     }
+    method isModuleScope {
+        variety == "module"
+    }
     method resolveOuterMethod(name) fromNode (aNode) {
         if (useOuterNodes) then {
             // replace name by a request with receiver self, or an outerNode
@@ -1040,11 +1043,20 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             true
         }
         method visitDefDec (o) up (as) {
-            o.scope := as.parent.scope
+            def myParent = as.parent
+            o.scope := myParent.scope
+            o.parentKind := myParent.kind
+            def declaredName = o.nameString
             if (false != o.startToken) then {
-                as.parent.scope.elementTokens.put(o.nameString, o.startToken)
+                myParent.scope.elementTokens.put(declaredName, o.startToken)
             }
-            if (o.value.isObject) then { o.value.name := o.nameString }
+            if (o.value.isObject) then { o.value.name := declaredName }
+            true
+        }
+        method visitVarDec(o) up (as) {
+            def myParent = as.parent
+            o.scope := myParent.scope
+            o.parentKind := myParent.kind
             true
         }
         method visitIdentifier (o) up (as) {
@@ -1181,7 +1193,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitString(o) up (as) { o.scope := as.parent.scope ; true }
         method visitNum(o) up (as) { o.scope := as.parent.scope ; true }
         method visitOp(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitVarDec(o) up (as) { o.scope := as.parent.scope ; true }
         method visitDialect(o) up (as) { o.scope := as.parent.scope ; true }
         method visitCommentNode(o) up (as) { o.scope := as.parent.scope ; true }
     }   // end of symbolTableVis

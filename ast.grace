@@ -847,6 +847,7 @@ def typeDecNode is public = object {
     def kind is public = "typedec"
     var name is public := name'
     var value is public := typeValue
+    var parentKind is public := "unset"
     def nameString is public = name.value
     var annotations is public := [ ]
     var typeParams is public := false
@@ -917,6 +918,10 @@ def typeDecNode is public = object {
     }
     method shallowCopy {
         typeDecNode.new(name, nullNode).shallowCopyFieldsFrom(self)
+    }
+    method postCopy(other) {
+        parentKind := other.parentKind
+        self
     }
   }
 }
@@ -2310,6 +2315,7 @@ def defDecNode is public = object {
         var name is public := name'
         var value is public := val
         var dtype is public := dtype'
+        var parentKind is public := "unset"
         def nameString is public = name.nameString
         var annotations is public := [ ]
         var startToken is public := false
@@ -2403,6 +2409,7 @@ def defDecNode is public = object {
         }
         method postCopy(other) {
             startToken := other.startToken
+            parentKind := other.parentKind
             self
         }
         method statementName { "definition" }
@@ -2415,6 +2422,7 @@ def varDecNode is public = object {
     var name is public := name'
     var value is public := val'
     var dtype is public := dtype'
+    var parentKind is public := "unset"
     def nameString is public = name.value
     var annotations is public := [ ]
 
@@ -2511,6 +2519,10 @@ def varDecNode is public = object {
     }
     method shallowCopy {
         varDecNode.new(name, value, dtype).shallowCopyFieldsFrom(self)
+    }
+    method postCopy(other) {
+        parentKind := other.parentKind
+        self
     }
     method statementName { "variable declaration" }
 
