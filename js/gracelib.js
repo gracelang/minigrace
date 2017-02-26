@@ -3235,7 +3235,7 @@ function selfRequestWithArgs(obj, methname, argcv) {
             for (var ix = 3; ix < argsLength; ix++) {
                 callmethod(argsGL, "push(1)", [1], arguments[ix]);
             }
-            return dealWithNoMethod(methname, obj, argsG);
+            return dealWithNoMethod(methname, obj, argsGL);
         }
         throw e;
     } finally {
@@ -3291,9 +3291,14 @@ function dealWithNoMethod(name, target, argList) {
             return callmethod(target.noSuchMethodHandler, "apply(2)", [2],
                 new GraceString(name), argList);
         } else {
+            var closeMatches = closeMatchesForMethodNamed(name, target);
+            var suggestions = "";
+            if (closeMatches.length !== 0) {
+                suggestions = "  Did you mean " + readableOptions(closeMatches) + "?";
+            }
             throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("no method '" + canonicalMethodName(name) + "' on " +
-                    describe(target) + "."));
+                new GraceString("no method " + canonicalMethodName(name) + " on " +
+                    describe(target) + "." + suggestions));
         }
     } else {
         var baseName = name.substring(0, dollarIx);
@@ -3303,11 +3308,46 @@ function dealWithNoMethod(name, target, argList) {
                     canonicalMethodName(baseName) + "' on " +
                     describe(target) + ". This is not a fresh method."));
         } else {
+            closeMatches = closeMatchesForMethodNamed(name, target);
+            suggestions = "";
+            if (closeMatches.length === 0) {
+                suggestions = "  Did you mean " + readableOptions(closeMatches) + "?";
+            }
             throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("no method '" + canonicalMethodName(baseName) + "' on " +
-                    describe(target) + "."));
+                new GraceString("no method " + canonicalMethodName(baseName) + " on " +
+                    describe(target) + "." + suggestions));
         }
     }
+}
+
+function closeMatchesForMethodNamed(mName, obj) {
+    // the method with name mName is not in the methods of obj.
+    // Returns a list of close matches to mName.
+    var matches = [];
+    var gName = new GraceString(mName);
+    var one = new GraceNum(1);
+    for (var candidate in obj.methods) {
+        if (obj.methods.hasOwnProperty(candidate)) {
+            var gCand = new GraceString(candidate);
+            var mm = do_import("mirrors", gracecode_mirrors);
+            var em = request(mm, "loadDynamicModule(1)", [1], new GraceString("errormessages"));
+            if (request(em, "name(1)matches(1)within(1)", [1, 1, 1],
+                                     gCand, gName, one)._value !== 0) {
+                matches.push(canonicalMethodName(gCand._value));
+            }
+        }
+    }
+    return matches;
+}
+
+function readableOptions(methList) {
+    // if methList is ["foo", "bar"], returns "foo or bar"
+    var len = methList.length;
+    if (len === 0) return "";
+    if (len === 1) return methList[0];
+    var result = "";
+    for (var i = 0; i < len-2; i++) result = result + methList[i] + ", ";
+    return result + methList[len-2] + " or " + methList[len-1];
 }
 
 function raiseConfidentialMethod(name, target) {
