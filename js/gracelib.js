@@ -1596,7 +1596,7 @@ function Grace_isTrue(o) {
         return false;
     if (o._value === true)
         return true;
-    throw new GraceExceptionPacket(RuntimeErrorObject,
+    throw new GraceExceptionPacket(ProgrammingErrorObject,
         new GraceString("non-Boolean object " + describe(o) + " used as condition."));
 }
 
