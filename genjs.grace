@@ -227,24 +227,23 @@ method create (kind) field (o) in (objr) {
     // accessor method(s), in objr, the object under construction
     def nm = escapestring(o.name.value)
     def nmi = escapeident(o.name.value)
-    def fun = uidWithPrefix "reader" ++ "_" ++ nmi
-    def fieldName = if (compilationDepth == 1) then {
-        out "    // create {kind} field: cDepth = {compilationDepth}"
-        "var_" ++ nmi
+    def rFun = uidWithPrefix "reader" ++ "_" ++ nmi
+    def fieldName = if (o.parentKind == "module") then {
+        "var_" ++ nmi     // this var_{nmi} variable must be declared by caller
     } else {
         out "{objr}.data.{nmi} = undefined;"
         "{objr}.data." ++ nmi
     }
-    out "var {fun} = function() \{  // reader method {nm}"
+    out "var {rFun} = function() \{  // reader method {nm}"
     out "    return {fieldName};"
     out "};"
-    out "{fun}.is{kind.capitalized} = true;"
+    out "{rFun}.is{kind.capitalized} = true;"
     if (o.isReadable.not) then {
-        out "{fun}.confidential = true;"
+        out "{rFun}.confidential = true;"
     }
-    out "{objr}.methods[\"{nm}\"] = {fun};"
+    out "{objr}.methods[\"{nm}\"] = {rFun};"
     if (kind == "var") then {
-        def wFun = uidWithPrefix "writer_{nmi}"
+        def wFun = uidWithPrefix "writer" ++ "_" ++ nmi
         out "var {wFun} = function(argcv, n) \{   // writer method {nm}:=(_)"
         increaseindent
         compileTypeCheck(o.dtype, "n", "argument to {nm}:=(_)", 0)
@@ -939,7 +938,7 @@ method compiledefdec(o) {
     }
     def val = compilenode(o.value)
     out "var {var_nm} = {val};"
-    if (compilationDepth == 1) then {
+    if (o.parentKind == "module") then {
         create "def" field (o) in "this"
     }
     if (emitTypeChecks) then {
@@ -977,7 +976,7 @@ method compilevardec(o) {
     if (debugMode) then {
         out "myframe.addVar(\"{escapestring(nm)}\", function() \{return {var_nm}});"
     }
-    if (compilationDepth == 1) then {
+    if (o.parentKind == "module") then {
         create "var" field (o) in "this"
     }
     if (emitTypeChecks) then {
