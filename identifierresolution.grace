@@ -1087,18 +1087,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 if ((o.isDeclaredByParent.not) && {o.wildcard.not}) then {
                     checkForReservedName(o)
                     def kind = o.declarationKindWithAncestors(as)
-                    if (kind.isParameter) then {
-                        if (scope.variety == "object") then {
-                            // this is a hack for declaring the parameters of the factory
-                            // method of a dotted class.  The class's symbol table is that of the
-                            // fresh object; the factory method's parameters need to go in
-                            // the _enclosing_ scope.
-                            scope := scope.parent
-                            if (scope.variety != "method") then {
-                                ProgrammingError.raise "object scope not in method scope"
-                            }
-                        }
-                    } elseif {scope.isObjectScope && (kind == k.vardec)} then {
+                    if (scope.isObjectScope && (kind == k.vardec)) then {
                         varFieldDecls.add(as.parent)
                         // Why not just add the :=(_) now?
                         // Because we want some field assignments to be compiled as
