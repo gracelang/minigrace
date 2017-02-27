@@ -1,83 +1,89 @@
 dialect "minitest"
-import "option" as opt
+import "option" as option
 
 testSuiteNamed "option tests" with {
-    def n = opt.none
-    test "none isNone" by {
-        assert (n.isNone) description "n isn't None"
+    def e = option.empty
+    test "type of empty" by {
+        assert (e) hasType (option.Option)
     }
-    test "none isEmpty" by {
-        assert (n.isEmpty) description "n isn't Empty"
+    test "empty isEmpty" by {
+        assert (e.isEmpty) description "empty isn't empty"
     }
-    test "none isn't some" by {
-        deny (n.isSome) description "none is Some!"
+    test "empty isn't full" by {
+        deny (e.isFull) description "empty is full!"
     }
-    test "none has no value" by {
-        assert {n.value} shouldRaise (opt.ValueError)
+    test "empty has no value" by {
+        assert {e.value} shouldRaise (option.ValueError)
     }
-    test "none.do does nothing" by {
-        n.do { failBecause "none.do executes its block " }
+    test "empty valueIfEmpty" by {
+        assert (e.valueIfEmpty { 42 }) shouldBe 42
+    }
+    test "empty.do does nothing" by {
+        e.do { failBecause "empty.do executes its block " }
         assert true
     }
-    test "none ifSome … ifNone" by {
-        n.ifSome { failBecause "none.ifSome executes the some block" }
-          ifNone { assert true }
+    test "empty ifFull … ifEmpty" by {
+        e.ifFull { failBecause "empty.ifFull executes the full block" }
+          ifEmpty { assert true }
     }
-    test "none ifNone … ifSome" by {
-        n.ifNone { assert true }
-          ifSome { failBecause "none.ifNone executes the some block" }
+    test "empty ifEmpty … ifFull" by {
+        e.ifEmpty { assert true }
+          ifFull { failBecause "empty.ifEmpty executes the full block" }
     }
-    test "none ifSome" by {
-        n.ifSome { failBecause "none.ifSome executes the some block" }
+    test "empty ifFull" by {
+        e.ifFull { failBecause "empty.ifFull executes the full block" }
         assert true
     }
-    test "none ifNone" by {
-        var s := "Bad"
-        n.ifNone { s := "OK" }
-        assert (s) shouldBe "OK"
+    test "empty ifEmpty" by {
+        var f := "Bad"
+        e.ifEmpty { f := "OK" }
+        assert (f) shouldBe "OK"
     }
     
-    // Now the tests on a some
-    def s = opt.some⟦String⟧ "yes"
-    test "some isNone" by {
-        deny (s.isNone) description "s is None"
+    // Now the tests on a full
+    def f = option.full⟦String⟧ "yes"
+    test "type of full" by {
+        assert (f) hasType (option.Option)
     }
-    test "some isEmpty" by {
-        deny (s.isEmpty) description "s is Empty"
+    test "full isn't Empty" by {
+        deny (f.isEmpty) description "f is Empty"
     }
-    test "some isn't some" by {
-        assert (s.isSome) description "some isn't Some!"
+    test "full is full" by {
+        assert (f.isFull) description "full isn't full!"
     }
-    test "some has a value" by {
-        assert (s.value) shouldBe "yes"
+    test "full has a value" by {
+        assert (f.value) shouldBe "yes"
     }
-    test "some.do does nothing" by {
+    test "full valueIfEmpty" by {
+        assert (f.valueIfEmpty { 42 }) shouldBe "yes"
+    }
+    test "full.do does nothing" by {
         var flag := "Bad"
-        s.do { value → flag := value }
+        f.do { value → flag := value }
         assert (flag) shouldBe "yes"
     }
-    test "some ifSome … ifNone" by {
-        s.ifSome { value → assert (value) shouldBe "yes" }
-          ifNone { failBecause "some.ifNone executes the none block" }
+    test "full ifFull … ifEmpty" by {
+        f.ifFull { value → assert (value) shouldBe "yes" }
+          ifEmpty { failBecause "full.ifEmpty executes the empty block" }
     }
-    test "some ifNone … ifSome" by {
-        s.ifNone { failBecause "some.ifNone executes the none block" }
-          ifSome { value → assert (value) shouldBe "yes" }
+    test "full ifEmpty … ifFull" by {
+        f.ifEmpty { failBecause "full.ifEmpty executes the empty block" }
+          ifFull { value → assert (value) shouldBe "yes" }
     }
-    test "some ifNone" by {
-        s.ifNone { failBecause "some.ifNone executes the none block" }
+    test "full ifEmpty" by {
+        f.ifEmpty { failBecause "full.ifEmpty executes the empty block" }
         assert true
     }
-    test "some ifSome" by {
+    test "full ifFull" by {
         var flag := "Bad"
-        s.ifSome { value → flag := value }
+        f.ifFull { value → flag := value }
         assert (flag) shouldBe "yes"
     }
 }
 
 testSuiteNamed "sequence tests" with {
-    def empty = opt.none
-    def evens = opt.some 2
+    def empty = option.empty
+    def evens = option.full 2
     
     test "empty option has type Sequence" by {
         assert (empty) hasType (Sequence)
@@ -86,43 +92,42 @@ testSuiteNamed "sequence tests" with {
         assert (evens) hasType (Sequence⟦Number⟧)
     }
     test "testFiltered Option TypeEnumerable" by {
-        def witness =  opt.some⟦Number⟧ 3.filter{x -> true}
+        def witness =  option.full⟦Number⟧ 3.filter{x -> true}
         assert (witness) hasType (Enumerable⟦Number⟧)
     }
     test "test Option not type with wombat" by {
-        def witness =  opt.some ⟦Number⟧ 1
+        def witness =  option.full ⟦Number⟧ 1
         deny (witness) hasType (Sequence⟦Number⟧ & type { wombat })
     }
     test "test Option sizes" by {
         assert(empty.size) shouldBe 0
         assert(evens.size) shouldBe 1
     }
-
     test "test Option EmptyDo" by {
         empty.do {each -> failBecause "empty empty.do did with {each}"}
         assert(true)
     }
 
     test "test Option Equality empty" by {
-        assert(empty == opt.none) description "empty  Option  ≠ itself!"
+        assert(empty == option.empty) description "empty  Option  ≠ itself!"
         assert(empty == emptyList) description "empty  Option  ≠ empty list"
     }
 
     test "test Option InequalityEmpty" by {
-        deny (empty == opt.some 1)
-        assert (empty ≠ opt.some 1)
+        deny (empty == option.full 1)
+        assert (empty ≠ option.full 1)
         deny (empty == 3)
         deny (empty == evens)
     }
 
     test "test Option Inequality 2" by {
-        deny (evens ≠ opt.some 2)
-        assert (evens != opt.some 1)
+        deny (evens ≠ option.full 2)
+        assert (evens != option.full 1)
     }
 
     test "test Option Equality 2" by {
-        assert (evens == opt.some 2) description "even ≠ some 2"
-        deny(evens == opt.some 1) description "even == some 1"
+        assert (evens == option.full 2) description "even ≠ full 2"
+        deny(evens == option.full 1) description "even == full 1"
     }
 
     test "test Option evens do" by {
@@ -169,36 +174,36 @@ testSuiteNamed "sequence tests" with {
     }
 
     test "test Option Fold" by {
-        assert(opt.some 4.fold {a, each -> a + each} startingWith 0) shouldBe 4
+        assert(option.full 4.fold {a, each -> a + each} startingWith 0) shouldBe 4
     }
     
     test "test Option doSeparatedBy empty" by {
-        var s := "nothing"
+        var f := "nothing"
         empty.do { failBecause "do did when Option is empty" }
-            separatedBy { s := "kilroy" }
-        assert (s) shouldBe ("nothing")
+            separatedBy { f := "kilroy" }
+        assert (f) shouldBe ("nothing")
     }
 
-    test "test Option doSeparatedBy some" by {
-        var s := "nothing"
-        opt.some(1).do { each -> assert(each)shouldBe(1) }
-            separatedBy { s := "kilroy" }
-        assert (s) shouldBe ("nothing")
+    test "test Option doSeparatedBy full" by {
+        var f := "nothing"
+        option.full(1).do { each -> assert(each)shouldBe(1) }
+            separatedBy { f := "kilroy" }
+        assert (f) shouldBe ("nothing")
     }
 
     test "test Option KeysAndValuesDo" by {
         def accum = emptyDictionary
-        var n := 1
+        var e := 1
         evens.keysAndValuesDo { k, v ->
             accum.at(k)put(v)
-            assert (accum.size) shouldBe (n)
-            n := n + 1
+            assert (accum.size) shouldBe (e)
+            e := e + 1
         }
         assert(accum) shouldBe (dictionary [1::2])
     }
 
     test "test Option ReversedEvens" by {
-        assert (evens.reversed) shouldBe ( opt.some(2) )
+        assert (evens.reversed) shouldBe ( option.full(2) )
         assert (evens.reversed.reversed) shouldBe (evens)
     }
 
@@ -207,11 +212,11 @@ testSuiteNamed "sequence tests" with {
     }
 
     test "test Option asString NonEmpty" by {
-        assert (evens.asString) shouldBe ("some(2)")
+        assert (evens.asString) shouldBe ("option.full(2)")
     }
 
     test "test Option asString Empty" by {
-        assert (empty.asString) shouldBe ("none")
+        assert (empty.asString) shouldBe ("option.empty")
     }
 
     test "test Option Map Empty" by {
@@ -226,7 +231,7 @@ testSuiteNamed "sequence tests" with {
         deny(evens.filter{x -> false}.iterator.hasNext)
     }
     
-    test "test Option Filter None" by {
+    test "test Option Filter Empty" by {
         deny(empty.filter{x -> false}.iterator.hasNext)
         deny(empty.filter{x -> true}.iterator.hasNext)
     }
@@ -267,18 +272,18 @@ testSuiteNamed "sequence tests" with {
     test "test Option LazyConcat" by {
         def s0 = evens.filter{x -> (x % 2) == 1}
         def s2 = evens.filter{x -> true}
-        assert(s0 ++ s2) shouldBe ( opt.some⟦Number⟧ 2)
+        assert(s0 ++ s2) shouldBe ( option.full⟦Number⟧ 2)
     }
     test "test Option ExplicitLazyConcat" by {
-        def oneToTwo =  collections.lazyConcatenation(opt.some 1, opt.some 2)
+        def oneToTwo =  collections.lazyConcatenation(option.full 1, option.full 2)
         assert (oneToTwo) shouldBe (1..2)
     }
-    test "test Option MultipleConcat onto some" by {
-        def oneToSix =  (2..6).fold {acc, next → acc ++ opt.some(next)} startingWith (opt.some⟦Number⟧ 1)
+    test "test Option MultipleConcat onto full" by {
+        def oneToSix =  (2..6).fold {acc, next → acc ++ option.full(next)} startingWith (option.full⟦Number⟧ 1)
         assert (oneToSix) shouldBe (1..6)
     }
-    test "test Option MultipleConcat onto none" by {
-        def oneToSix =  (1..6).fold {acc, next → acc ++ opt.some(next)} startingWith (opt.none⟦Number⟧)
+    test "test Option MultipleConcat onto empty" by {
+        def oneToSix =  (1..6).fold {acc, next → acc ++ option.full(next)} startingWith (option.empty⟦Number⟧)
         assert (oneToSix) shouldBe (1..6)
     }
     test "Option even indexOf found " by {
