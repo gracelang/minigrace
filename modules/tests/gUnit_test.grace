@@ -75,7 +75,7 @@ theResult.failures.do { each:gUnit.TestRecord ->
 
 print "Errored:"
 theResult.errors.do { each:gUnit.TestRecord ->
-    print "    {each.name}: {each.message.substringFrom 1 to 48}"
+    print "    {each.name}: {each.message}"
 }
 
 
