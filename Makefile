@@ -46,6 +46,7 @@ STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 TYPE_DIALECTS = staticTypes requireTypes
 TEST_DEPENDENCIES = ast lexer stringMap collectionsPrelude parser xmodule errormessages standardGrace identifierKinds standardGrace
 #   these are modules used in running the full test suite
+NPM_STABLE_VERSION=1.0.72
 
 VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
@@ -177,12 +178,6 @@ fulltest: gencheck clean selftest selftest-js module-test-js
 gencheck:
 	X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache
 
-get-npm-kg:
-	@echo "Downloading known-good js compiler from NPM... VERSION=$(NPM_STABLE)"
-	sed -e 's/VERSION/$(NPM_STABLE)/g' package.in.json > package.json
-	npm install
-	mkdir -p js-kg/
-	cp -R node_modules/minigrace/ js-kg/
 
 gracedoc: tools/gracedoc
 
@@ -408,6 +403,26 @@ modules/rtobjectdraw.grace: modules/objectdraw.grace tools/make-rt-version
 modules/stobjectdraw.grace: modules/objectdraw.grace tools/make-st-version
 	./tools/make-st-version $< > $@
 
+npm-get-kg:
+	@echo "Downloading known-good js compiler from NPM... VERSION=$(NPM_STABLE_VERSION)"
+	sed -e 's/VERSION/$(NPM_STABLE_VERSION)/g' package.in.json > package.json
+	npm install
+	mkdir -p js-kg/
+	cp -R node_modules/minigrace/ js-kg/
+
+npm-build-kg: all
+	mkdir -p js-kg
+	rm -rf js-kg/*
+	-@cp js/* js-kg/
+	rm -f js-kg/*.in js-kg/*.gso js-kg/*.gcn js-kg/*.png js-kg/*.html js-kg/*.css
+
+npm-update-kg:
+	@[ -n "$(VERSION)" ] || { echo "Please set the VERSION variable to something like x.x.x, current version is $(NPM_STABLE_VERSION)" && false; }
+	cd js-kg/ && npm version $(VERSION) && npm publish
+	perl -pi -e 's/$(NPM_STABLE_VERSION)/$(VERSION)/g' Makefile
+	@echo ! NPM Known–Good Package Version has been updated to $(VERSION) !
+
+
 $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
 
@@ -447,7 +462,6 @@ pull-brace: pull-web-editor
        then printf "grace-web-editor/brace: " ; cd grace-web-editor/brace; git pull ; \
        else git clone https://github.com/gracelang/brace/ grace-web-editor/brace ; fi
 
-push-npm-update:
 
 sample-dialects: $(DIALECT_DEPENDENCIES)
 	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
