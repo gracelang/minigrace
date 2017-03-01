@@ -10,18 +10,29 @@ type Date = type {
     hour -> Number
         // the hour of the day, e.g. 16 for 4 pm
     minute -> Number
-        // the minute past the hour, e.g. 49 for 4:49 pm
+        // the minutes past the hour, e.g. 49 for 4:49 pm
     second -> Number
-        // the second past the minute, e.g. 33 for 4:49:32 pm
+        // the seconds past the minute, e.g. 32 for 4:49:32 pm
     asString -> String
         // a string representation of this date and time
     asDateString -> String
-        // a string representation of just date part
+        // a string representation of just the date part
     asTimeString -> String
-        // a sttring representation of just the time part
+        // a string representation of just the time part
     asIsoString -> String
         // a string representation that complies with ISO 8601
+    timeZoneOffsetInMinutes -> Number
+        // the offset between this time and UTC, in minutes.
+    timeZoneOffsetInHours -> Number
+        // the offset between this time and UTC, in hours.
     == (other:Date) -> Boolean
+        // is self == to other?
+    + (other:Date) -> Date
+        // the sum of self and other
+    - (other:Date)
+        // the difference betweem self and other
+    * (factor:Number)
+        // the product of self and factor
 }
 
 trait basic {
@@ -77,7 +88,7 @@ trait basic {
     method timeZoneOffsetInMinutes -> Number {
         // the offset between this time and UTC, as a Number of minutes.
 
-        // why not presnet this as a date?  Because, as a date, it's always zero
+        // why not present this as a date?  Because, as a date, it's always zero
         native "js" code "return new GraceNum(this.data.value.getTimezoneOffset());"
     }
     method timeZoneOffsetInHours -> Number {
