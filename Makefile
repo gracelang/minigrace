@@ -32,7 +32,8 @@ JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
 MGFLAGS = -XnoChecks
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
 JSSOURCEFILES = $(SOURCEFILES:%.grace=js/%.js)
-KG=known-good/$(ARCH)/$(STABLE)
+KG = known-good/$(ARCH)/$(STABLE)
+JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
 
@@ -244,7 +245,7 @@ js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
 js/buildinfo.gct: buildinfo.grace
-	GRACE_MODULE_PATH=. js-kg/minigrace-js $(VERBOSITY) --make --target js -dir js $<
+	GRACE_MODULE_PATH=. $(JS-KG)/minigrace-js $(VERBOSITY) --make --target js -dir js $<
 
 js/collectionsPrelude%js js/collectionsPrelude%gct: collectionsPrelude.grace minigrace
 	GRACE_MODULE_PATH=modules:js ./minigrace $(VERBOSITY) --make --target js --dir js $(<F)
@@ -369,9 +370,6 @@ minigrace-dynamic: l1/minigrace $(SOURCEFILES)
 minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) $(C_MODULES_GSO:%.gso=%.gct) gracelib.o unixFilePath.gct
 	GRACE_MODULE_PATH=. l1/minigrace --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
 
-minigrace-js: pull-js js/gracelib.js js/buildinfo.gct $(STUBS:%.grace=%.gct) $(STUBS:%.grace=%.gct) $(C_MODULES_GSO:%.gso=%.gct) unixFilePath.gct
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
-
 minigrace-environment: minigrace-c-env minigrace-js-env
 
 minigrace-c-env: minigrace standardGrace.gct gracelib.o unicode.gso $(MODULES_WO_JSONLY:%.grace=modules/%.gct) .git/hooks/commit-msg
@@ -397,24 +395,25 @@ modules/rtobjectdraw.grace: modules/objectdraw.grace tools/make-rt-version
 modules/stobjectdraw.grace: modules/objectdraw.grace tools/make-st-version
 	./tools/make-st-version $< > $@
 
-npm-get-kg:
+npm-get-kg: $(JS-KG)
+
+$(JS-KG):
 	@echo "Downloading known-good js compiler from NPM... VERSION=$(NPM_STABLE_VERSION)"
 	sed -e 's/VERSION/$(NPM_STABLE_VERSION)/g' package.in.json > package.json
 	npm install
-	mkdir -p js-kg/
-	cp -R node_modules/minigrace/ js-kg/
+	mkdir -p $(JS-KG)
+	cp -R node_modules/minigrace/ $(JS-KG)
 
 npm-build-kg: all
-	mkdir -p js-kg
-	rm -rf js-kg/*
-	cp npm-js-kg.json js-kg/package.json
-	-@cp js/* js-kg/
-	-@cp minigrace-js js-kg/
-	rm -fr js-kg/*.in js-kg/*.gso js-kg/*.gso.dSYM js-kg/*.gcn js-kg/*.png js-kg/*.html js-kg/*.css
+	mkdir $(JS-KG)
+	rm -rf $(JS-KG)/*
+	cp npm-$(JS-KG).json $(JS-KG)/package.json
+	-@cp js/*.js js/*.gct js/grace js/grace-debug $(JS-KG)
+	-@cp minigrace-js $(JS-KG)/
 
 npm-update-kg:
 	@[ -n "$(VERSION)" ] || { echo "Please set the VERSION variable to something like x.x.x, current version is $(NPM_STABLE_VERSION)" && false; }
-	cd js-kg/ && npm version $(VERSION) && npm publish
+	cd $(JS-KG)/ && npm version $(VERSION) && npm publish
 	perl -pi -e 's/$(NPM_STABLE_VERSION)/$(VERSION)/g' Makefile
 	@echo ! NPM Known–Good Package Version has been updated to $(VERSION) !
 
@@ -525,11 +524,22 @@ $(STUBS:%.grace=stubs/l1/%.gct): stubs/l1/%.gct: stubs/%.grace l1/standardGrace.
 	GRACE_MODULE_PATH=l1 $(KG)/minigrace $(VERBOSITY) --make --noexec --dir stubs/l1 $<
 	@rm -f $(@:%.gct=%{.c,.gcn});
 
+$(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace standardGrace.gct j1/minigrace-js
+	cd j1 && GRACE_MODULE_PATH=. ./minigrace-js $(VERBOSITY) --make --noexec --dir ../stubs ../$<
+	@rm -f $(@:%.gct=%.js);
+
+$(STUBS:%.grace=stubs/j1/%.gct): stubs/j1/%.gct: stubs/%.grace j1/standardGrace.gct $(KG-JS)/minigrace-js
+	GRACE_MODULE_PATH=j1 $(KG)/minigrace $(VERBOSITY) --make --noexec --dir stubs/l1 $<
+	@rm -f $(@:%.gct=%.js);
+
 $(STUBS:%.grace=js/%.gct): js/%.gct: stubs/%.gct
 	cd js && ln -sf ../$< .
 
 $(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/l1/%.gct
 	cd l1 && ln -sf ../$< .
+
+$(STUBS:%.grace=j1.gct): j1/%.gct: stubs/j1/%.gct
+	cd j1 && ln -sf ../$< .
 
 tarWeb: js
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
@@ -602,6 +612,46 @@ uninstall:
 
 webIde:
 	$(MAKE) ide
+
+j1:
+	mkdir -p j1
+
+j1/minigrace: j1 $(JS-KG)/minigrace-js $(STUBS:%.grace=$(KG-JS)/%.gct)
+	GRACE_MODULE_PATH=$(JS-KG) $(JS-KG)/minigrace-js --make --dir j1 --module minigrace compiler.grace
+
+js-minigrace: $(STUBS:%.grace=j1/%.gct)
+	GRACE_MODULE_PATH=j1 j1/minigrace-js --make --dir . compiler.grace
+
+#Not needed or used:
+quick-compile:
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec --dir $(JS-KG) collectionsPrelude.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js --make --noexec --dir $(JS-KG) standardGrace.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec --dir $(JS-KG) stubs/curl.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec --dir $(JS-KG) stubs/dom.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec --dir $(JS-KG) stubs/io.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js --make --noexec --dir $(JS-KG) stubs/mirrors.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec --dir $(JS-KG) stubs/sys.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec --dir $(JS-KG) stubs/timer.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec --dir $(JS-KG) stubs/unicode.grace
+	cd $(JS-KG)/ && ld -o gracelib.o -r gracelib-basic.o standardGrace.gcn collectionsPrelude.gcn debugger.o
+	cp $(JS-KG)/gsoModules/* ./
+	cp $(JS-KG)/gracelib.o ./
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec buildinfo.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  stringMap.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  unixFilePath.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  util.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  errormessages.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  lexer.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  identifierKinds.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  ast.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  parser.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  xmodule.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  genc.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  genjs.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  identifierresolution.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --native --gracelib $(JS-KG)/ --module minigrace compiler.grace
+	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --native --module minigrace  --gracelib . compiler.grace
+
 
 .git/hooks/commit-msg: tools/validate-commit-message
 	@ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
