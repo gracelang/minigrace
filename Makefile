@@ -46,7 +46,7 @@ STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 TYPE_DIALECTS = staticTypes requireTypes
 TEST_DEPENDENCIES = ast lexer stringMap collectionsPrelude parser xmodule errormessages standardGrace identifierKinds standardGrace
 #   these are modules used in running the full test suite
-NPM_STABLE_VERSION=1.0.72
+NPM_STABLE_VERSION=1.0.73
 
 VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
@@ -369,14 +369,14 @@ minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) $
 	GRACE_MODULE_PATH=. l1/minigrace --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
 
 minigrace-js: pull-js js/gracelib.js js/buildinfo.gct $(STUBS:%.grace=%.gct) $(STUBS:%.grace=%.gct) $(C_MODULES_GSO:%.gso=%.gct) unixFilePath.gct
-	GRACE_MODULE_PATH=javascript-compiler/  javascript-compiler/minigrace-js --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
 
 
-js/buildinfo.gct: javascript-compiler/buildinfo.grace
-	GRACE_MODULE_PATH=. javascript-compiler/minigrace-js $(VERBOSITY) --make --noexec $<
+js/buildinfo.gct: js-kg/buildinfo.grace
+	GRACE_MODULE_PATH=. js-kg/minigrace-js $(VERBOSITY) --make --noexec $<
 
 js/gracelib.js:
-	cd javascript-compiler && ln -sf ../gracelib.js .
+	cd js-kg && ln -sf ../gracelib.js .
 
 minigrace-environment: minigrace-c-env minigrace-js-env
 
@@ -413,6 +413,7 @@ npm-get-kg:
 npm-build-kg: all
 	mkdir -p js-kg
 	rm -rf js-kg/*
+	cp npm-js-kg.json js-kg/package.json
 	-@cp js/* js-kg/
 	rm -f js-kg/*.in js-kg/*.gso js-kg/*.gcn js-kg/*.png js-kg/*.html js-kg/*.css
 
