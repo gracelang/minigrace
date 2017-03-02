@@ -615,34 +615,6 @@ js-kg/standardGrace.gct: standardGrace.grace collectionsPrelude.gct js-kg/minigr
 
 $(SOURCEFILES:%.grace=js-kg/%.gct): js-kg/%.gct:
 
-quick-compile: js/grace-debug js/gracelib.js
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir js-kg collectionsPrelude.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js --make --noexec --dir js-kg standardGrace.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir js-kg stubs/curl.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir js-kg stubs/dom.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir js-kg stubs/io.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js --make --noexec --dir js-kg stubs/mirrors.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir js-kg stubs/sys.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir js-kg stubs/timer.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir js-kg stubs/unicode.grace
-	cd js-kg/ && ld -o gracelib.o -r gracelib-basic.o standardGrace.gcn collectionsPrelude.gcn debugger.o
-	cp js-kg/gsoModules/* ./
-	cp js-kg/gracelib.o ./
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec buildinfo.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  stringMap.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  unixFilePath.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  util.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  errormessages.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  lexer.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  identifierKinds.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  ast.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  parser.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  xmodule.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  genc.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  genjs.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --noexec  identifierresolution.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --native --gracelib js-kg/ --module minigrace compiler.grace
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js   --make --native --module minigrace  --gracelib . compiler.grace
 
 .git/hooks/commit-msg: tools/validate-commit-message
 	@ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
