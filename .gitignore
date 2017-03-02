@@ -66,6 +66,7 @@ js/unixFilePath.js
 js/util.js
 js/xmodule.js
 js/tests/test.js.log
+js-kg/
 objectdraw/
 stubs/collectionsPrelude.grace
 stubs/standardGrace.grace

@@ -46,6 +46,7 @@ STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 TYPE_DIALECTS = staticTypes requireTypes
 TEST_DEPENDENCIES = ast lexer stringMap collectionsPrelude parser xmodule errormessages standardGrace identifierKinds standardGrace
 #   these are modules used in running the full test suite
+NPM_STABLE_VERSION=1.0.73
 
 VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
@@ -243,6 +244,9 @@ $(JSONLY:%.grace=js/%.gct): js/%.gct: modules/%.grace js/dom.gct minigrace js/ti
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
+js/buildinfo.gct: buildinfo.grace
+	GRACE_MODULE_PATH=. js-kg/minigrace-js $(VERBOSITY) --make --target js -dir js $<
+
 js/collectionsPrelude%js js/collectionsPrelude%gct: collectionsPrelude.grace minigrace
 	GRACE_MODULE_PATH=modules:js ./minigrace $(VERBOSITY) --make --target js --dir js $(<F)
 
@@ -366,6 +370,9 @@ minigrace-dynamic: l1/minigrace $(SOURCEFILES)
 minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) $(C_MODULES_GSO:%.gso=%.gct) gracelib.o unixFilePath.gct
 	GRACE_MODULE_PATH=. l1/minigrace --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
 
+minigrace-js: pull-js js/gracelib.js js/buildinfo.gct $(STUBS:%.grace=%.gct) $(STUBS:%.grace=%.gct) $(C_MODULES_GSO:%.gso=%.gct) unixFilePath.gct
+	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
+
 minigrace-environment: minigrace-c-env minigrace-js-env
 
 minigrace-c-env: minigrace standardGrace.gct gracelib.o unicode.gso $(MODULES_WO_JSONLY:%.grace=modules/%.gct) .git/hooks/commit-msg
@@ -390,6 +397,28 @@ modules/rtobjectdraw.grace: modules/objectdraw.grace tools/make-rt-version
 
 modules/stobjectdraw.grace: modules/objectdraw.grace tools/make-st-version
 	./tools/make-st-version $< > $@
+
+npm-get-kg:
+	@echo "Downloading known-good js compiler from NPM... VERSION=$(NPM_STABLE_VERSION)"
+	sed -e 's/VERSION/$(NPM_STABLE_VERSION)/g' package.in.json > package.json
+	npm install
+	mkdir -p js-kg/
+	cp -R node_modules/minigrace/ js-kg/
+
+npm-build-kg: all
+	mkdir -p js-kg
+	rm -rf js-kg/*
+	cp npm-js-kg.json js-kg/package.json
+	-@cp js/* js-kg/
+	-@cp minigrace-js js-kg/
+	rm -fr js-kg/*.in js-kg/*.gso js-kg/*.gso.dSYM js-kg/*.gcn js-kg/*.png js-kg/*.html js-kg/*.css
+
+npm-update-kg:
+	@[ -n "$(VERSION)" ] || { echo "Please set the VERSION variable to something like x.x.x, current version is $(NPM_STABLE_VERSION)" && false; }
+	cd js-kg/ && npm version $(VERSION) && npm publish
+	perl -pi -e 's/$(NPM_STABLE_VERSION)/$(VERSION)/g' Makefile
+	@echo ! NPM Known–Good Package Version has been updated to $(VERSION) !
+
 
 $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
