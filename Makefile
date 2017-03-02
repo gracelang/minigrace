@@ -243,6 +243,9 @@ $(JSONLY:%.grace=js/%.gct): js/%.gct: modules/%.grace js/dom.gct minigrace js/ti
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
+js/buildinfo.gct: buildinfo.grace
+	GRACE_MODULE_PATH=. js-kg/minigrace-js $(VERBOSITY) --make --target js -dir js $<
+
 js/collectionsPrelude%js js/collectionsPrelude%gct: collectionsPrelude.grace minigrace
 	GRACE_MODULE_PATH=modules:js ./minigrace $(VERBOSITY) --make --target js --dir js $(<F)
 
@@ -369,13 +372,6 @@ minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) $
 minigrace-js: pull-js js/gracelib.js js/buildinfo.gct $(STUBS:%.grace=%.gct) $(STUBS:%.grace=%.gct) $(C_MODULES_GSO:%.gso=%.gct) unixFilePath.gct
 	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
 
-
-js/buildinfo.gct: js-kg/buildinfo.grace
-	GRACE_MODULE_PATH=. js-kg/minigrace-js $(VERBOSITY) --make --noexec $<
-
-js/gracelib.js:
-	cd js-kg && ln -sf ../gracelib.js .
-
 minigrace-environment: minigrace-c-env minigrace-js-env
 
 minigrace-c-env: minigrace standardGrace.gct gracelib.o unicode.gso $(MODULES_WO_JSONLY:%.grace=modules/%.gct) .git/hooks/commit-msg
@@ -413,7 +409,8 @@ npm-build-kg: all
 	rm -rf js-kg/*
 	cp npm-js-kg.json js-kg/package.json
 	-@cp js/* js-kg/
-	rm -f js-kg/*.in js-kg/*.gso js-kg/*.gcn js-kg/*.png js-kg/*.html js-kg/*.css
+	-@cp minigrace-js js-kg/
+	rm -fr js-kg/*.in js-kg/*.gso js-kg/*.gso.dSYM js-kg/*.gcn js-kg/*.png js-kg/*.html js-kg/*.css
 
 npm-update-kg:
 	@[ -n "$(VERSION)" ] || { echo "Please set the VERSION variable to something like x.x.x, current version is $(NPM_STABLE_VERSION)" && false; }
@@ -605,15 +602,6 @@ uninstall:
 
 webIde:
 	$(MAKE) ide
-
-js-kg/collectionsPrelude.gct: collectionsPrelude.grace js-kg/minigrace-js
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir $(@D) $(<F)
-
-js-kg/standardGrace.gct: standardGrace.grace collectionsPrelude.gct js-kg/minigrace-js
-	GRACE_MODULE_PATH=js-kg/  js-kg/minigrace-js  --make --noexec --dir $(@D) $(<F)
-
-$(SOURCEFILES:%.grace=js-kg/%.gct): js-kg/%.gct:
-
 
 .git/hooks/commit-msg: tools/validate-commit-message
 	@ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
