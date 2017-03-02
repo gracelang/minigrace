@@ -1,0 +1,105 @@
+{
+  "_args": [
+    [
+      {
+        "raw": "minigrace@1.x.x",
+        "scope": null,
+        "escapedName": "minigrace",
+        "name": "minigrace",
+        "rawSpec": "1.x.x",
+        "spec": ">=1.0.0 <2.0.0",
+        "type": "range"
+      },
+      "/Users/Dmitri/LocalMinigrace"
+    ],
+    [
+      {
+        "raw": "minigrace@1.0.6",
+        "scope": null,
+        "escapedName": "minigrace",
+        "name": "minigrace",
+        "rawSpec": "1.0.6",
+        "spec": "1.0.6",
+        "type": "version"
+      },
+      "/Users/Dmitri/testMinigrace/testMini5"
+    ],
+    [
+      {
+        "raw": "minigrace@1.0.72",
+        "scope": null,
+        "escapedName": "minigrace",
+        "name": "minigrace",
+        "rawSpec": "1.0.72",
+        "spec": "1.0.72",
+        "type": "version"
+      },
+      "/Users/Dmitri/testMinigrace/testMini5"
+    ]
+  ],
+  "_from": "minigrace@1.0.72",
+  "_id": "minigrace@1.0.72",
+  "_inCache": true,
+  "_location": "/minigrace",
+  "_nodeVersion": "6.9.4",
+  "_npmOperationalInternal": {
+    "host": "packages-18-east.internal.npmjs.com",
+    "tmp": "tmp/minigrace-1.0.72.tgz_1488258653263_0.4492189211305231"
+  },
+  "_npmUser": {
+    "name": "dmitri2",
+    "email": "dmitri.murphy@gmail.com"
+  },
+  "_npmVersion": "3.10.10",
+  "_phantomChildren": {},
+  "_requested": {
+    "raw": "minigrace@1.0.72",
+    "scope": null,
+    "escapedName": "minigrace",
+    "name": "minigrace",
+    "rawSpec": "1.0.72",
+    "spec": "1.0.72",
+    "type": "version"
+  },
+  "_requiredBy": [
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/minigrace/-/minigrace-1.0.72.tgz",
+  "_shasum": "5f317b55a855f6a540efcc5f2374aa055b135669",
+  "_shrinkwrap": null,
+  "_spec": "minigrace@1.0.72",
+  "_where": "/Users/Dmitri/testMinigrace/testMini5",
+  "author": {
+    "name": "The Grace Development Team"
+  },
+  "dependencies": {},
+  "description": "A pre-packaged complier for the Grace language",
+  "devDependencies": {},
+  "directories": {
+    "doc": "doc",
+    "test": "tests"
+  },
+  "dist": {
+    "shasum": "5f317b55a855f6a540efcc5f2374aa055b135669",
+    "tarball": "https://registry.npmjs.org/minigrace/-/minigrace-1.0.72.tgz"
+  },
+  "keywords": [
+    "grace",
+    "compiler"
+  ],
+  "license": "GPL-3.0",
+  "main": "index.js",
+  "maintainers": [
+    {
+      "name": "dmitri2",
+      "email": "dmitri.murphy@gmail.com"
+    }
+  ],
+  "name": "minigrace",
+  "optionalDependencies": {},
+  "readme": "ERROR: No README data found!",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "version": "1.0.72"
+}
