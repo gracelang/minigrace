@@ -177,7 +177,6 @@ fulltest: gencheck clean selftest selftest-js module-test-js
 gencheck:
 	X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache
 
-
 gracedoc: tools/gracedoc
 
 grace-web-editor/index.html: pull-web-editor grace-web-editor/index.in.html
@@ -461,7 +460,6 @@ pull-brace: pull-web-editor
 	@if [ -e grace-web-editor/brace ] ; \
        then printf "grace-web-editor/brace: " ; cd grace-web-editor/brace; git pull ; \
        else git clone https://github.com/gracelang/brace/ grace-web-editor/brace ; fi
-
 
 sample-dialects: $(DIALECT_DEPENDENCIES)
 	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
