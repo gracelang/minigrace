@@ -331,10 +331,10 @@ type Extractable = {
     extract
 }
 
-type MatchResult = Boolean & type {
+type MatchResult = Boolean | (Boolean & type {
     result -> Unknown
     bindings -> List⟦Unknown⟧
-}
+})
 
 type Pattern = {
     & (other:Pattern) -> Pattern
