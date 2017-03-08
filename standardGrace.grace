@@ -453,19 +453,55 @@ import "collectionsPrelude" as coll
 // not fully implemented.  So instead we create an alias:
 def collections is public = coll
 
-type Block0⟦R⟧ = collections.Block0⟦R⟧
-type Block1⟦T,R⟧ = collections.Block1⟦T,R⟧
-type Block2⟦S,T,R⟧ = collections.Block2⟦S,T,R⟧
-type Block3⟦S,T,U,R⟧ = type {
-    apply(a:S, b:T, c:U) -> R
+
+// New names for Blocks: FunctionN == BlockN
+
+type Function0⟦ResultT⟧  = type {
+    apply -> ResultT     // Function with no arguments and a result of type ResultT
+    //  matches -> Boolean   // answers true
 }
-type Cmd = Block0⟦Done⟧
-type Fun⟦T,R⟧ = Block1⟦T,R⟧
-type Fun2⟦T,U,R⟧ = Block2⟦T,U,R⟧
-type Fun3⟦T,U,W,R⟧ = Block3⟦T,U,W,R⟧
-type Proc⟦T⟧ = Block1⟦T,Done⟧
-type Proc2⟦T,U⟧ = Block2⟦T,U,Done⟧
-type Proc3⟦T,U,W⟧ = Block3⟦T,U,W,Done⟧
+type Function1⟦ArgT1, ResultT⟧ = type {
+    apply(a1:ArgT1) -> ResultT    // Function with argument a1 of type ArgT1, and a result of type ResultT
+    //  matches(a1:Object) -> Boolean   // answers true if a1 <: ArgT1
+}
+type Function2⟦ArgT1, ArgT2, ResultT⟧ = type {
+    apply(a1:ArgT1, a2:ArgT2) -> ResultT
+    // Function with arguments of types ArgT1 and ArgT2, and a result of type ResultT
+    //  matches(a1:Object, a2:Object) -> Boolean
+        // answers true if a1 <: ArgT1 and a2 <: ArgT2
+}
+type Function3⟦ArgT1, ArgT2, ArgT3, ResultT⟧  = type {
+    apply(a1:ArgT1, a2:ArgT2, a3:ArgT3) -> ResultT
+    //  matches(a1:Object, a2:Object, a3:Object) -> Boolean
+        // answers true if a1 <: ArgT1 and a2 <: ArgT2 and a3 :< ArgT3
+}
+
+// for backward compatibility
+
+type Block0⟦R⟧ = Function0⟦R⟧
+type Block1⟦T,R⟧ = Function1⟦T,R⟧
+type Block2⟦S,T,R⟧ = Function2⟦S,T,R⟧
+
+// Procedures are fuctions that have no result
+
+type Procedure0 = Function0⟦Done⟧
+    // Function with no arguments and no result
+type Procedure1⟦ArgT1⟧ = Function1⟦ArgT1, Done⟧
+    // Function with 1 argument of type ArgT1, and no result
+type Procedure2⟦ArgT1, ArgT2⟧ = Function2⟦ArgT1, ArgT2, Done⟧ 
+    // Function with 2 arguments of types ArgT1 and ArgT2, and no result
+type Procedure3⟦ArgT1, ArgT2, ArgT3⟧ = Function3⟦ArgT1, ArgT2, ArgT3, Done⟧
+
+// Predictates are functions that return a Boolean
+
+type Predicate0 = Function0⟦Boolean⟧
+    // Function with no arguments returning Boolean
+type Predicate1⟦ArgT1⟧ = Function1⟦ArgT1, Boolean⟧
+    // Function with 1 argument of type ArgT1, returning Boolean
+type Predicate2⟦ArgT1, ArgT2⟧ = Function2⟦ArgT1, ArgT2, Boolean⟧
+    // Function with 2 arguments of types ArgT1 and ArgT2, returning Boolean
+type Predicate3⟦ArgT1, ArgT2, ArgT3⟧ = Function3⟦ArgT1, ArgT2, Arg3, Boolean⟧
+    // Function with 3 arguments of types ArgT1, ArgT2, and ArgT3, returning Boolean
 
 type Collection⟦T⟧ = collections.Collection⟦T⟧
 type Iterable⟦T⟧ = collections.Iterable⟦T⟧

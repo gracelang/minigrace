@@ -362,7 +362,7 @@ def ifNode is public = object {
     var elseblock is public := elseblock'
     var handledIdentifiers is public := false
     method isSimple { false }  // needs parens when used as reciever
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitIf(self) up(as)) then {
             def newChain = as.extend(self)
             value.accept(visitor) from(newChain)
@@ -467,7 +467,7 @@ def blockNode is public = object {
             positionOfNext "}" after (params.last.end)
         }
     }
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitBlock(self) up(as)) then {
             def newChain = as.extend(self)
             for (self.params) do { mx ->
@@ -557,7 +557,7 @@ def tryCatchNode is public = object {
         if (cases.isEmpty.not) then { return cases.last.end }
         return value.end
     }
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitTryCatch(self) up(as)) then {
             def newChain = as.extend(self)
             self.value.accept(visitor) from(newChain)
@@ -617,7 +617,7 @@ def matchCaseNode is public = object {
         return value.end
     }
     method matchee { value }
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitMatchCase(self) up(as)) then {
             def newChain = as.extend(self)
             self.value.accept(visitor) from(newChain)
@@ -709,7 +709,7 @@ def methodTypeNode is public = object {
         st.node := self
     }
     method declarationKindWithAncestors(as) { k.typedec }
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitMethodType(self) up(as)) then {
             def newChain = as.extend(self)
             if (false != typeParams) then {
@@ -785,7 +785,7 @@ def typeLiteralNode is public = object {
         positionOfNext "}" after (max(tEnd, mEnd))
     }
 
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitTypeLiteral(self) up(as)) then {
             def newChain = as.extend(self)
             for (self.methods) do { each ->
@@ -872,7 +872,7 @@ def typeDecNode is public = object {
     method isWritable { false }
     method isReadable { isPublic }
 
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitTypeDec(self) up(as)) then {
             def newChain = as.extend(self)
             name.accept(visitor) from(newChain)
@@ -1074,7 +1074,7 @@ def methodNode is public = object {
             if (last.isReturn) then { last := last.value }
             last
         }
-        method accept(visitor : ASTVisitor) from(as) {
+        method accept(visitor : AstVisitor) from(as) {
             if (visitor.visitMethod(self) up(as)) then {
                 def newChain = as.extend(self)
                 self.value.accept(visitor) from(newChain)
@@ -1300,7 +1300,7 @@ def callNode is public = object {
             if (false == generics) then { 0 } else { generics.size }
         }
 
-        method accept(visitor : ASTVisitor) from(as) {
+        method accept(visitor : AstVisitor) from(as) {
             if (visitor.visitCall(self) up(as)) then {
                 def newChain = as.extend(self)
                 self.receiver.accept(visitor) from(newChain)
@@ -1429,7 +1429,7 @@ def moduleNode is public = object {
                 if (o.isExternal) then { action.apply(o) }
             }
         }
-        method accept(visitor : ASTVisitor) from(as) {
+        method accept(visitor : AstVisitor) from(as) {
             if (visitor.visitModule(self) up(as)) then {
                 def newChain = as.extend(self)
                 theDialect.accept(visitor) from (newChain)
@@ -1581,7 +1581,7 @@ def objectNode is public = object {
         method canInherit { inTrait.not }   // an object can inherit if not in a trait
         method canUse { true }
         method isObject { true }
-        method accept(visitor : ASTVisitor) from(as) {
+        method accept(visitor : AstVisitor) from(as) {
             if (visitor.visitObject(self) up(as)) then {
                 def newChain = as.extend(self)
                 if (false != superclass) then {
@@ -1671,7 +1671,7 @@ def arrayNode is public = object {
             positionOfNext "]" after (value.last.end)
         }
     }
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitArray(self) up(as)) then {
             def newChain = as.extend(self)
             for (self.value) do { ax ->
@@ -1783,7 +1783,7 @@ def memberNode is public = object {
             if (false == generics) then { 0 } else { generics.size }
         }
 
-        method accept(visitor : ASTVisitor) from(as) {
+        method accept(visitor : AstVisitor) from(as) {
             if (visitor.visitMember(self) up(as)) then {
                 def newChain = as.extend(self)
                 if (false != generics) then {
@@ -1863,7 +1863,7 @@ def genericNode is public = object {
     method end -> Position { positionOfNext "⟧" after (args.last.end) }
     method nameString { value.nameString }
     method asString { toGrace 0 }
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitGeneric(self) up(as)) then {
             def newChain = as.extend(self)
             self.value.accept(visitor) from(newChain)
@@ -1905,7 +1905,7 @@ def typeParametersNode is public = object {
     method asString { toGrace 0 }
     method declarationKindWithAncestors(as) { k.typeparam }
 
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitTypeParameters(self) up(as)) then {
             def newChain = as.extend(self)
             params.do { p ->
@@ -2010,7 +2010,7 @@ def identifierNode is public = object {
         method usesAsType(aNode) {
             aNode == dtype
         }
-        method accept(visitor : ASTVisitor) from(as) {
+        method accept(visitor : AstVisitor) from(as) {
             if (visitor.visitIdentifier(self) up(as)) then {
                 def newChain = as.extend(self)
                 if (false != self.dtype) then {
@@ -2107,7 +2107,7 @@ def stringNode is public = object {
         var end is public := line (line) column (linePos + v.size + 1)
             // +1 to allow for quotes
 
-        method accept(visitor : ASTVisitor) from(as) {
+        method accept(visitor : AstVisitor) from(as) {
             visitor.visitString(self) up(as)
         }
         method map(blk) ancestors(as) {
@@ -2140,7 +2140,7 @@ def numNode is public = object {
         inherit baseNode
         def kind is public = "num"
         var value is public := val
-        method accept(visitor : ASTVisitor) from(as) {
+        method accept(visitor : AstVisitor) from(as) {
             visitor.visitNum(self) up(as)
         }
         method map(blk) ancestors(as) {
@@ -2195,7 +2195,7 @@ def opNode is public = object {
     method numArgs { 1 }
     method numTypeArgs { 0 }
 
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitOp(self) up(as)) then {
             def newChain = as.extend(self)
             self.left.accept(visitor) from(newChain)
@@ -2268,7 +2268,7 @@ def bindNode is public = object {
     method canonicalName { value ++ ":=(_)" }
     method isBind { true }
     method asString { "bind {value}" }
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitBind(self) up(as)) then {
             def newChain = as.extend(self)
             self.dest.accept(visitor) from(newChain)
@@ -2343,7 +2343,7 @@ def defDecNode is public = object {
         }
         method declarationKindWithAncestors(as) { k.defdec }
 
-        method accept(visitor : ASTVisitor) from(as) {
+        method accept(visitor : AstVisitor) from(as) {
             if (visitor.visitDefDec(self) up(as)) then {
                 def newChain = as.extend(self)
                 self.name.accept(visitor) from(newChain)
@@ -2458,7 +2458,7 @@ def varDecNode is public = object {
 
     method declarationKindWithAncestors(as) { k.vardec }
 
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitVarDec(self) up(as)) then {
             def newChain = as.extend(self)
             self.name.accept(visitor) from(newChain)
@@ -2565,7 +2565,7 @@ def importNode is public = object {
     method usesAsType(aNode) {
         aNode == dtype
     }
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitImport(self) up(as)) then {
             def newChain = as.extend(self)
             for (self.annotations) do { ann ->
@@ -2632,7 +2632,7 @@ def dialectNode is public = object {
     method path {
         value
     }
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         visitor.visitDialect(self) up(as)
     }
     method map(blk) ancestors(as) {
@@ -2673,7 +2673,7 @@ def returnNode is public = object {
         }
     }
     method isReturn { true }
-    method accept(visitor : ASTVisitor) from(as) {
+    method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitReturn(self) up(as)) then {
             def newChain = as.extend(self)
             self.value.accept(visitor) from(newChain)
@@ -2732,7 +2732,7 @@ def inheritNode is public = object {
         method inheritFromMember { value.isMember }
         method inheritFromCall { value.isCall }
         method isExecutable { false }
-        method accept(visitor : ASTVisitor) from(as) {
+        method accept(visitor : AstVisitor) from(as) {
             if (visitor.visitInherits(self) up(as)) then {
                 def newChain = as.extend(self)
                 value.accept(visitor) from(newChain)
@@ -2880,7 +2880,7 @@ def signaturePart is public = object {
             name ++ "(" ++ underScores ++ ")"
         }
 
-        method accept(visitor : ASTVisitor) from(as) {
+        method accept(visitor : AstVisitor) from(as) {
             if (visitor.visitSignaturePart(self) up(as)) then {
                 def newChain = as.extend(self)
                 params.do { p -> p.accept(visitor) from(newChain) }
@@ -3040,7 +3040,7 @@ def commentNode is public = object {
             def newChain = as.extend(n)
             blk.apply(n, as)
         }
-        method accept(visitor : ASTVisitor) from(as) {
+        method accept(visitor : AstVisitor) from(as) {
             visitor.visitComment(self) up(as)
         }
         method pretty(depth) {
@@ -3108,7 +3108,7 @@ method wrap(str) to (l:Number) prefix (margin) {
 }
 
 
-type ASTVisitor = {
+type AstVisitor = {
     visitIf(o) up(as) -> Boolean
     visitBlock(o) up(as) -> Boolean
     visitMatchCase(o) up(as) -> Boolean
@@ -3141,7 +3141,7 @@ type ASTVisitor = {
     visitOuter(o) up(as) -> Boolean
 }
 
-class baseVisitor -> ASTVisitor {
+class baseVisitor -> AstVisitor {
     method visitIf(o) up(as) { visitIf(o) }
     method visitBlock(o) up(as) { visitBlock(o) }
     method visitMatchCase(o) up(as) { visitMatchCase(o) }
@@ -3207,10 +3207,10 @@ class baseVisitor -> ASTVisitor {
     method asString { "an AST visitor" }
 }
 
-class pluggableVisitor(visitation:Block2) -> ASTVisitor {
+class pluggableVisitor(visitation:Predicate2⟦AstNode, Object⟧) -> AstVisitor {
     // Manufactures a default visitor, given a 2-parameter block.
     // Typically, some of the methods will be overridden.
-    // The block will be applied with the AST node as the first argument
+    // The visitation predicate will be applied with the AST node as the first argument
     // and the ancestor chain as the second, and should answer true if
     // the visitation is to continue and false if it is to go no deeper.
 

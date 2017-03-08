@@ -8,22 +8,34 @@ def RequestError is public = ProgrammingError.refine "RequestError"
 def ConcurrentModification is public = ProgrammingError.refine "ConcurrentModification"
 def SizeUnknown is public = Exception.refine "SizeUnknown"
 
-method abstract is confidential {
-    // copied from standardGrace
-    SubobjectResponsibility.raise "abstract method not overriden by subobject"
+method required is confidential {
+    SubobjectResponsibility.raise "required method not overriden by subobject"
 }
 
-type Block0⟦R⟧ = type {
-    apply -> R
-}
 
-type Block1⟦T,R⟧ = type {
-    apply(a:T) -> R
+type Function0⟦ResultT⟧  = type {
+    apply -> ResultT     // Function with no arguments and a result of type ResultT
+    //  matches -> Boolean   // answers true
 }
+type Function1⟦ArgT1, ResultT⟧ = type {
+    apply(a1:ArgT1) -> ResultT    // Function with argument a1 of type ArgT1, and a result of type ResultT
+    //  matches(a1:Object) -> Boolean   // answers true if a1 <: ArgT1
+}
+type Function2⟦ArgT1, ArgT2, ResultT⟧ = type {
+    apply(a1:ArgT1, a2:ArgT2) -> ResultT
+    // Function with arguments of types ArgT1 and ArgT2, and a result of type ResultT
+    //  matches(a1:Object, a2:Object) -> Boolean
+        // answers true if a1 <: ArgT1 and a2 <: ArgT2
+}
+type Procedure0 = Function0⟦Done⟧
+    // Function with no arguments and no result
+type Procedure1⟦ArgT1⟧ = Function1⟦ArgT1, Done⟧
+    // Function with 1 argument of type ArgT1, and no result
+type Procedure2⟦ArgT1, ArgT2⟧ = Function1⟦ArgT1, ArgT2, Done⟧
+    // Function with 2 argument of types ArgT1, and ArgT2, and no result
+type Predicate1⟦ArgT1⟧ = Function1⟦ArgT1, Boolean⟧
+    // Function with 1 argument of type ArgT1, returning Boolean
 
-type Block2⟦S,T,R⟧ = type {
-    apply(a:S, b:T) -> R
-}
 
 type SelfType = Unknown     // becuase it's not yet in the language
 
@@ -35,23 +47,23 @@ type Collection⟦T⟧ = Object & type {
     size -> Number
         // my size (the number of elements that I contain);
         // may raise SizeUnknown.
-    sizeIfUnknown(action: Block0⟦Number⟧)
+    sizeIfUnknown(action: Function0⟦Number⟧)
         // my size; if not known, then the result of applying action
     == (other) -> Boolean
         // other and self have the same size, and contain the same elements.
     first -> T
         // my first element; raises BoundsError if I have none.
-    do(body: Block1⟦T, Done⟧) -> Done
+    do(body: Procedure1⟦T⟧) -> Done
         // an internal iterator; applies body to each of my elements
-    do(body:Block1⟦T, Done⟧) separatedBy(separator:Block0⟦Done⟧) -> Done
+    do(body:Procedure1⟦T⟧) separatedBy(separator:Procedure0) -> Done
         // an internal iterator; applies body to each of my elements, and applies separator in between
     ++(other: Collection⟦T⟧) -> Collection⟦T⟧
         // returns a new Collection over the concatenation of self and other
-    fold(binaryFunction:Block2⟦T, T, T⟧) startingWith(initial:T) -> T
+    fold(binaryFunction:Function2⟦T, T, T⟧) startingWith(initial:T) -> T
         // the left-associative fold of binaryFunction over self, starting with initial
-    map⟦U⟧(function:Block1⟦T, U⟧) -> Collection⟦U⟧
+    map⟦U⟧(function:Function1⟦T, U⟧) -> Collection⟦U⟧
         // returns a new iterator that yields my elements mapped by function
-    filter(condition:Block1⟦T,Boolean⟧) -> Collection⟦T⟧
+    filter(condition:Predicate1⟦T⟧) -> Collection⟦T⟧
         // returns a new iterator that yields those of my elements for which condition holds
 }
 
@@ -65,9 +77,9 @@ type Iterable⟦T⟧ = Collection⟦T⟧    // for backward compatibility
 type Enumerable⟦T⟧ = Collection⟦T⟧ & type {
     values -> Collection⟦T⟧
     asDictionary -> Dictionary⟦Number,T⟧
-    keysAndValuesDo(action:Block2⟦Number,T,Object⟧) -> Done
+    keysAndValuesDo(action:Function2⟦Number,T,Object⟧) -> Done
     into(existing: Expandable⟦Unknown⟧) -> Collection⟦Unknown⟧
-    sortedBy(comparison:Block2⟦T,T,Number⟧) -> SelfType
+    sortedBy(comparison:Function2⟦T,T,Number⟧) -> SelfType
     sorted -> SelfType
 }
 
@@ -81,7 +93,7 @@ type Sequence⟦T⟧ = Enumerable⟦T⟧ & type {
     fourth -> T
     fifth -> T
     last -> T
-    indexOf⟦W⟧(elem:T)ifAbsent(action:Block0⟦W⟧) -> Number | W
+    indexOf⟦W⟧(elem:T)ifAbsent(action:Function0⟦W⟧) -> Number | W
     indexOf(elem:T) -> Number
     contains(elem:T) -> Boolean
     reversed -> Sequence⟦T⟧
@@ -99,15 +111,15 @@ type List⟦T⟧ = Sequence⟦T⟧ & type {
     removeAt(n: Number) -> T
     removeLast -> T
     remove(v:T)
-    remove(v:T) ifAbsent(action:Block0⟦Done⟧)
+    remove(v:T) ifAbsent(action:Procedure0)
     removeAll(vs: Collection⟦T⟧)
-    removeAll(vs: Collection⟦T⟧) ifAbsent(action:Block0⟦Unknown⟧)
+    removeAll(vs: Collection⟦T⟧) ifAbsent(action:Function0⟦Unknown⟧)
     pop -> T
     ++(o: List⟦T⟧) -> List⟦T⟧
     addAll(l: Collection⟦T⟧) -> List⟦T⟧
     copy -> List⟦T⟧
     sort -> List⟦T⟧
-    sortBy(sortBlock:Block2⟦T,T,Number⟧) -> List⟦T⟧
+    sortBy(sortBlock:Function2⟦T,T,Number⟧) -> List⟦T⟧
     reverse -> List⟦T⟧
     reversed -> List⟦T⟧
 }
@@ -117,10 +129,10 @@ type Set⟦T⟧ = Collection⟦T⟧ & type {
     add(x:T) -> SelfType
     addAll(elements: Collection⟦T⟧) -> SelfType
     remove(x: T) -> Set⟦T⟧
-    remove(x: T) ifAbsent(block: Block0⟦Done⟧) -> Set⟦T⟧
+    remove(x: T) ifAbsent(block: Procedure0) -> Set⟦T⟧
     clear -> Set⟦T⟧
-    includes(booleanBlock: Block1⟦T,Boolean⟧) -> Boolean
-    find(booleanBlock: Block1⟦T,Boolean⟧) ifNone(notFoundBlock: Block0⟦T⟧) -> T
+    includes(booleanBlock: Predicate1⟦T⟧) -> Boolean
+    find(booleanBlock: Predicate1⟦T⟧) ifNone(notFoundBlock: Function0⟦T⟧) -> T
     copy -> Set⟦T⟧
     contains(elem:T) -> Boolean
     ** (other:Set⟦T⟧) -> Set⟦T⟧
@@ -129,7 +141,7 @@ type Set⟦T⟧ = Collection⟦T⟧ & type {
     isSubset(s2: Set⟦T⟧) -> Boolean
     isSuperset(s2: Collection⟦T⟧) -> Boolean
     removeAll(elems: Collection⟦T⟧)
-    removeAll(elems: Collection⟦T⟧)ifAbsent(action:Block0⟦Done⟧) -> Set⟦T⟧
+    removeAll(elems: Collection⟦T⟧)ifAbsent(action:Procedure0) -> Set⟦T⟧
     into(existing: Expandable⟦Unknown⟧) -> Collection⟦Unknown⟧
 }
 
@@ -138,7 +150,7 @@ type Dictionary⟦K,T⟧ = Collection⟦T⟧ & type {
     containsKey(k:K) -> Boolean
     containsValue(v:T) -> Boolean
     contains(elem:T) -> Boolean
-    at(key:K)ifAbsent(action:Block0⟦Unknown⟧) -> Unknown
+    at(key:K)ifAbsent(action:Function0⟦Unknown⟧) -> Unknown
     at(key:K)put(value:T) -> Dictionary⟦K,T⟧
     at(k:K) -> T
     removeAllKeys(keys: Collection⟦K⟧) -> Dictionary⟦K,T⟧
@@ -149,9 +161,9 @@ type Dictionary⟦K,T⟧ = Collection⟦T⟧ & type {
     keys -> Enumerable⟦K⟧
     values -> Enumerable⟦T⟧
     bindings -> Enumerable⟦Binding⟦K,T⟧⟧
-    keysAndValuesDo(action:Block2⟦K,T,Done⟧) -> Done
-    keysDo(action:Block1⟦K,Done⟧) -> Done
-    valuesDo(action:Block1⟦T,Done⟧) -> Done
+    keysAndValuesDo(action:Procedure2⟦K,T⟧) -> Done
+    keysDo(action:Procedure1⟦K⟧) -> Done
+    valuesDo(action:Procedure1⟦T⟧) -> Done
     == (other:Object) -> Boolean
     copy -> Dictionary⟦K,T⟧
     ++ (other:Dictionary⟦K, T⟧) -> Dictionary⟦K, T⟧
@@ -165,7 +177,7 @@ type Iterator⟦T⟧ = type {
 }
 
 class lazySequenceOver⟦T,R⟧ (source: Collection⟦T⟧)
-        mappedBy (function:Block1⟦T,R⟧) -> Enumerable⟦R⟧ is confidential {
+        mappedBy (function:Function1⟦T, R⟧) -> Enumerable⟦R⟧ is confidential {
     use enumerable⟦T⟧
     class iterator {
         def sourceIterator = source.iterator
@@ -179,7 +191,7 @@ class lazySequenceOver⟦T,R⟧ (source: Collection⟦T⟧)
 }
 
 class lazySequenceOver⟦T⟧ (source: Collection⟦T⟧)
-        filteredBy(predicate:Block1⟦T,Boolean⟧) -> Enumerable⟦T⟧ is confidential {
+        filteredBy(predicate:Predicate1⟦T⟧) -> Enumerable⟦T⟧ is confidential {
     use enumerable⟦T⟧
     class iterator {
         var cache
@@ -256,8 +268,8 @@ trait collection⟦T⟧ {
     method size {
         SizeUnknown.raise "this collection does not know its size"
     }
-    method do { abstract }
-    method iterator { abstract }
+    method do { required }
+    method iterator { required }
     method isEmpty {
         // override if size is known
         iterator.hasNext.not
@@ -294,10 +306,10 @@ trait collection⟦T⟧ {
         }
         return result
     }
-    method map⟦R⟧(block1:Block1⟦T,R⟧) -> Enumerable⟦R⟧ {
+    method map⟦R⟧(block1:Function1⟦T, R⟧) -> Enumerable⟦R⟧ {
         lazySequenceOver(self) mappedBy(block1)
     }
-    method filter(selectionCondition:Block1⟦T,Boolean⟧) -> Enumerable⟦T⟧ {
+    method filter(selectionCondition:Predicate1⟦T⟧) -> Enumerable⟦T⟧ {
         lazySequenceOver(self) filteredBy(selectionCondition)
     }
     method iter { self.iterator }
@@ -306,7 +318,7 @@ trait collection⟦T⟧ {
 
 trait enumerable⟦T⟧ {
     use collection⟦T⟧
-    method iterator { abstract }
+    method iterator { required }
     method size {
         // override if size is known
         SizeUnknown.raise "size requested on {asDebugString}"
@@ -328,13 +340,13 @@ trait enumerable⟦T⟧ {
     method ==(other) {
         isEqual (self) toCollection (other)
     }
-    method do(block1:Block1⟦T,Done⟧) -> Done {
+    method do(block1:Procedure1⟦T⟧) -> Done {
         def selfIterator = self.iterator
         while {selfIterator.hasNext} do {
             block1.apply(selfIterator.next)
         }
     }
-    method keysAndValuesDo(block2:Block2⟦Number,T,Done⟧) -> Done {
+    method keysAndValuesDo(block2:Procedure2⟦Number,T⟧) -> Done {
         var ix := 0
         def selfIterator = self.iterator
         while {selfIterator.hasNext} do {
@@ -356,7 +368,7 @@ trait enumerable⟦T⟧ {
     method ++ (other) -> Enumerable⟦T⟧ {
         lazyConcatenation(self, other)
     }
-    method sortedBy(sortBlock:Block2) -> List⟦T⟧ {
+    method sortedBy(sortBlock:Function2) -> List⟦T⟧ {
         list.withAll(self).sortBy(sortBlock)
     }
     method sorted -> List⟦T⟧ {
@@ -371,10 +383,10 @@ trait enumerable⟦T⟧ {
 
 trait indexable⟦T⟧ {
     use collection⟦T⟧
-    method at(index) { abstract }
-    method size { abstract }
+    method at(index) { required }
+    method size { required }
     method isEmpty { size == 0 }
-    method keysAndValuesDo(action:Block2⟦Number,T,Done⟧) -> Done {
+    method keysAndValuesDo(action:Procedure2⟦Number,T⟧) -> Done {
         def curSize = size
         var i := 1
         while {i <= curSize} do {
@@ -392,7 +404,7 @@ trait indexable⟦T⟧ {
     method indexOf(sought:T)  {
         indexOf(sought) ifAbsent { NoSuchObject.raise "collection does not contain {sought}" }
     }
-    method indexOf(sought:T) ifAbsent(action:Block0)  {
+    method indexOf(sought:T) ifAbsent(action:Function0⟦Unknown⟧)  {
         keysAndValuesDo { ix, v ->
             if (v == sought) then { return ix }
         }
@@ -446,7 +458,7 @@ def emptySequence is confidential = object {
         method next { IteratorExhausted.raise "on empty sequence" }
     }
     method sorted { self }
-    method sortedBy(sortBlock:Block2){ self }
+    method sortedBy(sortBlock:Function2){ self }
 }
 
 class sequence⟦T⟧ {
@@ -579,7 +591,7 @@ class sequence⟦T⟧ {
                         else {1}
                 })
             }
-            method sortedBy(sortBlock:Block2){
+            method sortedBy(sortBlock:Function2){
                 sequence.withAll(list.withAll(self).sortBy(sortBlock))
             }
         }
@@ -753,7 +765,7 @@ class list⟦T⟧ {
                 self
             }
 
-            method remove(elt:T) ifAbsent(action:Block0⟦Done⟧) {
+            method remove(elt:T) ifAbsent(action:Procedure0) {
                 def ix = self.indexOf(elt) ifAbsent {
                     action.apply
                     return self
@@ -766,7 +778,7 @@ class list⟦T⟧ {
                 removeAll(vs) ifAbsent { NoSuchObject.raise "list does not contain object" }
                 self
             }
-            method removeAll(vs: Collection⟦T⟧) ifAbsent(action:Block0⟦Done⟧)  {
+            method removeAll(vs: Collection⟦T⟧) ifAbsent(action:Procedure0)  {
                 for (vs) do { each ->
                     def ix = indexOf(each) ifAbsent { 0 }
                     if (ix ≠ 0) then {
@@ -866,7 +878,7 @@ class list⟦T⟧ {
                 }
                 inner := newInner
             }
-            method sortBy(sortBlock:Block2) {
+            method sortBy(sortBlock:Function2) {
                 mods := mods + 1
                 inner.sortInitial(size) by(sortBlock)
                 self
@@ -878,7 +890,7 @@ class list⟦T⟧ {
                         else {1}
                 }
             }
-            method sortedBy(sortBlock:Block2) {
+            method sortedBy(sortBlock:Function2) {
                 copy.sortBy(sortBlock)
             }
             method sorted {
@@ -968,7 +980,7 @@ class set⟦T⟧ {
             }
             self    // for chaining
         }
-        method removeAll(elements)ifAbsent(block:Block1⟦T,Done⟧) {
+        method removeAll(elements)ifAbsent(block:Procedure1⟦T⟧) {
             mods := mods + 1
             for (elements) do { x ->
                 var t := findPosition(x)
@@ -1314,7 +1326,7 @@ class dictionary⟦K,T⟧ {
             }
             self
         }
-        method removeKey(k:K) ifAbsent (action:Block0⟦Unknown⟧) {
+        method removeKey(k:K) ifAbsent (action:Function0⟦Unknown⟧) {
             mods := mods + 1
             var t := findPosition(k)
             if (inner.at(t).key == k) then {
@@ -1352,7 +1364,7 @@ class dictionary⟦K,T⟧ {
             }
             self
         }
-        method removeValue(v) ifAbsent (action:Block0⟦Unknown⟧) {
+        method removeValue(v) ifAbsent (action:Function0⟦Unknown⟧) {
             // remove all bindings with value v
             mods := mods + 1
             def initialNumBindings = numBindings

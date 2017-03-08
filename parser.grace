@@ -2790,7 +2790,7 @@ method dotypeLiteral {
         if (!accept("lbrace")) then {
             def suggestion = errormessages.suggestion.new
             suggestion.replaceToken(sym) with("\{")
-            errormessages.syntaxError "type literals must open with a brace."
+            errormessages.syntaxError "{typeLiteralTok.value} literals must open with a brace."
                 atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
             return
         }
@@ -2837,7 +2837,9 @@ method typedec {
         def anns = doannotation
         if ((sym.kind != "op") || (sym.value != "=")) then {
             var suggestion := errormessages.suggestion.new
-            def nextTok = findNextToken({ t -> t.kind == "lbrace" })
+            def nextTok = findNextToken { t ->
+                (t.kind == "lbrace") || (t.kind == "keyword")
+            }
             if ((false == nextTok) || {nextTok == sym}) then {
                 suggestion.insert(" =")afterToken(lastToken)
             } else {
