@@ -295,6 +295,17 @@ method readableStringFrom(xs:Collection) {
     result
 }
 
+method name (p:String) mightBeIntendedToBe (target:String) {
+    def parenIx = p.indexOf "(" ifAbsent { p.size + 1 }
+    def pPrefix = p.substringFrom 1 to (parenIx - 1)
+    if (target.startsWith(pPrefix)) then { return true }
+    def rng = name (p) matches (target) within 2
+    if (rng == 0) then { return false }
+    if (rng > (p.size * 2)) then { return false }  // found too far along
+    return true
+}
+
+
 method name (p:String) matches (t:String) within (k:Number) {
     // This is algorithm EDP from Jokinen, Jorma, Tarhio and Ukkinen:
     // "A comparison of Approximate String Matching Algorithms"
@@ -318,12 +329,14 @@ method name (p:String) matches (t:String) within (k:Number) {
 
     def m = p.size
     def n = t.size
-    if (k >= m) then { return m }  // trivial case
-    def k' = min3(k, n-1, m-1)
-    var top := k' + 1  // the location where the topmost diagonal under
-                       // threshold intersects the current column
+    if ((m ≤ k)) then {
+        return min(m, n)   // can match first min(m, n) chars of t
+    }
+    var top := k + 1  // the location where the topmost diagonal under
+                      // threshold intersects the current column
+    var maxResult := 0
     def h = emptyList
-    for (0..m) do { i -> h.at(i+1) put(i+1) }
+    for (0..m) do { i -> h.at(i+1) put(i) }
     try {
         for (1..n) do { j ->
             var c := 0
@@ -336,15 +349,19 @@ method name (p:String) matches (t:String) within (k:Number) {
                 c := h.at(i+1)
                 h.at(i+1) put (e)
             }
-            while { (top >= 0) && {h.at(top+1) > k'} } do { top := top - 1 }
+            while { h.at(top+1) > k } do { top := top - 1 }
             if (top == m) then {
-                return j    // the last character of t that was used in the match
+                maxResult := max(maxResult, j)       //  j is the index of
+                    //  the last character of t that was used in the match
             } else {
                 top := top + 1
             }
         }
-    } catch { e:BoundsError -> return 0 }   // if the code is buggy, don't crash
-    return 0            // there was no match
+    } catch { e:BoundsError ->
+        print "BoundsError in name({p})matches({t})within({k})"
+        e.printBacktrace
+        return 0 }   // if the code is buggy, don't crash
+    return maxResult
 }
 
 method min3(a, b, c) is confidential {

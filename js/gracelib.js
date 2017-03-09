@@ -3325,14 +3325,13 @@ function closeMatchesForMethodNamed(mName, obj) {
     // Returns a list of close matches to mName.
     var matches = [];
     var gName = new GraceString(mName);
-    var one = new GraceNum(1);
     for (var candidate in obj.methods) {
         if (obj.methods.hasOwnProperty(candidate)) {
             var gCand = new GraceString(candidate);
             var mm = do_import("mirrors", gracecode_mirrors);
             var em = request(mm, "loadDynamicModule(1)", [1], new GraceString("errormessages"));
-            if (request(em, "name(1)matches(1)within(1)", [1, 1, 1],
-                                     gCand, gName, one)._value !== 0) {
+            if (Grace_isTrue(request(em, "name(1)mightBeIntendedToBe(1)",
+                    [1, 1], gCand, gName))) {
                 matches.push(canonicalMethodName(gCand._value));
             }
         }
