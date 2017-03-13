@@ -423,12 +423,13 @@ $(JS-KG):
 	mkdir -p $(JS-KG)
 	cp -R node_modules/minigrace/ $(JS-KG)
 
-npm-build-kg: all
+npm-build-kg: minigrace-js-env
 	mkdir $(JS-KG)
 	rm -rf $(JS-KG)/*
 	cp npm-$(JS-KG).json $(JS-KG)/package.json
 	-@cp js/*.js js/*.gct js/grace js/grace-debug $(JS-KG)
 	-@cp minigrace-js $(JS-KG)/
+# "-" prefix means ignore exit status!
 
 npm-update-kg:
 	@[ -n "$(VERSION)" ] || { echo "Please set the VERSION variable to something like x.x.x, current version is $(NPM_STABLE_VERSION)" && false; }
@@ -538,27 +539,30 @@ $(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace standardGrace.gct l1/mi
 	cd l1 && GRACE_MODULE_PATH=. ./minigrace $(VERBOSITY) --make --noexec --dir ../stubs ../$<
 	@rm -f $(@:%.gct=%{.c,.gcn});
 
-$(STUBS:%.grace=stubs/l1/%.gct): stubs/l1/%.gct: stubs/%.grace l1/standardGrace.gct $(KG)/minigrace
-	@rm -f $(@:%.gct=%{.c,.gcn,})
-	GRACE_MODULE_PATH=l1 $(KG)/minigrace $(VERBOSITY) --make --noexec --dir stubs/l1 $<
-	@rm -f $(@:%.gct=%{.c,.gcn});
+$(STUBS:%.grace=stubs/j1/%.gct): stubs/j1/%.gct: stubs/%.grace j1/standardGrace.gct $(JS-KG)/minigrace-js
+	GRACE_MODULE_PATH=j1 $(KG)/minigrace $(VERBOSITY) --make --noexec --dir stubs/l1 $<
+	@rm -f $(@:%.gct=%.js);
 
 $(STUBS:%.grace=stubs/j2/%.gct): stubs/j2/%.gct: stubs/%.grace standardGrace.gct j1-minigrace
 	cd j1 && GRACE_MODULE_PATH=. ./minigrace-js $(VERBOSITY) --make --noexec --dir ../stubs/j2 ../$<
 	@rm -f $(@:%.gct=%.js);
 
-$(STUBS:%.grace=stubs/j1/%.gct): stubs/j1/%.gct: stubs/%.grace j1/standardGrace.gct $(JS-KG)/minigrace-js
-	GRACE_MODULE_PATH=j1 $(KG)/minigrace $(VERBOSITY) --make --noexec --dir stubs/l1 $<
-	@rm -f $(@:%.gct=%.js);
+$(STUBS:%.grace=stubs/l1/%.gct): stubs/l1/%.gct: stubs/%.grace l1/standardGrace.gct $(KG)/minigrace
+	@rm -f $(@:%.gct=%{.c,.gcn,})
+	GRACE_MODULE_PATH=l1 $(KG)/minigrace $(VERBOSITY) --make --noexec --dir stubs/l1 $<
+	@rm -f $(@:%.gct=%{.c,.gcn});
 
 $(STUBS:%.grace=js/%.gct): js/%.gct: stubs/%.gct
 	cd js && ln -sf ../$< .
 
-$(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/l1/%.gct
-	cd l1 && ln -sf ../$< .
-
 $(STUBS:%.grace=j1/%.gct): j1/%.gct: stubs/j1/%.gct
 	cd j1 && ln -sf ../$< .
+
+$(STUBS:%.grace=j2/%.gct): j2/%.gct: stubs/j2/%.gct
+	cd j2 && ln -sf ../$< .
+
+$(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/l1/%.gct
+	cd l1 && ln -sf ../$< .
 
 tarWeb: js
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
