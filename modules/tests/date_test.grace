@@ -9,7 +9,12 @@ testSuite {
     test "day of week" by { assert (example.day) shouldBe 6 }  //day of week — Friday
     test "day of month" by { assert (example.date) shouldBe 26 }
     test "hour" by {
-        assert ((example + date.timeZoneOffset).hour) shouldBe 18
+        assert (example.hour) shouldBe (example.timeZoneOffsetInHours + 2)
+        // example.hour is in local time, e.g. 10 if we are in Pacific Time;
+        // it doesn't matter if it is currently Daylight time or not,
+        // because it wasn't daytlight tine in February.
+        // example.timeZoneOffset = +8, because in Feb 2016, Pacific was
+        // 8 hours _behind_ UTC
     }
     test "minute" by { assert (example.minute) shouldBe 51 }
     test "second" by { assert (example.second) shouldBe 25 }
@@ -27,4 +32,3 @@ testSuite {
         assert (later.second) shouldBe 20
     }
 }
-

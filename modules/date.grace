@@ -74,6 +74,16 @@ trait basic {
         // date as milliseconds since the epoch
         native "js" code "return new GraceNum(this.data.value.getTime());"
     }
+    method timeZoneOffsetInMinutes -> Number {
+        // the offset between this time and UTC, as a Number of minutes.
+
+        // why not presnet this as a date?  Because, as a date, it's always zero
+        native "js" code "return new GraceNum(this.data.value.getTimezoneOffset());"
+    }
+    method timeZoneOffsetInHours -> Number {
+        // the offset between this time and UTC, as a Number of hours.
+        native "js" code "return new GraceNum(this.data.value.getTimezoneOffset() / 60);"
+    }
     method + (other:Date) -> Date {
         milliseconds(self.asMilliseconds + other.asMilliseconds)
     }
@@ -116,13 +126,6 @@ method days(n) -> Date {
 
 method weeks(n) -> Date {
     days(7 * n)
-}    
-
-method timeZoneOffset -> Date {
-    // the offset between local time and UTC, as a Date.
-    def minutesOffset =
-        native "js" code "result = new GraceNum(new Date().getTimezoneOffset());"
-    minutes(minutesOffset)
 }
 
 class now {
