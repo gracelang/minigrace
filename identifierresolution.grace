@@ -1345,7 +1345,6 @@ method gatherUsedNames(objNode) is confidential {
         }
         traitScope.keysAndKindsDo { nm, kd ->
             if (kd.forUsers) then {
-                util.log 70 verbose "meth {nm} is forUsers; (kind = {kd})"
                 objScope.addName(nm) as(k.fromTrait)
                 t.providedNames.add(nm)
             }
