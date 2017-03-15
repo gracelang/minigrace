@@ -228,13 +228,19 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 	@./tools/warnAbout PATH $(PREFIX)/bin
 	@./tools/warnAbout GRACE_MODULE_PATH $(MODULE_PATH)
 
+j1/compiler-js: compiler-js
+	cp -p compiler-js $@
+
 j1-minigrace: j1/minigrace-js $(JSJSFILES:%=j1/%) $(MGSOURCEFILES:%.grace=j1/%.js)
 
-j1/minigrace-js: minigrace-js
+j1/minigrace-js: minigrace-js j1/compiler-js
 	cp -p minigrace-js $@
 
-$(JS-KG)/minigrace-js: $(JS-KG)
+$(JS-KG)/minigrace-js: $(JS-KG) $(JS-KG)/compiler-js
 	cp -p minigrace-js $(JS-KG)
+
+$(JS-KG)/compiler-js: $(JS-KG)
+	cp -p compiler-js $(JS-KG)
 
 $(JSONLY:%.grace=modules/%.gso): modules/%.gso:
 	@echo "Can't build $@; no C version of dependencies"
@@ -422,6 +428,10 @@ $(JS-KG):
 	npm install
 	mkdir -p $(JS-KG)
 	cp -R node_modules/minigrace/ $(JS-KG)
+#	if [ ! -e $(JS-KG)/minigrace-js ] ;\
+#        then cp minigrace-js $(JS-KG) ; fi
+#	if [ ! -e $(JS-KG)/compiler-js ] ;\
+#        then cp compiler-js $(JS-KG) ; fi
 
 npm-build-kg: minigrace-js-env
 	mkdir $(JS-KG)
@@ -639,8 +649,8 @@ webIde:
 j1:
 	mkdir -p j1
 
-j1/minigrace: j1 $(JS-KG)/minigrace-js $(STUBS:%.grace=$(JS-KG)/%.gct)
-	GRACE_MODULE_PATH=$(JS-KG) $(JS-KG)/minigrace-js --make --dir j1 --module minigrace compiler.grace
+j1/minigrace: j1 $(JS-KG)/minigrace-js
+	$(JS-KG)/minigrace-js --make --dir j1 --target js --module minigrace compiler.grace
 
 js-minigrace: $(STUBS:%.grace=j1/%.gct) j1-minigrace
 	GRACE_MODULE_PATH=j1 j1/minigrace-js --make --dir . compiler.grace
