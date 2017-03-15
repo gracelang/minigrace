@@ -2320,7 +2320,7 @@ function gracecode_sys() {
         if(typeof(process) !== "undefined") {
             var list = [];
             process.argv.forEach(function(val, index, array) {
-        if(index > 1)
+                if(index > 0)   // element 0 is /usr/local/bin/node, or similar
                     list.push(new GraceString(val));
             });
             return new GraceList(list);
