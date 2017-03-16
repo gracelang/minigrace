@@ -993,15 +993,17 @@ method setupContext(moduleObject) {
     builtInsScope.at "false" putScope(booleanScope)
 
     def dialectNode = moduleObject.theDialect
-    def dialectName = dialectNode.value
+    def dialectName:String = dialectNode.value
+    util.log 50 verbose "in dialect {dialectName}"
     if (dialectName ≠ "none") then {
         xmodule.checkExternalModule(dialectNode)
         def gctDict = xmodule.parseGCT(dialectName)
+        util.log 50 verbose("got gct for {dialectName}; public methods are " ++
+            gctDict.at "public" ifAbsent {emptySequence})
+        def typeDecls = set(gctDict.at "types" ifAbsent {emptySequence})
         gctDict.at "public" ifAbsent {emptySequence}.do { mn ->
-            preludeScope.addName(mn)
-        }
-        gctDict.at "confidential" ifAbsent {emptySequence}.do { mn ->
-            preludeScope.addName(mn)
+            preludeScope.addName(mn) as (if (typeDecls.contains(mn))
+                                           then { k.typedec } else { k.methdec })
         }
         processGCT(gctDict, preludeScope)
     }
