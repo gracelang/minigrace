@@ -314,6 +314,9 @@ method generalError(message, errlinenum, position, arr, suggestions) {
             s.print
         }
     }
+    def outputfilePath = outfile.pathname
+    outfile.close
+    io.spawn("/bin/rm", ["-f", outputfilePath]) // remove the bad output file
     sys.exit(2)
 }
 
