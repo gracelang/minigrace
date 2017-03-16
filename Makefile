@@ -32,7 +32,8 @@ JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
 MGFLAGS = -XnoChecks
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
 JSSOURCEFILES = $(SOURCEFILES:%.grace=js/%.js)
-JSJSFILES = grace grace-debug gracelib.js unicodedata.js
+JSJSFILES = gracelib.js unicodedata.js
+JSRUNNERS = grace grace-debug compiler-js minigrace-js
 KG = known-good/$(ARCH)/$(STABLE)
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
@@ -228,19 +229,26 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 	@./tools/warnAbout PATH $(PREFIX)/bin
 	@./tools/warnAbout GRACE_MODULE_PATH $(MODULE_PATH)
 
-j1/compiler-js: compiler-js
-	cp -p compiler-js $@
+
+$(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
+	cp -p $< $@
 
 j1-minigrace: j1/minigrace-js $(JSJSFILES:%=j1/%) $(MGSOURCEFILES:%.grace=j1/%.js)
 
-j1/minigrace-js: minigrace-js j1/compiler-js
-	cp -p minigrace-js $@
+j2-minigrace: j1-minigrace $(JSJSFILES:%=j2/%) $(MGSOURCEFILES:%.grace=j2/%.js)
 
-$(JS-KG)/minigrace-js: $(JS-KG) $(JS-KG)/compiler-js
-	cp -p minigrace-js $(JS-KG)
+$(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
+	cp -p $< $@
 
-$(JS-KG)/compiler-js: $(JS-KG)
-	cp -p compiler-js $(JS-KG)
+j2/minigrace: j2 j1-minigrace
+	j1/minigrace-js $(VERBOSITY) --make --dir j2 --target js compiler.grace
+
+$(JS-KG)/minigrace-js: $(JS-KG)/compiler-js
+	cp -p js/minigrace-js $(JS-KG)
+
+$(JS-KG)/compiler-js:
+	if [ ! -e $(JS-KG) ] ; then mkdir -p $(JS-KG) ; fi
+	cp -p js/compiler-js $(JS-KG)
 
 $(JSONLY:%.grace=modules/%.gso): modules/%.gso:
 	@echo "Can't build $@; no C version of dependencies"
@@ -256,6 +264,15 @@ $(JSONLY:%.grace=js/%.js): js/%.js: modules/%.grace js/dom.gct minigrace js/time
 
 $(JSONLY:%.grace=js/%.gct): js/%.gct: modules/%.grace js/dom.gct minigrace js/timer.gct
 	GRACE_MODULE_PATH=js:modules ./minigrace --target js --dir js --make $(VERBOSITY) $<
+
+$(JSRUNNERS:%=j1/%): j1/%: js/%
+	cp -p $< $@
+
+$(JSRUNNERS:%=j2/%): j2/%: js/%
+	cp -p $< $@
+
+js-minigrace: $(STUBS:%.grace=j1/%.gct) j2-minigrace
+	GRACE_MODULE_PATH=j1 j1/minigrace-js $(VERBOSITY) --make --dir . compiler.grace
 
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
@@ -287,7 +304,7 @@ js/sample-dialects js/sample-graphics: js/sample-%: js
 js/sample/graphics: $(WEB_GRAPHICS_MODULES:modules/%.grace=js/%.js)
 
 js/sample/graphics/%.js: js/sample/graphics/%.grace minigrace
-	cd js && GRACE_MODULE_PATH=. ../minigrace --make --target js ../$<
+	cd js && GRACE_MODULE_PATH=. ../minigrace $(VERBOSITY) --make --target js ../$<
 
 js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sample/dialects/%.grace js/grace minigrace
 	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
@@ -369,10 +386,10 @@ $(MGSOURCEFILES:%.grace=%.gct): %.gct: %.grace standardGrace.gct l1/minigrace
 	GRACE_MODULE_PATH=.:.. l1/minigrace $(VERBOSITY) --make --noexec $<
 
 $(SOURCEFILES:%.grace=j1/%.js): j1/%.js: %.grace $(JS-KG)/standardGrace.gct $(JS-KG)/minigrace-js
-	GRACE_MODULE_PATH=$(JS-KG) $(JS-KG)/minigrace-js $(VERBOSITY) --make --target js --dir j1 $<
+	$(JS-KG)/minigrace-js $(VERBOSITY) --make --target js --dir j1 $<
 
 $(SOURCEFILES:%.grace=j1/%.gct): j1/%.gct: %.grace $(JS-KG)/standardGrace.gct $(JS-KG)/minigrace-js
-	GRACE_MODULE_PATH=$(JS-KG) $(JS-KG)/minigrace-js $(VERBOSITY) --make --target js --dir j1 $<
+	$(JS-KG)/minigrace-js $(VERBOSITY) --make --target js --dir j1 $<
 
 $(SOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace j1-minigrace
 	GRACE_MODULE_PATH=j1 j1/minigrace-js $(VERBOSITY) --make --target js --dir j2 $<
@@ -450,19 +467,6 @@ npm-update-kg:
 
 $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
-
-# Not for normal use!   A check test of a change to
-# only the js code generator
-old-js-one: l1/minigrace
-	l1/minigrace --target js --dir js/tests --make collectionsPrelude.grace
-	node -c js/tests/collectionsPrelude.js
-	l1/minigrace --target js --dir js/tests --make standardGrace.grace
-	l1/minigrace --target js --dir js/tests --make modules/gUnit.grace
-	l1/minigrace --target js --dir js/tests --make modules/minitest.grace
-	GRACE_MODULE_PATH=js/tests:js l1/minigrace js/tests/t001_languageTests0_49_test.grace --verbose --target js
-
-old-js-two: old-js-one
-	GRACE_MODULE_PATH=js/tests:js l1/minigrace js/tests/t003_languageTests100_145_test.grace --verbose --target js
 
 oldWeb : WEB_DIRECTORY = public_html/minigrace/js
 oldWeb: $(WEBFILES) js/sample
@@ -622,7 +626,7 @@ test.js: minigrace-js-env
 	js/tests/harness minigrace js/tests "" $(TESTS)
 
 test.js.js: minigrace-js-env
-	js/tests/harness minigrace-js js/tests "" $(TESTS)
+	js/tests/harness js/minigrace-js js/tests "" $(TESTS)
 
 test: minigrace-c-env modules/minitest.gso
 	tests/harness minigrace tests "" $(TESTS)
@@ -646,46 +650,6 @@ uninstall:
 webIde:
 	$(MAKE) ide
 
-j1:
-	mkdir -p j1
-
-j1/minigrace: j1 $(JS-KG)/minigrace-js
-	$(JS-KG)/minigrace-js --make --dir j1 --target js --module minigrace compiler.grace
-
-js-minigrace: $(STUBS:%.grace=j1/%.gct) j1-minigrace
-	GRACE_MODULE_PATH=j1 j1/minigrace-js --make --dir . compiler.grace
-
-#Not needed or used:
-quick-compile:
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec --dir $(JS-KG) collectionsPrelude.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js --make --noexec --dir $(JS-KG) standardGrace.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec --dir $(JS-KG) stubs/curl.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec --dir $(JS-KG) stubs/dom.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec --dir $(JS-KG) stubs/io.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js --make --noexec --dir $(JS-KG) stubs/mirrors.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec --dir $(JS-KG) stubs/sys.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec --dir $(JS-KG) stubs/timer.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec --dir $(JS-KG) stubs/unicode.grace
-	cd $(JS-KG)/ && ld -o gracelib.o -r gracelib-basic.o standardGrace.gcn collectionsPrelude.gcn debugger.o
-	cp $(JS-KG)/gsoModules/* ./
-	cp $(JS-KG)/gracelib.o ./
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js  --make --noexec buildinfo.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  stringMap.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  unixFilePath.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  util.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  errormessages.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  lexer.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  identifierKinds.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  ast.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  parser.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  xmodule.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  genc.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  genjs.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --noexec  identifierresolution.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --native --gracelib $(JS-KG)/ --module minigrace compiler.grace
-	GRACE_MODULE_PATH=$(JS-KG)/  $(JS-KG)/minigrace-js   --make --native --module minigrace  --gracelib . compiler.grace
-
-
 .git/hooks/commit-msg: tools/validate-commit-message
 	@ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
 
@@ -693,8 +657,8 @@ quick-compile:
 	gcc -g -std=c99 -c -o $@ $<
 
 
-.SECONDEXPANSION:
-
-$(JSJSFILES:%=j1/%): j1/%: js/$$(@F)
-	echo "depencency is js/$(@F); dollar< is $<"
-	cp -p $< $@
+#.SECONDEXPANSION:
+#
+#$(JSJSFILES:%=j1/%): j1/%: js/$$(@F)
+#	echo "depencency is js/$(@F); dollar< is $<"
+#	cp -p $< $@
