@@ -11,6 +11,8 @@
 *.c
 l1
 l2
+j1
+j2
 minigrace
 misc
 tests/test.log
