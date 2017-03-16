@@ -71,7 +71,7 @@ class newScopeIn(parent') kind(variety') {
         }
         errormessages.syntaxError("'{n}' cannot be" ++
             " redefined as {kind} because it is already declared as {oldKind}")
-            atRange(util.line, util.linePos, util.linePos + n.size - 1)
+            atRange(util.linenum, util.linepos, util.linepos + n.size - 1)
     }
     method addNode (nd) as (kind) {
         def ndName = nd.value
