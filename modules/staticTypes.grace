@@ -1,16 +1,15 @@
 #pragma noTypeChecks
 #pragma ExtendedLineups
-dialect "dialect"
-
+dialect "none"
+import "dialect" as dia
 import "ast" as ast
 import "util" as util
 
-inherit prelude.methods
+inherit dia.methods
 
-type List⟦T⟧ = prelude.List⟦T⟧
+// type List⟦T⟧ = prelude.List⟦T⟧
 
-def ProgrammingError = _prelude.ProgrammingError
-def TypeError is public = CheckerFailure.refine "TypeError"
+def TypeError is public = dia.CheckerFailure.refine "TypeError"
 
 type MethodType = {
     // Method signature information consisting of the name, list of MixParts,
@@ -362,7 +361,7 @@ def objectType = object {
                 return if (false ≠ lit.value) then {
                     object {
 //                        inherit oType & fromDType (intersection.last)
-                        inherit prelude.TypeIntersection.new (oType, fromDType (intersection.last))
+                        inherit TypeIntersection.new (oType, fromDType (intersection.last))
 
                         method asString is override { lit.value }
                     }
@@ -382,7 +381,7 @@ def objectType = object {
                 return if (false ≠ lit.value) then {
                     object {
 //                        inherit oType | fromDType (union.last)
-                        inherit prelude.TypeUnion.new (oType, fromDType (union.last))
+                        inherit TypeUnion.new (oType, fromDType (union.last))
                         def asString: String is public, override = lit.value
                     }
                 } else {

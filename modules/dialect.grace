@@ -1,15 +1,21 @@
 #pragma ExtendedLineups
+dialect "none"
+import "standardGrace" as sg
 import "errormessages" as errormessages
 import "ast" as ast
 
-inherit prelude.methods
+inherit sg.methods
+
+method methods {
+    // This should be unnecessary, because it is inherited.
+    // But the compiler gets confised and does not find it statically.
+    prelude.clone(self)
+}
 
 // Checker error
 
-def CheckerFailure is public = prelude.Exception.refine "CheckerFailure"
-def DialectError is public = prelude.Exception.refine "DialectError"
-
-type List = prelude.List
+def CheckerFailure is public = Exception.refine "CheckerFailure"
+def DialectError is public = Exception.refine "DialectError"
 
 // Helper Map
 
@@ -29,12 +35,12 @@ class aMutableMap {
     method at(key) {
         atKey(key) do { value -> return value }
 
-        prelude.NoSuchObject.raise "no key {key} in aMutableMap"
+        NoSuchObject.raise "no key {key} in aMutableMap"
     }
 
     method at(key) put(value) -> Done {
         if (value.asString == "done") then {
-            prelude.ProgrammingError.raise "mutableMap: attempting to put ‹done› at key {key}"
+            ProgrammingError.raise "mutableMap: attempting to put ‹done› at key {key}"
         }
         for(entries) do { entry ->
             if(entry.key == key) then {
@@ -248,13 +254,13 @@ method runRules(node) {
     cache.atKey(node) do { value -> return value }
     currentLine := node.line
 
-    var result := prelude.FailedMatch.new(node)
+    var result := FailedMatch.new(node)
     for (rules) do { each ->
         def matched = each.match(node)
         if(matched) then {
             result := matched.result
             if (result.asString == "done") then {
-                prelude.ProgrammingError.raise
+                ProgrammingError.raise
                     "rule.match(node) has result 'done' when rule is {each} and node = {node}"
             }
             cache.at(node) put(result)
@@ -274,18 +280,18 @@ method check(module) -> Done {
 
 type AstNode = { kind -> String }
 
-class aPatternMatchingNode(kind : String) -> prelude.Pattern {
-    inherit prelude.BasicPattern.new
+class aPatternMatchingNode(kind : String) -> Pattern {
+    inherit BasicPattern.new
 
-    method match(obj : Object) -> prelude.MatchResult {
+    method match(obj : Object) -> MatchResult {
         match(obj) 
           case { node : AstNode ->
             if(kind == node.kind) then {
-                prelude.SuccessfulMatch.new(node, [])
+                SuccessfulMatch.new(node, [])
             } else {
-                prelude.FailedMatch.new(node)
+                FailedMatch.new(node)
             }
-          } case { _ -> prelude.FailedMatch.new(obj) }
+          } case { _ -> FailedMatch.new(obj) }
     }
 }
 
@@ -321,20 +327,20 @@ def Inherit is public = aPatternMatchingNode "inherit"
 
 // Special requests patterns.
 
-class RequestOf(methodName:String) -> prelude.Pattern {
+class RequestOf(methodName:String) -> Pattern {
 
-    inherit prelude.BasicPattern.new
+    inherit BasicPattern.new
 
-    method match(obj:Object) -> prelude.MatchResult {
+    method match(obj:Object) -> MatchResult {
         match(obj) 
             case { node:AstNode ->
                 if (node.isCall && {node.canonicalName == methodName}) then {
-                    prelude.Successfulmatch.new(node, makeBindings(node))
+                    SuccessfulMatch.new(node, makeBindings(node))
                 } else {
-                    prelude.Failedmatch.new(node)
+                    FailedMatch.new(node)
                 }
             } case { _ ->
-                prelude.Failedmatch.new(obj)
+                FailedMatch.new(obj)
             }
     }
 
