@@ -124,7 +124,7 @@ MiniGrace.prototype.run = function(fileName) {
     };
     var modName = path.basename(fileName, ".js");
     var dirName = path.dirname(fileName);
-    this.loadModule(modName, dirName);
+    this.loadModule(modName, dirName, pathDirArray);
         // defines a global gracecode_‹modName›
     var theModule = global[graceModuleName(modName)];
     this.trapErrors(function() {
@@ -187,8 +187,8 @@ function findOnPath(fn, pathArray) {
 }
 
 function addToPathIfNecessary(dir) {
-    if ( pathdirs.indexOf(dir) === -1 ) {
-        pathdirs.push(dir);
+    if ( pathDirArray.indexOf(dir) === -1 ) {
+        pathDirArray.push(dir);
     }
 }
 
@@ -207,12 +207,12 @@ if (graceModulePath === undefined) {
     }
 }
 
-var pathdirs = graceModulePath.split(path.delimiter);
+var pathDirArray = graceModulePath.split(path.delimiter);
 
 addToPathIfNecessary("./");
 addToPathIfNecessary("../");
 
-MiniGrace.prototype.loadModule = function(moduleName, referencingDir) {
+MiniGrace.prototype.loadModule = function(moduleName, referencingDir, pathdirs) {
     var graceModule = graceModuleName(moduleName);
     if (typeof global[graceModule] === 'function') return;   //already loaded
     var extn = ".js";
@@ -221,6 +221,10 @@ MiniGrace.prototype.loadModule = function(moduleName, referencingDir) {
         moduleName = moduleName.substring(0, moduleName.length - extn.length);
     } else {
         fileName = fileName + extn;
+    }
+    if (! pathdirs) {
+        // provide default value for parameter
+        pathdirs = pathDirArray;
     }
     var found = findOnPath(fileName, [referencingDir].concat(pathdirs));
     var sourceDir = path.dirname(fs.realpathSync(found));
@@ -239,7 +243,7 @@ MiniGrace.prototype.loadModule = function(moduleName, referencingDir) {
     }
     var recursiveImports = global[graceModule].imports;
     for (var ix = 0; ix < recursiveImports.length; ix++) {
-        MiniGrace.prototype.loadModule(recursiveImports[ix], sourceDir);
+        MiniGrace.prototype.loadModule(recursiveImports[ix], sourceDir, pathdirs);
     }
 };
 
@@ -249,13 +253,13 @@ function abspath(file) {
 }
 
 try {
-    require(findOnPath("gracelib.js", pathdirs));
-    require(findOnPath("unicodedata.js", pathdirs));
+    require(findOnPath("gracelib.js", pathDirArray));
+    require(findOnPath("unicodedata.js", pathDirArray));
     minigrace = new MiniGrace();
-    minigrace.loadModule("standardGrace", "./");
+    minigrace.loadModule("standardGrace", "./", pathDirArray);
     var executable = process.argv[2];
     if (! executable.endsWith(".js")) executable = executable + ".js";
-    var exFile = findOnPath(executable, pathdirs);
+    var exFile = findOnPath(executable, pathDirArray);
     minigrace.execFile = abspath(exFile);
 
     minigrace.trapErrors(function() {
