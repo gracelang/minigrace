@@ -48,7 +48,9 @@ STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 TYPE_DIALECTS = staticTypes requireTypes
 TEST_DEPENDENCIES = ast lexer stringMap collectionsPrelude parser xmodule errormessages standardGrace identifierKinds standardGrace
 #   these are modules used in running the full test suite
-NPM_STABLE_VERSION=1.0.73
+NPM_VERSION_PREFIX=1.0
+VERSION := $(NPM_VERSION_PREFIX).$(shell ./tools/git-calculate-generation)
+NPM_STABLE_VERSION=1.0.3956
 
 VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
@@ -147,6 +149,7 @@ dev-ideDeploy: ideBuild
 dialects: gracelib.o js js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
 
 echo:
+	@echo VERSION = $(VERSION)
 	@echo MAKEFLAGS = $(MAKEFLAGS)
 	@echo JS-KG = $(JS-KG)
 	@echo CFLAGS = $(CFLAGS)
@@ -451,19 +454,17 @@ $(JS-KG):
 #        then cp compiler-js $(JS-KG) ; fi
 
 npm-build-kg: minigrace-js-env
-	mkdir $(JS-KG)
-	rm -rf $(JS-KG)/*
-	cp npm-$(JS-KG).json $(JS-KG)/package.json
-	-@cp js/*.js js/*.gct js/grace js/grace-debug $(JS-KG)
-	-@cp minigrace-js $(JS-KG)/
+	mkdir -p npm-build
+	rm -rf npm-build/*
+	cp npm-js-kg.json npm-build/package.json
+	-@cp js/*.js js/*.gct js/grace js/grace-debug npm-build/
+	-@cp js/minigrace-js js/compiler-js npm-build/
 # "-" prefix means ignore exit status!
 
-npm-update-kg:
-	@[ -n "$(VERSION)" ] || { echo "Please set the VERSION variable to something like x.x.x, current version is $(NPM_STABLE_VERSION)" && false; }
-	cd $(JS-KG)/ && npm version $(VERSION) && npm publish
-	perl -pi -e 's/$(NPM_STABLE_VERSION)/$(VERSION)/g' Makefile
-	@echo ! NPM Known–Good Package Version has been updated to $(VERSION) !
-
+npm-publish:
+	cd npm-build && npm version $(VERSION) && npm publish
+#	perl -pi -e 's/$(NPM_STABLE_VERSION)/$(VERSION)/g' Makefile
+	@echo Published minigrace version $(VERSION) to npmjs.com
 
 $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
