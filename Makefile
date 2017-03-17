@@ -244,6 +244,8 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 $(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
 	cp -p $< $@
 
+j2/animation.gct j2/animation.js: j2/timer.gct j2/timer.js
+
 j1-minigrace: $(JS-KG) $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js)
 	touch j1/minigrace-js
 
