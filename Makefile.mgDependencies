@@ -12,20 +12,88 @@ l1/symbolTable.gct: l1/ast.gct l1/errormessages.gct
 l1/util.gct: l1/io.gct l1/sys.gct l1/stringMap.gct l1/unixFilePath.gct
 l1/xmodule.gct: l1/io.gct l1/sys.gct l1/util.gct l1/ast.gct l1/mirrors.gct l1/mirrors.gso l1/errormessages.gct l1/unixFilePath.gct
 
-# had to remove all: js/unicode.js js/io.js js/sys.js js/mirrors.js and js/minigrace/compiler.js/ !
-## TODO: add --js to make-depend that does the above!
-js/standardGrace.gct: js/collectionsPrelude.gct
 js/ast.gct: js/util.gct js/identifierKinds.gct
-js/errormessages.gct: js/util.gct
-js/genc.gct: js/ast.gct js/util.gct js/stringMap.gct js/xmodule.gct js/errormessages.gct
-js/genjs.gct: js/ast.gct js/util.gct js/xmodule.gct js/errormessages.gct
-js/identifierresolution.gct: js/ast.gct js/util.gct js/xmodule.gct js/stringMap.gct js/errormessages.gct js/identifierKinds.gct
-js/lexer.gct: js/unicode.gct js/util.gct js/errormessages.gct
+js/ast.js: js/util.js js/util.gct js/identifierKinds.gct
 js/compiler.gct: js/util.gct js/lexer.gct js/ast.gct js/parser.gct js/genc.gct js/genjs.gct js/buildinfo.gct identifierresolution.gct
+js/compiler.js: js/genc.js js/genjs.js js/lexer.js js/parser.js js/identifierresolution.js js/standardGrace.gct
+js/errormessages.gct: js/util.gct js/standardGrace.gct
+js/errormessages.js: js/util.js
+js/genc.gct: js/ast.gct js/util.gct js/stringMap.gct js/xmodule.gct js/errormessages.gct js/standardGrace.gct
+js/genc.js: js/xmodule.js
+js/genjs.gct: js/ast.gct js/util.gct js/xmodule.gct js/errormessages.gct
+js/genjs.js: js/xmodule.js
+js/identifierresolution.gct: js/ast.gct js/util.gct js/xmodule.gct js/stringMap.gct js/errormessages.gct js/identifierKinds.gct
+js/identifierresolution.js: js/xmodule.js js/identifierKinds.js
+js/lexer.gct: js/unicode.gct js/util.gct js/errormessages.gct js/standardGrace.gct
+js/lexer.js: js/errormessages.js
 js/parser.gct: js/ast.gct js/util.gct js/errormessages.gct
-js/symbolTable.gct: js/ast.gct js/errormessages.gct
+js/parser.js: js/ast.js js/errormessages.js
+js/requireTypes.js: js/dialect.js js/standardGrace.gct
+js/standardGrace.gct: js/collectionsPrelude.gct
+js/staticTypes.js: js/dialect.js
+js/stringMap.js: js/standardGrace.gct
+js/symbolTable.gct: js/ast.gct js/errormessages.gct js/standardGrace.gct
 js/util.gct: js/io.gct js/sys.gct js/unixFilePath.gct js/stringMap.gct
+js/util.js: js/buildinfo.js js/stringMap.js js/standardGrace.gct
 js/xmodule.gct: js/util.gct js/ast.gct js/errormessages.gct js/unixFilePath.gct
+js/xmodule.js: js/ast.js js/errormessages.js
+
+j1/ast.gct: j1/util.gct j1/identifierKinds.gct
+j1/ast.js: j1/util.js j1/util.gct j1/identifierKinds.gct
+j1/compiler.gct: j1/util.gct j1/lexer.gct j1/ast.gct j1/parser.gct j1/genc.gct j1/genjs.gct j1/buildinfo.gct identifierresolution.gct
+j1/compiler.js: j1/genc.js j1/genjs.js j1/lexer.js j1/parser.js j1/identifierresolution.js j1/standardGrace.gct
+j1/errormessages.gct: j1/util.gct j1/standardGrace.gct
+j1/errormessages.js: j1/util.js
+j1/genc.gct: j1/ast.gct j1/util.gct j1/stringMap.gct j1/xmodule.gct j1/errormessages.gct j1/standardGrace.gct
+j1/genc.js: j1/xmodule.js
+j1/genjs.gct: j1/ast.gct j1/util.gct j1/xmodule.gct j1/errormessages.gct
+j1/genjs.js: j1/xmodule.js
+j1/identifierresolution.gct: j1/ast.gct j1/util.gct j1/xmodule.gct j1/stringMap.gct j1/errormessages.gct j1/identifierKinds.gct
+j1/identifierresolution.js: j1/xmodule.js j1/identifierKinds.js
+j1/lexer.gct: j1/unicode.gct j1/util.gct j1/errormessages.gct j1/standardGrace.gct
+j1/lexer.js: j1/errormessages.js
+j1/parser.gct: j1/ast.gct j1/util.gct j1/errormessages.gct
+j1/parser.js: j1/ast.js j1/errormessages.js
+j1/requireTypes.js: j1/dialect.js j1/standardGrace.gct
+j1/standardGrace.gct: j1/collectionsPrelude.gct
+j1/staticTypes.js: j1/dialect.js
+j1/stringMap.js: j1/standardGrace.gct
+j1/symbolTable.gct: j1/ast.gct j1/errormessages.gct j1/standardGrace.gct
+j1/util.gct: j1/io.gct j1/sys.gct j1/unixFilePath.gct j1/stringMap.gct
+j1/util.js: j1/buildinfo.js j1/stringMap.js j1/standardGrace.gct
+j1/xmodule.gct: j1/util.gct j1/ast.gct j1/errormessages.gct j1/unixFilePath.gct
+j1/xmodule.js: j1/ast.js j1/errormessages.js
+
+j2/ast.gct: j2/util.gct j2/identifierKinds.gct
+j2/ast.js: j2/util.js j2/util.gct j2/identifierKinds.gct
+j2/buildinfo.js: j2/standardGrace.gct
+j2/compiler.gct: j2/util.gct j2/lexer.gct j2/ast.gct j2/parser.gct j2/genc.gct j2/genjs.gct j2/buildinfo.gct identifierresolution.gct
+j2/compiler.js: j2/genc.js j2/genjs.js j2/lexer.js j2/parser.js j2/identifierresolution.js j2/standardGrace.gct
+j2/errormessages.gct: j2/util.gct j2/standardGrace.gct
+j2/errormessages.js: j2/util.js
+j2/genc.gct: j2/ast.gct j2/util.gct j2/stringMap.gct j2/xmodule.gct j2/errormessages.gct j2/standardGrace.gct
+j2/genc.js: j2/xmodule.js
+j2/genjs.gct: j2/ast.gct j2/util.gct j2/xmodule.gct j2/errormessages.gct
+j2/genjs.js: j2/xmodule.js
+j2/identifierresolution.gct: j2/ast.gct j2/util.gct j2/xmodule.gct j2/stringMap.gct j2/errormessages.gct j2/identifierKinds.gct
+j2/identifierresolution.js: j2/xmodule.js j2/identifierKinds.js
+j2/lexer.gct: j2/unicode.gct j2/util.gct j2/errormessages.gct j2/standardGrace.gct
+j2/lexer.js: j2/errormessages.js
+j2/logo.gct: j2/turtle.gct
+j2/logo.js: j2/turtle.gct
+j2/parser.gct: j2/ast.gct j2/util.gct j2/errormessages.gct
+j2/parser.js: j2/ast.js j2/errormessages.js
+j2/requireTypes.js: j2/dialect.js j2/standardGrace.gct
+j2/standardGrace.gct: j2/collectionsPrelude.gct
+j2/staticTypes.js: j2/dialect.js
+j2/stringMap.js: j2/standardGrace.gct
+j2/symbolTable.gct: j2/ast.gct j2/errormessages.gct j2/standardGrace.gct
+j2/turtle.gct: j2/dom.gct
+j2/turtle.js: j2/dom.gct
+j2/util.gct: j2/io.gct j2/sys.gct j2/unixFilePath.gct j2/stringMap.gct
+j2/util.js: j2/io.gct j2/sys.gct j2/unixFilePath.gct j2/stringMap.gct
+j2/xmodule.gct: j2/util.gct j2/ast.gct j2/errormessages.gct j2/unixFilePath.gct
+j2/xmodule.js: j2/util.gct j2/ast.gct j2/errormessages.gct j2/unixFilePath.gct
 
 standardGrace.gct: collectionsPrelude.gct
 ast.gct: util.gct identifierKinds.gct
@@ -40,23 +108,6 @@ parser.gct: io.gct ast.gct util.gct errormessages.gct
 symbolTable.gct: ast.gct errormessages.gct
 util.gct: io.gct sys.gct stringMap.gct unixFilePath.gct
 xmodule.gct: io.gct sys.gct util.gct ast.gct mirrors.gso unixFilePath.gct errormessages.gct
-
-
-#missing JS dependencies; required for parallel building
-js/staticTypes.js: js/dialect.js
-js/requireTypes.js: js/dialect.js
-
-js/compiler.js: js/genc.js js/genjs.js js/lexer.js js/parser.js js/identifierresolution.js
-js/genc.js: js/xmodule.js
-js/genjs.js: js/xmodule.js
-js/identifierresolution.js: js/xmodule.js js/identifierKinds.js
-js/lexer.js: js/errormessages.js
-js/parser.js: js/ast.js js/errormessages.js
-js/xmodule.js: js/ast.js js/errormessages.js
-
-js/ast.js: js/util.js
-js/errormessages.js: js/util.js
-js/util.js: js/buildinfo.js js/stringMap.js
 
 %.gso: %.gct
 %.gcn: %.gct
