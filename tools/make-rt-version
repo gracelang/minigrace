@@ -4,6 +4,6 @@
 
 N=`grep -n ^import "$1" | tail -n 1 | cut -f1 -d:`
 head -n $N $1
-echo 'import "modules/requireTypes" as rt'
+echo 'import "requireTypes" as rt'
 echo 'def thisDialect = rt.thisDialect'
 tail -n +$(($N+1)) $1
