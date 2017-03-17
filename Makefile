@@ -246,6 +246,10 @@ $(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
 
 j2/animation.gct j2/animation.js: j2/timer.gct j2/timer.js
 
+j2/rtobjectdraw.gct j2/rtobjectdraw.js: j2/requireTypes.gct j2/requireTypes.js
+
+j2/stobjectdraw.gct j2/stobjectdraw.js: j2/staticTypes.gct j2/staticTypes.js
+
 j1-minigrace: $(JS-KG) $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js)
 	touch j1/minigrace-js
 
