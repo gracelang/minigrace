@@ -244,10 +244,10 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 $(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
 	cp -p $< $@
 
-j1-minigrace: $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js)
+j1-minigrace: $(JS-KG) $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js)
 	touch j1/minigrace-js
 
-j2-minigrace: j1/minigrace-js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js)
+j2-minigrace: j1-minigrace $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js)
 	touch j2/minigrace-js
 
 $(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
