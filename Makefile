@@ -475,10 +475,7 @@ $(JS-KG):
 	npm install
 	mkdir -p $(JS-KG)
 	cp -R node_modules/minigrace/ $(JS-KG)
-#	if [ ! -e $(JS-KG)/minigrace-js ] ;\
-#        then cp minigrace-js $(JS-KG) ; fi
-#	if [ ! -e $(JS-KG)/compiler-js ] ;\
-#        then cp compiler-js $(JS-KG) ; fi
+	-ls -l /home/travis/build/gracelang/minigrace/$(JS-KG)/
 
 npm-build-kg: minigrace-js-env
 	mkdir -p npm-build
