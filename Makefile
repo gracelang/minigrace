@@ -31,7 +31,7 @@ MODULES_WO_JSONLY = $(sort $(filter-out $(JSONLY), $(LIBRARY_MODULES)))
 JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
 MGFLAGS = -XnoChecks
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
-JSSOURCEFILES = $(SOURCEFILES:%.grace=js/%.js)
+JSSOURCEFILES = $(SOURCEFILES:%.grace=%.js)
 JSJSFILES = gracelib.js unicodedata.js
 JSRUNNERS = grace grace-debug compiler-js minigrace-js
 KG = known-good/$(ARCH)/$(STABLE)
@@ -54,19 +54,23 @@ NPM_STABLE_VERSION=1.0.3956
 
 VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
-WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html js/unicodedata.js js/importStandardGrace.js $(ICONS:%=js/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
+WEBFILES_STATIC = $(filter-out sample,$(sort index.html global.css minigrace.js tabs.js  gtk.js debugger.js ace  debugger.html  importStandardGrace.js $(ICONS)))
+WEBFILES_DYNAMIC = $(sort $(ALL_LIBRARY_MODULES:%.grace=%.js) $(filter-out util.js,$(JSSOURCEFILES) gracelib.js dom.js timer.js unicodedata.js))
+WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html js/unicodedata.js js/importStandardGrace.js $(ICONS:%=js/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES:%=js/%))))
 WEBFILES_SIMPLE = $(filter-out js-simple/sample,$(sort js-simple/index.html js-simple/global.css js-simple/tests js-simple/minigrace.js js-simple/tabs-simple.js js-simple/gracelib.js js-simple/dom.js js-simple/gtk.js js-simple/debugger.js js-simple/timer.js js-simple/ace  js-simple/debugger.html  js-simple/unicodedata.js js-simple/importStandardGrace.js $(ICONS:%=js-simple/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
 WEB_GRAPHICS_MODULES = modules/turtle.grace modules/logo.grace
+
 # The next few rules are here for their side effects: updating
 # buildinfo.grace if necessary, and creating directories.
-CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
+
 CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi ; (cd l1 ; ln -sf $(ALLSOURCEFILES:%=../%) .))
 CREATE_J1 := $(shell if [ ! -e j1 ] ; then mkdir -p j1 ; fi)
 CREATE_J2 := $(shell if [ ! -e j2 ] ; then mkdir -p j2 ; fi)
+CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
 
 all: minigrace-environment $(C_MODULES_GSO) $(WEBFILES)
 
-.PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects dev-ide dev-ideDeploy echo ideBuild ideDeploy fullclean install j1-minigrace j2-minigrace js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env old-js-one old-js-two pull-web-editor pull-objectdraw selfhost-stats selftest selftest-js samples sample-% test test.js test.js.compile uninstall
+.PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects dev-ide dev-ideDeploy echo ide ide-js ideBuild ideBuild-js ideDeploy ideDeploy-js fullclean install j1-minigrace j2-minigrace js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env old-js-one old-js-two pull-web-editor pull-objectdraw selfhost-stats selftest selftest-js samples sample-% test test.js test.js.compile uninstall
 
 # clear out the default rules: produces far less --debug output
 .SUFFIXES:
@@ -166,6 +170,9 @@ echo:
 	@echo JSSOURCEFILES = $(JSSOURCEFILES) "\n"
 	@echo ALLSOURCEFILES = $(ALLSOURCEFILES) "\n"
 	@echo WEBFILES = $(WEBFILES) "\n"
+	@echo WEBFILES_STATIC = $(sort $(WEBFILES_STATIC)) "\n"
+	@echo WEBFILES_DYNAMIC = $(sort $(WEBFILES_DYNAMIC)) "\n"
+	@echo Wanted WEBFILES_STATIC = $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES_STATIC:%=js/%)))
 	@echo JSONLY = $(JSONLY)
 	@echo KG = $(KG):
 	@echo STUBS = $(STUBS)
@@ -223,6 +230,20 @@ ideDeploy: ideBuild
 	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
 	rsync -az --delete --exclude .git grace-web-editor/ $(WEB_SERVER):$(WEB_DIRECTORY)
 
+ide-js: ideDeploy-js
+
+ideBuild-js: j2-minigrace pull-brace grace-web-editor/scripts/setup.js grace-web-editor/scripts/background.js $(WEBFILES_STATIC:%=js/%) $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES_DYNAMIC:%=j2/%))) $(ALL_LIBRARY_MODULES:%.grace=j2/%.js)
+	./tools/includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
+	./tools/calc-IDE-version
+	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
+	ln -f $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES_STATIC:%=js/%))) grace-web-editor/js
+	ln -f $(WEBFILES_DYNAMIC:%=j2/%) grace-web-editor/js
+	ln -f $(GRAPHIX:%.grace=j2/%.js) grace-web-editor/js
+
+ideDeploy-js: ideBuild-js
+	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
+	rsync -az --delete --exclude .git grace-web-editor/ $(WEB_SERVER):$(WEB_DIRECTORY)
+
 install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grace=%.gct) $(COMPILER_MODULES:%.grace=%.gso) $(COMPILER_MODULES:%.grace=%.gcn) $(STUB_GCTS) $(STUBS:%.grace=js/%.gct) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=js/%.js) $(MODULES_WO_JSONLY:%.grace=modules/%.gcn) $(MODULES_WO_JSONLY:%.grace=modules/%.gso) gracelib.o
 	test -d $(PREFIX)/bin || install -d $(PREFIX)/bin
 	test -d $(MODULE_PATH) || install -d $(MODULE_PATH)
@@ -251,10 +272,10 @@ j2/rtobjectdraw.gct j2/rtobjectdraw.js: j2/requireTypes.gct j2/requireTypes.js
 j2/stobjectdraw.gct j2/stobjectdraw.js: j2/staticTypes.gct j2/staticTypes.js
 
 j1-minigrace: $(JS-KG) $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js)
-	touch j1/minigrace-js
+#	touch j1/minigrace-js
 
 j2-minigrace: j1-minigrace $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js)
-	touch j2/minigrace-js
+#	touch j2/minigrace-js
 
 $(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
 	cp -p $< $@
@@ -340,7 +361,7 @@ js/standardGrace.js js/standardGrace.gct: standardGrace.grace js/collectionsPrel
 
 js/animation%gct js/animation%js: js/timer.gct objectdraw/animation.grace
 
-js: js/index.html js/dom.gct $(COMPILER_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES) minigrace
+js: js/index.html js/dom.gct $(COMPILER_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES:%=js/%) minigrace
 	ln -f minigrace js/minigrace
 
 $(KG)/minigrace:
@@ -444,7 +465,7 @@ minigrace-environment: minigrace-c-env minigrace-js-env
 
 minigrace-c-env: minigrace standardGrace.gct gracelib.o unicode.gso $(MODULES_WO_JSONLY:%.grace=modules/%.gct) .git/hooks/commit-msg
 
-minigrace-js-env: minigrace js/grace js/grace-debug standardGrace.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) $(JSSOURCEFILES:%.js=%.gct) $(TYPE_DIALECTS:%=modules/%.gso) $(TYPE_DIALECTS:%=js/%.js) $(TEST_DEPENDENCIES:%=js/tests/%.js) $(TEST_DEPENDENCIES:%=js/tests/%.gct)
+minigrace-js-env: minigrace js/grace js/grace-debug standardGrace.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES:%=js/%) $(JSSOURCEFILES:%.js=js/%.gct) $(TYPE_DIALECTS:%=modules/%.gso) $(TYPE_DIALECTS:%=js/%.js) $(TEST_DEPENDENCIES:%=js/tests/%.js) $(TEST_DEPENDENCIES:%=js/tests/%.gct)
 
 minigrace.js.env: j2-minigrace $(LIBRARY_MODULES:%.grace=j2/%.js) $(JS_STUBS:%.grace=j2/%.js)
 
@@ -502,19 +523,19 @@ oldWeb: $(WEBFILES) js/sample js/ace/ace.js
 	rsync -a -l -z js/sample/graphics/ $(WEB_SERVER):$(WEB_DIRECTORY)
 
 pull-web-editor:
-	@if [ -e grace-web-editor ] ; \
-       then printf "grace-web-editor: " ; cd grace-web-editor; git pull ; \
-       else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi
+#	@if [ -e grace-web-editor ] ; \
+#       then printf "grace-web-editor: " ; cd grace-web-editor; git pull ; \
+#       else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi
 
 pull-objectdraw:
-	@if [ -e objectdraw ] ; \
-       then printf "objectdraw: " ; cd objectdraw; git pull ; \
-       else git clone https://github.com/gracelang/objectdraw/ ; fi
+#	@if [ -e objectdraw ] ; \
+#       then printf "objectdraw: " ; cd objectdraw; git pull ; \
+#       else git clone https://github.com/gracelang/objectdraw/ ; fi
 
 pull-brace: pull-web-editor
-	@if [ -e grace-web-editor/brace ] ; \
-       then printf "grace-web-editor/brace: " ; cd grace-web-editor/brace; git pull ; \
-       else git clone https://github.com/gracelang/brace/ grace-web-editor/brace ; fi
+#	@if [ -e grace-web-editor/brace ] ; \
+#       then printf "grace-web-editor/brace: " ; cd grace-web-editor/brace; git pull ; \
+#       else git clone https://github.com/gracelang/brace/ grace-web-editor/brace ; fi
 
 sample-dialects: $(DIALECT_DEPENDENCIES)
 	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
