@@ -495,7 +495,7 @@ $(JS-KG):
 	sed -e 's/VERSION/$(NPM_STABLE_VERSION)/g' package.in.json > package.json
 	npm install
 	mkdir -p $(JS-KG)
-	cp -R node_modules/minigrace/ $(JS-KG)
+	cp -R node_modules/minigrace/* $(JS-KG)
 	-ls -l /home/travis/build/gracelang/minigrace/$(JS-KG)/
 
 npm-build-kg: minigrace-js-env
