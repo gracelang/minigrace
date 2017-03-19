@@ -7,12 +7,19 @@
   ]
 , "dependencies":
   { "minigrace": "VERSION"}
+, "repository": {
+  "type": "git",
+  "url": "https://github.com/gracelang/minigrace.git"
+  }
 , "contributors":
   [ { "name": "Andrew P. Black"
     , "email": "black@cs.pdx.edu"
     , "url": "http://www.cs.pdx.edu/~black"
+    },
+    { "name": "Dmitri Murphy"
+    , "email": "dmitri2@pdx.edu"
+    , "url": "http://www.cs.pdx.edu/~dmitri2"
     }
-  , "Dmitri Murphy"
   ]
 , "license": "GPL-3.0"
 }
