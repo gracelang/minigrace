@@ -1777,7 +1777,7 @@ def memberNode is public = object {
 
         method parts { list [requestPart.request(nameString).setStart(reqPos)] }
         method arguments { emptySeq }
-        method argumentsDo { }
+        method argumentsDo(action) { }
         method numArgs { 0 }
         method numTypeArgs {
             if (false == generics) then { 0 } else { generics.size }

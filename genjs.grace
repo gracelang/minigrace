@@ -1051,13 +1051,11 @@ method compileop(o) {
     o.register := register
 }
 method compileNormalArguments(o, args) {
-    for (o.parts) do { part ->
-        for (part.args) do { p ->
-            if ( p.isIdentifier && emitUndefinedChecks ) then {
-                compileCheckForUndefinedIdentifier(p)
-            }
-            args.push(compilenode(p))
+    o.argumentsDo { a ->
+        if (a.isIdentifier && emitUndefinedChecks) then {
+            compileCheckForUndefinedIdentifier(a)
         }
+        args.push(compilenode(a))
     }
 }
 method compileTypeArguments(o, args) {
