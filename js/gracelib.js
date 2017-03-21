@@ -3816,15 +3816,18 @@ function prelude_clone (argcv, obj) {
 Grace_prelude.methods['clone(1)$build(3)'] = prelude_clone_build;
 
 function prelude_clone_build (ignore, obj, ouc, aliases, exclusions) {
-    // shallow copy
+    // shallow copy fields
     ouc.className = obj.className;
-    ouc.methods = Object.create(obj.methods);
-        // a new object with obj.methods as its prototype
+    ouc.methods = Object.create(Object.getPrototypeOf(obj.methods));
+    for (var attr in obj.methods) {
+        if (obj.methods.hasOwnProperty(attr))
+            ouc.methods[attr] = obj.methods[attr];
+    }
     ouc.mutable = obj.mutable;
-    ouc.data = {};
     if (obj.noSuchMethodHandler) {
         ouc.noSuchMethodHandler = obj.noSuchMethodHandler;
     }
+    ouc.data = {};
     for (var attr in obj.data) {
         if (obj.data.hasOwnProperty(attr))
             ouc.data[attr] = obj.data[attr];
