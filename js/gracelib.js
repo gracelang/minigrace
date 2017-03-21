@@ -3819,6 +3819,9 @@ function prelude_clone_build (ignore, obj, ouc, aliases, exclusions) {
         // a new object with obj.methods as its prototype
     ouc.mutable = obj.mutable;
     ouc.data = {};
+    if (obj.noSuchMethodHandler) {
+        ouc.noSuchMethodHandler = obj.noSuchMethodHandler;
+    }
     for (var attr in obj.data) {
         if (obj.data.hasOwnProperty(attr))
             ouc.data[attr] = obj.data[attr];
