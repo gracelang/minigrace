@@ -1274,52 +1274,54 @@ method collectParentNames(node) {
 }
 
 method gatherInheritedNames(node) is confidential {
-    var inhNode := node.superclass
-    def objScope = node.scope
-    var superScope
-    var inheritedKind := k.inherited
-    if (false == inhNode) then {
-        def gO = ast.identifierNode.new("graceObject", false) scope(objScope)
-        inhNode := ast.inheritNode.new(gO) scope(objScope)
-        superScope := graceObjectScope
-        inheritedKind := k.graceObjectMethod
-    } else {
-        superScope := objScope.scopeReferencedBy(inhNode.value)
-        // If superScope is the universal scope, then we have no information
-        // about the inherited attributes
-        if (superScope.isUniversal.not) then {
-            if (ast.nullNode != superScope.node) then {
-                // superScope.node == nullNode when superScope describes
-                // an imported module.
-                collectParentNames(superScope.node)
+    if (node.isObject) then {
+        var inhNode := node.superclass
+        def objScope = node.scope
+        var superScope
+        var inheritedKind := k.inherited
+        if (false == inhNode) then {
+            def gO = ast.identifierNode.new("graceObject", false) scope(objScope)
+            inhNode := ast.inheritNode.new(gO) scope(objScope)
+            superScope := graceObjectScope
+            inheritedKind := k.graceObjectMethod
+        } else {
+            superScope := objScope.scopeReferencedBy(inhNode.value)
+            // If superScope is the universal scope, then we have no information
+            // about the inherited attributes
+            if (superScope.isUniversal.not) then {
+                if (ast.nullNode != superScope.node) then {
+                    // superScope.node == nullNode when superScope describes
+                    // an imported module.
+                    collectParentNames(superScope.node)
+                } else {
+                    util.log 70 verbose "‹{node.nameString}›.superscope.node == nullNode"
+                }
             } else {
-                util.log 70 verbose "‹{node.nameString}›.superscope.node == nullNode"
+                util.log 70 verbose "superscope of {node.nameString} is universal"
             }
-        } else {
-            util.log 70 verbose "superscope of {node.nameString} is universal"
         }
-    }
-    superScope.elements.keysDo { each ->
-        if (each != "self") then {
-            objScope.addName(each) as(inheritedKind)
-            inhNode.providedNames.add(each)
+        superScope.elements.keysDo { each ->
+            if (each != "self") then {
+                objScope.addName(each) as(inheritedKind)
+                inhNode.providedNames.add(each)
+            }
         }
-    }
-    inhNode.aliases.do { a ->
-        def old = a.oldName.nameString
-        if (superScope.contains(old)) then {
-            inhNode.providedNames.add(a.newName.nameString)
-        } else {
-            errormessages.syntaxError("can't define an alias for {old} " ++
-                "because it is not present in the inherited object")
-                atRange(a.oldName.range)
+        inhNode.aliases.do { a ->
+            def old = a.oldName.nameString
+            if (superScope.contains(old)) then {
+                inhNode.providedNames.add(a.newName.nameString)
+            } else {
+                errormessages.syntaxError("can't define an alias for {old} " ++
+                    "because it is not present in the inherited object")
+                    atRange(a.oldName.range)
+            }
         }
-    }
-    inhNode.exclusions.do { exId ->
-        inhNode.providedNames.remove(exId.nameString) ifAbsent {
-            errormessages.syntaxError("can't exclude {exId.canonicalName} " ++
-                "because it is not present in the inherited object")
-                atRange(exId.range)
+        inhNode.exclusions.do { exId ->
+            inhNode.providedNames.remove(exId.nameString) ifAbsent {
+                errormessages.syntaxError("can't exclude {exId.canonicalName} " ++
+                    "because it is not present in the inherited object")
+                    atRange(exId.range)
+            }
         }
     }
 }

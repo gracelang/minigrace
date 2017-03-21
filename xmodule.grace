@@ -568,9 +568,10 @@ method buildGctFor(module) {
                 v.scope.elements.keysDo { m -> meths.push(m) }
             }
             if (v.returnsObject) then {
-                def ob = v.value
+                def ob = v.returnedObjectScope.node
                 def obConstructors = [ ]
-                for (ob.value) do {nd->
+                if (ob.isObject) then {
+                  for (ob.value) do {nd->
                     if (nd.isClass) then {
                         def factMethNm = nd.nameString
                         obConstructors.push(factMethNm)
@@ -581,6 +582,7 @@ method buildGctFor(module) {
                         gct.at "methods-of:{v.name.value}.{factMethNm}"
                             put(exportedMethods.sort)
                     }
+                  }
                 }
                 if (obConstructors.size > 0) then {
                     gct.at "constructors-of:{v.name.value}"
