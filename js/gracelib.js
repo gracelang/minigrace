@@ -3322,7 +3322,8 @@ function dealWithNoMethod(name, target, argList) {
 
 function closeMatchesForMethodNamed(mName, obj) {
     // the method with name mName is not in the methods of obj.
-    // Returns a list of close matches to mName.
+    // Returns a list of up to 4 close matches to mName.
+    var matchesFound = 0;
     var matches = [];
     var gName = new GraceString(mName);
     for (var candidate in obj.methods) {
@@ -3333,6 +3334,8 @@ function closeMatchesForMethodNamed(mName, obj) {
             if (Grace_isTrue(request(em, "name(1)mightBeIntendedToBe(1)",
                     [1, 1], gCand, gName))) {
                 matches.push(canonicalMethodName(gCand._value));
+                matchesFound = matchesFound + 1;
+                if (matchesFound === 4)  { return matches; }
             }
         }
     }
