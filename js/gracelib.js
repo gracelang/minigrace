@@ -3815,7 +3815,8 @@ Grace_prelude.methods['clone(1)$build(3)'] = prelude_clone_build;
 function prelude_clone_build (ignore, obj, ouc, aliases, exclusions) {
     // shallow copy
     ouc.className = obj.className;
-    ouc.methods = obj.methods;
+    ouc.methods = Object.create(obj.methods);
+        // a new object with obj.methods as its prototype
     ouc.mutable = obj.mutable;
     ouc.data = {};
     for (var attr in obj.data) {
