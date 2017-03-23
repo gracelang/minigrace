@@ -31,7 +31,7 @@ class newPrelude {
     
     method compareProtocols {
         def mSelf = mirror.reflect(self).methodNames --
-                    self.set ["hook", "compareProtocols", "doIt"]
+                    self.set ["hook", "compareProtocols", "doIt(_)"]
         def mPrelude = mirror.reflect(_prelude).methodNames
         if (mPrelude == mSelf) then {
             true
@@ -47,13 +47,12 @@ class newPrelude {
             false
         }
     }
-
     
     method hook {
         self.abstract
     }
     
-    method doIt { hook }
+    method doIt(a) { hook }
 }
 
 testSuite {
@@ -61,12 +60,18 @@ testSuite {
         assert {newPrelude.hook} shouldRaise (SubobjectResponsibility)
     }
     
-    test "prelude inheritance" by {
+    test "prelude inheritance contains set(_)" by {
         def mNewPrelude = mirror.reflect(newPrelude).methodNames
         assert (mNewPrelude.contains "set(_)")
             description "method 'set(_)' missing from newPrelude"
+    }
+    test "prelude inheritance contains compareProtocols" by {
+        def mNewPrelude = mirror.reflect(newPrelude).methodNames
         assert (mNewPrelude.contains "compareProtocols")
             description "method 'compareProtocols' missing from newPrelude"
+    }
+    test "prelude inheritance contains Sequence" by {
+        def mNewPrelude = mirror.reflect(newPrelude).methodNames
         assert (mNewPrelude.contains "Sequence")
             description "type 'Sequence' missing from newPrelude"
     }
