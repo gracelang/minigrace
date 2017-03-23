@@ -265,7 +265,9 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 $(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
 	cp -p $< $@
 
-j1-minigrace: $(JS-KG) $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js)
+j1-minigrace: $(JS-KG) $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/buildinfo.js
+
+j1/buildinfo.js: j1/buildinfo.grace
 
 j2/animation.gct j2/animation.js: j2/timer.gct j2/timer.js
 
@@ -273,7 +275,12 @@ j2/rtobjectdraw.gct j2/rtobjectdraw.js: j2/requireTypes.gct j2/requireTypes.js
 
 j2/stobjectdraw.gct j2/stobjectdraw.js: j2/staticTypes.gct j2/staticTypes.js
 
-j2-minigrace: j1-minigrace j1/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js)
+j2/buildinfo.grace: buildinfo.grace
+	cp -p $< $@
+
+j2/buildinfo.js: j2/buildinfo.grace
+
+j2-minigrace: j1-minigrace j1/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) j2/buildinfo.js
 
 $(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
 	cp -p $< $@
