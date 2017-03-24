@@ -68,7 +68,7 @@ CREATE_J1 := $(shell if [ ! -e j1 ] ; then mkdir -p j1 ; fi)
 CREATE_J2 := $(shell if [ ! -e j2 ] ; then mkdir -p j2 ; fi)
 CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
 
-all: minigrace-environment $(C_MODULES_GSO) $(WEBFILES)
+all: minigrace-environment minigrace.js.env $(C_MODULES_GSO) $(WEBFILES)
 
 .PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects dev-ide dev-ideDeploy echo ide ide-js ideBuild ideBuild-js ideDeploy ideDeploy-js fullclean install j1-minigrace j2-minigrace js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env old-js-one old-js-two pull-web-editor pull-objectdraw selfhost-stats selftest selftest-js samples sample-% test test.js test.js.compile uninstall
 
@@ -172,7 +172,6 @@ echo:
 	@echo WEBFILES = $(WEBFILES) "\n"
 	@echo WEBFILES_STATIC = $(sort $(WEBFILES_STATIC)) "\n"
 	@echo WEBFILES_DYNAMIC = $(sort $(WEBFILES_DYNAMIC)) "\n"
-	@echo Wanted WEBFILES_STATIC = $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES_STATIC:%=js/%)))
 	@echo JSONLY = $(JSONLY)
 	@echo KG = $(KG):
 	@echo STUBS = $(STUBS)
@@ -232,7 +231,7 @@ ideDeploy: ideBuild
 
 ide-js: ideDeploy-js
 
-ideBuild-js: j2-minigrace pull-brace grace-web-editor/scripts/setup.js grace-web-editor/scripts/background.js $(WEBFILES_STATIC:%=js/%) $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES_DYNAMIC:%=j2/%))) $(ALL_LIBRARY_MODULES:%.grace=j2/%.js)
+ideBuild-js: j2-minigrace minigrace.js.env pull-brace grace-web-editor/scripts/setup.js grace-web-editor/scripts/background.js $(WEBFILES_STATIC:%=js/%) $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES_DYNAMIC:%=j2/%))) $(ALL_LIBRARY_MODULES:%.grace=j2/%.js)
 	./tools/includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	./tools/calc-IDE-version
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
@@ -268,6 +267,7 @@ $(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
 j1-minigrace: $(JS-KG) $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/buildinfo.js
 
 j1/buildinfo.js: j1/buildinfo.grace
+	$(JS-KG)/minigrace-js $(VERBOSITY) --make --target js --dir j1 $<
 
 j2/animation.gct j2/animation.js: j2/timer.gct j2/timer.js
 
@@ -436,7 +436,7 @@ $(MGSOURCEFILES:%.grace=%.gso): $(MGSOURCEFILES:%.grace=%.gct)
 $(MGSOURCEFILES:%.grace=%.gct): %.gct: %.grace standardGrace.gct l1/minigrace
 	GRACE_MODULE_PATH=.:.. l1/minigrace $(VERBOSITY) --make --noexec $<
 
-$(SOURCEFILES:%.grace=j1/%.js): j1/%.js: %.grace $(JS-KG)/minigrace-js
+$(REALSOURCEFILES:%.grace=j1/%.js): j1/%.js: %.grace $(JS-KG)/minigrace-js
 	$(JS-KG)/minigrace-js $(VERBOSITY) --make --target js --dir j1 $<
 
 $(SOURCEFILES:%.grace=j1/%.gct): j1/%.gct: %.grace $(JS-KG)/minigrace-js

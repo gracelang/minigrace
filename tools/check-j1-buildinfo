@@ -8,19 +8,19 @@ OBJECT_PATH=$4
 # Regenerate the file buildinfo.grace, but only if necessary.
 # If none of the info has changed, take case not to change the timestamp
 
-echo "method gitrevision { \"l1 compiler\" }" > buildinfo_tmp.grace.$$
-echo "method gitgeneration { \"l1 compiler\" }" >> buildinfo_tmp.grace.$$
+echo "method gitrevision { \"j1 compiler\" }" > buildinfo_tmp.grace.$$
+echo "method gitgeneration { \"j1 compiler\" }" >> buildinfo_tmp.grace.$$
 echo "method prefix { \"$PREFIX\" }" >> buildinfo_tmp.grace.$$
 echo "method includepath { \"$INCLUDE_PATH\" }" >> buildinfo_tmp.grace.$$
 echo "method modulepath { \"$MODULE_PATH\" }" >> buildinfo_tmp.grace.$$
 echo "method objectpath { \"$OBJECT_PATH\" }" >> buildinfo_tmp.grace.$$
 #	@echo "method authors { ‹$$(./tools/git-authors)› }" >> buildinfo_tmp.grace.$$
 
-if ! cmp -s buildinfo_tmp.grace.$$ l1/buildinfo.grace
+if ! cmp -s buildinfo_tmp.grace.$$ j1/buildinfo.grace
 then 
-    mv buildinfo_tmp.grace.$$ l1/buildinfo.grace
-    echo "l1/buildinfo rebuilt."
+    mv buildinfo_tmp.grace.$$ j1/buildinfo.grace
+    echo "j1/buildinfo rebuilt."
 else
     rm buildinfo_tmp.grace.$$
-    echo "l1/buildinfo up-to-date."
+    echo "j1/buildinfo up-to-date."
 fi
