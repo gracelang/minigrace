@@ -1,2 +1,1 @@
-the value of the counter is 1, should be 1
-f is 10, should be 10
+../js/tests/t207_outerSetterIssue186.out

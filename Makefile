@@ -109,7 +109,7 @@ clean:
 	cd js && rm -f $(SOURCEFILES:%.grace=%.js)
 	rm -f debugger.o
 	rm -f standardGrace.{c,gcn,gct} js/standardGrace.js collectionsPrelude.{c,gcn,gct} js/collectionsPrelude.js
-	rm -rf l1 l2 buildinfo.grace
+	rm -rf l1 l2 j1 j2 buildinfo.grace
 	rm -f $(SOURCEFILES:.grace=.c) minigrace.c
 	rm -f *.gcn *.gct
 	rm -f $(STUB_GCTS)
