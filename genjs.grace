@@ -1422,7 +1422,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
     }
     compileobjouter(moduleObject, "var_prelude")
     def imported = []
-    if (isPrelude) then {  // compile components in non-standard order
+    if (modname == "standardGrace") then {  // compile components in non-standard order
         moduleObject.methodsDo { o -> compilenode(o) }
         moduleObject.externalsDo { o -> imported.push(o.path) }
         moduleObject.value.do { o ->    // this treats importNodes as executable
