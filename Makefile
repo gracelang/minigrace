@@ -506,11 +506,11 @@ $(JS-KG):
 	cp -R node_modules/minigrace/* $(JS-KG)
 	-ls -l /home/travis/build/gracelang/minigrace/$(JS-KG)/
 
-npm-build-kg: minigrace-js-env
+npm-build-kg: minigrace.js.env
 	mkdir -p npm-build
 	rm -rf npm-build/*
 	cp npm-js-kg.json npm-build/package.json
-	-@cp js/*.js js/*.gct js/grace js/grace-debug npm-build/
+	-@cp j2/*.js j2/*.gct js/grace js/grace-debug npm-build/
 	-@cp js/minigrace-js js/compiler-js npm-build/
 # "-" prefix means ignore exit status!
 
