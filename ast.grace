@@ -83,6 +83,26 @@ method positionOfNext (needle:String) after (pos:Position) -> Position {
     line (lineNr) column (found)
 }
 
+method positionOfNext (needle1:String) or (needle2:String)
+          after (pos:Position) -> Position {
+    def sourceLines = util.lines
+    var lineNr := pos.line
+    if (lineNr == 0) then { return noPosition }
+    var found := sourceLines.at(lineNr).indexOf (needle1) startingAt (pos.column + 1)
+    if (found == 0) then {
+        found := sourceLines.at(lineNr).indexOf (needle2) startingAt (pos.column + 1)
+    }
+    while { found == 0 } do {
+        lineNr := lineNr + 1
+        if (lineNr > sourceLines.size) then { return noPosition }
+        found := sourceLines.at(lineNr).indexOf (needle1)
+        if (found == 0) then {
+            found := sourceLines.at(lineNr).indexOf (needle2)
+        }
+    }
+    line (lineNr) column (found)
+}
+
 def lineLength is public = 80
 def uninitialized = Singleton.named "uninitialized"
 method listMap(l, b) ancestors(as) is confidential {
@@ -1904,6 +1924,9 @@ def typeParametersNode is public = object {
     var params is public := params'
     method asString { toGrace 0 }
     method declarationKindWithAncestors(as) { k.typeparam }
+    method end -> Position {
+        positionOfNext "]]" or "⟧" after (params.last.end)
+    }
 
     method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitTypeParameters(self) up(as)) then {
