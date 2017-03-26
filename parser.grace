@@ -2633,6 +2633,7 @@ method methodsignature(sameline) {
 }
 
 method typeparameters {
+    def openBracket = sym
     next
     def typeIds = [ ]
     while {accept("identifier")} do {
@@ -2645,10 +2646,10 @@ method typeparameters {
         }
     }
     typeIds.do { each -> each.isBindingOccurrence := true }
-    def result = ast.typeParametersNode.new(typeIds)
+    def result = ast.typeParametersNode.new(typeIds).setPositionFrom(openBracket)
     if (sym.kind != "rgeneric") then {
         def suggestion = errormessages.suggestion.new
-        suggestion.insert(">")afterToken(lastToken)
+        suggestion.insert "⟧" afterToken (lastToken)
         errormessages.syntaxError("a list of type parameters starting with '⟦' must end with '⟧'.")atPosition(
             lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
     }
