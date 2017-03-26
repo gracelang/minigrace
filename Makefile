@@ -480,6 +480,9 @@ mirrors.gso: mirrors.c
 module-test-js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.js) $(TYPE_DIALECTS:%=modules/%.gso)
 	modules/tests/harness_js minigrace
 
+module.test.js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.js)
+	modules/tests/harness-js-js j2/minigrace-js
+
 modules/curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC curl.c -lcurl
 
