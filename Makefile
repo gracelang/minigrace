@@ -531,19 +531,19 @@ oldWeb: $(WEBFILES) js/sample js/ace/ace.js
 	rsync -a -l -z js/sample/graphics/ $(WEB_SERVER):$(WEB_DIRECTORY)
 
 pull-web-editor:
-#	@if [ -e grace-web-editor ] ; \
-#       then printf "grace-web-editor: " ; cd grace-web-editor; git pull ; \
-#       else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi
+	@if [ -e grace-web-editor ] ; \
+       then printf "grace-web-editor: " ; cd grace-web-editor; git pull ; \
+       else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi
 
 pull-objectdraw:
-#	@if [ -e objectdraw ] ; \
-#       then printf "objectdraw: " ; cd objectdraw; git pull ; \
-#       else git clone https://github.com/gracelang/objectdraw/ ; fi
+	@if [ -e objectdraw ] ; \
+       then printf "objectdraw: " ; cd objectdraw; git pull ; \
+       else git clone https://github.com/gracelang/objectdraw/ ; fi
 
 pull-brace: pull-web-editor
-#	@if [ -e grace-web-editor/brace ] ; \
-#       then printf "grace-web-editor/brace: " ; cd grace-web-editor/brace; git pull ; \
-#       else git clone https://github.com/gracelang/brace/ grace-web-editor/brace ; fi
+	@if [ -e grace-web-editor/brace ] ; \
+       then printf "grace-web-editor/brace: " ; cd grace-web-editor/brace; git pull ; \
+       else git clone https://github.com/gracelang/brace/ grace-web-editor/brace ; fi
 
 sample-dialects: $(DIALECT_DEPENDENCIES)
 	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
