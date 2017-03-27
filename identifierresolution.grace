@@ -99,7 +99,10 @@ class newScopeIn(parent') kind(variety') {
             atRange(nd.range)
     }
     method contains (n) {
-        elements.contains(n)
+        if (elements.contains(n)) then { return true }
+        if (isInBeginningStudentDialect.not) then { return false }
+        if (self ≠ preludeScope) then { return false }
+        return isSpecial(n)
     }
     method withSurroundingScopesDo (b) {
         // do b in this scope and all surounding scopes.
@@ -116,8 +119,18 @@ class newScopeIn(parent') kind(variety') {
     method keysAndKindsDo (action) {
         elements.keysAndValuesDo(action)
     }
-    method kind (n) { elements.get(n) }
-    method kind (n) ifAbsent (action) { elements.get(n) ifAbsent (action) }
+    method kind (n) {
+        if { isInBeginningStudentDialect } then {
+            if (isSpecial(n)) then { return k.methdec }
+        }
+        elements.get(n)
+    }
+    method kind (n) ifAbsent (action) {
+        if { isInBeginningStudentDialect } then {
+            if (isSpecial(n)) then { return k.methdec }
+        }
+        elements.get(n) ifAbsent (action)
+    }
     method at(n) putScope(scp) {
         elementScopes.put(n, scp)
     }
@@ -176,6 +189,9 @@ class newScopeIn(parent') kind(variety') {
                 return true
             }
         }
+        if { isInBeginningStudentDialect } then {
+            if (isSpecial(nm)) then { return true }
+        }
         return false
     }
     method kindInNest(nm) {
@@ -190,6 +206,9 @@ class newScopeIn(parent') kind(variety') {
                 }
             }
         }
+        if { isInBeginningStudentDialect } then {
+            if (isSpecial(nm)) then { return k.methdec }
+        }
         return k.undefined
     }
     method scopeInNest(nm) {
@@ -201,17 +220,26 @@ class newScopeIn(parent') kind(variety') {
                 return s.getScope(nm)
             }
         }
+        if { isInBeginningStudentDialect } then {
+            if (isSpecial(nm)) then { return preludeScope }
+        }
         return universalScope
     }
     method thatDefines(name) ifNone(action) {
         withSurroundingScopesDo { s->
             if (s.contains(name)) then { return s }
         }
+        if { isInBeginningStudentDialect } then {
+            if (isSpecial(name)) then { return preludeScope }
+        }
         action.apply
     }
     method thatDefines(name) {
         withSurroundingScopesDo { s->
             if (s.contains(name)) then { return s }
+        }
+        if { isInBeginningStudentDialect } then {
+            if (isSpecial(name)) then { return preludeScope }
         }
         print(self.asStringWithParents)
         ProgrammingError.raise "no scope defines {name}"
@@ -315,6 +343,28 @@ class newScopeIn(parent') kind(variety') {
         }
         errormessages.syntaxError "there is no method {aNode.canonicalName}."
                 atRange(aNode.range)
+    }
+    method isSpecial(name) is confidential {
+        if (name.startsWith "list") then {
+            endsWithParenthesizedNumber(name, 5)
+        } elseif { name.startsWith "set" } then {
+            endsWithParenthesizedNumber(name, 4)
+        } elseif { name.startsWith "sequence" } then {
+            endsWithParenthesizedNumber(name, 9)
+        } else {
+            false
+        }
+    }
+    method endsWithParenthesizedNumber(name, startIndex) is confidential {
+        def sz = name.size
+        if ( startIndex ≥ sz ) then { return false }
+        if ( name.at(startIndex) ≠ "(" ) then { return false }
+        var i := startIndex + 1
+        while { name.at(i).startsWithDigit } do {
+            i := i + 1
+            if (i > sz) then { return false }
+        }
+        ( name.at(i) == ")" ) && ( i == sz )
     }
     method scopeReferencedBy(nd:ast.AstNode) {
         // Finds the scope referenced by astNode nd.
@@ -919,6 +969,8 @@ method processGCT(gct, importedModuleScope) {
     }
 }
 
+var isInBeginningStudentDialect := false
+
 method setupContext(moduleObject) {
     // define the built-in names
     util.setPosition(0, 0)
@@ -1006,6 +1058,9 @@ method setupContext(moduleObject) {
                                            then { k.typedec } else { k.methdec })
         }
         processGCT(gctDict, preludeScope)
+    }
+    if (dialectName == "beginningStudent") then {
+        isInBeginningStudentDialect := true
     }
 }
 
