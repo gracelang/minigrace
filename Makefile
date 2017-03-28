@@ -82,7 +82,9 @@ include Makefile.mgDependencies
 # The rules that follow are in alphabetical order.  Keep them that way!
 
 $(ALL_LIBRARY_MODULES:%.grace=j2/%.js): j2/%.js: modules/%.grace
+	@if ( ! cmp --quiet j2/dom.js js/dom.js ) ; then echo "j2/dom.js and js/dom.js are different !" ; fi
 	GRACE_MODULE_PATH=modules j2/minigrace-js $(VERBOSITY) --make --target js --dir j2 $<
+	@if ( ! cmp --quiet j2/dom.js js/dom.js ) ; then echo "j2/dom.js and js/dom.js are different after compiling $<!" ; cp js/dom.js j2/dom.js ; fi
 
 $(ALL_LIBRARY_MODULES:%.grace=j2/%.gct): j2/%.gct: modules/%.grace
 	GRACE_MODULE_PATH=modules j2/minigrace-js $(VERBOSITY) --make --target js --dir j2 $<
@@ -235,6 +237,7 @@ ideBuild-js: j2-minigrace minigrace.js.env pull-brace grace-web-editor/scripts/s
 	./tools/includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	./tools/calc-IDE-version
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
+	@if ( ! cmp --quiet j2/dom.js js/dom.js ) ; then echo "j2/dom.js and js/dom.js are different in ideBuild-js" ; cp js/dom.js j2/dom.js ; fi
 	ln -f $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES_STATIC:%=js/%))) grace-web-editor/js
 	ln -f $(WEBFILES_DYNAMIC:%=j2/%) grace-web-editor/js
 	ln -f $(GRAPHIX:%.grace=j2/%.js) grace-web-editor/js
