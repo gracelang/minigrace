@@ -351,6 +351,8 @@ class newScopeIn(parent') kind(variety') {
             endsWithParenthesizedNumber(name, 4)
         } elseif { name.startsWith "sequence" } then {
             endsWithParenthesizedNumber(name, 9)
+        } elseif { name.startsWith "dictionary" } then {
+            endsWithParenthesizedNumber(name, 11)
         } else {
             false
         }
