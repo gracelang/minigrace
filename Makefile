@@ -283,7 +283,7 @@ j2/buildinfo.grace: buildinfo.grace
 
 j2/buildinfo.js: j2/buildinfo.grace
 
-j2-minigrace: j1-minigrace j1/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) j2/buildinfo.js
+j2-minigrace: j1-minigrace j1/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js)
 
 $(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
 	cp -p $< $@

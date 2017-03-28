@@ -68,7 +68,7 @@ j2/ast.gct: j2/util.gct j2/identifierKinds.gct
 j2/ast.js: j2/util.js j2/util.gct j2/identifierKinds.gct
 j2/buildinfo.js: j2/standardGrace.gct
 j2/compiler.gct: j2/util.gct j2/lexer.gct j2/ast.gct j2/parser.gct j2/genc.gct j2/genjs.gct j2/buildinfo.gct identifierresolution.gct
-j2/compiler.js: j2/genc.js j2/genjs.js j2/lexer.js j2/parser.js j2/identifierresolution.js j2/standardGrace.gct
+j2/compiler.js: j2/ast.gct j2/buildinfo.gct j2/genc.gct j2/genjs.gct j2/identifierresolution.gct j2/io.gct j2/lexer.gct j2/mirrors.gct j2/parser.gct j2/sys.gct j2/unicode.gct j2/util.gct j2/xmodule.gct
 j2/errormessages.gct: j2/util.gct j2/standardGrace.gct
 j2/errormessages.js: j2/util.js
 j2/genc.gct: j2/ast.gct j2/util.gct j2/stringMap.gct j2/xmodule.gct j2/errormessages.gct j2/standardGrace.gct
