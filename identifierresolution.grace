@@ -779,73 +779,39 @@ method checkForReservedName(node) {
     }
 }
 
-method isSameIgnoringCase(c1, c2) {
-    // necessary because the C library doesn't implement asLower or asUpper
-    if (c1 == c2) then { return true }
-    return (c1.ord - c2.ord).abs == 32
-}
-
-method reportUndeclaredIdentifier(node) {
-    def nodeScope = node.scope
+method suggestionsForIdentifier(node) {
     def nm = node.nameString
-    def nmSize = nm.size
-    def sizeLimit = nmSize * 2
-        // below which we want the startChars to match
-    def thresh = ((nmSize / 3) + 1).truncated
-    def suggestions = []
-    def startChar = nm.first
-    var suggestion
+    def suggestions = [ ]
+    def nodeScope = node.scope
+    def thresh = 4      // max number of suggestions
     nodeScope.withSurroundingScopesDo { s ->
         s.elements.keysDo { v ->
             if (errormessages.name (nm) mightBeIntendedToBe(v)) then {
-                suggestion := errormessages.suggestion.new
-                suggestion.replaceRange(node.linePos, node.linePos +
+                def sug = errormessages.suggestion.new
+                sug.replaceRange(node.linePos, node.linePos +
                     node.value.size - 1) with (v) onLine(node.line)
-                suggestions.push(suggestion)
+                suggestions.push(sug)
+                if (suggestions.size ≥ thresh) then { return suggestions }
             }
         }
     }
     nodeScope.elementScopes.keysDo { s ->
         if (nodeScope.elementScopes.get(s).contains(nm)) then {
-            suggestion := errormessages.suggestion.new
-            suggestion.insert("{s}.")atPosition(node.linePos)onLine(node.line)
-            suggestions.push(suggestion)
+            def sug = errormessages.suggestion.new
+            sug.insert "{s}." atPosition (node.linePos) onLine(node.line)
+            suggestions.push(sug)
+            if (suggestions.size ≥ thresh) then { return suggestions }
         }
     }
-    var highlightLength := node.value.size
-    if (node.value.contains "(") then {
-        util.log 10 verbose "node {node.value} on line {node.line} contains parens"
-        // apb: I think that this case can never happen
-        var i := 0
-        var found := false
-        for (node.value) do {c->
-            if ((c == "(") && (!found)) then {
-                highlightLength := i
-                found := true
-            }
-            i := i + 1
-        }
-    }
-    if (node.inRequest) then {
-        var extra := ""
-        if (node.value == "while") then {
-            suggestion := errormessages.suggestion.new
-            suggestion.append " do \{ \}" onLine(node.line)
-            suggestions.push(suggestion)
-        }
-        if (node.value == "for") then {
-            suggestion := errormessages.suggestion.new
-            suggestion.append " do \{ aVarName -> \}" onLine(node.line)
-            suggestions.push(suggestion)
-        }
-        errormessages.syntaxError ("unknown variable or method '{node.canonicalName}'. " ++
-              "This may be a spelling mistake or an attempt to access a method in another scope.{extra}")
-              atRange (node.range) withSuggestions (suggestions)
-    }
+}
+
+method reportUndeclaredIdentifier(node) {
+    def suggestions = suggestionsForIdentifier(node)
     errormessages.syntaxError("unknown variable or method '{node.canonicalName}'. " ++
           "This may be a spelling mistake or an attempt to access a variable in another scope.")
           atRange (node.range) withSuggestions (suggestions)
 }
+
 method reportAssignmentTo(node) declaredInScope(scp) {
     // Report a syntax error for an illegal assignment
 

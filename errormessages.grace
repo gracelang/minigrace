@@ -296,9 +296,12 @@ method readableStringFrom(xs:Collection) {
 }
 
 method name (p:String) mightBeIntendedToBe (target:String) {
+    if (p == "module()object") then { return false }
+    if (p.contains "$") then { return false }
     def parenIx = p.indexOf "(" ifAbsent { p.size + 1 }
     def pPrefix = p.substringFrom 1 to (parenIx - 1)
     if (target.startsWith(pPrefix)) then { return true }
+    if (target.size > (p.size * 2)) then { return false }
     def rng = name (p) matches (target) within 2
     if (rng == 0) then { return false }
     if (rng > (p.size * 2)) then { return false }  // found too far along
@@ -323,8 +326,8 @@ method name (p:String) matches (t:String) within (k:Number) {
     // D[i-1, j-1] and D[i, j-1], we can store only the current
     // column, which we do in h, and the value of D[i-1,j-1], which is
     // cached in c.  Moreover, since we are not interested in edit
-    // distances > k, it's only necessary to evalue the elments of the table
-    // around the diagonal.
+    // distances > k, it's necessary to evaluate only those elements
+    // of the table around the diagonal.
 
 
     def m = p.size
