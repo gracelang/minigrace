@@ -2066,6 +2066,7 @@ method doarray {
     // Accept a square-bracketed collection literal like [1,2,3].
 
     if (accept "lsquare") then {
+        def lSq = sym
         next
         var tmp
         var params := []
@@ -2100,7 +2101,7 @@ method doarray {
             errormessages.syntaxError("a collection beginning with a '[' must end with a ']'.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
         }
-        var o := ast.arrayNode.new(params)
+        def o = ast.arrayNode.new(params).setPositionFrom(lSq)
         values.push(o)
         next
     }
