@@ -1,4 +1,4 @@
-#pragma NativePrelude
+dialect "none"
 
 def BoundsError is public = ProgrammingError.refine "BoundsError"
 def IteratorExhausted is public = ProgrammingError.refine "IteratorExhausted"
@@ -943,6 +943,8 @@ class set⟦T⟧ {
         (0..(cap - 1)).do { i ->
             inner.at (i) put (unused)
         }
+
+        method isEmpty { size == 0 }
 
         method addAll(elements) {
             mods := mods + 1
