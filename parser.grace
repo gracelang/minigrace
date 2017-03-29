@@ -705,6 +705,11 @@ method doif {
         def localStatementIndent = statementIndent
         var minInd := statementIndent + 2
         if (accept("identifier") && (sym.value == "then")) then {
+            if ((sym.line > btok.line) && (sym.indent ≤ btok.indent)) then {
+                errormessages.syntaxError("the `then` part of an " ++
+                    "`if(_)then(_)...` must be indented more than the `if`")
+                    atRange(sym.line, sym.linePos, sym.linePos + 3)
+            }
             next
             if (sym.kind != "lbrace") then {
                 def suggestion = errormessages.suggestion.new
