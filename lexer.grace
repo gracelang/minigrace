@@ -286,7 +286,7 @@ class new {
             if (c == "\n") then {
                 errormessages.syntaxError "Incomplete pragma definition "
                     atRange(lineNumber, startPosition, linePosition)
-            } elseif{isSpaceChar(c)} then {
+            } elseif {isSpaceChar(c)} then {
                 if (accum == "pragma") then {
                     accum := ""
                     advanceTo(pragmaBodyState)
@@ -294,8 +294,7 @@ class new {
                     errormessages.syntaxError "Pragmas must start with #pragma "
                         atRange(lineNumber, startPosition, linePosition)
                 }
-            }
-            else {
+            } else {
                 store(c)
             }
         }
@@ -429,8 +428,7 @@ class new {
                 interpdepth := interpdepth - 1
                 inStr := true
                 advanceTo(quotedStringState)
-            }
-            else {
+            } else {
                 emit (rBraceToken)
                 advanceTo (defaultState)
             }
@@ -610,8 +608,7 @@ class new {
                 emit(multiLineStringToken(accum))
                 inStr := false
                 advanceTo(defaultState)
-            }
-            else {
+            } else {
                 store(c)
             }
         }
@@ -831,17 +828,22 @@ class new {
             }
         } else {
             def errorLine = util.lines.at(lineNumber)
-            def nextLine = if(util.lines.size >= (lineNumber + 1)) then {
-                util.lines.at(lineNumber + 1)
-            } else {
-                ""
-            }
+            def nextLine = if (util.lines.size >= (lineNumber + 1)) then {
+                    util.lines.at(lineNumber + 1)
+                } else {
+                    ""
+                }
             // Count the number of literal quotes in the next line.
             var i := 1
             var count := 0
             while { i <= nextLine.size } do {
-                if(nextLine.at(i) == "\"") then { count := count + 1 }
-                elseif { nextLine.at(i) == "\\" } then { i := i + 1 }
+                if (nextLine.at(i) == "\"") then {
+                    count := count + 1
+                } elseif {
+                    nextLine.at(i) == "\\"
+                } then {
+                    i := i + 1
+                }
                 i := i + 1
             }
             if ((count % 2) == 1) then {
