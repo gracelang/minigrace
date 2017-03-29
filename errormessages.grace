@@ -401,15 +401,9 @@ method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestion(s
 }
 
 method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions(suggestions) {
-    var loc := if(startpos == endpos) then {startpos.asString} else { "{startpos}-{endpos}" }
-    var arr := "----"
-    for (2..(startpos + errlinenum.asString.size)) do { _ ->
-        arr := arr ++ "-"
-    }
-    for (startpos..endpos) do { _ ->
-        arr := arr ++ "^"
-    }
-    util.syntaxError(message, errlinenum, ":{loc}", arr, suggestions)
+    syntaxError (message)
+          atRange (errlinenum, startpos, errlinenum, endpos)
+          withSuggestions (suggestions)
 }
 
 method syntaxError (message)
@@ -433,20 +427,34 @@ method syntaxError (message)
 }
 
 method error (message) atRange (r) {
-    error (message) atRange (r.start.line, r.start.column, r.end.column)
+    error (message)
+        atRange (r.start.line, r.start.column, r.end.line, r.end.column)
+        withSuggestions []
 }
-method error(message)atRange(errlinenum, startpos, endpos)withSuggestions(suggestions) {
-    var loc := if(startpos == endpos) then {startpos.asString} else { "{startpos}-{endpos}" }
+method error (message)
+          atRange (startline, startpos, endline, endpos)
+          withSuggestions (suggestions) {
+
+    // this variant allows for range to start and end on different lines.
+    def loc = if (startline == endline) then {
+        if (startpos == endpos)
+              then { startpos.asString }
+              else { "{startpos}-{endpos}" }
+    } else { "{startpos}-{endline}:{endpos}" }
     var arr := "----"
-    for (2..(startpos + errlinenum.asString.size)) do { _ ->
+    for (2..(startpos + startline.asString.size)) do { _ ->
         arr := arr ++ "-"
     }
     for (startpos..endpos) do { _ ->
         arr := arr ++ "^"
     }
-    util.generalError(message, errlinenum, ":{loc}", arr, suggestions)
+    util.generalError(message, startline, ":{loc}", arr, suggestions)
 }
-
+method error(message)atRange(errlinenum, startpos, endpos)withSuggestions(suggestions) {
+    error (message)
+          atRange (errlinenum, startpos, errlinenum, endpos)
+          withSuggestions (suggestions)
+}
 method error(message) atRange(errlinenum, startpos, endpos) {
     error (message) atRange(errlinenum, startpos, endpos) withSuggestions([])
 }
