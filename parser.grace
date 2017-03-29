@@ -168,12 +168,13 @@ method findNextValidToken(validFollowTokens) {
     return validToken
 }
 
-// Finds the closing brace for token (that is the beginning of a control
-// structure) -- an opening brace. Returns an object with two fields: found
-// and tok. If a closing brace is found, found is set to true, and tok is set to
-// the closing brace. Otherwise found is set to false, and tok is set to the
-// token that the closing brace should appear after.
 method findClosingBrace(token, inserted) {
+    // Finds the closing brace for token (that is the beginning of a control
+    // structure) -- an opening brace. Returns an object with two fields: found
+    // and tok. If a closing brace is found, found is set to true, and tok is set to
+    // the closing brace. Otherwise found is set to false, and tok is set to the
+    // token that the closing brace should appear after.
+
     var n := sym
     var numOpening := if (inserted) then {1} else {0}
     var numClosing := 0
@@ -183,8 +184,11 @@ method findClosingBrace(token, inserted) {
     }
     // Skip all tokens on the same line first.
     while {(n.kind != "eof") && (n.line == token.line)} do {
-        if (n.kind == "lbrace") then { numOpening := numOpening + 1 }
-        elseif { n.kind == "rbrace" } then { numClosing := numClosing + 1 }
+        if (n.kind == "lbrace") then {
+            numOpening := numOpening + 1
+        } elseif { n.kind == "rbrace" } then {
+            numClosing := numClosing + 1
+        }
         n := n.next
     }
     // Skip all tokens that have greater indent than the target closing brace.
@@ -607,6 +611,9 @@ method blockBody(params) beginningWith (btok) {
 method doif {
     if (accept("identifier") && (sym.value == "if")) then {
         def btok = sym
+        def minStartColumn = sym.indent + 3
+            // if the `if` has indent 0, then `then`, `else` etc. must
+            // start in column 3 or more.
         next
         def opener = if ((sym.kind == "lparen") || {sym.kind == "lbrace"})
                         then { sym.value } else { "-missing-" }
@@ -692,22 +699,22 @@ method doif {
         var cond := values.pop
         var body := []
 
-        // These two are for else/elseif handling. elseif is turned into
-        // nested if statements for the AST, so curelse points to the
-        // most deeply-nested of those (where any eventual "else" block's
-        // statements will go). elseblock contains the statements of the
-        // top-level "else" block - if there are any elseifs, that
-        // consists of only one statement, another if.
         var elseblock := []
         var curelse := elseblock
+            // These two variables are for else/elseif handling. An 'elseif' is
+            // turned into nested 'if' statements for the AST; `curelse` points
+            // to the most deeply-nested of those (where any eventual "else"
+            // blocks will go). `elseblock` contains the statements of the
+            // top-level 'else' block --- if there are any 'elseif's, that top-
+            // level 'else' will comprise just one statement: another if.
         var v
         def localMin = minIndentLevel
         def localStatementIndent = statementIndent
         var minInd := statementIndent + 2
         if (accept("identifier") && (sym.value == "then")) then {
-            if ((sym.line > btok.line) && (sym.indent ≤ btok.indent)) then {
-                errormessages.syntaxError("the `then` part of an " ++
-                    "`if(_)then(_)...` must be indented more than the `if`")
+            if (sym.linePos < minStartColumn) then {
+                errormessages.syntaxError("the 'then' part of an " ++
+                    "'if(_)then(_)…' must be indented more than the 'if'")
                     atRange(sym.line, sym.linePos, sym.linePos + 3)
             }
             next
@@ -760,6 +767,11 @@ method doif {
                 // Currently, the parser just accepts arbitrarily many
                 // "elseifs", turning them into ifs inside the else.
                 // TODO: allow blocks after elseif to contain a sequence of expressions.
+                if (sym.linePos < minStartColumn) then {
+                    errormessages.syntaxError("the 'elseif' part of an " ++
+                        "'if(_)then(_)…elseif(_)' must be indented more than the 'if'")
+                        atRange(sym.line, sym.linePos, sym.linePos + 5)
+                }
                 statementToken := sym
                 next
                 if (sym.kind != "lbrace") then {
@@ -809,12 +821,12 @@ method doif {
                         } else {
                             suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression» \} then \{")
                         }
-                        errormessages.syntaxError("an elseif statement must have an expression in braces after the 'elseif'.")atPosition(
+                        errormessages.syntaxError("an elseif clause must have an expression in braces after the 'elseif'.")atPosition(
                             sym.line, sym.linePos)withSuggestion(suggestion)
                     } else {
                         if (nextTok == sym) then {
                             suggestion.insert("«expression»")afterToken(lastToken)
-                            errormessages.syntaxError("an elseif statement must have an expression in braces after the 'elseif'.")atPosition(
+                            errormessages.syntaxError("an elseif clause must have an expression in braces after the 'elseif'.")atPosition(
                                 sym.line, sym.linePos)withSuggestion(suggestion)
                         } else {
                             //checkInvalidExpression
@@ -835,8 +847,12 @@ method doif {
                 }
                 next
                 econd := values.pop
-                if ((accept("identifier") &&
-                    (sym.value == "then"))) then {
+                if (accept "identifier" && (sym.value == "then")) then {
+                    if (sym.linePos < minStartColumn) then {
+                        errormessages.syntaxError("the 'then' part of an " ++
+                            "'if(_)…elseif(_)then(_)' must be indented more than the 'if'")
+                            atRange(sym.line, sym.linePos, sym.linePos + 3)
+                    }
                     next
                     ebody := []
                 } else {
@@ -866,8 +882,8 @@ method doif {
                             suggestion.insert(" then \{")afterToken(lastToken)
                         }
                     }
-                    errormessages.syntaxError("an elseif statement must have 'then' after the expression in braces.")atPosition(
-                        sym.line, sym.linePos)withSuggestion(suggestion)
+                    errormessages.syntaxError("an elseif clause must have 'then' after the expression in braces.")
+                          atPosition(sym.line, sym.linePos)withSuggestion(suggestion)
                 }
                 if (sym.kind != "lbrace") then {
                     def suggestion = errormessages.suggestion.new
@@ -882,7 +898,7 @@ method doif {
                     } else {
                         suggestion.replaceToken(lastToken)leading(false)trailing(true)with("then \{")
                     }
-                    errormessages.syntaxError("an elseif statement must have a '\{' after the 'then'.")atPosition(
+                    errormessages.syntaxError("an elseif clause must have a '\{' after the 'then'.")atPosition(
                         lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
                 }
                 next
@@ -903,7 +919,7 @@ method doif {
                             }
                         }
                         suggestion.deleteToken(sym)
-                        errormessages.syntaxError("an elseif statement must end with a '}'.")atPosition(
+                        errormessages.syntaxError("an 'elseif' clause must end with a '}'.")atPosition(
                             sym.line, sym.linePos)withSuggestion(suggestion)
                     }
                     v := values.pop
@@ -920,6 +936,11 @@ method doif {
                 curelse := newelse
             }
             if (accept("identifier") && (sym.value == "else")) then {
+                if (sym.linePos < minStartColumn) then {
+                    errormessages.syntaxError("the 'else' part of an " ++
+                        "'if(_)then(_)…else(_)' must be indented more than the 'if'")
+                        atRange(sym.line, sym.linePos, sym.linePos + 3)
+                }
                 next
                 if (sym.kind != "lbrace") then {
                     def suggestion = errormessages.suggestion.new
@@ -934,8 +955,9 @@ method doif {
                     } else {
                         suggestion.replaceToken(lastToken)leading(false)trailing(true)with("else \{")
                     }
-                    errormessages.syntaxError("an else statement must have a '\{' after the 'else'.")atPosition(
-                        lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+                    errormessages.syntaxError("an else clause must start with a '\{' after the 'else'.")
+                          atPosition(lastToken.line, lastToken.linePos + lastToken.size - 1)
+                          withSuggestion(suggestion)
                 }
                 next
                 // Just take all the statements and put them into
@@ -1185,7 +1207,7 @@ method trycatch {
             } else {
                 suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression»")
             }
-            errormessages.syntaxError("a try(_)catch(_) statement must have " ++
+            errormessages.syntaxError("a 'try(_)catch(_)…' statement must have " ++
                 "a block or an expression in parentheses after the 'try'.")
                 atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
         }
@@ -1246,16 +1268,17 @@ method trycatch {
                 suggestion.insert(" \{")afterToken(lastToken)
                 suggestions.push(suggestion)
             }
-            errormessages.syntaxError("a try(_)catch(_) statement must have either a matching block or an expression in parentheses after the 'catch'.")atPosition(
-                sym.line, sym.linePos)withSuggestions(suggestions)
+            errormessages.syntaxError("a 'try(_)catch(_)…' statement must have " ++
+                  "either a matching block or an expression in parentheses after the 'catch'.")
+                    atPosition(sym.line, sym.linePos) withSuggestions (suggestions)
         }
         cases.push(values.pop)
     }
     if (accept("identifier")onLineOf(tryTok) && (sym.value == "case")) then {
         def suggestion = errormessages.suggestion.new
         suggestion.replaceToken(sym)with("catch")
-        errormessages.syntaxError("a try-catch statement starts with a "
-                ++ "'try' and then zero or more 'catch' blocks; there "
+        errormessages.syntaxError("a 'try(_)catch(_)…' statement starts with a "
+                ++ "'try', followed by zero or more 'catch' blocks; there "
                 ++ "are no 'case' blocks.")
             atRange(sym.line, sym.linePos, sym.linePos + 3)
             withSuggestion(suggestion)
@@ -1274,8 +1297,10 @@ method trycatch {
                 } else {
                     suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression»")
                 }
-                errormessages.syntaxError("a try(_)catch(_)…finally(_) statement must have either a block or an expression in parentheses after the 'finally'.")atPosition(
-                    sym.line, sym.linePos)withSuggestion(suggestion)
+                errormessages.syntaxError("a 'try(_)catch(_)…finally(_)' statement " ++
+                    "must have either a block, or an expression in parentheses, " ++
+                    "after the 'finally'.")
+                    atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
             }
             if (sym.kind != "rparen") then {
                 checkBadOperators
@@ -2312,7 +2337,7 @@ method doclass {
     //   class objName.methodName (param1, param2) {
     //     inherit <expr>
     //     var x
-    //     method y(z) { ... }
+    //     method y(z) { … }
     // }
     // Such declarations are no longer supported, and produce an
     // error message starting with "dotted classes are no longer supported"
@@ -2322,7 +2347,7 @@ method doclass {
     // class methodName (param1, param2) {
     //     inherit <expr>
     //     var x
-    //     method y(z) { ... }
+    //     method y(z) { … }
     // }
     //
     // A class is compiled into a methodNode that contains
@@ -2332,7 +2357,7 @@ method doclass {
     //     object {
     //         inherit <expr>
     //         var x
-    //         method y(z) { ... }
+    //         method y(z) { … }
     //     }
     // }
     //
