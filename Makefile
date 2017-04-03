@@ -563,13 +563,14 @@ sample/dialects/staticTypes.gct sample/dialects/staticTypes.gso: $(DIALECT_DEPEN
 samples: sample-dialects js/sample-dialects
 # omitted for the time-being: js/sample-graphics
 
-selfhost-stats: minigrace-js-env
+selfhost-stats: minigrace.js.env
 	rm -rf selftest-js
 	mkdir -p selftest-js
-	cd selftest-js; ln -sf $(STUBS:%.grace=../js/%.gct) $(STUBS:%.grace=../js/%.js) .
+	cd selftest-js; ln -sf $(STUBS:%.grace=../j2/%.gct) $(STUBS:%.grace=../j2/%.js) .
 	cp -f $(SOURCEFILES) selftest-js    # copy makes the source file newer than the .gct
+	touch selftest-js/*
 	cd selftest-js; ln -sf ../js/gracelib.js ../js/unicodedata.js .
-	cd selftest-js; STATS=TRUE GRACE_MODULE_PATH=..:../js:../modules time ../minigrace-js $(VERBOSITY) --make --target js --module minigrace --dir generated --module minigrace compiler.grace
+	cd selftest-js; STATS=TRUE time ../j2/minigrace-js $(VERBOSITY) --make --target js --dir generated  compiler.grace
 # generated files go in a subdirectory, to avoid over-writing the files that
 # are being executed!
 

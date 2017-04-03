@@ -1,5 +1,5 @@
 language:
-  - c
+  - js
 env:
   - PREFIX=/usr/local
 compiler:
@@ -9,7 +9,6 @@ install:
 before_script:
   - git fetch --unshallow
 script:
-  - make test || ( cat tests/test.log ; exit 1)
-  - ([ -e ./minigrace ] && ( make test.js || ( cat js/tests/test.js.log ; exit 1 )))
-  - ([ -e ./minigrace ] && ( make test.js.js || ( cat js/tests/test.js.log ; exit 1 )))
+  - make test.js.js || ( cat tests/test.js.log ; exit 1)
+  - (make minigrace.js.env && make module.test.js) || ( cat modules/tests/test.log ; exit 1 )
 sudo: false
