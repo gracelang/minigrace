@@ -15,22 +15,13 @@ def DialectError is public = prelude.Exception.refine "DialectError"
 def gctCache = emptyDictionary
 def keyCompare = { a, b -> a.key.compare(b.key) }
 
-method builtInModules {
-    if (util.target == "c") then {
-        list [  "sys",
-                "io",
-                "imports",
-                "standardGrace",
-                "collectionsPrelude" ]
-    } else {
+def builtInModules =
         list [  "imports",
                 "io",
                 "mirrors",
                 "sys",
                 "unicode",
                 "util" ]
-    }
-}
 
 def currentDialect is public = object {
     var name is public := "standardGrace"
@@ -209,56 +200,7 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
     } else {
         sourceFile.exists
     }
-    if (util.target == "c") then {
-        def moduleFileGso = moduleFileGct.copy.setExtension ".gso"
-        def moduleFileGcn = moduleFileGct.copy.setExtension ".gcn"
-        def needsDynamic = isDialect || util.importDynamic ||
-            util.dynamicModule || { dynamicCModules.contains(nm) }
-        util.log 100 verbose "needsDynamic for {nm} is {needsDynamic}."
-        var binaryFile
-        var importsSet
-        if (needsDynamic) then {
-            dynamicCModules.add(nm)
-            binaryFile := moduleFileGso
-            importsSet := imports.other
-        } else {
-            binaryFile := moduleFileGcn
-            importsSet := imports.static
-        }
-        if (sourceExists.not && binaryFile.exists.not) then {
-            binaryFile := util.file(binaryFile) onPath (gmp) otherwise { l ->
-                def rl = errormessages.readableStringFrom(l)
-                errormessages.error(
-                    "I can't find {pn.shortName} or {binaryFile.shortName}; looked in {rl}.")
-                    atRange(sourceRange)
-            }
-            moduleFileGct.setDirectory(binaryFile.directory)
-            if (moduleFileGct.exists.not) then {
-                errormessages.error("I found {binaryFile}, but neither " ++
-                    "{moduleFileGct} nor source.")
-                    atRange(sourceRange)
-            }
-        }
-        if (needsDynamic.not) then {
-            imports.linkfiles.add(binaryFile.asString)
-        }
-        util.log 100 verbose "linkfiles is {imports.linkfiles}."
-        if (binaryFile.exists && {
-            moduleFileGct.exists } && {
-                sourceExists.not || { binaryFile.newer(sourceFile) }
-            }
-        ) then {
-        } else {
-            if ( binaryFile.exists.not ) then {
-                util.log 60 verbose "{binaryFile} does not exist"
-            } elseif { binaryFile.newer(sourceFile).not } then {
-                util.log 60 verbose "{binaryFile} not newer than {sourceFile}"
-            }
-            compileModule (nm) inFile (sourceFile.asString)
-                forDialect (isDialect) atRange (sourceRange)
-        }
-        importsSet.add(nm)
-    } elseif { util.target == "js" } then {
+    if ( util.target == "js" ) then {
         def moduleFileJs = moduleFileGct.copy.setExtension ".js"
         if (moduleFileJs.exists && {
             moduleFileGct.exists } && {
@@ -360,15 +302,6 @@ method compileModule (nm) inFile (sourceFile)
     }
     if (false != util.vtag) then {
         cmd := cmd ++ " --vtag " ++ util.vtag
-    }
-    if (util.target == "c") then {
-        if (util.dynamicModule || isDialect) then {
-            cmd := cmd ++ " --dynamic-module"
-        }
-        if (util.importDynamic) then {
-            cmd := cmd ++ " --import-dynamic"
-        }
-        cmd := cmd ++ " -XNoMain"
     }
     cmd := cmd ++ " --gracelib " ++ util.gracelibPath
     cmd := cmd ++ util.commandLineExtensions

@@ -13,7 +13,6 @@ def completed = Singleton.named "completed"
 def inProgress = Singleton.named "inProgress"
 def undiscovered = Singleton.named "undiscovered"
 // constants used in detecting cyclic inheritance
-var useOuterNodes := true
 
 var stSerial := 100
 
@@ -288,8 +287,8 @@ class newScopeIn(parent') kind(variety') {
         variety == "module"
     }
     method resolveOuterMethod(name) fromNode (aNode) {
-        if (useOuterNodes) then {
         // replace name by a request with receiver self, or an outerNode
+
         def outerChain = [ ]
         withSurroundingScopesDo { s->
             if (s.contains(name)) then {
@@ -319,25 +318,7 @@ class newScopeIn(parent') kind(variety') {
                 }
             }
         }
-        } else {
-            // replace name by outer.outer. ... .name,
-            // depending on where name is declared.
-            var mem := ast.identifierNode.new("self", false) scope(self)
-            withSurroundingScopesDo { s->
-                if (s.contains(name)) then {
-                    if (s.variety == "dialect") then {
-                        return ast.memberNode.new(name,
-                            ast.identifierNode.new("prelude", false) scope(self)) scope(self).onSelf
-                    } elseif { s.variety == "module" } then {
-                        return ast.memberNode.new(name, thisModule) scope(self).onSelf
-                    }
-                    return ast.memberNode.new(name, mem) scope(self).onSelf
-                }
-                if (s.variety == "object") then {
-                    mem := ast.memberNode.new("outer", mem) scope(self)
-                }
-            }
-        }
+
         if (aNode.nameString == "explOde(1)") then {
             ProgrammingError.raise "the compiler exploded."
         }
@@ -693,15 +674,8 @@ method transformIdentifier(node) ancestors(as) {
         }
     }
     if (nm == "outer") then {
-        if (useOuterNodes) then {
         return ast.outerNode [nodeScope.enclosingObjectScope.node].
                 setPositionFrom(node).setScope(nodeScope)
-        } else {
-            def selfId = ast.identifierNode.new("self", false) scope(nodeScope)
-            def memb = ast.memberNode.new("outer", selfId) scope(nodeScope)
-            if (as.parent.isCall) then { as.parent.onSelf }
-            return memb
-        }
     }
     if (nm == "self") then {
         return node
@@ -1034,7 +1008,6 @@ method setupContext(moduleObject) {
 }
 
 method checkTraitBody(traitObjNode) {
-//    util.log 70 verbose "checking trait object at line {traitObjNode.line}"
     traitObjNode.value.do { node ->
         if (node.isLegalInTrait.not) then {
             def badThing = node.statementName
@@ -1594,28 +1567,20 @@ method resolve(moduleObject) {
     setupContext(moduleObject)
     util.setPosition(0, 0)
     moduleObject.scope := moduleScope
-    if (util.target == "c") then { useOuterNodes := false }
     def preludeObject = ast.moduleNode.body([moduleObject])
         named "prelude" scope (preludeScope)
     def preludeChain = ast.ancestorChain.with(preludeObject)
-
-    def patternMatchModule =
-        if ((util.target == "c") || (util.target == "patterns")) then {
-            rewriteMatches(moduleObject)
-        } else {
-            moduleObject
-        }
 
     if (util.target == "patterns") then {
         util.outprint "====================================="
         util.outprint "module after pattern-match re-writing"
         util.outprint "====================================="
-        util.outprint(patternMatchModule.pretty(0))
+        util.outprint(moduleObject.pretty(0))
         util.log_verbose "done"
         sys.exit(0)
     }
 
-    buildSymbolTableFor(patternMatchModule) ancestors(preludeChain)
+    buildSymbolTableFor(moduleObject) ancestors(preludeChain)
     util.log_verbose "symbol tables built."
 
     if (util.target == "symbols") then {
@@ -1624,14 +1589,14 @@ method resolve(moduleObject) {
         util.outprint "====================================="
         util.outprint "top-level"
         util.outprint "Universal scope = {universalScope.asDebugString}"
-        patternMatchModule.scope.withSurroundingScopesDo { each ->
+        moduleObject.scope.withSurroundingScopesDo { each ->
             util.outprint (each.asString)
             util.outprint (each.elementScopesAsString)
             util.outprint "----------------"
         }
-        util.outprint(patternMatchModule.pretty(0))
+        util.outprint(moduleObject.pretty(0))
         util.log_verbose "done"
         sys.exit(0)
     }
-    resolveIdentifiers(patternMatchModule)
+    resolveIdentifiers(moduleObject)
 }

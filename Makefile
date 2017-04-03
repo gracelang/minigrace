@@ -40,7 +40,7 @@ OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.gr
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
 
 PRELUDESOURCEFILES = collectionsPrelude.grace standardGrace.grace
-REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace genc.grace stringMap.grace unixFilePath.grace xmodule.grace identifierresolution.grace)
+REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace stringMap.grace unixFilePath.grace xmodule.grace identifierresolution.grace)
 ALLSOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES) $(HEADERFILES)
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 STABLE=1e6315be77eff662cf99876c2ac8964a81f2abc7
@@ -264,7 +264,9 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 	@./tools/warnAbout GRACE_MODULE_PATH $(MODULE_PATH)
 
 
-$(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
+$(JSJSFILES:%.js=j1/%.js): j1/%.js: $(JS-KG)/%.js
+# The j1/*.js files are created by the kg compiler, and so need to be run
+# with the kg runners and libraries.
 	cp -p $< $@
 
 j1-minigrace: $(JS-KG) $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/buildinfo.js
@@ -322,7 +324,9 @@ $(JSONLY:%.grace=js/%.js): js/%.js: modules/%.grace js/dom.gct minigrace js/time
 $(JSONLY:%.grace=js/%.gct): js/%.gct: modules/%.grace js/dom.gct minigrace js/timer.gct
 	GRACE_MODULE_PATH=js:modules ./minigrace --target js --dir js --make $(VERBOSITY) $<
 
-$(JSRUNNERS:%=j1/%): j1/%: js/%
+$(JSRUNNERS:%=j1/%): j1/%: $(JS-KG)/%
+# The j1/*.js files are created by the kg compiler, and so need to be run
+# with the kg runners and libraries.
 	cp -p $< $@
 
 $(JSRUNNERS:%=j2/%): j2/%: js/%
@@ -483,7 +487,7 @@ mirrors.gso: mirrors.c
 module-test-js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.js) $(TYPE_DIALECTS:%=modules/%.gso)
 	modules/tests/harness_js minigrace
 
-module.test.js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.js)
+module.test.js: minigrace.js.env $(TYPE_DIALECTS:%=j2/%.js)
 	modules/tests/harness-js-js j2/minigrace-js
 
 modules/curl.gso: curl.c gracelib.h

@@ -1,25 +1,9 @@
-l1/standardGrace.gct: l1/collectionsPrelude.gct
-l1/ast.gct: l1/util.gct l1/identifierKinds.gct
-l1/errormessages.gct: l1/io.gct l1/sys.gct l1/util.gct
-l1/gUnit.gct: l1/mirrors.gct l1/mirrors.gso
-l1/genc.gct: l1/io.gct l1/sys.gct l1/ast.gct l1/util.gct l1/stringMap.gct l1/xmodule.gct l1/mirrors.gct l1/mirrors.gso  l1/errormessages.gct
-l1/genjs.gct: l1/io.gct l1/sys.gct l1/ast.gct l1/util.gct l1/xmodule.gct l1/mirrors.gct l1/mirrors.gso l1/errormessages.gct
-l1/identifierresolution.gct: l1/io.gct l1/sys.gct l1/ast.gct l1/util.gct l1/xmodule.gct l1/stringMap.gct l1/mirrors.gct l1/mirrors.gso l1/errormessages.gct  l1/identifierKinds.gct
-l1/lexer.gct: l1/util.gct l1/unicode.gct l1/errormessages.gct
-l1/minigrace: l1/io.gct l1/sys.gct l1/unicode.gct l1/util.gct l1/lexer.gct l1/ast.gct l1/parser.gct l1/genc.gct l1/genjs.gct l1/buildinfo.gct l1/identifierresolution.gct l1/mirrors.gct l1/mirrors.gso
-l1/parser.gct: l1/io.gct l1/ast.gct l1/util.gct l1/errormessages.gct
-l1/symbolTable.gct: l1/ast.gct l1/errormessages.gct
-l1/util.gct: l1/io.gct l1/sys.gct l1/stringMap.gct l1/unixFilePath.gct
-l1/xmodule.gct: l1/io.gct l1/sys.gct l1/util.gct l1/ast.gct l1/mirrors.gct l1/mirrors.gso l1/errormessages.gct l1/unixFilePath.gct
-
 js/ast.gct: js/util.gct js/identifierKinds.gct
 js/ast.js: js/util.js js/util.gct js/identifierKinds.gct
-js/compiler.gct: js/util.gct js/lexer.gct js/ast.gct js/parser.gct js/genc.gct js/genjs.gct js/buildinfo.gct identifierresolution.gct
-js/compiler.js: js/genc.js js/genjs.js js/lexer.js js/parser.js js/identifierresolution.js js/standardGrace.gct
+js/compiler.gct: js/util.gct js/lexer.gct js/ast.gct js/parser.gct js/genjs.gct js/buildinfo.gct identifierresolution.gct
+js/compiler.js: js/genjs.js js/lexer.js js/parser.js js/identifierresolution.js js/standardGrace.gct
 js/errormessages.gct: js/util.gct js/standardGrace.gct
 js/errormessages.js: js/util.js
-js/genc.gct: js/ast.gct js/util.gct js/stringMap.gct js/xmodule.gct js/errormessages.gct js/standardGrace.gct
-js/genc.js: js/xmodule.js
 js/genjs.gct: js/ast.gct js/util.gct js/xmodule.gct js/errormessages.gct
 js/genjs.js: js/xmodule.js
 js/identifierresolution.gct: js/ast.gct js/util.gct js/xmodule.gct js/stringMap.gct js/errormessages.gct js/identifierKinds.gct
@@ -40,12 +24,10 @@ js/xmodule.js: js/ast.js js/errormessages.js
 
 j1/ast.gct: j1/util.gct j1/identifierKinds.gct
 j1/ast.js: j1/util.js j1/util.gct j1/identifierKinds.gct
-j1/compiler.gct: j1/util.gct j1/lexer.gct j1/ast.gct j1/parser.gct j1/genc.gct j1/genjs.gct j1/buildinfo.gct identifierresolution.gct
-j1/compiler.js: j1/genc.js j1/genjs.js j1/lexer.js j1/parser.js j1/identifierresolution.js j1/standardGrace.gct
+j1/compiler.gct: j1/util.gct j1/lexer.gct j1/ast.gct j1/parser.gct j1/genjs.gct j1/buildinfo.gct identifierresolution.gct
+j1/compiler.js: j1/genjs.js j1/lexer.js j1/parser.js j1/identifierresolution.js j1/standardGrace.gct
 j1/errormessages.gct: j1/util.gct j1/standardGrace.gct
 j1/errormessages.js: j1/util.js
-j1/genc.gct: j1/ast.gct j1/util.gct j1/stringMap.gct j1/xmodule.gct j1/errormessages.gct j1/standardGrace.gct
-j1/genc.js: j1/xmodule.js
 j1/genjs.gct: j1/ast.gct j1/util.gct j1/xmodule.gct j1/errormessages.gct
 j1/genjs.js: j1/xmodule.js
 j1/identifierresolution.gct: j1/ast.gct j1/util.gct j1/xmodule.gct j1/stringMap.gct j1/errormessages.gct j1/identifierKinds.gct
@@ -67,12 +49,10 @@ j1/xmodule.js: j1/ast.js j1/errormessages.js
 j2/ast.gct: j2/util.gct j2/identifierKinds.gct
 j2/ast.js: j2/util.js j2/util.gct j2/identifierKinds.gct
 j2/buildinfo.js: j2/standardGrace.gct
-j2/compiler.gct: j2/util.gct j2/lexer.gct j2/ast.gct j2/parser.gct j2/genc.gct j2/genjs.gct j2/buildinfo.gct identifierresolution.gct
-j2/compiler.js: j2/ast.gct j2/buildinfo.gct j2/genc.gct j2/genjs.gct j2/identifierresolution.gct j2/io.gct j2/lexer.gct j2/mirrors.gct j2/parser.gct j2/sys.gct j2/unicode.gct j2/util.gct j2/xmodule.gct
+j2/compiler.gct: j2/util.gct j2/lexer.gct j2/ast.gct j2/parser.gct j2/genjs.gct j2/buildinfo.gct identifierresolution.gct
+j2/compiler.js: j2/ast.gct j2/buildinfo.gct j2/genjs.gct j2/identifierresolution.gct j2/io.gct j2/lexer.gct j2/mirrors.gct j2/parser.gct j2/sys.gct j2/unicode.gct j2/util.gct j2/xmodule.gct
 j2/errormessages.gct: j2/util.gct j2/standardGrace.gct
 j2/errormessages.js: j2/util.js
-j2/genc.gct: j2/ast.gct j2/util.gct j2/stringMap.gct j2/xmodule.gct j2/errormessages.gct j2/standardGrace.gct
-j2/genc.js: j2/xmodule.js
 j2/genjs.gct: j2/ast.gct j2/util.gct j2/xmodule.gct j2/errormessages.gct
 j2/genjs.js: j2/xmodule.js
 j2/identifierresolution.gct: j2/ast.gct j2/util.gct j2/xmodule.gct j2/stringMap.gct j2/errormessages.gct j2/identifierKinds.gct
@@ -98,37 +78,13 @@ j2/xmodule.js: j2/util.gct j2/ast.gct j2/errormessages.gct j2/unixFilePath.gct
 standardGrace.gct: collectionsPrelude.gct
 ast.gct: util.gct identifierKinds.gct
 errormessages.gct: io.gct sys.gct util.gct
-modules/gUnit.gct: mirrors.gct  mirrors.gso
-genc.gct: io.gct sys.gct ast.gct util.gct stringMap.gct xmodule.gct mirrors.gso errormessages.gct
-genjs.gct: io.gct sys.gct ast.gct util.gct xmodule.gct mirrors.gso errormessages.gct
-identifierresolution.gct: io.gct sys.gct ast.gct util.gct xmodule.gct stringMap.gct mirrors.gso errormessages.gct  identifierKinds.gct
+modules/gUnit.gct: mirrors.gct
+genjs.gct: io.gct sys.gct ast.gct util.gct xmodule.gct errormessages.gct
+identifierresolution.gct: io.gct sys.gct ast.gct util.gct xmodule.gct stringMap.gct  errormessages.gct  identifierKinds.gct
 lexer.gct: util.gct unicode.gct errormessages.gct
-minigrace: io.gct sys.gct unicode.gct util.gct lexer.gct ast.gct parser.gct genc.gct genjs.gct buildinfo.gct identifierresolution.gct mirrors.gso
+minigrace: io.gct sys.gct unicode.gct util.gct lexer.gct ast.gct parser.gct genjs.gct buildinfo.gct identifierresolution.gct
 parser.gct: io.gct ast.gct util.gct errormessages.gct
 symbolTable.gct: ast.gct errormessages.gct
 util.gct: io.gct sys.gct stringMap.gct unixFilePath.gct
-xmodule.gct: io.gct sys.gct util.gct ast.gct mirrors.gso unixFilePath.gct errormessages.gct
+xmodule.gct: io.gct sys.gct util.gct ast.gct unixFilePath.gct errormessages.gct
 
-%.gso: %.gct
-%.gcn: %.gct
-
-#missing dialect dependencies; required for parallel building
-modules/staticTypes.gso: modules/dialect.gso
-modules/requireTypes.gso: modules/dialect.gso
-#missing compiler dependencies; required for parallel building
-compiler.gso: genc.gso genjs.gso lexer.gso parser.gso identifierresolution.gso
-genc.gso: xmodule.gso
-genjs.gso: xmodule.gso
-identifierresolution.gso: xmodule.gso identifierKinds.gso
-lexer.gso: unicode.gct errormessages.gso
-parser.gso: ast.gso errormessages.gso
-xmodule.gso: ast.gso mirrors.gso errormessages.gso
-## GENERATED WITH: for i in stringMap errormessages buildinfo util ast; do ./tools/make-depend $i; done | sort -u | grep -v :$ | sed 's/gct/gso/g'
-# manually removed io.gso and sys.gso, which are built in!
-ast.gso: util.gso
-errormessages.gso: util.gso
-util.gso: buildinfo.gso stringMap.gso
-
-l1/ast.gso: l1/util.gso
-l1/errormessages.gso: l1/util.gso
-l1/util.gso: l1/stringMap.gso

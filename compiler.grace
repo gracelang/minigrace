@@ -1,6 +1,5 @@
 import "ast" as ast
 import "buildinfo" as buildinfo
-import "genc" as genc
 import "genjs" as genjs
 import "identifierresolution" as identifierresolution
 import "io" as io
@@ -93,10 +92,6 @@ xmodule.doAstCheck(moduleObject)
 
 // Perform the actual compilation
 match(util.target)
-    case { "c" ->
-        genc.compile(moduleObject, util.outfile, util.runmode,
-            util.buildtype, buildinfo)
-    }
     case { "js" ->
         genjs.compile(moduleObject, util.outfile, util.runmode,
             util.buildtype, util.gracelibPath)

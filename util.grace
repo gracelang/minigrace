@@ -16,7 +16,7 @@ var linenumv := 1
 var lineposv := 1
 var vtagv := false
 var noexecv := false
-var targetv := "c"
+var targetv := "js"
 var extensionsv := map.new
 var recurse is readable := true
 var dynamicModule is public := false
@@ -30,7 +30,7 @@ var commandLineExtensions is readable := ""
 
 
 def targets = set ["lex", "parse", "grace", "ast", "processed-ast",
-    "patterns", "symbols", "imports", "c", "js"]
+    "patterns", "symbols", "imports", "js"]
 
 def requiredModules is public = object {
     def static is public = emptySet
@@ -196,7 +196,6 @@ method parseargs(buildinfo) {
     }
     if ((outfilev == io.output) && {!toStdout}) then {
         outfilev := match(targetv)
-            case { "c" -> io.open(outDir ++ modnamev ++ ".c", "w") }
             case { "js" -> io.open(outDir ++ modnamev ++ ".js", "w") }
             case { "parse" -> io.open(outDir ++ modnamev ++ ".parse", "w") }
             case { "lex" -> io.open(outDir ++ modnamev ++ ".lex", "w") }
@@ -210,11 +209,11 @@ method parseargs(buildinfo) {
                 startupFailure "unrecognized target '{targetv}'."
             }
     }
-    if ((target != "c") && (target != "js")) then {
+    if (target != "js") then {
         buildtypev := "debug"
     }
     if ((buildtype == "run") && (gracelibPathv == false)) then {
-        def extension = if (target == "c") then { ".o" } else { "." ++ target }
+        def extension = "." ++ target
         def soughtLibrary = filePath.withDirectory(execDir)
                                 base "gracelib" extension(extension)
         if (soughtLibrary.exists) then {
