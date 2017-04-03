@@ -289,36 +289,36 @@ class newScopeIn(parent') kind(variety') {
     }
     method resolveOuterMethod(name) fromNode (aNode) {
         if (useOuterNodes) then {
-            // replace name by a request with receiver self, or an outerNode
-            def outerChain = [ ]
-            withSurroundingScopesDo { s->
-                if (s.contains(name)) then {
-                    if (s.variety == "dialect") then {
-                        return ast.memberNode.new(name,
-                              ast.identifierNode.new("prelude", false)
-                                    scope(self)) scope(self).onSelf
-                    } elseif { s.variety == "module" } then {
-                        return ast.memberNode.new(name, thisModule) scope(self).onSelf
-                    }
-                    def rcvr = if (outerChain.isEmpty) then {
-                        ast.identifierNode.new("self", false) scope(self).
-                              setStart(ast.noPosition)
-                    } else {
-                        ast.outerNode(outerChain).setScope(self).
-                              setStart(ast.noPosition)
-                    }
-                    return ast.memberNode.new(name, rcvr).setScope(self).
-                          setPositionFrom(aNode).onSelf
+        // replace name by a request with receiver self, or an outerNode
+        def outerChain = [ ]
+        withSurroundingScopesDo { s->
+            if (s.contains(name)) then {
+                if (s.variety == "dialect") then {
+                    return ast.memberNode.new(name,
+                          ast.identifierNode.new("prelude", false)
+                                scope(self)) scope(self).onSelf
+                } elseif { s.variety == "module" } then {
+                    return ast.memberNode.new(name, thisModule) scope(self).onSelf
                 }
-                if (s.variety == "object") then {
-                    def definingObjNode = s.node
-                    if (outerChain.isEmpty.not && {outerChain.last == definingObjNode}) then {
-                        ProgrammingError.raise "adding {definingObjNode} twice"
-                    } else {
-                        outerChain.addLast(s.node)
-                    }
+                def rcvr = if (outerChain.isEmpty) then {
+                    ast.identifierNode.new("self", false) scope(self).
+                          setStart(ast.noPosition)
+                } else {
+                    ast.outerNode(outerChain).setScope(self).
+                          setStart(ast.noPosition)
+                }
+                return ast.memberNode.new(name, rcvr).setScope(self).
+                      setPositionFrom(aNode).onSelf
+            }
+            if (s.variety == "object") then {
+                def definingObjNode = s.node
+                if (outerChain.isEmpty.not && {outerChain.last == definingObjNode}) then {
+                    ProgrammingError.raise "adding {definingObjNode} twice"
+                } else {
+                    outerChain.addLast(s.node)
                 }
             }
+        }
         } else {
             // replace name by outer.outer. ... .name,
             // depending on where name is declared.
@@ -694,8 +694,8 @@ method transformIdentifier(node) ancestors(as) {
     }
     if (nm == "outer") then {
         if (useOuterNodes) then {
-            return ast.outerNode [nodeScope.enclosingObjectScope.node].
-                    setPositionFrom(node).setScope(nodeScope)
+        return ast.outerNode [nodeScope.enclosingObjectScope.node].
+                setPositionFrom(node).setScope(nodeScope)
         } else {
             def selfId = ast.identifierNode.new("self", false) scope(nodeScope)
             def memb = ast.memberNode.new("outer", selfId) scope(nodeScope)
@@ -803,6 +803,7 @@ method suggestionsForIdentifier(node) {
             if (suggestions.size ≥ thresh) then { return suggestions }
         }
     }
+    suggestions
 }
 
 method reportUndeclaredIdentifier(node) {
