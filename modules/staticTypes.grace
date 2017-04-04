@@ -7,10 +7,6 @@ import "util" as util
 
 inherit dia.methods
 
-// type List⟦T⟧ = prelude.List⟦T⟧
-
-def TypeError is public = dia.CheckerFailure.refine "TypeError"
-
 type MethodType = {
     // Method signature information consisting of the name, list of MixParts,
     // return type and info on what types it specializes.
