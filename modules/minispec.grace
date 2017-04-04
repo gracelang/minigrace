@@ -1,6 +1,6 @@
 import "gUnit" as gu
 
-inherit prelude.methods
+inherit prelude.methods exclude methods
 
 def MinispecError = prelude.ProgrammingError.refine "MinispecError"
 
@@ -134,4 +134,11 @@ method testCaseNamed(name') setupIn(setupBlock) asTestNumber(number) -> gu.TestC
             // for minispec, the test is run in setup
         }
     }
+}
+
+method methods {
+    // Makes a fresh object that can be inherited.
+    // This method overrides an identical method inherited
+    // from standardGrace, so ought to be unnecessary.
+    prelude.clone(self)
 }

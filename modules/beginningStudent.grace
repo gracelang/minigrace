@@ -4,7 +4,8 @@ import "unicode" as unicode
 import "typeComparison" as tc
     // TODO: make the gracelib version of canonicalName
     // available as a method
-inherit prelude.methods
+import "minispec" as minispec
+inherit minispec.methods
     exclude list
     exclude list(_)
     exclude dictionary
