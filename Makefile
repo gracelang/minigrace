@@ -511,7 +511,6 @@ $(JS-KG):
 	npm install
 	mkdir -p $(JS-KG)
 	cp -R node_modules/minigrace/* $(JS-KG)
-	-ls -l /home/travis/build/gracelang/minigrace/$(JS-KG)/
 
 npm-build-kg: minigrace.js.env
 	mkdir -p npm-build
@@ -523,7 +522,6 @@ npm-build-kg: minigrace.js.env
 
 npm-publish:
 	cd npm-build && npm version $(VERSION) && npm publish
-#	perl -pi -e 's/$(NPM_STABLE_VERSION)/$(VERSION)/g' Makefile
 	@echo Published minigrace version $(VERSION) to npmjs.com
 
 $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
