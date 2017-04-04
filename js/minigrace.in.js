@@ -133,17 +133,29 @@ MiniGrace.prototype.trapErrors = function(func) {
         }
         if (e.exctype === "graceexception") {
             var stderr_write = this.stderr_write;
-            var i;
             this.exception = e;
-            callmethod(e, "printBacktrace", [0]);
-            if (originalSourceLines[e.moduleName]) {
-                var lines = originalSourceLines[e.moduleName];
-                for (i = e.lineNumber - 1; i <= e.lineNumber + 1; i++) {
-                    if (lines[i-1] != undefined) {
-                        stderr_write(padToFour(i) + ": " + lines[i-1]);
+            if (e.exception.name === "AssertionFailure") {
+                stderr_write("Assertion Failed: " + e.message._value);
+                var skipable = new GraceList([
+                            new GraceString("gUnit"),
+                            new GraceString("minitest"),
+                            new GraceString("minispec"),
+                            new GraceString("beginningStudent")
+                ]);
+                callmethod(e, "printBacktraceSkippingModules", [1], skipable);
+                stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".");
+            } else {
+                callmethod(e, "printBacktrace", [0]);
+                stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".");
+                if (originalSourceLines[e.moduleName]) {
+                    var lines = originalSourceLines[e.moduleName];
+                    for (var i = e.lineNumber - 1; i <= e.lineNumber + 1; i++) {
+                        if (lines[i-1] != undefined) {
+                            stderr_write(padToFour(i) + ": " + lines[i-1]);
+                        }
                     }
+                    stderr_write("");
                 }
-                stderr_write("");
             }
             if (e.stackFrames.length > 0 && this.printStackFrames) {
                 stderr_write("Stack frames:\n");

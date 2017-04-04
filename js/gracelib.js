@@ -3068,9 +3068,12 @@ function stripDollarSuffix(str) {
 function GraceCallStackToString() {
     var errorLine = this.lineNumber;
     var effectiveName = canonicalMethodName(stripDollarSuffix(this.methname));
-    var errorString = this.className + "." + effectiveName;
+    var errorString = effectiveName;
+    if (this.className !== "module") {
+        errorString = this.className + "." + effectiveName;
+    }
     if (typeof(errorLine) === "undefined" || errorLine === 0) {
-        errorString += " in ";
+        errorString += " in method ";
     } else {
         errorString += " at line " + errorLine + " of ";
     }
@@ -3517,14 +3520,41 @@ GraceExceptionPacket.prototype = {
             Grace_errorPrint(errMsg);
             var bt = callmethod(this, "backtrace", [0]);
             var prefix = new GraceString("  raised at ");
-            var cf = new GraceString("  requested from ");
+            var rf = new GraceString("  requested from ");
             while (callmethod(bt, "size", [0])._value > 0) {
                 Grace_errorPrint(callmethod(prefix, "++(1)", [1],
                         callmethod(bt, "pop", [0])));
-                prefix = cf;
+                prefix = rf;
             }
             Grace_errorPrint(callmethod(prefix, "++(1)", [1],
-                  new GraceString("line " + lineNumber + " of module " + moduleName + ".")));
+                  new GraceString("line " + this.lineNumber + " of module " + this.moduleName + ".")));
+        },
+        "printBacktraceSkippingModules": function(argcv, skipable) {
+            var exceptionName = callmethod(callmethod(this, "exception", [0]), "asString", [0]);
+            var ln = callmethod(this, "lineNumber", [0]);
+            var mn = callmethod(this, "moduleName", [0]);
+            if (! Grace_isTrue(callmethod(skipable, "contains(1)", [1], mn))) {
+                var errMsg = callmethod(exceptionName, "++(1)", [1], new GraceString(" on line "));
+                errMsg = callmethod(callmethod(errMsg, "++(1)", [1], ln), "++(1)", [1], new GraceString(" of "));
+                errMsg = callmethod(callmethod(errMsg, "++(1)", [1], mn), "++(1)", [1], new GraceString(": "));
+                errMsg = callmethod(errMsg, "++(1)", [1], callmethod(this, "message", [0]));
+                Grace_errorPrint(errMsg);
+            }
+            var bt = callmethod(this, "backtrace", [0]);
+            var prefix = new GraceString("  in method ");
+            var rf = new GraceString("  requested from ");
+            for (var i = this.exitStack.length - 1; i >= 0; i--) {
+                var nextFrame = this.exitStack[i];
+                mn = new GraceString(nextFrame.moduleName);
+                if (! Grace_isTrue(callmethod(skipable, "contains(1)", [1], mn))) {
+                    Grace_errorPrint(callmethod(prefix, "++(1)", [1], new GraceString(nextFrame.toString())));
+                    prefix = rf;
+                }
+            }
+            if (! Grace_isTrue(callmethod(skipable, "contains(1)", [1], new GraceString(this.moduleName)))) {
+                Grace_errorPrint(callmethod(prefix, "++(1)", [1],
+                    new GraceString("line " + this.lineNumber + " of module " + this.moduleName + ".")));
+            }
         },
         "reraise": function exception_reraise(argcv) {
             throw this;
@@ -3602,6 +3632,7 @@ GraceException.prototype = {
 var importedModules = {};
 
 function do_import(modname, moduleCodeFunc) {
+    var origModuleName = moduleName;
     if (importedModules[modname]) {
         return importedModules[modname];
     }
@@ -3618,6 +3649,7 @@ function do_import(modname, moduleCodeFunc) {
         return f;
     } finally {
         importedModules[modname] = f;
+        setModuleName(origModuleName);
     }
 }
 
@@ -3828,7 +3860,7 @@ function prelude_clone_build (ignore, obj, ouc, aliases, exclusions) {
         ouc.noSuchMethodHandler = obj.noSuchMethodHandler;
     }
     ouc.data = {};
-    for (var attr in obj.data) {
+    for (attr in obj.data) {
         if (obj.data.hasOwnProperty(attr))
             ouc.data[attr] = obj.data[attr];
     }
