@@ -34,7 +34,6 @@ js/dialect.js
 js/errormessages.js
 js/gUnit.js
 js/gUnit_test.js
-js/genc.js
 js/genjs.js
 js/grace
 js/gracedoc.js
