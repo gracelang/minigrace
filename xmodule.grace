@@ -496,6 +496,8 @@ method buildGctFor(module) {
         } elseif {v.kind == "defdec"} then {
             if (v.isPublic) then {
                 meths.push(v.nameString)
+            } else {
+                confidentials.push(v.nameString)
             }
             if (ast.findAnnotation(v, "parent")) then {
                 v.scope.elements.keysDo { m -> meths.push(m) }
