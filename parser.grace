@@ -558,7 +558,7 @@ method blockParameter(params) -> Boolean {
             }
             thisParam.isBindingOccurrence := true
             if (paramIsPattern && accept "colon") then {
-                reportSyntaxError("a block parameter that's an  expression is assumed to mean " ++
+                reportSyntaxError("a block parameter that's an expression is assumed to mean " ++
                       "_:‹expression›, and so cannot be followed by a colon")
                       before ["arrow", "comma"]
             }
@@ -582,7 +582,12 @@ method blockParameter(params) -> Boolean {
 }
 
 method blockBody(params) beginningWith (btok) {
-    // returns a block AST node.
+    // returns a block AST node.  params is the list of parameters,
+    // which may be empty, and btok the lbrace that started the block.
+    // The module variable sym is the first token in the body, and lastToken
+    // is the preceeding lbrace that started the block, or the arrow that
+    // terminated the parameter list (if there was one),
+    // or the comment that appears after the lbrace, if there was one.
 
     def originalValues = values
     values := []
@@ -598,8 +603,15 @@ method blockBody(params) beginningWith (btok) {
                 atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
         }
     }
+    def etok = sym  // the closing rbrace
     next
     def body = values
+    if ((etok.line ≠ btok.line) && (body.isEmpty.not)) then {
+        if (body.last.linePos == (btok.indent + 1)) then {
+            errormessages.syntaxError "the body of a block must be indented."
+                atRange(body.first.range)
+        }
+    }
     values := originalValues
     return ast.blockNode.new(params, body).setPositionFrom(btok)
 }
