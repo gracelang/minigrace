@@ -56,7 +56,7 @@ VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
 WEBFILES_STATIC = $(filter-out sample,$(sort index.html global.css minigrace.js tabs.js  gtk.js debugger.js ace  debugger.html  importStandardGrace.js $(ICONS)))
 WEBFILES_DYNAMIC = $(sort $(ALL_LIBRARY_MODULES:%.grace=%.js) $(filter-out util.js,$(JSSOURCEFILES) gracelib.js dom.js timer.js unicodedata.js))
-WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html js/unicodedata.js js/importStandardGrace.js $(ICONS:%=js/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES:%=js/%))))
+WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html js/unicodedata.js js/importStandardGrace.js $(ICONS:%=js/%) $(ALL_LIBRARY_MODULES:%.grace=j2/%.js) $(filter-out j2/util.js,$(JSSOURCEFILES:%=j2/%))))
 WEBFILES_SIMPLE = $(filter-out js-simple/sample,$(sort js-simple/index.html js-simple/global.css js-simple/tests js-simple/minigrace.js js-simple/tabs-simple.js js-simple/gracelib.js js-simple/dom.js js-simple/gtk.js js-simple/debugger.js js-simple/timer.js js-simple/ace  js-simple/debugger.html  js-simple/unicodedata.js js-simple/importStandardGrace.js $(ICONS:%=js-simple/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
 WEB_GRAPHICS_MODULES = modules/turtle.grace modules/logo.grace
 
@@ -356,18 +356,6 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
-js/sample-dialects js/sample-graphics: js/sample-%: js
-	$(MAKE) -C js/sample/$* VERBOSITY=$(VERBOSITY)
-
-js/sample/graphics: $(WEB_GRAPHICS_MODULES:modules/%.grace=js/%.js)
-
-js/sample/graphics/%.js: js/sample/graphics/%.grace minigrace
-	cd js && GRACE_MODULE_PATH=. ../minigrace $(VERBOSITY) --make --target js ../$<
-
-js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sample/dialects/%.grace js/grace minigrace
-	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
-#	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
-
 js/standardGrace.js js/standardGrace.gct: standardGrace.grace js/collectionsPrelude.gct minigrace
 	./minigrace --target js --dir js --make $(VERBOSITY) $<
 
@@ -528,12 +516,8 @@ $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
 
 oldWeb : WEB_DIRECTORY = public_html/minigrace/js
-oldWeb: $(WEBFILES) js/sample js/ace/ace.js
+oldWeb: $(WEBFILES) js/ace/ace.js
 	rsync -a -l -z --delete $(WEBFILES) $(WEB_SERVER):$(WEB_DIRECTORY)
-	rsync -a -l -z js/samples.js $(WEB_SERVER):$(WEB_DIRECTORY)
-	rsync -a -l -z js/sample $(WEB_SERVER):$(WEB_DIRECTORY)
-	rsync -a -l -z sample $(WEB_SERVER):$(WEB_DIRECTORY)
-	rsync -a -l -z js/sample/graphics/ $(WEB_SERVER):$(WEB_DIRECTORY)
 
 pull-web-editor:
 	@if [ -e grace-web-editor ] ; \
