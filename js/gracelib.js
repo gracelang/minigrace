@@ -543,7 +543,7 @@ GraceString.prototype = {
         "match(1)": function string_match (argcv, o) {
             if (Grace_isTrue(callmethod(this, "==(1)", [1], o)))
                 return new GraceSuccessfulMatch(o);
-            return new GraceFailedMatch(o);
+            return GraceFalse;
         },
         "|(1)": function string_orPattern(argcv, o) {
             return new GraceOrPattern(this, o);
@@ -744,6 +744,18 @@ GraceNum.prototype = {
         "prefix-": function(argcv) {
             return new GraceNum(-this._value);
         },
+        "prefix<": function(argcv) {
+            return new GracePredicatePattern(arg => arg < this._value);
+        },
+        "prefix>": function(argcv) {
+            return new GracePredicatePattern(arg => arg > this._value);
+        },
+        "prefix≤": function(argcv) {
+            return new GracePredicatePattern(arg => arg <= this._value);
+        },
+        "prefix≥": function(argcv) {
+            return new GracePredicatePattern(arg => arg >= this._value);
+        },
         "asString": function(argcv) {
             var num = this._value;
             if (num === Infinity)
@@ -871,7 +883,7 @@ GraceNum.prototype = {
         "match(1)": function(argcv, o) {
             if (Grace_isTrue(callmethod(this, "==(1)", [1], o)))
                 return new GraceSuccessfulMatch(o);
-            return new GraceFailedMatch(o);
+            return GraceFalse;
         },
         "|(1)": function(argcv, o) {
             return new GraceOrPattern(this, o);
@@ -884,6 +896,45 @@ GraceNum.prototype = {
     definitionModule: "basic library",
     definitionLine: 0
 };
+
+function GracePredicatePattern(pred) {
+    this._value = pred;
+}
+
+GracePredicatePattern.prototype = {
+    methods: {
+        "isMe(1)":          object_isMe,
+        "≠(1)":             object_notEquals,
+        "basicAsString":    object_basicAsString,
+        "debugValue":       object_debugValue,
+        "debugIterator":    object_debugIterator,
+        "::(1)":            object_colonColon,
+        "asString": function(argcv) {
+            return new GraceString("a predicate pattern");
+        },
+        "asDebugString": function(argcv) {
+            return new GraceString("a predicate pattern");
+        },
+        "match(1)": function predicate_match (argcv, o) {
+            if (o._value) {
+                // if o has no _value, it is not a number, and so can't match
+                if (this._value(o._value)) {
+                    return new GraceSuccessfulMatch(o);
+                }
+            }
+            return GraceFalse;
+        },
+        "|(1)": function predicate_orPattern(argcv, o) {
+            return new GraceOrPattern(this, o);
+        },
+        "&(1)": function predicate_andPattern (argcv, o) {
+            return new GraceAndPattern(this, o);
+        }
+    },
+    className: "predicatePattern",
+    definitionModule: "basic library",
+    definitionLine: 0
+}
 
 function GraceBoolean(b) {
     this._value = b;
@@ -940,7 +991,7 @@ GraceBoolean.prototype = {
         "match(1)": function(argcv, o) {
             if (Grace_isTrue(callmethod(this, "==(1)", [1], o)))
                 return new GraceSuccessfulMatch(o);
-            return new GraceFailedMatch(o);
+            return GraceFalse;
         },
         "hash": function(argcv) {
             return new GraceNum(this._value ? 3637 : 1741);
@@ -1699,7 +1750,7 @@ GraceType.prototype = {
             for (var i=0; i<this.typeMethods.length; i++) {
                 var m = this.typeMethods[i];
                 if (!other.methods[m]) {
-                    return new GraceFailedMatch(other);
+                    return GraceFalse;
                 }
             }
             return new GraceSuccessfulMatch(other);
@@ -1887,7 +1938,7 @@ function GraceBlock_match(argcv, o) {
         var rv2 = callmethod(this, "apply(1)", [1], o);
         return new GraceSuccessfulMatch(rv2);
     }
-    return new GraceFailedMatch(o);
+    return GraceFalse;
 }
 
 function classType(o) {
@@ -2537,7 +2588,7 @@ GraceUnicodePattern.prototype = {
             }
             if (success)
                 return new GraceSuccessfulMatch(o);
-            return new GraceFailedMatch(o);
+            return GraceFalse;
         }
     },
     typeMethods: [],
@@ -3587,7 +3638,7 @@ GraceException.prototype = {
         },
         "match(1)": function(argcv, other) {
             if (!other.exception)
-                return new GraceFailedMatch(other);
+                return GraceFalse;
             if (other.exception.name === this.name)
                 return new GraceSuccessfulMatch(other);
             var exc = other.exception;
@@ -3596,7 +3647,7 @@ GraceException.prototype = {
                     return new GraceSuccessfulMatch(other);
                 exc = exc.parent;
             }
-            return new GraceFailedMatch(other);
+            return GraceFalse;
         },
         "|(1)": function(argcv, o) {
             return new GraceOrPattern(this, o);
