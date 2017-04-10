@@ -21,6 +21,45 @@ function getModuleName() {
     return moduleName;
 }
 
+function identifierAvailable(category, identifier) {
+    return !(localStorage.hasOwnProperty(category + ":" + identifier))
+}
+
+function getFile(name){
+    return localStorage[name];
+}
+
+function setFile(name, data){
+    localStorage.setItem(name,data);
+}
+
+//Takes a full localStorage directory identifier, ex. (thisDir/thatDir)
+//and returns just the actual name ex. (thatDir)
+function getDirectoryName(toParse)
+{
+    var directoryName = toParse;
+    var lastSlash = directoryName.lastIndexOf("/");
+
+    //Check for a slash in the name (-1 means not found)
+    if(lastSlash !== -1)
+    {
+        //Remove everything before the slash
+        directoryName = directoryName.substring(0,lastSlash);
+    }
+
+    return directoryName;
+}
+
+function addFileToTree(name) {
+    //Store the name of the file to be added
+    var element = document.getElementById("new-file-io-api");
+    element.innerHTML = name;
+
+    //Trigger event for adding file to user file-tree
+    element.click();
+}
+
+
 Array.prototype.sum = function () {
     return this.reduce(function(a,b) {return a+b;}, 0);
 };
@@ -2290,9 +2329,14 @@ function gracecode_io() {
     };
     this.methods['open(2)'] = function(argcv, path, mode) {
         path = callmethod(path, "asString", [0])._value;
-        if (typeof(process) !== "undefined") {
+        //Console Environment
+        if (typeof(process) !== "undefined")
+        {
             var m = mode._value;
             var o = Grace_allocObject(GraceObject, "fileStream");
+            var i = 0;
+
+            //Setup File
             try {
                 var f = fs.openSync(path, m);
             } catch(ex) {
@@ -2303,7 +2347,8 @@ function gracecode_io() {
                 var c = fs.readFileSync(path);
                 var a = c.toString().split('\n');
             }
-            var i = 0;
+
+            //Add Methods
             o.methods['write(1)'] = function (argvc, data) { fs.writeSync(f, safeJsString(data)); };
             o.methods['close'] = function () { fs.closeSync(f); };
             o.methods['getline'] = function () { var s = a[i]; i++; return new GraceString(s); };
@@ -2314,36 +2359,231 @@ function gracecode_io() {
                   return (this===other) ? GraceTrue : GraceFalse; };
             return o;
         }
-        var o2 = Grace_allocObject(GraceObject, "fileStream");
-        o2.methods['write'] = function io_write () {};
-        o2.methods['close'] = function io_close () {};
-        var slash = path.lastIndexOf("/");
-        if (slash >= 0) path = path.substring(slash+1);
-        if (path.substr(path.length - 4) === ".gct") {
-            var gctpath = path.substr(0, path.length - 4);
-            if (mode._value === "w")
-                gctCache[gctpath] = "";
-            else if (mode._value === "r") {
-                if (typeof gctCache[gctpath] === "undefined")
-                    throw new GraceExceptionPacket(EnvironmentExceptionObject,
-                           new GraceString("can't open file '" + gctpath +
-                                           ".gct' for 'r'.  File does not exist."));
-                else {
-                    o2._lines = gctCache[gctpath].split("\n");
-                    o2._index = 0;
+        //Web IDE Environment
+        else
+        {
+            //-- Executes for both .gct and user files
+            //Allocate fstream object, setup variables
+            var o2 = Grace_allocObject(GraceObject, "fileStream");
+            var file_mode = mode._value;
+            var filename = "file:"+path;
+            var lastPeriod = filename.lastIndexOf(".");
+            var file_extension = filename.substring(lastPeriod);
+            var textExtensions = [".grace", ".txt", ".json", ".xml", ".js", ".html", ".xhtml"];
+            var contents, write_allowed, read_allowed, append_mode,
+                rw_pointer, file_creation_needed, content_length;
+
+            //Default Methods
+            o2.methods['write'] = function io_write () {};
+            o2.methods['close'] = function io_close () {};
+
+            //Determine File Mode
+            file_mode = file_mode.toLowerCase();
+            write_allowed = file_mode.includes("w");
+            append_mode = file_mode.includes("a");
+            read_allowed = file_mode.includes("r");
+
+            //IDE Only -- If in web environment and dealing with a text-based file
+            if(textExtensions.includes(file_extension)) {
+
+                //Check if the file needs to be created
+                file_creation_needed = identifierAvailable("file",path);
+
+                //Check to see if reading a non-existing file
+                if((file_mode === "r") && file_creation_needed){
+                    throw new GraceExceptionPacket(ResourceExceptionObject,
+                        new GraceString("\n\nError reading file: "+path+" \nReason: File does not exist.\n\n"));
                 }
+
+                //Add the file to the UI, if needed
+                if(write_allowed && file_creation_needed) {
+                    var directory = getDirectoryName(path);
+
+                    //Check to see if the file's directory exists
+                    if((directory !== path) && identifierAvailable("directory",directory))
+                    {
+                        //If the directory of the file doesnt exist
+                        throw new GraceExceptionPacket(ResourceExceptionObject,
+                            new GraceString("\n\nError creating file: "+path+" \nReason: Directory \""+directory+"\" does not exist.\n\n"));
+                    }
+
+                    //Add the file to IDE file-tree
+                    addFileToTree(path);
+                }
+
+                //Get and parse file
+                contents = getFile(filename);
+                if (contents === undefined) { content_length=0; }
+                else { content_length = contents.length; }
+
+                //Set the write pointer
+                if(append_mode && contents !== undefined){ rw_pointer= contents.length;}
+                else { rw_pointer = 0; }
+
+                //------ IO Methods --------
+
+                //Write (overwrite) Method
+                o2.methods['write(1)'] = function (argcv, data) {
+                    if(write_allowed){
+                        var new_contents = contents.slice(0,rw_pointer) + data._value + contents.slice(rw_pointer);
+
+                        //Update localStorage and local values
+                        setFile(filename,new_contents);
+                        contents = new_contents;
+                    }
+                };
+
+                //Get next line method
+                o2.methods['getline'] = function () {
+                    //Parse the most recent file contents
+                    var parsed_contents = contents.slice(rw_pointer);
+                    var line_index = parsed_contents.indexOf("\n");
+
+                    //Check for last-line or EOF case and narrow-down to next line from rw_pointer
+                    if(line_index !== -1){
+                        parsed_contents = parsed_contents.toString().slice(0, line_index+1);
+                    } else {
+                        parsed_contents = parsed_contents.toString();
+                    }
+
+                    //Update rw_pointer to take into account returned value
+                    rw_pointer += (parsed_contents.length);
+
+                    //Return line of file as a string
+                    return new GraceString(parsed_contents);
+                };
+
+                //Seek Methods
+                o2.methods['seek(1)'] = function (argcv, data) {
+                    var pointer = parseFloat(data._value);
+                    //Check for NaN and for non-integer input
+                    if(isNaN(pointer)){
+                        throw new GraceExceptionPacket(TypeErrorObject,
+                             new GraceString("\n\nError executing: seek("+data._value+") \nReason: The input is not a number.\n\n"));
+                    }
+                    else if(pointer % 1 !== 0) {
+                        throw new GraceExceptionPacket(RequestErrorObject,
+                            new GraceString("\n\nError executing: seek("+data._value+") \nReason: The input is not an integer.\n\n"));
+                    }
+                    //Bounds check
+                    if(pointer<0){pointer=0}
+                    else if(pointer>content_length){pointer=content_length}
+
+                    //Set the write pointer
+                    rw_pointer=pointer;
+                };
+
+                o2.methods['seekForward(1)'] = function (argcv, data) {
+                    var pointer = parseFloat(data._value);
+                    //Check for NaN and for non-integer input
+                    if(isNaN(pointer)){
+                        throw new GraceExceptionPacket(TypeErrorObject,
+                            new GraceString("\n\nError executing: seekForward("+data._value+") \nReason: The input is not a number.\n\n"));
+                    }
+                    else if(pointer % 1 !== 0) {
+                        throw new GraceExceptionPacket(RequestErrorObject,
+                            new GraceString("\n\nError executing: seekForward("+data._value+") \nReason: The input is not an integer.\n\n"));
+                    }
+                    //Update pointer
+                    pointer = rw_pointer+pointer;
+
+                    //Bounds check
+                    if(pointer<0){pointer=0}
+                    else if(pointer>content_length){pointer=content_length}
+
+                    //Set the write pointer
+                    rw_pointer=pointer;
+
+                };
+                o2.methods['seekBackward(1)'] = function (argcv, data) {
+                    var pointer = parseFloat(data._value);
+                    //Check for NaN and for non-integer input
+                    if(isNaN(pointer)){
+                        throw new GraceExceptionPacket(TypeErrorObject,
+                            new GraceString("\n\nError executing: seekBackward("+data._value+") \nReason: The input is not a number.\n\n"));
+                    }
+                    else if(pointer % 1 !== 0) {
+                        throw new GraceExceptionPacket(RequestErrorObject,
+                            new GraceString("\n\nError executing: seekBackward("+data._value+") \nReason: The input is not an integer.\n\n"));
+                    }
+                    //Update pointer
+                    pointer = rw_pointer-pointer;
+
+                    //Bounds check
+                    if(pointer<0){pointer=0}
+                    else if(pointer>content_length){pointer=content_length}
+
+                    //Set the write pointer
+                    rw_pointer=pointer;
+                };
+
+                //Next Char Methods
+                o2.methods['hasNext'] = function () {
+                    if(rw_pointer < content_length){
+                        return GraceTrue;
+                    } else {
+                        return GraceFalse;
+                    }
+                };
+                o2.methods['next'] = function () {
+                    if(rw_pointer < content_length){
+                        var char = new GraceString(contents.charAt(rw_pointer));
+                        rw_pointer++;
+                        return char;
+                    } else {
+                        var ie = callmethod(var___95__prelude, "IteratorExhausted", [0]);
+                        throw new GraceExceptionPacket(ie, new GraceString("\n\nError: End of file \""+path+"\"\nReason: \"next\" cannot return a character at EOF.\n\n"));
+                    }
+                };
+
+                //Binary R/W Methods
+                o2.methods['readBinary(1)'] = function (argcv, data) {
+                    throw new GraceExceptionPacket(ExceptionObject,
+                        new GraceString("\n\nError: method \"readBinary(_)\" has not yet been implemented.\n\n"));
+                };
+                o2.methods['writeBinary(1)'] = function (argcv, data) {
+                    throw new GraceExceptionPacket(ExceptionObject,
+                        new GraceString("\n\nError: method \"writeBinary(_)\" has not yet been implemented.\n\n"));
+                };
+
+                //Other Methods
+                o2.methods['pathname'] = function () { return new GraceString(path); };
+                o2.methods['eof'] = function () { return (rw_pointer < content_length) ? GraceFalse : GraceTrue; };
+                o2.methods['read'] = function () { return new GraceString(contents.toString()); };
+                o2.methods['close'] = function () { return GraceDone; };
+                o2.methods['iterator'] = function () { return this; };
+                o2.methods['isatty'] = function () { return GraceFalse;}; //tty not currently possible in IDE
+                o2.methods['==(1)'] = function (argcv, other) { return (this===other) ? GraceTrue : GraceFalse; };
             }
-            o2.methods['write(1)'] = function io_gct_write (argcv, s) {
-                gctCache[gctpath] += s._value;
-            };
-            o2.methods['getline'] = function io_gct_getline (argcv) {
-                return new GraceString(this._lines[this._index++]);
-            };
-            o2.methods['eof'] = function io_gct_eof  () {
-                return ((this._index >= this._lines.length) ? GraceTrue : GraceFalse);
-            };
+
+            //.gct File Methods 
+            if (path.substr(path.length - 4) === ".gct") {
+                var gctpath = path.substr(0, path.length - 4);
+                if (mode._value === "w")
+                    gctCache[gctpath] = "";
+                else if (mode._value === "r") {
+                    if (typeof gctCache[gctpath] === "undefined")
+                        throw new GraceExceptionPacket(EnvironmentExceptionObject,
+                            new GraceString("can't open file '" + gctpath +
+                                ".gct' for 'r'.  File does not exist."));
+                    else {
+                        o2._lines = gctCache[gctpath].split("\n");
+                        o2._index = 0;
+                    }
+                }
+                o2.methods['write(1)'] = function io_gct_write (argcv, s) {
+                    gctCache[gctpath] += s._value;
+                };
+                o2.methods['getline'] = function io_gct_getline (argcv) {
+                    return new GraceString(this._lines[this._index++]);
+                };
+                o2.methods['eof'] = function io_gct_eof  () {
+                    return ((this._index >= this._lines.length) ? GraceTrue : GraceFalse);
+                };
+            } 
+
+            return o2;
         }
-        return o2;
     };
     this.methods['realpath(1)'] = function io_browser_realpath (argcv, x) {
         if(typeof(process) !== "undefined") {
