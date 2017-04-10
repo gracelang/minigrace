@@ -10,6 +10,12 @@ inherit prelude.methods exclude Point
 type Point = outer.Point
     // this makes Point visible to dialectic programs
 
+type Color = interface {
+    r -> Number
+    g -> Number
+    b -> Number
+}
+
 def red is public = turtle.red
 def green is public = turtle.green
 def blue is public = turtle.blue
