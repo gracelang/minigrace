@@ -19,6 +19,7 @@ var constants := []
 var output := []
 var usedvars := []
 var declaredvars := []
+var initializedMethodVars := emptySet
 var bblock := "entry"
 
 var outfile
@@ -673,6 +674,7 @@ method compileMetadata(o, funcName, name) {
 method compilemethod(o, selfobj) {
     def oldusedvars = usedvars
     def olddeclaredvars = declaredvars
+    def oldInitializedMethodVars = initializedMethodVars
     o.register := uidWithPrefix "func"
     if ((o.body.size == 1) && {o.body.first.isIdentifier}) then {
         compileSimpleAccessor(o)
@@ -681,6 +683,7 @@ method compilemethod(o, selfobj) {
     }
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
+    initializedMethodVars := oldInitializedMethodVars
 }
 
 method compileSimpleAccessor(o) {
@@ -919,6 +922,9 @@ method compilebind(o) {
         def nm = lhs.value
         usedvars.push(nm)
         out "{varf(nm)} = {val};"
+        if (o.scope.kindInNest(nm) == k.methdec) then {
+            initializedMethodVars.add(nm)
+        }
         o.register := "GraceDone"
     } else {
         ProgrammingError.raise "bindNode {o} does not bind an indentifer"
@@ -938,8 +944,11 @@ method compiledefdec(o) {
     }
     def val = compilenode(o.value)
     out "var {var_nm} = {val};"
-    if (o.parentKind == "module") then {
+    def surroundingScopeKind = o.parentKind
+    if (surroundingScopeKind == "module") then {
         create "def" field (o) in "this"
+    } elseif {surroundingScopeKind == "method"} then {
+        initializedMethodVars.add(nm)
     }
     if (emitTypeChecks) then {
         if (o.dtype != false) then {
@@ -976,8 +985,11 @@ method compilevardec(o) {
     if (debugMode) then {
         out "myframe.addVar(\"{escapestring(nm)}\", function() \{return {var_nm}});"
     }
-    if (o.parentKind == "module") then {
+    def surroundingScopeKind = o.parentKind
+    if (surroundingScopeKind == "module") then {
         create "var" field (o) in "this"
+    } elseif {surroundingScopeKind == "method"} then {
+        initializedMethodVars.add(nm)
     }
     if (emitTypeChecks) then {
         if (o.dtype != false) then {
@@ -1083,7 +1095,7 @@ method compileCheckForUndefinedIdentifier(id) {
     def definingScope = id.scope.thatDefines(name)
     if (definingScope.variety == "built-in") then { return }
     def idKind = definingScope.kind(name)
-    if (((idKind == k.defdec) && definingScope.isObjectScope) ||
+    if (((idKind == k.defdec) && {initializedMethodVars.contains(name).not}) ||
             (idKind == k.vardec)) then {
         out "if ({varf(name)} === undefined) raiseUninitializedVariable(\"{name}\");"
     }
