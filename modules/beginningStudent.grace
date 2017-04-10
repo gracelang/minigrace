@@ -146,6 +146,7 @@ def bsVisitor = object {
                 with (v.body)
         }
         def commentString = v.comments.value
+        def lowerCommentString = commentString.asLower
         v.parametersDo { p ->
             if (p.wildcard.not) then {
                 def pn = p.nameString
@@ -173,7 +174,7 @@ def bsVisitor = object {
                 with (ast.start(v.start)
                             end(v.signature.last.end))
         } elseif {(v.dtype.nameString ≠ "Done") && {
-              ((commentString.contains "returns") || (commentString.contains "answers")).not} } then {
+              ((lowerCommentString.contains "returns") || (lowerCommentString.contains "answers")).not} } then {
             DialectError.raise ("purpose statement of method '{v.canonicalName}" ++
                 "does not describe what it returns") with (v.comments)
         }
