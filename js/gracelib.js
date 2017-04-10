@@ -3415,13 +3415,13 @@ function raiseConfidentialMethod(name, target) {
 
 function raiseUninitializedArgument(n, name, target) {
     throw new GraceExceptionPacket(UninitializedVariableObject,
-           new GraceString("uninitialised variable used as argument " + n + " to '" +
-                           canonicalMethodName(name) + "' of " + describe(target) + "."));
+          new GraceString("uninitialised variable used as argument " + n + " to '" +
+                canonicalMethodName(name) + "' of " + describe(target) + "."));
 }
 
 function raiseUninitializedVariable(name) {
     throw new GraceExceptionPacket(UninitializedVariableObject,
-           new GraceString("attempt to read uninitialised variable {name}."));
+          new GraceString("attempt to read uninitialised variable " + name + "."));
 }
 
 function describe(obj) {
