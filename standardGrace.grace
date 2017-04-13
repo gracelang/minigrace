@@ -431,6 +431,8 @@ class point2Dx (x') y (y') {
     method hash { hashCombine(x.hash, y.hash) }
 }
 
+def pi is public = π
+
 method hashCombine(a, b) {
     native "c" code ‹
         int a = (int)(args[0]->data);

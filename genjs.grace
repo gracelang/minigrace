@@ -834,7 +834,6 @@ method typeParamlist(o) {
 }
 method compilemethodtypes(func, o) {
     out("{func}.paramTypes = [];")
-    var pi := 0
     for (o.signature) do { part ->
         for (part.params) do {p->
             // We store information for static top-level types only:
@@ -855,7 +854,6 @@ method compilemethodtypes(func, o) {
             } else {
                 out("{func}.paramTypes.push([]);")
             }
-            pi := pi + 1
         }
     }
 }
