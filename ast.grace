@@ -1423,12 +1423,14 @@ def moduleNode is public = object {
     }
     class body(b) {
         inherit objectNode.new(b, false)
+            alias oNPostCopy(_) = postCopy(_)
         def kind is public = "module"
         def sourceLines = util.lines
         var theDialect is public := dialectNode.new "standardGrace"
         theDialect.setStart(noPosition)     // dialect is implicit
         setStart(noPosition)                // so is the module
         var imports is public := [ ]
+        var directImports is public := [ ]
 
         method end -> Position {
             line (util.lines.size) column (util.lines.last.size)
@@ -1480,18 +1482,11 @@ def moduleNode is public = object {
         }
         method postCopy(other) {
             imports := other.imports
+            directImports := other.directImports
             theDialect := other.theDialect
-            // copy the field of moduleNode
+            // copy the fields of moduleNode
 
-            name := other.name
-            value := other.value
-            superclass := other.superclass
-            usedTraits := other.usedTraits
-            inClass := other.inClass
-            inTrait := other.inTrait
-            annotations := other.annotations
-            // copy the fields of objectNode — should be an alias to objectNode.postCopy
-
+            oNPostCopy(other)
             self
         }
     }

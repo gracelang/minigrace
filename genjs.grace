@@ -112,6 +112,13 @@ method outUnnumbered(s) {
     output.push(indent ++ s)
 }
 
+method emitBufferedOutput {
+    for (output) do { o ->
+        util.outprint(o)
+    }
+    outfile.close
+}
+
 method escapeident(vn) {
     var nm := ""
     for (vn) do {c->
@@ -1365,7 +1372,7 @@ method compilenode(o) {
     o.register
 }
 
-method compile(moduleObject, of, rm, bt, glPath) {
+method initializeCodeGenerator(moduleObject) {
     def isPrelude = moduleObject.theDialect.value == "none"
     if (util.extensions.contains "ExtendedLineups") then {
         bracketConstructor := "PrimitiveGraceList"
@@ -1388,13 +1395,8 @@ method compile(moduleObject, of, rm, bt, glPath) {
     if (util.extensions.contains "noLineNumbers") then {
         emitPositions := false
     }
-    outfile := of
     modname := moduleObject.name
     emod := escapeident(modname)
-    def selfr = "module$" ++ emod
-    moduleObject.register := selfr
-    runmode := rm
-    buildtype := bt
     if (util.extensions.contains("Debug")) then {
         debugMode := true
     }
@@ -1414,36 +1416,46 @@ method compile(moduleObject, of, rm, bt, glPath) {
         out "var___95__prelude = do_import(\"standardGrace\", gracecode_standardGrace);"
     }
     util.setline(1)
+}
+
+method outputModuleDefinition(moduleObject) {
+    // output the definition of the module function, conventionally
+    // called gracecode_«modname».  Noe that "output" means append to
+    // the output buffer; it will be printed later.
+
     def generatedModuleName = formatModname(modname)
     out "function {generatedModuleName}() \{"
     increaseindent
-    out("setModuleName(\"{modname}\");")
+    out "setModuleName(\"{modname}\");"
     out "importedModules[\"{modname}\"] = this;"
+    def selfr = "module$" ++ emod
+    moduleObject.register := selfr
     out "var {selfr} = this;"
     out "this.definitionModule = \"{modname}\";"
     out "this.definitionLine = 0;"
     out "var var_prelude = var___95__prelude;"
-        // var_prelude must be local to this function, because its value
-        // varies from module to module.
+        // var_prelude must be local to the module function, because its
+        // value varies from module to module.
 
     if (debugMode) then {
         out "var myframe = new StackFrame(\"{modname} module\");"
         out "stackFrames.push(myframe);"
     }
     compileobjouter(moduleObject, "var_prelude")
-    def imported = []
-    if (modname == "standardGrace") then {  // compile components in non-standard order
+    if (modname == "standardGrace") then {
+        // compile components in non-standard order
         moduleObject.methodsDo { o -> compilenode(o) }
-        moduleObject.externalsDo { o -> imported.push(o.path) }
+        moduleObject.externalsDo { o -> moduleObject.directImports.push(o.path) }
         moduleObject.value.do { o ->    // this treats importNodes as executable
             if (o.isMethod.not) then {
                 compilenode(o)
             }
         }
     } else {
+        // compile in normal order
         moduleObject.externalsDo { o ->
             compilenode(o)
-            imported.push(o.path)
+            moduleObject.directImports.push(o.path)
         }
         def inheritsStmt = moduleObject.superclass
         if (false != inheritsStmt) then {
@@ -1469,20 +1481,29 @@ method compile(moduleObject, of, rm, bt, glPath) {
     if (debugMode) then {
         out "stackFrames.pop();"
     }
-    out("return this;")
+    out "return this;"
     decreaseindent
-    out("\}")
+    out "\}"
 
-    def importList = list(imported.map{ each -> "\"{each}\"" }).sort
-    out "{generatedModuleName}.imports = {importList};"
+    out "if (typeof global !== \"undefined\")"
+    out "  global.{generatedModuleName} = {generatedModuleName};"
+    out "if (typeof window !== \"undefined\")"
+    out "  window.{generatedModuleName} = {generatedModuleName};"
+}
 
-    moduleObject.imports := imports.other
-    xmodule.writeGctForModule(moduleObject)
+method outputImportsList(moduleObject) {
+    def importList = list(moduleObject.directImports.
+                        map{ each -> "\"{each}\"" }).sort
+    out "{formatModname(modname)}.imports = {importList};"
+}
 
+method outputGct {
     def gct = xmodule.parseGCT(modname)
     def gctText = xmodule.gctAsString(gct)
     out "if (typeof gctCache !== \"undefined\")"
     out "  gctCache[\"{escapestring(basename(modname))}\"] = \"{escapestring(gctText)}\";"
+}
+method outputSource {
     out "if (typeof originalSourceLines !== \"undefined\") \{"
     out "  originalSourceLines[\"{modname}\"] = ["
     def sourceLines = util.cLines
@@ -1498,15 +1519,29 @@ method compile(moduleObject, of, rm, bt, glPath) {
         out "    \"{sourceLines.at(numberOfLines)}\" ];"
     }
     out "\}"
-    out "if (typeof global !== \"undefined\")"
-    out "  global.{generatedModuleName} = {generatedModuleName};"
-    out "if (typeof window !== \"undefined\")"
-    out "  window.{generatedModuleName} = {generatedModuleName};"
+}
 
-    for (output) do { o ->
-        util.outprint(o)
-    }
-    outfile.close
+method compile(moduleObject, of, mode, bt, glPath) {
+    // compile the module represente by the ast.moduleNode moduleObject.
+    // of is the output file; rm the run mode, and bt the build type.
+    // glPath is the GRACE_MODULE_PATH to use when running the compiled code
+
+    outfile := of
+    runmode := mode
+    buildtype := bt
+
+    initializeCodeGenerator(moduleObject)
+    outputModuleDefinition(moduleObject)
+    outputImportsList(moduleObject)
+    moduleObject.imports := imports.other
+        // imports is modified by outputModuleDefinition; it is the
+        // transitive closure of moduleObject.directImports.
+    xmodule.writeGctForModule(moduleObject)
+    outputGct
+    outputSource
+
+    emitBufferedOutput
+    
     util.log_verbose "done."
     if (buildtype == "run") then { runJsCode(of, glPath) }
 }
