@@ -739,7 +739,15 @@ GraceNum.prototype = {
             if (this._value % 2 === 0) return GraceTrue; else return GraceFalse;
         },
         "isOdd": function(argcv, other) {
-            if (this._value % 2 === 1) return GraceTrue; else return GraceFalse;
+            // we can't just check that remainder is 1, becasue negative
+            // arguments give a remaider of -1.  This is much faster than
+            // checking for +1 or -1, or taking abs!
+            var val = this._value;
+            if (Number.isInteger(val) && (val % 2 !== 0)) {
+                return GraceTrue;
+            } else {
+                return GraceFalse;
+            }
         },
         "prefix-": function(argcv) {
             return new GraceNum(-this._value);

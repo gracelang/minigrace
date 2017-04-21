@@ -22,16 +22,59 @@ testSuite {
     test "Zero hash" by {
         assert ((-0.0).hash) shouldBe ((0.0).hash)
     }
-
-    test "isEven" by {
-        assert (234567892.isEven) description "234567892 isn't even"
-        deny (23446789.isEven) description "23446789 is even"
+    test "odd isEven" by {
+        deny (234567891.isEven) description "234567891 is even"
+    }
+    test "even isEven" by {
+        assert (234467892.isEven) description "234467892 isn't even"
+    }
+    test "negative odd isEven" by {
+        deny ((-234567891).isEven) description "-234567891 is even"
+    }
+    test "negative even isEven" by {
+        assert ((-234467892).isEven) description "-234467892 isn't even"
+    }
+    test "non-integer isEven" by {
         deny (12.5.isEven) description "12.5 is even"
     }
-    test "isOdd" by {
+    test "negative non-integer isEven" by {
+        deny ((-12.5).isEven) description "12.5 is even"
+    }
+    test "infinite isEven" by {
+        deny (infinity.isEven) description "infinity is even"
+    }
+    test "negative infinity isEven" by {
+        deny ((-infinity).isEven) description "-infinity is even"
+    }
+    test "NaN isEven" by {
+        deny ((0/0).isEven) description "{0/0} is even"
+    }
+    test "odd isOdd" by {
         assert (234567891.isOdd) description "234567891 isn't odd"
+    }
+    test "even isOdd" by {
         deny (234467892.isOdd) description "234467892 is odd"
+    }
+    test "negative odd isOdd" by {
+        assert ((-234567891).isOdd) description "-234567891 isn't odd"
+    }
+    test "negative even isOdd" by {
+        deny ((-234467892).isOdd) description "-234467892 is odd"
+    }
+    test "non-integer isOdd" by {
         deny (12.5.isOdd) description "12.5 is odd"
+    }
+    test "negative non-integer isOdd" by {
+        deny ((-12.5).isOdd) description "12.5 is odd"
+    }
+    test "infinite isOdd" by {
+        deny (infinity.isOdd) description "infinity is odd"
+    }
+    test "negative infinity isOdd" by {
+        deny ((-infinity).isOdd) description "-infinity is odd"
+    }
+    test "NaN isOdd" by {
+        deny ((0/0).isOdd) description "{0/0} is odd"
     }
     test "isInteger" by {
         deny (12.00001.isInteger) description "12.00001 is an Integer"
