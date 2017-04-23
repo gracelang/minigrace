@@ -1410,10 +1410,10 @@ method initializeCodeGenerator(moduleObject) {
     topLevelTypes.add "Unknown"
     topLevelTypes.add "Object"
     if (! util.extensions.contains "noStrict") then {
-        out "\"use strict\";"
+        util.outprint ";\"use strict\";"
     }
     if (isPrelude.not) then {
-        out "var___95__prelude = do_import(\"standardGrace\", gracecode_standardGrace);"
+        util.outprint "var___95__prelude = do_import(\"standardGrace\", gracecode_standardGrace);"
     }
     util.setline(1)
 }
@@ -1500,25 +1500,25 @@ method outputImportsList(moduleObject) {
 method outputGct {
     def gct = xmodule.parseGCT(modname)
     def gctText = xmodule.gctAsString(gct)
-    out "if (typeof gctCache !== \"undefined\")"
-    out "  gctCache[\"{escapestring(basename(modname))}\"] = \"{escapestring(gctText)}\";"
+    util.outprint "if (typeof gctCache !== \"undefined\")"
+    util.outprint "  gctCache[\"{escapestring(basename(modname))}\"] = \"{escapestring(gctText)}\";"
 }
 method outputSource {
-    out "if (typeof originalSourceLines !== \"undefined\") \{"
-    out "  originalSourceLines[\"{modname}\"] = ["
+    util.outprint "if (typeof originalSourceLines !== \"undefined\") \{"
+    util.outprint "  originalSourceLines[\"{modname}\"] = ["
     def sourceLines = util.cLines
     def numberOfLines = util.cLines.size
     var ln := 1
     while {ln < numberOfLines} do {
-        out "    \"{sourceLines.at(ln)}\","
+        util.outprint "    \"{sourceLines.at(ln)}\","
         ln := ln + 1
     }
     if (numberOfLines <= 0) then {
-        out " ];"
+        util.outprint " ];"
     } else {
-        out "    \"{sourceLines.at(numberOfLines)}\" ];"
+        util.outprint "    \"{sourceLines.at(numberOfLines)}\" ];"
     }
-    out "\}"
+    util.outprint "\}"
 }
 
 method compile(moduleObject, of, mode, bt, glPath) {
