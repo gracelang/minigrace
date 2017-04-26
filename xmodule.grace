@@ -172,28 +172,26 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
         return
     }
     def gmp = sys.environ.at "GRACE_MODULE_PATH"
-    def pn = filePath.fromString(pathname).setExtension "gct"
-    def moduleFileGct = util.file(pn) on (util.outDir)
+    def pn = filePath.fromString(pathname).setExtension "js"
+    def moduleFileJs = util.file(pn) on (util.outDir)
                                 orPath (gmp) otherwise { l ->
-        def graceFile = pn.copy.setExtension "grace"
-        def moduleFileGrace = util.file(graceFile) on(util.outDir)
+        def graceFileName = pn.copy.setExtension "grace"
+        def moduleFileGrace = util.file(graceFileName) on(util.outDir)
                                 orPath (gmp) otherwise { m ->
             def rm = errormessages.readableStringFrom(m)
             errormessages.error("I can't find {pn.shortName} " ++
-                "or {graceFile.shortName}; looked in {rm}.") atRange (sourceRange)
+                "or {graceFileName.shortName}; looked in {rm}.") atRange (sourceRange)
         }
         compileModule (nm) inFile (moduleFileGrace.asString)
                 forDialect (isDialect) atRange (sourceRange)
         util.file(pn) on(util.outDir) orPath (gmp) otherwise { m ->
             def rm = errormessages.readableStringFrom(m)
             errormessages.error("I just compiled {moduleFileGrace} " ++
-                "but can't find the .gct; looked in {rm}.") atRange (sourceRange)
+                "but can't find the .js file; looked in {rm}.") atRange (sourceRange)
         }
     }
 
-    def gctDict = gctCache.at(nm) ifAbsent {
-        parseGCT (nm) sourceDir (moduleFileGct.directory)
-    }
+    def gctDict = parseGCT(nm)
     def sourceFile = filePath.fromString(gctDict.at "path" .first)
     def sourceExists = if (sourceFile.directory.contains "stub") then {
         false        // for binary-only modules like unicode
@@ -201,9 +199,7 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
         sourceFile.exists
     }
     if ( util.target == "js" ) then {
-        def moduleFileJs = moduleFileGct.copy.setExtension ".js"
         if (moduleFileJs.exists && {
-            moduleFileGct.exists } && {
                 sourceExists.not || { moduleFileJs.newer(sourceFile) }
             }
         ) then {
@@ -222,7 +218,7 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
         }
         imports.other.add(nm)
     }
-    addTransitiveImports(moduleFileGct.directory, isDialect, nm, sourceRange)
+    addTransitiveImports(moduleFileJs.directory, isDialect, nm, sourceRange)
 }
 
 method directory (d) expectedOrInPath (p) -> Boolean {
@@ -323,30 +319,95 @@ method parseGCT(moduleName) {
 method parseGCT(moduleName) sourceDir(dir) is confidential {
     def gctData = emptyDictionary
     def sz = moduleName.size
-    def sought = filePath.fromString(moduleName).setExtension ".gct"
-    def filename = util.file(sought) on(dir)
-      orPath(sys.environ.at "GRACE_MODULE_PATH") otherwise { l ->
-        def rl = errormessages.readableStringFrom(l)
-        util.log 80 verbose "Can't find file {sought} for module {moduleName}; looked in {rl}."
-        gctCache.at(moduleName) put(gctData)
-        return gctData
-    }
-    def tfp = io.open(filename, "r")
+    def gctList = extractGctFor(moduleName) sourceDir(dir)
     var key := ""
-    while {!tfp.eof} do {
-        def line = tfp.getline
+    for (gctList) do { line ->
         if (line.size > 0) then {
-            if (line.at(1) != " ") then {
-                key := line.substringFrom 1 to (line.size-1)
+            if (line.first ≠ " ") then {
+                key := line.substringFrom 1 to (line.size-1)  // dropping the ":"
                 gctData.at(key) put [ ]
             } else {
                 gctData.at(key).addLast(line.substringFrom 2 to (line.size))
             }
         }
     }
-    tfp.close
     gctCache.at(moduleName) put(gctData)
     return gctData
+}
+
+method extractGctFor(moduleName) sourceDir(dir) {
+    // Extracts the gct information for moduleName from an external file
+
+    try {
+        return extractGctFromJsFile(moduleName) sourceDir(dir)
+    } catch {
+        ep:EnvironmentException -> done
+    } // other excpetions are not caught
+
+    return extractGctFromGctFile(moduleName) sourceDir(dir)
+}
+
+method extractGctFromJsFile(moduleName) sourceDir(dir) {
+    // Looks for a .js file continaing the compiled code for moduleName.
+    // The file that referenced moduleName is in directory dir.
+    // returns the gct information as a collection of Strings.
+
+    def sought = filePath.fromString(moduleName).setExtension ".js"
+    def gmp = sys.environ.at "GRACE_MODULE_PATH"
+    def filename = util.file(sought) on(dir) orPath(gmp) otherwise { l ->
+        def rl = errormessages.readableStringFrom(l)
+        EnvironmentException.raise "Can't find file {sought} for module {moduleName}; looked in {rl}."
+    }
+    def jsStream = io.open(filename, "r")
+    var maxLines := 10  // look in first 10 lines of js file
+    while { jsStream.eof.not && (maxLines > 0) } do {
+        def line = jsStream.getline
+        if (line.startsWith "  gctCache[") then {
+            jsStream.close
+            return splitJsString(line)
+        }
+        maxLines := maxLines - 1
+    }
+    jsStream.close
+    EnvironmentException.raise "Can't find gct string in JS file {filename}"
+}
+
+method extractGctFromGctFile(moduleName) sourceDir(dir) {
+    // Looks for a .gct file continaing the compiled code for moduleName.
+    // The file that referenced moduleName is in directory dir.
+    // Returns the gct information as a collection of Strings.
+    def sought = filePath.fromString(moduleName).setExtension ".gct"
+
+    def gmp = sys.environ.at "GRACE_MODULE_PATH"
+    def filename = util.file(sought) on(dir) orPath(gmp) otherwise { l ->
+        def rl = errormessages.readableStringFrom(l)
+        EnvironmentException.raise "Can't find file {sought} for module {moduleName}; looked in {rl}."
+    }
+    def gctStream = io.open(filename, "r")
+    def result = []
+    while { gctStream.eof.not } do {
+        result.push(gctStream.getline)
+    }
+    result
+}
+
+method splitJsString(jsLine:String) {
+    // jsLine is a line of javascript like
+    //   gctCache["xmodule"] = "classes:\nconfidential:\n CheckerFailure\n ..."
+    // Evaluates the string on the rhs of the = sign, splits into lines,
+    // and returns a (Grace) list containing those lines as (Grace) strings.
+    native "js" code ‹
+        var arg = var_jsLine._value;
+        var keyStr = "\"] = ";
+        var keyStart = arg.indexOf(keyStr);
+        var stringLit = arg.substr(keyStart + keyStr.length);
+        var gctString = eval(stringLit);
+        var jsStringArray = gctString.split("\n");
+        result = callmethod(Grace_prelude, "emptyList", [0]);
+        for (var ix = 0, len = jsStringArray.length ; ix < len; ix++) {
+            callmethod(result, "push(1)", [1],
+                new GraceString (jsStringArray[ix]));
+        }›
 }
 
 method writeGCT(modname, dict) is confidential {
