@@ -2,17 +2,17 @@
 
 "use strict";
 // Runs the minigrace compiler using the components in the same directory
-// as this script.  Expects to be invoked by minigarce-js.
+// as this script.  Expects to be invoked by minigrace-js.
 
 // This script is similar to js/grace, the script that runs a Grace program
-// that has been compiled into JavaScipt.  The difference is that it is
-// specialied to run the mingrace compiler.  It's necessary because the
-// compiler may needs to load the modules that are components of the
+// that has been compiled into JavaScript.  The difference is that it is
+// specialised to run the minigrace compiler.  It's necessary because the
+// compiler needs to load the modules that are components of the
 // compiler from a place different from where it searches for modules that
-// that are components of the program being compiled.  In particualr,
-// this will be so when the compiler ie being bootstrapped.
+// that are components of the program being compiled.  In particular,
+// this will be so when the compiler is being bootstrapped.
 
-// Eventually, the code commone to this file, grace.in, ande js/minigrace.js
+// Eventually, the code common to this file, grace.in, and js/minigrace.js
 // should be factored out and placed in a single file.
 
 var path = require("path");
