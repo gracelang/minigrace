@@ -266,7 +266,7 @@ trait collection⟦T⟧ {
         action.apply
     }
     method size {
-        SizeUnknown.raise "this collection does not know its size"
+        SizeUnknown.raise "collection {asDebugString} does not know its size"
     }
     method do { required }
     method iterator { required }
@@ -319,10 +319,6 @@ trait collection⟦T⟧ {
 trait enumerable⟦T⟧ {
     use collection⟦T⟧
     method iterator { required }
-    method size {
-        // override if size is known
-        SizeUnknown.raise "size requested on {asDebugString}"
-    }
     method asDictionary {
         def result = dictionary.empty
         keysAndValuesDo { k, v ->
@@ -385,6 +381,7 @@ trait indexable⟦T⟧ {
     use collection⟦T⟧
     method at(index) { required }
     method size { required }
+    method sizeIfUnknown(action) { size }
     method isEmpty { size == 0 }
     method keysAndValuesDo(action:Procedure2⟦Number,T⟧) -> Done {
         def curSize = size
@@ -433,6 +430,7 @@ method max(a,b) is confidential {       // copied from standard prelude
 def emptySequence is confidential = object {
     use indexable
     method size { 0 }
+    method sizeIfUnknown(action) { 0 }
     method isEmpty { true }
     method at(n) { BoundsError.raise "index {n} of empty sequence" }
     method keys { self }
