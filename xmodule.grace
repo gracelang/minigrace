@@ -411,14 +411,16 @@ method splitJsString(jsLine:String) {
 }
 
 method writeGCT(modname, dict) is confidential {
-    def fp = io.open("{util.outDir}{modname}.gct", "w")
-    list(dict.bindings).sortBy(keyCompare).do { b ->
-        fp.write "{b.key}:\n"
-        list(b.value).sort.do { v ->
-            fp.write " {v}\n"
+    if (util.extensions.contains "gctfile") then {
+        def fp = io.open("{util.outDir}{modname}.gct", "w")
+        list(dict.bindings).sortBy(keyCompare).do { b ->
+            fp.write "{b.key}:\n"
+            list(b.value).sort.do { v ->
+                fp.write " {v}\n"
+            }
         }
+        fp.close
     }
-    fp.close
     gctCache.at(modname) put(dict)
 }
 

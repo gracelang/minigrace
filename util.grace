@@ -148,6 +148,8 @@ method parseargs(buildinfo) {
                             }
                             sys.exit(0)
                         }
+                    } case { "--gctfile" ->
+                        extensionsv.put("gctfile", true)
                     } case { "-j" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
