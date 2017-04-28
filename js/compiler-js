@@ -109,6 +109,7 @@ MiniGrace.prototype.trapErrors = function(func) {
                     });
                 }
             }
+            process.exit(3);
         } else if (e === "SystemExit") {
             process.exit(1);
         } else {
