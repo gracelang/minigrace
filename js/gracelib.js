@@ -2911,11 +2911,6 @@ function gracecode_util() {
 if (typeof(process) === "undefined" && typeof gctCache !== "undefined")
     gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=(1)\n dynamicModule\n dynamicModule:=(1)\n importDynamic\n importDynamic:=(1)\n jobs\n jobs:=(1)\n cLines\n cLines:=(1)\n lines\n lines:=(1)\n filename\n filename:=(1)\n errno\n errno:=(1)\n parseargs\n previousElapsed\n previousElapsed:=(1)\n log_verbose\n outprint\n syntaxError\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath(1)\n file(1)on(1)orPath(1)otherwise(1)\n file(1)onPath(1)otherwise(1)\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n stringMap\n buildinfo\n sys\n io\n";
 
-var interactive_module = false;
-function gracecode_interactive() {
-    return this;
-}
-
 function GraceMirrorMethod(o, k) {
     this.name = k;
     this.canonicalName = canonicalMethodName(k);
@@ -4048,7 +4043,6 @@ if (typeof global !== "undefined") {
     global.GraceBindingClass = GraceBindingClass;
     global.GraceBlock_match = GraceBlock_match;
     global.GraceBoolean = GraceBoolean;
-    global.gracecode_interactive = gracecode_interactive;
     global.gracecode_io = gracecode_io;
     global.gracecode_mirrors = gracecode_mirrors;
     global.gracecode_sys = gracecode_sys;
