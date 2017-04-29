@@ -301,7 +301,7 @@ method compileModule (nm) inFile (sourceFile)
     }
     cmd := cmd ++ " --gracelib " ++ util.gracelibPath
     cmd := cmd ++ util.commandLineExtensions
-    cmd := "{cmd} --target {util.target} --noexec \"{sourceFile}\""
+    cmd := "{cmd} --target {util.target} --make \"{sourceFile}\""
     util.log 50 verbose "executing sub-compile {cmd}"
     def exitCode = io.spawn("bash", ["-c", cmd]).status
     if (exitCode != 0) then {

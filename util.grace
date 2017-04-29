@@ -9,7 +9,6 @@ var verbosity is public := defaultVerbosity
 var outfilev := io.output
 var infilev := io.input
 var modnamev := "standardInput"
-var runmodev := "make"
 var buildtypev := "run"
 var gracelibPathv := false
 var linenumv := 1
@@ -20,8 +19,6 @@ var targetv := "js"
 var extensionsv := map.new
 var recurse is readable := true
 var dynamicModule is public := false
-var importDynamic is public := false
-var jobs := 2
 def cLines is readable = [ ]
 def lines is readable = [ ]
 def nullFile = filePath.null        // don't modify this one
@@ -29,21 +26,14 @@ var filename is readable := nullFile
 var commandLineExtensions is readable := ""
 
 
-def targets = set ["lex", "parse", "grace", "ast", "processed-ast",
-    "patterns", "symbols", "imports", "js"]
+def targets = set [
+    "lex", "parse", "grace", "ast", "processed-ast", "symbols", "imports", "js"
+]
 
 def requiredModules is public = object {
-    def static is public = emptySet
-    def linkfiles is public = emptySet
     def other is public = emptySet
     method isAlready ( moduleName ) -> Boolean {
-        if ( static.contains(moduleName) ) then {
-            true
-        } elseif { other.contains(moduleName ) } then {
-            true
-        } else {
-            false
-        }
+        other.contains(moduleName)
     }
 }
 
@@ -85,28 +75,11 @@ method parseargs(buildinfo) {
                         }
                         vtagv := argv.at(ai + 1)
                     } case { "--make" ->
-                        runmodev := "make"
                         buildtypev := "bc"
                     } case { "--no-recurse" ->
                         recurse := false
-                    } case { "--dynamic-module" ->
-                        dynamicModule := true
-                        runmodev := "make"
-                        noexecv := true
-                        buildtypev := "bc"
-                    } case { "--import-dynamic" ->
-                        importDynamic := true
                     } case { "--run" ->
                         buildtypev := "run"
-                        runmodev := "make"
-                    } case { "--source" ->
-                        buildtypev := "source"
-                        runmodev := "build"
-                    } case { "--native" ->
-                        buildtypev := "native"
-                    } case { "--noexec" ->
-                        noexecv := true
-                        buildtypev := "bc"
                     } case { "--dir" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
@@ -150,12 +123,6 @@ method parseargs(buildinfo) {
                         }
                     } case { "--gctfile" ->
                         extensionsv.put("gctfile", true)
-                    } case { "-j" ->
-                        skip := true
-                        if(argv.size < (ai + 1)) then {
-                            startupFailure "-j requires an argument."
-                        }
-                        jobs := argv.at(ai + 1).asNumber
                     } case { "--version" ->
                         print("minigrace version "
                             ++ "{buildinfo.gitgeneration}")
@@ -374,9 +341,6 @@ method infile {
 method modname {
     modnamev
 }
-method runmode {
-    runmodev
-}
 method buildtype {
     buildtypev
 }
@@ -487,19 +451,18 @@ method processExtension(ext) {
     extensionsv.put(extn, extv)
 }
 method printhelp {
-    print "Usage: {sys.argv.at(1)} [OPTION]... [FILE]"
-    print "Compile, process, or run a Grace source file or standard input."
+    print "Usage: {sys.argv.at(1)} [Mode] [Option]... [FILE]"
+    print "Compile, process, or run a Grace source file, or standard input."
     print ""
     print "Modes:"
-    print "  --make           Compile FILE and link, creating a executable"
-    print "  --run            Compile FILE and execute the program [default]"
-    print "  --source         Compile FILE to C source, but no further"
-    print "  --noexec         Compile FILE to object code, but don't create executable"
-    print "  --dynamic-module Compile FILE as a dynamic module"
+    print "  --make           Compile FILE, creating an executable."
+    print "  --run            Compile FILE and execute the program [default]."
     print ""
     print "Options:"
     print "  --dir DIR        Use the directory DIR for generated output files,"
-    print "                   and for .gct files of imported modules"
+    print "                   and for .gct files of imported modules."
+    print "  --gctfile        Write a separate gct file, in addition to putting the"
+    print "                   GCT information in the compiled code."
     print "  --gracelib DIR   Look in DIR for gracelib.  If not specified, looks in"
     print "                   the same directory as {sys.argv.at(1)}, and then on GRACE_MODULE_PATH."
     print "  --help           This text"
@@ -516,6 +479,7 @@ method printhelp {
     print "                      n ≥ 60 also describes searches for imports"
     print "                      n ≥ 100 also describes import logic"
     print "  --version        Print version information"
+    print "  -Xprag           equivalent to putting `#pragma prag` in FILE"
     print ""
     print "By default, {sys.argv.at(1)} FILE will compile and execute FILE."
     print "More detailed usage information is in the <doc/usage> file in the source tree."

@@ -24,7 +24,6 @@ var bblock := "entry"
 
 var outfile
 var modname := "main"
-var runmode := "build"
 var buildtype := "bc"
 var inBlock := false
 var compilationDepth := 0
@@ -1521,13 +1520,12 @@ method outputSource {
     util.outprint "\}"
 }
 
-method compile(moduleObject, of, mode, bt, glPath) {
+method compile(moduleObject, of, bt, glPath) {
     // compile the module represente by the ast.moduleNode moduleObject.
-    // of is the output file; rm the run mode, and bt the build type.
+    // of is the output file, and bt the build type.
     // glPath is the GRACE_MODULE_PATH to use when running the compiled code
 
     outfile := of
-    runmode := mode
     buildtype := bt
 
     initializeCodeGenerator(moduleObject)

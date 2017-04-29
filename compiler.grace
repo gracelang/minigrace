@@ -93,8 +93,7 @@ xmodule.doAstCheck(moduleObject)
 // Perform the actual compilation
 match(util.target)
     case { "js" ->
-        genjs.compile(moduleObject, util.outfile, util.runmode,
-            util.buildtype, util.gracelibPath)
+        genjs.compile(moduleObject, util.outfile, util.buildtype, util.gracelibPath)
     }
     case { _ ->
         io.error.write("minigrace: no such target '" ++ util.target ++ "'\n")
