@@ -410,6 +410,10 @@ method execDir {
 method file(name) on(origin) orPath(pathString) otherwise(action) {
     def locations = filePath.split(pathString)
     locations.addFirst(origin)
+    if (locations.contains(outDir).not) then { locations.addFirst(outDir) }
+        // it's important that outDir is first; if not, the compiler
+        // might compile an imported file, but then be unable to find the
+        // code that it just generated.
     if (locations.contains(execDir).not) then { locations.addLast(execDir) }
     def candidate = name.copy
     def originalDir = name.directory
