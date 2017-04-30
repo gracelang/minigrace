@@ -27,9 +27,9 @@ j2/stringMap.js: j2/standardGrace.js
 j2/util.js: j2/io.gct j2/sys.gct j2/unixFilePath.js j2/stringMap.js j2/standardGrace.js
 j2/xmodule.js: j2/io.gct j2/sys.gct j2/util.js j2/ast.js j2/mirrors.gct j2/errormessages.js j2/unixFilePath.js j2/standardGrace.js
 
-j2/logo.gct: j2/turtle.gct
-j2/logo.js: j2/turtle.js
+j2/logo.js: j2/turtle.js j2/standardGrace.js
 j2/requireTypes.js: j2/dialect.js j2/standardGrace.js
-j2/staticTypes.js: j2/dialect.js
-j2/turtle.gct: j2/dom.gct
-j2/turtle.js: j2/dom.gct
+j2/staticTypes.js: j2/dialect.js j2/standardGrace.js
+j2/turtle.js: j2/dom.gct j2/dom.js j2/standardGrace.js
+j2/beginningStudent.js: j2/standardGrace.js
+
