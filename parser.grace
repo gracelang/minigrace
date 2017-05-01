@@ -2171,7 +2171,12 @@ method dodialect {
         if (values.isEmpty) then {
             def dn = ast.dialectNode.fromToken(sym)
             next
-            moduleObject.theDialect := dn
+            if (moduleObject.theDialect.line == 0) then {
+                moduleObject.theDialect := dn
+            } else {
+                errormessages.syntaxError("at most one dialect statement may appear in a module.")
+                  atLine(lastToken.line)
+            }
         } else {
             errormessages.syntaxError("a dialect statement must be at the start of the module.")
                   atLine(lastToken.line)
