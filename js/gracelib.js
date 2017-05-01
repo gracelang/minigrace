@@ -302,23 +302,6 @@ GraceString.prototype = {
             tmp = tmp.replace(/\t/g, '\\t');
             return new GraceString(tmp);
         },
-        "_escape": function(argcv) {
-            // Used by the genc compiler backend to help generate utf-8.
-            // This implementation is inadequate for any other purpose;
-            // it works only for the particular strings thrown at it
-            // by genc.  *Not* part of the documented string interface.
-            var tmp = callmethod(this, "replace(1)with(1)", [2],
-                    new GraceString("\\"), new GraceString("\\\\"));
-            tmp = callmethod(tmp, "replace(1)with(1)", [2],
-                    new GraceString("\""), new GraceString("\\22"));
-            tmp = callmethod(tmp, "replace(1)with(1)", [2],
-                    new GraceString("\n"), new GraceString("\\0a"));
-            tmp = callmethod(tmp, "replace(1)with(1)", [2],
-                    new GraceString("\r"), new GraceString("\\0d"));
-            tmp = callmethod(tmp, "replace(1)with(1)", [2],
-                    new GraceString("\u2028"), new GraceString("\\e2\\80\\a8"));
-            return tmp;
-        },
         "replace(1)with(1)": function(argcv, what, wth) {
             var s = this._value;
             var os = "";
@@ -4000,9 +3983,10 @@ function graceModuleName(fileName) {
 }
 
 function escapeident(id) {
-    // must correspond to escapeident(_) in genjs.grace
+    // escapses characters not legal in an identifer using __«codepoint»__
+    // This function must correspond to method escapeident(_) in genjs.grace
     var nm = "";
-    for (var ix = 0; ix < id.length; ix++) {
+    for (var ix = 0, len = id.length; ix < len; ix++) {
         var o = id.charCodeAt(ix);
         if (((o >= 97) && (o <= 122)) || ((o >= 65) && (o <= 90)) ||
             ((o >= 48) && (o <= 57))) {
@@ -4012,6 +3996,34 @@ function escapeident(id) {
         }
     }
     return nm;
+}
+
+function escapestring(str) {
+    // escapes embedded double-quotes, backslashes, newlines and non-ascii chars
+    // this function must correspond to method escapestring(_) in genjs.grace
+    var os = ""
+    for (var ix = 0, len = str.length; ix < len; ix++) {
+        var c = str.charAt(ix);
+        if (c === "\"") {
+            os = os + "\\\"";
+        } else if (c === "\\") {
+            os = os + "\\\\";
+        } else if (c === "\n") {
+            os = os + "\\n";
+        } else {
+            var cOrd = str.charCodeAt(ix);
+            if  ((cOrd < 32) || (cOrd > 126)) {
+                var uh = cOrd.toString(16)
+                while (uh.length < 4) {
+                    uh = "0" + uh;
+                }
+                os = os + "\\u" + uh;
+            } else {
+                os = os + c;
+            }
+        }
+    }
+    return os;
 }
 
 
