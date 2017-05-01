@@ -41,7 +41,7 @@ NPM_STABLE_VERSION=1.0.3984
 VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
 WEBFILES_STATIC = $(filter-out sample,$(sort index.html global.css minigrace.js tabs.js  gtk.js debugger.js ace  debugger.html  importStandardGrace.js $(ICONS)))
-WEBFILES_DYNAMIC = $(sort $(ALL_LIBRARY_MODULES:%.grace=%.js) $(filter-out util.js,$(SOURCEFILES:%.grace=%.js) gracelib.js dom.js timer.js unicodedata.js))
+WEBFILES_DYNAMIC = $(sort $(ALL_LIBRARY_MODULES:%.grace=%.js) $(filter-out util.js,$(MGSOURCEFILES:%.grace=%.js) gracelib.js dom.js timer.js unicodedata.js))
 WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html js/unicodedata.js js/importStandardGrace.js $(ICONS:%=js/%) $(ALL_LIBRARY_MODULES:%.grace=j2/%.js) $(filter-out j2/util.js, $(SOURCEFILES:%.grace=j2/%.js))))
 WEBFILES_SIMPLE = $(filter-out js-simple/sample,$(sort js-simple/index.html js-simple/global.css js-simple/tests js-simple/minigrace.js js-simple/tabs-simple.js js-simple/gracelib.js js-simple/dom.js js-simple/gtk.js js-simple/debugger.js js-simple/timer.js js-simple/ace  js-simple/debugger.html  js-simple/unicodedata.js js-simple/importStandardGrace.js $(ICONS:%=js-simple/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js, $(SOURCEFILES:%.grace=%.js))))
 WEB_GRAPHICS_MODULES = modules/turtle.grace modules/logo.grace
@@ -53,9 +53,11 @@ CREATE_J1 := $(shell if [ ! -e j1 ] ; then mkdir -p j1 ; fi)
 CREATE_J2 := $(shell if [ ! -e j2 ] ; then mkdir -p j2 ; fi)
 CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
 
-all: minigrace-environment minigrace.js.env $(WEBFILES)
+all: minigrace.env ideBuild
 
-.PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects dev-ide dev-ideDeploy echo ide ide-js ideBuild ideBuild-js ideDeploy ideDeploy-js fullclean install j1-minigrace j2-minigrace js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env old-js-one old-js-two pull-web-editor pull-objectdraw selfhost-stats selftest selftest-js samples sample-% test test.js test.js.compile uninstall
+alltest: test module.test self.test
+
+.PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects dev-ide dev-ideDeploy echo ide ideBuild ideDeploy fullclean install j1-minigrace j2-minigrace just-minigrace minigrace.env pull-web-editor pull-objectdraw selfhost-stats self.test samples sample-% test test.compile uninstall
 
 # clear out the default rules: produces far less --debug output
 .SUFFIXES:
@@ -73,8 +75,6 @@ $(ALL_LIBRARY_MODULES:%.grace=j2/%.gct): j2/%.gct: modules/%.grace
 	GRACE_MODULE_PATH=modules:. j2/minigrace-js $(VERBOSITY) --make --target js --dir j2 $<
 
 ace-code: js/ace/ace.js
-
-alltests: test test.js module-test-js js/sample-dialects
 
 clean:
 	rm -f gracelib.o gracelib-basic.o standardInput{.grace,.gct,.gcn,.gso,.o,}
@@ -101,7 +101,7 @@ clean:
 	cd c && rm -f *.gcn *.gct *.c *.h *.grace minigrace unicode.gso gracelib.o
 	rm -f minigrace *.js
 	rm -fr grace-web-editor
-	rm -fr selftest selftest-js
+	rm -fr selftest
 	rm -fr tests/test-*.log tests/*{.c,.gct,.gso,.gcn,.js}
 	rm -fr js/tests/test-*.log js/tests/*{.c,.gct,.gso,.gcn,.js}
 	rm -f tests/retired/*{.c,.gct,.gso,.gcn,.js} js/tests/retired/*{.c,.gct,.gso,.gcn,.js}
@@ -157,7 +157,7 @@ fullclean: clean
 	rm -rf .git-generation-cache
 	rm -rf $$(ls -d known-good/*/* | grep -v $(STABLE))
 
-fulltest: gencheck clean selftest selftest-js module-test-js
+fulltest: gencheck clean self.test test module-test
 
 gencheck:
 	X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache
@@ -176,29 +176,16 @@ grace-web-editor/scripts/setup.js: pull-web-editor $(filter-out %/setup.js,$(wil
 
 ide: ideDeploy
 
-ideBuild: js pull-brace grace-web-editor/scripts/setup.js grace-web-editor/scripts/background.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
+ideBuild: j2-minigrace minigrace.env pull-brace grace-web-editor/scripts/setup.js grace-web-editor/scripts/background.js $(WEBFILES_STATIC:%=js/%) $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES_DYNAMIC:%=j2/%))) $(ALL_LIBRARY_MODULES:%.grace=j2/%.js)
 	./tools/includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	./tools/calc-IDE-version
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
-	ln -f $(filter-out js/samples.js js/tabs.js,$(filter %.js,$(WEBFILES))) grace-web-editor/js
-	ln -f $(GRAPHIX:%.grace=js/%.js) grace-web-editor/js
-
-ideDeploy: ideBuild
-	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
-	rsync -az --delete --exclude .git grace-web-editor/ $(WEB_SERVER):$(WEB_DIRECTORY)
-
-ide-js: ideDeploy-js
-
-ideBuild-js: j2-minigrace minigrace.js.env pull-brace grace-web-editor/scripts/setup.js grace-web-editor/scripts/background.js $(WEBFILES_STATIC:%=js/%) $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES_DYNAMIC:%=j2/%))) $(ALL_LIBRARY_MODULES:%.grace=j2/%.js)
-	./tools/includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
-	./tools/calc-IDE-version
-	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
-	@if ( ! cmp --quiet j2/dom.js js/dom.js ) ; then echo "j2/dom.js and js/dom.js are different in ideBuild-js" ; cp js/dom.js j2/dom.js ; fi
+	@if ( ! cmp --quiet j2/dom.js js/dom.js ) ; then echo "j2/dom.js and js/dom.js are different in ideBuild" ; cp js/dom.js j2/dom.js ; fi
 	ln -f $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES_STATIC:%=js/%))) grace-web-editor/js
 	ln -f $(WEBFILES_DYNAMIC:%=j2/%) grace-web-editor/js
 	ln -f $(GRAPHIX:%.grace=j2/%.js) grace-web-editor/js
 
-ideDeploy-js: ideBuild-js
+ideDeploy: ideBuild
 	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
 	rsync -az --delete --exclude .git grace-web-editor/ $(WEB_SERVER):$(WEB_DIRECTORY)
 
@@ -216,18 +203,18 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(STUBS:%.grace=js/%.gct)
 	@./tools/warnAbout GRACE_MODULE_PATH $(MODULE_PATH)
 
 
-$(JSJSFILES:%.js=j1/%.js): j1/%.js: $(JS-KG)/%.js
-# The j1/*.js files are created by the kg compiler, and so need to be run
-# with the kg runners and libraries.
+$(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
+# The j1/*.js files are used to run the j1 compiler, and so need to be
+# consistent with the code generated from the current js files.
 	cp -p $< $@
 
 j1-minigrace: $(JS-KG) $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js)
 
-j2/animation.gct j2/animation.js: j2/timer.gct j2/timer.js
+j2/animation.js: j2/timer.gct j2/timer.js
 
-j2/rtobjectdraw.gct j2/rtobjectdraw.js: j2/requireTypes.gct j2/requireTypes.js
+j2/rtobjectdraw.js: j2/requireTypes.js
 
-j2/stobjectdraw.gct j2/stobjectdraw.js: j2/staticTypes.gct j2/staticTypes.js
+j2/stobjectdraw.js: j2/staticTypes.js
 
 j2/buildinfo.grace: buildinfo.grace
 	cp -p $< $@
@@ -282,10 +269,10 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
-js/standardGrace.js js/standardGrace.gct: standardGrace.grace js/collectionsPrelude.gct minigrace
+js/standardGrace.js: standardGrace.grace js/collectionsPrelude.js minigrace
 	./minigrace --target js --dir js --make $(VERBOSITY) $<
 
-js/animation%gct js/animation%js: js/timer.gct objectdraw/animation.grace
+js/animation%js: js/timer.gct objectdraw/animation.grace
 
 Makefile.conf: configure stubs modules
 	./configure
@@ -298,14 +285,9 @@ $(MGSOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace j1/minigrace-js
 
 minigrace: j2-minigrace
 
-minigrace-environment: minigrace-c-env minigrace-js-env
+minigrace.env: j2-minigrace $(LIBRARY_MODULES:%.grace=j2/%.js) $(EXTERNAL_STUBS:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct)
 
-minigrace.js.env: j2-minigrace $(LIBRARY_MODULES:%.grace=j2/%.js) $(EXTERNAL_STUBS:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct)
-
-module-test-js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.js)
-	modules/tests/harness_js minigrace
-
-module.test.js: minigrace.js.env $(TYPE_DIALECTS:%=j2/%.js)
+module.test: minigrace.env $(TYPE_DIALECTS:%=j2/%.js)
 	modules/tests/harness-js-js j2/minigrace-js
 
 modules/rtobjectdraw.grace: modules/objectdraw.grace tools/make-rt-version
@@ -323,7 +305,7 @@ $(JS-KG):
 	mkdir -p $(JS-KG)
 	cp -R node_modules/minigrace/* $(JS-KG)
 
-npm-build-kg: minigrace.js.env
+npm-build-kg: minigrace.env
 	mkdir -p npm-build
 	rm -rf npm-build/*
 	cp npm-js-kg.json npm-build/package.json
@@ -363,32 +345,24 @@ sample-dialects: $(DIALECT_DEPENDENCIES)
 samples: js/sample-dialects
 # omitted for the time-being: js/sample-graphics
 
-selfhost-stats: minigrace.js.env
-	rm -rf selftest-js
-	mkdir -p selftest-js
-	cd selftest-js; ln -sf $(STUBS:%.grace=../j2/%.gct) $(STUBS:%.grace=../j2/%.js) .
-	cp -f $(SOURCEFILES) selftest-js    # copy makes the source file newer than the .gct
-	touch selftest-js/*
-	cd selftest-js; ln -sf ../js/gracelib.js ../js/unicodedata.js .
-	cd selftest-js; STATS=TRUE time ../j2/minigrace-js $(VERBOSITY) --make --target js --dir generated  compiler.grace
+selfhost-stats: minigrace.env
+	rm -rf selftest
+	mkdir -p selftest
+	cd selftest; ln -sf $(STUBS:%.grace=../j2/%.gct) $(STUBS:%.grace=../j2/%.js) .
+	cp -f $(SOURCEFILES) selftest    # copy makes the source file newer than the .gct
+	touch selftest/*
+	cd selftest; ln -sf ../js/gracelib.js ../js/unicodedata.js .
+	cd selftest; STATS=TRUE time ../j2/minigrace-js $(VERBOSITY) --make --target js --dir generated  compiler.grace
 # generated files go in a subdirectory, to avoid over-writing the files that
 # are being executed!
 
-selftest: minigrace-environment
+self.test: minigrace.env
 	rm -rf selftest
 	mkdir -p selftest
 	cat j2/compiler.js j2/gracelib.js $(SOURCEFILES:%.grace=j2/%.js) > selftest/mgc
 	chmod a+x selftest/mgc
 	GRACE_MODULE_PATH=modules:js selftest/mgc $(VERBOSITY) --make --module minigrace --dir selftest --module minigrace compiler.grace
 	tests/harness selftest/minigrace tests
-
-selftest-js: minigrace-js-env $(ALL_LIBRARY_MODULES:%.grace=../js/%.js)
-	rm -rf selftest-js
-	mkdir -p selftest-js
-	( cd selftest-js; ln -sf $(ALL_LIBRARY_MODULES:%.grace=../js/%.js) . )
-	( cd selftest-js; ln -sf ../js/gracelib.js . )
-	GRACE_MODULE_PATH=modules:js ./minigrace-js $(VERBOSITY) --make --native --module minigrace --dir selftest-js --module minigrace compiler.grace && \
-	tests/harness selftest-js/minigrace tests
 
 $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
 	cd js/tests; ln -sf ../$(<F) .
@@ -408,10 +382,10 @@ $(STUBS:%.grace=js/%.gct): js/%.gct: stubs/%.gct
 
 tarWeb: js
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
-#	Untar in your public_html directory with "tar -xpf ~/webfiles.tar". Make the
-#	subdirectory that tar creates readable and executable by your web daemon.
+	@echo "Untar in your public_html directory with `tar -xpf ~/webfiles.tar`. Make the
+	@echo "subdirectory that tar creates readable and executable by your web daemon."
 
-test.js.compile: minigrace
+test.compile: minigrace
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/'\
     | while read -r fileName num; \
@@ -420,7 +394,7 @@ test.js.compile: minigrace
 
 $(TYPE_DIALECTS:%=js/%.js): js/%.js: $(DIALECTS_NEED:%=%.js) $(patsubst modules/%, js/%.js, $(filter modules/%,$(DIALECTS_NEED)))
 
-test: minigrace.js.env
+test: minigrace.env
 	js/tests/harness-js j2/minigrace-js js/tests "" $(TESTS)
 
 togracetest: minigrace
