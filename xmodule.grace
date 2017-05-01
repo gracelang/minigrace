@@ -336,19 +336,21 @@ method parseGCT(moduleName) sourceDir(dir) is confidential {
 }
 
 method extractGctFor(moduleName) sourceDir(dir) {
-    // Extracts the gct information for moduleName from an external file
+    // Extracts the gct information for moduleName from an external resource
+
+    if (inBrowser) then { return extractGctFromCache(moduleName) }
 
     try {
         return extractGctFromJsFile(moduleName) sourceDir(dir)
     } catch {
         ep:EnvironmentException -> done
-    } // other excpetions are not caught
+    } // other exceptions are not caught
 
     return extractGctFromGctFile(moduleName) sourceDir(dir)
 }
 
 method extractGctFromJsFile(moduleName) sourceDir(dir) {
-    // Looks for a .js file continaing the compiled code for moduleName.
+    // Looks for a .js file containing the compiled code for moduleName.
     // The file that referenced moduleName is in directory dir.
     // returns the gct information as a collection of Strings.
 
@@ -403,12 +405,26 @@ method splitJsString(jsLine:String) {
         var stringLit = arg.substr(keyStart + keyStr.length);
         var gctString = eval(stringLit);
         var jsStringArray = gctString.split("\n");
-        result = callmethod(Grace_prelude, "emptyList", [0]);
+        result = new PrimitiveGraceList([]);
         for (var ix = 0, len = jsStringArray.length ; ix < len; ix++) {
             callmethod(result, "push(1)", [1],
                 new GraceString (jsStringArray[ix]));
         }›
 }
+
+method extractGctFromCache(module) {
+    // When running in the browser, returns a Grace list containing
+    // the contents of the cached gct information for module
+
+    native "js" code ‹var gctString = gctCache[var_module._value];
+        var jsStringArray = gctString.split("\n");
+        result = new PrimitiveGraceList([]);
+        for (var ix = 0, len = jsStringArray.length ; ix < len; ix++) {
+            callmethod(result, "push(1)", [1],
+                new GraceString (jsStringArray[ix]));
+        }›
+}
+
 
 method writeGCT(modname, dict) is confidential {
     if (util.extensions.contains "gctfile") then {
