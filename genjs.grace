@@ -119,38 +119,12 @@ method emitBufferedOutput {
 }
 
 method escapeident(vn) {
-    var nm := ""
-    for (vn) do {c->
-        var o := c.ord
-        if (((o >= 97 ) && (o <= 122)) || ((o >= 65) && (o <= 90))
-            || ((o >= 48) && (o <= 57))) then {
-            nm := nm ++ c
-        } else {
-            nm := nm ++ "__" ++ o ++ "__"
-        }
-    }
-    nm
+    // escapes characters not legal in an identifer using __«codepoint»__
+    native "js" code ‹return new GraceString(escapeident(var_vn._value));›
 }
 method escapestring(s) {
-    var os := ""
-    for (s) do {c->
-        if (c == "\"") then {
-            os := os ++ "\\\""
-        } elseif { c == "\\" } then {
-            os := os ++ "\\\\"
-        } elseif { c == "\n" } then {
-            os := os ++ "\\n"
-        } elseif { (c.ord < 32) || (c.ord > 126) } then {
-            var uh := util.hex(c.ord)
-            while {uh.size < 4} do {
-                uh := "0" ++ uh
-            }
-            os := os ++ "\\u" ++ uh
-        } else {
-            os := os ++ c
-        }
-    }
-    os
+    // escapes embedded double-quotes, backslashes, newlines and non-ascii chars
+    native "js" code ‹return new GraceString(escapestring(var_s._value));›
 }
 method varf(vn) {
     "var_" ++ escapeident(vn)
