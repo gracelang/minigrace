@@ -296,10 +296,10 @@ GraceString.prototype = {
         "last": function() { return string_curriedAt.call(this, this._value.length); },
         "quoted": function(argcv) {
             var s = this._value;
-            var tmp = s.replace(/\\/g, '\\\\');
-            tmp = tmp.replace(/"/g, '\\"');
-            tmp = tmp.replace(/\n/g, '\\n');
-            tmp = tmp.replace(/\t/g, '\\t');
+            var tmp = s.replace(/\\/g, '\\\\');   // replaces backslash
+            tmp = tmp.replace(/"/g, '\\"');       // quotes double-quote
+            tmp = tmp.replace(/\n/g, '\\n');      // quotes newline
+            tmp = tmp.replace(/\t/g, '\\t');      // quotes tab
             return new GraceString(tmp);
         },
         "replace(1)with(1)": function(argcv, what, wth) {
@@ -4043,6 +4043,8 @@ if (typeof global !== "undefined") {
     global.do_import = do_import;
     global.emptyGraceObject = emptyGraceObject;
     global.EnvironmentExceptionObject = EnvironmentExceptionObject;
+    global.escapeident = escapeident;
+    global.escapestring = escapestring;
     global.ExceptionObject = ExceptionObject;
     global.findMethod = findMethod;
     global.getLineNumber = getLineNumber;
