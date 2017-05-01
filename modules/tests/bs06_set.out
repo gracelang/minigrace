@@ -2,10 +2,4 @@ prelude is the "beginningStudent" module
 outer is the "standardGrace" module
 set{}
 set{1}
-set{2, 1}
-set{1, 2, 3}
-set{1, 2, 3, 4}
-set{5, 4, 3, 2, 1}
-true
-set{5, 4, 3, 2, 1, 6}
-true
+sets: 9 run, 0 failed, 0 errors
