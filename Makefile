@@ -36,7 +36,7 @@ TEST_DEPENDENCIES = ast lexer stringMap collectionsPrelude parser xmodule errorm
 #   these are modules used in running the full test suite
 NPM_VERSION_PREFIX=1.0
 VERSION := $(NPM_VERSION_PREFIX).$(shell ./tools/git-calculate-generation)
-NPM_STABLE_VERSION=1.0.3984
+NPM_STABLE_VERSION=1.0.4049
 
 VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
@@ -371,10 +371,10 @@ $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
 # The next few rules are Static Pattern Rules.  Each is like an implicit rule
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
 
-$(STUBS:%.grace=j1/%.gct): j1/%.gct: stubs/%.grace $(JS-KG)/standardGrace.gct $(JS-KG)/minigrace-js
+$(STUBS:%.grace=j1/%.gct): j1/%.gct: stubs/%.grace $(JS-KG)/standardGrace.js $(JS-KG)/minigrace-js
 	$(JS-KG)/minigrace-js $(VERBOSITY) --make --target js -XgctFile --dir j1 -o /dev/null $<
 
-$(STUBS:%.grace=j2/%.gct): j2/%.gct: stubs/%.grace j1/standardGrace.gct j1/minigrace-js
+$(STUBS:%.grace=j2/%.gct): j2/%.gct: stubs/%.grace j1/standardGrace.js j1/minigrace-js
 	GRACE_MODULE_PATH=j1 j1/minigrace-js $(VERBOSITY) --make --gctfile --dir j2 -o /dev/null $<
 
 $(STUBS:%.grace=js/%.gct): js/%.gct: stubs/%.gct
