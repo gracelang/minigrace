@@ -1873,31 +1873,31 @@ function checkBlockApply(numargs) {
                 plural + " but given " + nArgs + "."));
     }
     if (this.guard.apply(this.receiver, args)) return;
-    if (n === 1) {
-        throw new GraceExceptionPacket(TypeErrorObject,
-            new GraceString("argument to block.apply(_) has wrong type."));
-    } else {
-        for (var ix = 0; ix < this.paramTypes.length; ix++) {
-            var match = callmethod(this.paramTypes[ix], "match(1)", [1], args[ix]);
-            if ( ! Grace_isTrue(match)) {
-                var n = ix + 1;
-                var canonicalName = "apply(_";
-                for (var i = 1; i < numargs; i++) { canonicalName += ",_"; }
-                canonicalName += ")";
-                var argDesc = (numargs === 1) ? "argument" : "argument " + n ;
-                if (this.paramTypes[ix].className.startsWith("Type")) {
-                    // startsWith("Type") catches TypeIntersection, TypeUnion,
-                    // etc, as well as class "Type" itself.
-                    raiseTypeError(argDesc + " to block." +
-                                canonicalName + " has wrong type.",
-                                this.paramTypes[ix], args[ix]);
-                } else {
-                    throw new GraceExceptionPacket(RequestErrorObject,
-                       new GraceString(argDesc + " to block." +
-                           canonicalName + " does not match pattern."));
-                }
-
+    for (var ix = 0; ix < this.paramTypes.length; ix++) {
+        var typeSpec = this.paramTypes[ix]
+        var match = callmethod(typeSpec, "match(1)", [1], args[ix]);
+        if ( ! Grace_isTrue(match)) {
+            var n = ix + 1;
+            var canonicalName = "apply(_";
+            for (var i = 1; i < numargs; i++) { canonicalName += ",_"; }
+            canonicalName += ")";
+            var typeName = "type " + "typeSpec.name"
+            if (typeName.startsWith("type anon")) {
+                typeName = "required type"
             }
+            var argDesc = (numargs === 1) ? "argument" : "argument " + n ;
+            if (typeSpec.className.startsWith("Type")) {
+                // startsWith("Type") catches TypeIntersection, TypeUnion,
+                // etc, as well as class "Type" itself.
+                raiseTypeError(argDesc + " to block." + canonicalName +
+                            " does not have " + typeName + ".",
+                            typeSpec, args[ix]);
+            } else {
+                throw new GraceExceptionPacket(RequestErrorObject,
+                   new GraceString(argDesc + " to block." +
+                       canonicalName + " does not match pattern."));
+            }
+
         }
     }
 }
