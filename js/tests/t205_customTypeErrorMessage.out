@@ -1,0 +1,3 @@
+Type error in apply(_,_); error message is
+argument 1 to block.apply(_,_) does not have type Custom.
+It is missing methods +(_) and -(_).

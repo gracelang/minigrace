@@ -4,26 +4,46 @@ import "mirrors" as mirror
 method methodsIn(DesiredType) missingFrom (value) -> String {
     def vMethods = mirror.reflect(value).methodNames
     def tMethods = DesiredType.methodNames
-    def missing = list(tMethods -- vMethods).sort
-    if (missing.size == 0) then {
+    def missing = list((tMethods -- vMethods).filter{m ->
+        (! m.contains "$")}).sort
+    def n = missing.size
+    if (n == 0) then {
         ProgrammingError.raise "{value.asDebugString} seems to have all the methods of {DesiredType}"
-    } else {
-        var s := ""
-        missing.do { each -> s := s ++ each }
-            separatedBy { s := s ++ ", " }
-        s
     }
+    var s := ""
+    missing.keysAndValuesDo { ix, each ->
+        s := s ++ each
+        if (ix == (n - 1)) then {
+            if (n > 2) then {
+                s := s ++ ", and "      // Oxford comma
+            } else {
+                s := s ++ " and "
+            }
+        } elseif { ix < n } then {
+            s := s ++ ", "
+        }
+    }
+    return s
 }
 method protocolOf(value) notCoveredBy (Q:Type) -> String  {
-    var s := ""
     def vMethods = set(mirror.reflect(value).methodNames)
     def qMethods = set(Q.methodNames)
     def missing = list((vMethods -- qMethods).filter{m ->
-        (! m.contains "$") && (m != "outer")}).sort
-    if (missing.isEmpty.not) then {
-        s := ""
-        missing.do { each -> s := s ++ each }
-            separatedBy { s := s ++ ", " }
+        (! m.contains "$")}).sort
+    def n = missing.size
+    if (n == 0) then { return "" }
+    var s := ""
+    missing.keysAndValuesDo { ix, each ->
+        s := s ++ each
+        if (ix == (n - 1)) then {
+            if (n > 2) then {
+                s := s ++ ", and "      // Oxford comma
+            } else {
+                s := s ++ " and "
+            }
+        } elseif { ix < n } then {
+            s := s ++ ", "
+        }
     }
     return s
 }

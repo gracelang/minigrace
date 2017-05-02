@@ -1881,9 +1881,9 @@ function checkBlockApply(numargs) {
             var canonicalName = "apply(_";
             for (var i = 1; i < numargs; i++) { canonicalName += ",_"; }
             canonicalName += ")";
-            var typeName = "type " + "typeSpec.name"
-            if (typeName.startsWith("type anon")) {
-                typeName = "required type"
+            var typeName = callmethod(typeSpec, "asString", [0])._value;
+            if (typeName.match(/type ‹anon›/)) {
+                typeName = "required type";
             }
             var argDesc = (numargs === 1) ? "argument" : "argument " + n ;
             if (typeSpec.className.startsWith("Type")) {
@@ -1907,11 +1907,13 @@ function raiseTypeError(msg, type, value) {
      var diff = "";
      try {
          var tc = callmethod(mm, "loadDynamicModule(1)", [1], new GraceString("typeComparison"));
-         var missing = callmethod(tc, "methodsIn(1)missingFrom(1)", [1, 1], type, value);
-         diff = "\nIt's missing methods " + missing._value;
+         var missing = callmethod(tc, "methodsIn(1)missingFrom(1)", [1, 1], type, value)._value;
+         var s = (missing.includes(" ")) ? "s " : " ";
+         diff = "\nIt is missing method" + s + missing + ".";
      } catch (e) {
          // if something goes wrong while generating the message, just give up
      }
+     if (! diff) { diff = ""; }
      var ex = new GraceExceptionPacket(TypeErrorObject, new GraceString(msg + diff));
      throw ex;
 }
