@@ -1890,12 +1890,12 @@ function checkBlockApply(numargs) {
                 // startsWith("Type") catches TypeIntersection, TypeUnion,
                 // etc, as well as class "Type" itself.
                 raiseTypeError(argDesc + " to block." + canonicalName +
-                            " does not have " + typeName + ".",
+                            " does not have " + typeName,
                             typeSpec, args[ix]);
             } else {
                 throw new GraceExceptionPacket(RequestErrorObject,
                    new GraceString(argDesc + " to block." +
-                       canonicalName + " does not match pattern."));
+                       canonicalName + " does not match pattern"));
             }
 
         }
@@ -1903,19 +1903,24 @@ function checkBlockApply(numargs) {
 }
 
 function raiseTypeError(msg, type, value) {
-     var mm = do_import("mirrors", gracecode_mirrors);
-     var diff = "";
-     try {
-         var tc = callmethod(mm, "loadDynamicModule(1)", [1], new GraceString("typeComparison"));
-         var missing = callmethod(tc, "methodsIn(1)missingFrom(1)", [1, 1], type, value)._value;
-         var s = (missing.includes(" ")) ? "s " : " ";
-         diff = "\nIt is missing method" + s + missing + ".";
-     } catch (e) {
-         // if something goes wrong while generating the message, just give up
-     }
-     if (! diff) { diff = ""; }
-     var ex = new GraceExceptionPacket(TypeErrorObject, new GraceString(msg + diff));
-     throw ex;
+    var diff;
+    if (GraceDone === value) {
+        diff = " — it is `done`.";
+    } else {
+        var mm = do_import("mirrors", gracecode_mirrors);
+        try {
+             var tc = callmethod(mm, "loadDynamicModule(1)", [1], new GraceString("typeComparison"));
+             var missing = callmethod(tc, "methodsIn(1)missingFrom(1)", [1, 1], type, value)._value;
+             var s = (missing.includes(" ")) ? "s " : " ";
+             diff = ".\nIt is missing method" + s + missing + ".";
+        } catch (e) {
+             // if something goes wrong while generating the message, just give up
+        }
+        if (! diff) { diff = ""; }
+    }
+    var ex = new GraceExceptionPacket(TypeErrorObject,
+                                      new GraceString(msg + diff));
+    throw ex;
 }
 
 function GraceBlock_match(argcv, o) {

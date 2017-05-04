@@ -181,7 +181,7 @@ method compileTypeCheck(expectedType, val, complaint, lineNumber) {
                 def typeDesc = expectedType.toGrace 0.quoted
                 out "if (!Grace_isTrue(request({nm_t}, \"match(1)\", [1], {val})))"
                 out "    raiseTypeError("
-                out "      \"{complaint} is not of type {typeDesc}.\","
+                out "      \"{complaint} is not of type {typeDesc}\","
                 out "      {nm_t}, {val});"
             }
         }
@@ -621,6 +621,7 @@ method compileMethodBody(methNode) {
     // compiles the body of method represented by methNode.
     // answers the register containing the result.
 
+    noteLineNumber (methNode.line) comment "body for method {methNode.canonicalName}"
     var ret := "GraceDone"
     methNode.body.do { nd -> ret := compilenode(nd) }
     ret
