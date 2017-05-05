@@ -16,24 +16,21 @@
 // should be factored out and placed in a single file.
 
 var path = require("path");
-var fs = require("fs");
-var util = require('util');
+if (typeof global !== "undefined") {
+    global.path = path;
+}
 
-global.minigrace = {};
-global.sourceObject = null;
-global.invocationCount = 0;
-global.onOuter = false;
-global.onSelf = false;
-global.gctCache = {};
-global.originalSourceLines = {};
-global.stackFrames = [];
+var fs = require("fs");
+
+// common code for `grace`, the command-line runner, compiler-js, the
+// runner for the compiler, and the web ide.
 
 function MiniGrace() {
     this.compileError = false;
     this.vis = "standard";
     this.mode = "js";
     this.modname = "main";
-    this.verbosity = 30;
+    this.verbosity = 20;
     this.lastSourceCode = "";
     this.lastMode = "";
     this.lastModname = "";
@@ -44,21 +41,40 @@ function MiniGrace() {
     
     this.generated_output = "";
     
-    this.stdout_write = function(value) { };
+    this.stdout_write = function(value) {
+        if(typeof(process) != "undefined") {
+            process.stdout.write(value);
+        }
+    };
     
     this.stderr_write = function(value) {
-        console.log(value);
+        // This function is used only in the oldWeb interface.  The exp interface
+        // replaces it with a different method in editor.js around line 138.
+        // There, each error write is turned into an html div, and is thus a line
+        // of its own.  For compatibility, we make each stderr_write a separate line.
+        if(typeof(process) != "undefined") {
+            process.stderr.write(value + "\n");
+        } else {
+            console.log(value + "\n");
+        }
     };
     
     this.stdin_read = function() {
-        return "";
+        if(typeof(process) != "undefined") {
+            return process.stdin.read();
+        } else {
+            return "";
+        }
     };
+}
+
+
+MiniGrace.prototype.padToFour = function(num) {
+    return num <= 9999 ? ("   "+num).slice(-4) : num;
 }
 
 MiniGrace.prototype.trapErrors = function(func) {
     this.exception = null;
-    if (Grace_prelude.methods["while()do"])
-        Grace_prelude.methods["while()do"].safe = this.breakLoops;
     try {
         func();
     } catch (e) {
@@ -66,31 +82,41 @@ MiniGrace.prototype.trapErrors = function(func) {
         if ((eStr === "RangeError: Maximum call stack size exceeded") ||    // Chrome
             (eStr === "InternalError: too much recursion") ) {              // Firefox
             e = new GraceExceptionPacket(new GraceException("TooMuchRecursion", ProgrammingErrorObject),
-                   new GraceString("Does one of your methods request execution of itself without limit?"));
-        }
-        if (e.exctype == 'graceexception') {
+                   new GraceString("does one of your methods request execution of itself without limit?"));
+        } else if (e.exctype === "graceexception") {
+            var stderr_write = this.stderr_write;
             this.exception = e;
-            callmethod(e, "printBacktrace", [0]);
-            if (originalSourceLines[e.moduleName]) {
-                var lines = originalSourceLines[e.moduleName];
+            if (e.exception.name === "AssertionFailure") {
+                stderr_write("Assertion Failed: " + e.message._value);
+                var skipable = new GraceList([
+                            new GraceString("gUnit"),
+                            new GraceString("minitest"),
+                            new GraceString("minispec"),
+                            new GraceString("beginningStudent")
+                ]);
+                callmethod(e, "printBacktraceSkippingModules", [1], skipable);
+                stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".");
+            } else {
+                callmethod(e, "printBacktrace", [0]);
+                stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".");
+                if (originalSourceLines[e.moduleName]) {
+                    var lines = originalSourceLines[e.moduleName];
                 for (let i = e.lineNumber - 1; i <= e.lineNumber + 1; i++) {
-                    if (lines[i-1] != undefined) {
-                        for (var j=0; j<4-i.toString().length; j++)
-                            this.stderr_write(" ");
-                        this.stderr_write("" + i + ": " + lines[i-1] + "\n");
+                        if (lines[i-1] != undefined) {
+                            stderr_write(this.padToFour(i) + ": " + lines[i-1]);
+                        }
                     }
+                    stderr_write("");
                 }
             }
             if (e.stackFrames.length > 0 && this.printStackFrames) {
-                this.stderr_write("Stack frames:\n");
+                stderr_write("Stack frames:\n");
                 for (i=0; i<e.stackFrames.length; i++) {
-                    this.stderr_write("  " + e.stackFrames[i].methodName + "\n");
-                    var stderr_write = this.stderr_write;
+                    stderr_write("  " + e.stackFrames[i].methodName);
                     e.stackFrames[i].forEach(function(name, value) {
-                        stderr_write("    " + name);
                         var debugString = "unknown";
                         try {
-                            if (typeof value == "undefined") {
+                            if (value === undefined) {
                                 debugString = "‹undefined›";
                             } else {
                                 debugString = callmethod(value,
@@ -98,31 +124,39 @@ MiniGrace.prototype.trapErrors = function(func) {
                             }
                         } catch(e) {
                             debugger;
-                            debugString = "<[Error calling asDebugString: " +
-                                  e.message._value + "]>";
+                            debugString = "[Error calling asDebugString:" +
+                                e.message._value + "]";
                         }
-                        debugString = debugString.replace("\\", "\\\\");
-                        debugString = debugString.replace("\n", "\\n");
                         if (debugString.length > 60)
                             debugString = debugString.substring(0,57) + "...";
-                        stderr_write(" = " + debugString + "\n");
+                        stderr_write("    " + name + " = " + debugString);
                     });
                 }
             }
             process.exit(3);
-        } else if (e === "SystemExit") {
-            process.exit(1);
-        } else {
-            this.stderr_write("Internal error around line " + getLineNumber() + 
-                " of " + getModuleName() + ": " + e + "\n");
+        } else if (e.exctype === "return") {
+            this.stderr_write("ProgrammingError: you are attempting to return " +
+                "from a method that has already returned, at line " +
+                lineNumber + " of " + moduleName);
+            process.exit(2);
+        } else if (e != "SystemExit") {
+            this.stderr_write("Internal error around line " +
+                lineNumber + " of " + moduleName + ": " + e);
             throw e;
             process.exit(2);
         }
-    } finally {
-        if (Grace_prelude.methods["while()do"])
-            Grace_prelude.methods["while()do"].safe = false;
     }
 };
+// end of common code
+
+global.minigrace = {};
+global.sourceObject = null;
+global.invocationCount = 0;
+global.onOuter = false;
+global.onSelf = false;
+global.gctCache = {};
+global.originalSourceLines = {};
+global.stackFrames = [];
 
 MiniGrace.prototype.run = function(fileName) {
     stackFrames = [];
@@ -145,19 +179,6 @@ MiniGrace.prototype.run = function(fileName) {
         do_import(fileName, theModule);
     }              );
 };
-
-//  This method has been added to the ECMAScript 6 specification, but is not yet in node:
-
-if ( ! String.prototype.endsWith) {
-    String.prototype.endsWith = function (suffix, position) {
-        if (position === undefined || position > this.length) {
-            position = this.length;
-        }
-        position = position - suffix.length;
-        var lastIndex = this.lastIndexOf(suffix, position);
-        return lastIndex !== -1 && lastIndex === position;
-    };
-}
 
 function graceModuleName(fileName) {
     var prefix = "gracecode_";
@@ -205,6 +226,8 @@ function addToPathIfNecessary(dir) {
         pathDirArray.push(dir);
     }
 }
+
+// end of preamble
 
 var graceModulePath = process.env.GRACE_MODULE_PATH;
 if (graceModulePath === undefined) {
@@ -269,8 +292,12 @@ function abspath(file) {
 var execDir = path.parse(process.argv[1]).dir + path.sep;
 
 try {
-    require(execDir + "gracelib.js");
-    require(execDir + "unicodedata.js");
+    if (typeof GraceObject === "undefined") {
+        require(execDir + "gracelib.js");
+    }
+    if (typeof unicodedata === "undefined") {
+        require(execDir + "unicodedata.js");
+    }
     minigrace = new MiniGrace();
     minigrace.loadModule("standardGrace", execDir, []);
     var executable = "compiler.js";

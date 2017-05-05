@@ -345,24 +345,17 @@ sample-dialects: $(DIALECT_DEPENDENCIES)
 samples: js/sample-dialects
 # omitted for the time-being: js/sample-graphics
 
-selfhost-stats: minigrace.env
+self.test: minigrace.env $(STUBS:%.grace=j2/%.gct)
 	rm -rf selftest
 	mkdir -p selftest
-	cd selftest; ln -sf $(STUBS:%.grace=../j2/%.gct) $(STUBS:%.grace=../j2/%.js) .
-	cp -f $(SOURCEFILES) selftest    # copy makes the source file newer than the .gct
-	touch selftest/*
-	cd selftest; ln -sf ../js/gracelib.js ../js/unicodedata.js .
-	cd selftest; STATS=TRUE time ../j2/minigrace-js $(VERBOSITY) --make --target js --dir generated  compiler.grace
-# generated files go in a subdirectory, to avoid over-writing the files that
-# are being executed!
-
-self.test: minigrace.env
-	rm -rf selftest
-	mkdir -p selftest
-	cat j2/compiler.js j2/gracelib.js $(SOURCEFILES:%.grace=j2/%.js) > selftest/mgc
+	cd selftest && ln -sf $(STUBS:%.grace=../j2/%.gct) .
+	cd selftest && ln -sf ../js/unicodedata.js .
+	awk '1;/^\/\/ end of preamble/{exit}' js/compiler-js > selftest/compiler-js-head
+	awk 'f;/^\/\/ end of preamble/{f=1}' js/compiler-js  > selftest/compiler-js-tail
+	cat selftest/compiler-js-head j2/gracelib.js $(MGSOURCEFILES:%.grace=j2/%.js) selftest/compiler-js-tail > selftest/mgc
 	chmod a+x selftest/mgc
-	GRACE_MODULE_PATH=modules:js selftest/mgc $(VERBOSITY) --make --module minigrace --dir selftest --module minigrace compiler.grace
-	tests/harness selftest/minigrace tests
+	GRACE_MODULE_PATH=.:modules:js time selftest/mgc $(VERBOSITY) --make --dir selftest --module minigrace compiler.grace
+	time tests/harness selftest/minigrace tests
 
 $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
 	cd js/tests; ln -sf ../$(<F) .
@@ -372,13 +365,16 @@ $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
 
 $(STUBS:%.grace=j1/%.gct): j1/%.gct: stubs/%.grace $(JS-KG)/standardGrace.js $(JS-KG)/minigrace-js
-	$(JS-KG)/minigrace-js $(VERBOSITY) --make --target js -XgctFile --dir j1 -o /dev/null $<
+	$(JS-KG)/minigrace-js $(VERBOSITY) --make --target js --gctfile --dir j1 -o /dev/null $<
 
 $(STUBS:%.grace=j2/%.gct): j2/%.gct: stubs/%.grace j1/standardGrace.js j1/minigrace-js
 	GRACE_MODULE_PATH=j1 j1/minigrace-js $(VERBOSITY) --make --gctfile --dir j2 -o /dev/null $<
 
 $(STUBS:%.grace=js/%.gct): js/%.gct: stubs/%.gct
 	cd js && ln -sf ../$< .
+
+$(STUBS:%.grace=selftest/%.gct): selftest/%.gct: j2/%.gct
+	cd selftest && ln -sf ../$< .
 
 tarWeb: js
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
