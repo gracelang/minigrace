@@ -360,7 +360,7 @@ method compileobject(o, outerRef) {
     compileBuildAndInitFunctions(o) inMethod (false)
     def objRef = o.register
     def objName = "\"" ++ o.name.quoted ++ "\""
-    out "var {objRef} = emptyGraceObject({objName}, \"{modname}\", {o.line});"
+    out "var {objRef} = emptyGraceObject({objName}, \"{escapestring(modname)}\", {o.line});"
     out "var {objRef}_init = {objRef}_build.call({objRef}, null, {outerRef}, [], []);"
     out "{objRef}_init.call({objRef});  // end of compileobject"
     objRef
@@ -369,7 +369,7 @@ method compileGuard(o, paramList) {
     def matchFun = uidWithPrefix "matches"
     out "var {matchFun} = function({paramList}) \{"
     increaseindent
-    out "setModuleName(\"{modname}\");" 
+    out "setModuleName(\"{escapestring(modname)}\");"
     noteLineNumber(o.line) comment "block matches function"
     o.params.do { p ->
         def pName = varf(p.value)
@@ -547,7 +547,7 @@ method compileDefaultsForTypeParameters(o) extraParams (extra) {
 }
 
 method compileArgumentTypeChecks(o) {
-    out "setModuleName(\"{modname}\");"     // do this before noteLineNumber
+    out "setModuleName(\"{escapestring(modname)}\");"     // do this before noteLineNumber
     if (emitTypeChecks && o.needsArgChecks) then {
         out "// Start argument type-checks"
         def isMultpart = (o.signature.size > 1)
@@ -649,7 +649,7 @@ method compileMetadata(o, funcName, name) {
     out "{funcName}.paramNames = {stringList(paramNames(o))};"
     out "{funcName}.typeParamNames = {stringList(typeParamNames(o))};"
     out "{funcName}.definitionLine = {o.line};"
-    out "{funcName}.definitionModule = \"{modname.quoted}\";"
+    out "{funcName}.definitionModule = \"{escapestring(modname)}\";"
 }
 
 method compilemethod(o, selfobj) {
@@ -701,7 +701,7 @@ method compileNormalMethod(o, selfobj) {
     debugModePrefix
     if (o.isFresh) then {
         def argList = paramlist(o)
-        out "var ouc = emptyGraceObject(\"{o.ilkName}\", \"{modname}\", {o.line});"
+        out "var ouc = emptyGraceObject(\"{o.ilkName}\", \"{escapestring(modname)}\", {o.line});"
         out "var ouc_init = {selfobj}.methods[\"{name}$build(3)\"].call(this, null{argList}, ouc, [], []);"
         out "ouc_init.call(ouc);"
         out "return ouc;"
@@ -884,7 +884,7 @@ method compileidentifier(o) {
     } elseif { name == "..." } then {
         o.register := "ellipsis"
     } elseif { name == "module()object" } then {
-        o.register := "importedModules[\"{modname}\"]"
+        o.register := "importedModules[\"{escapestring(modname)}\"]"
     } elseif { name == "true" } then {
         o.register := "GraceTrue"
     } elseif { name == "false" } then {
@@ -1003,7 +1003,7 @@ method compiletrycatch(o) {
     }
     noteLineNumber(o.line)comment("compiletrycatch")
     out("var catchres{myc} = tryCatch({mainblock},cases{myc},{finally});")
-    out("setModuleName(\"{modname}\");")
+    out("setModuleName(\"{escapestring(modname)}\");")
     o.register := "catchres" ++ myc
 }
 method compilematchcase(o) {
@@ -1018,7 +1018,7 @@ method compilematchcase(o) {
     }
     noteLineNumber(o.line)comment("compilematchcase")
     out("var matchres{myc} = matchCase({matchee},cases{myc});")
-    out("setModuleName(\"{modname}\");")
+    out("setModuleName(\"{escapestring(modname)}\");")
     o.register := "matchres" ++ myc
 }
 method compileop(o) {
@@ -1195,7 +1195,7 @@ method compileimport(o) {
             }
         }
     }
-    out "setModuleName(\"{modname}\");"
+    out "setModuleName(\"{escapestring(modname)}\");"
     o.register := "GraceDone"
 }
 method compilereturn(o) {
@@ -1394,25 +1394,25 @@ method initializeCodeGenerator(moduleObject) {
 
 method outputModuleDefinition(moduleObject) {
     // output the definition of the module function, conventionally
-    // called gracecode_«modname».  Noe that "output" means append to
+    // called gracecode_«modname».  Note that "output" means append to
     // the output buffer; it will be printed later.
 
     def generatedModuleName = formatModname(modname)
     out "function {generatedModuleName}() \{"
     increaseindent
-    out "setModuleName(\"{modname}\");"
-    out "importedModules[\"{modname}\"] = this;"
+    out "setModuleName(\"{escapestring(modname)}\");"
+    out "importedModules[\"{escapestring(modname)}\"] = this;"
     def selfr = "module$" ++ emod
     moduleObject.register := selfr
     out "var {selfr} = this;"
-    out "this.definitionModule = \"{modname}\";"
+    out "this.definitionModule = \"{escapestring(modname)}\";"
     out "this.definitionLine = 0;"
     out "var var_prelude = var___95__prelude;"
         // var_prelude must be local to the module function, because its
         // value varies from module to module.
 
     if (debugMode) then {
-        out "var myframe = new StackFrame(\"{modname} module\");"
+        out "var myframe = new StackFrame(\"{escapestring(modname)} module\");"
         out "stackFrames.push(myframe);"
     }
     compileobjouter(moduleObject, "var_prelude")
@@ -1475,11 +1475,11 @@ method outputGct {
     def gct = xmodule.parseGCT(modname)
     def gctText = xmodule.gctAsString(gct)
     util.outprint "if (typeof gctCache !== \"undefined\")"
-    util.outprint "  gctCache[\"{escapestring(basename(modname))}\"] = \"{escapestring(gctText)}\";"
+    util.outprint "  gctCache[\"{escapestring(modname)}\"] = \"{escapestring(gctText)}\";"
 }
 method outputSource {
     util.outprint "if (typeof originalSourceLines !== \"undefined\") \{"
-    util.outprint "  originalSourceLines[\"{modname}\"] = ["
+    util.outprint "  originalSourceLines[\"{escapestring(modname)}\"] = ["
     def sourceLines = util.cLines
     def numberOfLines = util.cLines.size
     var ln := 1
