@@ -100,7 +100,7 @@ clean:
 	rm -f js/minigrace.js
 	cd c && rm -f *.gcn *.gct *.c *.h *.grace minigrace unicode.gso gracelib.o
 	rm -f minigrace *.js
-	rm -fr grace-web-editor
+	git diff-index --quiet HEAD && rm -fr grace-web-editor/*
 	rm -fr selftest
 	rm -fr tests/test-*.log tests/*{.c,.gct,.gso,.gcn,.js}
 	rm -fr js/tests/test-*.log js/tests/*{.c,.gct,.gso,.gcn,.js}
