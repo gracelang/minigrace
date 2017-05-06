@@ -592,7 +592,7 @@ method debugModeSuffix {
 }
 method compileMethodBodyWithTypecheck(o) {
     def ret = compileMethodBody(o)
-    def ln = if (o.body.isEmpty) then { o.line } else { o.resultExpression.line }
+    def ln = if (o.body.isEmpty) then { o.end.line } else { o.resultExpression.line }
     compileTypeCheck(o.dtype, ret, "result of method {o.canonicalName}", ln)
     ret
 }
@@ -621,7 +621,6 @@ method compileMethodBody(methNode) {
     // compiles the body of method represented by methNode.
     // answers the register containing the result.
 
-    noteLineNumber (methNode.line) comment "body for method {methNode.canonicalName}"
     var ret := "GraceDone"
     methNode.body.do { nd -> ret := compilenode(nd) }
     ret
@@ -665,6 +664,7 @@ method compilemethod(o, selfobj) {
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
     initializedMethodVars := oldInitializedMethodVars
+    priorLineEmitted := 0
 }
 
 method compileSimpleAccessor(o) {
@@ -690,6 +690,7 @@ method compileSimpleAccessor(o) {
 method compileNormalMethod(o, selfobj) {
     def canonicalMethName = o.canonicalName
     def funcName = o.register
+    priorLineEmitted := 0
     usedvars := []
     declaredvars := []
     def name = escapestring(o.nameString)
