@@ -98,9 +98,10 @@ clean:
 	( cd js && for sf in $(SOURCEFILES) ; do rm -f $$sf ; done )
 	cd js && rm -rf $(ALL_LIBRARY_MODULES:%.grace=%.js) standardInput.* *.gct util.*
 	rm -f js/minigrace.js
-	cd c && rm -f *.gcn *.gct *.c *.h *.grace minigrace unicode.gso gracelib.o
+	rm -fr c
 	rm -f minigrace *.js
-	git diff-index --quiet HEAD && rm -fr grace-web-editor/*
+	if ( cd grace-web-editor; git diff-index --quiet HEAD ) ; then rm -fr grace-web-editor ; fi
+#       remove the grace-web-editor directory only if it is clean
 	rm -fr selftest
 	rm -fr tests/test-*.log tests/*{.c,.gct,.gso,.gcn,.js}
 	rm -fr js/tests/test-*.log js/tests/*{.c,.gct,.gso,.gcn,.js}
