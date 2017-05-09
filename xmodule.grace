@@ -20,8 +20,7 @@ def builtInModules =
                 "io",
                 "mirrors",
                 "sys",
-                "unicode",
-                "util" ]
+                "unicode" ]
 
 def currentDialect is public = object {
     var name is public := "standardGrace"
