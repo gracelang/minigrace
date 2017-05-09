@@ -1,1 +1,0 @@
-../js/tests/t164_inherits_test.grace

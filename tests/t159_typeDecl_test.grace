@@ -1,1 +1,0 @@
-../js/tests/t159_typeDecl_test.grace

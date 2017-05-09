@@ -1,2 +1,0 @@
-method true { ... }
-print(true)

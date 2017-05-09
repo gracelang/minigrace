@@ -1,1 +1,0 @@
-../js/tests/t040_point_test.grace

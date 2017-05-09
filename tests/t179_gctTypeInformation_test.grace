@@ -1,1 +1,0 @@
-../js/tests/t179_gctTypeInformation_test.grace

@@ -1,1 +1,0 @@
-../js/tests/t187_stringMap_test.grace

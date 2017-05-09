@@ -1,1 +1,0 @@
-../js/tests/t177_assignmentMethod_test.grace
