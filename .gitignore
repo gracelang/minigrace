@@ -15,6 +15,9 @@ j1
 j2
 minigrace
 misc
+npm-build
+package.json
+selftest
 tests/test.log
 buildinfo.grace
 objectdraw.grace

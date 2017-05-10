@@ -1,2 +1,6 @@
-test.log
-*.js
+test.js.log
+t*.js
+test-*.log
+test-*.out
+test-*.err
+known-failing/*.js
