@@ -18,7 +18,7 @@ function MiniGrace() {
     this.lastSourceCode = "";
     this.lastMode = "";
     this.lastModname = "";
-    this.breakLoops = false;
+    this.breakLoops = true;
     this.debugMode = false;
     this.lastDebugMode = false;
     this.printStackFrames = true;
@@ -191,8 +191,8 @@ MiniGrace.prototype.trapErrors = function(func) {
             throw e;
         }
     } finally {
-        if (Grace_prelude.methods["while()do"])
-            Grace_prelude.methods["while()do"].safe = false;
+        if (Grace_prelude.methods["while(1)do(1)"])
+            Grace_prelude.methods["while(1)do(1)"].safe = false;
     }
 };
 
@@ -206,8 +206,8 @@ MiniGrace.prototype.run = function() {
     eval(minigrace.generated_output);   // defines a global gracecode_‹moduleName›
     var theModuleFunc = window[graceModuleName(this.modname)];
     testpass = false;    // not used anywhere else ?
-    if (Grace_prelude.methods["while()do"])
-        Grace_prelude.methods["while()do"].safe = this.breakLoops;
+    if (Grace_prelude.methods["while(1)do(1)"])
+        Grace_prelude.methods["while(1)do(1)"].safe = this.breakLoops;
     this.trapErrors(function() {
         if(document.getElementById("debugtoggle").checked) {
             GraceDebugger.cache.start();
