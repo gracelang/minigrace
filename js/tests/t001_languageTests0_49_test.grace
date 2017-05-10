@@ -87,7 +87,7 @@ def aGraceLangTest = object {
         method test_002_concat {
             out("Hello " ++ "world.")
             out("Line " ++ 2)
-            out(3 ++ "rd line")
+            out("{3}rd line")
             
             assert(str)shouldBe("Hello world.\nLine 2\n3rd line\n")
         }

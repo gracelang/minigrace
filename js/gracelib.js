@@ -676,10 +676,6 @@ GraceNum.prototype = {
         "@(1)": function(argcv, other) {
             return callmethod(Grace_prelude, "point2Dx(1)y(1)", [1, 1], this, other);
         },
-        "++(1)": function(argcv, other) {
-            var t = callmethod(this, "asString", [0]);
-            return callmethod(t, "++(1)", [1], other);
-        },
         "..(1)": function(argcv, other) {
             if (! Number.isInteger(this._value)) {
                 throw new GraceExceptionPacket(RequestErrorObject,
