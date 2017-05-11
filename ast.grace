@@ -381,7 +381,7 @@ def ifNode is public = object {
     var thenblock is public := thenblock'
     var elseblock is public := elseblock'
     var handledIdentifiers is public := false
-    method isSimple { false }  // needs parens when used as reciever
+    method isSimple { false }  // needs parens when used as receiver
     method accept(visitor : AstVisitor) from(as) {
         if (visitor.visitIf(self) up(as)) then {
             def newChain = as.extend(self)
@@ -571,7 +571,7 @@ def tryCatchNode is public = object {
     var value is public := block
     var cases is public := cases'
     var finally is public := finally'
-    method isSimple { false }  // needs parens when used as reciever
+    method isSimple { false }  // needs parens when used as receiver
     method end -> Position {
         if (false ≠ finally) then { return finally.end }
         if (cases.isEmpty.not) then { return cases.last.end }
@@ -631,7 +631,7 @@ def matchCaseNode is public = object {
     def kind is public = "matchcase"
     var value is public := matchee'
     var cases is public := cases'
-    method isSimple { false }  // needs parens when used as reciever
+    method isSimple { false }  // needs parens when used as receiver
     method end -> Position {
         if (cases.isEmpty.not) then { return cases.last.end }
         return value.end
@@ -1368,7 +1368,7 @@ def callNode is public = object {
                 return "{opSymbol} {self.receiver.toGrace 0}"
             }
             var s := ""
-            if (receiver.isImplicit.not) then {
+            if ((receiver.isImplicit || receiver.isSelfOrOuter).not) then {
                 if (receiver.isSimple) then {
                     s := "{receiver.toGrace (depth + 1)}."
                 } else {
@@ -1832,7 +1832,11 @@ def memberNode is public = object {
             s
         }
         method toGrace(depth : Number) -> String {
-            var s := self.receiver.toGrace(depth) ++ "." ++ self.value
+            var s := ""
+            if ((receiver.isImplicit || receiver.isSelfOrOuter).not) then {
+                s := receiver.toGrace(depth) ++ "."
+            }
+            s := s ++ self.value
             if (false != generics) then {
                 s := s ++ "⟦"
                 for (1..(generics.size - 1)) do {ix ->
@@ -2002,7 +2006,12 @@ def identifierNode is public = object {
         method isSelf { "self" == value }
         method isSuper { "super" == value }
         method isPrelude { "prelude" == value }
-        method isOuter { "outer" == value }
+        method isOuter {
+            if ("outer" == value) then { return true }
+            if ("prelude" == value) then { return true }
+            if ("module()object" == value) then { return true }
+            return false
+        }
         method isSelfOrOuter {
             if (isSelf) then { return true }
             if (isOuter) then { return true }
@@ -2201,7 +2210,7 @@ def opNode is public = object {
         // the position of the start of the ‹op› in this ‹left› ‹op› ‹right›
         positionOfNext (value) after (left.end)
     }
-    method isSimple { false }    // needs parens when used as reciever
+    method isSimple { false }    // needs parens when used as receiver
     method nameString { value ++ "(1)" }
     method canonicalName { value ++ "(_)" }
     method receiver { left }
