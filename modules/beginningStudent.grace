@@ -33,8 +33,11 @@ method list⟦T⟧(a, b, c, d) {
     prelude.collections.list⟦T⟧.withAll [a, b, c, d]
 }
 
-method sequence⟦T⟧ {
-    prelude.collections.sequence⟦T⟧.empty
+class sequence⟦T⟧ {
+    inherit prelude.clone(prelude.emptySequence)
+    method withAll(elements) {
+        prelude.collections.sequence⟦T⟧.withAll(elements)
+    }
 }
 method sequence⟦T⟧(a) {
     prelude.collections.sequence⟦T⟧.withAll [a]
