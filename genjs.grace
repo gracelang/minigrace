@@ -172,7 +172,10 @@ method compileobjtypedec(o, selfr) {
 }
 method compileTypeCheck(expectedType, val, complaint, lineNumber) {
     // expectedType is an astNode representing the type expression;
-    // value the register that
+    // val the register that holds the value to be type-checked;
+    // complaint is a String that will be prefixed to the type error message,
+    // such as "argument 2 to foobaz(_)with(_)", and lineNumber the line
+    // on which the error was detected.
     if (emitTypeChecks) then {
         if ((false ≠ expectedType) && ("never returns" ≠ val)) then {
             if ((expectedType.value ≠ "Unknown") && (expectedType.value ≠ "Done")) then {
