@@ -170,21 +170,27 @@ method compileobjtypedec(o, selfr) {
     def val = compilenode(o.value)
     out "{selfr}.data.{tName} = {val};"
 }
-method compileTypeCheck(expectedType, val, complaint, lineNumber) {
+method compileCheckThat(val) called (description)
+                        hasType (expectedType) onLine(lineNumber) {
+    // Compiles a type check.
     // expectedType is an astNode representing the type expression;
     // val the register that holds the value to be type-checked;
-    // complaint is a String that will be prefixed to the type error message,
-    // such as "argument 2 to foobaz(_)with(_)", and lineNumber the line
-    // on which the error was detected.
+    // description is a String describing the nature of val, such as
+    // "argument 2 to `foobaz(_)with(_)`", which will be used in the error
+    // message, and lineNumber the line on which the error occurred (or 0
+    // if we don't want to emit a setLineNumber command).
+
     if (emitTypeChecks) then {
         if ((false ≠ expectedType) && ("never returns" ≠ val)) then {
             if ((expectedType.value ≠ "Unknown") && (expectedType.value ≠ "Done")) then {
                 def nm_t = compilenode(expectedType)
-                noteLineNumber(lineNumber) comment "typecheck"
+                if (lineNumber ≠ 0) then {
+                    noteLineNumber(lineNumber) comment "typecheck"
+                }
                 def typeDesc = expectedType.toGrace 0.quoted
                 out "if (!Grace_isTrue(request({nm_t}, \"match(1)\", [1], {val})))"
                 out "    raiseTypeError("
-                out "      \"{complaint} is not of type {typeDesc}\","
+                out "      \"{description} is not of type {typeDesc}\","
                 out "      {nm_t}, {val});"
             }
         }
@@ -194,15 +200,20 @@ method compileobjdefdec(o, selfr) {
     def val = compilenode(o.value)
     def oName = o.name.value
     def nm = escapeident(oName)
-    compileTypeCheck(o.dtype, val, "value bound to {escapestring(oName)}", o.line)
+    compileCheckThat (val) called "value bound to {escapestring(oName)}"
+          hasType (o.dtype) onLine (o.line)
     out "{selfr}.data.{nm} = {val};"
 }
 method compileobjvardec(o, selfr) {
-    if (false == o.value) then { return }
-    def val = compilenode(o.value)
     def oName = o.name.value
     def nm = escapeident(oName)
-    compileTypeCheck(o.dtype, val, "value assigned to {escapestring(oName)}", o.line)
+    if (false == o.value) then {
+        out "{selfr}.data.{nm} = undefined;"
+        return
+    }
+    def val = compilenode(o.value)
+    compileCheckThat(val) called "value assigned to {escapestring(oName)}"
+          hasType (o.dtype) onLine (o.line)
     out "{selfr}.data.{nm} = {val};"
 }
 
@@ -230,7 +241,8 @@ method create (kind) field (o) in (objr) {
         def wFun = uidWithPrefix "writer" ++ "_" ++ nmi
         out "var {wFun} = function(argcv, n) \{   // writer method {nm}:=(_)"
         increaseindent
-        compileTypeCheck(o.dtype, "n", "argument to {nm}:=(_)", 0)
+        compileCheckThat "n" called "argument to {nm}:=(_)"
+              hasType (o.dtype) onLine 0
         out "{fieldName} = n;"
         out "return GraceDone;"
         decreaseindent
@@ -550,31 +562,17 @@ method compileDefaultsForTypeParameters(o) extraParams (extra) {
 }
 
 method compileArgumentTypeChecks(o) {
-    out "setModuleName(\"{escapestring(modname)}\");"     // do this before noteLineNumber
-    if (emitTypeChecks && o.needsArgChecks) then {
-        out "// Start argument type-checks"
-        def isMultpart = (o.signature.size > 1)
-        for (o.signature.indices) do { partnr ->
-            var part := o.signature.at(partnr)
-            def partBit = if (isMultpart) then {" to `{part.name}` "} else {""}
-            var paramnr := 0
-            for (part.params) do { p ->
-                paramnr := paramnr + 1
-                def pName = p.value
-                def pVar = varf(pName)
-                if (emitTypeChecks && (p.dtype != false)) then {
-                    noteLineNumber(o.line)comment("argument check in compilemethod")
-                    def dtype = compilenode(p.dtype)
-                    def typeDesc = p.dtype.toGrace 0.quoted
-                    out("if (!Grace_isTrue(request({dtype}, \"match(1)\"," ++
-                        "  [1], {pVar})))")
-                    out "    raiseTypeError(\"in request of `{o.canonicalName}`, \" +"
-                    out "      \"argument {paramnr}{partBit} is not of type \" +"
-                    out "      \"{typeDesc}\", {dtype}, {pVar});"
-                }
-            }
+    var paramnr := 0
+    if (emitTypeChecks) then {
+        o.parametersDo { p ->
+            paramnr := paramnr + 1
+            def pName = p.value
+            compileCheckThat (varf(pName))
+                  called "argument {paramnr} in request of `{o.canonicalName}`"
+                  hasType (p.dtype) onLine 0
+            // the line number is 0, because we want the error message to
+            // refer to the call site, not the method definition.
         }
-        out "// End argument type-checks"
     }
 }
 method debugModePrefix {
@@ -584,7 +582,6 @@ method debugModePrefix {
         increaseindent
     }
 }
-
 method debugModeSuffix {
     if (debugMode) then {
         decreaseindent
@@ -596,7 +593,8 @@ method debugModeSuffix {
 method compileMethodBodyWithTypecheck(o) {
     def ret = compileMethodBody(o)
     def ln = if (o.body.isEmpty) then { o.end.line } else { o.resultExpression.line }
-    compileTypeCheck(o.dtype, ret, "result of method {o.canonicalName}", ln)
+    compileCheckThat(ret) called "result of method {o.canonicalName}"
+        hasType (o.dtype) onLine (ln)
     ret
 }
 
@@ -624,6 +622,7 @@ method compileMethodBody(methNode) {
     // compiles the body of method represented by methNode.
     // answers the register containing the result.
 
+    out "setModuleName(\"{escapestring(modname)}\");"
     var ret := "GraceDone"
     methNode.body.do { nd -> ret := compilenode(nd) }
     ret
@@ -769,8 +768,8 @@ method compileBuildMethodFor(methNode) withFreshCall (callExpr) inside (outerRef
     args.addAll ["ouc", "aliases", "exclusions"]
     compileTypeArguments(callExpr, args)
     compileCallToBuildMethod(callExpr) withArgs (args)
-    compileTypeCheck(methNode.dtype, "ouc",
-          "result of method {methNode.canonicalName}", callExpr.line)
+    compileCheckThat "ouc" called "result of method {methNode.canonicalName}"
+          hasType (methNode.dtype) onLine (callExpr.line)
     out "return {calltemp};      // from compileBuildMethodFor(_)withFreshCall(_)inside(_)"
     compileMethodPostamble(methNode, funcName, cName)
     out "this.methods[\"{name}\"] = {funcName};"
@@ -933,19 +932,8 @@ method compiledefdec(o) {
     } elseif {surroundingScopeKind == "method"} then {
         initializedMethodVars.add(nm)
     }
-    if (emitTypeChecks) then {
-        if (o.dtype != false) then {
-            if (o.dtype.value != "Unknown") then {
-                noteLineNumber(o.line)comment("type check for defdec")
-                def nm_t = compilenode(o.dtype)
-                def typeDesc = o.dtype.toGrace 0.quoted
-                out "if (!Grace_isTrue(request({nm_t}, \"match(1)\", [1], {var_nm})))"
-                out "    raiseTypeError("
-                out "      \"value of def {nm} is not of type {typeDesc}\","
-                out "      {nm_t}, {var_nm});"
-            }
-        }
-    }
+    compileCheckThat(var_nm) called "value of def {nm}"
+        hasType(o.dtype) onLine (o.line)
     o.register := "GraceDone"
 }
 method compilevardec(o) {
@@ -962,7 +950,6 @@ method compilevardec(o) {
         val := compilenode(val)
         out "var {var_nm} = {val};"
     } else {
-        val := "false"
         out "var {var_nm};"
     }
     if (debugMode) then {
@@ -971,23 +958,12 @@ method compilevardec(o) {
     def surroundingScopeKind = o.parentKind
     if (surroundingScopeKind == "module") then {
         create "var" field (o) in "this"
-    } elseif {surroundingScopeKind == "method"} then {
+    } elseif {(false != val) && (surroundingScopeKind == "method")} then {
         initializedMethodVars.add(nm)
     }
-    if (emitTypeChecks) then {
-        if (o.dtype != false) then {
-            if (o.dtype.value != "Unknown") then {
-                if (val != "false") then {
-                    noteLineNumber(o.line)comment("type check for vardec")
-                    def nm_t = compilenode(o.dtype)
-                    def typeDesc = o.dtype.toGrace 0.quoted
-                    out "if (!Grace_isTrue(request({nm_t}, \"match(1)\", [1], {var_nm})))"
-                    out "    raiseTypeError("
-                    out "      \"initial value of var '{nm}' is not of type {typeDesc}\","
-                    out "      {nm_t}, {var_nm});"
-                }
-            }
-        }
+    if (false != val) then {
+        compileCheckThat(var_nm) called "initial value of var {nm}"
+              hasType(o.dtype) onLine (o.line)
     }
     o.register := "GraceDone"
 }
@@ -1187,18 +1163,8 @@ method compileimport(o) {
     if (o.isReadable.not) then {
         out "{accessor.register}.confidential = true;"
     }
-    if (emitTypeChecks) then {
-        if (o.dtype != false) then {
-            if (o.dtype.value != "Unknown") then {
-                def nm_t = compilenode(o.dtype)
-                def typeDesc = o.dtype.toGrace 0.quoted
-                out "if (!Grace_isTrue(request({nm_t}, \"match(1)\", [1], {var_nm})))"
-                out "    raiseTypeError("
-                out "          \"module '{o.nameString.quoted}' is not of type {typeDesc}\","
-                out "          {nm_t}, {var_nm});"
-            }
-        }
-    }
+    compileCheckThat(var_nm) called "module '{o.nameString.quoted}'"
+        hasType(o.dtype) onLine (o.line)
     out "setModuleName(\"{escapestring(modname)}\");"
     o.register := "GraceDone"
 }
@@ -1206,7 +1172,7 @@ method compilereturn(o) {
     o.register := "never returns"
     var reg := compilenode(o.value)
     if ("never returns" == reg) then { return }
-    compileTypeCheck(o.dtype, reg, "return value", o.line)
+    compileCheckThat(reg) called "return value" hasType (o.dtype) onLine (o.line)
     if (inBlock) then {
         out("throw new ReturnException(" ++ reg ++ ", returnTarget);")
     } else {
