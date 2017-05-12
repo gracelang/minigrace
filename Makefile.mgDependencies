@@ -33,3 +33,7 @@ j2/staticTypes.js: j2/dialect.js j2/standardGrace.js
 j2/turtle.js: j2/dom.gct j2/dom.js j2/standardGrace.js
 j2/beginningStudent.js: j2/standardGrace.js
 
+j2/objectdraw.grace: j2/dom.gct
+j2/rtobjectdraw.grace: j2/dom.gct
+j2/stobjectdraw.grace: j2/dom.gct
+j2/turtle.grace: j2/dom.gct
