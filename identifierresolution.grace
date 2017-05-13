@@ -286,6 +286,9 @@ class newScopeIn(parent') kind(variety') {
     method isModuleScope {
         variety == "module"
     }
+    method isInheritableScope {
+        "class | object".contains(variety)
+    }
     method resolveOuterMethod(name) fromNode (aNode) {
         // replace name by a request with receiver self, or an outerNode
 
