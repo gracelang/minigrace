@@ -55,6 +55,22 @@ def uVarTest = object {
         method testNumberIsDone {
             assert (3) hasType (Done)
         }
+        method circularVars(str) -> String {
+            var ix:Number := strSize
+            var strSize:Number := str.size
+            return "hola"
+        }
+        method testCircularVars {
+            assert {circularVars "wombat"} shouldRaise (UninitializedVariable)
+        }
+        def circularBlock = { str ->
+            var ix:Number := strSize
+            var strSize:Number := str.size
+            "hola"
+        }
+        method testCircularBlock {
+            assert {circularBlock.apply} shouldRaise (UninitializedVariable)
+        }
     }
 }
 
