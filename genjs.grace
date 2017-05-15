@@ -19,7 +19,23 @@ var constants := []
 var output := []
 var usedvars := []
 var declaredvars := []
-var initializedMethodVars := emptySet
+var initializedVars := emptySet
+
+method saveInitializedVars {
+    // returns the current set of initialized vars,
+    // to be used in restoreInitializedVars
+    def result = initializedVars
+    initializedVars := emptySet
+    result
+}
+
+method restoreInitializedVars(savedState) {
+    // restores the set of initialized vars to savedState,
+    // the result od saveInitializedVars
+    initializedVars := savedState
+}
+
+
 var bblock := "entry"
 
 var outfile
@@ -41,6 +57,8 @@ var emitPositions := true
 var bracketConstructor := "Lineup"
 var emod        // the name of the module being compiled, escaped
                 // so that it is a legal identifier
+var modNameAsString     // the name of the module surrounded by quotes,
+                        // with internal special chars escaped.
 
 /////////////////////////////////////////////////////////////
 //
@@ -86,14 +104,12 @@ method noteLineNumber(n)comment(c) {
     }
 }
 
-method forceLineNumber(n)comment(c) {
-    // force the generation of code that sets the line number.
+method clearLineNumber(n) {
+    // clear and reset the remembered line number.
     // Used at the start of a method
-    noteLineNumber(n)comment(c)
-    if (emitPositions) then {
-        output.push "{indent}setLineNumber({priorLineSeen});    // {priorLineComment}"
-    }
-    priorLineEmitted := priorLineSeen
+    priorLineComment := "cleared on line {n}"
+    priorLineSeen := 0
+    priorLineEmitted := 0
 }
 
 method out(s) {
@@ -230,6 +246,9 @@ method create (kind) field (o) in (objr) {
         "{objr}.data." ++ nmi
     }
     out "var {rFun} = function() \{  // reader method {nm}"
+    if (emitUndefinedChecks) then {
+        out "    if ({fieldName} === undefined) raiseUninitializedVariable(\"{nm}\");"
+    }
     out "    return {fieldName};"
     out "};"
     out "{rFun}.is{kind.capitalized} = true;"
@@ -275,6 +294,7 @@ method installLocalAttributesOf(o) into (objr) {
 }
 
 method compileOwnInitialization(o, selfr) {
+    out "setModuleName({modNameAsString});"
     o.body.do { e ->
         if (e.kind == "method") then {
         } elseif { e.kind == "vardec" } then {
@@ -375,7 +395,7 @@ method compileobject(o, outerRef) {
     compileBuildAndInitFunctions(o) inMethod (false)
     def objRef = o.register
     def objName = "\"" ++ o.name.quoted ++ "\""
-    out "var {objRef} = emptyGraceObject({objName}, \"{escapestring(modname)}\", {o.line});"
+    out "var {objRef} = emptyGraceObject({objName}, {modNameAsString}, {o.line});"
     out "var {objRef}_init = {objRef}_build.call({objRef}, null, {outerRef}, [], []);"
     out "{objRef}_init.call({objRef});  // end of compileobject"
     objRef
@@ -384,7 +404,7 @@ method compileGuard(o, paramList) {
     def matchFun = uidWithPrefix "matches"
     out "var {matchFun} = function({paramList}) \{"
     increaseindent
-    out "setModuleName(\"{escapestring(modname)}\");"
+    out "setModuleName({modNameAsString});"
     noteLineNumber(o.line) comment "block matches function"
     o.params.do { p ->
         def pName = varf(p.value)
@@ -401,12 +421,12 @@ method compileGuard(o, paramList) {
 }
 
 method compileblock(o) {
-    var origInBlock := inBlock
+    def origInBlock = inBlock
+    def oldInitializedVars = saveInitializedVars
     inBlock := true
-    def myc = auto_count
+    def myId = uidWithPrefix "block"
     def nParams = o.params.size
-    auto_count := auto_count + 1
-    out "var block{myc} = new GraceBlock(this, {o.line}, {nParams});"
+    out "var {myId} = new GraceBlock(this, {o.line}, {nParams});"
     var paramList := ""
     var paramTypes :=  [ ]
     var paramsAreTyped := false
@@ -425,11 +445,11 @@ method compileblock(o) {
         }
     }
     if (paramsAreTyped) then {
-        out "block{myc}.paramTypes = {paramTypes};"
+        out "{myId}.paramTypes = {paramTypes};"
     }
 
-    out "block{myc}.guard = {compileGuard(o, paramList)};"
-    out "block{myc}.real = function({paramList}) \{"
+    out "{myId}.guard = {compileGuard(o, paramList)};"
+    out "{myId}.real = function({paramList}) \{"
     increaseindent
     var ret := "GraceDone"
     for (o.body) do {l->
@@ -438,7 +458,8 @@ method compileblock(o) {
     if ("never returns" ≠ ret) then { out("return " ++ ret ++ ";") }
     decreaseindent
     out("\};")
-    o.register := "block" ++ myc
+    o.register := myId
+    restoreInitializedVars(oldInitializedVars)
     inBlock := origInBlock
 }
 method compiletypedec(o) {
@@ -510,7 +531,7 @@ method hasTypedParams(o) {
 }
 
 method compileMethodPreamble(o, funcName, name) withParams (p) {
-    out "var {funcName} = function(argcv{p}) \{    // method {name}"
+    out "var {funcName} = function(argcv{p}) \{    // method {name}, line {o.line}"
     increaseindent
     out "var returnTarget = invocationCount;"
     out "invocationCount++;"
@@ -622,7 +643,7 @@ method compileMethodBody(methNode) {
     // compiles the body of method represented by methNode.
     // answers the register containing the result.
 
-    out "setModuleName(\"{escapestring(modname)}\");"
+    out "setModuleName({modNameAsString});"
     var ret := "GraceDone"
     methNode.body.do { nd -> ret := compilenode(nd) }
     ret
@@ -650,13 +671,14 @@ method compileMetadata(o, funcName, name) {
     out "{funcName}.paramNames = {stringList(paramNames(o))};"
     out "{funcName}.typeParamNames = {stringList(typeParamNames(o))};"
     out "{funcName}.definitionLine = {o.line};"
-    out "{funcName}.definitionModule = \"{escapestring(modname)}\";"
+    out "{funcName}.definitionModule = {modNameAsString};"
 }
 
 method compilemethod(o, selfobj) {
     def oldusedvars = usedvars
     def olddeclaredvars = declaredvars
-    def oldInitializedMethodVars = initializedMethodVars
+    def oldInitializedVars = saveInitializedVars
+    clearLineNumber(o.line)
     o.register := uidWithPrefix "func"
     if ((o.body.size == 1) && {o.body.first.isIdentifier}) then {
         compileSimpleAccessor(o)
@@ -665,8 +687,7 @@ method compilemethod(o, selfobj) {
     }
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
-    initializedMethodVars := oldInitializedMethodVars
-    priorLineEmitted := 0
+    restoreInitializedVars(oldInitializedVars)
 }
 
 method compileSimpleAccessor(o) {
@@ -679,9 +700,6 @@ method compileSimpleAccessor(o) {
     def p = paramlist(o) ++ typeParamlist(o)
     out "var {funcName} = function(argcv{p}) \{     // accessor method {name}"
     increaseindent
-    if ( emitUndefinedChecks ) then {
-        compileCheckForUndefinedIdentifier(ident)
-    }
     out "return {compilenode(ident)};"
     compileMethodPostamble(o, funcName, canonicalMethName)
     out "this.methods[\"{name}\"] = {funcName};"
@@ -704,7 +722,7 @@ method compileNormalMethod(o, selfobj) {
     debugModePrefix
     if (o.isFresh) then {
         def argList = paramlist(o)
-        out "var ouc = emptyGraceObject(\"{o.ilkName}\", \"{escapestring(modname)}\", {o.line});"
+        out "var ouc = emptyGraceObject(\"{o.ilkName}\", {modNameAsString}, {o.line});"
         out "var ouc_init = {selfobj}.methods[\"{name}$build(3)\"].call(this, null{argList}, ouc, [], []);"
         out "ouc_init.call(ouc);"
         out "return ouc;"
@@ -842,57 +860,53 @@ method compilemethodtypes(func, o) {
     }
 }
 method compileif(o) {
-    def myc = auto_count
-    auto_count := auto_count + 1
-    outUnnumbered "var if{myc} = GraceDone;"
+    def myId = uidWithPrefix "if"
+    outUnnumbered "var {myId} = GraceDone;"  // TODO: remove - this is unncessary
     out("if (Grace_isTrue(" ++ compilenode(o.value) ++ ")) \{")
     var tret := "GraceDone"
     increaseindent
+    def thenSavedVars = saveInitializedVars
     def thenList = o.thenblock.body
     for (thenList) do { l->
         tret := compilenode(l)
     }
     if (tret != "never returns") then {
-        out("if" ++ myc ++ " = " ++ tret ++ ";")
+        out "{myId} = {tret};"
     }
+    restoreInitializedVars(thenSavedVars)
     decreaseindent
     def elseList = o.elseblock.body
     var fret := "GraceDone"
     if (elseList.size > 0) then {
         out("\} else \{")
         increaseindent
+        def elseSavedVars = saveInitializedVars
         for (elseList) do { l->
             fret := compilenode(l)
         }
         if (fret != "never returns") then {
-            out("if" ++ myc ++ " = " ++ fret ++ ";")
+            out "{myId} = {fret};"
         }
+        restoreInitializedVars(elseSavedVars)
         decreaseindent
     }
-    out("\}")
-    o.register := "if" ++ myc
+    out "\}"
+    o.register := myId
 }
 method compileidentifier(o) {
     var name := o.value
-    if (name == "super") then {
-        def sugg = errormessages.suggestion.new
-        sugg.replaceRange(o.linePos, o.linePos + 4)with "self" onLine(o.line)
-        errormessages.syntaxError("'super' can be used only to the "
-                ++ "left of the . in a method request.")
-            atRange(
-                o.line, o.linePos, o.linePos + 4)withSuggestion(sugg)
-    }
     if (name == "self") then {
         o.register := "this"
     } elseif { name == "..." } then {
         o.register := "ellipsis"
     } elseif { name == "module()object" } then {
-        o.register := "importedModules[\"{escapestring(modname)}\"]"
+        o.register := "importedModules[{modNameAsString}]"
     } elseif { name == "true" } then {
         o.register := "GraceTrue"
     } elseif { name == "false" } then {
         o.register := "GraceFalse"
     } else {
+        compileUninitializedCheck(o)
         usedvars.push(name)
         o.register := varf(name)
     }
@@ -904,12 +918,15 @@ method compilebind(o) {
         def nm = lhs.value
         usedvars.push(nm)
         out "{varf(nm)} = {val};"
-        if (o.scope.kindInNest(nm) == k.methdec) then {
-            initializedMethodVars.add(nm)
+        if (o.scope.isInheritableScope) then {
+            // if this scope is inheritable (an object or class), then
+            // the fact that we have just assigned to nm is no guarantee
+            // that it is initialised!
+            initializedVars.add(nm)
         }
         o.register := "GraceDone"
     } else {
-        ProgrammingError.raise "bindNode {o} does not bind an indentifer"
+        ProgrammingError.raise "bindNode {o} does not bind an identifer"
     }
 }
 method compiledefdec(o) {
@@ -926,11 +943,11 @@ method compiledefdec(o) {
     }
     def val = compilenode(o.value)
     out "var {var_nm} = {val};"
-    def surroundingScopeKind = o.parentKind
-    if (surroundingScopeKind == "module") then {
+    def parentNodeKind = o.parentKind
+    if (parentNodeKind == "module") then {
         create "def" field (o) in "this"
-    } elseif {surroundingScopeKind == "method"} then {
-        initializedMethodVars.add(nm)
+    } elseif {parentNodeKind == "method"} then {
+        initializedVars.add(nm)
     }
     compileCheckThat(var_nm) called "value of def {nm}"
         hasType(o.dtype) onLine (o.line)
@@ -938,6 +955,7 @@ method compiledefdec(o) {
 }
 method compilevardec(o) {
     def currentScope = o.scope
+    def parentNodeKind = o.parentKind
     def nm = if (o.name.kind == "generic") then {
         o.name.value.value
     } else {
@@ -945,25 +963,23 @@ method compilevardec(o) {
     }
     def var_nm = varf(nm)
     declaredvars.push(nm)
-    var val := o.value
-    if (false != val) then {
-        val := compilenode(val)
+    def rhs = o.value
+    if (false != rhs) then {
+        def val = compilenode(rhs)
+        compileCheckThat(val) called "initial value of var {nm}"
+              hasType(o.dtype) onLine (o.line)
         out "var {var_nm} = {val};"
+        if ("module | method | dialect".contains(parentNodeKind)) then {
+            initializedVars.add(nm)
+        }
     } else {
         out "var {var_nm};"
     }
     if (debugMode) then {
         out "myframe.addVar(\"{escapestring(nm)}\", function() \{return {var_nm}});"
     }
-    def surroundingScopeKind = o.parentKind
-    if (surroundingScopeKind == "module") then {
+    if (parentNodeKind == "module") then {
         create "var" field (o) in "this"
-    } elseif {(false != val) && (surroundingScopeKind == "method")} then {
-        initializedMethodVars.add(nm)
-    }
-    if (false != val) then {
-        compileCheckThat(var_nm) called "initial value of var {nm}"
-              hasType(o.dtype) onLine (o.line)
     }
     o.register := "GraceDone"
 }
@@ -983,7 +999,7 @@ method compiletrycatch(o) {
     }
     noteLineNumber(o.line)comment("compiletrycatch")
     out("var catchres{myc} = tryCatch({mainblock},cases{myc},{finally});")
-    out("setModuleName(\"{escapestring(modname)}\");")
+    out("setModuleName({modNameAsString});")
     o.register := "catchres" ++ myc
 }
 method compilematchcase(o) {
@@ -998,15 +1014,12 @@ method compilematchcase(o) {
     }
     noteLineNumber(o.line)comment("compilematchcase")
     out("var matchres{myc} = matchCase({matchee},cases{myc});")
-    out("setModuleName(\"{escapestring(modname)}\");")
+    out("setModuleName({modNameAsString});")
     o.register := "matchres" ++ myc
 }
 method compileop(o) {
     def left = compilenode(o.left)
     def opRight = o.right
-    if ( opRight.isIdentifier && emitUndefinedChecks ) then {
-        compileCheckForUndefinedIdentifier(opRight)
-    }
     def right = compilenode(opRight)
     def opSym = o.value
     def rnm =   if (opSym == "+") then { "sum"
@@ -1023,9 +1036,6 @@ method compileop(o) {
 }
 method compileNormalArguments(o, args) {
     o.argumentsDo { a ->
-        if (a.isIdentifier && emitUndefinedChecks) then {
-            compileCheckForUndefinedIdentifier(a)
-        }
         args.push(compilenode(a))
     }
 }
@@ -1047,15 +1057,22 @@ method assembleArguments(args) {
     }
     result
 }
-method compileCheckForUndefinedIdentifier(id) {
+method compileUninitializedCheck(id) {
     // id is an identiferNode.   If it is possible that this identifier is
     // undefined, emit a check.
+    if (emitUndefinedChecks.not) then { return }
     def name = id.nameString
-    def definingScope = id.scope.thatDefines(name)
-    if (definingScope.variety == "built-in") then { return }
+    def definingScope = id.scope.thatDefines(name) ifNone {
+        // this happens for the "unknown" identifierNode
+        return
+    }
+    def scopeVariety = definingScope.variety
+    if (scopeVariety == "built-in") then { return }
+    if ("module | method | dialect".contains(definingScope.variety)) then {
+        if (initializedVars.contains(name)) then { return }
+    }
     def idKind = definingScope.kind(name)
-    if (((idKind == k.defdec) && {initializedMethodVars.contains(name).not}) ||
-            (idKind == k.vardec)) then {
+    if ((idKind == k.defdec) || (idKind == k.vardec)) then {
         out "if ({varf(name)} === undefined) raiseUninitializedVariable(\"{name}\");"
     }
 }
@@ -1136,7 +1153,7 @@ method compiledialect(o) {
         if (xmodule.currentDialect.hasAtStart) then {
             out "var var_thisDialect = selfRequest(var_prelude, \"thisDialect\", [0]);"
             out "selfRequest(var_thisDialect, \"atStart(1)\", [1], "
-            out "  new GraceString(\"{escapestring(modname)}\"));"
+            out "  new GraceString({modNameAsString}));"
         }
     }
     o.register := "GraceDone"
@@ -1152,6 +1169,7 @@ method compileimport(o) {
     out "  throw new GraceExceptionPacket(EnvironmentExceptionObject, "
     out "    new GraceString(\"could not find module {o.path}\"));"
     out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", {formatModname(o.path)});")
+    initializedVars.add(nm)
     def methodIdent = o.value
     def accessor = (ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(currentScope)],
         [methodIdent], o.dtype) scope(currentScope))
@@ -1165,7 +1183,7 @@ method compileimport(o) {
     }
     compileCheckThat(var_nm) called "module '{o.nameString.quoted}'"
         hasType(o.dtype) onLine (o.line)
-    out "setModuleName(\"{escapestring(modname)}\");"
+    out "setModuleName({modNameAsString});"
     o.register := "GraceDone"
 }
 method compilereturn(o) {
@@ -1180,6 +1198,8 @@ method compilereturn(o) {
     }
 }
 method compilePrint(o) {
+    // TODO: simplify; we know that there is one argument
+    // Why is this a special case ansyway?
     var args := []
     for (o.parts) do { part ->
         for (part.args) do { prm ->
@@ -1244,8 +1264,11 @@ method stripLeadingZeros(str) {
 
 method compilenode(o) {
     compilationDepth := compilationDepth + 1
-    noteLineNumber(o.line)comment "compilenode {o.kind}"
     def oKind = o.kind
+    if ((oKind ≠ "method") && (oKind ≠ "identifier")) then {
+        noteLineNumber(o.line)comment "compilenode {oKind}"
+        // no point in setting the line number for a method declaration
+    }
     if (oKind == "num") then {
         o.register := "new GraceNum(" ++ stripLeadingZeros(o.value) ++ ")"
     } elseif {oKind == "string"} then {
@@ -1341,6 +1364,7 @@ method initializeCodeGenerator(moduleObject) {
     }
     modname := moduleObject.name
     emod := escapeident(modname)
+    modNameAsString := "\"{escapestring(modname)}\""
     if (util.extensions.contains("Debug")) then {
         debugMode := true
     }
@@ -1370,12 +1394,12 @@ method outputModuleDefinition(moduleObject) {
     def generatedModuleName = formatModname(modname)
     out "function {generatedModuleName}() \{"
     increaseindent
-    out "setModuleName(\"{escapestring(modname)}\");"
-    out "importedModules[\"{escapestring(modname)}\"] = this;"
+    out "setModuleName({modNameAsString});"
+    out "importedModules[{modNameAsString}] = this;"
     def selfr = "module$" ++ emod
     moduleObject.register := selfr
     out "var {selfr} = this;"
-    out "this.definitionModule = \"{escapestring(modname)}\";"
+    out "this.definitionModule = {modNameAsString};"
     out "this.definitionLine = 0;"
     out "var var_prelude = var___95__prelude;"
         // var_prelude must be local to the module function, because its
@@ -1445,11 +1469,11 @@ method outputGct {
     def gct = xmodule.parseGCT(modname)
     def gctText = xmodule.gctAsString(gct)
     util.outprint "if (typeof gctCache !== \"undefined\")"
-    util.outprint "  gctCache[\"{escapestring(modname)}\"] = \"{escapestring(gctText)}\";"
+    util.outprint "  gctCache[{modNameAsString}] = \"{escapestring(gctText)}\";"
 }
 method outputSource {
     util.outprint "if (typeof originalSourceLines !== \"undefined\") \{"
-    util.outprint "  originalSourceLines[\"{escapestring(modname)}\"] = ["
+    util.outprint "  originalSourceLines[{modNameAsString}] = ["
     def sourceLines = util.cLines
     def numberOfLines = util.cLines.size
     var ln := 1
