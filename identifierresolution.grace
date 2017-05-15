@@ -992,12 +992,9 @@ method setupContext(moduleObject) {
 
     def dialectNode = moduleObject.theDialect
     def dialectName:String = dialectNode.value
-    util.log 50 verbose "in dialect {dialectName}"
     if (dialectName ≠ "none") then {
         xmodule.checkExternalModule(dialectNode)
         def gctDict = xmodule.parseGCT(dialectName)
-        util.log 50 verbose("got gct for {dialectName}; public methods are " ++
-            gctDict.at "public" ifAbsent {emptySequence})
         def typeDecls = set(gctDict.at "types" ifAbsent {emptySequence})
         gctDict.at "public" ifAbsent {emptySequence}.do { mn ->
             preludeScope.addName(mn) as (if (typeDecls.contains(mn))
@@ -1257,9 +1254,6 @@ method collectParentNames(node) {
     // node is an object or class; put the names that it inherit into its scope.
     // In the process, checks for a cycle in the inheritance chain.
     def nodeScope = node.scope
-    if (ast.fakeSymbolTable == nodeScope) then {
-        util.log 20 verbose "node {node} has no scope.\n{node.pretty 0}"
-    }
     if (nodeScope.inheritedNames == completed) then {
         return
     }
@@ -1293,11 +1287,7 @@ method gatherInheritedNames(node) is confidential {
                     // superScope.node == nullNode when superScope describes
                     // an imported module.
                     collectParentNames(superScope.node)
-                } else {
-                    util.log 70 verbose "‹{node.nameString}›.superscope.node == nullNode"
                 }
-            } else {
-                util.log 70 verbose "superscope of {node.nameString} is universal"
             }
         }
         superScope.elements.keysDo { each ->
@@ -1335,11 +1325,8 @@ method gatherUsedNames(objNode) is confidential {
     objNode.usedTraits.do { t ->
         def traitScope = objScope.scopeReferencedBy(t.value)
         def traitNode = traitScope.node
-        util.log 70 verbose "examining parents of trait {t} which has scope {traitScope}\ndefined in node {traitNode}"
         if (traitNode.isObject) then {
             collectParentNames(traitScope.node)
-        } else {
-            util.log 70 verbose "traitNode {traitNode} is not an object.\n{traitNode.pretty 1}"
         }
         traitScope.keysAndKindsDo { nm, kd ->
             if (kd.forUsers) then {
@@ -1382,8 +1369,6 @@ method checkForConflicts(objNode, traitMethods) {
     traitMethods.keysDo { methName ->
         def sources = traitMethods.get(methName)
         if (sources.size > 1) then {    // a method has more than one source trait
-            util.log 70 verbose("{objNode.nameString}'s scope = {objNode.scope}" ++
-                  "\n and {objNode.nameString}'s localNames = {objNode.localNames}")
             if (objNode.localNames.contains(methName).not) then {
                 conflicts.addLast (conflictForMethodName(methName) from(sources))
             }
@@ -1521,7 +1506,7 @@ method transformCall(cNode) -> ast.AstNode {
     if (nominalRcvr.isImplicit) then {
         def rcvr = s.resolveOuterMethod(methodName) fromNode(cNode)
         if (rcvr.isIdentifier) then {
-            util.log 60 verbose "Transformed {cNode.pretty 0} answered identifier {rcvr.nameString}"
+            util.log 60 verbose "Transformed {cNode.pretty 0} did nothing"
             return cNode
         }
         def definingScope = s.thatDefines(methodName)

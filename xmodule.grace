@@ -220,29 +220,7 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
     addTransitiveImports(moduleFileJs.directory, isDialect, nm, sourceRange)
 }
 
-method directory (d) expectedOrInPath (p) -> Boolean {
-    // is directory d one of the expected directories, or in the path string p
-    // The expected directories are the directory where the compiler lives, the
-    // directory where the input lives, and the current directory.
-    // All comparisons are between absolute path names.
-
-    def dr = io.realpath(d)
-    if (dr == io.realpath "./") then { return true }
-    if (dr == io.realpath(util.sourceDir)) then { return true }
-    if (dr == io.realpath(sys.execPath)) then { return true }
-    filePath.split(p).do { d1 ->
-        if (dr == io.realpath(d1)) then { return true }
-    }
-    def pathdirs = filePath.split(p).map { each -> io.realpath(each) }
-    util.log 50 verbose("directory(_)expectedOrInPath(_) returning false.\n " ++
-        "Looking for {dr}\nTried ./ = {io.realpath "./"}\n" ++
-        "    sourceDir = {io.realpath(util.sourceDir)}\n" ++
-        "    execDir = {io.realpath(sys.execPath)}\n" ++
-        "    PATH dirs = {pathdirs}\n")
-    return false
-}
 method addTransitiveImports(directory, isDialect, moduleName, sourceRange) is confidential {
-    util.log 50 verbose "adding transitive imports for {moduleName}"
     def gctData = gctCache.at(moduleName) ifAbsent {
         parseGCT(moduleName) sourceDir(directory)
     }
