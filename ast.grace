@@ -195,6 +195,7 @@ class baseNode {
     var line is public := util.linenum
     var linePos is public := util.linepos
     var symbolTable := fakeSymbolTable
+    symbolTable.node := self
     var comments is public := false
 
     method setLine (l) col (c) {
@@ -357,17 +358,23 @@ def nullNode is public = object {
     method == (other) { self.isMe(other) }
 }
 
-def fakeSymbolTable is public = object {
-    var node is public := nullNode
+class fakeSymbolTable is public {
+    var node is public    // will be initialized when this node
+      // is placed in an AstNode using scope:=(_).
+      // Can't make it nullNode now, because nullNode
+      // inherits from baseNode, which uses fakeSymbolTable
     method asString { "the fakeSymbolTable" }
     method addNode (n) as (kind) {
-        ProgrammingError.raise "fakeSymbolTable(on node {node}).addNode({n}) as \"{kind}\" requested"
+        ProgrammingError.raise "fakeSymbolTable(on node {node}).addNode({n}) as \"{kind}\""
     }
     method thatDefines (name) ifNone (action) {
-        ProgrammingError.raise "fakeSymbolTable.thatDefines({name})."
+        action.apply
+    }
+    method thatDefines (name) {
+        ProgrammingError.raise "fakeSymbolTable(on node {node}).thatDefines({name})."
     }
     method enclosingObjectScope {
-        ProgrammingError.raise "fakeSymbolTable.enclosingObjectScope on node {node}"
+        ProgrammingError.raise "fakeSymbolTable(on node {node}).enclosingObjectScope"
     }
     method variety { "fake" }
     method ==(other) { self.isMe(other) }
@@ -1383,7 +1390,7 @@ def callNode is public = object {
             // make and return an identifiderNode for my request
 
             if (uninitialized == cachedIdentifier) then {
-                if (fakeSymbolTable == scope) then {
+                if (scope.variety == "fake") then {
                     ProgrammingError.raise
                         "asIdentifier requested on {pretty 0} when scope was fake"
                 }
@@ -1849,7 +1856,7 @@ def memberNode is public = object {
         method asString { toGrace 0 }
         method asIdentifier {
             // make and return an identifiderNode for my request
-            if (fakeSymbolTable == scope) then {
+            if (scope.variety == "fake") then {
                 ProgrammingError.raise "asIdentifier requested on {pretty 0} when scope was fake"
             }
             def resultNode = identifierNode.new (nameString, false) scope (scope)
