@@ -412,16 +412,24 @@ class new {
         method consume (c){
             if (interpdepth > 0) then {
                 if (tokens.last.kind == "lparen") then {
-                    def suggestion1 = errormessages.suggestion.new
-                    suggestion1.deleteRange(tokens.last.linePos, linePosition)
-                                    onLine(lineNumber)
-                    def suggestion2 = errormessages.suggestion.new
-                    suggestion2.insert "«expression»"
-                                    atPosition (tokens.last.linePos+1)
-                                    onLine(lineNumber)
+                    def lastPos = tokens.last.linePos
+                    def lineLength = util.lines.at(lineNumber).size
+                    def suggestions = []
+                    if (lastPos < lineLength) then {
+                        def suggestion1 = errormessages.suggestion.new
+
+                        suggestion1.deleteRange(lastPos, linePosition)
+                                        onLine(lineNumber)
+                        suggestions.add(suggestion1)
+                        def suggestion2 = errormessages.suggestion.new
+                        suggestion2.insert "«expression»"
+                                        atPosition (lastPos + 1)
+                                        onLine(lineNumber)
+                        suggestions.add(suggestion2)
+                    }
                     errormessages.syntaxError "a string interpolation cannot be empty."
-                          atRange (lineNumber, tokens.last.linePos, linePosition)
-                          withSuggestions [suggestion1, suggestion2]
+                          atRange (lineNumber, lastPos, linePosition)
+                          withSuggestions (suggestions)
                 }
                 emit (rParenToken)
                 emit (opToken("++"))

@@ -49,7 +49,7 @@ def suggestion is public = object {
     method deleteRange(start, end)onLine(lineNumber) {
         var start' := start
         def line = getLine(lineNumber)
-        if((start' > 1) && (end == line.size)) then {
+        if ((start > 1) && (end == line.size) && (start ≤ end)) then {
             // Check for removing the whole line, then remove the indent also.
             var indent := true
             for(1..(start'-1)) do { i ->
