@@ -278,6 +278,9 @@ GraceString.prototype = {
             var o = callmethod(other, "asString", [0]);
             return new GraceString(this._value + o._value);
         },
+        ">>(1)": function(argcv, target) {
+            return callmethod(target, "++(1)", [1], this);
+        },
         "at(1)": string_at,
         "size": function(argcv) {
             return new GraceNum(this._value.length);
@@ -1299,14 +1302,8 @@ PrimitiveGraceList.prototype = {
             }
             return new PrimitiveGraceList(l);
         },
-        "asSet": function list_asSet(argcv) {
-            return callmethod(var___95__prelude, "set(1)", [1], this);
-        },
-        "asList": function list_asSet(argcv) {
-            return callmethod(var___95__prelude, "list(1)", [1], this);
-        },
-        "asSequence": function list_asSet(argcv) {
-            return callmethod(var___95__prelude, "sequence(1)", [1], this);
+        ">>(1)": function(argcv, target) {
+            return callmethod(target, "++(1)", [1], this);
         }
     },
     className: "extendedLineup",
@@ -1478,6 +1475,9 @@ Lineup.prototype = {
                 l.push(callmethod(otherIter, "next", [0]));
             }
             return new Lineup(l);
+        },
+        ">>(1)": function(argcv, target) {
+            return callmethod(target, "++(1)", [1], this);
         }
     },
     className: "lineup",

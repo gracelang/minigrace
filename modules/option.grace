@@ -28,6 +28,7 @@ trait optionAsCollection⟦T⟧ {
     method fifth -> T { BoundsError.raise "attemp to use fifth on {self}." }
     method last -> T { first }
     method reversed → Option⟦T⟧ { self }
+    method >> (target:Collection⟦T⟧) -> Collection⟦T⟧ { target ++ self }
 }
 class full⟦T⟧(contents:T) → Option {
     use optionAsCollection⟦T⟧

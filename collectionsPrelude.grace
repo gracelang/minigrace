@@ -65,6 +65,8 @@ type Collection⟦T⟧ = Object & type {
         // returns a new iterator that yields my elements mapped by function
     filter(condition:Predicate1⟦T⟧) -> Collection⟦T⟧
         // returns a new iterator that yields those of my elements for which condition holds
+    >>(target: Collection⟦T⟧) -> Collection⟦T⟧
+        // returns the reverse concatentation target ++ self; used for writing pipelines
 }
 
 type Expandable⟦T⟧ = Collection⟦T⟧ & type {
@@ -313,6 +315,7 @@ trait collection⟦T⟧ {
         lazySequenceOver(self) filteredBy(selectionCondition)
     }
     method iter { self.iterator }
+    method >>(target:Collection⟦T⟧) -> Collection⟦T⟧ { target ++ self }
 
 }
 
@@ -361,7 +364,7 @@ trait enumerable⟦T⟧ {
         }
         return res
     }
-    method ++ (other) -> Enumerable⟦T⟧ {
+    method ++ (other:Collection⟦T⟧) -> Enumerable⟦T⟧ {
         lazyConcatenation(self, other)
     }
     method sortedBy(sortBlock:Function2) -> List⟦T⟧ {
@@ -437,7 +440,7 @@ def emptySequence is confidential = object {
     method values { self }
     method keysAndValuesDo(block2) { done }
     method reversed { self }
-    method ++(other: Collection) { sequence.withAll(other) }
+    method ++ (other: Collection) { sequence.withAll(other) }
     method asString { "⟨⟩" }
     method contains(element) { false }
     method do(block1) { done }
@@ -543,7 +546,7 @@ class sequence⟦T⟧ {
                 }
                 outer.fromprimitiveArray(freshArray, size)
             }
-            method ++(other: Collection) {
+            method ++ (other:Collection⟦T⟧) {
                 sequence.withAll(lazyConcatenation(self, other))
             }
             method asString {
@@ -806,7 +809,7 @@ class list⟦T⟧ {
                 }
                 self
             }
-            method ++(o) {
+            method ++ (o:Collection⟦T⟧) {
                 def l = list.withAll(self)
                 l.addAll(o)
             }
@@ -1175,11 +1178,11 @@ class set⟦T⟧ {
         method copy {
             outer.withAll(self)
         }
-        method ++ (other) {
+        method ++ (other:Collection⟦T⟧) {
         // set union
             copy.addAll(other)
         }
-        method -- (other) {
+        method -- (other:Collection⟦T⟧) {
         // set difference
             def result = set.empty
             for (self) do {v->
@@ -1615,7 +1618,7 @@ class dictionary⟦K,T⟧ {
             self
         }
 
-        method ++(other) {
+        method ++ (other:Collection⟦T⟧) {
             def newDict = self.copy
             other.keysAndValuesDo {k, v ->
                 newDict.at(k) put(v)
@@ -1623,7 +1626,7 @@ class dictionary⟦K,T⟧ {
             return newDict
         }
 
-        method --(other) {
+        method -- (other:Collection⟦T⟧) {
             def newDict = dictionary.empty
             keysAndValuesDo { k, v ->
                 if (! other.containsKey(k)) then {
@@ -1720,7 +1723,7 @@ class range {
             method reversed {
                 from(upper)downTo(lower)
             }
-            method ++(other) {
+            method ++ (other:Collection⟦Number⟧) {
                 sequence.withAll(lazyConcatenation(self, other))
             }
             method ==(other) {
@@ -1811,7 +1814,7 @@ class range {
             method reversed {
                 from(lower)to(upper)
             }
-            method ++(other) {
+            method ++ (other:Collection⟦Number⟧) {
                 sequence.withAll(lazyConcatenation(self, other))
             }
             method ==(other) {
