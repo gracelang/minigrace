@@ -217,8 +217,8 @@ function findOnPath(fn, pathArray) {
     for (ix = 0; ix < candidates.length ; ix++) {
         console.error(candidates[ix]);
     }
-    process.exit(2);
-    return "undefined";
+    throw new GraceExceptionPacket(EnvironmentExceptionObject,
+        new GraceString('module "' + fn + '" not found'));
 }
 
 function addToPathIfNecessary(dir) {
