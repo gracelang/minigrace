@@ -355,9 +355,15 @@ self.test: minigrace.env $(STUBS:%.grace=j2/%.gct)
 	awk 'f;/^\/\/ end of preamble/{f=1}' js/compiler-js  > selftest/compiler-js-tail
 	cat selftest/compiler-js-head j2/gracelib.js $(MGSOURCEFILES:%.grace=j2/%.js) selftest/compiler-js-tail > selftest/mgc
 	chmod a+x selftest/mgc
-	GRACE_MODULE_PATH=.:modules:js /usr/bin/env time selftest/mgc $(VERBOSITY) --make --dir selftest compiler.grace
+	if [ "$(TRAVIS)" == "true" ]; \
+		then GRACE_MODULE_PATH=.:modules:js selftest/mgc $(VERBOSITY) --make --dir selftest compiler.grace; \
+		else GRACE_MODULE_PATH=.:modules:js /usr/bin/env time selftest/mgc $(VERBOSITY) --make --dir selftest compiler.grace; \
+	fi
 	cp js/compiler-js js/minigrace-js js/gracelib.js js/tests/harness-js selftest
-	/usr/bin/env time selftest/harness-js selftest/minigrace-js js/tests ""
+	if [ "$(TRAVIS)" == "true" ]; \
+		then selftest/harness-js selftest/minigrace-js js/tests "" ; \
+    	else time selftest/harness-js selftest/minigrace-js js/tests "" ; \
+	fi
 
 $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
 	cd js/tests; ln -sf ../$(<F) .
