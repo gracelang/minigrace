@@ -1398,6 +1398,7 @@ def callNode is public = object {
                 cachedIdentifier.inRequest := true
                 cachedIdentifier.line := parts.first.line
                 cachedIdentifier.linePos := parts.first.linePos
+                cachedIdentifier.canonicalName := canonicalName
             }
             cachedIdentifier
         }
@@ -2277,6 +2278,7 @@ def opNode is public = object {
         resultNode.inRequest := true
         resultNode.line := line
         resultNode.linePos := linePos
+        resultNode.canonicalName := canonicalName
         return resultNode
     }
     method shallowCopy {
