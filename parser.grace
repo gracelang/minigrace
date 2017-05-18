@@ -2440,6 +2440,7 @@ method dofactoryMethod {
         errormessages.syntaxError("the keyword combination 'factory method' is " ++
                 "no longer supported. Use 'class' instead.")
                 atRange(btok.line, btok.linePos, sym.line, sym.endPos)
+                withSuggestions []
     }
 }
 
