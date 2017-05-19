@@ -63,7 +63,7 @@ function object_basicAsString (argcv) {
         if (firstTime) firstTime = false; else s += ", ";
         try {
             s += "" + i + " = " + callmethod(this.data[i], "asString", [0])._value;
-        } catch (e) {
+        } catch (ex) {
             s += "" + i + " = ?";
         }
     }
@@ -1191,7 +1191,7 @@ PrimitiveGraceList.prototype = {
                 try {
                     var m = findMethod(obj, "asString");
                     s += m.call(obj, [0])._value;
-                } catch (e) {
+                } catch (ex) {
                     s += "‹" + dbgp(obj, 2) + "›";
                 }
             }
@@ -1211,7 +1211,7 @@ PrimitiveGraceList.prototype = {
                 try {
                     var m = findMethod(obj, "asDebugString");
                     s += m.call(obj, [0])._value;
-                } catch (e) {
+                } catch (ex) {
                     s += "‹" + dbgp(obj, 2) + "›";
                 }
             }
@@ -1383,7 +1383,7 @@ Lineup.prototype = {
                 try {
                     var m = findMethod(obj, "asString");
                     s += m.call(obj, [0])._value;
-                } catch (e) {
+                } catch (ex) {
                     s += "‹" + dbgp(obj, 2) + "›";
                 }
             }
@@ -1403,7 +1403,7 @@ Lineup.prototype = {
                 try {
                     var m = findMethod(obj, "asDebugString");
                     s += m.call(obj, [0])._value;
-                } catch (e) {
+                } catch (ex) {
                     s += "‹" + dbgp(obj, 2) + "›";
                 }
             }
@@ -1534,7 +1534,7 @@ GracePrimitiveArray.prototype = {
                 try {
                     var m = findMethod(obj, "asString");
                     s += m.call(obj, [0])._value;
-                } catch (e) {
+                } catch (ex) {
                     s += "‹" + dbgp(obj, 2) + "›";
                 }
             }
@@ -1550,7 +1550,7 @@ GracePrimitiveArray.prototype = {
                 try {
                     var m = findMethod(obj, "asDebugString");
                     s += m.call(obj, [0])._value;
-                } catch (e) {
+                } catch (ex) {
                     s += "‹" + dbgp(obj, 2) + "›";
                 }
             }
@@ -1649,7 +1649,7 @@ function Grace_errorPrint(obj) {
         try {
             var s = callmethod(obj, "asString", [0]);
             minigrace.stderr_write(s._value);
-        } catch (e) {
+        } catch (ex) {
             minigrace.stderr_write(describe(obj));
         }
     } finally {
@@ -1909,7 +1909,7 @@ function raiseTypeError(msg, type, value) {
              var missing = callmethod(tc, "methodsIn(1)missingFrom(1)", [1, 1], type, value)._value;
              var s = (missing.includes(" ")) ? "s " : " ";
              diff = ".\nIt is missing method" + s + missing + ".";
-        } catch (e) {
+        } catch (ex) {
              // if something goes wrong while generating the message, just give up
         }
         if (! diff) { diff = ""; }
@@ -2247,7 +2247,7 @@ function gracecode_io() {
                 var result = child_process.execSync(safeJsString(systemString),
                                             {stdio: [process.stdin, process.stdout, process.stderr]});
                 return GraceTrue;
-            } catch(e) {
+            } catch(ex) {
                 return GraceFalse;
             }
         }
@@ -2282,7 +2282,7 @@ function gracecode_io() {
             var o = Grace_allocObject(GraceObject, "fileStream");
             try {
                 var f = fs.openSync(path, m);
-            } catch(e) {
+            } catch(ex) {
                 throw new GraceExceptionPacket(EnvironmentExceptionObject,
                     new GraceString("can't open file '" + path + "' for '" + m + "'."));
             }
@@ -3059,7 +3059,7 @@ function gracecode_mirrors() {
         if (typeof process === "undefined") {
             try {
                 moduleFunc = eval(graceModuleName(name));
-            } catch (e) {
+            } catch (ex) {
                 throw new GraceExceptionPacket(ImportErrorObject,
                            new GraceString("can't find module " + v._value));
             }
@@ -3067,7 +3067,7 @@ function gracecode_mirrors() {
             minigrace.loadModule(name, "./");
             try {
                 moduleFunc = eval(graceModuleName(name));
-            } catch (e) {
+            } catch (ex) {
                 throw new GraceExceptionPacket(ImportErrorObject,
                     new GraceString("error initializing module " + v._value));
             }
@@ -3089,7 +3089,7 @@ function safeJsString (obj) {
     try {
         var m = findMethod(obj, "asString");
         objString = m.call(obj, [0])._value;
-    } catch (e) {
+    } catch (ex) {
         objString = "(without working asString method)";
     }
     return objString;
@@ -3133,13 +3133,13 @@ function request(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
             raiseConfidentialMethod(methname, obj);
         }
         var ret = meth.call(obj, argcv, a, b, c, d, e, f, g, h, i, j);
-    } catch(e) {
-        if (e.exctype === 'return') {
-            if (e.target == returnTarget) {
-                return e.returnvalue;
+    } catch(ex) {
+        if (ex.exctype === 'return') {
+            if (ex.target == returnTarget) {
+                return ex.returnvalue;
             }
-        } else if (e.exctype === 'graceexception') {
-            e.exitStack.unshift({
+        } else if (ex.exctype === 'graceexception') {
+            ex.exitStack.unshift({
                 className: obj.className,
                 methname: methname,
                 moduleName: moduleName,
@@ -3157,7 +3157,7 @@ function request(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
             }
             return dealWithNoMethod(methname, obj, argsGL);
         }
-        throw e;
+        throw ex;
     } finally {
         setModuleName(origModuleName);
         setLineNumber(origLineNumber);
@@ -3179,13 +3179,13 @@ function requestWithArgs(obj, methname, argcv) {
         }
         var args = Array.prototype.slice.call(arguments, 2);
         var ret = meth.apply(obj, args);
-    } catch(e) {
-        if (e.exctype === 'return') {
-            if (e.target == returnTarget) {
-                return e.returnvalue;
+    } catch(ex) {
+        if (ex.exctype === 'return') {
+            if (ex.target == returnTarget) {
+                return ex.returnvalue;
             }
-        } else if (e.exctype === 'graceexception') {
-            e.exitStack.unshift({
+        } else if (ex.exctype === 'graceexception') {
+            ex.exitStack.unshift({
                 className: obj.className,
                 methname: methname,
                 moduleName: moduleName,
@@ -3203,7 +3203,7 @@ function requestWithArgs(obj, methname, argcv) {
             }
             return dealWithNoMethod(methname, obj, argsGL);
         }
-        throw e;
+        throw ex;
     } finally {
         setModuleName(origModuleName);
         setLineNumber(origLineNumber);
@@ -3218,13 +3218,13 @@ function selfRequest(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
     try {
         var meth = obj.methods[methname];
         var ret = meth.call(obj, argcv, a, b, c, d, e, f, g, h, i, j);
-    } catch(e) {
-        if (e.exctype === 'return') {
-            if (e.target == returnTarget) {
-                return e.returnvalue;
+    } catch(ex) {
+        if (ex.exctype === 'return') {
+            if (ex.target == returnTarget) {
+                return ex.returnvalue;
             }
-        } else if (e.exctype === 'graceexception') {
-            e.exitStack.unshift({
+        } else if (ex.exctype === 'graceexception') {
+            ex.exitStack.unshift({
                 className: obj.className,
                 methname: methname,
                 moduleName: moduleName,
@@ -3242,7 +3242,7 @@ function selfRequest(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
             }
             return dealWithNoMethod(methname, obj, argsGL);
         }
-        throw e;
+        throw ex;
     } finally {
         setModuleName(origModuleName);
         setLineNumber(origLineNumber);
@@ -3259,13 +3259,13 @@ function selfRequestWithArgs(obj, methname, argcv) {
         var meth = obj.methods[methname];
         var args = Array.prototype.slice.call(arguments, 2);
         var ret = meth.apply(obj, args);
-    } catch(e) {
-        if (e.exctype === 'return') {
-            if (e.target == returnTarget) {
-                return e.returnvalue;
+    } catch(ex) {
+        if (ex.exctype === 'return') {
+            if (ex.target == returnTarget) {
+                return ex.returnvalue;
             }
-        } else if (e.exctype === 'graceexception') {
-            e.exitStack.unshift({
+        } else if (ex.exctype === 'graceexception') {
+            ex.exitStack.unshift({
                 className: obj.className,
                 methname: methname,
                 moduleName: moduleName,
@@ -3283,7 +3283,7 @@ function selfRequestWithArgs(obj, methname, argcv) {
             }
             return dealWithNoMethod(methname, obj, argsGL);
         }
-        throw e;
+        throw ex;
     } finally {
         setModuleName(origModuleName);
         setLineNumber(origLineNumber);
@@ -3430,7 +3430,7 @@ function describe(obj) {
         var origLineNumber = lineNumber;    // will change them
         var m = findMethod(obj, "asString");
         objString = m.call(obj, [0])._value;
-    } catch (e) {
+    } catch (ex) {
     } finally {
         setModuleName(origModuleName);
         setLineNumber(origLineNumber);
@@ -3439,7 +3439,7 @@ function describe(obj) {
         classString = obj.className;
         var dotIx = classString.lastIndexOf(".");
         shortClassString = (dotIx == -1) ? classString : classString.substring(dotIx+1);
-    } catch (e) {
+    } catch (ex) {
     }
     if (objString === "") {
         return classString + " (without working asString method)";
@@ -3456,22 +3456,22 @@ function tryCatch(obj, cases, finallyblock) {
     var ret;
     try {
         return callmethod(obj, "apply", [0]);
-    } catch (e) {
-        if (e.exctype === 'graceexception') {
+    } catch (ex) {
+        if (ex.exctype === 'graceexception') {
             for (var i = 0; i < cases.length; i++) {
                 var eachCase = cases[i];
-                if (eachCase.guard.call(eachCase.receiver, e))
-                    return callmethod(cases[i], "apply(1)", [0], e);
+                if (eachCase.guard.call(eachCase.receiver, ex))
+                    return callmethod(cases[i], "apply(1)", [0], ex);
             }
-            throw e;
+            throw ex;
         } else {
-            var eStr = e.toString();
+            var eStr = ex.toString();
             if ((eStr === "RangeError: Maximum call stack size exceeded") ||    // Chrome
                 (eStr === "InternalError: too much recursion") ) {              // Firefox
-                e = new GraceExceptionPacket(new GraceException("TooMuchRecursion", ProgrammingErrorObject),
+                ex = new GraceExceptionPacket(new GraceException("TooMuchRecursion", ProgrammingErrorObject),
                        new GraceString("Does one of your methods request execution of itself without limit?"));
             }
-            throw e;
+            throw ex;
         }
     } finally {
         if (finallyblock !== false)
