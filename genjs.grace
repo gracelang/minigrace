@@ -8,6 +8,9 @@ import "xmodule" as xmodule
 import "mirrors" as mirrors
 import "errormessages" as errormessages
 import "identifierKinds" as k
+import "stringMap" as map
+
+def nodeTally = map.new
 
 def maxArgsToRequest = 10
 
@@ -1265,78 +1268,96 @@ method stripLeadingZeros(str) {
 method compilenode(o) {
     compilationDepth := compilationDepth + 1
     def oKind = o.kind
-    if ((oKind ≠ "method") && (oKind ≠ "identifier")) then {
-        noteLineNumber(o.line)comment "compilenode {oKind}"
-        // no point in setting the line number for a method declaration
-    }
-    if (oKind == "num") then {
-        o.register := "new GraceNum(" ++ stripLeadingZeros(o.value) ++ ")"
-    } elseif {oKind == "string"} then {
-        // Escape characters that may not be legal in string literals
-        def os = escapestring(o.value)
-        out("var string" ++ auto_count ++ " = new GraceString(\""
-            ++ os ++ "\");")
-        o.register := "string" ++ auto_count
-        auto_count := auto_count + 1
-    } elseif { oKind == "dialect" } then {
-        compiledialect(o)
-    } elseif { oKind == "import" } then {
-        compileimport(o)
-    } elseif { oKind == "return" } then {
-        compilereturn(o)
-    } elseif { oKind == "generic" } then {
-        o.register := compilenode(o.value)
-    } elseif { oKind == "identifier" } then {
+    tallyNode(oKind)
+    if { oKind == "identifier" } then {
         compileidentifier(o)
-    } elseif { oKind == "defdec" } then {
-        compiledefdec(o)
-    } elseif { oKind == "vardec" } then {
-        compilevardec(o)
-    } elseif { oKind == "block" } then {
-        compileblock(o)
     } elseif { oKind == "method" } then {
         compilemethod(o, "this")
-    } elseif { oKind == "array" } then {
-        compilearray(o)
-    } elseif { oKind == "bind" } then {
-        compilebind(o)
-    } elseif { oKind == "if" } then {
-        compileif(o)
-    } elseif { oKind == "trycatch" } then {
-        compiletrycatch(o)
-    } elseif { oKind == "matchcase" } then {
-        compilematchcase(o)
-    } elseif { oKind == "object" } then {
-        compileobject(o, "this")
-    } elseif { oKind == "typedec" } then {
-        compiletypedec(o)
-    } elseif { oKind == "typeliteral" } then {
-        compiletypeliteral(o)
-    } elseif { oKind == "inherit" } then {
-        compileInherit(o) forClass "irrelevant"
-    } elseif { oKind == "member" } then {
-        compilemember(o)
-    } elseif { oKind == "call" } then {
-        if (o.receiver.isPrelude) then {
-            if (o.nameString == "print(1)") then {
-                compilePrint(o)
-            } elseif {o.nameString == "native(1)code(1)"} then {
-                compileNativeCode(o)
+    } elseif { oKind == "generic" } then {
+        o.register := compilenode(o.value)
+    } else {
+        noteLineNumber(o.line)comment "compilenode {oKind}"
+        // no point in setting the line number for the above kinds
+        if { oKind == "member" } then {
+            compilemember(o)
+        } elseif { oKind == "call" } then {
+            if (o.receiver.isPrelude) then {
+                if (o.nameString == "print(1)") then {
+                    compilePrint(o)
+                } elseif {o.nameString == "native(1)code(1)"} then {
+                    compileNativeCode(o)
+                } else {
+                    compilecall(o)
+                }
             } else {
                 compilecall(o)
             }
+        } elseif { oKind == "op" } then {
+            compileop(o)
+        } elseif { oKind == "num" } then {
+            o.register := "new GraceNum(" ++ stripLeadingZeros(o.value) ++ ")"
+        } elseif {oKind == "string"} then {
+            // Escape characters that may not be legal in string literals
+            def os = escapestring(o.value)
+            out("var string" ++ auto_count ++ " = new GraceString(\""
+                ++ os ++ "\");")
+            o.register := "string" ++ auto_count
+            auto_count := auto_count + 1
+        } elseif { oKind == "bind" } then {
+            compilebind(o)
+        } elseif { oKind == "return" } then {
+            compilereturn(o)
+        } elseif { oKind == "defdec" } then {
+            compiledefdec(o)
+        } elseif { oKind == "vardec" } then {
+            compilevardec(o)
+        } elseif { oKind == "block" } then {
+            compileblock(o)
+        } elseif { oKind == "array" } then {
+            compilearray(o)
+        } elseif { oKind == "if" } then {
+            compileif(o)
+        } elseif { oKind == "trycatch" } then {
+            compiletrycatch(o)
+        } elseif { oKind == "matchcase" } then {
+            compilematchcase(o)
+        } elseif { oKind == "object" } then {
+            compileobject(o, "this")
+        } elseif { oKind == "typedec" } then {
+            compiletypedec(o)
+        } elseif { oKind == "typeliteral" } then {
+            compiletypeliteral(o)
+        } elseif { oKind == "inherit" } then {
+            compileInherit(o) forClass "irrelevant"
+        } elseif { oKind == "outer" } then {
+            compileOuter(o)
+        } elseif { oKind == "dialect" } then {
+            compiledialect(o)
+        } elseif { oKind == "import" } then {
+            compileimport(o)
         } else {
-            compilecall(o)
+            ProgrammingError.raise "unrecognized ast node \"{oKind}\"."
         }
-    } elseif { oKind == "op" } then {
-        compileop(o)
-    } elseif { oKind == "outer" } then {
-        compileOuter(o)
-    } else {
-        ProgrammingError.raise "unrecognized ast node \"{oKind}\"."
     }
     compilationDepth := compilationDepth - 1
     o.register
+}
+
+method tallyNode(kind) {
+    if (util.verbosity > util.defaultVerbosity) then {
+        def count = nodeTally.get(kind) ifAbsent { 0 }
+        nodeTally.put (kind, count + 1)
+    }
+}
+
+def valueCompare = { a, b -> b.value.compare(a.value) }
+
+method printNodeTally {
+    def bindingList = nodeTally.bindings
+    bindingList.sortBy(valueCompare)
+    bindingList.do { b ->
+        print "{b.key}\t{b.value}"
+    }
 }
 
 method initializeCodeGenerator(moduleObject) {
@@ -1508,7 +1529,9 @@ method compile(moduleObject, of, bt, glPath) {
     outputSource
 
     emitBufferedOutput
-    
+    if (util.verbosity > util.defaultVerbosity) then {
+        printNodeTally
+    }
     util.log_verbose "done."
     if (buildtype == "run") then { runJsCode(of, glPath) }
 }

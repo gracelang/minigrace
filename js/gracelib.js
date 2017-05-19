@@ -2651,6 +2651,9 @@ function gracecode_util() {
     this.methods.verbosity = function util_verbosity(argcv) {
         return new GraceNum(minigrace.verbosity);
     };
+    this.methods.defaultVerbosity = function util_defaultVerbosity(argcv) {
+        return new GraceNum(40);
+    };
     function util_log_verbose(argcv, level, s) {
         if (minigrace.verbosity >= level._value) {
             var elapsed = Math.round((Date.now() - loadDate)/10); // 10 ms
