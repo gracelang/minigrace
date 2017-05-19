@@ -1,7 +1,7 @@
 import "gUnit" as gU
 import "stringMap" as map
 import "unicode" as unicode
-import "math" as math
+import "random" as random
 import "sys" as sys
 
 def stringMapTest = object {
@@ -24,7 +24,7 @@ def stringMapTest = object {
 
         method testAsString {
             def m12Str = m12.asString
-            assert ((m12Str == "map.new [two::2, one::1]")  || (m12Str == "map.new [one::1, two::2]"))
+            assert ((m12Str == "map.new[two::2, one::1]")  || (m12Str == "map.new[one::1, two::2]"))
                 description "m12.asString == {m12Str}"
         }
         method testBindings {
@@ -57,7 +57,7 @@ def stringMapTest = object {
             deny (m123.contains "foo") description "m123 contains \"foo\""
         }
         method testMany {
-            def n = if (engine == "c") then { 1000 } else { 10000 }
+            def n = 10000
             def keys = randomKeys(n);
             def m = map.new
             def startTime = sys.elapsedTime
@@ -69,7 +69,7 @@ def stringMapTest = object {
                 assert (keys.at(v) == k) description "wrong value found for {k}"
             }
             def duration = sys.elapsedTime - startTime
-            print "In {engine}, elapsed time for {n} keys is {duration}s"
+            print "Elapsed time for {n} keys is {duration}s"
             print "{n - m.size} duplicate keys"
         }
         method testDo {
@@ -88,7 +88,7 @@ def stringMapTest = object {
             (1..n).do { ix ->
                 var s := ""
                 repeat 8 times {
-                    def ch = (math.random * 26).truncated + base
+                    def ch = (random.between0And1 * 26).truncated + base
                     s := s ++ unicode.create(ch)
                 }
                 result.add(s)
@@ -96,7 +96,7 @@ def stringMapTest = object {
             result
         }
         method testStringHash {
-            def n = if (engine == "c") then { 500 } else { 10000 }
+            def n = 10000
             def strings = randomKeys(n)
             def hashes = emptyDictionary
             var total := 0
@@ -121,7 +121,7 @@ def stringMapTest = object {
                 total := total + v.size
             }
             assert (total) shouldBe (n)
-            print "In {engine}, elapsed time for {n} hashes is {duration}s."
+            print "Elapsed time for {n} hashes is {duration}s."
             print "Hash range is {minh}..{maxh}. {hashes.size} distinct mod {p} values."
         }
     }
