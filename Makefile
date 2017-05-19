@@ -19,6 +19,8 @@ GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 
 JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
 MGFLAGS = -XnoChecks
+J1-MINIGRACE = $(JS-KG) $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js)
+J2-MINIGRACE = $(J1-MINIGRACE) j1/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js)
 JSJSFILES = gracelib.js unicodedata.js
 JSRUNNERS = grace grace-debug compiler-js minigrace-js
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
@@ -66,7 +68,7 @@ include Makefile.mgDependencies
 
 # The rules that follow are in alphabetical order.  Keep them that way!
 
-$(ALL_LIBRARY_MODULES:%.grace=j2/%.js): j2/%.js: modules/%.grace
+$(ALL_LIBRARY_MODULES:%.grace=j2/%.js): j2/%.js: modules/%.grace $(J1-MINIGRACE)
 	@if ( ! cmp --quiet j2/dom.js js/dom.js ) ; then echo "j2/dom.js and js/dom.js are different !" ; fi
 	GRACE_MODULE_PATH=modules:. j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
 	@if ( ! cmp --quiet j2/dom.js js/dom.js ) ; then echo "j2/dom.js and js/dom.js are different after compiling $<!" ; cp js/dom.js j2/dom.js ; fi
@@ -177,7 +179,7 @@ grace-web-editor/scripts/setup.js: pull-web-editor $(filter-out %/setup.js,$(wil
 
 ide: ideDeploy
 
-ideBuild: j2-minigrace minigrace.env pull-brace grace-web-editor/scripts/setup.js grace-web-editor/scripts/background.js $(WEBFILES_STATIC:%=js/%) $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES_DYNAMIC:%=j2/%))) $(ALL_LIBRARY_MODULES:%.grace=j2/%.js)
+ideBuild: $(J2-MINIGRACE) minigrace.env pull-brace grace-web-editor/scripts/setup.js grace-web-editor/scripts/background.js $(WEBFILES_STATIC:%=js/%) $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES_DYNAMIC:%=j2/%))) $(ALL_LIBRARY_MODULES:%.grace=j2/%.js)
 	./tools/includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	./tools/calc-IDE-version
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
@@ -209,7 +211,7 @@ $(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
 # consistent with the code generated from the current js files.
 	cp -p $< $@
 
-j1-minigrace: $(JS-KG) $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js)
+j1-minigrace: $(J1-MINIGRACE)
 
 j2/animation.js: j2/timer.gct j2/timer.js
 
@@ -220,7 +222,7 @@ j2/stobjectdraw.js: j2/staticTypes.js
 j2/buildinfo.grace: buildinfo.grace
 	cp -p $< $@
 
-j2-minigrace: j1-minigrace j1/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js)
+j2-minigrace: $(J2-MINIGRACE)
 
 $(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
 	cp -p $< $@
@@ -281,12 +283,12 @@ Makefile.conf: configure stubs modules
 $(MGSOURCEFILES:%.grace=j1/%.js): j1/%.js: %.grace $(JS-KG)/minigrace-js
 	$(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
 
-$(MGSOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace j1/minigrace-js
+$(MGSOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace j1/minigrace-js $(MGSOURCEFILES:%.grace=j1/%.js) $(JSRUNNERS:%=j1/%)
 	j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
 
-minigrace: j2-minigrace
+minigrace: J2-MINIGRACE
 
-minigrace.env: j2-minigrace $(LIBRARY_MODULES:%.grace=j2/%.js) $(EXTERNAL_STUBS:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct)
+minigrace.env: $(MGSOURCEFILES:%.grace=j2/%.js) $(LIBRARY_MODULES:%.grace=j2/%.js) $(EXTERNAL_STUBS:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct) $(JSRUNNERS:%=j2/%)
 
 module.test: minigrace.env $(TYPE_DIALECTS:%=j2/%.js)
 	modules/tests/harness-js-js j2/minigrace-js
@@ -383,7 +385,7 @@ $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
 $(STUBS:%.grace=j1/%.gct): j1/%.gct: stubs/%.grace $(JS-KG)/standardGrace.js $(JS-KG)/minigrace-js
 	$(JS-KG)/minigrace-js $(VERBOSITY) --make --gctfile --dir j1 -o /dev/null $<
 
-$(STUBS:%.grace=j2/%.gct): j2/%.gct: stubs/%.grace j1/standardGrace.js j1/minigrace-js
+$(STUBS:%.grace=j2/%.gct): j2/%.gct: stubs/%.grace j1/standardGrace.js $(J1-MINIGRACE)
 	GRACE_MODULE_PATH=j1 j1/minigrace-js $(VERBOSITY) --make --gctfile --dir j2 -o /dev/null $<
 
 $(STUBS:%.grace=js/%.gct): js/%.gct: stubs/%.gct
