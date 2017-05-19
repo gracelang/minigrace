@@ -103,95 +103,6 @@ then
     OBJECT_PATH=`dirname $MODULE_PATH`
 fi
 
-checkcurl() {
-    echo -n "Checking for libcurl... "
-    cat <<EOT > configure-$$-tmp.c
-#include <curl/curl.h>
-
-int main(int argc, char **argv) {
-    CURL *handle = curl_easy_init();
-    return 0;
-}
-EOT
-    if gcc -o configure-$$-tmp configure-$$-tmp.c -lcurl
-    then
-        other_modules=${other_modules:+"${other_modules[@]}"}
-        echo yes
-    else
-        echo no
-    fi
-    rm -f configure-$$-tmp*
-}
-
-UNICODE_MODULE=unicode.gso
-if grep -qi CYGWIN <<<"$PLATFORM"
-then
-    STATIC=y
-fi
-
-if [ "$STATIC" ]
-then
-    UNICODE_MODULE=unicode.gcn
-    STATIC_MODULES="unicode.gcn unixFilePath.gcn"
-    for mod in ${other_modules[@]}
-    do
-        OTHER_MODULES=(${OTHER_MODULES:+"${OTHER_MODULES[@]}"} $mod.gcn)
-    done
-    if [ -e minigrace.c ]
-    then
-        echo "Patching minigrace.c for static build..."
-        sed -i "" 's/dlmodule("unicode")/module_unicode_init()/' minigrace.c
-    fi
-else
-    STATIC_MODULES=unixFilePath.gcn
-    checkcurl
-    for mod in ${other_modules[@]}
-    do
-        OTHER_MODULES=(${OTHER_MODULES:+"${OTHER_MODULES[@]}"} $mod.gso)
-    done
-fi
-
-echo -n "Locating linker... "
-LD_PATH=$(which ld 2>/dev/null)
-if [ "$LD_PATH" ]
-then
-    echo $LD_PATH
-else
-    echo "none."
-    fail "linker"
-fi
-
-echo -n "Checking linker... "
-case "$(ld -v 2>&1)" in
-    "GNU ld"*)
-    GNU_LD=1
-    echo GNU LD.
-    LDFLAGS="-Wl,--export-dynamic"
-    ;;
-    *PROJECT:ld*)
-    LLVM_LD=1
-    echo LLVM LD.
-    UNICODE_LDFLAGS="-Wl,-undefined -Wl,dynamic_lookup"
-    ;;
-    *llvm*)
-    LLVM_LD=1
-    echo LLVM LD.
-    UNICODE_LDFLAGS="-Wl,-undefined -Wl,dynamic_lookup"
-    ;;
-    *)
-    echo unknown.
-    ;;
-esac
-
-echo -n "Checking for -ldl... "
-if ld -o /dev/null -ldl >/dev/null 2>&1
-then
-    echo yes.
-    LDFLAGS="$LDFLAGS -ldl"
-else
-    echo no.
-fi
-
 echo -n "Locating GNU make... "
 GMAKE_PATH=$(which gmake 2>/dev/null)
 if [ "$GMAKE_PATH" ]
@@ -220,38 +131,6 @@ else
     echo "Substitute the path to your GNU make below."
 fi
 
-echo -n "Locating gcc... "
-GCC_PATH=$(which gcc 2>/dev/null)
-if [ "$GCC_PATH" ]
-then
-    echo $GCC_PATH
-else
-    echo "none."
-    fail "gcc"
-fi
-
-echo -n "Checking GCC search paths... "
-cat <<EOT >> configure-$$-tmp.c
-#include <setjmp.h>
-int main() {
-    return 0;
-}
-EOT
-if ! gcc -o configure-$$-tmp configure-$$-tmp.c
-then
-    fail "gcc"
-else
-    echo "OK."
-fi
-rm -f configure-$$-tmp*
-
-if [ "$DISTRIB" = "tarball" ]
-then
-    echo "Run '$MK' to build, and '$MK selfhost' to have it compile itself."
-else
-    echo "Run '$MK' to build."
-fi
-
 STUBS=$(cd stubs; ls *.grace | tr \\n ' ')
 LIBRARY_MODULES=$(cd modules; ls *.grace | grep -v Test | tr \\n ' ')
 ICONS=$(cd js; ls *.png | tr \\n ' ')
@@ -270,7 +149,6 @@ INCLUDE_PATH = $INCLUDE_PATH
 MODULE_PATH = $MODULE_PATH
 OBJECT_PATH = $OBJECT_PATH
 EOT
-
 
 if [ "$ADVISE_END" ]
 then
