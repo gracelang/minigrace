@@ -3123,6 +3123,31 @@ function GraceCallStackToString() {
     return errorString + this.moduleName;
 }
 
+function handleRequestException(ex, obj, methname, methodArgs) {
+    if (ex.exctype === 'graceexception') {
+        ex.exitStack.unshift({
+            className: obj.className,
+            methname: methname,
+            moduleName: moduleName,
+            lineNumber: lineNumber,
+            toString: GraceCallStackToString
+        });
+        throw ex;
+    } else if (!obj) {
+        throw new GraceExceptionPacket(UninitializedVariableObject,
+            new GraceString("requested method '" + methname + "' on uninitialised variable."));
+    } else if (typeof(obj.methods[methname]) !== "function") {
+        var argsGL = callmethod(Grace_prelude, "emptyList", [0]);
+        var argsLength = methodArgs.length;
+        for (var ix = 3; ix < argsLength; ix++) {
+            callmethod(argsGL, "push(1)", [1], methodArgs[ix]);
+        }
+        return dealWithNoMethod(methname, obj, argsGL);
+    } else {
+        throw ex;
+    }
+}
+
 function request(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
     var origModuleName = moduleName;
     var origLineNumber = lineNumber;
@@ -3138,26 +3163,10 @@ function request(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
             if (ex.target == returnTarget) {
                 return ex.returnvalue;
             }
-        } else if (ex.exctype === 'graceexception') {
-            ex.exitStack.unshift({
-                className: obj.className,
-                methname: methname,
-                moduleName: moduleName,
-                lineNumber: lineNumber,
-                toString: GraceCallStackToString
-            });
-        } else if (!obj) {
-            throw new GraceExceptionPacket(UninitializedVariableObject,
-                new GraceString("requested method '" + methname + "' on uninitialised variable."));
-        } else if (typeof(obj.methods[methname]) !== "function") {
-            var argsGL = callmethod(Grace_prelude, "emptyList", [0]);
-            var argsLength = arguments.length;
-            for (var ix = 3; ix < argsLength; ix++) {
-                callmethod(argsGL, "push(1)", [1], arguments[ix]);
-            }
-            return dealWithNoMethod(methname, obj, argsGL);
+            throw ex;
+        } else {
+            return handleRequestException(ex, obj, methname, arguments);
         }
-        throw ex;
     } finally {
         setModuleName(origModuleName);
         setLineNumber(origLineNumber);
@@ -3184,26 +3193,10 @@ function requestWithArgs(obj, methname, argcv) {
             if (ex.target == returnTarget) {
                 return ex.returnvalue;
             }
-        } else if (ex.exctype === 'graceexception') {
-            ex.exitStack.unshift({
-                className: obj.className,
-                methname: methname,
-                moduleName: moduleName,
-                lineNumber: lineNumber,
-                toString: GraceCallStackToString
-            });
-        } else if (!obj) {
-            throw new GraceExceptionPacket(UninitializedVariableObject,
-                new GraceString("requested method '" + methname + "' on uninitialised variable."));
-        } else if (typeof(obj.methods[methname]) !== "function") {
-            var argsGL = callmethod(Grace_prelude, "emptyList", [0]);
-            var argsLength = arguments.length;
-            for (var ix = 3; ix < argsLength; ix++) {
-                callmethod(argsGL, "push(1)", [1], arguments[ix]);
-            }
-            return dealWithNoMethod(methname, obj, argsGL);
+            throw ex;
+        } else {
+            return handleRequestException(ex, obj, methname, arguments);
         }
-        throw ex;
     } finally {
         setModuleName(origModuleName);
         setLineNumber(origLineNumber);
@@ -3223,26 +3216,10 @@ function selfRequest(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
             if (ex.target == returnTarget) {
                 return ex.returnvalue;
             }
-        } else if (ex.exctype === 'graceexception') {
-            ex.exitStack.unshift({
-                className: obj.className,
-                methname: methname,
-                moduleName: moduleName,
-                lineNumber: lineNumber,
-                toString: GraceCallStackToString
-            });
-        } else if (!obj) {
-            throw new GraceExceptionPacket(UninitializedVariableObject,
-                new GraceString("requested method '" + methname + "' on uninitialised variable."));
-        } else if (typeof(obj.methods[methname]) !== "function") {
-            var argsGL = callmethod(Grace_prelude, "emptyList", [0]);
-            var argsLength = arguments.length;
-            for (var ix = 3; ix < argsLength; ix++) {
-                callmethod(argsGL, "push(1)", [1], arguments[ix]);
-            }
-            return dealWithNoMethod(methname, obj, argsGL);
+            throw ex;
+        } else {
+            return handleRequestException(ex, obj, methname, arguments);
         }
-        throw ex;
     } finally {
         setModuleName(origModuleName);
         setLineNumber(origLineNumber);
