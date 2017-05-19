@@ -68,11 +68,11 @@ include Makefile.mgDependencies
 
 $(ALL_LIBRARY_MODULES:%.grace=j2/%.js): j2/%.js: modules/%.grace
 	@if ( ! cmp --quiet j2/dom.js js/dom.js ) ; then echo "j2/dom.js and js/dom.js are different !" ; fi
-	GRACE_MODULE_PATH=modules:. j2/minigrace-js $(VERBOSITY) --make --target js --dir j2 $<
+	GRACE_MODULE_PATH=modules:. j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
 	@if ( ! cmp --quiet j2/dom.js js/dom.js ) ; then echo "j2/dom.js and js/dom.js are different after compiling $<!" ; cp js/dom.js j2/dom.js ; fi
 
 $(ALL_LIBRARY_MODULES:%.grace=j1/%.js): j1/%.js: modules/%.grace
-	GRACE_MODULE_PATH=modules:. $(JS-KG)/minigrace-js $(VERBOSITY) --make --target js --dir j1 $<
+	GRACE_MODULE_PATH=modules:. $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
 
 ace-code: js/ace/ace.js
 
@@ -118,7 +118,7 @@ checkjs:
 
 checkgenjs: j1/minigrace
 	if [ ! -e js/ast.js ] ;\
-        then j1/minigrace --dir js --target js --verbose ast.grace ; fi
+        then j1/minigrace --dir js --verbose ast.grace ; fi
 	jsl -nologo -conf tools/jsl.genjs.conf -process js/ast.js
 
 dev-ide:
@@ -233,10 +233,10 @@ $(JS-KG)/compiler-js:
 	cp -p js/compiler-js $(JS-KG)
 
 $(JSONLY:%.grace=js/%.js): js/%.js: modules/%.grace js/dom.gct minigrace js/timer.gct
-	GRACE_MODULE_PATH=js:modules ./minigrace --target js --dir js --make $(VERBOSITY) $<
+	GRACE_MODULE_PATH=js:modules ./minigrace --dir js --make $(VERBOSITY) $<
 
 $(JSONLY:%.grace=js/%.gct): js/%.gct: modules/%.grace js/dom.gct minigrace js/timer.gct
-	GRACE_MODULE_PATH=js:modules ./minigrace --target js --dir js --make $(VERBOSITY) $<
+	GRACE_MODULE_PATH=js:modules ./minigrace --dir js --make $(VERBOSITY) $<
 
 $(JSRUNNERS:%=j1/%): j1/%: $(JS-KG)/%
 # The j1/*.js files are created by the kg compiler, and so need to be run
@@ -250,7 +250,7 @@ js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
 js/collectionsPrelude%js js/collectionsPrelude%gct: collectionsPrelude.grace minigrace
-	GRACE_MODULE_PATH=modules:js ./minigrace $(VERBOSITY) --make --target js --dir js $(<F)
+	GRACE_MODULE_PATH=modules:js ./minigrace $(VERBOSITY) --make --dir js $(<F)
 
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
@@ -271,7 +271,7 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
 js/standardGrace.js: standardGrace.grace js/collectionsPrelude.js minigrace
-	./minigrace --target js --dir js --make $(VERBOSITY) $<
+	./minigrace --dir js --make $(VERBOSITY) $<
 
 js/animation%js: js/timer.gct objectdraw/animation.grace
 
@@ -279,10 +279,10 @@ Makefile.conf: configure stubs modules
 	./configure
 
 $(MGSOURCEFILES:%.grace=j1/%.js): j1/%.js: %.grace $(JS-KG)/minigrace-js
-	$(JS-KG)/minigrace-js $(VERBOSITY) --make --target js --dir j1 $<
+	$(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
 
 $(MGSOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace j1/minigrace-js
-	j1/minigrace-js $(VERBOSITY) --make --target js --dir j2 $<
+	j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
 
 minigrace: j2-minigrace
 
@@ -373,7 +373,7 @@ $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
 
 $(STUBS:%.grace=j1/%.gct): j1/%.gct: stubs/%.grace $(JS-KG)/standardGrace.js $(JS-KG)/minigrace-js
-	$(JS-KG)/minigrace-js $(VERBOSITY) --make --target js --gctfile --dir j1 -o /dev/null $<
+	$(JS-KG)/minigrace-js $(VERBOSITY) --make --gctfile --dir j1 -o /dev/null $<
 
 $(STUBS:%.grace=j2/%.gct): j2/%.gct: stubs/%.grace j1/standardGrace.js j1/minigrace-js
 	GRACE_MODULE_PATH=j1 j1/minigrace-js $(VERBOSITY) --make --gctfile --dir j2 -o /dev/null $<
@@ -393,7 +393,7 @@ test.compile: minigrace
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/'\
     | while read -r fileName num; \
-    do echo "$$num \c"; ../../minigrace --target js $${fileName}; \
+    do echo "$$num \c"; ../../minigrace $${fileName}; \
     done && echo "tests compiled."
 
 $(TYPE_DIALECTS:%=js/%.js): js/%.js: $(DIALECTS_NEED:%=%.js) $(patsubst modules/%, js/%.js, $(filter modules/%,$(DIALECTS_NEED)))
