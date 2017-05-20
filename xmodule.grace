@@ -316,14 +316,19 @@ method extractGctFor(moduleName) sourceDir(dir) {
     // Extracts the gct information for moduleName from an external resource
 
     if (inBrowser) then { return extractGctFromCache(moduleName) }
-
     try {
-        return extractGctFromJsFile(moduleName) sourceDir(dir)
-    } catch {
-        ep:EnvironmentException -> done
-    } // other exceptions are not caught
+        try {
+            return extractGctFromJsFile(moduleName) sourceDir(dir)
+        } catch { ep:EnvironmentException ->
+            done
+        } // other exceptions are not caught
 
-    return extractGctFromGctFile(moduleName) sourceDir(dir)
+        return extractGctFromGctFile(moduleName) sourceDir(dir)
+    } catch {ex:EnvironmentException ->
+        util.log 0 verbose("Failed to find gct for {moduleName}; " ++
+            "looked for a .js file containing a gct string, and a .gct file.")
+        sys.exit(2)
+    }
 }
 
 method extractGctFromJsFile(moduleName) sourceDir(dir) {
