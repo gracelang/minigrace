@@ -3549,8 +3549,6 @@ GraceExceptionPacket.prototype = {
                         callmethod(bt, "pop", [0])));
                 prefix = rf;
             }
-            Grace_errorPrint(callmethod(prefix, "++(1)", [1],
-                  new GraceString("line " + this.lineNumber + " of module " + this.moduleName + ".")));
         },
         "printBacktraceSkippingModules": function(argcv, skipable) {
             var exceptionName = callmethod(callmethod(this, "exception", [0]), "asString", [0]);
