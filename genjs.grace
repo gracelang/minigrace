@@ -586,8 +586,15 @@ method compileDefaultsForTypeParameters(o) extraParams (extra) {
 }
 
 method compileArgumentTypeChecks(o) {
-    var paramnr := 0
-    if (emitTypeChecks) then {
+    if ( emitTypeChecks.not ) then { return }
+    if (o.numParams == 1) then {
+        def p = o.signature.first.params.first
+        def pName = p.value
+        compileCheckThat (varf(pName))
+              called "argument to request of `{o.canonicalName}`"
+              hasType (p.dtype) onLine 0
+    } else {
+        var paramnr := 0
         o.parametersDo { p ->
             paramnr := paramnr + 1
             def pName = p.value
