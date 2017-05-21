@@ -206,14 +206,15 @@ method compileCheckThat(val) called (description)
                 if (lineNumber ≠ 0) then {
                     noteLineNumber(lineNumber) comment "typecheck"
                 }
-                def typeDesc = expectedType.toGrace 0.quoted
-                out "if (!Grace_isTrue(request({nm_t}, \"match(1)\", [1], {val})))"
-                out "    raiseTypeError("
-                out "      \"{description} is not of type {typeDesc}\","
-                out "      {nm_t}, {val});"
+                def typeDesc = removeTypeArgs(expectedType.toGrace 0.quoted)
+                out "assertTypeOrMsg({val}, {nm_t}, \"{description} is not of type {typeDesc}\");"
             }
         }
     }
+}
+method removeTypeArgs(str) {
+    def leftBracketIx = str.indexOf "⟦" ifAbsent { return str }
+    return str.substringFrom 1 to (leftBracketIx - 1)
 }
 method compileobjdefdec(o, selfr) {
     def val = compilenode(o.value)

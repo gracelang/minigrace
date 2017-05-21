@@ -1898,6 +1898,12 @@ function checkBlockApply(numargs) {
     }
 }
 
+function assertTypeOrMsg(obj, type, message) {
+    if (!Grace_isTrue(request(type, "match(1)", [1], obj))) {
+        raiseTypeError(message, type, obj);
+    }
+}
+
 function raiseTypeError(msg, type, value) {
     var diff;
     if (GraceDone === value) {
@@ -4020,6 +4026,7 @@ var var_done = GraceDone;
 // for node: explicitly make names global
 if (typeof global !== "undefined") {
     global.Alias = Alias;
+    global.assertTypeOrMsg = assertTypeOrMsg;
     global.callmethod = callmethod;
     global.classType = classType;
     global.dbg = dbg;
