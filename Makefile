@@ -19,8 +19,8 @@ GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 
 JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
 MGFLAGS = -XnoChecks
-J1-MINIGRACE = $(JS-KG) $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js)
-J2-MINIGRACE = $(J1-MINIGRACE) j1/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js)
+J1-MINIGRACE = $(JS-KG) j1/compiler.js $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/gracelib.js
+J2-MINIGRACE = $(J1-MINIGRACE) j2/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) j2/gracelib.js
 JSJSFILES = gracelib.js unicodedata.js
 JSRUNNERS = grace grace-debug compiler-js minigrace-js
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
@@ -283,12 +283,12 @@ Makefile.conf: configure stubs modules
 $(MGSOURCEFILES:%.grace=j1/%.js): j1/%.js: %.grace $(JS-KG)/minigrace-js
 	$(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
 
-$(MGSOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace j1/minigrace-js $(MGSOURCEFILES:%.grace=j1/%.js) $(JSRUNNERS:%=j1/%)
-	j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
+$(MGSOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace $(J1-MINIGRXCE)
+	GRACE_MODULE_PATH=modules j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
 
-minigrace: J2-MINIGRACE
+minigrace: $(J2-MINIGRACE)
 
-minigrace.env: $(MGSOURCEFILES:%.grace=j2/%.js) $(LIBRARY_MODULES:%.grace=j2/%.js) $(EXTERNAL_STUBS:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct) $(JSRUNNERS:%=j2/%)
+minigrace.env: minigrace $(EXTERNAL_STUBS:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct)
 
 module.test: minigrace.env $(TYPE_DIALECTS:%=j2/%.js)
 	modules/tests/harness-js-js j2/minigrace-js
@@ -298,6 +298,10 @@ modules/rtobjectdraw.grace: modules/objectdraw.grace tools/make-rt-version
 
 modules/stobjectdraw.grace: modules/objectdraw.grace tools/make-st-version
 	./tools/make-st-version $< > $@
+
+# needed to produce run-time error messages from the compiler
+modules/typeComparison.js: modules/typeComparison.grace
+	$(JS-KG)/minigrace-js $(VERBOSITY) --make $<
 
 npm-get-kg: $(JS-KG)
 
@@ -372,7 +376,7 @@ self.test: minigrace.env $(STUBS:%.grace=j2/%.gct)
 			selftest/harness-js selftest/minigrace-js js/tests "" ; \
     	else \
 			echo "time selftest/harness-js selftest/minigrace-js js/tests"; \
-			time selftest/harness-js selftest/minigrace-js js/tests "" ; \
+			/usr/bin/env time selftest/harness-js selftest/minigrace-js js/tests "" ; \
 	fi
 
 $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
