@@ -207,7 +207,7 @@ method compileCheckThat(val) called (description)
                     noteLineNumber(lineNumber) comment "typecheck"
                 }
                 def typeDesc = removeTypeArgs(expectedType.toGrace 0.quoted)
-                out "assertTypeOrMsg({val}, {nm_t}, \"{description} is not of type {typeDesc}\");"
+                out "assertTypeOrMsg({val}, {nm_t}, \"{description}\", \"{typeDesc}\");"
             }
         }
     }

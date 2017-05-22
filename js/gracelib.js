@@ -1898,9 +1898,16 @@ function checkBlockApply(numargs) {
     }
 }
 
-function assertTypeOrMsg(obj, type, message) {
-    if (!Grace_isTrue(request(type, "match(1)", [1], obj))) {
-        raiseTypeError(message, type, obj);
+function assertTypeOrMsg(obj, type, objDesc, typeDesc) {
+    if (type.methods["match(1)"]) {
+        if (!Grace_isTrue(request(type, "match(1)", [1], obj))) {
+            let message = objDesc + " does not have type " + typeDesc;
+            raiseTypeError(message, type, obj);
+        }
+    } else {
+        throw new GraceExceptionPacket(ProgrammingErrorObject,
+                new GraceString("while checking that " + objDesc + " has type " +
+                  typeDesc + ", found that " + typeDesc + " is not a type"));
     }
 }
 
