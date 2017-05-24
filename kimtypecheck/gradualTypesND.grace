@@ -20,6 +20,92 @@ type List = prelude.List
 
 method olist(lst) → List { prelude.list(lst) }
 
+var methodtypes := [ ]
+def typeVisitor = object {
+    inherit ast.baseVisitor
+    var literalCount := 1
+    method visitTypeLiteral(lit) {
+        for (lit.methods) do { meth ->
+            var mtstr := "{literalCount} "
+            for (meth.signature) do { part ->
+                mtstr := mtstr ++ part.name
+                if (part.params.size > 0) then {
+                    mtstr := mtstr ++ "("
+                    for (part.params.indices) do { pnr ->
+                        var p := part.params.at(pnr)
+                        if (p.dtype != false) then {
+                            mtstr := mtstr ++ p.toGrace(1)
+                        } else {
+                            // if parameter type not listed, give it type Unknown
+                            if(p.wildcard) then {
+                                mtstr := mtstr ++ "_"
+                            } else {
+                                mtstr := mtstr ++ p.value
+                            }
+                            mtstr := mtstr ++ ":" ++ ast.unknownType.value
+                            if (false != p.generics) then {
+                                mtstr := mtstr ++ "⟦"
+                                for (1..(p.generics.size - 1)) do {ix ->
+                                    mtstr := mtstr ++ p.generics.at(ix).toGrace(1) ++ ", "
+                                }
+                                mtstr := mtstr ++ p.generics.last.toGrace(1) ++ "⟧"
+                            }
+                        }
+                        if (pnr < part.params.size) then {
+                            mtstr := mtstr ++ ", "
+                        }
+                    }
+                    mtstr := mtstr ++ ")"
+                }
+            }
+            if (meth.rtype != false) then {
+                mtstr := mtstr ++ " → " ++ meth.rtype.toGrace(1)
+            }
+            methodtypes.push(mtstr)
+        }
+        io.error.write "methodtypes of {lit} is {methodtypes}"
+        return false
+    }
+    method visitOp(op) {
+        if ((op.value=="&") || (op.value=="|")) then {
+            def leftkind = op.left.kind
+            def rightkind = op.right.kind
+            if ((leftkind=="identifier") || (leftkind=="member")) then {
+                var typeIdent := op.left.toGrace(0)
+                methodtypes.push("{op.value} {typeIdent}")
+            } elseif { leftkind=="typeliteral" } then {
+                literalCount := literalCount + 1
+                methodtypes.push("{op.value} {literalCount}")
+                visitTypeLiteral(op.left)
+            } elseif { leftkind=="op" } then {
+                visitOp(op.left)
+            }
+            if ((rightkind=="identifier") || (rightkind=="member")) then {
+                var typeIdent := op.right.toGrace(0)
+                methodtypes.push("{op.value} {typeIdent}")
+            } elseif { rightkind=="typeliteral" } then {
+                literalCount := literalCount + 1
+                methodtypes.push("{op.value} {literalCount}")
+                visitTypeLiteral(op.right)
+            } elseif { rightkind=="op" } then {
+                visitOp(op.right)
+            }
+        }
+        return false
+    }
+}
+
+method dtypeToString(dtype) {
+    if (false == dtype) then {"Unknown"}
+    elseif {dtype.kind == "typeliteral"} then {
+        methodtypes := []
+        dtype.accept(typeVisitor)
+        methodtypes.at(1)
+    } else {
+        dtype.value
+    }
+}
+
 
 // Helper Map
 
@@ -178,14 +264,14 @@ def scope is public = object {
     }
 }
 
-method checkTypes (node) {
-    io.error.write "179: checking types of {node}"
+method checkTypes (node) → Done {
+    io.error.write "\n182: checking types of {node}"
     node.accept (astVisitor)
-    io.error.write "181: done checking types of {node}"
+    io.error.write "\n184: done checking types of {node}"
 }
 
-method typeOf (node) {
-    io.error.write "185: ready to checkTypes"
+method typeOf (node) → ObjectType {
+    io.error.write "\n188: ready to checkTypes"
     checkTypes (node)
     cache.atKey (node) do { value -> return value }
     CheckerFailure.raise "cannot type non-expression {node}" with (node)
@@ -449,7 +535,11 @@ def aMethodType: MethodTypeFactory = object {
         var lst: Number
         def parts = olist[]
         var ret
-        mstr := line.substringFrom (line.indexOf (" ") + 1) to (line.size)
+        mstr := if (line.at(1).startsWithLetter) then {
+            line
+        } else {
+            line.substringFrom (line.indexOf (" ") + 1) to (line.size)
+        }
         
         fst := 1
         var par: Number := mstr.indexOf ("(") startingAt (fst)
@@ -471,14 +561,14 @@ def aMethodType: MethodTypeFactory = object {
                     }
                  
                     var paramName: String := mstr.substringFrom(fst)to(lst - 1)
-                    // io.error.write "paramName: {paramName}"
+                    io.error.write "paramName: {paramName}"
                     fst := lst + 1
                     while {(mstr.at (lst) != ")") && (mstr.at (lst) != ",") 
-                                                && (mstr.at(lst) != "<")} do {
+                                                && (mstr.at(lst) != "⟦")} do {
                         lst := lst + 1
                     }
                     var paramType: String := mstr.substringFrom(fst)to(lst - 1)
-                    // io.error.write "paramType = {paramType}"
+                    io.error.write "paramType = {paramType}"
                     if (mstr.at (lst) == ",") then {
                         fst := lst + 2
                         lst := fst
@@ -605,7 +695,7 @@ type ObjectTypeFactory = {
     enumerable -> ObjectType
 }
 
-def anObjectType = object {
+def anObjectType: ObjectTypeFactory = object {
 
     method fromMethods (methods' : List⟦MethodType⟧) -> ObjectType { object {
         def methods : List⟦MethodType⟧ is public = if(base == dynamic)
@@ -632,7 +722,7 @@ def anObjectType = object {
         
         method getVariantTypes { variantTypes }
         
-        method setVariantTypes(newVariantTypes:List⟦anObjectType⟧) -> Done {
+        method setVariantTypes(newVariantTypes:List⟦ObjectType⟧) -> Done {
           variantTypes := newVariantTypes
         }
 
@@ -913,10 +1003,13 @@ def anObjectType = object {
 
     method fromDType(dtype) -> ObjectType {
         // io.error.write "fromDType with {dtype}"
+//        io.error.write "\1002 testing dtypeToString"
+//        io.error.write "{dtype} is {dtypeToString(dtype)}"
         match(dtype) 
           case { (false) ->
             dynamic
         } case { typeDec : TypeDeclaration ->
+            io.error.write "\n1008: converting {dtype} to ObjectType\n"
 //        TODO: re-write this code to understand the syntax of type expressions
 //          and type declarations, which are not the same!
             anObjectType.fromDType(typeDec.value)
@@ -968,7 +1061,7 @@ def anObjectType = object {
             // io.error.write "temp2 is {temp2}"
             temp2
         } case { generic : Generic ->
-            //TODO: figure out what to do here!
+            io.error.write "\n971: Handling generic: {generic}"
             anObjectType.fromIdentifier(generic.value)
         } case { memb : Member ->
             // io.error.write "709GT: {memb.receiver.value}.{memb.value}"
@@ -1182,7 +1275,7 @@ def anObjectType = object {
     addTo(number) name("%") param(number) returns(number)
     addTo(number) name("@") param(number) returns(point)
     addTo(number) name("hashcode") returns(string)
-    addTo(number) name("hash") returns(string)
+//    addTo(number) name("hash") returns(string)
     addTo(number) name("++") param(base) returns(string)
     addTo(number) name("<") param(number) returns(boolean)
     addTo(number) name(">") param(number) returns(boolean)
@@ -1275,7 +1368,7 @@ def anObjectType = object {
     addTo((listTp)) name("addLast") param(dynamic) returns(listTp)
     addTo((listTp)) name("addAll") param(listTp) returns(listTp)
     addTo((listTp)) name("pop") returns(dynamic)
-    addTo((listTp)) name("length") returns(number)
+//    addTo((listTp)) name("length") returns(number)
     addTo((listTp)) name("size") returns(number)
     addTo((listTp)) name("iter") returns(iterator)
     addTo((listTp)) name("iterator") returns(iterator)
@@ -1410,19 +1503,37 @@ method check(node) matches(eType : ObjectType)
     }
 }
 
+method split(input : String, separator : String) -> List⟦String⟧ {
+    var start := 1
+    var end := 1
+    var output := olist[]
+    while {end < input.size} do {
+        if (input.substringFrom(end)to(end) == (separator)) then {
+            var cand := input.substringFrom(start)to(end-1)
+            if (cand.size > 0) then {
+                output.push(cand)
+            }
+            start := end + 1
+        }
+        end := end + 1
+    }
+    output.push(input.substringFrom(start)to(end))
+    return output
+}
+
 
 def astVisitor = object {
     inherit ast.baseVisitor
     
     method checkMatch(node) → Boolean {
-        io.error.write "1344: checkMatch in astVisitor"
+        io.error.write "1436: checkMatch in astVisitor"
         true
     }
     
-    method runRules(node) → Boolean {
-        io.error.write "1349: runRules"
-        true
-    }
+//    method runRules(node) → Boolean {
+//        io.error.write "1349: runRules"
+//        true
+//    }
 
     method visitIf (ifnode: If) -> Boolean {
         def cond: AstNode = ifnode.value
@@ -1457,7 +1568,7 @@ def astVisitor = object {
 
     // params are identifier nodes.
     method visitBlock (block) -> Boolean {
-        io.error.write "1396: visiting block {block}"
+        io.error.write "1478: visiting block {block}"
         for (block.params) do {p->
             if ((p.kind == "identifier") && {p.wildcard.not} && {p.decType.value=="Unknown"}) then {
                 CheckerFailure.raise("no type given to declaration"
@@ -1490,6 +1601,7 @@ def astVisitor = object {
             }
         }
     
+        // why is this code repeated???
         def parameters = olist[]
         for(block.params) do { param ->
             match (param)
@@ -1508,7 +1620,7 @@ def astVisitor = object {
         def blockType: ObjectType = anObjectType.blockTaking(parameters)
             returning(anObjectType.fromBlockBody(body))
             
-        io.error.write "1447: blockType is {blockType}"
+        io.error.write "\n1529: blockType is {blockType}\n"
 
         cache.at (block) put (blockType)
 
@@ -1517,18 +1629,18 @@ def astVisitor = object {
 
     // not implemented yet
     method visitMatchCase (node) -> Boolean {
-        io.error.write "1504: MatchCase visit not implemented yet"
+        io.error.write "\n1538: MatchCase visit not implemented yet\n"
         checkMatch (node)
     }
 
     // not implemented yet
     method visitTryCatch (node) -> Boolean {
-        io.error.write "1509: TryCatch visit not implemented yet"
+        io.error.write "\n1544: TryCatch visit not implemented yet\n"
         checkMatch (node)
     }
 
     method visitMethodType (node) -> Boolean {
-        io.error.write "1512: visiting method type {node} not implemented"
+        io.error.write "\n1549: visiting method type {node} not implemented\n"
 
 //        runRules (node)
 //
@@ -1540,13 +1652,13 @@ def astVisitor = object {
     }
 
     method visitType (node) -> Boolean {
-        io.error.write "\n1524: visiting type {node}\n"
+        io.error.write "\n1561: visiting type {node} (not implemented)\n"
         checkMatch (node)
 //        io.error.write "432: done visiting type {node}"
     }
 
     method visitMethod (meth) -> Boolean {
-        io.error.write "\n1549: Visiting method {meth}\n"
+        io.error.write "\n1567: Visiting method {meth}\n"
         for (meth.signature) do {s->
             for (s.params) do {p->
                 if ((p.kind == "identifier") && {p.wildcard.not} && {p.decType.value=="Unknown"}) then {
@@ -1564,7 +1676,7 @@ def astVisitor = object {
         def mType = aMethodType.fromNode(meth)
         def returnType = mType.returnType
         
-        io.error.write "\n1567: Entering scope for {meth}\n"
+        io.error.write "\n1585: Entering scope for {meth}\n"
         scope.enter {
             for(meth.signature) do { part ->
                 for(part.params) do { param ->
@@ -1574,16 +1686,16 @@ def astVisitor = object {
             }
             
             collectTypes(olist(meth.body))
-            io.error.write "\n1577: collected types for {olist(meth.body)}\n"
+            io.error.write "\n1595: collected types for {olist(meth.body)}\n"
     
             for(meth.body) do { stmt ->
                 checkTypes(stmt)
-                io.error.write "1579: ready to accept {stmt}"
+                io.error.write "1599: ready to accept {stmt}"
                 stmt.accept(object {
                     inherit ast.baseVisitor
     
                     method visitReturn(ret) is override {
-                        io.error.write "1584: checking return {ret.value}"
+                        io.error.write "\n1604: checking return {ret.value}"
                         check (ret.value) matches (returnType) inMethod (name)
                         cache.at(ret) put (returnType)
                         return false
@@ -1626,20 +1738,20 @@ def astVisitor = object {
     }
 
     method visitCall (req) -> Boolean {
-        io.error.write "1545: visiting call {req}"
+        io.error.write "\n1647: visiting call {req}"
         def rec: AstNode = req.receiver
             
         def rType: ObjectType = if(rec.isIdentifier && {rec.nameString == "self"}) then {
-            io.error.write "1626: Looking up $elf"
+            io.error.write "\n1651: Looking up $elf"
             scope.types.find("$elf") butIfMissing {
                 prelude.Exception.raise "type of self missing" with(rec)
             }
         } else {
-            io.error.write "1631: non-self case"
+            io.error.write "\n1656: non-self case"
             typeOf(rec)
         }
         
-        io.error.write "type of receiver is {rType}"
+        io.error.write "\n1660: type of receiver is {rType}"
         def callType: ObjectType = if (rType.isDynamic) then {
             anObjectType.dynamic
         } else { 
@@ -1666,24 +1778,26 @@ def astVisitor = object {
 
     // returns false so don't recurse into object
     method visitObject (obj) -> Boolean {
-        io.error.write "\n1558: visiting object {obj}\n"
+        io.error.write "\n1687: visiting object {obj}\n"
         def objType: ObjectType = scope.enter { 
             processBody (olist (obj.value), obj.superclass) 
         }
-        io.error.write "\n1658: type of {obj} is {objType}\n"
+        io.error.write "\n1691: type of {obj} is {objType}\n"
         cache.at(obj) put (objType)
         false
     }
     
     // skip for now
     method visitModule (node) → Boolean {  // added kim
-        io.error.write "1678: visiting module {node}"
+        io.error.write "\n1698: visiting module {node}"
         checkMatch (node)
     }
 
-    method visitArray (node) -> Boolean {
-        io.error.write "1683: visiting array {node}"
-        checkMatch (node)
+    // array literals represent collections (should fix to be lineups)
+    method visitArray (lineUpLiteral) -> Boolean {
+        io.error.write "\n1704: visiting array {lineUpLiteral}"
+        cache.at (lineUpLiteral) put (anObjectType.collection)
+        false
     }
 
     // members are treated like calls
@@ -1692,7 +1806,7 @@ def astVisitor = object {
     }
 
     method visitGeneric (node) -> Boolean {
-        io.error.write "1693: visiting generic {node}"
+        io.error.write "\n1715: visiting generic {node} (not implemented)"
         checkMatch (node)
     }
 
@@ -1713,8 +1827,8 @@ def astVisitor = object {
 
     // Fix later
     method visitOctets (node) -> Boolean {
-        io.error.write "17147: visiting Octets {node}"
-        checkMatch (node)
+        io.error.write "\n1736: visiting Octets {node} (not implemented)"
+        false
     }
 
     // type of string is String
@@ -1735,7 +1849,7 @@ def astVisitor = object {
     }
 
     method visitBind (bind) -> Boolean {
-        io.error.write "1612: Visit Bind"
+        io.error.write "\n 1758: Visit Bind"
         def dest = bind.dest
     
         match (dest) case { _ : Member ->
@@ -1795,9 +1909,9 @@ def astVisitor = object {
             CheckerFailure.raise("no type given to declaration"
                 ++ " of {typ} '{defd.name.value}'") with (defd.name)
         }
-        
+        io.error.write "\n1818: type is {defd.dtype}"
         var defType := anObjectType.fromDType(defd.dtype)
-        io.error.write "1496: defType is {defType}"
+        io.error.write "\n1820: defType is {defType}"
         def value = defd.value
     
         if(value != false) then {
@@ -1833,28 +1947,87 @@ def astVisitor = object {
     } 
 
     method visitVarDec (node) -> Boolean {
-        io.error.write "visiting var dec {node}"
+        io.error.write "\n1856: visiting var dec {node}"
         visitDefDec (node)
     }
 
-    method visitImport (node) -> Boolean {
-        io.error.write "1839: visiting import {node}"
-        checkMatch (node)
+    method visitImport (imp) -> Boolean {
+        io.error.write "\n1861: visiting import {imp}"
+        def gct = xmodule.parseGCT(imp.path)
+        def placeholders = olist[]
+        def typeNames = olist[]
+        io.error.write("\n1954 keys are {gct.keys}\n")
+        
+        if (gct.containsKey("types")) then {
+            for(gct.at("types")) do { typ ->
+                def placeholder = anObjectType.dynamic
+                typeNames.push(typ)
+                placeholders.push(placeholder)
+                scope.types.at("{imp.nameString}.{typ}")put(placeholder)
+            }
+        }
+        if (typeNames.size > 0) then {
+            // ID for type declarations
+            var counter := 1
+            gct.keys.do { key : String ->
+              if (key.startsWith("methodtypes-of:")) then {
+                  var parseMethodTypes := split(key, ":")
+                  var typeOfMethods := parseMethodTypes.at(2)
+                  io.error.write "\n1881: typeOfMethods is {typeOfMethods}"
+                  def typeliterals = outer.dictionary.empty
+                  var unionTypes := olist[]
+                  var variantTypes := olist[]
+                  for (gct.at(key)) do { methodSignature ->
+                      if (typeOfMethods == "&") then {
+                          unionTypes.push(methodSignature.substringFrom(3)to(methodSignature.size))
+                      } elseif {typeOfMethods == "|"} then {
+                          variantTypes.push(methodSignature.substringFrom(3)to(methodSignature.size))
+                      } else {
+                          if (!typeliterals.containsKey(typeOfMethods)) then {
+                              typeliterals.at(typeOfMethods)put(olist[])
+                          }
+                          typeliterals.at(typeOfMethods).push(aMethodType.fromGctLine(methodSignature))
+                      }
+                  }
+                  
+                  scope.types.at("{imp.nameString}.{typeOfMethods}")put(anObjectType.fromMethods(typeliterals.at(typeOfMethods)))
+              }
+            }
+        }
+        cache.at(imp) put (anObjectType.doneType)
+        
+        def importedMethodTypes = gct.at("publicMethodTypes") ifAbsent {
+            io.error.write "nothing imported from {imp.nameString}"
+            olist[]
+        }
+        
+        def methodTypes = olist[]
+        
+        for (importedMethodTypes) do {methodSignature → 
+            io.error.write "\n1998: methodSignature is {methodSignature}"
+            methodTypes.push(aMethodType.fromGctLine(methodSignature))
+        }
+        
+        def importType = anObjectType.fromMethods(methodTypes)
+
+        scope.variables.at(imp.nameString) put(importType)
+        false
     }
 
     method visitReturn (node) -> Boolean {
-        io.error.write "1844: visiting return {node}"
+        io.error.write "\n1907: visiting return {node}"
         cache.at(node) put (typeOf(node.value))
         false
     }
 
     method visitInherits (node) -> Boolean {
-        io.error.write "1849: visiting inherits {node}"
-        checkMatch (node)
+        io.error.write "\n1913: visiting inherits {node}"
+        cache.at(node) put (typeOf(node.value))
+        false
     }
 
     method visitDialect (node) -> Boolean {
-        io.error.write "1854: visiting dialect {node}"
+        io.error.write "\n1919: visiting dialect {node}"
         checkMatch (node)
     }
 
@@ -1893,14 +2066,14 @@ method outerAt(i : Number) -> ObjectType is confidential {
 // Typing methods.
 
 method processBody(body : List, superclass: AstNode | false) -> ObjectType is confidential {
-    io.error.write "1879: superclass: {superclass}\n"
+    io.error.write "\n1958: superclass: {superclass}\n"
     // Collect the declarative types directly in the object body.
     collectTypes(body)
     // io.error.write "1732: collected types"
     // Inheritance typing.
     var inheritedMethods := olist[]
     def hasInherits = false ≠ superclass
-    io.error.write "1886: hasInherits is {hasInherits}\n"
+    io.error.write "\n1965: hasInherits is {hasInherits}\n"
     def superType = if(hasInherits) then {
         def inheriting = superclass
 //        inheriting.accept(object {
@@ -1916,15 +2089,15 @@ method processBody(body : List, superclass: AstNode | false) -> ObjectType is co
 //                true
 //            }
 //        })
-        io.error.write "\nGT1787: checking types of inheriting = {inheriting}\n"
+        io.error.write "\nGT1981: checking types of inheriting = {inheriting}\n"
         def inheritedType = typeOf(inheriting)
         inheritedMethods := inheritedType.methods
-        io.error.print "inherited methods: {inheritedMethods}"
+        io.error.write "\n1984: inherited methods: {inheritedMethods}"
         inheritedType
     } else {
         anObjectType.base
     }
-    io.error.write "1756: superType is {superType}\n"
+    io.error.write "\n1989: superType is {superType}\n"
     scope.variables.at("super") put(superType)
 
     // If the super type is dynamic, then we can't know anything about the
@@ -1944,7 +2117,7 @@ method processBody(body : List, superclass: AstNode | false) -> ObjectType is co
         def allMethods = olist[isMeMeth]
 
         for(body) do { stmt ->
-            io.error.write "1777: processing {stmt}"
+            io.error.write "\n2009: processing {stmt}"
             match(stmt) case { meth : Method ->
                 def mType = aMethodType.fromNode(meth)
                 allMethods.push(mType)
@@ -1957,9 +2130,10 @@ method processBody(body : List, superclass: AstNode | false) -> ObjectType is co
                     scope.variables.at(mType.name) put(mType.returnType)
                 }
             } case { defd : Def | Var ->
+                io.error.write "\n2022: in def or var case"
                 def mType = aMethodType.fromNode(defd)
                 allMethods.push(mType)
-                io.error.write "1945: add {mType} to allMethods"
+                io.error.write "\n2024: add {mType} to allMethods"
                 if(defd.isReadable) then {
                     publicMethods.push(mType)
                 }
@@ -1980,7 +2154,7 @@ method processBody(body : List, superclass: AstNode | false) -> ObjectType is co
             }
         }
         def internalType = anObjectType.fromMethods(allMethods)
-        io.error.write "\n1965: internalType is {internalType}\n"
+        io.error.write "\n2045: internalType is {internalType}\n"
         scope.types.at("$elf") put (internalType)
         // io.error.write "added $elf to scope"
         if (hasInherits) then {
@@ -1993,7 +2167,7 @@ method processBody(body : List, superclass: AstNode | false) -> ObjectType is co
     // io.error.write "1820:done calculating publicType"
 
     scope.variables.at("self") put(publicType)
-    io.error.write "\n1978: publicType is {publicType}\n"
+    io.error.write "\n2058: publicType is {publicType}\n"
 
     // Type-check the object body.
     def indices = if(hasInherits) then {
@@ -2002,14 +2176,14 @@ method processBody(body : List, superclass: AstNode | false) -> ObjectType is co
         body.indices
     }
     
-    io.error.write "1832: indices = {indices}"
+    io.error.write "\n2067: indices = {indices}"
 
     for(indices) do { i ->
-        io.error.write "1992: checking index {i} at line {body.at(i).line}" 
+        io.error.write "\n2070: checking index {i} at line {body.at(i).line}" 
         checkTypes(body.at(i))
-        io.error.write "1994: finished index {i}" 
+        io.error.write "\n2072: finished index {i}" 
     }
-    io.error.write "1996: exiting processBody {body}"
+    io.error.write "\n2074: exiting processBody {body}"
     publicType
 }
 
