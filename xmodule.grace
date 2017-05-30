@@ -520,27 +520,60 @@ method generateGctForModule(moduleObject) is confidential {
     return gct
 }
 
+method generateMethodHeader(methNode) -> String {
+    var depth: Number := 0
+    var s: String := ""
+    var firstPart := true
+    for (methNode.signature) do { part ->
+        s := s ++ part.name
+        if (firstPart && {false != methNode.typeParams}) then {
+            s := s ++ methNode.typeParams.toGrace(depth + 1)
+        }
+        firstPart := false
+        if (part.params.size > 0) then {
+            s := s ++ "("
+            for (part.params.indices) do { pnr ->
+                var p := part.params.at(pnr)
+                s := s ++ p.toGrace(depth + 1)
+                if (pnr < part.params.size) then {
+                    s := s ++ ", "
+                }
+            }
+            s := s ++ ")"
+        }
+    }
+    if (false != methNode.dtype) then {
+        s := s ++ " → {methNode.dtype.toGrace(0)}"
+    }
+    s
+}
+
 method buildGctFor(module) {
     def gct = emptyDictionary
     def classes = emptyList
     def confidentials = emptyList
     def meths = emptyList
     def types = emptyList
+    def publicMethodTypes = emptyList
     def theDialect = module.theDialect.moduleName
     module.parentsDo { p ->
         meths.addAll(p.providedNames)
     }
     for (module.value) do { v->
         if (v.kind == "vardec") then {
+            def gctType = if (false != v.dtype) then {v.dtype.toGrace(0)} else {"Unknown"}
             if (v.isReadable) then {
                 meths.push(v.name.value)
+                publicMethodTypes.push("{v.name.value} → {gctType}")
             }
             if (v.isWritable) then {
                 meths.push(v.name.value ++ ":=(1)")
+                publicMethodTypes.push("{v.name.value}:=({v.name.value}': {gctType}) → Done")
             }
         } elseif {v.kind == "method"} then {
             if (v.isPublic) then {
                 meths.push(v.nameString)
+                publicMethodTypes.push(generateMethodHeader(v))
             } else {
                 confidentials.push(v.nameString)
             }
@@ -561,6 +594,8 @@ method buildGctFor(module) {
         } elseif {v.kind == "defdec"} then {
             if (v.isPublic) then {
                 meths.push(v.nameString)
+                def gctType = if (false != v.dtype) then {v.dtype.toGrace(0)} else {"Unknown"}
+                publicMethodTypes.push("{v.name.value} → {gctType}")
             } else {
                 confidentials.push(v.nameString)
             }
@@ -600,6 +635,7 @@ method buildGctFor(module) {
             else { io.realpath(util.infile.pathname) }
     ]
     gct.at "public" put(meths.sort)
+    gct.at "publicMethodTypes" put(publicMethodTypes.sort)
     gct.at "types" put(types.sort)
     gct.at "dialect" put (
         if (theDialect == "none") then { [] } else { [theDialect] }

@@ -30,7 +30,13 @@ public:
  D
  H
  Z
- m
+ m(1)
+ x:=
+ xx
+publicMethodTypes:
+ m(y:Number) → Done
+ x:=(x': Number) → Done
+ xx → Number
 types:
  A
  D
