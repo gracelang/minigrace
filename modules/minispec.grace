@@ -65,11 +65,11 @@ method expect(b:Block) notToRaise (undesired:prelude.ExceptionKind) {
     mtAssertion.assert(b) shouldntRaise (undesired)
 }
 
-method expect(s:Object) toHaveType (desired:Type) {
+method expect(s:Unknown) toHaveType (desired:Type) {
     mtAssertion.assert(s) hasType (desired)
 }
 
-method expect(s:Object) notToHaveType (undesired:Type) {
+method expect(s:Unknown) notToHaveType (undesired:Type) {
     mtAssertion.deny(s) hasType (undesired)
 }
 

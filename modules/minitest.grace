@@ -67,11 +67,11 @@ method assert(b:Block) shouldntRaise (undesired:prelude.ExceptionKind) {
     mtAssertion.assert(b) shouldntRaise (undesired)
 }
 
-method assert(s:Object) hasType (desired:Type) {
+method assert(s:Unknown) hasType (desired:Type) {
     mtAssertion.assert(s) hasType (desired)
 }
 
-method deny(s:Object) hasType (undesired:Type) {
+method deny(s:Unknown) hasType (undesired:Type) {
     mtAssertion.deny(s) hasType (undesired)
 }
 
