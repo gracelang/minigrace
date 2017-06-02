@@ -9,7 +9,7 @@ import "unixFilePath" as filePath
 
 
 def CheckerFailure = Exception.refine "CheckerFailure"
-def DialectError is public = prelude.Exception.refine "DialectError"
+def DialectError is public = Exception.refine "DialectError"
     //must correspond to what is defined in "dialect"
 
 def gctCache = emptyDictionary
@@ -163,9 +163,9 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
         return
     }
 
-    if (prelude.inBrowser) then {
+    if (inBrowser) then {
         util.file(nm ++ ".js") onPath "" otherwise { _ ->
-            errormessages.error "Please compile module {nm} before importing it."
+            errormessages.error "Please \"Run\" module {nm} before importing it."
                 atRange(sourceRange)
         }
         return
@@ -245,8 +245,12 @@ method addTransitiveImports(directory, isDialect, moduleName, sourceRange) is co
 
 method compileModule (nm) inFile (sourceFile)
         forDialect (isDialect) atRange (sourceRange) is confidential {
-    if ( prelude.inBrowser || { util.recurse.not } ) then {
+    if (util.recurse.not) then {
         errormessages.error "Please compile module {nm} before using it."
+            atRange (sourceRange)
+    }
+    if (inBrowser) then {
+        errormessages.error "Please \"Run\" module {nm} before using it."
             atRange (sourceRange)
     }
     var slashed := false
