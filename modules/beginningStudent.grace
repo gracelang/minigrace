@@ -145,8 +145,14 @@ def bsVisitor = object {
     }
     method visitMethod(v) -> Boolean {
         if (false == v.comments) then {
+            def headerEnd = if (false == v.dtype) then {
+                v.signature.last.end
+            } else {
+                v.dtype.end
+            }
+            def loc = ast.start(v.start) end (headerEnd)
             DialectError.raise "purpose statement missing from method '{v.canonicalName}'"
-                with (v.body)
+                with (loc)
         }
         def commentString = v.comments.value
         def lowerCommentString = commentString.asLower
@@ -172,6 +178,7 @@ def bsVisitor = object {
             DialectError.raise("by convention, method names start " ++
                 "with a lower-case letter") with (v.signature.first)
         }
+        if (v.isClass) then { return true }
         if (false == v.dtype) then {
             DialectError.raise "no return type given to method '{v.canonicalName}'" 
                 with (ast.start(v.start)
