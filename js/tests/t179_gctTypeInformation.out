@@ -1,5 +1,6 @@
 classes:
 confidential:
+ n(1)
  x
 dialect:
  standardGrace
@@ -31,7 +32,7 @@ public:
  H
  Z
  m(1)
- x:=
+ x:=(1)
  xx
 publicMethodTypes:
  m(y:Number) → Done

@@ -562,13 +562,19 @@ method buildGctFor(module) {
     for (module.value) do { v->
         if (v.kind == "vardec") then {
             def gctType = if (false != v.dtype) then {v.dtype.toGrace(0)} else {"Unknown"}
+            def varRead: String = "{v.name.value} → {gctType}"
             if (v.isReadable) then {
                 meths.push(v.name.value)
-                publicMethodTypes.push("{v.name.value} → {gctType}")
+                publicMethodTypes.push(varRead)
+            } else {
+                confidentials.push(v.name.value)
             }
+            def varWrite: String = "{v.name.value}:=({v.name.value}': {gctType}) → Done"   
             if (v.isWritable) then {
                 meths.push(v.name.value ++ ":=(1)")
-                publicMethodTypes.push("{v.name.value}:=({v.name.value}': {gctType}) → Done")
+                publicMethodTypes.push(varWrite)
+            } else {
+                confidentials.push(varWrite)
             }
         } elseif {v.kind == "method"} then {
             if (v.isPublic) then {
