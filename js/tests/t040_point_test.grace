@@ -26,27 +26,39 @@ testSuiteNamed "point tests" with {
     test "addition" by {
         assert (p+q) shouldBe (15@16)
     }
-
+    test "point + number" by {
+        assert (p+4) shouldBe (15@17)
+    }
+    test "number + point" by {
+        assert (4+p) shouldBe (15@17)
+    }
     test "subtraction" by {
         assert (p-q) shouldBe (7@10)
     }
-
+    test "point - number" by {
+        assert (p-4) shouldBe (7@9)
+    }
+    test "number - point" by {
+        assert (15-p) shouldBe (4@2)
+    }
     test "prefix minus" by {
         assert (-p) shouldBe ((-11)@(-13))
     }
-
-    test "multiply" by {
+    test "multiply by number" by {
         assert (p*2) shouldBe (22@26)
     }
-
+    test "number * point" by {
+        assert (2*p) shouldBe (22@26)
+    }
     test "divide" by {
         assert (p/2) shouldBe (5.5@6.5)
     }
-
+    test "number / point" by {
+        assert (12/q) shouldBe (3@4)
+    }
     test "length" by {
         assert (p.length) shouldEqual 17.02938 within (10^(-5))
     }
-
     test "distance to" by {
         assert (p.distanceTo(q)) shouldBe ((p-q).length)
     }
