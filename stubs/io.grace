@@ -1,6 +1,7 @@
 type FileStream = Object & type {
     read -> String
         // returns the whole contents of the underlying file.
+        // ignores the position of the read-write pointer, and does not change it.
     getline -> String
         // returns the next line in the file, up to and including the next
         // newline.  If the end of the input is reached before a newline is
@@ -39,6 +40,8 @@ type FileStream = Object & type {
         // true if self and other are the same FileStream object.  Note that
         // it is possible to have several distinct filestreams on the same
         // underlying file.
+    clear -> FileStream
+        // makes the contents of this filestream empty. The read/write position becoems 0
 }
 
 type IO = Object & type {
@@ -47,11 +50,20 @@ type IO = Object & type {
     error -> FileStream        // answers stderr
     ask(question:String) -> String
     open (path:String, mode:String) -> FileStream
-        // opens path in mode
+        // opens path in mode, which is one of the following:
+        // "r" - Open file for reading. An exception occurs if the file does not exist.
+        // "w" - Open file for writing. The file is created (if it does not exist) or truncated (if it exists).
+        // "rw" - Open file for reading and writing. The file is created (if it does not exist)
+        //       or truncated (if it exists).
+        // "a" - Open file for appending. The file is created if it does not exist.
+        //       Appending means that the read–write position is at the end of the file.
+
     system (command:String) -> Boolean
         // executes system command, answers true iff exit status is 0
     exists (path:String) -> Boolean
         // answers true iff path exists in the file system
+    unlink (path:String) -> Done
+        // removes path from the file system; raises an exception if it wasn't there
     newer (path1:String, path2:String) -> Boolean
         // answers true iff the file at path1 is newer than the file at path2
     realpath (path:String) -> String     // answers absolute name of the file at path
