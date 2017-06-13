@@ -78,6 +78,8 @@ type IO = Object & type {
     ask (question:String) -> String
         // asks `question` interactively, and returns the answer input
         // by the interactive user.
+    IoException -> ExceptionKind
+        // the parent of all input-output exceptions; a specialization of EnvironmentException
 }
 
 type Process = Object & type {
