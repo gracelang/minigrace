@@ -25,11 +25,6 @@ type FileStream = Object & type {
     next -> String
         // returns the next Unicode character from the file.
         // Raises IteratorExhausted if there is none
-    readBinary(n:Number) -> Object
-        // Returns an array containing the next n bytes
-    writeBinary(bytes:Object) -> Number
-        // appends bytes to the file.  Returns the number
-        // of bytes written.
     pathname -> String
         // the name of the file underlying this fileStream
     eof -> Boolean
