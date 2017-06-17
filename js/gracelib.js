@@ -4366,6 +4366,7 @@ if (typeof global !== "undefined") {
     global.Lineup = Lineup;
     global.loadDate = loadDate;
     global.matchCase = matchCase;
+    global.MinigraceErrorObject = MinigraceErrorObject;
     global.NoSuchMethodErrorObject = NoSuchMethodErrorObject;
     global.nullFunction = nullFunction;
     global.PrimitiveGraceList = PrimitiveGraceList;
