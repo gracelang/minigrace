@@ -3183,7 +3183,7 @@ GraceMirrorMethod.prototype.methods['partcount'] = function(argcv) {
 
 GraceMirrorMethod.prototype.methods['paramcounts'] = function(argcv) {
     var theFunction = this.obj.methods[this.name];
-    var l = theFunction.paramCounts.length;
+    var l = theFunction.paramCounts ? theFunction.paramCounts.length : 0;
     var countArray = new Array(l);
     for (var i = 0; i < l; i++) {
         countArray[i] = new GraceNum(theFunction.paramCounts[i]);
@@ -3197,7 +3197,7 @@ GraceMirrorMethod.prototype.methods['request(1)'] = function(argcv, argList) {
                 new GraceString("'request(_)' requires one argument (a list of argument lists)"));
     }
     var theFunction = this.obj.methods[this.name];
-    var requiredLen = theFunction.paramCounts.length;
+    var requiredLen = theFunction.paramCounts ? theFunction.paramCounts.length : 0;
     var providedLen = callmethod(argList, "size", [0])._value;
     if (providedLen !== requiredLen) {
         throw new GraceExceptionPacket(ProgrammingErrorObject,
@@ -3214,7 +3214,7 @@ GraceMirrorMethod.prototype.methods['request(1)'] = function(argcv, argList) {
             allArgs.push(callmethod(innerIter, "next"));
         }
     }
-    return callmethod.apply(null, allArgs);
+    return selfRequest.apply(null, allArgs);
 };
 
 GraceMirrorMethod.prototype.methods['requestWithArgs(1)'] = function(argcv, argList) {
@@ -3241,7 +3241,7 @@ GraceMirrorMethod.prototype.methods['requestWithArgs(1)'] = function(argcv, argL
         var arg = callmethod(argsIter, "next", [0]);
         allArgs.push(arg);
     }
-    return callmethod.apply(null, allArgs);
+    return selfRequest.apply(null, allArgs);
 };
 
 GraceMirrorMethod.prototype.methods['hash'] = function methodMirror_hash (argcv) {
