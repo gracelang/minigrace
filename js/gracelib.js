@@ -52,7 +52,7 @@ function browserWrite(name, data) {
 
 function commandLineWrite (name, data){
     // name is a pathname, data the string to be written
-    try{
+    try {
         var nodeFileObject = fs.openSync(name, "w");
         fs.writeSync(nodeFileObject, data);
         fs.closeSync(nodeFileObject);
@@ -2193,7 +2193,7 @@ stdout.methods["write(1)"] = function(argcv, s) {
 };
 stdout.methods.pathname = function() { return new GraceString("stdout"); };
 stdout.methods.isatty = function() {
-        if(!inBrowser) {
+        if (!inBrowser) {
             return Boolean(process.stdout.isTTY) ? GraceTrue : GraceFalse;
         } else {
             return GraceFalse;
@@ -2349,7 +2349,7 @@ function gracecode_io() {
             if (! localStorage[fileKey]) {
                 throw new GraceExceptionPacket(EnvironmentExceptionObject,
                     new GraceString("can't unlink file '" + data._value +" because it does not exist."));
-            } else {
+        } else {
                 removeFileFromTree(data._value);
                 localStorage.removeItem(fileKey);
             }
@@ -2367,7 +2367,7 @@ function gracecode_io() {
         if (!inBrowser) {
             try {
                 var result = child_process.execSync(safeJsString(systemString),
-                                            {stdio: [process.stdin, process.stdout, process.stderr]});
+                    {stdio: [process.stdin, process.stdout, process.stderr]});
                 return GraceTrue;
             } catch(ex) {
                 return GraceFalse;
@@ -2564,10 +2564,10 @@ function gracecode_io() {
             };
             o.methods['close'] = function () {
                 //Update system storage with buffered contents
-                if(inBrowser && fileMode === "w"){
+                if (inBrowser && fileMode === "w") {
                     if (identifierAvailable("file",path)) { addFileToTree(path); }
                     writeFileToDisk(fileName, contents);
-                } else if(!inBrowser && fileMode === "w"){
+                } else if (!inBrowser && fileMode === "w") {
                     writeFileToDisk(fileName, contents);
                 }
                 return GraceDone;
