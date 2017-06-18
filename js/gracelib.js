@@ -71,14 +71,18 @@ function getDirectoryName(toParse) {
     return directoryName;
 }
 
-//Store the name of the file to be added
+//Functions to add/remove files from the web editor file tree
 function addFileToTree(name) {
-    var element = document.getElementById("new-file-io-api");
+    var element = document.getElementById("add-file-io-api");
     element.innerHTML = name;
-    //Trigger event for adding file to user file-tree
-    element.click();
+    element.click(); //Trigger event in files.js (grace-web-editor)
 }
 
+function removeFileFromTree(name) {
+    var element = document.getElementById("remove-file-io-api");
+    element.innerHTML = name;
+    element.click(); //Trigger event in files.js (grace-web-editor)
+}
 
 Array.prototype.sum = function () {
     return this.reduce(function(a,b) {return a+b;}, 0);
@@ -2190,8 +2194,19 @@ stdout.methods.isatty = function() {
             return GraceFalse;
         }
 };
-stdout.methods.close = function() {};
+stdout.methods.close = function() {return GraceDone;};
 stdout.methods.clear = function() {/* Raise not yet implimented if can't impliment */};
+stdout.methods["pathname"] = function() { return new GraceString("Standard Out"); };
+stdout.methods["seek(1)"] = function() { throw new GraceExceptionPacket(ExceptionObject,
+    new GraceString("method \"seek(_)\" has not yet been implemented."));};
+stdout.methods["seekForward(1)"] = function() { throw new GraceExceptionPacket(ExceptionObject,
+    new GraceString("method \"seekForward(_)\" has not yet been implemented."));};
+stdout.methods["seekBackward(1)"] = function() { throw new GraceExceptionPacket(ExceptionObject,
+    new GraceString("method \"seekBackward(_)\" has not yet been implemented."));};
+stdout.methods["hasNext"] = function() {return GraceFalse;};
+stdout.methods["next"] = function() { throw new GraceExceptionPacket(ExceptionObject,
+    new GraceString("method \"next\" has not yet been implemented."));};
+stdout.methods["eof"] = function() {return GraceTrue;};
 stdout.methods['==(1)'] = function (argcv, other) {
     return (this===other) ? GraceTrue : GraceFalse;
 };
@@ -2305,22 +2320,36 @@ function gracecode_io() {
         return this._error;
     };
     this._error = stderr;
+    this.methods['FileStream'] = function () {
+        return new classType(stdout);
+    };
+
+    this.methods['IoException'] = function(argcv) {
+        return IoExceptionObject;
+    };
     this.methods['exists(1)'] = function(argcv, path) {
         if(!inBrowser) {
             return (fs.existsSync(safeJsString(path)) ? GraceTrue : GraceFalse);
         }
-        if (fileExists(path._value)) return GraceTrue;
+        if (!identifierAvailable("file",path._value)) return GraceTrue;
         return GraceFalse;
     };
     this.methods['unlink(1)'] = function (argcv, data) {
         if (inBrowser) {
-            localStorage.removeItem("file:" + data);
+            var fileKey = "file:" + data._value;
+            if(!localStorage[fileKey]) {
+                throw new GraceExceptionPacket(EnvironmentExceptionObject,
+                    new GraceString("can't unlink file '" + data._value +" because it does not exist."));
+            } else {
+                removeFileFromTree(data._value);
+                localStorage.removeItem(fileKey);
+            }
         } else {
             try {
-                fs.unlinkSync(data);
+                fs.unlinkSync(data._value);
             } catch (ex) {
                 throw new GraceExceptionPacket(EnvironmentExceptionObject,
-                    new GraceString("can't unlink file '" + data));
+                    new GraceString("can't unlink file '" + data._value));
             }
         }
         return GraceDone;
@@ -2400,8 +2429,6 @@ function gracecode_io() {
                         throw new GraceExceptionPacket(DirectoryErrorObject,
                             new GraceString("can't create file \"" + path + "\" because directory \"" + directory + "\" does not exist."));
                     }
-                    addFileToTree(path);
-                    writeFileToDisk(fileName, "");
                 }
             } else {
                 try {
@@ -2531,6 +2558,7 @@ function gracecode_io() {
             o.methods['close'] = function () {
                 //Update system storage with buffered contents
                 if(inBrowser && fileMode === "w"){
+                    addFileToTree(path);
                     writeFileToDisk(fileName, contents);
                 } else if(!inBrowser && fileMode === "w"){
                     writeFileToDisk(nodeFileObject, contents);
@@ -2542,7 +2570,7 @@ function gracecode_io() {
             o.methods['eof'] =  function () { return (rw_pointer < content_length) ? GraceFalse : GraceTrue; };
             o.methods['read'] = function () { return new GraceString(contents.toString()); };
             o.methods['iterator'] = function () { return this; };
-            o.methods['isatty'] = function () { return GraceFalse;}; //tty not currently possible in IDE
+            o.methods['isatty'] = function () { return GraceFalse;}; //tty not currently possible
             o.methods['==(1)'] = function (argcv, other) { return (this===other) ? GraceTrue : GraceFalse; };
 
         return o;

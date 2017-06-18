@@ -2,6 +2,7 @@ dialect "minispec"
 import "date" as date
 import "io" as io
 
+
 def longFile = io.open("io-specify-data.txt", "w")
 longFile.write "This is test data\n"
 (1..12).do { i →
@@ -11,9 +12,10 @@ longFile.close
 def shortFile = io.open("io-specify-hi.txt","w")
 shortFile.write "hi"
 shortFile.close
-def emptyFileName = "aNewFile{date.now}.txt"
+def emptyFileName = "aEmptyFile{date.now}.txt"
 def es = io.open(emptyFileName,"w")  // creates the file
 es.close
+
 
 describe "io" with {
     specify "read on file" by {
@@ -51,7 +53,7 @@ describe "io" with {
         def file = io.open("io-specify-data.txt", "r")
         expect {file.seek("10000")} toRaise (TypeError)
         expect {file.seek(3.1415)} toRaise (RequestError)
-        expect (file.seek(9).asString) toHaveType (io.FileStream)
+        expect (file.seek(8)) toHaveType (io.FileStream)
         expect (file.next) toBe ("t")
         expect (file.next) toBe ("e")
         expect (file.next) toBe ("s")
@@ -61,8 +63,8 @@ describe "io" with {
         def file = io.open("io-specify-data.txt", "r")
         expect {file.seekForward("10000")} toRaise (TypeError)
         expect {file.seekForward(3.1415)} toRaise (RequestError)
-        expect (file.seekForward(5).asString) toHaveType (io.FileStream)
-        expect (file.seekForward(4).asString) toHaveType (io.FileStream)
+        expect (file.seekForward(5)) toHaveType (io.FileStream)
+        expect (file.seekForward(3)) toHaveType (io.FileStream)
         expect (file.next) toBe ("t")
         expect (file.next) toBe ("e")
         expect (file.next) toBe ("s")
@@ -72,9 +74,9 @@ describe "io" with {
         def file = io.open("io-specify-data.txt", "r")
         expect {file.seekBackward("10000")} toRaise (TypeError)
         expect {file.seekBackward(3.1415)} toRaise (RequestError)
-        expect (file.seekForward(18).asString) toHaveType (io.FileStream)
-        expect (file.seekBackward(4).asString) toHaveType (io.FileStream)
-        expect (file.seekBackward(5).asString) toHaveType (io.FileStream)
+        expect (file.seekForward(18)) toHaveType (io.FileStream)
+        expect (file.seekBackward(5)) toHaveType (io.FileStream)
+        expect (file.seekBackward(5)) toHaveType (io.FileStream)
         expect (file.next) toBe ("t")
         expect (file.next) toBe ("e")
         expect (file.next) toBe ("s")
@@ -183,6 +185,7 @@ describe "io" with {
 }
 
 io.unlink "io-specify-hi.txt"
+io.unlink "io-specify-data.txt"
 io.unlink(emptyFileName)
 
 
