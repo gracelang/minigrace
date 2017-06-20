@@ -43,14 +43,16 @@ function getFile(name){
     }
 }
 
-//If inBrowser, `name` must be a string, must be a file descriptor in Node
+//`name` must be a string that contains a pathname string
 var writeFileToDisk = inBrowser ? browserWrite : commandLineWrite;
 
 function browserWrite(name, data){ localStorage.setItem(name,data)}
 
 function commandLineWrite (name, data){
     try{
-        fs.writeSync(name, data);
+        var nodeFileObject = fs.openSync(name, "w");
+        fs.writeSync(nodeFileObject, data);
+        fs.closeSync(nodeFileObject);
     } catch(ex) {
         throw new GraceExceptionPacket(EnvironmentExceptionObject,
             new GraceString("can't write to file '" + path + "'."));
@@ -2186,17 +2188,17 @@ var stdout = Grace_allocObject(GraceObject, "stdout");
 stdout.methods["write(1)"] = function(argcv, s) {
     minigrace.stdout_write(s._value);
 };
-stdout.methods.pathname = function() { return new GraceString(""); };
-stdout.methods.isatty = function() {
+stdout.methods["pathname"] = function() { return new GraceString("stdout"); };
+stdout.methods["isatty"] = function() {
         if(!inBrowser) {
             return Boolean(process.stdout.isTTY) ? GraceTrue : GraceFalse;
         } else {
             return GraceFalse;
         }
 };
-stdout.methods.close = function() {return GraceDone;};
-stdout.methods.clear = function() {/* Raise not yet implimented if can't impliment */};
-stdout.methods["pathname"] = function() { return new GraceString("Standard Out"); };
+stdout.methods["close"] = function() {return GraceDone;};
+stdout.methods["clear"] = function() {throw new GraceExceptionPacket(ExceptionObject,
+    new GraceString("method \"clear\" has not yet been implemented."));};
 stdout.methods["seek(1)"] = function() { throw new GraceExceptionPacket(ExceptionObject,
     new GraceString("method \"seek(_)\" has not yet been implemented."));};
 stdout.methods["seekForward(1)"] = function() { throw new GraceExceptionPacket(ExceptionObject,
@@ -2337,7 +2339,7 @@ function gracecode_io() {
     this.methods['unlink(1)'] = function (argcv, data) {
         if (inBrowser) {
             var fileKey = "file:" + data._value;
-            if(!localStorage[fileKey]) {
+            if(localStorage[fileKey] === undefined) {
                 throw new GraceExceptionPacket(EnvironmentExceptionObject,
                     new GraceString("can't unlink file '" + data._value +" because it does not exist."));
             } else {
@@ -2396,14 +2398,14 @@ function gracecode_io() {
             var lastPeriod = fileName.lastIndexOf(".");
             var fileExtension = fileName.substring(lastPeriod);
             var textExtensions = [".grace", ".txt", ".json", ".xml", ".js", ".html", ".xhtml"];
-            var contents, write_allowed, read_allowed, append_mode,
+            var contents, write_allowed, read_only, append_mode,
                 rw_pointer, isFile_creation_needed, content_length, nodeFileObject;
 
             //Determine File Mode
             fileMode = fileMode.toLowerCase();
-            append_mode = fileMode.includes("a");
+            append_mode = (fileMode === "a");
             write_allowed = fileMode.includes("w") || append_mode;
-            read_allowed = fileMode.includes("r");
+            read_only = (fileMode === "r");
 
             if(inBrowser) {
                 //Enforce specified file types for IDE
@@ -2415,7 +2417,7 @@ function gracecode_io() {
                 isFile_creation_needed = identifierAvailable("file", path);
 
                 //Check to see if reading a non-existing file
-                if ((fileMode === "r") && isFile_creation_needed) {
+                if (read_only && isFile_creation_needed) {
                     throw new GraceExceptionPacket(FileErrorObject,
                         new GraceString("can't open file " + path + " in mode " + fileMode + " because it does not exist"));
                 }
@@ -2431,9 +2433,7 @@ function gracecode_io() {
                     }
                 }
             } else {
-                try {
-                    nodeFileObject = fs.openSync(path, fileMode);
-                } catch(ex) {
+                if (!fs.existsSync(path) && read_only) {
                     throw new GraceExceptionPacket(EnvironmentExceptionObject,
                         new GraceString("can't open file '" + path + "' for '" + fileMode + "'."));
                 }
@@ -2457,17 +2457,17 @@ function gracecode_io() {
             o.methods['write(1)'] = function (argcv, data) {
                 var new_contents;
                 if(write_allowed){
-                    if(contents && inBrowser){
+                    if (contents && inBrowser) {
                         new_contents = contents.slice(0,rw_pointer) + data._value + contents.slice((rw_pointer)+(data._value.length));
                     } else {
                         new_contents = safeJsString(data);
                     }
 
                     //Update buffer values only
-                    if(fileMode === "w" && !inBrowser){
+                    if (fileMode === "w" && !inBrowser) {
                         contents = contents + new_contents;
                         rw_pointer += new_contents.length;
-                    } else if (inBrowser){
+                    } else if (inBrowser) {
                         contents = new_contents;
                         rw_pointer += data._value.length;
                     }
@@ -2480,7 +2480,7 @@ function gracecode_io() {
                 }
             };
             o.methods['clear'] = function () {
-                if(write_allowed) {
+                if (write_allowed) {
                     contents = "";
                     rw_pointer = 0;
                     content_length = 0;
@@ -2558,17 +2558,17 @@ function gracecode_io() {
             o.methods['close'] = function () {
                 //Update system storage with buffered contents
                 if(inBrowser && fileMode === "w"){
-                    addFileToTree(path);
+                    if (identifierAvailable("file",path)) { addFileToTree(path); }
                     writeFileToDisk(fileName, contents);
                 } else if(!inBrowser && fileMode === "w"){
-                    writeFileToDisk(nodeFileObject, contents);
-                    fs.closeSync(nodeFileObject);
+                    writeFileToDisk(fileName, contents);
                 }
                 return GraceDone;
             };
             o.methods['pathname'] = function () { return new GraceString(path); };
             o.methods['eof'] =  function () { return (rw_pointer < content_length) ? GraceFalse : GraceTrue; };
             o.methods['read'] = function () { return new GraceString(contents.toString()); };
+            o.methods['length'] = function () { return new GraceNum(content_length); };
             o.methods['iterator'] = function () { return this; };
             o.methods['isatty'] = function () { return GraceFalse;}; //tty not currently possible
             o.methods['==(1)'] = function (argcv, other) { return (this===other) ? GraceTrue : GraceFalse; };
