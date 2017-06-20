@@ -162,12 +162,6 @@ describe "io" with {
         def shortStream = io.open("io-specify-hi.txt","r")
         expect (shortStream.isatty) toBe false orSay "file system file is interactive"
     }
-    if (inBrowser.not) then {
-        specify "ttys are interactive" by {
-            def shortStream = io.open("/dev/tty","r")
-            expect (shortStream.isatty) toBe true orSay "/dev/tty is not interactive"
-        }
-    }
     specify "fileStream is equal to itself" by {
         def shortStream = io.open("io-specify-hi.txt","r")
         expect (shortStream == shortStream) orSay "fileStream is not equal to itself"
