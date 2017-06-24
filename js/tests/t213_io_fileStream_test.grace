@@ -146,13 +146,29 @@ describe "io" with {
         expect (io.exists(writeStream.pathname)) toBe true orSay "file not created after close"
         io.unlink(fileName)
     }
-    specify "clear empties the contents of a file" by {
+    specify "clear removes previously written data" by {
         def shortStream = io.open("io-specify-file-to-clear.txt","w")
         shortStream.write "hi-ho"
         shortStream.clear
-        expect {shortStream.next} toRaise (IteratorExhausted)
-        expect (shortStream.read) toBe ""
-        expect (io.exists(shortStream.pathname)) toBe false orSay "file created even though not closed"
+        shortStream.close
+        shortStream.write "lets start again\n"
+        shortStream.close
+        def readStream = io.open("io-specify-file-to-clear.txt","r")
+        expect (readStream.size) toBe ("lets start again\n".size)
+        expect (readStream.read) toBe "lets start again\n"
+        readStream.close
+        io.unlink "io-specify-file-to-clear.txt"
+    }
+    specify "clear empties a file in storage" by {
+        def shortStream = io.open("io-specify-file-to-clear.txt","w")
+        shortStream.write "hi-ho"
+        shortStream.clear
+        shortStream.close
+        def readStream = io.open("io-specify-file-to-clear.txt","r")
+        expect (readStream.size) toBe 0 orSay "after clear, file does not have zero size"
+        expect (readStream.read) toBe "" orSay "after clear, file contents not empty"
+        expect (readStream.eof) toBe true orSay "after clear, file is not empty"
+        io.unlink "io-specify-file-to-clear.txt"
     }
     specify "iterator on file" by {
         def shortStream = io.open("io-specify-hi.txt","r")

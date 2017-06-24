@@ -24,15 +24,15 @@ function getModuleName() {
 }
 
 function identifierAvailable(category, identifier) {
-    if(inBrowser){
-        return !(localStorage.hasOwnProperty(category + ":" + identifier))
+    if (inBrowser) {
+        return !(localStorage.hasOwnProperty(category + ":" + identifier));
     } else {
         return fs.existsSync(identifier);
     }
 }
 
 function getFile(name){
-    if(inBrowser){
+    if (inBrowser) {
         return localStorage[name];
     } else {
         if (fs.existsSync(name)) {
@@ -43,14 +43,19 @@ function getFile(name){
     }
 }
 
-//If inBrowser, `name` must be a string, must be a file descriptor in Node
 var writeFileToDisk = inBrowser ? browserWrite : commandLineWrite;
 
-function browserWrite(name, data){ localStorage.setItem(name,data)}
+function browserWrite(name, data) {
+    // name is a pathname, data the string to be written
+    localStorage.setItem(name,data);
+}
 
 function commandLineWrite (name, data){
+    // name is a pathname, data the string to be written
     try{
-        fs.writeSync(name, data);
+        var nodeFileObject = fs.openSync(name, "w");
+        fs.writeSync(nodeFileObject, data);
+        fs.closeSync(nodeFileObject);
     } catch(ex) {
         throw new GraceExceptionPacket(EnvironmentExceptionObject,
             new GraceString("can't write to file '" + path + "'."));
@@ -64,7 +69,7 @@ function getDirectoryName(toParse) {
     var lastSlash = directoryName.lastIndexOf("/");
 
     //Check for a slash in the name (-1 means not found)
-    if(lastSlash !== -1) {
+    if (lastSlash !== -1) {
         directoryName = directoryName.substring(0,lastSlash);
     }
 
@@ -2186,7 +2191,7 @@ var stdout = Grace_allocObject(GraceObject, "stdout");
 stdout.methods["write(1)"] = function(argcv, s) {
     minigrace.stdout_write(s._value);
 };
-stdout.methods.pathname = function() { return new GraceString(""); };
+stdout.methods.pathname = function() { return new GraceString("stdout"); };
 stdout.methods.isatty = function() {
         if(!inBrowser) {
             return Boolean(process.stdout.isTTY) ? GraceTrue : GraceFalse;
@@ -2195,18 +2200,20 @@ stdout.methods.isatty = function() {
         }
 };
 stdout.methods.close = function() {return GraceDone;};
-stdout.methods.clear = function() {/* Raise not yet implimented if can't impliment */};
-stdout.methods["pathname"] = function() { return new GraceString("Standard Out"); };
-stdout.methods["seek(1)"] = function() { throw new GraceExceptionPacket(ExceptionObject,
-    new GraceString("method \"seek(_)\" has not yet been implemented."));};
-stdout.methods["seekForward(1)"] = function() { throw new GraceExceptionPacket(ExceptionObject,
-    new GraceString("method \"seekForward(_)\" has not yet been implemented."));};
-stdout.methods["seekBackward(1)"] = function() { throw new GraceExceptionPacket(ExceptionObject,
-    new GraceString("method \"seekBackward(_)\" has not yet been implemented."));};
-stdout.methods["hasNext"] = function() {return GraceFalse;};
-stdout.methods["next"] = function() { throw new GraceExceptionPacket(ExceptionObject,
-    new GraceString("method \"next\" has not yet been implemented."));};
-stdout.methods["eof"] = function() {return GraceTrue;};
+stdout.methods.clear = function() {throw new GraceExceptionPacket(IoExceptionObject,
+    new GraceString("method \"clear\" not implemented on stdout"));};
+stdout.methods["seek(1)"] = function() { throw new GraceExceptionPacket(IoExceptionObject,
+    new GraceString("method \"seek(_)\" not implemented on stdout"));};
+stdout.methods["seekForward(1)"] = function() { throw new GraceExceptionPacket(IoExceptionObject,
+    new GraceString("method \"seekForward(_)\" not implemented on stdout"));};
+stdout.methods["seekBackward(1)"] = function() { throw new GraceExceptionPacket(IoExceptionObject,
+    new GraceString("method \"seekBackward(_)\" not implemented on stdout"));};
+stdout.methods.hasNext = function() {return GraceFalse;};
+stdout.methods.next = function() { throw new GraceExceptionPacket(IoExceptionObject,
+    new GraceString("method \"next\" not implemented on stdout"));};
+stdout.methods.size = function() { throw new GraceExceptionPacket(IoExceptionObject,
+    new GraceString("method \"size\" not implemented on stdout"));};
+stdout.methods.eof = function() {return GraceTrue;};
 stdout.methods['==(1)'] = function (argcv, other) {
     return (this===other) ? GraceTrue : GraceFalse;
 };
@@ -2222,13 +2229,15 @@ stdin.methods.iterator = function() {
     return callmethod(new GraceString(minigrace.stdin_read()), "iterator", [0]);
 };
 stdin.methods.isatty = function() {
-        if(!inBrowser) {
+        if (!inBrowser) {
             return Boolean(process.stdin.isTTY) ? GraceTrue : GraceFalse;
         } else {
             return GraceFalse;
         }
 };
-stdin.methods.pathname = function() { return new GraceString(""); };
+stdin.methods.pathname = function() { return new GraceString("stdin"); };
+stdin.methods.size = function() { throw new GraceExceptionPacket(IoExceptionObject,
+    new GraceString("method \"size\" not implemented on stdin"));};
 stdin.methods.close = function() {};
 stdin.methods['==(1)'] = function (argcv, other) {
     return (this===other) ? GraceTrue : GraceFalse;
@@ -2241,7 +2250,7 @@ stderr.methods['write(1)'] = function(junk, s) {
     return GraceDone;
 };
 stderr.methods.isatty = function() {
-    if(!inBrowser) {
+    if (!inBrowser) {
         return Boolean(process.stderr.isTTY) ? GraceTrue : GraceFalse;
     } else {
         return GraceFalse;
@@ -2328,7 +2337,7 @@ function gracecode_io() {
         return IoExceptionObject;
     };
     this.methods['exists(1)'] = function(argcv, path) {
-        if(!inBrowser) {
+        if (!inBrowser) {
             return (fs.existsSync(safeJsString(path)) ? GraceTrue : GraceFalse);
         }
         if (!identifierAvailable("file",path._value)) return GraceTrue;
@@ -2337,7 +2346,7 @@ function gracecode_io() {
     this.methods['unlink(1)'] = function (argcv, data) {
         if (inBrowser) {
             var fileKey = "file:" + data._value;
-            if(!localStorage[fileKey]) {
+            if (! localStorage[fileKey]) {
                 throw new GraceExceptionPacket(EnvironmentExceptionObject,
                     new GraceString("can't unlink file '" + data._value +" because it does not exist."));
             } else {
@@ -2355,7 +2364,7 @@ function gracecode_io() {
         return GraceDone;
     };
     this.methods['system(1)'] = function(argcv, systemString) {
-        if(!inBrowser) {
+        if (!inBrowser) {
             try {
                 var result = child_process.execSync(safeJsString(systemString),
                                             {stdio: [process.stdin, process.stdout, process.stderr]});
@@ -2367,7 +2376,7 @@ function gracecode_io() {
         return GraceFalse;
     };
     this.methods['spawn(2)'] = function(argcv, gCmd, gArgList) {
-        if(!inBrowser) {
+        if (!inBrowser) {
             var cmd = safeJsString(gCmd);
             var args = [];
             var iter = callmethod(gArgList, "iterator", [0]);
@@ -2396,16 +2405,16 @@ function gracecode_io() {
             var lastPeriod = fileName.lastIndexOf(".");
             var fileExtension = fileName.substring(lastPeriod);
             var textExtensions = [".grace", ".txt", ".json", ".xml", ".js", ".html", ".xhtml"];
-            var contents, write_allowed, read_allowed, append_mode,
+            var contents, write_allowed, read_only, append_mode,
                 rw_pointer, isFile_creation_needed, content_length, nodeFileObject;
 
             //Determine File Mode
             fileMode = fileMode.toLowerCase();
-            append_mode = fileMode.includes("a");
+            append_mode = (fileMode === "a");
             write_allowed = fileMode.includes("w") || append_mode;
-            read_allowed = fileMode.includes("r");
+            read_only = (fileMode === "r");
 
-            if(inBrowser) {
+            if (inBrowser) {
                 //Enforce specified file types for IDE
                 if (!textExtensions.includes(fileExtension)) {
                     throw new GraceExceptionPacket(IoExceptionObject,
@@ -2415,7 +2424,7 @@ function gracecode_io() {
                 isFile_creation_needed = identifierAvailable("file", path);
 
                 //Check to see if reading a non-existing file
-                if ((fileMode === "r") && isFile_creation_needed) {
+                if (read_only && isFile_creation_needed) {
                     throw new GraceExceptionPacket(FileErrorObject,
                         new GraceString("can't open file " + path + " in mode " + fileMode + " because it does not exist"));
                 }
@@ -2431,9 +2440,7 @@ function gracecode_io() {
                     }
                 }
             } else {
-                try {
-                    nodeFileObject = fs.openSync(path, fileMode);
-                } catch(ex) {
+                if (!fs.existsSync(path) && read_only) {
                     throw new GraceExceptionPacket(EnvironmentExceptionObject,
                         new GraceString("can't open file '" + path + "' for '" + fileMode + "'."));
                 }
@@ -2456,18 +2463,18 @@ function gracecode_io() {
             //------ IO Methods --------
             o.methods['write(1)'] = function (argcv, data) {
                 var new_contents;
-                if(write_allowed){
-                    if(contents && inBrowser){
+                if (write_allowed) {
+                    if (contents && inBrowser) {
                         new_contents = contents.slice(0,rw_pointer) + data._value + contents.slice((rw_pointer)+(data._value.length));
                     } else {
                         new_contents = safeJsString(data);
                     }
 
                     //Update buffer values only
-                    if(fileMode === "w" && !inBrowser){
+                    if (fileMode === "w" && !inBrowser) {
                         contents = contents + new_contents;
                         rw_pointer += new_contents.length;
-                    } else if (inBrowser){
+                    } else if (inBrowser) {
                         contents = new_contents;
                         rw_pointer += data._value.length;
                     }
@@ -2480,7 +2487,7 @@ function gracecode_io() {
                 }
             };
             o.methods['clear'] = function () {
-                if(write_allowed) {
+                if (write_allowed) {
                     contents = "";
                     rw_pointer = 0;
                     content_length = 0;
@@ -2512,8 +2519,8 @@ function gracecode_io() {
                 //Check for NaN and for non-integer input
                 checkSeekInput(data.className, pointer, "seek(_)");
 
-                if(pointer<0){pointer=0}
-                else if(pointer>content_length){pointer=content_length}
+                if (pointer<0){pointer=0}
+                else if (pointer>content_length){pointer=content_length}
 
                 rw_pointer=pointer;
                 return this;
@@ -2525,8 +2532,8 @@ function gracecode_io() {
 
                 pointer = rw_pointer+pointer;
 
-                if(pointer<0){pointer=0}
-                else if(pointer>content_length){pointer=content_length}
+                if (pointer<0){pointer=0}
+                else if (pointer>content_length){pointer=content_length}
 
                 rw_pointer=pointer;
                 return this;
@@ -2538,15 +2545,15 @@ function gracecode_io() {
 
                 pointer = rw_pointer-pointer;
 
-                if(pointer<0){pointer=0}
-                else if(pointer>content_length){pointer=content_length}
+                if (pointer<0){pointer=0}
+                else if (pointer>content_length){pointer=content_length}
 
                 rw_pointer=pointer;
                 return this;
             };
             o.methods['hasNext'] = function () { return (rw_pointer < content_length) ? GraceTrue : GraceFalse; };
             o.methods['next'] = function () {
-                if(rw_pointer < content_length){
+                if (rw_pointer < content_length){
                     var char = new GraceString(contents.charAt(rw_pointer));
                     rw_pointer++;
                     return char;
@@ -2558,17 +2565,17 @@ function gracecode_io() {
             o.methods['close'] = function () {
                 //Update system storage with buffered contents
                 if(inBrowser && fileMode === "w"){
-                    addFileToTree(path);
+                    if (identifierAvailable("file",path)) { addFileToTree(path); }
                     writeFileToDisk(fileName, contents);
                 } else if(!inBrowser && fileMode === "w"){
-                    writeFileToDisk(nodeFileObject, contents);
-                    fs.closeSync(nodeFileObject);
+                    writeFileToDisk(fileName, contents);
                 }
                 return GraceDone;
             };
             o.methods['pathname'] = function () { return new GraceString(path); };
             o.methods['eof'] =  function () { return (rw_pointer < content_length) ? GraceFalse : GraceTrue; };
             o.methods['read'] = function () { return new GraceString(contents.toString()); };
+            o.methods['size'] = function () { return new GraceNum(content_length); };
             o.methods['iterator'] = function () { return this; };
             o.methods['isatty'] = function () { return GraceFalse;}; //tty not currently possible
             o.methods['==(1)'] = function (argcv, other) { return (this===other) ? GraceTrue : GraceFalse; };
@@ -2576,23 +2583,23 @@ function gracecode_io() {
         return o;
     };
     function checkSeekInput(className, value, method) {
-        if(className !== "number"){
+        if (className !== "number"){
             throw new GraceExceptionPacket(TypeErrorObject,
                 new GraceString("in request of `"+method+"`, the argument is not of type Number"));
         }
-        else if(!Number.isInteger(value)) {
+        else if (!Number.isInteger(value)) {
             throw new GraceExceptionPacket(RequestErrorObject,
                 new GraceString("in request of `"+method+"`, the argument is not an integer"));
         }
     }
     this.methods['realpath(1)'] = function io_browser_realpath (argcv, x) {
-        if(!inBrowser) {
+        if (!inBrowser) {
             return new GraceString(fs.realpathSync(safeJsString(x)));
         }
         return x;
     };
     this.methods['listdir(1)'] = function (argcv, x) {
-        if(!inBrowser) {
+        if (!inBrowser) {
             var list = [];
             list.push(new GraceString("."));
             list.push(new GraceString(".."));
@@ -2618,10 +2625,10 @@ if (typeof gctCache !== "undefined")
 function gracecode_sys() {
     var startTime = (new Date).getTime()/1000;
     this.methods.argv = function() {
-        if(!inBrowser) {
+        if (!inBrowser) {
             var list = [];
             process.argv.forEach(function(val, index, array) {
-                if(index > 0)   // element 0 is /usr/local/bin/node, or similar
+                if (index > 0)   // element 0 is /usr/local/bin/node, or similar
                     list.push(new GraceString(val));
             });
             return new GraceList(list);
@@ -2658,15 +2665,15 @@ function gracecode_sys() {
     this.methods.environ = function() {
         var o = Grace_allocObject(GraceObject, "environmentObject");
         o.methods['at(1)'] = function environ_at(argcv, key) {
-            if(!inBrowser) {
+            if (!inBrowser) {
                 var str = safeJsString(key);
-                if(str in process.env)
+                if (str in process.env)
                     return new GraceString(process.env[str]);
             }
             return GraceEmptyString;
         };
         o.methods['at(1)put(1)'] = function environ_at_put(argcv, key, value) {
-            if(!inBrowser) {
+            if (!inBrowser) {
                 var kstr = safeJsString(key);
                 var vstr = safeJsString(value);
                 process.env[kstr] = vstr;
@@ -2674,7 +2681,7 @@ function gracecode_sys() {
             return GraceTrue;
         };
         o.methods['contains(1)'] = function environ_contains(argcv, searchkey) {
-            if(!inBrowser) {
+            if (!inBrowser) {
                 return (safeJsString(searchkey) in process.env) ? GraceTrue : GraceFalse;
             } else {
             return GraceFalse;
@@ -3529,7 +3536,7 @@ function canonicalMethodName(name) {
     var output = parts[0];
     for (var i = 1; i < parts.length; i++) {
         var part_split = parts[i].split(")");
-        if(isNaN(Number(part_split[0]))){
+        if (isNaN(Number(part_split[0]))){
             output += part_split[0];
         } else {
             output += "(";
@@ -3537,7 +3544,7 @@ function canonicalMethodName(name) {
                 output += "_,";
             }
             output += "_)";
-            if(part_split.length > 1) {
+            if (part_split.length > 1) {
                 output += part_split[1];
             }
         }
