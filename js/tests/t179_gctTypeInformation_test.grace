@@ -30,7 +30,7 @@ util.lines.addAll(input)
 def tokens = lexer.new.lexinput(input)
 def module = parser.parse(tokens)
 module.name := "test_179_output"
-
+util.extensions.put("gctfile", true)
 util.outDir := "./"
 xmodule.writeGctForModule(module)
 def gct = xmodule.parseGCT("test_179_output")
