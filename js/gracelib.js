@@ -5,11 +5,12 @@ var inBrowser = (typeof global === "undefined");
 if (!inBrowser) {  // if we are in Node.js
     var fs = require("fs");
     var child_process = require('child_process');
+    global.lineNumber = 0;
+    global.moduleName = "null";
+} else {
+    var lineNumber = 0;
+    var moduleName = "null";
 }
-
-var lineNumber = 0;
-var moduleName = "null";
-
 function setLineNumber(n) {
     lineNumber = n;
 }
@@ -2594,7 +2595,13 @@ function gracecode_io() {
     }
     this.methods['realpath(1)'] = function io_browser_realpath (argcv, x) {
         if (!inBrowser) {
-            return new GraceString(fs.realpathSync(safeJsString(x)));
+            var arg = safeJsString(x);
+            try {
+                return new GraceString(fs.realpathSync(arg));
+            } catch (ex) {
+                throw new GraceExceptionPacket(RequestErrorObject,
+                        new GraceString("can't get real path for \"" + arg + "\""));
+            }
         }
         return x;
     };
@@ -3379,7 +3386,7 @@ function GraceCallStackToString() {
         errorString = this.className + "." + effectiveName;
     }
     if (typeof(errorLine) === "undefined" || errorLine === 0) {
-        errorString += " in method ";
+        errorString += " in ";
     } else {
         errorString += " at line " + errorLine + " of ";
     }
@@ -3407,7 +3414,16 @@ function handleRequestException(ex, obj, methname, methodArgs) {
         }
         return dealWithNoMethod(methname, obj, argsGL);
     } else {
-        throw ex;
+        var newEx = new GraceExceptionPacket(MinigraceErrorObject,
+            new GraceString("Implementation error in JavaScript method. " + ex.toString()));
+        newEx.exitStack.unshift({
+            className: obj.className,
+            methname: methname,
+            moduleName: "native code",
+            lineNumber: 0,
+            toString: GraceCallStackToString
+        });
+        throw newEx;
     }
 }
 
@@ -3928,6 +3944,11 @@ function do_import(modname, moduleCodeFunc) {
           // moduleCodeFunc with this === newModule.  The difference is that we
           // ensure that the `call` function is the one from Function.prototype
         return f;
+    } catch (ex) {
+        return handleRequestException(ex,
+                                      {className: "module"},
+                                      "module initialization",
+                                      []);
     } finally {
         importedModules[modname] = f;
         setModuleName(origModuleName);
@@ -3990,6 +4011,7 @@ if (typeof global === "undefined") {
 }
 
 var ExceptionObject = new GraceException("Exception", false);
+var MinigraceErrorObject = new GraceException("MinigraceError", ExceptionObject);
 var ProgrammingErrorObject = new GraceException("ProgrammingError", ExceptionObject);
 var RequestErrorObject = new GraceException("RequestError", ProgrammingErrorObject);
 var EnvironmentExceptionObject = new GraceException("EnvironmentException", ExceptionObject);
