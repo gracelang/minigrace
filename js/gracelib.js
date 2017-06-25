@@ -2191,7 +2191,7 @@ var stdout = Grace_allocObject(GraceObject, "stdout");
 stdout.methods["write(1)"] = function(argcv, s) {
     minigrace.stdout_write(s._value);
 };
-stdout.methods.pathname = function() { return new GraceString("stdout"); };
+stdout.methods.pathname = function() { return new GraceString("/dev/stdout"); };
 stdout.methods.isatty = function() {
         if (!inBrowser) {
             return Boolean(process.stdout.isTTY) ? GraceTrue : GraceFalse;
@@ -2235,7 +2235,7 @@ stdin.methods.isatty = function() {
             return GraceFalse;
         }
 };
-stdin.methods.pathname = function() { return new GraceString("stdin"); };
+stdin.methods.pathname = function() { return new GraceString("/dev/stdin"); };
 stdin.methods.size = function() { throw new GraceExceptionPacket(IoExceptionObject,
     new GraceString("method \"size\" not implemented on stdin"));};
 stdin.methods.close = function() {};
@@ -2256,7 +2256,7 @@ stderr.methods.isatty = function() {
         return GraceFalse;
     }
 };
-stderr.methods.pathname = function() { return new GraceString(""); };
+stderr.methods.pathname = function() { return new GraceString("/dev/stderr"); };
 stderr.methods.close = function() {};
 stderr.methods['==(1)'] = function (argcv, other) {
     return (this===other) ? GraceTrue : GraceFalse;
