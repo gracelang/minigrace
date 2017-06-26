@@ -455,6 +455,9 @@ method compileblock(o) {
     out "{myId}.guard = {compileGuard(o, paramList)};"
     out "{myId}.real = function({paramList}) \{"
     increaseindent
+    out "setModuleName({modNameAsString});"
+    priorLineEmitted := 0
+    noteLineNumber (o.line) comment ("compileBlock")
     var ret := "GraceDone"
     for (o.body) do {l->
         ret := compilenode(l)
