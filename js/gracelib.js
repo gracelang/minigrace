@@ -28,7 +28,7 @@ function identifierAvailable(category, identifier) {
     if (inBrowser) {
         return !(localStorage.hasOwnProperty(category + ":" + identifier));
     } else {
-        return fs.existsSync(identifier);
+        return ! fs.existsSync(identifier);
     }
 }
 
@@ -2347,10 +2347,10 @@ function gracecode_io() {
     this.methods['unlink(1)'] = function (argcv, data) {
         if (inBrowser) {
             var fileKey = "file:" + data._value;
-            if (! localStorage[fileKey]) {
+            if (! localStorage.hasOwnProperty(fileKey)) {
                 throw new GraceExceptionPacket(EnvironmentExceptionObject,
-                    new GraceString("can't unlink file '" + data._value +" because it does not exist."));
-        } else {
+                    new GraceString("can't unlink file \"" + data._value +"\" because it does not exist."));
+            } else {
                 removeFileFromTree(data._value);
                 localStorage.removeItem(fileKey);
             }
