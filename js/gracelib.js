@@ -2318,6 +2318,8 @@ function fileExists(path) {
 }
 
 function gracecode_io() {
+    var FileStream = classType(stdout);
+    FileStream.name = "FileStream";
     this.methods.output = function() {
         return this._output;
     };
@@ -2331,7 +2333,7 @@ function gracecode_io() {
     };
     this._error = stderr;
     this.methods['FileStream'] = function () {
-        return new classType(stdout);
+        return FileStream;
     };
 
     this.methods['IoException'] = function(argcv) {
