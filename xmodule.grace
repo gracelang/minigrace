@@ -636,10 +636,15 @@ method buildGctFor(module) {
     gct.at "classes" put(classes.sort)
     gct.at "confidential" put(confidentials.sort)
     gct.at "modules" put(list(module.imports).sorted)
+    def p = util.infile.pathname
     gct.at "path" put [
-        if (util.infile.pathname.isEmpty) then { "" }
-            else { io.realpath(util.infile.pathname) }
-    ]
+        if (p.isEmpty) then {
+            ""
+        } elseif { p.startsWith "/" } then {
+            p
+        } else {
+            io.realpath(p)
+        } ]
     gct.at "public" put(meths.sort)
     gct.at "publicMethodTypes" put(publicMethodTypes.sort)
     gct.at "types" put(types.sort)
