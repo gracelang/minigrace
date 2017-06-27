@@ -5,11 +5,11 @@ env:
 compiler:
   - clang
 install:
-  - nvm install 4.0.0
+  - nvm install 5.0.0
 before_script:
   - git fetch --unshallow
 script:
   - make test || ( cat tests/test.js.log ; exit 1)
   - (make minigrace.env && make module.test) || ( cat modules/tests/test.log ; exit 1 )
-  - make self.test
+  - make VERBOSE="--verbose" self.test
 sudo: false
