@@ -117,9 +117,13 @@ class assertion {
     method assert(value) hasType (Desired:Type) {
         match (value)
             case { _:Desired -> countOneAssertion }
-            case { _ -> 
+            case { _ ->
+                var typeName := Desired.asString
+                if (! typeName.startsWith "type ") then {
+                    typeName := typeName ++ "type "
+                }
                 def m = methodsIn(Desired) missingFrom (value)
-                failBecause "{value.asDebugString} does not have type {Desired}; it's missing methods {m}." }
+                failBecause "{value.asDebugString} does not have {Desired}; it's missing methods {m}." }
     }
     method assertType(T:Type) describes (value) {
         def missingFromT = protocolOf(value) notCoveredBy(T)
