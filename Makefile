@@ -108,7 +108,7 @@ clean:
 	rm -fr tests/test-*.log tests/*{.c,.gct,.gso,.gcn,.js}
 	rm -fr js/tests/test-*.log js/tests/*{.c,.gct,.gso,.gcn,.js}
 	rm -f tests/retired/*{.c,.gct,.gso,.gcn,.js} js/tests/retired/*{.c,.gct,.gso,.gcn,.js}
-	cd stubs && rm -f *.gct *.gcn *.gso *.js *.c
+	cd stubs && rm -f *.gct *.gcn *.gso *.js *.c *Prelude.grace standardGrace.grace
 	rm Makefile.conf
 	cd sample/dialects && $(MAKE)  clean
 	cd js/sample/graphics && $(MAKE) clean
@@ -251,9 +251,6 @@ $(JSRUNNERS:%=j2/%): j2/%: js/%
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
-js/collectionsPrelude%js js/collectionsPrelude%gct: collectionsPrelude.grace minigrace
-	GRACE_MODULE_PATH=modules:js ./minigrace $(VERBOSITY) --make --dir js $(<F)
-
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@
@@ -271,9 +268,6 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@cat js/minigrace.in.js > js/minigrace.js
 	@echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
-
-js/standardGrace.js: standardGrace.grace js/collectionsPrelude.js minigrace
-	./minigrace --dir js --make $(VERBOSITY) $<
 
 js/animation%js: js/timer.gct objectdraw/animation.grace
 
