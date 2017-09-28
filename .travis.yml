@@ -9,6 +9,8 @@ install:
 before_script:
   - git fetch --unshallow
 script:
+  - make minigrace
+  - j2/minigrace
   - make test || ( cat tests/test.js.log ; exit 1)
   - (make minigrace.env && make module.test) || ( cat modules/tests/test.log ; exit 1 )
   - make VERBOSE="--verbose" self.test
