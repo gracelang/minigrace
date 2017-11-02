@@ -4112,12 +4112,14 @@ Grace_prelude.methods['while(1)do(1)'] = function(argcv, c, b) {
             if (count % 100000 === 0 && ((diff=new Date()-startTime) > 5000)) {
                 var totTime = runningTime + diff;
                 var totIterations = runningCount + count;
-                if (confirm("A while loop is taking a long time to run. Do you want to stop the program? " + totIterations + " iterations of the loop have taken " +
+                if (! confirm("A while loop is taking a long time to run. " +
+                              "Do you want to continue? " +
+                              totIterations + " iterations of the loop have taken " +
                               totTime + "ms so far." +
-                              "\n\nChoose OK to stop the loop or Cancel to " +
+                              "\n\nChoose Cancel to stop the program, or OK to " +
                               "let it continue."))
                     throw new GraceExceptionPacket(ResourceExceptionObject,
-                        new GraceString("user abort of possibly-infinite loop."));
+                        new GraceString("user abort of long-running loop."));
                 else {
                     runningCount += count;
                     runningTime += diff;
