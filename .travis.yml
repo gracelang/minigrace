@@ -1,7 +1,5 @@
 language:
   - js
-env:
-  - PREFIX=/usr/local
 compiler:
   - clang
 install:
