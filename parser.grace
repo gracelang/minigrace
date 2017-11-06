@@ -2592,7 +2592,7 @@ method optionalTypeAnnotation {
 
 method methodsignature(sameline) {
     // Accept a method signature
-    if ((sym.kind != "identifier") && (sym.kind != "op") && (sym.kind != "lsquare")) then {
+    if ((! acceptKeyword "prefix") && (sym.kind != "identifier") && (sym.kind != "op")) then {
         def suggestion = errormessages.suggestion.new
         suggestion.insert(" «method name»")afterToken(lastToken)
         errormessages.syntaxError("a method name must start with an identifier, or be an operator.")
