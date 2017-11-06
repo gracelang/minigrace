@@ -3094,7 +3094,7 @@ def commentNode is public = object {
                 "// (partial) {value}"
             } else {
                 def spc = "    " * depth
-                wrap(value) to (lineLength) prefix (spc ++ "// ")
+                wrap(value) to (lineLength) prefixedBy (spc ++ "// ")
             }
         }
         method shallowCopy {
@@ -3110,7 +3110,7 @@ def commentNode is public = object {
     }
 }
 
-method wrap(str) to (l:Number) prefix (margin) {
+method wrap(str) to (l:Number) prefixedBy (margin) {
     def ind = margin.size
     def len = max(ind + 4, l)
     if ((ind + str.size) <= len) then {
@@ -3140,7 +3140,7 @@ method wrap(str) to (l:Number) prefix (margin) {
     }
     "\n" ++ margin ++ trimmedLine ++
         wrap(str.substringFrom (currBreak+1) to (str.size))
-            to (l) prefix (margin)
+            to (l) prefixedBy (margin)
 }
 
 
