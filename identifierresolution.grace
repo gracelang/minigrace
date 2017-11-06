@@ -418,12 +418,11 @@ class newScopeIn(parent') kind(variety') {
         def priorScope = thatDefines(name) ifNone {
             return
         }
-        def description =
-            if (priorScope == self) then {
-                "this"
-            } else {
-                "an enclosing {priorScope.variety}"
-            }
+        def description = if (priorScope == self) then {
+            "this"
+        } else {
+            "an enclosing {priorScope.variety}"
+        }
         def priorKind = priorScope.kind(name)
         if (priorScope.isObjectScope && {self.isObjectScope}) then {
             return
@@ -590,32 +589,32 @@ method rewritematchblock(blk) {
             [ast.requestPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )] )
         if (false != arg.dtype) then {
             match (arg.dtype.kind)
-                case { "identifier" | "op" ->
-                    pattern := ast.callNode.new(
-                            ast.memberNode.new("AndPattern",
-                                ast.identifierNode.new("prelude", false)),
-                        [ast.requestPart.request "new" withArgs( [varpat, arg.dtype] )] )
-                } case { _ ->
-                    def tmp = rewritematchblockterm(arg.dtype)
-                    def bindingpat = ast.callNode.new(
-                            ast.memberNode.new("AndPattern",
-                                ast.identifierNode.new("prelude", false)),
-                        [ast.requestPart.request "new" withArgs( [varpat, tmp.first ] )] )
-                    pattern := bindingpat
-                    for (tmp.second) do {p->
-                        // We can't name both p and the extra param binding
-                        // occurences, because then there would be shadowing.
-                        if (p.wildcard) then {
-                            p.isBindingOccurrence := true
-                        } else {
-                            def extraParam = p.deepCopy
-                            // The deepCopy copies the type too.
-                            // Does this cause an unnecessary dynamic type-check?
-                            extraParam.isBindingOccurrence := true
-                            newparams.push(extraParam)
-                        }
+              case { "identifier" | "op" ->
+                pattern := ast.callNode.new(
+                        ast.memberNode.new("AndPattern",
+                            ast.identifierNode.new("prelude", false)),
+                    [ast.requestPart.request "new" withArgs( [varpat, arg.dtype] )] )
+            } case { _ ->
+                def tmp = rewritematchblockterm(arg.dtype)
+                def bindingpat = ast.callNode.new(
+                        ast.memberNode.new("AndPattern",
+                            ast.identifierNode.new("prelude", false)),
+                    [ast.requestPart.request "new" withArgs( [varpat, tmp.first ] )] )
+                pattern := bindingpat
+                for (tmp.second) do {p->
+                    // We can't name both p and the extra param binding
+                    // occurences, because then there would be shadowing.
+                    if (p.wildcard) then {
+                        p.isBindingOccurrence := true
+                    } else {
+                        def extraParam = p.deepCopy
+                        // The deepCopy copies the type too.
+                        // Does this cause an unnecessary dynamic type-check?
+                        extraParam.isBindingOccurrence := true
+                        newparams.push(extraParam)
                     }
                 }
+            }
         } else {
             if (false != blk.matchingPattern) then {
                 if (blk.matchingPattern.value == arg.value) then {

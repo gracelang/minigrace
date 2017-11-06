@@ -634,9 +634,11 @@ method doif {
         if (opener == "-missing-") then {
             def suggestion = errormessages.suggestion.new
             // Look ahead for a rparen or then.
-            def nextTok = findNextToken({ t -> (t.line == btok.line)
-                && ((t.kind == "rparen") || (t.kind == "rbrace") || (t.kind == "lbrace")
-                || ((t.kind == "identifier") && (t.value == "then"))) })
+            def nextTok = findNextToken { t ->
+                (t.line == btok.line) && ((t.kind == "rparen") ||
+                    (t.kind == "rbrace") || (t.kind == "lbrace") ||
+                    ((t.kind == "identifier") && (t.value == "then")))
+            }
             if (false == nextTok) then {
                 suggestion.insert(" («condition») then \{")afterToken(btok)
             } elseif { nextTok.kind == "rparen" } then {
@@ -789,9 +791,10 @@ method doif {
                 if (sym.kind != "lbrace") then {
                     def suggestion = errormessages.suggestion.new
                     // Look ahead for a rbrace or then.
-                    def nextTok = findNextToken({ t -> (t.line == statementToken.line)
-                        && ((t.kind == "rbrace") || (t.kind == "lbrace")
-                        || ((t.kind == "identifier") && (t.value == "then"))) })
+                    def nextTok = findNextToken { t ->
+                        (t.line == statementToken.line)
+                            && ((t.kind == "rbrace") || (t.kind == "lbrace")
+                            || ((t.kind == "identifier") && (t.value == "then"))) }
                     if (false == nextTok) then {
                         suggestion.insert(" \{ «expression» \} then \{")afterToken(statementToken)
                     } elseif { nextTok.kind == "rbrace" } then {
@@ -824,8 +827,8 @@ method doif {
                 if (didNotConsume {expression(blocksOK)}) then {
                     def suggestion = errormessages.suggestion.new
                     // Look ahead for a rbrace or then.
-                    var nextTok := findNextToken({ t -> (t.line == lastToken.line) && 
-                        (t.kind == "rbrace")})
+                    var nextTok := findNextToken { t ->
+                        (t.line == lastToken.line) && (t.kind == "rbrace")}
                     if (false == nextTok) then {
                         nextTok := findNextValidToken( ["rbrace"] )
                         if (nextTok == sym) then {
@@ -1577,8 +1580,9 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
     var allarith := true // Consists only of arithmetic operators
     var opcount := 0
     var opdtype := "" // The single operator being used in this expression
-    while {accept("op")onLineOfLastOr(statementToken) && 
-            {sym.value != "="}} do {
+    while {
+        accept("op")onLineOfLastOr(statementToken) && {sym.value != "="}
+    } do {
         opcount := opcount + 1
         o := sym.value
         next
@@ -2432,9 +2436,9 @@ method doclass {
 
 method dofactoryMethod {
     // Accept a factory method declaration
-    if ((acceptKeyword "factory") && {
-            tokens.first.kind == "keyword"} && {
-            tokens.first.value == "method"}) then {
+    if ((acceptKeyword "factory") && { tokens.first.kind == "keyword" } && {
+        tokens.first.value == "method"
+    }) then {
         def btok = sym
         next
         errormessages.syntaxError("the keyword combination 'factory method' is " ++
@@ -2538,8 +2542,9 @@ method methodDecRest(tm, sameline) {
         }
         next
         var comma := false
-        while {accept("identifier")
-                || (accept("op") && (sym.value == "*"))} do {
+        while {
+            accept("identifier") || (accept("op") && (sym.value == "*"))
+        } do {
             if (accept "op") then {
                 next
                 errormessages.syntaxError("variable length parameters (parameters prefixed by '*') are no longer part of Grace.  Consider making {sym.value} an Iterable.")
@@ -2620,8 +2625,9 @@ method methodsignature(sameline) {
         next
         var id
         var comma := false
-        while {accept("identifier") ||
-                (accept("op") && (sym.value == "*"))} do {
+        while {
+            accept("identifier") || (accept("op") && (sym.value == "*"))
+        } do {
             // Parse the parameter list, including optional dtype
             // annotations.
             if (accept "op") then {

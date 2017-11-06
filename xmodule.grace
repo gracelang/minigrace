@@ -117,23 +117,20 @@ method doAstCheck(moduleNode) {
 
 method reportDialectError(ex) {
     match (ex.data)
-        case { rs:RangeSuggestions ->
-            errormessages.error "Dialect {currentDialect.name}: {ex.message}."
-                atRange(rs)
-                withSuggestions(rs.suggestions)
-        }
-        case { r:ast.Range ->  //  inlcudes ast.AstNode
-            errormessages.error "Dialect {currentDialect.name}: {ex.message}."
-                atRange(r)
-        }
-        case { p:ast.Position ->
-            errormessages.error "Dialect {currentDialect.name}: {ex.message}."
-                atPosition(p.line, p.column)
-        }
-        case { _ ->
-            errormessages.error "Dialect {currentDialect.name}: {ex.message}."
-                atLine(util.linenum)
-        }
+      case { rs:RangeSuggestions ->
+        errormessages.error "Dialect {currentDialect.name}: {ex.message}."
+            atRange(rs)
+            withSuggestions(rs.suggestions)
+    } case { r:ast.Range ->  //  inlcudes ast.AstNode
+        errormessages.error "Dialect {currentDialect.name}: {ex.message}."
+            atRange(r)
+    } case { p:ast.Position ->
+        errormessages.error "Dialect {currentDialect.name}: {ex.message}."
+            atPosition(p.line, p.column)
+    } case { _ ->
+        errormessages.error "Dialect {currentDialect.name}: {ex.message}."
+            atLine(util.linenum)
+    }
 }
 
 method printBacktrace(exceptionPacket) asFarAs (methodName) {
@@ -199,9 +196,8 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
     }
     if ( util.target == "js" ) then {
         if (moduleFileJs.exists && {
-                sourceExists.not || { moduleFileJs.newer(sourceFile) }
-            }
-        ) then {
+            sourceExists.not || { moduleFileJs.newer(sourceFile) }
+        }) then {
         } else {
             if (moduleFileJs.newer(sourceFile).not) then {
                 util.log 60 verbose "{moduleFileJs} not newer than {sourceFile}"
@@ -638,13 +634,13 @@ method buildGctFor(module) {
     gct.at "modules" put(list(module.imports).sorted)
     def p = util.infile.pathname
     gct.at "path" put [
-        if (p.isEmpty) then {
-            ""
-        } elseif { p.startsWith "/" } then {
-            p
-        } else {
-            io.realpath(p)
-        } ]
+      if (p.isEmpty) then {
+        ""
+    } elseif { p.startsWith "/" } then {
+        p
+    } else {
+        io.realpath(p)
+    } ]
     gct.at "public" put(meths.sort)
     gct.at "publicMethodTypes" put(publicMethodTypes.sort)
     gct.at "types" put(types.sort)
@@ -698,7 +694,7 @@ method addFreshMethod (node) to (freshlist) for (gct) is confidential {
                             "unrecognized fresh method tail-call:\n" ++
                               freshMethExpression.pretty(0) ++ "\n" ++
                                 "Can't find methods-of:{cloneArg.toGrace 0} in gct." )
-                    } )
+                } )
             }
         } else {
             // if it's not a call or an object constructor, why is it labelled as fresh?

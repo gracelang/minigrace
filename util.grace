@@ -50,93 +50,93 @@ method parseargs(buildinfo) {
             arg := argv.at(ai)
             if (!skip && (arg.at(1) == "-")) then {
                 match(arg)
-                    case { "-o" ->
+                  case { "-o" ->
                         if(argv.size < (ai + 1)) then {
                             startupFailure "-o requires an argument."
                         }
                         outfilev := io.open(argv.at(ai + 1), "w")
                         skip := true
-                    } case { "--verbose" ->
-                        verbosity := 40
-                        if (argv.size >= (ai + 1)) then {
-                            def nextArg = argv.at(ai + 1)
-                            def firstCh = nextArg.at(1)
-                            if ((firstCh >= "0") && (firstCh <= "9")) then {
-                                skip := true
-                                verbosity := nextArg.asNumber
-                            }
-                        }
-                    } case { "--help" ->
-                        printhelp
-                    } case { "--vtag" ->
-                        skip := true
-                        if(argv.size < (ai + 1)) then {
-                            startupFailure "--vtag requires an argument."
-                        }
-                        vtagv := argv.at(ai + 1)
-                    } case { "--make" ->
-                        buildtypev := "bc"
-                    } case { "--no-recurse" ->
-                        recurse := false
-                    } case { "--run" ->
-                        buildtypev := "run"
-                    } case { "--dir" ->
-                        skip := true
-                        if(argv.size < (ai + 1)) then {
-                            startupFailure "--dir requires an argument."
-                        }
-                        outDirCache := argv.at(ai + 1)
-                        dirFlag := true
-                        if (outDirCache.at(outDirCache.size) != "/") then {
-                            outDirCache := outDirCache ++ "/"
-                        }
-                        createDirectoryIfNecessary(outDirCache)
-                    } case { "--stdout" ->
-                        toStdout := true
-                    } case { "-" ->
-                        toStdout := true
-                    } case { "--module" ->
-                        skip := true
-                        if(argv.size < (ai + 1)) then {
-                            startupFailure "--module requires an argument."
-                        }
-                        modnamev := argv.at(ai + 1)
-                    } case { "--gracelib" ->
-                        skip := true
-                        if(argv.size < (ai + 1)) then {
-                            startupFailure "--gracelib requires an argument."
-                        }
-                        gracelibPathv := argv.at(ai + 1)
-                    } case { "--target" ->
-                        skip := true
-                        if(argv.size < (ai + 1)) then {
-                            startupFailure "--target requires an argument."
-                        }
-                        targetv := argv.at(ai + 1)
-
-                        if (targetv == "help") then {
-                            io.error.write "Valid targets:\n"
-                            list(targets).sort.do { t ->
-                                io.error.write "  {t}\n"
-                            }
-                            sys.exit(0)
-                        }
-                    } case { "--gctfile" ->
-                        extensionsv.put("gctfile", true)
-                    } case { "--version" ->
-                        print("minigrace version "
-                            ++ "{buildinfo.gitgeneration}")
-                        print("git revision " ++ buildinfo.gitrevision)
-                        sys.exit(0)
-                    } case { _ ->
-                        if (arg.at(2) == "X") then {
-                            var ext := arg.substringFrom(3)to(arg.size)
-                            commandLineExtensions := "{commandLineExtensions} {arg}"
-                            processExtension(ext)
-                        } else {
-                            startupFailure "invalid argument {arg}."
+                } case { "--verbose" ->
+                    verbosity := 40
+                    if (argv.size >= (ai + 1)) then {
+                        def nextArg = argv.at(ai + 1)
+                        def firstCh = nextArg.at(1)
+                        if ((firstCh >= "0") && (firstCh <= "9")) then {
+                            skip := true
+                            verbosity := nextArg.asNumber
                         }
                     }
+                } case { "--help" ->
+                    printhelp
+                } case { "--vtag" ->
+                    skip := true
+                    if(argv.size < (ai + 1)) then {
+                        startupFailure "--vtag requires an argument."
+                    }
+                    vtagv := argv.at(ai + 1)
+                } case { "--make" ->
+                    buildtypev := "bc"
+                } case { "--no-recurse" ->
+                    recurse := false
+                } case { "--run" ->
+                    buildtypev := "run"
+                } case { "--dir" ->
+                    skip := true
+                    if(argv.size < (ai + 1)) then {
+                        startupFailure "--dir requires an argument."
+                    }
+                    outDirCache := argv.at(ai + 1)
+                    dirFlag := true
+                    if (outDirCache.at(outDirCache.size) != "/") then {
+                        outDirCache := outDirCache ++ "/"
+                    }
+                    createDirectoryIfNecessary(outDirCache)
+                } case { "--stdout" ->
+                    toStdout := true
+                } case { "-" ->
+                    toStdout := true
+                } case { "--module" ->
+                    skip := true
+                    if(argv.size < (ai + 1)) then {
+                        startupFailure "--module requires an argument."
+                    }
+                    modnamev := argv.at(ai + 1)
+                } case { "--gracelib" ->
+                    skip := true
+                    if(argv.size < (ai + 1)) then {
+                        startupFailure "--gracelib requires an argument."
+                    }
+                    gracelibPathv := argv.at(ai + 1)
+                } case { "--target" ->
+                    skip := true
+                    if(argv.size < (ai + 1)) then {
+                        startupFailure "--target requires an argument."
+                    }
+                    targetv := argv.at(ai + 1)
+
+                    if (targetv == "help") then {
+                        io.error.write "Valid targets:\n"
+                        list(targets).sort.do { t ->
+                            io.error.write "  {t}\n"
+                        }
+                        sys.exit(0)
+                    }
+                } case { "--gctfile" ->
+                    extensionsv.put("gctfile", true)
+                } case { "--version" ->
+                    print("minigrace version "
+                        ++ "{buildinfo.gitgeneration}")
+                    print("git revision " ++ buildinfo.gitrevision)
+                    sys.exit(0)
+                } case { _ ->
+                    if (arg.at(2) == "X") then {
+                        var ext := arg.substringFrom(3)to(arg.size)
+                        commandLineExtensions := "{commandLineExtensions} {arg}"
+                        processExtension(ext)
+                    } else {
+                        startupFailure "invalid argument {arg}."
+                    }
+                }
             } else {
                 if (skip) then {
                     skip := false
@@ -176,7 +176,7 @@ method parseargs(buildinfo) {
             case { "imports" -> io.output }
             case { _ ->
                 startupFailure "unrecognized target '{targetv}'."
-            }
+        }
     }
     if (target != "js") then {
         buildtypev := "debug"
@@ -194,7 +194,7 @@ method parseargs(buildinfo) {
                 otherwise { locs ->
                     startupFailure("can't find {soughtLibrary.shortName};\n" ++
                           "looked in {locs}.")
-                }
+            }
             gracelibPathv := gracelib.directory
         }
     }

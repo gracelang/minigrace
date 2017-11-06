@@ -838,10 +838,10 @@ class new {
         } else {
             def errorLine = util.lines.at(lineNumber)
             def nextLine = if (util.lines.size >= (lineNumber + 1)) then {
-                    util.lines.at(lineNumber + 1)
-                } else {
-                    ""
-                }
+                util.lines.at(lineNumber + 1)
+            } else {
+                ""
+            }
             // Count the number of literal quotes in the next line.
             var i := 1
             var count := 0
