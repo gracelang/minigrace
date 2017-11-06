@@ -6,14 +6,14 @@ MODULE_PATH=$3
 OBJECT_PATH=$4
 
 # Regenerate the file buildinfo.grace, but only if necessary.
-# If none of the info has changed, take case not to change the timestamp
+# If none of the info has changed, take care not to change the timestamp
 
 REV=$([ -e .git ] && git rev-parse HEAD || echo unknown )
 GEN=$([ -e .git ] && tools/git-calculate-generation || echo unknown )
 
 echo "method gitrevision { \"$REV\" }" > buildinfo_tmp.grace.$$
 echo "method gitgeneration { \"$GEN\" }" >> buildinfo_tmp.grace.$$
-echo "method prefix { \"$PREFIX\" }" >> buildinfo_tmp.grace.$$
+echo "method pathPrefix { \"$PREFIX\" }" >> buildinfo_tmp.grace.$$
 echo "method includepath { \"$INCLUDE_PATH\" }" >> buildinfo_tmp.grace.$$
 echo "method modulepath { \"$MODULE_PATH\" }" >> buildinfo_tmp.grace.$$
 echo "method objectpath { \"$OBJECT_PATH\" }" >> buildinfo_tmp.grace.$$
