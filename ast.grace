@@ -14,16 +14,16 @@ import "identifierKinds" as k
 // each case. Some nodes contain other fields for their specific use: while has
 // both a value (the condition) and a body, for example.
 
-type Position = type {
+type Position = interface {
     line -> Number
     column -> Number
-    > -> Boolean
-    ≥ -> Boolean
-    == -> Boolean
-    < -> Boolean
-    ≤ -> Boolean
+    > (other) -> Boolean
+    ≥ (other) -> Boolean
+    == (other) -> Boolean
+    < (other) -> Boolean
+    ≤ (other) -> Boolean
 }
-type Range = type {
+type Range = interface {
     start -> Position
     end -> Position
 }
@@ -161,7 +161,7 @@ def ancestorChain is public = object {
 
 def emptySeq = emptySequence
 
-type AstNode = type {
+type AstNode = interface {
     kind -> String
         // Used for pseudo-instanceof tests, and for printing
     register -> String
@@ -1063,8 +1063,8 @@ def methodNode is public = object {
         method needsArgChecks {
             signature.do { part ->
                 part.params.do { p ->
-                    if ((false != p.dtype) && {
-                            p.dtype.nameString != "Unknown" }) then {
+                    if ((false != p.dtype) &&
+                          { p.dtype.nameString != "Unknown" }) then {
                         return true
                     }
                 }
@@ -1204,8 +1204,8 @@ def methodNode is public = object {
             if (self.annotations.size > 0) then {
                 s := s ++ " is "
                 s := s ++ self.annotations.fold{ a,b ->
-                    if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) }
-                        startingWith ""
+                    if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0)
+                } startingWith ""
             }
             s := s ++ " \{"
             if (false != comments) then {
@@ -2425,15 +2425,14 @@ def defDecNode is public = object {
         method toGrace(depth : Number) -> String {
             def spc = "    " * depth
             var s := "def {self.name.toGrace(0)}"
-            if ( (false != self.dtype) && {
-                    self.dtype.value != "Unknown" }) then {
+            if ((false != self.dtype) && { self.dtype.value != "Unknown" }) then {
                 s := s ++ " : " ++ self.dtype.toGrace(0)
             }
             if (self.annotations.size > 0) then {
                 s := s ++ " is "
-                s := s ++ self.annotations.fold{ a,b ->
-                    if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) }
-                        startingWith ""
+                s := s ++ self.annotations.fold { a,b ->
+                    if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0)
+                } startingWith ""
             }
             if (false != self.value) then {
                 s := s ++ " = " ++ self.value.toGrace(depth)
@@ -2538,15 +2537,16 @@ def varDecNode is public = object {
     method toGrace(depth : Number) -> String {
         def spc = "    " * depth
         var s := "var {self.name.toGrace(0)}"
-        if ( (false != self.dtype) && {
-                self.dtype.value != "Unknown" }) then {
+        if ((false != self.dtype) && {
+                self.dtype.value != "Unknown"
+        }) then {
             s := s ++ " : " ++ self.dtype.toGrace(0)
         }
         if (self.annotations.size > 0) then {
             s := s ++ " is "
-            s := s ++ self.annotations.fold{ a,b ->
-                if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) }
-                    startingWith ""
+            s := s ++ self.annotations.fold { a,b ->
+                if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0)
+            } startingWith ""
         }
         if (false != self.value) then {
             s := s ++ " := " ++ self.value.toGrace(depth)

@@ -445,13 +445,11 @@ def emptySequence is confidential = object {
     method contains(element) { false }
     method do(block1) { done }
     method ==(other) {
-        match (other)
-            case {o: Collection ->
-                o.isEmpty
-            }
-            case {_ ->
-                false
-            }
+        match (other) case {
+            o: Collection -> o.isEmpty
+        } case {_ ->
+            false
+        }
     }
     class iterator {
         method asString { "emptySequenceIterator" }
@@ -1592,18 +1590,18 @@ class dictionary⟦K,T⟧ {
 
         method ==(other) {
             match (other)
-                case {o:ComparableToDictionary⟦K,V⟧ ->
-                    if (self.size != o.size) then {return false}
-                    self.keysAndValuesDo { k, v ->
-                        if (o.at(k)ifAbsent{return false} != v) then {
-                            return false
-                        }
+              case { o:ComparableToDictionary⟦K,V⟧ ->
+                if (self.size != o.size) then {return false}
+                self.keysAndValuesDo { k, v ->
+                    if (o.at(k)ifAbsent{return false} != v) then {
+                        return false
                     }
-                    return true
                 }
-                case {_ ->
-                    return false
-                }
+                return true
+            }
+            case {_ ->
+                return false
+            }
         }
 
         method copy {
@@ -1641,18 +1639,22 @@ class dictionary⟦K,T⟧ {
 class range {
     method from(lower)to(upper) -> Sequence⟦Number⟧ {
         match (lower)
-            case {_:Number -> }
-            case {_ -> RequestError.raise ("lower bound {lower}" ++
-                " in range.from({lower})to({upper}) is not an integer") }
+          case { _:Number ->
+        } case { _ ->
+            RequestError.raise ("lower bound {lower}" ++
+                " in range.from({lower})to({upper}) is not an integer")
+        }
         def start = lower.truncated
         if (start != lower) then {
             RequestError.raise ("lower bound {lower}" ++
                 " in range.from({lower})to({upper}) is not an integer") }
 
         match (upper)
-            case {_:Number -> }
-            case {_ -> RequestError.raise ("upper bound {upper}" ++
-                " in range.from({lower})to({upper}) is not an integer") }
+          case {_:Number ->
+        } case {_ ->
+            RequestError.raise ("upper bound {upper}" ++
+                " in range.from({lower})to({upper}) is not an integer")
+        }
         def stop = upper.truncated
         if (stop != upper) then {
             RequestError.raise ("upper bound {upper}" ++
@@ -1745,9 +1747,9 @@ class range {
     method from(upper)downTo(lower) -> Sequence⟦Number⟧ {
         object {
             use indexable⟦Number⟧
-            match (upper)
-                case {_:Number -> }
-                case {_ -> RequestError.raise ("upper bound {upper}" ++
+            match (upper) case {_:Number ->
+            } case {_ ->
+                RequestError.raise ("upper bound {upper}" ++
                     " in range.from({upper})downTo({lower}) is not an integer") }
             def start = upper.truncated
             if (start != upper) then {
@@ -1755,9 +1757,11 @@ class range {
                     " in range.from({upper})downTo({lower}) is not an integer")
             }
             match (lower)
-                case {_:Number -> }
-                case {_ -> RequestError.raise ("lower bound {lower}" ++
-                    " in range.from({upper})downTo({lower}) is not an integer") }
+              case {_:Number ->
+            } case {_ ->
+                RequestError.raise ("lower bound {lower}" ++
+                    " in range.from({upper})downTo({lower}) is not an integer")
+            }
             def stop = lower.truncated
             if (stop != lower) then {
                 RequestError.raise ("lower bound {lower}" ++
