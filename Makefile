@@ -284,6 +284,18 @@ minigrace: $(J2-MINIGRACE)
 
 minigrace.env: minigrace $(EXTERNAL_STUBS:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct)
 
+mgc: minigrace.env $(STUBS:%.grace=j2/%.gct)
+	rm -rf mgcTemp ./mgc ./unicodedata.js
+	mkdir mgcTemp
+	cd mgcTemp && ln -sf $(STUBS:%.grace=../j2/%.gct) .
+	cd mgcTemp && ln -sf ../js/unicodedata.js .
+	awk '1;/^\/\/ end of preamble/{exit}' js/compiler-js > mgcTemp/compiler-js-head
+	awk 'f;/^\/\/ end of preamble/{f=1}' js/compiler-js  > mgcTemp/compiler-js-tail
+	cat mgcTemp/compiler-js-head j2/gracelib.js $(MGSOURCEFILES:%.grace=j2/%.js) mgcTemp/compiler-js-tail > mgcTemp/mgc
+	chmod a+x mgcTemp/mgc
+	ln -i mgcTemp/mgc mgcTemp/unicodedata.js .
+	rm -rf mgcTemp
+
 module.test: minigrace.env $(TYPE_DIALECTS:%=j2/%.js)
 	modules/tests/harness-js-js j2/minigrace-js
 
