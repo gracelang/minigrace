@@ -13,6 +13,13 @@ def traits = object {
         apply(a:Arg1, b:Arg2) -> Res
     }
 
+    type Collection⟦T⟧ = interface {
+        iterator -> Iterator⟦T⟧
+        size -> Number
+        isEmpty -> Boolean
+        >> (destination: CollectionFactory ⟦T⟧) -> Collection ⟦T⟧
+    }
+
     class collection⟦T⟧ {
 
         method asString { "a collection trait" }
@@ -60,12 +67,10 @@ def traits = object {
             }
             return result
         }
-        method map⟦R⟧(block1:Block1⟦T,R⟧) // -> Enumerable⟦R⟧
-        {
+        method map⟦R⟧(block1:Block1⟦T,R⟧) -> Stream⟦R⟧ {
             standardGrace.lazySequenceOver⟦T,R⟧(self) mappedBy(block1)
         }
-        method filter(selectionCondition:Block1⟦T,Boolean⟧) // -> Enumerable⟦T⟧
-        {
+        method filter(selectionCondition:Block1⟦T,Boolean⟧) -> Stream⟦T⟧ {
             standardGrace.lazySequenceOver⟦T⟧(self) filteredBy(selectionCondition)
         }
         method >> (collFactory) {
@@ -87,8 +92,7 @@ def traits = object {
             }
             return result
         }
-        method into(existing) // -> Collection⟦T⟧
-        {
+        method into(existing) -> Collection⟦T⟧ {
             def selfIterator = self.iterator
             while {selfIterator.hasNext} do {
                 existing.add(selfIterator.next)
@@ -112,8 +116,7 @@ def traits = object {
                 block2.apply(ix, selfIterator.next)
             }
         }
-        method values // -> Collection⟦T⟧
-        {
+        method values -> Collection⟦T⟧ {
             self
         }
         method fold⟦R⟧(block2)startingWith(initial) -> R {
@@ -124,16 +127,13 @@ def traits = object {
             }
             return res
         }
-        method ++ (other) // -> Enumerable⟦T⟧
-        {
+        method ++ (other) -> Enumerable⟦T⟧ {
             standardGrace.lazyConcatenation(self, other)
         }
-        method sortedBy(sortBlock:Block2) // -> List⟦T⟧
-        {
+        method sortedBy(sortBlock:Block2) -> List⟦T⟧ {
             standardGrace.list.withAll(self).sortBy(sortBlock)
         }
-        method sorted  // -> List⟦T⟧
-        {
+        method sorted -> List⟦T⟧ {
             standardGrace.list.withAll(self).sort
         }
         method asString {
@@ -181,8 +181,7 @@ def traits = object {
             }
             return result
         }
-        method into(existing) // -> Collection⟦T⟧
-        {
+        method into(existing) -> Collection⟦T⟧ {
             def selfIterator = self.iterator
             while {selfIterator.hasNext} do {
                 existing.add(selfIterator.next)
@@ -212,28 +211,28 @@ class standardGrace {
     def SizeUnknown is public = Exception.refine "SizeUnknown"
     def SubobjectResponsibility is public = ProgrammingError.refine "SubobjectResponsibility"
 
-    class SuccessfulMatch.new(result', bindings') {
-        inherit true
-        method result { result' }
-        method bindings { bindings' }
-        method asString {
-            "SuccessfulMatch(result = {result}, bindings = {bindings})"
+    method SuccessfulMatch {
+        object {
+            class new(result', bindings') {
+                inherit true
+                method result { result' }
+                method bindings { bindings' }
+                method asString {
+                    "SuccessfulMatch(result = {result}, bindings = {bindings})"
+                }
+            }
         }
     }
 
-    class FailedMatch.new(result') {
-        inherit false
-        method result { result' }
-        method bindings { emptySequence }
-        method asString {
-            "FailedMatch(result = {result})"
+    method FailedMatch {
+        object {
+            method new(result') { false }
         }
     }
 
     method abstract {
         SubobjectResponsibility.raise "abstract method not overriden by subobject"
     }
-
 
     method required {
         SubobjectResponsibility.raise "required method not overriden by subobject"
@@ -277,72 +276,51 @@ class standardGrace {
         nullaryBlock.apply
     }
 
-    class BasicPattern.new {
-        method &(o) {
-            AndPattern.new(self, o)
-        }
-        method |(o) {
-            OrPattern.new(self, o)
+    method BasicPattern {
+        object {
+            class new {
+                method &(o) {
+                    AndPattern.new(self, o)
+                }
+                method |(o) {
+                    OrPattern.new(self, o)
+                }
+            }
         }
     }
-    class MatchAndDestructuringPattern.new(pat, items') {
-        inherit BasicPattern.new
-        def pattern = pat
-        def items = items'
-        method match(o) {
-            def m = pat.match(o)
-            if (m) then{
-                var mbindings := m.bindings
-                def bindings = []
-                if (mbindings.size < items.size) then {
-                    if (Extractable.match(o)) then {
-                        mbindings := o.extract
+    method MatchAndDestructuringPattern {
+        object {
+            class new(pat, items') {
+                inherit BasicPattern.new
+                def pattern = pat
+                def items = items'
+                method match(o) {
+                    def m = pat.match(o)
+                    if (m) then{
+                        var mbindings := m.bindings
+                        def bindings = []
+                        if (mbindings.size < items.size) then {
+                            if (Extractable.match(o)) then {
+                                mbindings := o.extract
+                            } else {
+                                return FailedMatch.new(o)
+                            }
+                        }
+                        for (items.indices) do {i->
+                            def b = items.at(i).match(mbindings.at(i))
+                            if (!b) then {
+                                return FailedMatch.new(o)
+                            }
+                            for (b.bindings) do {bb->
+                                bindings.push(bb)
+                            }
+                        }
+                        SuccessfulMatch.new(o, bindings)
                     } else {
-                        return FailedMatch.new(o)
+                        FailedMatch.new(o)
                     }
                 }
-                for (items.indices) do {i->
-                    def b = items.at(i).match(mbindings.at(i))
-                    if (!b) then {
-                        return FailedMatch.new(o)
-                    }
-                    for (b.bindings) do {bb->
-                        bindings.push(bb)
-                    }
-                }
-                SuccessfulMatch.new(o, bindings)
-            } else {
-                FailedMatch.new(o)
             }
-        }
-    }
-
-    class VariablePattern.new(nm) {
-        inherit BasicPattern.new
-        method match(o) {
-            SuccessfulMatch.new(o, [o])
-        }
-    }
-
-    class BindingPattern.new(pat) {
-        inherit BasicPattern.new
-        method match(o) {
-            def bindings = [o]
-            def m = pat.match(o)
-            if (!m) then {
-                return m
-            }
-            for (m.bindings) do {b->
-                bindings.push(b)
-            }
-            SuccessfulMatch.new(o, bindings)
-        }
-    }
-
-    class WildcardPattern.new {
-        inherit BasicPattern.new
-        method match(o) {
-            SuccessfulMatch.new(done, [])
         }
     }
 
