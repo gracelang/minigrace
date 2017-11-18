@@ -633,8 +633,7 @@ method buildGctFor(module) {
     gct.at "confidential" put(confidentials.sort)
     gct.at "modules" put(list(module.imports).sorted)
     def p = util.infile.pathname
-    gct.at "path" put [
-      if (p.isEmpty) then {
+    gct.at "path" put [ if (p.isEmpty) then {
         ""
     } elseif { p.startsWith "/" } then {
         p
