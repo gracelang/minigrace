@@ -75,7 +75,7 @@ method t124_tryMatch(x) {
         case { 2 -> out "TWO" }
         case { y -> out "FALLTHROUGH {y}" }
 }
-method t129_foo(x : type { bar -> String }) {
+method t129_foo(x : interface { bar -> String }) {
     out(x.bar)
 }
 
@@ -534,7 +534,7 @@ def aGraceLangTest = object {
                 bar -> String
             }
             
-            type B = A & type {
+            type B = A & interface {
                 quux -> Number
             }
             
@@ -556,7 +556,7 @@ def aGraceLangTest = object {
                 bar -> String
             }
             
-            type B = A & type {
+            type B = A & interface {
                 quux -> Number
             }
             def t131_context = object {
@@ -616,12 +616,10 @@ def aGraceLangTest = object {
             
             try {
                 MyException.raise "OK"
-            } catch {
-                e : MyException ->
-                    out "{e.message}; Caught a refined exception with super-exception."
-            } catch {
-                e : MySubException ->
-                    out "Failed; Did not catch a refined exception as super-exception."
+            } catch { e:MyException ->
+                out "{e.message}; Caught a refined exception with super-exception."
+            } catch { e:MySubException ->
+                out "Failed; did not catch a refined exception as super-exception."
             }
             
             assert(str)shouldBe("OK; Refined an exception.\nOK; Caught a refined exception.\nOK; Refined sub-exceptions.\nOK; Caught a refined exception with super-exception.\n")
@@ -634,10 +632,9 @@ def aGraceLangTest = object {
                 out "OK; inside main block."
                 Exception.raise "OK"
                 out "Failed; exception did not terminate block."
-            } catch {
-                e : Exception ->
-                    out "OK."
-                    count := count + 1
+            } catch { e:Exception ->
+                out "OK."
+                count := count + 1
             } finally {
                 out "OK."
                 count := count + 2
@@ -704,12 +701,12 @@ def aGraceLangTest = object {
         }
         
         method test_142_anontypevalue {
-            if (type { y -> String }.match(t142_x)) then {
+            if (interface { y -> String }.match(t142_x)) then {
                 out(t142_x.y)
             }
 
             match(t142_x)
-                case { z : type { y -> String} -> out(z.y) }
+                case { z : interface { y -> String} -> out(z.y) }
             assert (str) shouldBe "ok\nok\n"
         }
         
