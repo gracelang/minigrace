@@ -3,9 +3,9 @@ dialect "minitest"
 testSuiteNamed "for and" with {
     test "same size" by {
         def result = emptyList
-        def as = [1, 2, 3, 4, 5]
-        def bs = ["one", "two", "three", "four", "five"]
-        for (as) and (bs) do { a, b ->
+        def a's = [1, 2, 3, 4, 5]
+        def b's = ["one", "two", "three", "four", "five"]
+        for (a's) and (b's) do { a, b ->
             result.add(a::b)
         }
         assert (result) shouldBe
@@ -14,9 +14,9 @@ testSuiteNamed "for and" with {
     
     test "first smaller" by {
         def result = emptyList
-        def as = [1, 2, 3]
-        def bs = ["one", "two", "three", "four", "five"]
-        for (as) and (bs) do { a, b ->
+        def a's = [1, 2, 3]
+        def b's = ["one", "two", "three", "four", "five"]
+        for (a's) and (b's) do { a, b ->
             result.add(a::b)
         }
         assert (result) shouldBe [1::"one", 2::"two", 3::"three"]
@@ -24,9 +24,9 @@ testSuiteNamed "for and" with {
     
     test "second smaller" by {
         def result = emptyList
-        def as = [1, 2, 3, 4, 5]
-        def bs = ["one", "two", "three"]
-        for (as) and (bs) do { a, b ->
+        def a's = [1, 2, 3, 4, 5]
+        def b's = ["one", "two", "three"]
+        for (a's) and (b's) do { a, b ->
             result.add(a::b)
         }
         assert (result) shouldBe [1::"one", 2::"two", 3::"three"]
@@ -34,9 +34,9 @@ testSuiteNamed "for and" with {
     
     test "first empty" by {
         def result = emptyList
-        def as = []
-        def bs = ["one", "two", "three"]
-        for (as) and (bs) do { a, b ->
+        def a's = []
+        def b's = ["one", "two", "three"]
+        for (a's) and (b's) do { a, b ->
             result.add(a::b)
         }
         assert (result) shouldBe []
@@ -44,9 +44,9 @@ testSuiteNamed "for and" with {
     
     test "second empty" by {
         def result = emptyList
-        def as = [1, 2, 3, 4, 5]
-        def bs = []
-        for (as) and (bs) do { a, b ->
+        def a's = [1, 2, 3, 4, 5]
+        def b's = []
+        for (a's) and (b's) do { a, b ->
             result.add(a::b)
         }
         assert (result) shouldBe []
@@ -54,9 +54,9 @@ testSuiteNamed "for and" with {
     
     test "both empty" by {
         def result = emptyList
-        def as = []
-        def bs = []
-        for (as) and (bs) do { a, b ->
+        def a's = []
+        def b's = []
+        for (a's) and (b's) do { a, b ->
             result.add(a::b)
         }
         assert (result) shouldBe []

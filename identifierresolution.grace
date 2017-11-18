@@ -45,7 +45,7 @@ class newScopeIn(parent') kind(variety') {
     def hash is public = serialNumber.hash
 
     if (isObjectScope) then {
-        addName "self" as(k.selfDef)
+        addName "self" asA(k.selfDef)
         at "self" putScope(self)
     }
     method == (other) { self.isMe(other) }
@@ -54,7 +54,7 @@ class newScopeIn(parent') kind(variety') {
         elements.put(n, k.methdec)
         elementLines.put(n, util.linenum)
     }
-    method addName (n) as (kind:DeclKind) {
+    method addName (n) asA (kind:DeclKind) {
         def oldKind = elements.get(n) ifAbsent {
             elements.put(n, kind)
             elementLines.put(n, util.linenum)
@@ -72,9 +72,9 @@ class newScopeIn(parent') kind(variety') {
             " redefined as {kind} because it is already declared as {oldKind}")
             atRange(util.linenum, util.linepos, util.linepos + n.size - 1)
     }
-    method addNode (nd) as (kind) {
+    method addNode (nd) asA (kind) {
         def ndName = nd.value
-        checkShadowing(nd) as(kind)
+        checkShadowing(nd) asA(kind)
         def oldKind = elements.get(ndName) ifAbsent {
             elements.put(ndName, kind)
             elementLines.put(ndName, nd.line)
@@ -413,7 +413,7 @@ class newScopeIn(parent') kind(variety') {
         ProgrammingError.raise "self = {self}; encScope = {encScope}"
     }
     method isUniversal { false }
-    method checkShadowing(ident) as(newKind) {
+    method checkShadowing(ident) asA(newKind) {
         def name = ident.nameString
         def priorScope = thatDefines(name) ifNone {
             return
@@ -475,7 +475,7 @@ def thisModule = ast.identifierNode.new("module()object", false)
     // a hack to give us a way of referring to this module,
     // other than by a chain of `outer`s.  The name is one that
     // cannot occur naturally in a program
-moduleScope.addName "module()object" as (k.defdec)
+moduleScope.addName "module()object" asA (k.defdec)
 moduleScope.at "module()object" putScope(moduleScope)
 
 def universalScope = object {
@@ -485,8 +485,8 @@ def universalScope = object {
     method hasParent { false }
     method parent { ProgrammingError.raise "universal scope has no parent" }
     method addName(n) { ProgrammingError.raise "can't add to the universal scope" }
-    method addName(n)as(kd) { ProgrammingError.raise "can't add to the universal scope" }
-    method addNode(n)as(kd) { ProgrammingError.raise "can't add to the universal scope" }
+    method addName(n)asA(kd) { ProgrammingError.raise "can't add to the universal scope" }
+    method addNode(n)asA(kd) { ProgrammingError.raise "can't add to the universal scope" }
     method contains(n) { true }
     method withSurroundingScopesDo(b) { b.apply(self) }
     method kind(n) { "unknown" }
@@ -637,7 +637,7 @@ method rewritematchblock(blk) {
     return newblk
 }
 
-method transformIdentifier(node) ancestors(as) {
+method transformIdentifier(node) ancestors(anc) {
     // node is a (copy of an) ast node that represents an applied occurence of
     // an identifer id.
     // This method may or may not transform node into another ast.
@@ -682,7 +682,7 @@ method transformIdentifier(node) ancestors(as) {
     if (nm == "self") then {
         return node
     }
-    checkForAmbiguityOf (node) definedIn (definingScope) as (nodeKind)
+    checkForAmbiguityOf (node) definedIn (definingScope) asA (nodeKind)
     def v = definingScope.variety
     if (v == "built-in") then { return node }
     if (v == "dialect") then {
@@ -716,7 +716,7 @@ method transformIdentifier(node) ancestors(as) {
     if (v == "block") then { return node }
     return nodeScope.resolveOuterMethod(nm) fromNode(node)
 }
-method checkForAmbiguityOf (node) definedIn (definingScope) as (kind) {
+method checkForAmbiguityOf (node) definedIn (definingScope) asA (kind) {
     // The spec says:
     // When resolving an implicit request, the usual rules of lexical scoping
     // apply, so a definition of m in the current scope will take precedence
@@ -851,15 +851,15 @@ method resolveIdentifiers(topNode) {
     // bottom-up, so by the time a node is mapped, all of its
     // descendents have already been mapped.
 
-    def newModule = topNode.map { node, as ->
+    def newModule = topNode.map { node, anc ->
         if ( node.isAppliedOccurenceOfIdentifier ) then {
-            transformIdentifier(node) ancestors(as)
+            transformIdentifier(node) ancestors(anc)
         } elseif { node.isCall } then {
             transformCall(node)
         } elseif { node.isInherits } then {
-            transformInherits(node) ancestors(as)
+            transformInherits(node) ancestors(anc)
         } elseif { node.isBind } then {
-            transformBind(node) ancestors(as)
+            transformBind(node) ancestors(anc)
         } elseif { node.isTypeDec } then {
             node
         } else {
@@ -883,7 +883,7 @@ method addAssignmentMethodsToSymbolTable {
         def nameGets = decl.nameString ++ ":=(_)"
         if (dScope.isModuleScope.not || decl.isPublic) then {
             util.setPosition(decl.line, decl.linePos)
-            dScope.addName(nameGets) as (k.methdec)  // will complain if already declared
+            dScope.addName(nameGets) asA (k.methdec)  // will complain if already declared
         }
     }
 }
@@ -920,25 +920,25 @@ method setupContext(moduleObject) {
     // define the built-in names
     util.setPosition(0, 0)
 
-    builtInsScope.addName "Type" as(k.typedec)
-    builtInsScope.addName "Object" as(k.typedec)
-    builtInsScope.addName "Unknown" as(k.typedec)
-    builtInsScope.addName "String" as(k.typedec)
-    builtInsScope.addName "Number" as(k.typedec)
-    builtInsScope.addName "Boolean" as(k.typedec)
-    builtInsScope.addName "Block" as(k.typedec)
-    builtInsScope.addName "Done" as(k.typedec)
-    builtInsScope.addName "done" as(k.defdec)
+    builtInsScope.addName "Type" asA(k.typedec)
+    builtInsScope.addName "Object" asA(k.typedec)
+    builtInsScope.addName "Unknown" asA(k.typedec)
+    builtInsScope.addName "String" asA(k.typedec)
+    builtInsScope.addName "Number" asA(k.typedec)
+    builtInsScope.addName "Boolean" asA(k.typedec)
+    builtInsScope.addName "Block" asA(k.typedec)
+    builtInsScope.addName "Done" asA(k.typedec)
+    builtInsScope.addName "done" asA(k.defdec)
     builtInsScope.addName "true"
     builtInsScope.addName "false"
-    builtInsScope.addName "outer" as(k.defdec)
+    builtInsScope.addName "outer" asA(k.defdec)
     builtInsScope.addName "readable"
     builtInsScope.addName "writable"
     builtInsScope.addName "public"
     builtInsScope.addName "confidential"
     builtInsScope.addName "override"
     builtInsScope.addName "parent"
-    builtInsScope.addName "..." as(k.defdec)
+    builtInsScope.addName "..." asA(k.defdec)
 
     preludeScope.addName "asString"
     preludeScope.addName "::(1)"
@@ -950,15 +950,15 @@ method setupContext(moduleObject) {
     preludeScope.addName "print(1)"
     preludeScope.addName "native(1)code(1)"
     preludeScope.addName "native(1)header(1)"
-    preludeScope.addName "Exception" as(k.defdec)
-    preludeScope.addName "RuntimeError" as(k.defdec)
-    preludeScope.addName "NoSuchMethod" as(k.defdec)
-    preludeScope.addName "ProgrammingError" as(k.defdec)
-    preludeScope.addName "TypeError" as(k.defdec)
-    preludeScope.addName "ResourceException" as(k.defdec)
-    preludeScope.addName "EnvironmentException" as(k.defdec)
-    preludeScope.addName "π" as(k.defdec)
-    preludeScope.addName "infinity" as(k.defdec)
+    preludeScope.addName "Exception" asA(k.defdec)
+    preludeScope.addName "RuntimeError" asA(k.defdec)
+    preludeScope.addName "NoSuchMethod" asA(k.defdec)
+    preludeScope.addName "ProgrammingError" asA(k.defdec)
+    preludeScope.addName "TypeError" asA(k.defdec)
+    preludeScope.addName "ResourceException" asA(k.defdec)
+    preludeScope.addName "EnvironmentException" asA(k.defdec)
+    preludeScope.addName "π" asA(k.defdec)
+    preludeScope.addName "infinity" asA(k.defdec)
     preludeScope.addName "minigrace"
     preludeScope.addName "_methods"
     preludeScope.addName "primitiveArray"
@@ -968,12 +968,12 @@ method setupContext(moduleObject) {
     preludeScope.addName "inBrowser"
     preludeScope.addName "engine"
 
-    graceObjectScope.addName "isMe(1)" as (k.graceObjectMethod)
-    graceObjectScope.addName "≠(1)" as (k.graceObjectMethod)
-    graceObjectScope.addName "basicAsString" as (k.graceObjectMethod)
-    graceObjectScope.addName "asString" as (k.graceObjectMethod)
-    graceObjectScope.addName "asDebugString" as (k.graceObjectMethod)
-    graceObjectScope.addName "::(1)" as (k.graceObjectMethod)
+    graceObjectScope.addName "isMe(1)" asA (k.graceObjectMethod)
+    graceObjectScope.addName "≠(1)" asA (k.graceObjectMethod)
+    graceObjectScope.addName "basicAsString" asA (k.graceObjectMethod)
+    graceObjectScope.addName "asString" asA (k.graceObjectMethod)
+    graceObjectScope.addName "asDebugString" asA (k.graceObjectMethod)
+    graceObjectScope.addName "::(1)" asA (k.graceObjectMethod)
 
     booleanScope.addName "prefix!"
     booleanScope.addName "&&(1)"
@@ -982,9 +982,9 @@ method setupContext(moduleObject) {
 
     builtInsScope.addName "graceObject"
     builtInsScope.at "graceObject" putScope(graceObjectScope)
-    builtInsScope.addName "prelude" as(k.defdec)
+    builtInsScope.addName "prelude" asA(k.defdec)
     builtInsScope.at "prelude" putScope(preludeScope)
-    builtInsScope.addName "_prelude" as(k.defdec)
+    builtInsScope.addName "_prelude" asA(k.defdec)
     builtInsScope.at "_prelude" putScope(preludeScope)
     builtInsScope.at "true" putScope(booleanScope)
     builtInsScope.at "false" putScope(booleanScope)
@@ -996,7 +996,7 @@ method setupContext(moduleObject) {
         def gctDict = xmodule.parseGCT(dialectName)
         def typeDecls = set(gctDict.at "types" ifAbsent {emptySequence})
         gctDict.at "public" ifAbsent {emptySequence}.do { mn ->
-            preludeScope.addName(mn) as (if (typeDecls.contains(mn))
+            preludeScope.addName(mn) asA (if (typeDecls.contains(mn))
                                            then { k.typedec } else { k.methdec })
         }
         processGCT(gctDict, preludeScope)
@@ -1027,16 +1027,16 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
     def symbolTableVis = object {
         inherit ast.baseVisitor
 
-        method visitBind (o) up (as) {
-            o.scope := as.parent.scope
+        method visitBind (o) up (anc) {
+            o.scope := anc.parent.scope
             def lValue = o.dest
             if (lValue.kind == "identifier") then {
                 lValue.isAssigned := true
             }
             return true
         }
-        method visitCall (o) up (as) {
-            def enclosingNode = as.parent
+        method visitCall (o) up (anc) {
+            def enclosingNode = anc.parent
             o.scope := enclosingNode.scope
             def callee = o.receiver
             if (callee.kind == "identifier") then {
@@ -1051,12 +1051,12 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             return true
         }
-        method visitBlock (o) up (as) {
-            o.scope := newScopeIn(as.parent.scope) kind "block"
+        method visitBlock (o) up (anc) {
+            o.scope := newScopeIn(anc.parent.scope) kind "block"
             true
         }
-        method visitDefDec (o) up (as) {
-            def myParent = as.parent
+        method visitDefDec (o) up (anc) {
+            def myParent = anc.parent
             o.scope := myParent.scope
             o.parentKind := myParent.kind
             def declaredName = o.nameString
@@ -1066,27 +1066,27 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             if (o.value.isObject) then { o.value.name := declaredName }
             true
         }
-        method visitVarDec(o) up (as) {
-            def myParent = as.parent
+        method visitVarDec(o) up (anc) {
+            def myParent = anc.parent
             o.scope := myParent.scope
             o.parentKind := myParent.kind
             true
         }
-        method visitIdentifier (o) up (as) {
-            var scope := as.parent.scope
+        method visitIdentifier (o) up (anc) {
+            var scope := anc.parent.scope
             o.scope := scope
             if (o.isBindingOccurrence) then {
                 if ((o.isDeclaredByParent.not) && {o.wildcard.not}) then {
                     checkForReservedName(o)
-                    def kind = o.declarationKindWithAncestors(as)
+                    def kind = o.declarationKindWithAncestors(anc)
                     if (scope.isObjectScope && (kind == k.vardec)) then {
-                        varFieldDecls.add(as.parent)
+                        varFieldDecls.add(anc.parent)
                         // Why not just add the :=(_) now?
                         // Because we want some field assignments to be compiled as
                         // direct assignments, and hence have to distinguish
                         // programmer-writen :=(_) methods from synthetic ones.
                     }
-                    scope.addNode(o) as (kind)
+                    scope.addNode(o) asA (kind)
                 }
             } elseif {o.wildcard} then {
                 errormessages.syntaxError("'_' cannot be used in an expression")
@@ -1094,26 +1094,26 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             true
         }
-        method visitImport (o) up (as) {
-            o.scope := as.parent.scope
+        method visitImport (o) up (anc) {
+            o.scope := anc.parent.scope
             xmodule.checkExternalModule(o)
             def gct = xmodule.parseGCT(o.path)
-            def otherModule = newScopeIn(as.parent.scope) kind "module"
+            def otherModule = newScopeIn(anc.parent.scope) kind "module"
             otherModule.node := o
             processGCT(gct, otherModule)
             o.scope.at(o.nameString) putScope(otherModule)
             true
         }
-        method visitInherits (o) up (as) {
-            o.scope := as.parent.scope
+        method visitInherits (o) up (anc) {
+            o.scope := anc.parent.scope
             if (o.isUse) then {
-                if (as.parent.canUse.not) then {
+                if (anc.parent.canUse.not) then {
                     errormessages.syntaxError("use statements must " ++
                         "be inside an object, class, or trait")
                         atRange(o.range)
                 }
             } else {
-                if (as.parent.canInherit.not) then {
+                if (anc.parent.canInherit.not) then {
                     errormessages.syntaxError("inherit statements must " ++
                         "be inside an object or class; a trait cannot inherit")
                         atRange(o.range)
@@ -1121,8 +1121,8 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             true
         }
-        method visitMethod (o) up (as) {
-            def surroundingScope = as.parent.scope
+        method visitMethod (o) up (anc) {
+            def surroundingScope = anc.parent.scope
             if (surroundingScope.isObjectScope.not) then {
                 // This check needs to be here so long as the parser accepts
                 // class declarations as statments, rather than as method
@@ -1133,7 +1133,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             def ident = o.asIdentifier
             checkForReservedName(ident)
-            surroundingScope.addNode(ident) as(k.methdec)
+            surroundingScope.addNode(ident) asA(k.methdec)
             ident.isDeclaredByParent := true
             if (ident.isBindingOccurrence) then {
                 // aliased and excluded names are appliedOccurences
@@ -1147,25 +1147,25 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             true
         }
-        method visitMethodType (o) up (as) {
-            o.scope := newScopeIn(as.parent.scope) kind "methodtype"
+        method visitMethodType (o) up (anc) {
+            o.scope := newScopeIn(anc.parent.scope) kind "methodtype"
             // the scope for the parameters (including the type parameters,
             // if any) of this method.
             true
         }
-        method visitObject (o) up (as) {
-            def myParent = as.parent
+        method visitObject (o) up (anc) {
+            def myParent = anc.parent
             o.scope := newScopeIn(myParent.scope) kind "object"
             if (o.inTrait) then { checkTraitBody(o) }
             true
         }
-        method visitModule(o) up (as) {
+        method visitModule(o) up (anc) {
             // the module scope was set before the traversal started
             true
         }
-        method visitTypeDec (o) up (as) {
-            def enclosingScope = as.parent.scope
-            enclosingScope.addNode(o.name) as(k.typedec)
+        method visitTypeDec (o) up (anc) {
+            def enclosingScope = anc.parent.scope
+            enclosingScope.addNode(o.name) asA(k.typedec)
             o.name.isDeclaredByParent := true
             o.scope := newScopeIn(enclosingScope) kind "typedec"
             // this scope will be the home for any type parameters.
@@ -1173,32 +1173,32 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             // For now, we don't distinguish between type decs and type params
             true
         }
-        method visitTypeLiteral (o) up (as) {
-            o.scope := newScopeIn(as.parent.scope) kind "type"
+        method visitTypeLiteral (o) up (anc) {
+            o.scope := newScopeIn(anc.parent.scope) kind "type"
             true
         }
-        method visitReturn(o) up (as) {
-            o.scope := as.parent.scope;
-            def enclosingMethodNode = as.suchThat { n -> n.isMethod } ifAbsent {
+        method visitReturn(o) up (anc) {
+            o.scope := anc.parent.scope;
+            def enclosingMethodNode = anc.suchThat { n -> n.isMethod } ifAbsent {
                 errormessages.syntaxError "`return` statements must be inside methods."
                     atRange(o.range)
             }
             o.dtype := enclosingMethodNode.dtype
             true
         }
-        method visitTypeParameters(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitIf(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitMatchCase(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitTryCatch(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitSignaturePart(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitArray(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitMember(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitGeneric(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitString(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitNum(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitOp(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitDialect(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitCommentNode(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitTypeParameters(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitIf(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitMatchCase(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitTryCatch(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitSignaturePart(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitArray(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitMember(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitGeneric(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitString(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitNum(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitOp(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitDialect(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitCommentNode(o) up (anc) { o.scope := anc.parent.scope ; true }
     }   // end of symbolTableVis
 
     def objectScopesVis = object {
@@ -1208,18 +1208,18 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         // delcaration is visited.
 
         inherit ast.baseVisitor
-        method visitDefDec (o) up (as) {
+        method visitDefDec (o) up (anc) {
             if (o.returnsObject) then {
                 o.scope.at(o.nameString)
                     putScope(o.returnedObjectScope)
             }
             true
         }
-        method visitMethod (o) up (as) {
-            def myParent = as.parent
+        method visitMethod (o) up (anc) {
+            def myParent = anc.parent
             if (o.returnsObject) then {
                 myParent.scope.at(o.nameString) putScope(o.returnedObjectScope)
-                if (as.forebears.forebears.isEmpty.not) then {
+                if (anc.forebears.forebears.isEmpty.not) then {
                     // omit this if I'm at the module-level
                     def factoryName = myParent.name
                     def tailNode = o.body.last
@@ -1234,11 +1234,11 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
 
     def inheritanceVis = object {
         inherit ast.baseVisitor
-        method visitObject (o) up (as) {
+        method visitObject (o) up (anc) {
             collectParentNames(o)
             true
         }
-        method visitModule (o) up (as) {
+        method visitModule (o) up (anc) {
             collectParentNames(o)
             true
         }
@@ -1291,7 +1291,7 @@ method gatherInheritedNames(node) is confidential {
         }
         superScope.elements.keysDo { each ->
             if (each != "self") then {
-                objScope.addName(each) as(inheritedKind)
+                objScope.addName(each) asA(inheritedKind)
                 inhNode.providedNames.add(each)
             }
         }
@@ -1329,7 +1329,7 @@ method gatherUsedNames(objNode) is confidential {
         }
         traitScope.keysAndKindsDo { nm, kd ->
             if (kd.forUsers) then {
-                objScope.addName(nm) as(k.fromTrait)
+                objScope.addName(nm) asA(k.fromTrait)
                 t.providedNames.add(nm)
             }
         }
@@ -1401,7 +1401,7 @@ class conflictForMethodName(nm) from(srcs) {
     def sources is public = srcs
 }
 
-method transformBind(bindNode) ancestors(as) {
+method transformBind(bindNode) ancestors(anc) {
     // bindNode is (a shallow copy of) a bindNode.  If it is binding a
     // "member" or an identifier, transform it into a request on a setter
 
@@ -1439,7 +1439,7 @@ method transformBind(bindNode) ancestors(as) {
 }
 
 
-method transformInherits(inhNode) ancestors(as) {
+method transformInherits(inhNode) ancestors(anc) {
     // inhNode is (a shallow copy of) an inheritNode.  Transform it to deal
     // with superobject initialization and inherited names, including
     // inheritance modifiers
@@ -1510,7 +1510,7 @@ method transformCall(cNode) -> ast.AstNode {
         }
         def definingScope = s.thatDefines(methodName)
         checkForAmbiguityOf (cNode)
-            definedIn (definingScope) as (definingScope.kind(methodName))
+            definedIn (definingScope) asA (definingScope.kind(methodName))
         cNode.receiver := rcvr.receiver
         cNode.onSelf
         if (definingScope.kind(methodName) == "object") then {
@@ -1540,7 +1540,7 @@ method callReturnsFreshObject(cNode) {
 }
 
 method rewriteMatches(topNode) {
-    topNode.map { node, as ->
+    topNode.map { node, anc ->
         if (node.isMatchingBlock) then {
             rewritematchblock(node)
         } else {

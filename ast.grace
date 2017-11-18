@@ -105,21 +105,21 @@ method positionOfNext (needle1:String) or (needle2:String)
 
 def lineLength is public = 80
 def uninitialized = Singleton.named "uninitialized"
-method listMap(l, b) ancestors(as) is confidential {
+method listMap(l, b) ancestors(ac) is confidential {
     def newList = [ ]
-    l.do { nd -> newList.addLast(nd.map(b) ancestors(as)) }
+    l.do { nd -> newList.addLast(nd.map(b) ancestors(ac)) }
     newList
 }
-method maybeMap(n, b) ancestors(as) is confidential {
+method maybeMap(n, b) ancestors(ac) is confidential {
     if (false != n) then {
-        n.map(b) ancestors(as)
+        n.map(b) ancestors(ac)
     } else {
         n
     }
 }
-method maybeListMap(n, b) ancestors(as) is confidential {
+method maybeListMap(n, b) ancestors(ac) is confidential {
     if (false != n) then {
-        listMap(n, b) ancestors(as)
+        listMap(n, b) ancestors(ac)
     } else {
         n
     }
@@ -132,8 +132,8 @@ def ancestorChain is public = object {
         method extend(n) { cons(n) onto(self) }
     }
     method with(n) { empty.extend(n) }
-    class cons(p) onto(as) is confidential {
-        method forebears { as }
+    class cons(p) onto(ac) is confidential {
+        method forebears { ac }
         method isEmpty { false }
         method parent { p }
         method grandparent { forebears.parent }
@@ -266,8 +266,8 @@ class baseNode {
         }
         return self.dtype
     }
-    method isSimple { true }  // needs no parens when used as receiver
-    method isDelimited { false }  // needs no parens when used as argument
+    method isSimple { true }  // needs no parens when used ac receiver
+    method isDelimited { false }  // needs no parens when used ac argument
     method description { kind }
     method accept(visitor) {
         self.accept(visitor) from (ancestorChain.empty)
@@ -340,9 +340,9 @@ def implicit is public = object {
     method toGrace(depth) { "implicit" }
     method asString { "the implicit receiver" }
     method == (other) { self.isMe(other) }
-    method map(blk) ancestors(as) { self }
-    method accept(visitor) from (as) {
-        visitor.visitImplicit(self) up (as)
+    method map(blk) ancestors(ac) { self }
+    method accept(visitor) from (ac) {
+        visitor.visitImplicit(self) up (ac)
     }
     method pretty(depth) { "implicit" }
 }
@@ -364,8 +364,8 @@ class fakeSymbolTable is public {
       // Can't make it nullNode now, because nullNode
       // inherits from baseNode, which uses fakeSymbolTable
     method asString { "the fakeSymbolTable" }
-    method addNode (n) as (kind) {
-        ProgrammingError.raise "fakeSymbolTable(on node {node}).addNode({n}) as \"{kind}\""
+    method addNode (n) ac (kind) {
+        ProgrammingError.raise "fakeSymbolTable(on node {node}).addNode({n}) ac \"{kind}\""
     }
     method thatDefines (name) ifNone (action) {
         action.apply
@@ -388,23 +388,23 @@ def ifNode is public = object {
     var thenblock is public := thenblock'
     var elseblock is public := elseblock'
     var handledIdentifiers is public := false
-    method isSimple { false }  // needs parens when used as receiver
-    method accept(visitor : AstVisitor) from(as) {
-        if (visitor.visitIf(self) up(as)) then {
-            def newChain = as.extend(self)
+    method isSimple { false }  // needs parens when used ac receiver
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitIf(self) up(ac)) then {
+            def newChain = ac.extend(self)
             value.accept(visitor) from(newChain)
             thenblock.accept(visitor) from(newChain)
             elseblock.accept(visitor) from(newChain)
         }
     }
     method end -> Position { elseblock.end }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
+        def newChain = ac.extend(n)
         n.value := value.map(blk) ancestors(newChain)
         n.thenblock := thenblock.map(blk) ancestors(newChain)
         n.elseblock := elseblock.map(blk) ancestors(newChain)
-        blk.apply(n, as)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
@@ -474,7 +474,7 @@ def blockNode is public = object {
         symbolTable := st
         st.node := self
     }
-    method declarationKindWithAncestors(as) { k.parameter }
+    method declarationKindWithAncestors(ac) { k.parameter }
     method isMatchingBlock { params.size == 1 }
     method returnsObject {
         (body.size > 0) && { body.last.returnsObject }
@@ -494,9 +494,9 @@ def blockNode is public = object {
             positionOfNext "}" after (params.last.end)
         }
     }
-    method accept(visitor : AstVisitor) from(as) {
-        if (visitor.visitBlock(self) up(as)) then {
-            def newChain = as.extend(self)
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitBlock(self) up(ac)) then {
+            def newChain = ac.extend(self)
             for (self.params) do { mx ->
                 mx.accept(visitor) from(newChain)
             }
@@ -508,13 +508,13 @@ def blockNode is public = object {
             }
         }
     }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
+        def newChain = ac.extend(n)
         n.params := listMap(params, blk) ancestors(newChain)
         n.body := listMap(body, blk) ancestors(newChain)
         n.matchingPattern := maybeMap(matchingPattern, blk) ancestors(newChain)
-        blk.apply(n, as)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
@@ -578,15 +578,15 @@ def tryCatchNode is public = object {
     var value is public := block
     var cases is public := cases'
     var finally is public := finally'
-    method isSimple { false }  // needs parens when used as receiver
+    method isSimple { false }  // needs parens when used ac receiver
     method end -> Position {
         if (false ≠ finally) then { return finally.end }
         if (cases.isEmpty.not) then { return cases.last.end }
         return value.end
     }
-    method accept(visitor : AstVisitor) from(as) {
-        if (visitor.visitTryCatch(self) up(as)) then {
-            def newChain = as.extend(self)
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitTryCatch(self) up(ac)) then {
+            def newChain = ac.extend(self)
             self.value.accept(visitor) from(newChain)
             for (self.cases) do { mx ->
                 mx.accept(visitor) from(newChain)
@@ -596,13 +596,13 @@ def tryCatchNode is public = object {
             }
         }
     }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
+        def newChain = ac.extend(n)
         n.value := value.map(blk) ancestors(newChain)
         n.cases := listMap(cases, blk) ancestors(newChain)
         n.finally := maybeMap(finally, blk) ancestors(newChain)
-        blk.apply(n, as)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
@@ -638,27 +638,27 @@ def matchCaseNode is public = object {
     def kind is public = "matchcase"
     var value is public := matchee'
     var cases is public := cases'
-    method isSimple { false }  // needs parens when used as receiver
+    method isSimple { false }  // needs parens when used ac receiver
     method end -> Position {
         if (cases.isEmpty.not) then { return cases.last.end }
         return value.end
     }
     method matchee { value }
-    method accept(visitor : AstVisitor) from(as) {
-        if (visitor.visitMatchCase(self) up(as)) then {
-            def newChain = as.extend(self)
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitMatchCase(self) up(ac)) then {
+            def newChain = ac.extend(self)
             self.value.accept(visitor) from(newChain)
             for (self.cases) do { mx ->
                 mx.accept(visitor) from(newChain)
             }
         }
     }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
+        def newChain = ac.extend(n)
         n.value := value.map(blk) ancestors(newChain)
         n.cases := listMap(cases, blk) ancestors(newChain)
-        blk.apply(n, as)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
@@ -735,10 +735,10 @@ def methodTypeNode is public = object {
         symbolTable := st
         st.node := self
     }
-    method declarationKindWithAncestors(as) { k.typedec }
-    method accept(visitor : AstVisitor) from(as) {
-        if (visitor.visitMethodType(self) up(as)) then {
-            def newChain = as.extend(self)
+    method declarationKindWithAncestors(ac) { k.typedec }
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitMethodType(self) up(ac)) then {
+            def newChain = ac.extend(self)
             if (false != typeParams) then {
                 typeParams.accept(visitor) from(newChain)
             }
@@ -750,13 +750,13 @@ def methodTypeNode is public = object {
             }
         }
     }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
+        def newChain = ac.extend(n)
         n.rtype := maybeMap(rtype, blk) ancestors(newChain)
         n.signature := listMap(signature, blk) ancestors(newChain)
         n.typeParams := maybeMap(typeParams, blk) ancestors(newChain)
-        blk.apply(n, as)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
@@ -803,7 +803,7 @@ def typeLiteralNode is public = object {
     method asString {
         "typeliteral: methods = {methods}, types = {types}"
     }
-    method declarationKindWithAncestors(as) { k.typedec }
+    method declarationKindWithAncestors(ac) { k.typedec }
     method isExecutable { false }
 
     method end -> Position {
@@ -812,9 +812,9 @@ def typeLiteralNode is public = object {
         positionOfNext "}" after (max(tEnd, mEnd))
     }
 
-    method accept(visitor : AstVisitor) from(as) {
-        if (visitor.visitTypeLiteral(self) up(as)) then {
-            def newChain = as.extend(self)
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitTypeLiteral(self) up(ac)) then {
+            def newChain = ac.extend(self)
             for (self.methods) do { each ->
                 each.accept(visitor) from(newChain)
             }
@@ -823,12 +823,12 @@ def typeLiteralNode is public = object {
             }
         }
     }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
-        n.methods := listMap(methods, blk) ancestors (as)
-        n.types := listMap(types, blk) ancestors (as)
-        blk.apply(n, as)
+        def newChain = ac.extend(n)
+        n.methods := listMap(methods, blk) ancestors (ac)
+        n.types := listMap(types, blk) ancestors (ac)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
@@ -890,7 +890,7 @@ def typeDecNode is public = object {
     }
 
     method isExecutable { true }
-    method declarationKindWithAncestors(as) { k.typeparam }
+    method declarationKindWithAncestors(ac) { k.typeparam }
     method isConfidential {
         if (annotations.size == 0) then { return false }
         findAnnotation(self, "confidential")
@@ -899,9 +899,9 @@ def typeDecNode is public = object {
     method isWritable { false }
     method isReadable { isPublic }
 
-    method accept(visitor : AstVisitor) from(as) {
-        if (visitor.visitTypeDec(self) up(as)) then {
-            def newChain = as.extend(self)
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitTypeDec(self) up(ac)) then {
+            def newChain = ac.extend(self)
             name.accept(visitor) from(newChain)
             if (false != typeParams) then {
                 typeParams.accept(visitor) from(newChain)
@@ -910,14 +910,14 @@ def typeDecNode is public = object {
             value.accept(visitor) from(newChain)
         }
     }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
+        def newChain = ac.extend(n)
         n.name := name.map(blk) ancestors(newChain)
         n.typeParams := maybeMap(typeParams, blk) ancestors(newChain)
         n.value := value.map(blk) ancestors(newChain)
         n.annotations := listMap(annotations, blk) ancestors(newChain)
-        blk.apply(n, as)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
@@ -1077,7 +1077,7 @@ def methodNode is public = object {
             symbolTable := st
             st.node := self
         }
-        method declarationKindWithAncestors(as) { k.parameter }
+        method declarationKindWithAncestors(ac) { k.parameter }
         method isConfidential {
             if (annotations.size == 0) then { return false }
             findAnnotation(self, "confidential")
@@ -1101,9 +1101,9 @@ def methodNode is public = object {
             if (last.isReturn) then { last := last.value }
             last
         }
-        method accept(visitor : AstVisitor) from(as) {
-            if (visitor.visitMethod(self) up(as)) then {
-                def newChain = as.extend(self)
+        method accept(visitor : AstVisitor) from(ac) {
+            if (visitor.visitMethod(self) up(ac)) then {
+                def newChain = ac.extend(self)
                 self.value.accept(visitor) from(newChain)
                 if (false != typeParams) then {
                     typeParams.accept(visitor) from(newChain)
@@ -1124,15 +1124,15 @@ def methodNode is public = object {
                 }
             }
         }
-        method map(blk) ancestors(as){
+        method map(blk) ancestors(ac){
             var n := shallowCopy
-            def newChain = as.extend(n)
+            def newChain = ac.extend(n)
             n.body := listMap(body, blk) ancestors(newChain)
             n.typeParams := maybeMap(typeParams, blk) ancestors(newChain)
             n.signature := listMap(signature, blk) ancestors(newChain)
             n.annotations := listMap(annotations, blk) ancestors(newChain)
             n.dtype := maybeMap(dtype, blk) ancestors(newChain)
-            blk.apply(n, as)
+            blk.apply(n, ac)
         }
         method pretty(depth) {
             def spc = "  " * (depth+1)
@@ -1237,9 +1237,9 @@ def callNode is public = object {
         result
     }
     class new(receiver', parts') {
-        // requested as callNode.new(receiver':AstNode, parts:List)
+        // requested ac callNode.new(receiver':AstNode, parts:List)
         // Represents a method request with arguments.
-        // The argument list is in `parts`, as a sequence of `requestPart`s.
+        // The argument list is in `parts`, ac a sequence of `requestPart`s.
 
         inherit baseNode
         def kind is public = "call"
@@ -1269,7 +1269,7 @@ def callNode is public = object {
         method end:=(newPos) { endPos := newPos }
         method isRequestOfPrefixOperator { parts.first.name.startsWith "prefix" }
         method onSelf {
-            // mark as a self-request.  Answers self for chaining.
+            // mark ac a self-request.  Answers self for chaining.
             isSelfRequest := true
             self
         }
@@ -1287,7 +1287,7 @@ def callNode is public = object {
 
         method isCall { true }
         method returnsObject {
-            // we recognize two special calls as returning a fresh object
+            // we recognize two special calls ac returning a fresh object
             // self.copy, and prelude.clone(_)
             if (isCopy) then { return true }
             if (isClone) then { return true }
@@ -1327,9 +1327,9 @@ def callNode is public = object {
             if (false == generics) then { 0 } else { generics.size }
         }
 
-        method accept(visitor : AstVisitor) from(as) {
-            if (visitor.visitCall(self) up(as)) then {
-                def newChain = as.extend(self)
+        method accept(visitor : AstVisitor) from(ac) {
+            if (visitor.visitCall(self) up(ac)) then {
+                def newChain = ac.extend(self)
                 self.receiver.accept(visitor) from(newChain)
                 for (self.parts) do { part ->
                     for (part.args) do { arg ->
@@ -1343,13 +1343,13 @@ def callNode is public = object {
                 }
             }
         }
-        method map(blk) ancestors(as) {
+        method map(blk) ancestors(ac) {
             var n := shallowCopy
-            def newChain = as.extend(n)
+            def newChain = ac.extend(n)
             n.receiver := receiver.map(blk) ancestors(newChain)
             n.parts := listMap(parts, blk) ancestors(newChain)
             n.generics := maybeListMap(generics, blk) ancestors(newChain)
-            blk.apply(n, as)
+            blk.apply(n, ac)
         }
         method pretty(depth) {
             def spc = "  " * (depth+1)
@@ -1459,9 +1459,9 @@ def moduleNode is public = object {
                 if (o.isExternal) then { action.apply(o) }
             }
         }
-        method accept(visitor : AstVisitor) from(as) {
-            if (visitor.visitModule(self) up(as)) then {
-                def newChain = as.extend(self)
+        method accept(visitor : AstVisitor) from(ac) {
+            if (visitor.visitModule(self) up(ac)) then {
+                def newChain = ac.extend(self)
                 theDialect.accept(visitor) from (newChain)
                 if (false != self.superclass) then {
                     self.superclass.accept(visitor) from(newChain)
@@ -1471,14 +1471,14 @@ def moduleNode is public = object {
                 }
             }
         }
-        method map(blk) ancestors(as) {
+        method map(blk) ancestors(ac) {
             var n := shallowCopy
-            def newChain = as.extend(n)
+            def newChain = ac.extend(n)
             n.theDialect := theDialect.map(blk) ancestors(newChain)
             n.value := listMap(value, blk) ancestors(newChain)
             n.superclass := maybeMap(superclass, blk) ancestors(newChain)
             n.usedTraits := listMap(usedTraits, blk) ancestors(newChain)
-            blk.apply(n, as)
+            blk.apply(n, ac)
         }
         method basePretty(depth) {
             def spc = "  " * (depth+1)
@@ -1604,9 +1604,9 @@ def objectNode is public = object {
         method canInherit { inTrait.not }   // an object can inherit if not in a trait
         method canUse { true }
         method isObject { true }
-        method accept(visitor : AstVisitor) from(as) {
-            if (visitor.visitObject(self) up(as)) then {
-                def newChain = as.extend(self)
+        method accept(visitor : AstVisitor) from(ac) {
+            if (visitor.visitObject(self) up(ac)) then {
+                def newChain = ac.extend(self)
                 if (false != superclass) then {
                     superclass.accept(visitor) from(newChain)
                 }
@@ -1621,13 +1621,13 @@ def objectNode is public = object {
                 name
             }
         }
-        method map(blk) ancestors(as) {
+        method map(blk) ancestors(ac) {
             var n := shallowCopy
-            def newChain = as.extend(n)
+            def newChain = ac.extend(n)
             n.value := listMap(value, blk) ancestors(newChain)
             n.superclass := maybeMap(superclass, blk) ancestors(newChain)
             n.usedTraits := listMap(usedTraits, blk) ancestors(newChain)
-            blk.apply(n, as)
+            blk.apply(n, ac)
         }
         method pretty(depth') {
             var depth := depth'
@@ -1694,19 +1694,19 @@ def arrayNode is public = object {
             positionOfNext "]" after (value.last.end)
         }
     }
-    method accept(visitor : AstVisitor) from(as) {
-        if (visitor.visitArray(self) up(as)) then {
-            def newChain = as.extend(self)
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitArray(self) up(ac)) then {
+            def newChain = ac.extend(self)
             for (self.value) do { ax ->
                 ax.accept(visitor) from(newChain)
             }
         }
     }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
+        def newChain = ac.extend(n)
         n.value := listMap(value, blk) ancestors(newChain)
-        blk.apply(n, as)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
@@ -1742,8 +1742,8 @@ class outerNode(nodes) {
     method numberOfLevels { theObjects.size }
     method asString { "‹object outside that at line {theObjects.last.line}›" }
     method pretty(depth) { basePretty(depth) ++ asString }
-    method accept(visitor) from (as) {
-        visitor.visitOuter(self) up (as)
+    method accept(visitor) from (ac) {
+        visitor.visitOuter(self) up (ac)
         // don't visit theObject, since this would introduce a cycle
     }
     method toGrace(depth) {
@@ -1754,9 +1754,9 @@ class outerNode(nodes) {
     method shallowCopy {
         outerNode(theObjects).shallowCopyFieldsFrom(self)
     }
-    method map (blk) ancestors (as) {
+    method map (blk) ancestors (ac) {
         var nd := shallowCopy
-        blk.apply(nd, as)
+        blk.apply(nd, ac)
     }
     def end is public = if (line == 0) then { noPosition } else {
         line (line) column (linePos + 4)
@@ -1806,9 +1806,9 @@ def memberNode is public = object {
             if (false == generics) then { 0 } else { generics.size }
         }
 
-        method accept(visitor : AstVisitor) from(as) {
-            if (visitor.visitMember(self) up(as)) then {
-                def newChain = as.extend(self)
+        method accept(visitor : AstVisitor) from(ac) {
+            if (visitor.visitMember(self) up(ac)) then {
+                def newChain = ac.extend(self)
                 if (false != generics) then {
                     generics.do { each -> each.accept(visitor) from(newChain) }
                 }
@@ -1818,12 +1818,12 @@ def memberNode is public = object {
         method isSelfOrOuter {
             receiver.isSelfOrOuter
         }
-        method map(blk) ancestors(as) {
+        method map(blk) ancestors(ac) {
             var n := shallowCopy
-            def newChain = as.extend(n)
+            def newChain = ac.extend(n)
             n.receiver := receiver.map(blk) ancestors(newChain)
             n.generics := maybeListMap(generics, blk) ancestors(newChain)
-            blk.apply(n, as)
+            blk.apply(n, ac)
         }
         method pretty(depth) {
             def spc = "  " * (depth+1)
@@ -1890,21 +1890,21 @@ def genericNode is public = object {
     method end -> Position { positionOfNext "⟧" after (args.last.end) }
     method nameString { value.nameString }
     method asString { toGrace 0 }
-    method accept(visitor : AstVisitor) from(as) {
-        if (visitor.visitGeneric(self) up(as)) then {
-            def newChain = as.extend(self)
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitGeneric(self) up(ac)) then {
+            def newChain = ac.extend(self)
             self.value.accept(visitor) from(newChain)
             for (self.args) do { p ->
                 p.accept(visitor) from(newChain)
             }
         }
     }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
+        def newChain = ac.extend(n)
         n.value := value.map(blk) ancestors(newChain)
         n.args := listMap(args, blk) ancestors(newChain)
-        blk.apply(n, as)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         var s := "{basePretty(depth)}({value.pretty(depth)})⟦"
@@ -1930,14 +1930,14 @@ def typeParametersNode is public = object {
     def kind is public = "typeparams"
     var params is public := params'
     method asString { toGrace 0 }
-    method declarationKindWithAncestors(as) { k.typeparam }
+    method declarationKindWithAncestors(ac) { k.typeparam }
     method end -> Position {
         positionOfNext "]]" or "⟧" after (params.last.end)
     }
 
-    method accept(visitor : AstVisitor) from(as) {
-        if (visitor.visitTypeParameters(self) up(as)) then {
-            def newChain = as.extend(self)
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitTypeParameters(self) up(ac)) then {
+            def newChain = ac.extend(self)
             params.do { p ->
                 p.accept(visitor) from(newChain)
             }
@@ -1947,11 +1947,11 @@ def typeParametersNode is public = object {
         params.do(blk)
     }
     method size { params.size }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
+        def newChain = ac.extend(n)
         n.params := listMap(params, blk) ancestors(newChain)
-        blk.apply(n, as)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
@@ -2032,32 +2032,32 @@ def identifierNode is public = object {
                 isBindingOccurrence.not
             }
         }
-        method declarationKindWithAncestors(as) {
-            as.parent.declarationKindWithAncestors(as)
+        method declarationKindWithAncestors(ac) {
+            ac.parent.declarationKindWithAncestors(ac)
         }
-        method inTypePositionWithAncestors(as) {
-            // am I used by my parent node as a type?
-            // This is a hack, used as a subsitute for having information in the .gct
+        method inTypePositionWithAncestors(ac) {
+            // am I used by my parent node ac a type?
+            // This is a hack, used ac a subsitute for having information in the .gct
             // telling us which identifiers represent types
-            if (as.isEmpty) then { return false }
-            as.parent.usesAsType(self)
+            if (ac.isEmpty) then { return false }
+            ac.parent.usesAsType(self)
         }
         method usesAsType(aNode) {
             aNode == dtype
         }
-        method accept(visitor : AstVisitor) from(as) {
-            if (visitor.visitIdentifier(self) up(as)) then {
-                def newChain = as.extend(self)
+        method accept(visitor : AstVisitor) from(ac) {
+            if (visitor.visitIdentifier(self) up(ac)) then {
+                def newChain = ac.extend(self)
                 if (false != self.dtype) then {
                     self.dtype.accept(visitor) from(newChain)
                 }
             }
         }
-        method map(blk) ancestors(as) {
+        method map(blk) ancestors(ac) {
             var n := shallowCopy
-            def newChain = as.extend(n)
+            def newChain = ac.extend(n)
             n.dtype := maybeMap(dtype, blk) ancestors(newChain)
-            blk.apply(n, as)
+            blk.apply(n, ac)
         }
         method pretty(depth) {
             def spc = "  " * (depth+1)
@@ -2142,13 +2142,13 @@ def stringNode is public = object {
         var end is public := line (line) column (linePos + v.size + 1)
             // +1 to allow for quotes
 
-        method accept(visitor : AstVisitor) from(as) {
-            visitor.visitString(self) up(as)
+        method accept(visitor : AstVisitor) from(ac) {
+            visitor.visitString(self) up(ac)
         }
-        method map(blk) ancestors(as) {
+        method map(blk) ancestors(ac) {
             var n := shallowCopy
-            def newChain = as.extend(n)
-            blk.apply(n, as)
+            def newChain = ac.extend(n)
+            blk.apply(n, ac)
         }
         method pretty(depth) {
             "{basePretty(depth)}({self.value})"
@@ -2175,13 +2175,13 @@ def numNode is public = object {
         inherit baseNode
         def kind is public = "num"
         var value is public := val
-        method accept(visitor : AstVisitor) from(as) {
-            visitor.visitNum(self) up(as)
+        method accept(visitor : AstVisitor) from(ac) {
+            visitor.visitNum(self) up(ac)
         }
-        method map(blk) ancestors(as) {
+        method map(blk) ancestors(ac) {
             var n := shallowCopy
-            def newChain = as.extend(n)
-            blk.apply(n, as)
+            def newChain = ac.extend(n)
+            blk.apply(n, ac)
         }
         method pretty(depth) {
             "{basePretty(depth)}({self.value})"
@@ -2218,7 +2218,7 @@ def opNode is public = object {
         // the position of the start of the ‹op› in this ‹left› ‹op› ‹right›
         positionOfNext (value) after (left.end)
     }
-    method isSimple { false }    // needs parens when used as receiver
+    method isSimple { false }    // needs parens when used ac receiver
     method nameString { value ++ "(1)" }
     method canonicalName { value ++ "(_)" }
     method receiver { left }
@@ -2230,19 +2230,19 @@ def opNode is public = object {
     method numArgs { 1 }
     method numTypeArgs { 0 }
 
-    method accept(visitor : AstVisitor) from(as) {
-        if (visitor.visitOp(self) up(as)) then {
-            def newChain = as.extend(self)
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitOp(self) up(ac)) then {
+            def newChain = ac.extend(self)
             self.left.accept(visitor) from(newChain)
             self.right.accept(visitor) from(newChain)
         }
     }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
+        def newChain = ac.extend(n)
         n.left := left.map(blk) ancestors(newChain)
         n.right := right.map(blk) ancestors(newChain)
-        blk.apply(n, as)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
@@ -2273,7 +2273,7 @@ def opNode is public = object {
         s
     }
     method asIdentifier {
-        // make an identifiderNode with the same properties as me
+        // make an identifiderNode with the same properties ac me
         def resultNode = identifierNode.new (nameString, false) scope (scope)
         resultNode.inRequest := true
         resultNode.line := line
@@ -2304,19 +2304,19 @@ def bindNode is public = object {
     method canonicalName { value ++ ":=(_)" }
     method isBind { true }
     method asString { "bind {value}" }
-    method accept(visitor : AstVisitor) from(as) {
-        if (visitor.visitBind(self) up(as)) then {
-            def newChain = as.extend(self)
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitBind(self) up(ac)) then {
+            def newChain = ac.extend(self)
             self.dest.accept(visitor) from(newChain)
             self.value.accept(visitor) from(newChain)
         }
     }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
+        def newChain = ac.extend(n)
         n.dest := dest.map(blk) ancestors(newChain)
         n.value := value.map(blk) ancestors(newChain)
-        blk.apply(n, as)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
@@ -2377,11 +2377,11 @@ def defDecNode is public = object {
         method usesAsType(aNode) {
             aNode == dtype
         }
-        method declarationKindWithAncestors(as) { k.defdec }
+        method declarationKindWithAncestors(ac) { k.defdec }
 
-        method accept(visitor : AstVisitor) from(as) {
-            if (visitor.visitDefDec(self) up(as)) then {
-                def newChain = as.extend(self)
+        method accept(visitor : AstVisitor) from(ac) {
+            if (visitor.visitDefDec(self) up(ac)) then {
+                def newChain = ac.extend(self)
                 self.name.accept(visitor) from(newChain)
                 if (false != self.dtype) then {
                     self.dtype.accept(visitor) from(newChain)
@@ -2392,14 +2392,14 @@ def defDecNode is public = object {
                 value.accept(visitor) from(newChain)
             }
         }
-        method map(blk) ancestors(as) {
+        method map(blk) ancestors(ac) {
             var n := shallowCopy
-            def newChain = as.extend(n)
+            def newChain = ac.extend(n)
             n.name := name.map(blk) ancestors(newChain)
             n.value := value.map(blk) ancestors(newChain)
             n.dtype := maybeMap(dtype, blk) ancestors(newChain)
             n.annotations := listMap(annotations, blk) ancestors(newChain)
-            blk.apply(n, as)
+            blk.apply(n, ac)
         }
         method pretty(depth) {
             def spc = "  " * (depth+1)
@@ -2491,11 +2491,11 @@ def varDecNode is public = object {
         aNode == dtype
     }
 
-    method declarationKindWithAncestors(as) { k.vardec }
+    method declarationKindWithAncestors(ac) { k.vardec }
 
-    method accept(visitor : AstVisitor) from(as) {
-        if (visitor.visitVarDec(self) up(as)) then {
-            def newChain = as.extend(self)
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitVarDec(self) up(ac)) then {
+            def newChain = ac.extend(self)
             self.name.accept(visitor) from(newChain)
             if (false != self.dtype) then {
                 self.dtype.accept(visitor) from(newChain)
@@ -2508,14 +2508,14 @@ def varDecNode is public = object {
             }
         }
     }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
+        def newChain = ac.extend(n)
         n.name := name.map(blk) ancestors(newChain)
         n.value := maybeMap(value, blk) ancestors(newChain)
         n.dtype := maybeMap(dtype, blk) ancestors(newChain)
         n.annotations := listMap(annotations, blk) ancestors(newChain)
-        blk.apply(n, as)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
@@ -2597,13 +2597,13 @@ def importNode is public = object {
     }
     method isWritable { false }
     method isReadable { isPublic }
-    method declarationKindWithAncestors(as) { k.defdec }
+    method declarationKindWithAncestors(ac) { k.defdec }
     method usesAsType(aNode) {
         aNode == dtype
     }
-    method accept(visitor : AstVisitor) from(as) {
-        if (visitor.visitImport(self) up(as)) then {
-            def newChain = as.extend(self)
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitImport(self) up(ac)) then {
+            def newChain = ac.extend(self)
             for (self.annotations) do { ann ->
                 ann.accept(visitor) from(newChain)
             }
@@ -2613,13 +2613,13 @@ def importNode is public = object {
             }
         }
     }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
+        def newChain = ac.extend(n)
         n.value := value.map(blk) ancestors(newChain)
         n.dtype := maybeMap(dtype, blk) ancestors(newChain)
         n.annotations := listMap(annotations, blk) ancestors(newChain)
-        blk.apply(n, as)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
@@ -2632,7 +2632,7 @@ def importNode is public = object {
         s
     }
     method toGrace(depth : Number) -> String {
-        "import \"{self.path}\" as {nameString}"
+        "import \"{self.path}\" ac {nameString}"
     }
     method shallowCopy {
         importNode.new(path, nullNode, false).shallowCopyFieldsFrom(self)
@@ -2668,13 +2668,13 @@ def dialectNode is public = object {
     method path {
         value
     }
-    method accept(visitor : AstVisitor) from(as) {
-        visitor.visitDialect(self) up(as)
+    method accept(visitor : AstVisitor) from(ac) {
+        visitor.visitDialect(self) up(ac)
     }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
-        blk.apply(n, as)
+        def newChain = ac.extend(n)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
@@ -2709,18 +2709,18 @@ def returnNode is public = object {
         }
     }
     method isReturn { true }
-    method accept(visitor : AstVisitor) from(as) {
-        if (visitor.visitReturn(self) up(as)) then {
-            def newChain = as.extend(self)
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitReturn(self) up(ac)) then {
+            def newChain = ac.extend(self)
             self.value.accept(visitor) from(newChain)
         }
     }
-    method map(blk) ancestors(as) {
+    method map(blk) ancestors(ac) {
         var n := shallowCopy
-        def newChain = as.extend(n)
+        def newChain = ac.extend(n)
         n.value := value.map(blk) ancestors(newChain)
         n.dtype := maybeMap(dtype, blk) ancestors(newChain)
-        blk.apply(n, as)
+        blk.apply(n, ac)
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
@@ -2768,9 +2768,9 @@ def inheritNode is public = object {
         method inheritFromMember { value.isMember }
         method inheritFromCall { value.isCall }
         method isExecutable { false }
-        method accept(visitor : AstVisitor) from(as) {
-            if (visitor.visitInherits(self) up(as)) then {
-                def newChain = as.extend(self)
+        method accept(visitor : AstVisitor) from(ac) {
+            if (visitor.visitInherits(self) up(ac)) then {
+                def newChain = ac.extend(self)
                 value.accept(visitor) from(newChain)
                 aliases.do { a ->
                     a.newName.accept(visitor) from(newChain)
@@ -2779,17 +2779,17 @@ def inheritNode is public = object {
                 exclusions.do { e -> e.accept(visitor) from(newChain) }
             }
         }
-        method declarationKindWithAncestors(as) {
+        method declarationKindWithAncestors(ac) {
             // identifiers declared in an inherit statement are aliases for
-            // methods.  We treat them as methods, because (unlike inherited names)
+            // methods.  We treat them ac methods, because (unlike inherited names)
             // they can't be overridden by local methods.
             k.methdec
         }
-        method map(blk) ancestors(as) {
+        method map(blk) ancestors(ac) {
             var n := shallowCopy
-            def newChain = as.extend(n)
+            def newChain = ac.extend(n)
             n.value := value.map(blk) ancestors(newChain)
-            blk.apply(n, as)
+            blk.apply(n, ac)
         }
         method pretty(depth) {
             def spc = "  " * (depth+1)
@@ -2916,22 +2916,22 @@ def signaturePart is public = object {
             name ++ "(" ++ underScores ++ ")"
         }
 
-        method accept(visitor : AstVisitor) from(as) {
-            if (visitor.visitSignaturePart(self) up(as)) then {
-                def newChain = as.extend(self)
+        method accept(visitor : AstVisitor) from(ac) {
+            if (visitor.visitSignaturePart(self) up(ac)) then {
+                def newChain = ac.extend(self)
                 params.do { p -> p.accept(visitor) from(newChain) }
                 if (false != typeParams) then {
                     typeParams.accept(visitor) from(newChain)
                 }
             }
         }
-        method declarationKindWithAncestors(as) { k.parameter }
-        method map(blk) ancestors(as) {
+        method declarationKindWithAncestors(ac) { k.parameter }
+        method map(blk) ancestors(ac) {
             var nd := shallowCopy
-            def newChain = as.extend(nd)
+            def newChain = ac.extend(nd)
             nd.params := listMap(params, blk) ancestors(newChain)
             nd.typeParams := maybeMap(typeParams, blk) ancestors(newChain)
-            blk.apply(nd, as)
+            blk.apply(nd, ac)
         }
         method pretty(depth) {
             def spc = "  " * (depth+1)
@@ -3005,11 +3005,11 @@ def requestPart is public = object {
             name ++ "(" ++ underScores ++ ")"
         }
 
-        method map(blk) ancestors(as) {
+        method map(blk) ancestors(ac) {
             var n := shallowCopy
-            def newChain = as.extend(n)
+            def newChain = ac.extend(n)
             n.args := listMap(args, blk) ancestors(newChain)
-            blk.apply(n, as)
+            blk.apply(n, ac)
         }
         method pretty(depth) {
             def spc = "  " * (depth+1)
@@ -3071,13 +3071,13 @@ def commentNode is public = object {
             value := value ++ " " ++ cmtNode.value
             endLine := cmtNode.endLine
         }
-        method map(blk) ancestors(as) {
+        method map(blk) ancestors(ac) {
             var n := shallowCopy
-            def newChain = as.extend(n)
-            blk.apply(n, as)
+            def newChain = ac.extend(n)
+            blk.apply(n, ac)
         }
-        method accept(visitor : AstVisitor) from(as) {
-            visitor.visitComment(self) up(as)
+        method accept(visitor : AstVisitor) from(ac) {
+            visitor.visitComment(self) up(ac)
         }
         method pretty(depth) {
             var s := "\n"
@@ -3145,69 +3145,69 @@ method wrap(str) to (l:Number) prefixedBy (margin) {
 
 
 type AstVisitor = {
-    visitIf(o) up(as) -> Boolean
-    visitBlock(o) up(as) -> Boolean
-    visitMatchCase(o) up(as) -> Boolean
-    visitTryCatch(o) up(as) -> Boolean
-    visitMethodType(o) up(as) -> Boolean
-    visitSignaturePart(o) up(as) -> Boolean
-    visitTypeLiteral(o) up(as) -> Boolean
-    visitTypeParameters(o) up(as) -> Boolean
-    visitTypeDec(o) up(as) -> Boolean
-    visitMethod(o) up(as) -> Boolean
-    visitCall(o) up(as) -> Boolean
-    visitObject(o) up(as) -> Boolean
-    visitModule(o) up(as) -> Boolean
-    visitArray(o) up(as) -> Boolean
-    visitMember(o) up(as) -> Boolean
-    visitGeneric(o) up(as) -> Boolean
-    visitIdentifier(o) up(as) -> Boolean
-    visitString(o) up(as) -> Boolean
-    visitNum(o) up(as) -> Boolean
-    visitOp(o) up(as) -> Boolean
-    visitBind(o) up(as) -> Boolean
-    visitDefDec(o) up(as) -> Boolean
-    visitVarDec(o) up(as) -> Boolean
-    visitImport(o) up(as) -> Boolean
-    visitReturn(o) up(as) -> Boolean
-    visitInherits(o) up(as) -> Boolean
-    visitDialect(o) up(as) -> Boolean
-    visitComment(o) up(as) -> Boolean
-    visitImplicit(o) up(as) -> Boolean
-    visitOuter(o) up(as) -> Boolean
+    visitIf(o) up(ac) -> Boolean
+    visitBlock(o) up(ac) -> Boolean
+    visitMatchCase(o) up(ac) -> Boolean
+    visitTryCatch(o) up(ac) -> Boolean
+    visitMethodType(o) up(ac) -> Boolean
+    visitSignaturePart(o) up(ac) -> Boolean
+    visitTypeLiteral(o) up(ac) -> Boolean
+    visitTypeParameters(o) up(ac) -> Boolean
+    visitTypeDec(o) up(ac) -> Boolean
+    visitMethod(o) up(ac) -> Boolean
+    visitCall(o) up(ac) -> Boolean
+    visitObject(o) up(ac) -> Boolean
+    visitModule(o) up(ac) -> Boolean
+    visitArray(o) up(ac) -> Boolean
+    visitMember(o) up(ac) -> Boolean
+    visitGeneric(o) up(ac) -> Boolean
+    visitIdentifier(o) up(ac) -> Boolean
+    visitString(o) up(ac) -> Boolean
+    visitNum(o) up(ac) -> Boolean
+    visitOp(o) up(ac) -> Boolean
+    visitBind(o) up(ac) -> Boolean
+    visitDefDec(o) up(ac) -> Boolean
+    visitVarDec(o) up(ac) -> Boolean
+    visitImport(o) up(ac) -> Boolean
+    visitReturn(o) up(ac) -> Boolean
+    visitInherits(o) up(ac) -> Boolean
+    visitDialect(o) up(ac) -> Boolean
+    visitComment(o) up(ac) -> Boolean
+    visitImplicit(o) up(ac) -> Boolean
+    visitOuter(o) up(ac) -> Boolean
 }
 
 class baseVisitor -> AstVisitor {
-    method visitIf(o) up(as) { visitIf(o) }
-    method visitBlock(o) up(as) { visitBlock(o) }
-    method visitMatchCase(o) up(as) { visitMatchCase(o) }
-    method visitTryCatch(o) up(as) { visitTryCatch(o) }
-    method visitMethodType(o) up(as) { visitMethodType(o) }
-    method visitSignaturePart(o) up(as) { visitSignaturePart(o) }
-    method visitTypeDec(o) up(as) { visitTypeDec(o) }
-    method visitTypeLiteral(o) up(as) { visitTypeLiteral(o) }
-    method visitTypeParameters(o) up(as) { visitTypeParameters(o) }
-    method visitMethod(o) up(as) { visitMethod(o) }
-    method visitCall(o) up(as) { visitCall(o) }
-    method visitObject(o) up(as) { visitObject(o) }
-    method visitModule(o) up(as) { visitObject(o) }
-    method visitArray(o) up(as) { visitArray(o) }
-    method visitMember(o) up(as) { visitMember(o) }
-    method visitGeneric(o) up(as) { visitGeneric(o) }
-    method visitIdentifier(o) up(as) { visitIdentifier(o) }
-    method visitString(o) up(as) { visitString(o) }
-    method visitNum(o) up(as) { visitNum(o) }
-    method visitOp(o) up(as) { visitOp(o) }
-    method visitBind(o) up(as) { visitBind(o) }
-    method visitDefDec(o) up(as) { visitDefDec(o) }
-    method visitVarDec(o) up(as) { visitVarDec(o) }
-    method visitImport(o) up(as) { visitImport(o) }
-    method visitReturn(o) up(as) { visitReturn(o) }
-    method visitInherits(o) up(as) { visitInherits(o) }
-    method visitDialect(o) up(as) { visitDialect(o) }
-    method visitComment(o) up(as) { visitComment(o) }
-    method visitImplicit(o) up(as) { visitImplicit(o) }
-    method visitOuter(o) up(as) -> Boolean { visitOuter(o) }
+    method visitIf(o) up(ac) { visitIf(o) }
+    method visitBlock(o) up(ac) { visitBlock(o) }
+    method visitMatchCase(o) up(ac) { visitMatchCase(o) }
+    method visitTryCatch(o) up(ac) { visitTryCatch(o) }
+    method visitMethodType(o) up(ac) { visitMethodType(o) }
+    method visitSignaturePart(o) up(ac) { visitSignaturePart(o) }
+    method visitTypeDec(o) up(ac) { visitTypeDec(o) }
+    method visitTypeLiteral(o) up(ac) { visitTypeLiteral(o) }
+    method visitTypeParameters(o) up(ac) { visitTypeParameters(o) }
+    method visitMethod(o) up(ac) { visitMethod(o) }
+    method visitCall(o) up(ac) { visitCall(o) }
+    method visitObject(o) up(ac) { visitObject(o) }
+    method visitModule(o) up(ac) { visitObject(o) }
+    method visitArray(o) up(ac) { visitArray(o) }
+    method visitMember(o) up(ac) { visitMember(o) }
+    method visitGeneric(o) up(ac) { visitGeneric(o) }
+    method visitIdentifier(o) up(ac) { visitIdentifier(o) }
+    method visitString(o) up(ac) { visitString(o) }
+    method visitNum(o) up(ac) { visitNum(o) }
+    method visitOp(o) up(ac) { visitOp(o) }
+    method visitBind(o) up(ac) { visitBind(o) }
+    method visitDefDec(o) up(ac) { visitDefDec(o) }
+    method visitVarDec(o) up(ac) { visitVarDec(o) }
+    method visitImport(o) up(ac) { visitImport(o) }
+    method visitReturn(o) up(ac) { visitReturn(o) }
+    method visitInherits(o) up(ac) { visitInherits(o) }
+    method visitDialect(o) up(ac) { visitDialect(o) }
+    method visitComment(o) up(ac) { visitComment(o) }
+    method visitImplicit(o) up(ac) { visitImplicit(o) }
+    method visitOuter(o) up(ac) -> Boolean { visitOuter(o) }
 
     method visitIf(o) -> Boolean { true }
     method visitBlock(o) -> Boolean { true }
@@ -3246,39 +3246,39 @@ class baseVisitor -> AstVisitor {
 class pluggableVisitor(visitation:Predicate2⟦AstNode, Object⟧) -> AstVisitor {
     // Manufactures a default visitor, given a 2-parameter block.
     // Typically, some of the methods will be overridden.
-    // The visitation predicate will be applied with the AST node as the first argument
-    // and the ancestor chain as the second, and should answer true if
+    // The visitation predicate will be applied with the AST node ac the first argument
+    // and the ancestor chain ac the second, and should answer true if
     // the visitation is to continue and false if it is to go no deeper.
 
-    method visitIf(o) up(as) { visitation.apply (o, as) }
-    method visitBlock(o) up(as) { visitation.apply (o, as) }
-    method visitMatchCase(o) up(as) { visitation.apply (o, as) }
-    method visitTryCatch(o) up(as) { visitation.apply (o, as) }
-    method visitMethodType(o) up(as) { visitation.apply (o, as) }
-    method visitSignaturePart(o) up(as) { visitation.apply (o, as) }
-    method visitTypeDec(o) up(as) { visitation.apply (o, as) }
-    method visitTypeLiteral(o) up(as) { visitation.apply (o, as) }
-    method visitMethod(o) up(as) { visitation.apply (o, as) }
-    method visitCall(o) up(as) { visitation.apply (o, as) }
-    method visitObject(o) up(as) { visitation.apply (o, as) }
-    method visitModule(o) up(as) { visitation.apply (o, as) }
-    method visitArray(o) up(as) { visitation.apply (o, as) }
-    method visitMember(o) up(as) { visitation.apply (o, as) }
-    method visitGeneric(o) up(as) { visitation.apply (o, as) }
-    method visitIdentifier(o) up(as) { visitation.apply (o, as) }
-    method visitString(o) up(as) { visitation.apply (o, as) }
-    method visitNum(o) up(as) { visitation.apply (o, as) }
-    method visitOp(o) up(as) { visitation.apply (o, as) }
-    method visitBind(o) up(as) { visitation.apply (o, as) }
-    method visitDefDec(o) up(as) { visitation.apply (o, as) }
-    method visitVarDec(o) up(as) { visitation.apply (o, as) }
-    method visitImport(o) up(as) { visitation.apply (o, as) }
-    method visitReturn(o) up(as) { visitation.apply (o, as) }
-    method visitInherits(o) up(as) { visitation.apply (o, as) }
-    method visitDialect(o) up(as) { visitation.apply (o, as) }
-    method visitComment(o) up(as) { visitation.apply (o, as) }
-    method visitImplicit(o) up(as) { visitation.apply (o, as) }
-    method visitOuter(o) up(as) { visitation.apply (o, as) }
+    method visitIf(o) up(ac) { visitation.apply (o, ac) }
+    method visitBlock(o) up(ac) { visitation.apply (o, ac) }
+    method visitMatchCase(o) up(ac) { visitation.apply (o, ac) }
+    method visitTryCatch(o) up(ac) { visitation.apply (o, ac) }
+    method visitMethodType(o) up(ac) { visitation.apply (o, ac) }
+    method visitSignaturePart(o) up(ac) { visitation.apply (o, ac) }
+    method visitTypeDec(o) up(ac) { visitation.apply (o, ac) }
+    method visitTypeLiteral(o) up(ac) { visitation.apply (o, ac) }
+    method visitMethod(o) up(ac) { visitation.apply (o, ac) }
+    method visitCall(o) up(ac) { visitation.apply (o, ac) }
+    method visitObject(o) up(ac) { visitation.apply (o, ac) }
+    method visitModule(o) up(ac) { visitation.apply (o, ac) }
+    method visitArray(o) up(ac) { visitation.apply (o, ac) }
+    method visitMember(o) up(ac) { visitation.apply (o, ac) }
+    method visitGeneric(o) up(ac) { visitation.apply (o, ac) }
+    method visitIdentifier(o) up(ac) { visitation.apply (o, ac) }
+    method visitString(o) up(ac) { visitation.apply (o, ac) }
+    method visitNum(o) up(ac) { visitation.apply (o, ac) }
+    method visitOp(o) up(ac) { visitation.apply (o, ac) }
+    method visitBind(o) up(ac) { visitation.apply (o, ac) }
+    method visitDefDec(o) up(ac) { visitation.apply (o, ac) }
+    method visitVarDec(o) up(ac) { visitation.apply (o, ac) }
+    method visitImport(o) up(ac) { visitation.apply (o, ac) }
+    method visitReturn(o) up(ac) { visitation.apply (o, ac) }
+    method visitInherits(o) up(ac) { visitation.apply (o, ac) }
+    method visitDialect(o) up(ac) { visitation.apply (o, ac) }
+    method visitComment(o) up(ac) { visitation.apply (o, ac) }
+    method visitImplicit(o) up(ac) { visitation.apply (o, ac) }
+    method visitOuter(o) up(ac) { visitation.apply (o, ac) }
 
     method asString { "a pluggable AST visitor" }
 }
@@ -3286,7 +3286,7 @@ class pluggableVisitor(visitation:Predicate2⟦AstNode, Object⟧) -> AstVisitor
 
 def patternMarkVisitor = object {
     inherit baseVisitor
-    method visitCall(c) up(as) {
+    method visitCall(c) up(ac) {
         c.isPattern := true
         true
     }
