@@ -1,38 +1,42 @@
+# Modules
+
 Module files will be found in several locations. Grace source files of
 modules in these locations will be automatically compiled if the module
-is imported. The searched locations are:
-  * The current directory
-  * Next to the compiler executable
-  * The module path set at ./configure time. By default this is
-    $PREFIX/lib/grace/modules, or /usr/lib/grace/modules if no
-    installation prefix was given.
-  * ~/.local/lib/grace/modules
-  * ../lib/minigrace/modules relative to the compiler executable.
-Both Grace source code and dynamic modules (like the built-in "unicode")
-are found in these locations.
+is imported. 
+The searched locations are:
+
+ * The current directory
+ * Next to the compiler executable
+ * The directories on the path in the environment variable `GRACE_MODULE_PATH`.
+
+Both Grace source code and dynamic modules (like the built-in module "unicode")
+are sought in these locations.
 
 The Minigrace distribution includes some additional modules that may be
 useful in user code. They are briefly described here.
 
+## WARNING
+The documentation here is probably out of date.  To see the interface currently provided by these modules, look at the corresponding interface definition in _stubs/moduleName.grace_
+
 stringMap
 ---------
-This is a Grace module that is available on all targets and
-architectures, but must be found on GRACE_MODULE_PATH at compile
-time for the native compiler.  It implements a simple distionary where
+This is a Grace module that implements a simple dictionary where
 the keys are strings.  It exists for two reasons: it has an interface
-that is largely backward-compatable with the now-defunct mgcollections,
+that is largely backward-compatable with the now-defunct *mgcollections* module,
 and it has an accelerated implementation in JavaScript.
 
 mirrors
 -------
-The mirrors module supports reflection on Grace objects. A native module
-compiled from mirrors.c, this module will usually be dynamically loaded
-as mirrors.gso. The module supports one method: reflect(o : Object)
-returns a Mirror for the provided object.
+The mirrors module supports reflection on Grace objects. The module supports one method: 
 
-Mirrors support two methods: methods returns a list of MirrorMethods
-representing the methods on the object. getMethod returns a single
-MirrorMethod with the name given as argument.
+    reflect(o : Object)
+    
+which returns a `Mirror` on the object `o`.
+
+`Mirror`s support two methods: 
+
+    methods // returns a list of MirrorMethods representing the methods of the subject. 
+    getMethod(n) // returns a MirrorMethod for the method named n.
 
 MirrorMethods support four methods: name returns the name of the method,
 partcount the number of parts (words) in the name, and paramcounts a
@@ -53,18 +57,20 @@ The module may be built either dynamically or statically, but is dynamic
 on platforms that support it.
 
 The module contains these methods:
-  category(char : String) -> String
-  bidirectional(char : String) -> String
-  combining(char : String) -> Number
-  mirrored(char : String) -> Boolean
-  name(char : String) -> String
-  inCategory(char : String, category : String) -> Boolean
-  isSeparator(char : String) -> Boolean
-  isControl(char : String) -> Boolean
-  isLetter(char : String) -> Boolean
-  isNumber(char : String) -> Boolean
-  isSymbolMathematical(char : String) -> Boolean
-  create(codepoint : Number) -> String
+
+    category(char : String) -> String
+    bidirectional(char : String) -> String
+    combining(char : String) -> Number
+    mirrored(char : String) -> Boolean
+    name(char : String) -> String
+    inCategory(char : String, category : String) -> Boolean
+    isSeparator(char : String) -> Boolean
+    isControl(char : String) -> Boolean
+    isLetter(char : String) -> Boolean
+    isNumber(char : String) -> Boolean
+    isSymbolMathematical(char : String) -> Boolean
+    create(codepoint : Number) -> String
+
 These all return or test the corresponding Unicode property, or in the
 case of create return a String consisting of the character with the
 given codepoint.
@@ -75,8 +81,7 @@ curl
 ----
 The curl module is a thin wrapper around some of the libcurl API, for
 acccessing resources by URL. The module is compiled by default on
-systems where libcurl is detected during configure. It is only available
-as a dynamic module.
+systems where libcurl is detected during configure. It is available only as a dynamic module.
 
 The module supports one method:
   easy -> CurlEasy
@@ -128,6 +133,5 @@ that support dynamic modules.
 
 math
 ------
-The math module has been deleted.  Trig functions are now available
-directly on Numbers.
+The math module has been deleted.  Trig functions are now available directly on Numbers.
 
