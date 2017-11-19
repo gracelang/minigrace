@@ -2728,19 +2728,19 @@ method doimport {
                 suggestion.insert(" \"«module name»\"")afterToken(lastToken)
                 errorPos := lastToken.linePos + lastToken.size + 1
             }
-            errormessages.syntaxError("an import statement must have the name of the module in quotes, 'as', and an identifier after 'import'.")atPosition(
+            errormessages.syntaxError("an import statement must have the name of the module to be imported (in quotes), 'as', and an identifier after 'import'.")atPosition(
                 lastToken.line, errorPos)withSuggestion(suggestion)
         }
         pushstring
         def p = values.pop
-        if ((sym.kind != "identifier") || (sym.value != "as")) then {
+        if (! acceptKeyword "as") then {
             var suggestion := errormessages.suggestion.new
             if ((sym.kind == "identifier") && (sym.line == lastToken.line)) then {
                 suggestion.insert(" as")afterToken(lastToken)
             } else {
                 suggestion.insert(" as {p.value}")afterToken(lastToken)
             }
-            errormessages.syntaxError("an import statement must have 'as', and an identifier after the name of the module in quotes.")atPosition(
+            errormessages.syntaxError("an import statement must have 'as', followed by an identifier, after the name of the module in quotes.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestion(suggestion)
         }
         next

@@ -6,6 +6,7 @@ import "stringMap" as map
 
 def keywords = map.new
 keywords.put("alias", true)
+keywords.put("as", true)
 keywords.put("class", true)
 keywords.put("def", true)
 keywords.put("dialect", true)
