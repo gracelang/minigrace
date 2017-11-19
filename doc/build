@@ -1,40 +1,32 @@
-Minigrace should compile on any POSIX-compatible system with GCC. The
-build instructions differ according to how the source code was
-distributed.
+Minigrace should compile on any POSIX-compatible system with node.js
+veriosn 5 or greater.
 
-Tarball
--------
-A tarball distribution should build simply with `make` (or `gmake`, or
-the name of GNU make on your system). You may run `./configure` manually
-to specify options for your system.
+First clone the git repository, and then execute
 
-You can re-build Minigrace from the Grace source, rather than the
-pregenerated C files in the tarball, by running `make selfhost`.
+    make npm-get-kg
 
-Tarballs are available from <http://ecs.vuw.ac.nz/~mwh/minigrace/dist/>
+Here, "kg" stands for "known-good".  The git repository
+can be cloned with:
 
-Git
----
-The Git repository is capable of bootstrapping itself with `make` on
-some systems, but it is recommended to bootstrap from a recent tarball
-and is required on some platforms.
-
-To bootstrap from a tarball, run `tools/tarball-bootstrap` and it will
-provide instructions for downloading the correct tarball. You can then
-run the script again, passing in the path to the downloaded tarball,
-after which `make` will compile the latest version. If you run
-`tools/tarball-bootstrap -a` it will attempt to download the correct
-file itself and then build from it.
-
-After the first build you should be able to `git pull` and `make`
-without bootstrapping again. You will sometimes need to `make clean`
-when an ABI-incompatible change has been made.
-
-The main Git repository can be cloned with:
-  git clone git://github.com/mwh/minigrace.git
+    git clone git://github.com/gracelang/minigrace.git
 or:
-  git clone https://github.com/mwh/minigrace.git
-  
+
+    git clone https://github.com/gracelang/minigrace.git
+
+To build the most recent development version of minigrace,
+clone the git repository, and then execute
+
+    make minigrace
+
+This will download a known-good version using npm, as
+above, and then use this verison of minigrace to compile
+the current source tree.
+
+After the first build you should be able to `git pull`
+and `make`.  You will sometimes need to `make clean`
+when an incompatible change has occured.
+
+
 The build process
 -----------------
 
@@ -46,61 +38,66 @@ correctly.  (It does nothing at all for the features of minigrace not
 exercised by the compiler, such as minigraces's behaviour when given 
 non-programs, or dialects).
 
-The subdirectory known-good comptains old but working binary versions
-of the minigrace compiler, orgainized by architecture in a directory
-named by the git commit hash for that version.  The version identified by
-the STABLE variable in the makefile is used to compile the compiler.
-The output of this compilation is stired in the l1 subdirectory.
+The subdirectory js-kg comptains old but working javascript versions
+of the minigrace compiler. The version identified by
+the NPM_STABLE_VERSION variable in the makefile is used to compile the
+compiler.  The output of this compilation is stired in the j1
+subdirectory.
 
-If this is successful, then the l1/minigrace compiler is used to compile
-the compiler again; the resulting files are in the the l2 directory.
-So the l2 directory will contain the binaries emitted by a run of your new
-version of the compiler.
+If this is successful, then the j1/minigrace-js compiler is used to
+compile the compiler again; the resulting files are saved the the j2
+directory.
 
-Finally, the l2/minigrace compiler is used to compile the compiler once
-again.  If the compiler is emmitting bad code, then this is unlikely to
-work — which is a good thing!   If the l2 compilation succeeds, then you
-should try running the tests (make test and make test.js) which will exercise
-some of the features of minigrace (such as its treatment of
-non-programs, and programs with types) not used in minigrace itself.
+If you run
+
+    make test
+
+the j2 compiler will be used to run minigrace's test suite.
+
+Finally, if you run
+
+    make sellf.test
+
+the j2/minigrace compiler is used to compile the compiler once
+again. The resulting compiler is then used to run the test suite again.
 
 Post-build
 ----------
 The `make test` target will run the test suite. All tests are expected
-to pass; if any do not, please send the tests/test.log file to the
+to pass; if any do not, please send the js/tests/test.js.log file to the
 author.
 
-From a Git checkout only, `make js` will build the JavaScript frontend
-used on <http://ecs.vuw.ac.nz/~mwh/minigrace/js/>. The frontend is
-accessible in js/index.html. Note that in general the file must be
-served over HTTP for the test cases to load. The JavaScript back- and
-front-ends are suitable for quick testing, but have some limitations
-compared to the native compiler.
+The `make module.test` target will run tests against all of the grace
+modules in the modules subdirectory.
+
+`make alltest` will run the tests, the module tests, and the self-test.
 
 Installation
 ------------
-The `make install` target will install Minigrace and its libraries into
-the location you specified with the --prefix option to the configure
-script, or /usr if no prefix was given. If $PREFIX/bin is on your path
-after this you will be able to run `minigrace` from anywhere. This works
-for both tarball and Git builds.
+The `make install` target will install the mgc executable and
+its libraries into the location you specified in the PREFIX
+environment variable, or /usr if PREFIX is not set. If $PREFIX/bin
+is on your path after this you will be able to run `mgc` from anywhere.
+
+Once a js executable has been generated, mgc will normally run it once.
+If you want to run it again without recompiling, the command
+
+    grace compiledFile.js
+
+will do so.  There is also a script
+
+    grace-debug
+
+that can be used to run a compiled file under the Javascript debugger
+in Chrome.  This requires that node-inspector be installed.  At present
+there is no debugger for minigrace.
 
 Platform notes
 --------------
-On both Mac OS X and Cygwin building from the git repository requires
-bootstrapping from a tarball the first time.
+Most development has taken place on Mac OS X.  minigrace has
+also been successfully built on Linux.  I don't know if it will
+work on Cygwin; if you can test it, and provide necessary corrections,
+please do so and submit a pull request.
 
-On Mac OS X, Xcode is required to compile. The environment must be set
-up to ensure that gcc and ld are in the path and that GCC is able to
-compile C code. Setting the following environment variables is known to
-be required in many cases:
-  PATH
-  C_INCLUDE_PATH
-  LIBRARY_PATH
-The script c/environ-Darwin attempts to detect and set up these
-variables correctly on systems that do not have the command-line
-development tools set up.
 
-Under Cygwin, all builds will be static because of limitations in
-dynamic libraries in the PE format.
 

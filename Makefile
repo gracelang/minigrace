@@ -192,19 +192,19 @@ ideDeploy: ideBuild
 	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
 	rsync -az --delete --exclude .git grace-web-editor/ $(WEB_SERVER):$(WEB_DIRECTORY)
 
-install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(STUBS:%.grace=js/%.gct) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=js/%.js)
+install: minigrace $(COMPILER_MODULES:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct) js/grace js/grace-debug $(LIBRARY_MODULES:%.grace=j2/%.js) js/mgc
+	@if touch $(PREFIX)/bin/touched ; then rm -f $(PREFIX)/bin/touched ; else echo "Can't write to $(PREFIX)/bin/; set PREFIX to install somewhere else." ; exit 1 ; fi
 	test -d $(PREFIX)/bin || install -d $(PREFIX)/bin
 	test -d $(MODULE_PATH) || install -d $(MODULE_PATH)
 	test -d $(OBJECT_PATH)  || install -d $(OBJECT_PATH)
 	test -d $(INCLUDE_PATH) || install -d $(INCLUDE_PATH)
-	install -p -m 755 minigrace minigrace-js grace grace-debug $(PREFIX)/bin/
+	install -p -m 755 js/mgc js/grace js/grace-debug js/unicodedata.js $(PREFIX)/bin/
 	install -p -m 755 js/gracelib.js js/unicodedata.js $(MODULE_PATH)
-	install -p -m 644 mirrors.js mirrors.gct $(MODULE_PATH)
-	install -p -m 644 $(COMPILER_MODULES) $(COMPILER_MODULES:%.grace=js/%.js) $(STUBS:%.grace=%.gct) $(MODULE_PATH)
-	install -p -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=js/%.js) js/dom.js js/dom.gct $(MODULE_PATH)
+	install -p -m 644 j2/mirrors.gct $(MODULE_PATH)
+	install -p -m 644 $(COMPILER_MODULES:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct) $(MODULE_PATH)
+	install -p -m 644 $(LIBRARY_MODULES:%.grace=j2/%.js) js/dom.js $(MODULE_PATH)
 	@./tools/warnAbout PATH $(PREFIX)/bin
 	@./tools/warnAbout GRACE_MODULE_PATH $(MODULE_PATH)
-
 
 $(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
 # The j1/*.js files are used to run the j1 compiler, and so need to be
@@ -263,6 +263,17 @@ js/grace-debug: js/grace
 	sed -e "s|#!/usr/bin/env node|#!/usr/bin/env node --debug-brk|" $< > js/grace-debug
 	chmod a+x js/grace-debug
 
+js/mgc: minigrace.env $(STUBS:%.grace=j2/%.gct)
+	rm -rf mgcTemp js/mgc
+	mkdir mgcTemp
+	cd mgcTemp && ln -sf $(STUBS:%.grace=../j2/%.gct) .
+	awk '1;/^\/\/ end of preamble/{exit}' js/compiler-js > mgcTemp/compiler-js-head
+	awk 'f;/^\/\/ end of preamble/{f=1}' js/compiler-js  > mgcTemp/compiler-js-tail
+	cat mgcTemp/compiler-js-head j2/gracelib.js $(MGSOURCEFILES:%.grace=j2/%.js) mgcTemp/compiler-js-tail > mgcTemp/mgc
+	chmod a+x mgcTemp/mgc
+	ln -i mgcTemp/mgc js
+	rm -rf mgcTemp
+
 js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo Generating minigrace.js from minigrace.in.js...
 	@cat js/minigrace.in.js > js/minigrace.js
@@ -283,18 +294,6 @@ $(MGSOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace $(J1-MINIGRXCE)
 minigrace: $(J2-MINIGRACE)
 
 minigrace.env: minigrace $(EXTERNAL_STUBS:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct)
-
-mgc: minigrace.env $(STUBS:%.grace=j2/%.gct)
-	rm -rf mgcTemp ./mgc ./unicodedata.js
-	mkdir mgcTemp
-	cd mgcTemp && ln -sf $(STUBS:%.grace=../j2/%.gct) .
-	cd mgcTemp && ln -sf ../js/unicodedata.js .
-	awk '1;/^\/\/ end of preamble/{exit}' js/compiler-js > mgcTemp/compiler-js-head
-	awk 'f;/^\/\/ end of preamble/{f=1}' js/compiler-js  > mgcTemp/compiler-js-tail
-	cat mgcTemp/compiler-js-head j2/gracelib.js $(MGSOURCEFILES:%.grace=j2/%.js) mgcTemp/compiler-js-tail > mgcTemp/mgc
-	chmod a+x mgcTemp/mgc
-	ln -i mgcTemp/mgc mgcTemp/unicodedata.js .
-	rm -rf mgcTemp
 
 module.test: minigrace.env $(TYPE_DIALECTS:%=j2/%.js)
 	modules/tests/harness-js-js j2/minigrace-js

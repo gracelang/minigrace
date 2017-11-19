@@ -13,7 +13,7 @@ As a consequence, Grace method dispatch must be coded up as a search through the
 methods object, followed by a search through the methods object of the superobject,
 and so on.
 
-Another consequence is that great care must be taken not to add to of change
+Another consequence is that great care must be taken not to add to or change
 the methods object of an object that actually gets its methods object from a
 prototype. If this is done accidentally, the prototype will be corrupted, 
 and all other objects that use this prototype will see the change.  
@@ -46,14 +46,14 @@ Outer chains that reference the module object are compiled specially.  Since the
 module object is always a singleton, these outer references are compiled into
 references to the appropriate module object.
 
-## Object COnstruction
+## Object Construction
 
 Object construction is implemented using methods with the $build(3) suffix.
 The three arguments to the $build part are the inheriting object, into which the
 $build(3) method installs its stuff, a JS Array of aliases, and a JS Array
-of exclusions.  The $build(3) method makes the appropriate changes to
-inheriting object.  It implements inheritance by first calling the $build method
-of any object that it is inheriting from.
+of exclusions.  The $build(3) method makes the appropriate changes to the
+inheriting object.  It implements inheritance by first calling the
+$build method of any object that it is inheriting from.
 
 ## Object Initialization
 
@@ -87,7 +87,7 @@ inheritance chain is compiled away, and need not be searched at runtime.
 
 prelude.clone is treated as a fresh method, as are true and false.   They have
 hand-built $build(3) variants in the standard library, which are called by the
-compiled code just like the generted $buidl(3) variants for other fresh methods.
+compiled code just like the generted $build(3) variants for other fresh methods.
 Thus, from the persepctive of code-generation, they don't really need to be
 "special".  However, the .gct mechanism does not yet classify them as fresh, so
 these are still special cases in identifierresolution.

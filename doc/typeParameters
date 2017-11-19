@@ -1,0 +1,35 @@
+A method may be declared with type parameters:
+    method foo⟦X,Y⟧(...) { ... }
+The type parameters `X` and `Y` are available as local variables inside the method
+body, like other parameters. Only one list of type parameters is
+permitted on a method, and they must follow the first part of the method
+name.
+
+A method request may have type parameters on it:
+    foo⟦Number, String⟧(...)
+These type arguments are optional, but if present must follow the first part
+of the method name.
+
+A class declaration may have type parameters:
+    class foo⟦X,Y⟧(...) { ... }
+These type parameters are available in the lexical scope of the class
+body, like other parameters.
+
+If a method with type parameters is requested without type
+arguments, the parameters are bound to `Unknown`. If any
+type arguments are provided the full list must be given; providing
+too few type arguments is an error.
+
+Type parameters may be used to parameterise other methods or classes
+or for pattern-matching. Type parameters are not currently used for
+static type checks, and are treated as though they are `Unknown`. Static
+checking is to be added in future. At run-time, gradual checks on
+parameters of parameterized types will be performed.
+
+In the implementation, type arguments are passed as though they are
+aditional ordinary arguments at the end of the argument list.
+The receiver can distinguish whether it was called with
+type arguments or not by examining the number of provided arguments,
+which for this reason is included in the method request.
+
+Grace code does not need to care about the implementation.

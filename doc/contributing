@@ -5,32 +5,27 @@ Making changes
 --------------
 Minigrace uses the Git version control system (<http://git-scm.com>). To
 have your changes incorporated upstream you should work against the
-latest master branch of <https://github.com/mwh/minigrace.git>.
+latest master branch of <https://github.com/gracelang/minigrace.git>.
 
 To build the compiler including your changes, follow the standard
 instructions in <doc/build>. These will cause the build system to
 rebuild the compiler with itself multiple times to ensure that it is
 functional.
 
-If you are making modifications to the C code generation or run-time
-library, it is possible that your changes cause the compiler to begin
-segfaulting during build and reverting your changes does not fix it. In
-this case, undo the change and run `make clean` and then `make` again.
-
-If you are working on the JavaScript backend you will probably find that
+If you are using on the JavaScript backend in a web browser you will probably find that
 you need to perform a hard reload (commonly shift-reload) in your
 browser to cause it to pick up the new versions of files. If your
-modifications are only to js/gracelib.js you do not need to `make js`
+modifications are only to js/gracelib.js you do not need to `make minigrace`
 after changes, but editing any .grace or .in.html always requires
-rebuilding. In order to run the tests or load the samples in the user
+rebuilding. In order to run the compiler in the user
 interface the UI must be accessed over HTTP. Most browsers will not
-permit loading them from file://.
+permit loading from file://.
 
 Configuring Git
 ---------------
 Git should be configured with your name and email address. Use
-  git config --global user.name "Your Name"
-  git config --global user.email "you@example.com"
+    git config --global user.name "Your Name"
+    git config --global user.email "you@example.com"
 to set these before making any commits.
 
 Additional documentation for Git can be found on the Git website:
@@ -61,27 +56,9 @@ ensure that the tests succeed in the JavaScript user interface as well.
 Submitting changes
 ------------------
 To submit changes for inclusion, publish the branch containing them
-somewhere publicly accessible and inform the maintainer of its location,
-the branch you want to merge, and what it is you want to integrate. You
-may place this branch anywhere that is generally accessible; a number of
-special-purpose Git hosting services exist, which are listed on
-<https://git.wiki.kernel.org/index.php/GitHosting>. Any of these
-services are suitable for hosting your repository. Documentation on how
-to use each service is provided on their websites.
-
-Alternatively, you can also publish the branch into any HTTP-accessible
-webspace. In that case, run `git update-server-info` inside the
-repository directory to generate files required to let Git find what it
-needs. You can either copy the repository using an ordinary filesystem
-copy or publish it using `git push` and a configured remote (see `git
-help remote`).
-
-If none of the above options are available to you for some reason, `git
-format-patch name-of-upstream/master` will generate patch files from the
-commits, including their metadata, which can then be sent in for
-inclusion. `git send-email`, when configured correctly, will
-automatically generate and email these patches. Instructions for using
-these commands are included in the Git documentation.
+somewhere publicly accessible (such as in your own repository on github)
+and make a pull request to gracelang/minigrace for
+the branch you want to merge, stating what it is you want to integrate.
 
 Revising changes
 ----------------
