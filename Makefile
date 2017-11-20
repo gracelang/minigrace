@@ -26,7 +26,7 @@ JSRUNNERS = grace grace-debug compiler-js minigrace-js
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
-
+PREAMBLE:= $(if $(TRAVIS),notime,)
 PRELUDESOURCEFILES = collectionsPrelude.grace standardGrace.grace
 REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace stringMap.grace unixFilePath.grace xmodule.grace identifierresolution.grace)
 
@@ -42,6 +42,7 @@ NPM_STABLE_VERSION=1.0.4049
 
 VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
+VERB := $(if $(VERBOSITY),$(VERBOSITY),--verbose)
 WEBFILES_STATIC = $(filter-out sample,$(sort index.html global.css minigrace.js tabs.js  gtk.js debugger.js ace  debugger.html  importStandardGrace.js $(ICONS)))
 WEBFILES_DYNAMIC = $(sort $(ALL_LIBRARY_MODULES:%.grace=%.js) $(filter-out util.js,$(MGSOURCEFILES:%.grace=%.js) gracelib.js dom.js timer.js unicodedata.js))
 WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html js/unicodedata.js js/importStandardGrace.js $(ICONS:%=js/%) $(ALL_LIBRARY_MODULES:%.grace=j2/%.js) $(filter-out j2/util.js, $(SOURCEFILES:%.grace=j2/%.js))))
@@ -366,23 +367,10 @@ self.test: minigrace.env $(STUBS:%.grace=j2/%.gct)
 	awk 'f;/^\/\/ end of preamble/{f=1}' js/compiler-js  > selftest/compiler-js-tail
 	cat selftest/compiler-js-head j2/gracelib.js $(MGSOURCEFILES:%.grace=j2/%.js) selftest/compiler-js-tail > selftest/mgc
 	chmod a+x selftest/mgc
-	@if [ "$(TRAVIS)" ]; \
-		then \
-			echo "GRACE_MODULE_PATH=.:modules:js selftest/mgc $(VERBOSITY) --make --dir selftest compiler.grace"; \
-			GRACE_MODULE_PATH=.:modules:js selftest/mgc $(VERBOSITY) --make --dir selftest compiler.grace; \
-		else \
-			echo "GRACE_MODULE_PATH=.:modules:js time selftest/mgc $(VERBOSITY) --make --dir selftest compiler.grace"; \
-			GRACE_MODULE_PATH=.:modules:js /usr/bin/env time selftest/mgc $(VERBOSITY) --make --dir selftest compiler.grace; \
-	fi
-	cp js/compiler-js js/minigrace-js js/gracelib.js js/tests/harness-js selftest
-	@if [ "$(TRAVIS)" ]; \
-		then \
-			echo "selftest/harness-js selftest/minigrace-js js/tests" ; \
-			selftest/harness-js selftest/minigrace-js js/tests "" ; \
-    	else \
-			echo "time selftest/harness-js selftest/minigrace-js js/tests"; \
-			/usr/bin/env time selftest/harness-js selftest/minigrace-js js/tests "" ; \
-	fi
+	echo "GRACE_MODULE_PATH=.:modules:js /usr/bin/env $(PREAMBLE)selftest/mgc $(VERB) --make --dir selftest compiler.grace"
+	GRACE_MODULE_PATH=.:modules:js $(PREAMBLE)selftest/mgc $(VERB) --make --dir selftest compiler.grace ; \
+	cp js/compiler-js js/minigrace-js js/gracelib.js js/tests/harness-js js/standardGrace.js selftest
+	$(PREAMBLE)selftest/harness-js selftest/minigrace-js js/tests ""
 
 $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
 	cd js/tests; ln -sf ../$(<F) .
