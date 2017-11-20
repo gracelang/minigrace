@@ -26,7 +26,6 @@ JSRUNNERS = grace grace-debug compiler-js minigrace-js
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
-PREAMBLE:= $(if $(TRAVIS),notime,)
 PRELUDESOURCEFILES = collectionsPrelude.grace standardGrace.grace
 REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace stringMap.grace unixFilePath.grace xmodule.grace identifierresolution.grace)
 
@@ -42,7 +41,6 @@ NPM_STABLE_VERSION=1.0.4049
 
 VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
-VERB := $(if $(VERBOSITY),$(VERBOSITY),--verbose)
 WEBFILES_STATIC = $(filter-out sample,$(sort index.html global.css minigrace.js tabs.js  gtk.js debugger.js ace  debugger.html  importStandardGrace.js $(ICONS)))
 WEBFILES_DYNAMIC = $(sort $(ALL_LIBRARY_MODULES:%.grace=%.js) $(filter-out util.js,$(MGSOURCEFILES:%.grace=%.js) gracelib.js dom.js timer.js unicodedata.js))
 WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html js/unicodedata.js js/importStandardGrace.js $(ICONS:%=js/%) $(ALL_LIBRARY_MODULES:%.grace=j2/%.js) $(filter-out j2/util.js, $(SOURCEFILES:%.grace=j2/%.js))))
@@ -358,6 +356,8 @@ sample-dialects: $(DIALECT_DEPENDENCIES)
 samples: js/sample-dialects
 # omitted for the time-being: js/sample-graphics
 
+self.test : PREAMBLE = $(if $(TRAVIS),,time )
+self.test : VERB = $(if $(VERBOSITY),$(VERBOSITY),--verbose)
 self.test: minigrace.env $(STUBS:%.grace=j2/%.gct)
 	rm -rf selftest
 	mkdir -p selftest
