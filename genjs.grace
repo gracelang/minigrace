@@ -1355,7 +1355,7 @@ method compilenode(o) {
 }
 
 method tallyNode(kind) {
-    if (util.verbosity > util.defaultVerbosity) then {
+    if (util.verbosity > 50) then {
         def count = nodeTally.get(kind) ifAbsent { 0 }
         nodeTally.put (kind, count + 1)
     }
@@ -1366,8 +1366,9 @@ def valueCompare = { a, b -> b.value.compare(a.value) }
 method printNodeTally {
     def bindingList = nodeTally.bindings
     bindingList.sortBy(valueCompare)
+    print "AST nodes compiled:"
     bindingList.do { b ->
-        print "{b.key}\t{b.value}"
+        print "    {b.key}\t{b.value}"
     }
 }
 
@@ -1540,7 +1541,7 @@ method compile(moduleObject, of, bt, glPath) {
     outputSource
 
     emitBufferedOutput
-    if (util.verbosity > util.defaultVerbosity) then {
+    if (util.verbosity > 50) then {
         printNodeTally
     }
     util.log_verbose "done."
