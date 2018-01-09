@@ -5,5 +5,5 @@
 N=`grep -n ^import "$1" | tail -n 1 | cut -f1 -d:`
 head -n $N $1
 echo 'import "requireTypes" as rt'
-echo 'def thisDialect = rt.thisDialect'
+echo 'def thisDialect is public = rt.thisDialect'
 tail -n +$(($N+1)) $1
