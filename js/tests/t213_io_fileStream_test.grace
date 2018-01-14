@@ -38,16 +38,50 @@ describe "io" with {
         def file = io.open("io-specify-data.txt","r")
         file.seek(10000)
         expect (file.getline == "") orSay "getline at EOF did not return empty string"
-    }   
+    }
+    specify "next after close raises an exception" by {
+        def file = io.open("io-specify-data.txt","r")
+        expect (file.nextLine) toBe "This is test data"
+        file.close
+        expect {file.next} toRaise (io.IoException)
+    }
+    specify "nextLine on empty file raises an exception" by {
+        def fileName = "aNewFile{date.now}.txt"
+        def fs = io.open(fileName, "rw")       // create new empty file
+        expect {fs.nextLine} toRaise (IteratorExhausted)
+    }
+    specify "nextLine on long file reads lines" by {
+        def file = io.open("io-specify-data.txt","r")
+        expect (file.nextLine) toBe "This is test data"
+        (1..12).do { i → 
+            expect (file.nextLine) toBe "Line {i}"
+        }
+        expect (file.hasNext) toBe false orSay "hasNext is true after reading the whole file"
+    }
+    specify "nextLine at EOF raises an exception" by {
+        def file = io.open("io-specify-data.txt","r")
+        file.seek(10000)
+        expect {file.nextLine} toRaise (IteratorExhausted)
+    }
     specify "eof is true on empty file" by {
         def fileName = "aNewFile{date.now}.txt"
         def fs = io.open(fileName, "rw")       // create new empty file
         expect (fs.eof) toBe true orSay "eof on empty file should be true"
     }
+    specify "hasNext is false on empty file" by {
+        def fileName = "aNewFile{date.now}.txt"
+        def fs = io.open(fileName, "rw")       // create new empty file
+        expect (fs.hasNext) toBe false orSay "hasNext on empty file should be false"
+    }
     specify "eof is true at EOF" by {
         def file = io.open("io-specify-data.txt","r")
         file.seek(10000)
-        expect (file.eof) orSay "eof at EOF shoudl be true"
+        expect (file.eof) orSay "eof at EOF should be true"
+    }
+    specify "hasNext is false at EOF" by {
+        def file = io.open("io-specify-data.txt","r")
+        file.seek(10000)
+        expect (file.hasNext) toBe false orSay "hasNext at EOF should be false"
     }
     specify "seek(_) seeks to its argument" by {
         def file = io.open("io-specify-data.txt", "r")
@@ -82,7 +116,7 @@ describe "io" with {
         expect (file.next) toBe ("s")
         expect (file.next) toBe ("t")
     }
-    specify "write(_) on empty file writes supplied data after close" by {
+    specify "write on empty file writes supplied data after close" by {
         def fileName = "aNewFile{date.now}.txt"
         def writeStream = io.open(fileName,"w")  // fails if file exists
         expect (writeStream.eof) orSay "file opened in mode 'w' is not empty"
@@ -92,6 +126,13 @@ describe "io" with {
         def readStream = io.open(fileName,"r")  // fails if file does not exist
         expect (readStream.read) toBe "hi"
         readStream.close
+    }
+    specify "write after close raises exception" by {
+        def fileName = "aNewFile{date.now}.txt"
+        def writeStream = io.open(fileName,"w")  // fails if file exists
+        writeStream.write "hi\n"
+        writeStream.close
+        expect {writeStream.write "ho\n"} toRaise (io.IoException)
     }
     specify "read(_) after write(_) reads what was written" by {
         def fileName = "aNewFile{date.now}.txt"
@@ -107,6 +148,13 @@ describe "io" with {
         writeStream.close
         io.unlink(fileName)
     }
+    specify "hasNext on new empty file is false" by {
+        def fileName = "aNewFile{date.now}.txt"
+        def writeStream = io.open(fileName,"w")  // truncates if file exists
+        expect (writeStream.hasNext) toBe false orSay "file opened in mode 'w' is not empty"
+        writeStream.close
+        io.unlink(fileName)
+    }
     specify "eof after writing to empty file is true" by {
         def fileName = "aNewFile{date.now}.txt"
         def writeStream = io.open(fileName,"w")  // truncates if file exists
@@ -115,7 +163,15 @@ describe "io" with {
         writeStream.close
         io.unlink(fileName)
     }
-    specify "hasNext on empty file is false" by {
+    specify "hasNext after writing to empty file is false" by {
+        def fileName = "aNewFile{date.now}.txt"
+        def writeStream = io.open(fileName,"w")  // truncates if file exists
+        writeStream.write "hi"
+        expect (writeStream.hasNext) toBe false orSay "not at eof after writing"
+        writeStream.close
+        io.unlink(fileName)
+    }
+    specify "hasNext on existing empty file is false" by {
         def emptyStream = io.open(emptyFileName, "r")
         expect (emptyStream.hasNext) toBe false orSay "hasNext returned true on empty file"
     }
@@ -136,7 +192,7 @@ describe "io" with {
         def file = io.open("io-specify-data.txt", "r")
         expect (file.pathname) toBe "io-specify-data.txt"
     }
-    specify "write(_) on empty file does not write if file is not closed" by {
+    specify "write(_) does not write if file is not closed" by {
         def fileName = "aNewFile{date.now}.txt"
         def writeStream = io.open(fileName,"w")
         expect (writeStream.eof) orSay "file opened in mode 'w' is not empty"
@@ -150,7 +206,6 @@ describe "io" with {
         def shortStream = io.open("io-specify-file-to-clear.txt","w")
         shortStream.write "hi-ho"
         shortStream.clear
-        shortStream.close
         shortStream.write "lets start again\n"
         shortStream.close
         def readStream = io.open("io-specify-file-to-clear.txt","r")
