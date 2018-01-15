@@ -1,49 +1,66 @@
 type FileStream = Object & type {
+    // The type FileStream describes the interface of an opened file.  Notice that
+    // FileStream conforms to Iterator, so FileStreams can also be treated like Iterators.
     read -> String
         // returns the whole contents of the underlying file.
         // ignores the position of the read-write pointer, and does not change it.
-    getline -> String
-        // returns the next line in the file, up to and including the next
-        // newline.  If the end of the input is reached before a newline is
-        // found, the result will not have a final newline.  If eof is true,
-        // returns the empty string.
-    write (s:String) -> Done
-        // writes s to the file at the current position of the read-write pointer.
-    close -> Done
-        // closes the file.
-    seek (n: Number) -> FileStream
-        // moves the read position to n
-    seekForward (n:Number) -> FileStream
-        // moves the read/write position forward by n
-    seekBackward (n:Number) -> FileStream
-        // moved the read/write position backward by n
-    iterator -> FileStream
-        // returns self
+    size -> Number
+        // returns the total number of characters in this stream.
+        // This is the size of the string returned by read, not the number of characters remaining.
     hasNext -> Boolean
-        // returns true is next will return a character,
+        // returns true if next will return a character,
         // and false if it will raise an exception.
     next -> String
-        // returns the next Unicode character from the file.
-        // Raises IteratorExhausted if there is none
+        // returns the next character from the file.
+        // Raises IteratorExhausted if there are are no more characters to be read.
+    nextLine -> String
+        // returns the next line in the file, up to and including the next
+        // newline, or the end of the file.  The newline character itself 
+        // is not part of the result.
+        // Raises IteratorExhausted if there are no more lines to be read.
+    write (s:String) -> Done
+        // writes s to the file at the current position of the read-write
+        // pointer. Writes will not appear on the file until the FileStream is
+        // closed.  As a special case, writes to the output window in the
+        // Grace editor will also appear after a newline has been written.
+    close -> Done
+        // closes the stream.  Output is pushed to its destination, and further
+        // writes will raise an exception.  In the Grace editor, the input, 
+        // output and error streams remain open even after this method is used
+        // to close them.
+    seek (n: Number) -> FileStream
+        // moves the read position to be just after the nth character, meaning
+        // that the next character to be read will be the (n+1)th.
+    seekForward (n:Number) -> FileStream
+        // moves the read/write position forward by n characters
+    seekBackward (n:Number) -> FileStream
+        // moved the read/write position backward by n characters
+    iterator -> FileStream
+        // returns self
     pathname -> String
-        // the name of the file underlying this fileStream
-    eof -> Boolean
-        // true if the read–write position is at the end of the file.
+        // the name of the file underlying this FileStream
     isatty -> Boolean
         // true if this fileStream is interactive
     == (other) -> Boolean
         // true if self and other are the same FileStream object.  Note that
-        // it is possible to have several distinct filestreams on the same
+        // it is possible to have several distinct fileStreams on the same
         // underlying file.
     clear -> FileStream
-        // makes the contents of this filestream empty. The read/write position becoems 0
+        // makes the contents of this FileStream empty. The read/write position becomes 0
 }
 
 type IO = Object & type {
-    input -> FileStream        // answers stdin
-    output -> FileStream       // answers stdout
-    error -> FileStream        // answers stderr
+    IoException -> ExceptionKind    // the parent of all IO-specific exceptions; a specialization of EnvironmentException
+    input -> FileStream             // answers stdin
+    output -> FileStream            // answers stdout
+    error -> FileStream             // answers stderr
     ask(question:String) -> String
+    // asks `question` interactively, and returns the user's answer
+
+    // In the Grace editor, the output and error streams write to the feedback window,
+    // in black and in red, while reading from the input stream is equivalent to
+    // ask "Input".  These streams remain open even after executing their close methods.
+
     open (path:String, mode:String) -> FileStream
         // opens path in mode, which is one of the following:
         // "r" - Open file for reading. An exception occurs if the file does not exist.
@@ -70,11 +87,6 @@ type IO = Object & type {
         // their values
     spawn (executable:String, args:Collection⟦String⟧) -> Process
         // creates a new Process `executable` using `args` as the command-line arguments
-    ask (question:String) -> String
-        // asks `question` interactively, and returns the answer input
-        // by the interactive user.
-    IoException -> ExceptionKind
-        // the parent of all input-output exceptions; a specialization of EnvironmentException
 }
 
 type Process = Object & type {
@@ -98,6 +110,7 @@ type Process = Object & type {
 class input ->  FileStream {
     method read -> Object { }
     method getline -> Object { }
+    method nextLine -> Object { }
     method write (s:String) -> Object { }
     method close -> Object { }
     method seek (n:Number) -> Object { }
@@ -115,6 +128,7 @@ class input ->  FileStream {
 class output ->  FileStream {
     method read -> Object { }
     method getline -> Object { }
+    method nextLine -> Object { }
     method write (s:String) -> Object { }
     method close -> Object { }
     method seek (n:Number) -> Object { }
@@ -132,6 +146,7 @@ class output ->  FileStream {
 class error ->  FileStream {
     method read -> Object { }
     method getline -> Object { }
+    method nextLine -> Object { }
     method write (s:String) -> Object { }
     method close -> Object { }
     method seek (n:Number) -> Object { }
@@ -149,6 +164,7 @@ class error ->  FileStream {
 class open (fileName:String, mode:String) -> FileStream {
     method read -> Object { }
     method getline -> Object { }
+    method nextLine -> Object { }
     method write (s:String) -> Object { }
     method close -> Object { }
     method seek (n:Number) -> Object { }
