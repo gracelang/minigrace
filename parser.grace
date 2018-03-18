@@ -2197,7 +2197,7 @@ method inheritOrUse {
         def btok = sym
         checkIndent
         next
-        if (didNotConsume {expression(noBlocks)}) then {
+        if (didNotConsume {expression(blocksOK)}) then {
             def suggestions = [ ]
             var suggestion := errormessages.suggestion.new
             def nextTok = findNextValidToken( ["rsquare"] )

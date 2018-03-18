@@ -9,6 +9,7 @@
 *.gcn
 *.gct
 *.c
+*.grace.bak
 l1
 l2
 j1
@@ -71,6 +72,7 @@ js/util.js
 js/xmodule.js
 js/tests/test.js.log
 js/tests/*.txt
+js/tests/*.js
 js-kg/
 objectdraw/
 stubs/collectionsPrelude.grace
