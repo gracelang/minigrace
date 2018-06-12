@@ -406,6 +406,8 @@ test.compile: minigrace
 $(TYPE_DIALECTS:%=js/%.js): js/%.js: $(DIALECTS_NEED:%=%.js) $(patsubst modules/%, js/%.js, $(filter modules/%,$(DIALECTS_NEED)))
 
 test: minigrace.env
+# is TESTS is underfined, runs all tests.  Otherwise, TESTS should be set to a
+# space-separated sequence of test-name prefixes, e.g., "TESTS=t001 t027 t041"
 	js/tests/harness-js j2/minigrace-js js/tests "" $(TESTS)
 
 togracetest: minigrace
