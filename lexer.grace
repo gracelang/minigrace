@@ -363,7 +363,7 @@ class new {
             } elseif {c == "."} then {
                 advanceTo(dotState)
                 state.consume(c)
-            } elseif {(c == "<") || isOperatorChar(c, ordval)} then {
+            } elseif {isOperatorChar(c, ordval)} then {
                 advanceTo(operatorState)
                 state.consume(c)
             } elseif {c == ","} then {
@@ -402,7 +402,7 @@ class new {
                         (ordval != 13) &&
                         (ordval != 32)) then {
                     errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                        ++ "is not a valid character; use spaces instead.")atRange(
+                        ++ "is not a valid character")atRange(
                         lineNumber, linePosition, linePosition)
                 }
             }
