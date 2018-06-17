@@ -1102,7 +1102,8 @@ class new {
             var size is readable := 0
 
             method first { header.next }
-            method first := (nu) { header.next := nu }
+            method first := (nu) is confidential { header.next := nu }
+            method isEmpty { header == last }
 
             method savePosition {
                 return [first, last, size]
@@ -1119,8 +1120,7 @@ class new {
 
                 last.next := t
                 t.prev := last
-                if (header == last) then {
-                    util.log 60 verbose "pushing first token {t}, indent = {t.indent}"
+                if (isEmpty) then {
                     if (t.indent ≠ 0) then {
                         def msg = "the first line must not be indented"
                         errormessages.syntaxError(msg) atRange(t.line, 1, t.indent)
@@ -1141,7 +1141,7 @@ class new {
 
             method pop {
                 // removes the last element and returns it
-                if (header == last) then {
+                if (isEmpty) then {
                     ProgrammingError.raise "attempt to pop from an empty token list"
                 }
                 def popped = last
@@ -1152,7 +1152,7 @@ class new {
 
             method poll {
                 // removes the first element and returns it
-                if (header == first) then {
+                if (isEmpty) then {
                     ProgrammingError.raise "attempt to poll from an empty token list"
                 }
                 def polled = first
