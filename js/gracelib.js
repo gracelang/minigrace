@@ -1791,6 +1791,7 @@ function GraceTypeSubtraction(l, r) {
 function GraceType(name) {
     this.name = name;
     this.typeMethods = [];
+    this.typeTypes = {};
 }
 GraceType.prototype = {
     methods: {
@@ -1834,11 +1835,27 @@ GraceType.prototype = {
                 callmethod(result, "add(1)", [1], new GraceString(methName));
             }
             return result;
+        },
+        "typeNames": function type_typeNames (argcv) {
+            var result = callmethod(Grace_prelude, "emptySet", [0]);
+            for (var nm in this.typeTypes) {
+                if (this.typeTypes.hasOwnProperty(nm)) {
+                    callmethod(result, "add(1)", [1], new GraceString(nm));
+                }
+            }
+            return result;
+        },
+        "==(1)": function type_identity (argcv, other) {
+            return selfRequest(this, "isMe(1)", [1], other)
         }
     },
     className: "Type",
     definitionModule: "basic library",
     definitionLine: 0
+};
+
+function evaluateTypeInType(name, type) {
+	return type.typeTypes[name];
 };
 
 function GraceBlock(recvr, lineNum, numParams) {
@@ -2020,6 +2037,11 @@ function classType(o) {
     for (var m in o.methods) {
         if (! o.methods[m].confidential) {
             t.typeMethods.push(m);
+        }
+    };
+    if (o.types) {
+        for (var t in o.types) {
+            t.typeTypes[t] = o.types[t]
         }
     }
     return t;
@@ -3659,16 +3681,11 @@ function numericMethodName(name) {
     return output;
 }
 function dealWithNoMethod(name, target, argList) {
-    var targetDesc = "";
-    if (target.definitionLine && target.definitionModule !== "unknown") {
-        targetDesc = " in object at " + target.definitionModule +
-            ":" + target.definitionLine;
-    } else if (target.definitionModule !== "unknown") {
-        targetDesc = " in " + target.definitionModule + " module";
-    }
     var dollarIx = name.indexOf("$");
     if (dollarIx == -1) {
-        if (target.noSuchMethodHandler) {
+        if (target.typeTypes && target.typeTypes[name]) {
+            return evaluateTypeInType(name, target);
+        } else if (target.noSuchMethodHandler) {
             return callmethod(target.noSuchMethodHandler, "apply(2)", [2],
                 new GraceString(name), argList);
         } else {

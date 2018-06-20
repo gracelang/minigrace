@@ -473,30 +473,39 @@ method compiletypedec(o) {
     def myc = auto_count
     def enclosing = o.scope.parent
     auto_count := auto_count + 1
+    def reg = "type{myc}"
     def tName = o.name.value
     out "// Type decl {tName}"
     declaredvars.push(escapeident(tName))
     if (o.value.kind == "typeliteral") then {o.value.name := tName }
     def val = compilenode(o.value)
     out "var {varf(tName)} = {val};"
-    o.register := "type{myc}"
+    out "var {reg} = {val};"
     if (compilationDepth == 1) then {
         compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(enclosing)],
             [o.name], ast.typeType) scope(enclosing))
     }
+    o.register := reg
+    reg
 }
 method compiletypeliteral(o) {
     def myc = auto_count
     auto_count := auto_count + 1
+    def reg = "typeLit{myc}"
     def escName = escapestring(o.name)
     out("//   Type literal ")
-    out("var type{myc} = new GraceType(\"{escName}\");")
-    for (o.methods) do {meth->
+    out("var {reg} = new GraceType(\"{escName}\");")
+    for (o.methods) do { meth ->
         def mnm = escapestring(meth.nameString)
-        out("type{myc}.typeMethods.push(\"{mnm}\");")
+        out "{reg}.typeMethods.push(\"{mnm}\");"
     }
-    // TODO: types in the type literal
-    o.register := "type{myc}"
+    for (o.types) do { each ->
+        def typeVal = compiletypedec(each);
+        def tnm = escapeident(each.nameString)
+        out "{reg}.typeTypes.{tnm} = {typeVal};"
+    }
+    o.register := reg
+    reg
 }
 method paramCounts(o) {
     def result = [ ]

@@ -239,6 +239,12 @@ def TypeIntersection is public = object {
         method methodNames {
             t1.methodNames.addAll(t2.methodNames)
         }
+        method typeNames {
+            t1.typeNames.addAll(t2.typeNames)
+        }
+        method ==(o) {
+            isMe(o)
+        }
         method asString { "({t1} & {t2})" }
     }
 }
@@ -260,7 +266,13 @@ def TypeVariant is public = object {
             TypeSubtraction.new(self, o)
         }
         method methodNames {
-            self.TypeVariantsCannotBeCharacterizedByASetOfMethods
+            self.MethodsInTypeVariantsNotImplemented
+        }
+        method typeNames {
+            self.TypesInTypeVariantsNotImplemented
+        }
+        method ==(o) {
+            isMe(o)
         }
         method asString { "({t1} | {t2})" }
     }
@@ -298,6 +310,12 @@ def TypeUnion is public = object {
             }
             return SuccessfulMatch.new(o, [])
         }
+        method typeNames {
+            t1.typeNames ** t2.typeNames
+        }
+        method ==(o) {
+            isMe(o)
+        }
         method asString { "({t1} + {t2})" }
     }
 }
@@ -319,6 +337,12 @@ def TypeSubtraction is public = object {
         }
         method methodNames {
             t1.methodNames.removeAll(t2.methodNames)
+        }
+        method typeNames {
+            t1.typeNames.removeAll(t2.typeNames)
+        }
+        method ==(o) {
+            isMe(o)
         }
         method asString { "({t1} - {t2})" }
     }
