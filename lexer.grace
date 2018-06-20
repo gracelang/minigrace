@@ -81,6 +81,8 @@ method padl(s, l, w) {
     return s'
 }
 
+def noSuchLine = Singleton.named "noSuchLine"
+
 class new {
     var tokens
     var lineNumber := 1
@@ -90,6 +92,22 @@ class new {
     var startLine := 1
     var stringStart
     var unichars := 0
+    var braceChange
+    var currentLineBraceDepth := 0
+    var currentLineIndent := 0
+    var indentOfLineBeingContinued := noSuchLine
+    var indentStack := list.with(1)
+    var maxIndentOfContinuation
+    var priorLineBraceDepth := 0
+    var priorLineIndent := 0
+
+    method incrementBraceDepth {
+        currentLineBraceDepth := currentLineBraceDepth + 1
+    }
+    method decrementBraceDepth {
+        currentLineBraceDepth := currentLineBraceDepth - 1
+    }
+
     class token {
         def line is public = lineNumber
         def indent is public = indentLevel
@@ -112,7 +130,6 @@ class new {
         method kind { abstract }
         method endPos { linePos + size - 1 }
     }
-
 
     class identifierToken(s) {
         inherit token
@@ -370,6 +387,7 @@ class new {
             } elseif {c == ","} then {
                 emit(commaToken)
             } elseif {c == "\{"} then {
+                incrementBraceDepth
                 emit(lBraceToken)
             } elseif {c == "}"} then {
                 advanceTo(rBraceState)
@@ -439,6 +457,7 @@ class new {
                 inStr := true
                 advanceTo(quotedStringState)
             } else {
+                decrementBraceDepth
                 emit (rBraceToken)
                 advanceTo (defaultState)
             }
@@ -784,6 +803,7 @@ class new {
             if (spaceChars.contains(c)) then {
                 indentLevel := linePosition
             } else {
+                checkIndentation(c)
                 advanceTo(defaultState)
                 state.consume(c)
             }
@@ -808,6 +828,69 @@ class new {
                 store(c)
             }
         }
+    }
+
+    method checkIndentation(currentCharacter) {
+        // a newline has been matched (including the spaces that follow it).
+        // Depending on the state of the lexer, classify it as <whitespace> (when
+        // the following line is a continuation line) or a real <newline> token."
+
+        checkAndRecordIndentStatus.
+        if (isLineEmpty) then { return }
+        if (isIndentationChangeOne) then {
+            errormessages.syntaxError "a change of indentation of 1 is not permitted"
+                            atRange (lineNumber, linePosition, linePosition)
+        }
+        terminateContinuationIfNecessary
+        if (isBlockStart) then {
+            recordNewIndentation
+            saveDataForPriorLine
+            if (priorLineEndsWithOpenBracket) then {
+                return
+            } else {
+                emit(separatorToken)
+                return
+            }
+        }
+        if (isBlockEnd) then { checkIndentationReset }
+        if (isContinuationLine) then {
+            recordContinuationStatus
+            saveDataForPriorLine
+            return
+        }
+        if (currentLineIndent < priorLineIndent) then { checkOutdent }
+        saveDataForPriorLine
+        if ( ")]}⟧".contains(currentCharacter) ) then { return }
+        emit(separatorToken)
+    }
+
+    method isLineEmpty(currentCharacter) {
+        // answers true if the line that we just started is empty, or just a comment.
+        // Leading spaces have already been consumed in indentationState, so
+        // on a line containing just spaces, currentCharacter will be the next newline.
+        // A line containing nothing but a comment is treated as empty,
+        // so that comments do not reset the indentation.
+
+        if ("\n" == currentCharacter) then { return true }
+        if ("/" ≠ currentCharacter) then { return false }
+        return "/" == followingCharacter
+    }
+
+    method isIndentationChangeOne {
+        def indentationChange = currentLineIndent - priorLineIndent
+        return indentationChange.abs == 1
+    }
+
+    method terminateContinuationIfNecessary {
+        if (indentOfLineBeingContinued == noSuchLine) then { return }
+        if ((braceChange < 1) && { currentLineIndent >= maxIndentOfContinuation }) then {
+            maxIndentOfContinuation := currentLineIndent
+            return
+        }
+        // The continuation has ended, either because we have opened a new block,
+        // or because currentLineIndent < maxIndentOfContinuation
+        priorLineIndent := indentOfLineBeingContinued
+        indentOfLineBeingContinued := noSuchLine    // receord termination of continuation
     }
 
     method newLineError {
