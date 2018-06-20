@@ -23,6 +23,7 @@ tests/test.log
 buildinfo.grace
 objectdraw.grace
 rtobjectdraw.grace
+grace-debug
 animation.grace
 js/.DS_Store
 js/animation.js

@@ -166,6 +166,9 @@ gencheck:
 
 gracedoc: tools/gracedoc
 
+grace-debug: js/grace-debug
+	ln -f $< $@
+
 grace-web-editor/index.html: pull-web-editor grace-web-editor/index.in.html
 	./tools/includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	./tools/calc-IDE-version
@@ -226,12 +229,12 @@ j2-minigrace: $(J2-MINIGRACE)
 $(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
 	cp -p $< $@
 
-$(JS-KG)/minigrace-js: $(JS-KG)/compiler-js
-	cp -p js/minigrace-js $(JS-KG)
-
-$(JS-KG)/compiler-js:
+$(JS-KG)/compiler-js: js/compiler-js
 	if [ ! -e $(JS-KG) ] ; then mkdir -p $(JS-KG) ; fi
 	cp -p js/compiler-js $(JS-KG)
+
+$(JS-KG)/minigrace-js: $(JS-KG)/compiler-js
+	cp -p js/minigrace-js $(JS-KG)
 
 $(JSONLY:%.grace=js/%.js): js/%.js: modules/%.grace js/dom.gct minigrace js/timer.gct
 	GRACE_MODULE_PATH=js:modules ./minigrace --dir js --make $(VERBOSITY) $<
@@ -259,7 +262,7 @@ js/grace: js/grace.in
 	chmod a+x js/grace
 
 js/grace-debug: js/grace
-	sed -e "s|#!/usr/bin/env node|#!/usr/bin/env node --debug-brk|" $< > js/grace-debug
+	sed -e "s|#!/usr/bin/env node|#!/usr/bin/env node --inspect-brk|" $< > js/grace-debug
 	chmod a+x js/grace-debug
 
 js/mgc: minigrace.env $(STUBS:%.grace=j2/%.gct)
@@ -280,6 +283,10 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
 js/animation%js: js/timer.gct objectdraw/animation.grace
+
+js/compiler-inspect: js/compiler-js
+	sed -e "s|#!/usr/bin/env node|#!/usr/bin/env node --inspect|" $< > $@
+	chmod a+x $@
 
 Makefile.conf: configure stubs modules
 	./configure
