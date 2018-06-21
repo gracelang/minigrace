@@ -94,7 +94,6 @@ clean:
 	rm -f $(SOURCEFILES:%.grace=%)
 	rm -f $(OBJECTDRAW:%.grace=%.*)
 	rm -f $(OBJECTDRAW:%.grace=modules/%.*)
-	( cd known-good && $(MAKE) clean )
 	( cd js && for sf in $(SOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
 	( cd js && for sf in $(SOURCEFILES) ; do rm -f $$sf ; done )
 	cd js && rm -rf $(ALL_LIBRARY_MODULES:%.grace=%.js) standardInput.* *.gct util.*
@@ -292,7 +291,7 @@ Makefile.conf: configure stubs modules
 	./configure
 
 $(MGSOURCEFILES:%.grace=j1/%.js): j1/%.js: %.grace $(JS-KG)/minigrace-js
-	$(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
+	GRACE_MODULE_PATH=j1 $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
 
 $(MGSOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace $(J1-MINIGRXCE)
 	GRACE_MODULE_PATH=modules j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
@@ -387,7 +386,7 @@ $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
 
 $(STUBS:%.grace=j1/%.gct): j1/%.gct: stubs/%.grace $(JS-KG)/standardGrace.js $(JS-KG)/minigrace-js
-	$(JS-KG)/minigrace-js $(VERBOSITY) --make --gctfile --dir j1 -o /dev/null $<
+	GRACE_MODULE_PATH=j1 $(JS-KG)/minigrace-js $(VERBOSITY) --make --gctfile --dir j1 -o /dev/null $<
 
 $(STUBS:%.grace=j2/%.gct): j2/%.gct: stubs/%.grace j1/standardGrace.js $(J1-MINIGRACE)
 	GRACE_MODULE_PATH=j1 j1/minigrace-js $(VERBOSITY) --make --gctfile --dir j2 -o /dev/null $<
@@ -422,6 +421,8 @@ togracetest: minigrace
 
 uninstall:
 	rm -f $(PREFIX)/bin/minigrace
+	rm -f $(PREFIX)/bin/minigrace-js
+	rm -f $(PREFIX)/bin/grace
 	rm -f $(OBJECT_PATH)/gracelib.o
 	rm -f $(INCLUDE_PATH)/gracelib.h
 	rm -rf $(MODULE_PATH)/*.{gct,js,grace,gcn,gso,gso.dSYM,c}
