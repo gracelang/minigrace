@@ -299,6 +299,10 @@ def sequenceTest = object {
             def witness = emptySequence
             assert (witness) hasType (Enumerable)
         }
+        method testSingletonSequenceTypeSequence {
+            def witness = sequence.with "a word"
+            assert (witness) hasType (Sequence)
+        }
         method testFilteredSequenceTypeEnumerable {
             def witness = sequence⟦Number⟧ [1,3].filter{x -> true}
             assert (witness) hasType (Enumerable⟦Number⟧)
@@ -312,7 +316,10 @@ def sequenceTest = object {
             assert(empty.size) shouldBe 0
             assert(evens.size) shouldBe 4
         }
-
+        method testSingletonSequenceSize {
+            def singleton = sequence.with "a word"
+            assert (singleton.size) shouldBe 1
+        }
         method testSequenceEmptyDo {
             empty.do {each -> failBecause "emptySequence.do did with {each}"}
             assert(true)
@@ -573,6 +580,10 @@ def listTest = object {
             def witness = list⟦Number⟧ [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (Sequence⟦Number⟧)
         }
+        method testSingletonListTypeList {
+            def witness = list.with "a word"
+            assert (witness) hasType (List)
+        }
         method testListTypeNotTypeWithWombat {
             def witness = list⟦Number⟧ [1, 2, 3, 4, 5, 6]
             deny (witness) hasType (List⟦Number⟧ & interface { wombat })
@@ -582,6 +593,11 @@ def listTest = object {
             assert(oneToFive.size) shouldBe 5
             assert(empty.size) shouldBe 0
             assert(evens.size) shouldBe 4
+        }
+        
+        method testSingletonListeSize {
+            def singleton = list.with "a word"
+            assert (singleton.size) shouldBe 1
         }
 
         method testListEmptyDo {
@@ -1051,6 +1067,10 @@ def setTest = object {
             def witness = set⟦Number⟧ [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (Set⟦Number⟧)
         }
+        method testSingletonSeteTypeSet {
+            def witness = set.with "a word"
+            assert (witness) hasType (Set)
+        }
         method testSetTypeNotSequence {
             def witness = set⟦Number⟧ [1, 2, 3, 4, 5, 6]
             deny (witness) hasType (Sequence⟦Number⟧)
@@ -1060,6 +1080,10 @@ def setTest = object {
             assert(oneToFive.size) shouldBe 5
             assert(empty.size) shouldBe 0
             assert(evens.size) shouldBe 4
+        }
+        method testSingletonSetSize {
+            def singleton = set.with "a word"
+            assert (singleton.size) shouldBe 1
         }
 
         method testSetEmptyDo {

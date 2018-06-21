@@ -469,6 +469,12 @@ class sequence⟦T⟧ {
         emptySequence
     }
 
+    method with(x:T) {
+        def inner = prelude.primitiveArray.new(8)
+        inner.at 0 put(x)
+        self.fromprimitiveArray(inner, 1)
+    }
+
     method withAll(arg: Collection⟦T⟧) {
         var sizeCertain := true
         // size might be uncertain if arg is a lazy collection.
@@ -622,6 +628,12 @@ class list⟦T⟧ {
     
     method empty -> List⟦T⟧ {
         withAll(emptySequence)
+    }
+    
+    method with(x:T)  -> List⟦T⟧ {
+        def result = empty
+        result.add(x)
+        result
     }
 
     method withAll(a: Collection⟦T⟧) -> List⟦T⟧ {
@@ -922,6 +934,12 @@ def removed = object {
 class set⟦T⟧ {
 
     method asString { "a set class" }
+
+    method with(x:T)  -> Set⟦T⟧ {
+        def result = empty
+        result.add(x)
+        result
+    }
 
     method withAll(a: Collection⟦T⟧) -> Set⟦T⟧ {
         def cap = max (a.sizeIfUnknown{2} * 3 + 1, 8)

@@ -1,7 +1,7 @@
 bindingTest: 6 run, 0 failed, 0 errors
-sequenceTest: 49 run, 0 failed, 0 errors
-listTest: 83 run, 0 failed, 0 errors
-setTest: 45 run, 0 failed, 0 errors
+sequenceTest: 51 run, 0 failed, 0 errors
+listTest: 85 run, 0 failed, 0 errors
+setTest: 47 run, 0 failed, 0 errors
 rangeTest: 45 run, 0 failed, 0 errors
 dictionaryTest: 59 run, 0 failed, 0 errors
 lazyEnumTest: 5 run, 0 failed, 0 errors
