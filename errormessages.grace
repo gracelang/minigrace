@@ -90,14 +90,14 @@ def suggestion is public = object {
     method getTokenStart(token)includeLeadingSpace(includeLeading) {
         var start := token.linePos
         // Include leading whitespace.
-        if(includeLeading == true) then {
-            if((token.prev != false) && ({token.prev.line == token.line})) then {
+        if (true == includeLeading) then {
+            if (token.hasPrev && {token.prev.line == token.line}) then {
                 start := token.prev.linePos + token.prev.size
             }
         }
         // Include indentation if this is the only token on the line.
-        if(token.linePos == (token.indent + 1)) then {
-            if ((token.next == false) || {token.next.line != token.line}) then {
+        if (token.linePos == (token.indent + 1)) then {
+            if (token.hasNext.not || {token.next.line ≠ token.line}) then {
                 start := 1
             }
         }
@@ -107,8 +107,8 @@ def suggestion is public = object {
     method getTokenEnd(token)includeTrailingSpace(includeTrailing) {
         var end := token.linePos + token.size - 1
         // Include trailing space.
-        if(includeTrailing == true) then {
-            if((token.next != false) && ({token.next.line == token.line})) then {
+        if (true == includeTrailing) then {
+            if (token.hasNext && {token.next.line == token.line}) then {
                 end := token.next.linePos - 1;
             } else {
                 end := getLine(token.line).size

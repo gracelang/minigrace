@@ -935,19 +935,15 @@ class set⟦T⟧ {
 
     method asString { "a set class" }
 
-    method with(x:T)  -> Set⟦T⟧ {
-        def result = empty
-        result.add(x)
-        result
-    }
-
     method withAll(a: Collection⟦T⟧) -> Set⟦T⟧ {
         def cap = max (a.sizeIfUnknown{2} * 3 + 1, 8)
         def result = ofCapacity (cap)
         a.do { x -> result.add(x) }
         result
     }
-    
+    method with(x) -> List⟦T⟧ {
+        empty.add(x)
+    }
     method empty -> Set⟦T⟧ {
         ofCapacity 8
     }

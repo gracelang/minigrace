@@ -191,6 +191,7 @@ def Singleton is public = object {
                 FailedMatch.new(other)
             }
         }
+        method matches(other) { self.isMe(other) }
         method ==(other) { self.isMe(other) }
     }
     class named(printString) {
@@ -198,6 +199,10 @@ def Singleton is public = object {
         method asString { printString }
     }
 }
+
+method singleton { Singleton.new }
+
+method singleton (nameString) { Singleton.named(nameString) }
 
 def BaseType = object {
     class new(name) {
