@@ -3190,7 +3190,7 @@ class baseVisitor -> AstVisitor {
     method visitMethod(o) up(ac) { visitMethod(o) }
     method visitCall(o) up(ac) { visitCall(o) }
     method visitObject(o) up(ac) { visitObject(o) }
-    method visitModule(o) up(ac) { visitObject(o) }
+    method visitModule(o) up(ac) { visitModule(o) }
     method visitArray(o) up(ac) { visitArray(o) }
     method visitMember(o) up(ac) { visitMember(o) }
     method visitGeneric(o) up(ac) { visitGeneric(o) }
