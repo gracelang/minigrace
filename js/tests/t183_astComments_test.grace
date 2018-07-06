@@ -50,12 +50,7 @@ def input = sequence [
 ]
 
 util.lines.addAll(input)
-
-//input.keysAndValuesDo { linenum, code -> 
-//    print "{linenum}    {code}"
-//}
-
-def tokens = lexer.new.lexinput(input)
+def tokens = lexer.new.lexInputLines
 def module = parser.parse(tokens)
 def nodes = module.value
 
@@ -136,8 +131,9 @@ testSuiteNamed "comment tests" with {
     }
     
     test "method m" by {
-        def methodMNode = nodes.filter { each -> (each.kind == "method")
-             && {each.nameString == "m"} }.first
+        def methodMNode = nodes.filter { each ->
+            (each.kind == "method") && {each.nameString == "m"}
+        }.first
         def mComments = methodMNode.comments.value
         assert (mComments.contains "post-comment (sameline) method m") 
             description "method m is missing the sameline comment"

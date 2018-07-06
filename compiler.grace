@@ -19,10 +19,11 @@ var tokens := lexer.new.lexfile(util.infile)
 if (util.target == "lex") then {
     // Print the lexed tokens and quit.
     for (tokens) do { v ->
+        def val = if ("\n" == v.value) then { "\\n" } else { v.value }
         if (util.verbosity > 30) then {
-            util.outprint "{v.kind}: {v.value}  [pos: {v.line}.{v.linePos} size: {v.size} indent: {v.indent}]"
+            util.outprint "{v.kind}: {val}  [pos: {v.line}.{v.linePos} size: {v.size} indent: {v.indent}]"
         } else {
-            util.outprint "{v.kind}: {v.value}"
+            util.outprint "{v.kind}: {val}"
         }
     }
     util.outfile.close

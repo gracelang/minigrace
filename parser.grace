@@ -76,6 +76,7 @@ method next {
         lastLine := lastToken.line
         lastIndent := lastToken.indent
         sym := tokens.poll
+        if (util.verbosity > 110) then { io.error.write "{sym}\n" }
         pushComments
         util.setPosition(sym.line, sym.linePos)
     } else {
@@ -232,6 +233,17 @@ method acceptKeyword (kw1) or (kw2) {
     return sym.value == kw2
 }
 
+method acceptSeparator {
+    def k = sym.kind
+    if (k == "separator") then { return true }
+    if (k == "semicolon") then { return true }
+    return false
+}
+
+method skipSeparators {
+    while { acceptSeparator } do { next }
+}
+
 method acceptSameLine (t) {
     // True if the current token is a t, and it is on the same logical
     // line (either because it's on the same physical line, or because
@@ -290,15 +302,15 @@ method tokenOnLineOfLastOr (other) {
 }
 method didConsume (aParsingBlock) {
     // returns true if executing aParsingBlock consumes at least one token.
-    def sz = tokens.size
+    def sz = values.size
     aParsingBlock.apply
-    tokens.size != sz
+    values.size != sz
 }
 method didNotConsume (aParsingBlock) {
     // returns true if executing aParsingBlock fails to consume any tokens.
-    def sz = tokens.size
+    def sz = values.size
     aParsingBlock.apply
-    tokens.size == sz
+    values.size == sz
 }
 method pushnum {
     // Push the current token onto the output stack as a number
@@ -498,6 +510,7 @@ method block {
     if (accept "lbrace") then {
         def btok = sym
         next
+        skipSeparators
         def oldMinIndent = minIndentLevel
         def minInd = statementIndent + 2
         def oldStatementToken = statementToken
@@ -537,6 +550,7 @@ method blockParameters {
             reportMissingArrow
         }
     }
+    skipSeparators
     return params
 }
 
@@ -754,24 +768,28 @@ method doif {
             } else {
                 minIndentLevel := minInd
             }
-            while {(accept("rbrace")).not} do {
-                if (didNotConsume {statement}) then {
-                    def suggestion = errormessages.suggestion.new
-                    def closingBrace = findClosingBrace(btok, false)
-                    if (closingBrace.found.not) then {
-                        if (closingBrace.tok == lastToken) then {
-                            suggestion.insert("}")afterToken(lastToken)
-                        } else {
-                            suggestion.addLine(closingBrace.tok.line + 0.1, "}")
-                        }
-                    }
-                    suggestion.deleteToken(sym)
-                    errormessages.syntaxError("an if statement must end with a '}'.")atPosition(
-                        sym.line, sym.linePos)withSuggestion(suggestion)
+            while {didConsume {statement}} do {
+                skipSeparators
+                if (values.isEmpty) then {
+                    ProgrammingError.raise "values is empty.\n  commentStack = {comments}\nsym = {sym}"
                 }
-                v := values.pop
-                body.push(v)
+                body.push(values.pop)
             }
+            if ((accept "rbrace").not) then {
+                def suggestion = errormessages.suggestion.new
+                def closingBrace = findClosingBrace(btok, false)
+                if (closingBrace.found.not) then {
+                    if (closingBrace.tok == lastToken) then {
+                        suggestion.insert("}")afterToken(lastToken)
+                    } else {
+                        suggestion.addLine(closingBrace.tok.line + 0.1, "}")
+                    }
+                }
+                suggestion.deleteToken(sym)
+                errormessages.syntaxError("an if statement must end with a '}'.")atPosition(
+                    sym.line, sym.linePos)withSuggestion(suggestion)
+            }
+
             next
             var econd
             var eif
@@ -854,7 +872,7 @@ method doif {
                 if (sym.value != "\}") then {
                     checkBadOperators
                     def suggestion = errormessages.suggestion.new
-                    suggestion.insert(")")afterToken(lastToken)
+                    suggestion.insert "}" afterToken (lastToken)
                     errormessages.syntaxError("a condition beginning with a " ++
                         "'\{' must end with a '\}'.")
                         atPosition(lastToken.line, lastToken.linePos + lastToken.size)
@@ -2190,12 +2208,11 @@ method dodialect {
 
 method inheritOrUse {
     // Parses "inherit «object expression»"
-
+    if ( acceptSeparator ) then { separator }
     if (! accept "keyword") then { return }
     if ((sym.value == "inherit") || (sym.value == "use")) then {
         statementToken := sym
         def btok = sym
-        checkIndent
         next
         if (didNotConsume {expression(blocksOK)}) then {
             def suggestions = [ ]
@@ -2310,7 +2327,7 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
     var superObject := false
     def usedTraits = []
     var inPreamble := true  // => processing inherit and use statements
-    while {(accept("rbrace")).not && {sym.kind != "eof"}} do {
+    while {(accept "rbrace").not && {sym.kind != "eof"}} do {
         pushComments
         if (didConsume {inheritOrUse}) then {
             def parentNode = values.pop
@@ -2422,7 +2439,7 @@ method doclass {
     meth.annotations.addAll(objNode.annotations)  // TODO: sort this out!
         // In a class declaration, there is just one place for annotations.
         // These might include annotations on the method (such as
-        // confidential), and annotations on the object (such as imutable)
+        // confidential), and annotations on the object (such as immutable)
     objNode.name := meth.canonicalName
     if (btok.value == "class") then {
         objNode.inClass := true
@@ -2432,6 +2449,7 @@ method doclass {
     values.push(meth)
     reconcileComments
     minIndentLevel := localMinIndentLevel
+    separator
 }
 
 method dofactoryMethod {
@@ -2453,7 +2471,6 @@ method methoddec {
 
     if (acceptKeyword "method") then {
         def btok = sym
-        checkIndent
         statementToken := sym
         next
         def methNode = methodsignature(false).setPositionFrom(btok)
@@ -2517,10 +2534,25 @@ method methoddec {
         util.setline(btok.line)
         if (false != anns) then { methNode.annotations.addAll(anns) }
         values.push(methNode)
+        pushComments
+        separator
         reconcileComments
+        pushComments
     }
 }
 
+method separator {
+    pushComments
+    if (acceptSeparator) then {
+        next
+    } elseif { (accept "eof") || { accept "rbrace" } } then {
+        // do nothing
+    } else {
+        errormessages.syntaxError "statments must be separated by newlines (or semicolons)"
+                    atPosition(
+                lastToken.line, lastToken.linePos + lastToken.size)
+    }
+}
 
 method methodDecRest(tm, sameline) {
     // Process the remainder of a method header. These follow
@@ -2821,7 +2853,7 @@ method domethodtype {
     o.typeParams := methNode.typeParams
     values.push(o)
     reconcileComments
-    if (accept "semicolon") then {
+    if (acceptSeparator) then {
         next
     } else {
         if (!accept("rbrace")) then {
@@ -2838,8 +2870,8 @@ method domethodtype {
 }
 
 method dotypeLiteral {
-    // parses a type literal between braces, with optional leading
-    // 'type' or 'interface' keyword.
+    // parses an interface literal between braces, with optional
+    // leading 'type' or 'interface' keyword.
     def typeLiteralTok = sym
     if (acceptKeyword "type" or "interface") then {
         next
@@ -2857,7 +2889,8 @@ method dotypeLiteral {
         def mc = auto_count
         auto_count := auto_count + 1
         next
-        while {accept("rbrace").not} do {
+        skipSeparators
+        while { accept("rbrace").not } do {
             if (acceptKeyword "type") then {
                 typedec
                 types.push(values.pop)
@@ -2921,42 +2954,6 @@ method typedec {
     }
 }
 
-method checkIndent {
-    if (indentFreePass) then {
-        indentFreePass := false
-    } elseif { sym.kind == "semicolon" } then {
-        // pass
-    } elseif {(sym.kind == "rbrace") || (sym.kind == "rparen")
-          || (sym.kind == "rsquare")} then {
-        // pass
-    } elseif { sym.kind == "eof" } then {
-    } elseif { sym.indent < minIndentLevel } then {
-        if ((sym.linePos - 1) != minIndentLevel) then {
-            def suggestions = [ ]
-            var suggestion := errormessages.suggestion.new
-            def correctIndent = " " * (minIndentLevel - (sym.linePos - 1))
-            suggestion.insert (correctIndent) atPosition 1 onLine(sym.line)
-            suggestions.push(suggestion)
-            suggestion := errormessages.suggestion.new
-            // Find the indent level for the opening brace.
-            var tok := lastToken
-            while {(tok.linePos != (tok.indent + 1)) || (tok.indent >= minIndentLevel)} do { 
-                tok := tok.prev 
-            }
-            def line = (" " * tok.indent) ++ "}"
-            suggestion.addLine(sym.line - 0.9, line)
-            suggestions.push(suggestion)
-            errormessages.syntaxError("the indentation for this line must be " ++
-                  "at least {minIndentLevel}. This is often caused by a missing '}'.")
-                  atPosition(sym.line, sym.linePos)withSuggestions(suggestions)
-        }
-    } elseif { sym.indent > minIndentLevel } then {
-        // The lexer rejects indentation changes of 1, so we don't
-        // need to check for that error here.
-        minIndentLevel := sym.indent
-    }
-}
-
 method statement {
     // Accept a statement. A statement is any of the above that may exist
     // at the top level, and includes expressions.
@@ -2964,11 +2961,11 @@ method statement {
     // bind AST node out of the expressions on either side (which at this point
     // can be any arbitrary expression).
 
+    skipSeparators
     statementIndent := sym.indent
     statementToken := sym
     def btok = sym
     pushComments
-    checkIndent
     if (accept "keyword") then {
         if (sym.value == "var") then {
             vardec
@@ -3015,15 +3012,6 @@ method statement {
     reconcileComments
     if (accept "eof") then {
         return true
-    }
-    if (accept "semicolon") then {
-        def oldLine = sym.line
-        next
-        if (sym.line == oldLine) then {
-            indentFreePass := true
-        }
-    } else {
-        checkUnexpectedTokenAfterStatement
     }
 }
 
@@ -3178,7 +3166,7 @@ method checkUnexpectedTokenAfterStatement {
             errormessages.syntaxError(
                 "multiple statements must be separated by a newline or a semicolon. " ++
                   "This error is often caused by unbalanced parentheses, " ++
-                    "or by omitting a part of a method name.")
+                    "or by omitting a part of a method name.\nsym = {sym}")
                       atPosition (sym.line, sym.linePos) withSuggestions (suggestions)
         }
     }
@@ -3196,7 +3184,7 @@ method parse(toks) {
         return moduleObject
     }
     tokens := toks
-    next
+    while { next ; acceptSeparator } do { }
 
     if (sym.indent > 0) then {
         def sugg = errormessages.suggestion.new

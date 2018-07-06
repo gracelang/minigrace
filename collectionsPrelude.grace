@@ -1603,8 +1603,7 @@ class dictionary⟦K,T⟧ {
         method do(block1) { valuesDo(block1) }
 
         method ==(other) {
-            match (other)
-              case { o:ComparableToDictionary⟦K,V⟧ ->
+            match (other) case { o:ComparableToDictionary⟦K,V⟧ ->
                 if (self.size != o.size) then {return false}
                 self.keysAndValuesDo { k, v ->
                     if (o.at(k)ifAbsent{return false} != v) then {
@@ -1612,8 +1611,7 @@ class dictionary⟦K,T⟧ {
                     }
                 }
                 return true
-            }
-            case {_ ->
+            } case { _ ->
                 return false
             }
         }

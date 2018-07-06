@@ -1,9 +1,11 @@
 dialect "minitest"
 
 method trymatch(e) {
-    match (e)
-    case {n: Number -> n+1}
-    case {s: String -> "Got " ++ s}
+    match (e) case {
+        n: Number -> n+1
+    } case {
+        s: String -> "Got " ++ s
+    }
 }
 
 testSuiteNamed "match tests" with {

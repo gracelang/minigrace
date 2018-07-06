@@ -100,7 +100,7 @@ class new {
     var maxIndentOfContinuation
     var priorLineBraceDepth := 0
     var priorLineIndent := 0
-    var inputLines
+    def inputLines = util.lines
 
     method incrementBraceDepth {
         currentLineBraceDepth := currentLineBraceDepth + 1
@@ -129,7 +129,7 @@ class new {
                 (other.line == line) && (other.linePos == linePos)
             }
         }
-        method asString { "({line}:{linePos}){self.kind} {self.value}" }
+        method asString { "({line}.{linePos}){self.kind} {self.value}" }
         method value { abstract }
         method size { abstract }
         method kind { abstract }
@@ -140,19 +140,19 @@ class new {
     }
 
     class identifierToken(s) {
-        inherit new.token
+        inherit token
         def kind is public = "identifier"
         def value is public = s
         def size is public = s.size
     }
     class stringToken(s) {
-        inherit new.token
+        inherit token
         def kind is public = "string"
         def value is public = s
         def size is public = linePosition - startPosition + 1
     }
     class multiLineStringToken(s) {
-        inherit new.token
+        inherit token
         def kind is public = "string"
         def value is public = s
         def size is public = s.size + 2
@@ -164,122 +164,123 @@ class new {
         method endPos is override { linePosition }
     }
     class commentToken(s) {
-        inherit new.token
+        inherit token
         def kind is public = "comment"
         def value is public = s
         def size is public = s.size + 2
     }
     class lBraceToken {
-        inherit new.token
+        inherit token
         def kind is public = "lbrace"
         def value is public = "\{"
         def size is public = 1
     }
     class rBraceToken {
-        inherit new.token
+        inherit token
         def kind is public = "rbrace"
         def value is public = "}"
         def size is public = 1
     }
     class lParenToken {
-        inherit new.token
+        inherit token
         def kind is public = "lparen"
         def value is public = "("
         def size is public = 1
     }
     class rParenToken {
-        inherit new.token
+        inherit token
         def kind is public = "rparen"
         def value is public = ")"
         def size is public = 1
     }
     class lSquareToken {
-        inherit new.token
+        inherit token
         def kind is public = "lsquare"
         def value is public = "["
         def size is public = 1
     }
     class rSquareToken {
-        inherit new.token
+        inherit token
         def kind is public = "rsquare"
         def value is public = "]"
         def size is public = 1
     }
     class commaToken {
-        inherit new.token
+        inherit token
         def kind is public = "comma"
         def value is public = ","
         def size is public = 1
     }
     class colonToken {
-        inherit new.token
+        inherit token
         def kind is public = "colon"
         def value is public = ":"
         def size is public = 1
     }
     class dotToken {
-        inherit new.token
+        inherit token
         def kind is public = "dot"
         def value is public = "."
         def size is public = 1
     }
     class numToken(v, b) {
-        inherit new.token
+        inherit token
         def kind is public = "num"
         def value is public = v
         def base is public = b
         def size is public = linePosition - startPosition + 1
     }
     class keywordToken(v) {
-        inherit new.token
+        inherit token
         def kind is public = "keyword"
         def value is public = v
         def size is public = v.size
     }
     class opToken(v) {
-        inherit new.token
+        inherit token
         def kind is public = "op"
         def value is public = v
         def size is public = v.size
     }
     class arrowToken {
-        inherit new.token
+        inherit token
         def kind is public = "arrow"
         def value is public = "→"
         def size is public = 1
     }
     class bindToken {
-        inherit new.token
+        inherit token
         def kind is public = "bind"
         def value is public = ":="
         def size is public = 2
     }
     class semicolonToken {
-        inherit new.token
+        inherit token
         def kind is public = "semicolon"
         def value is public = ";"
         def size is public = 1
     }
     class separatorToken {
-        inherit new.token
+        inherit token
         def kind is public = "separator"
         def value is public = "\n"
         def size is public = 1
+        method asString { "({line}.{linePos}){self.kind} \\n" }
     }
     class lGenericToken {
-        inherit new.token
+        inherit token
         def kind is public = "lgeneric"
         def value is public = "⟦"
         def size is public = 1
     }
     class rGenericToken {
-        inherit new.token
+        inherit token
         def kind is public = "rgeneric"
         def value is public = "⟧"
         def size is public = 1
     }
     class eofToken {
-        inherit new.token
+        inherit token
         def kind is public = "eof"
         def value is public = ""
         def size is public = 0
@@ -311,7 +312,6 @@ class new {
             }
         }
     }
-    state := startState
 
     def pragmaPrefixState = object {
         method consume(c){
@@ -1213,7 +1213,7 @@ class new {
     method lexfile(file) {
         // Reads the program text from file; returns a list of tokens.
 
-        inputLines := util.lines.makeEmpty
+        inputLines.makeEmpty
         def cLines = util.cLines.makeEmpty
             // making them empty is necessary for the browser,
             // where these variables persist from one compilation
@@ -1264,10 +1264,10 @@ class new {
             inputLines.push(line)
             cLines.push(cLine)
         }
-        lexinputLines
+        lexInputLines
     }
 
-    method lexinputLines {
+    method lexInputLines {
         // tokens is a doubly-linked list of tokens.
         tokens := object {
             def header = object {
@@ -1354,7 +1354,7 @@ class new {
 
             method do(action) {
                 var n := first
-                while { header ≠ n } do {
+                while { n.isHeader.not } do {
                     action.apply(n)
                     n := n.next
                 }

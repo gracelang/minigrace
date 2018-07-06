@@ -407,21 +407,19 @@ def aGraceLangTest = object {
 
         method test_098_defobjouter {
             def ClassWithPrivate = object {
-              method new {
-                 return (
-                    object {// Private parts
-                       var secret := 0
-                       method incSecret { secret := secret + 1 }
-                       def inner is public = object {
-                          method getSecret { secret }
-                          method tick { incSecret }
-                          def NAME = "inner"
-                       }
-                       def NAME = "ANON"
-                     }
-                ).inner
-              }
-              def NAME = "ClassWithPrivate"
+                method new {
+                    return object {// Private parts
+                        var secret := 0
+                        method incSecret { secret := secret + 1 }
+                        def inner is public = object {
+                            method getSecret { secret }
+                            method tick { incSecret }
+                            def NAME = "inner"
+                        }
+                        def NAME = "ANON"
+                    }.inner
+                }
+                def NAME = "ClassWithPrivate"
             }
             def x1 = ClassWithPrivate.new
             out (x1.getSecret)
