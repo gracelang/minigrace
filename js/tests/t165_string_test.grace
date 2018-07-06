@@ -99,9 +99,11 @@ def stringTest = object {
             assert (vowels4.indexOf "iou" startingAt 4 ifAbsent { 0 }) shouldBe 9
             assert (vowels4.indexOf "iou" startingAt 10 ifAbsent { 0 }) shouldBe 15
             assert (vowels4.indexOf "iou" startingAt 16 ifAbsent { 0 }) shouldBe 21
-            assert {vowels4.indexOf "iou" startingAt 22 ifAbsent {
-                ProgrammingError.raise "not found" 
-            }} shouldRaise (ProgrammingError)
+            assert {
+                vowels4.indexOf "iou" startingAt 22 ifAbsent {
+                    ProgrammingError.raise "not found"
+                }
+            } shouldRaise (ProgrammingError)
         }
         method testIndexOfStartingAt {
             def vowels4 = vowels * 4
@@ -436,6 +438,12 @@ def stringTest = object {
             assert(concatLetters.fold { acc, ch -> acc ++ ch } startingWith "<")
                 shouldBe ("<" ++ "abcdef")
 
+        }
+        method testSplit {
+            def result = "this is the way the world ends".split " "
+            def desired = ["this", "is", "the", "way", "the", "world", "ends"] >> list.empty
+            assert (result) shouldBe (desired)
+            assert (result) hasType (List)
         }
     }
 }

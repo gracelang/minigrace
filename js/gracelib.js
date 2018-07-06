@@ -443,6 +443,14 @@ GraceString.prototype = {
             if (result === -1) { return GraceFalse; }
             return GraceTrue;
         },
+        "split(1)": function string_split (argcv, spliter) {
+            var self = this._value;
+            var ary = self.split(spliter._value);
+            for (let i = 0, len = ary.length ; i < len ; i++) {
+                ary[i] = new GraceString(ary[i]);
+            }
+            return new GraceList(ary);
+        },
         "trim": function string_trim (argcv) {
             var self = this._value;
             return new GraceString(self.trim());
