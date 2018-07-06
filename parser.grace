@@ -5,13 +5,9 @@ import "util" as util
 import "errormessages" as errormessages
 
 var lastLine := 0
-var lastIndent := 0
-var indentFreePass := false
-var minIndentLevel := 0
-var statementIndent := 0
 var tokens := false
 var moduleObject
-var comments := emptyList   // so we can request `removeAt`
+var comments := list.empty   // so we can request `removeAt`
 
 var auto_count := 0
 def noBlocks = false
@@ -45,7 +41,7 @@ var values := [ ]
 //      method do(b) { realValues.do(b) }
 //  }
 
-// sym is a module-level field containing the current token
+// sym is a module-level field referring to the current token
 var sym := object {
     def kind is public = "start"
     def line is public = 0
@@ -74,7 +70,6 @@ method next {
     if (tokens.size > 0) then {
         lastToken := sym
         lastLine := lastToken.line
-        lastIndent := lastToken.indent
         sym := tokens.poll
         if (util.verbosity > 110) then { io.error.write "{sym}\n" }
         pushComments
@@ -86,18 +81,16 @@ method next {
     }
 }
 
-method indentHasIncreased {
+method isOnAContinationLine {
     // is lastToken on a line that is a continuation of the previous line?
-
-    if (lastIndent == 0) then {
-        return false        // this ensures that there will be a previous symbol
-                            // on a prior line, and we won't hit start of input.
+    def currentLine = sym.line
+    var s := sym
+    while {s.line == currentLine} do {
+        if (s.hasPrev.not) then { return false }
+        s := s.prev
+        if (s.kind == "separator") then { return false }
     }
-    var s := sym.prev
-    do { s := s.prev } while { s.line == lastLine }
-    if ( s.kind == "lbrace" ) then { return false }
-    if ( s.kind == "comment" ) then { return false }
-    return s.indent < lastIndent
+    return true
 }
 
 method saveParsePosition {
@@ -151,7 +144,7 @@ method findNextTokenIndentedAt(tok) {
 
 method findNextValidToken(validFollowTokens) {
     // Tokens that cannot start an expression.
-    def invalidTokens = set ["dot", "comma", "colon", "rparen",
+    def invalidTokens = set.withAll ["dot", "comma", "colon", "rparen",
             "rbrace", "rsquare", "arrow", "bind"];
     var validToken := sym
     while {validToken.kind != "eof"} do {
@@ -244,21 +237,6 @@ method skipSeparators {
     while { acceptSeparator } do { next }
 }
 
-method acceptSameLine (t) {
-    // True if the current token is a t, and it is on the same logical
-    // line (either because it's on the same physical line, or because
-    // it's on an indented continuation line).
-
-    (sym.kind == t) && 
-        ((lastLine == sym.line) || (sym.indent > lastIndent))
-}
-method acceptWithoutSpaces (t) {
-    // True if the current token is a t, and follows the previous token
-    // without any intervening spaces or continuation lines.
-
-    (sym.kind == t) && 
-        (lastLine == sym.line) && (sym.linePos == (lastToken.linePos + lastToken.size))
-}
 method accept (t) onLineOf (other) {
     // True if the current token is a t, and it is on the same logical
     // line as other (either because it's on the same physical
@@ -269,12 +247,7 @@ method accept (t) onLineOf (other) {
 method accept (t) onLineOfLastOr (other) {
     // True if the current token is a t, and it is on the same logical
     // line as the last token, or the other token.
-    if (sym.kind != t) then { return false }
-    if (lastLine == sym.line) then { return true }
-    if (sym.indent > lastIndent) then { return true }  // continuation last
-    if (other.line == sym.line) then { return true }
-    if (sym.indent > other.indent) then { return true }      // continuation of other
-    return false
+    accept (t)
 }
 method acceptArgumentOnLineOf(tok) {
     // True if the current token can start an argument to a request
@@ -289,16 +262,10 @@ method acceptArgumentOnLineOf(tok) {
 }
 method tokenOnSameLine {
     // returns true if there is a token on the current logical line
-    (lastLine == sym.line) || (sym.indent > lastIndent)
+    (lastLine == sym.line) && (sym.kind ≠ "separator")
 }
 method tokenOnLineOfLastOr (other) {
-    // returns true if there is a token on the current logical line, or one
-    // the same line as `other`
-    if (lastLine == sym.line) then { return true }
-    if (sym.indent > lastIndent) then { return true }   // continuation of last
-    if (other.line == sym.line) then { return true }
-    if (sym.indent > other.indent) then { return true } // continuation of other
-    return false
+    sym.kind ≠ "separator"
 }
 method didConsume (aParsingBlock) {
     // returns true if executing aParsingBlock consumes at least one token.
@@ -449,8 +416,8 @@ method typeexpression {
 }
 
 method newIf(cond, thenList, elseList) {
-    def thenBlock = ast.blockNode.new(emptySequence, thenList)
-    def elseBlock = ast.blockNode.new(emptySequence, elseList)
+    def thenBlock = ast.blockNode.new(sequence.empty, thenList)
+    def elseBlock = ast.blockNode.new(sequence.empty, elseList)
     ast.ifNode.new(cond, thenBlock, elseBlock)
 }
 
@@ -511,10 +478,7 @@ method block {
         def btok = sym
         next
         skipSeparators
-        def oldMinIndent = minIndentLevel
-        def minInd = statementIndent + 2
         def oldStatementToken = statementToken
-        def oldStatementIndent = statementIndent
         statementToken := sym
         var isMatchingBlock := false
 
@@ -529,8 +493,6 @@ method block {
 
         def blockNode = blockBody (params) beginningWith (btok)
         values.push(blockNode)
-        minIndentLevel := oldMinIndent
-        statementIndent := oldStatementIndent
         statementToken := oldStatementToken
     }
 }
@@ -605,9 +567,6 @@ method blockBody(params) beginningWith (btok) {
 
     def originalValues = values
     values := []
-    if (sym.line == lastToken.line) then {
-        indentFreePass := true
-    }
     while {accept "rbrace".not} do {
         // Take the body of the block
         if (didNotConsume {statement}) then {
@@ -736,15 +695,7 @@ method doif {
             // top-level 'else' block --- if there are any 'elseif's, that top-
             // level 'else' will comprise just one statement: another if.
         var v
-        def localMin = minIndentLevel
-        def localStatementIndent = statementIndent
-        var minInd := statementIndent + 2
         if (accept("identifier") && (sym.value == "then")) then {
-            if (sym.linePos < minStartColumn) then {
-                errormessages.syntaxError("the 'then' part of an " ++
-                    "'if(_)then(_)…' must be indented more than the 'if'")
-                    atRange(sym.line, sym.linePos, sym.linePos + 3)
-            }
             next
             if (sym.kind != "lbrace") then {
                 def suggestion = errormessages.suggestion.new
@@ -763,11 +714,6 @@ method doif {
                     lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
             }
             next
-            if (sym.line == lastToken.line) then {
-                minIndentLevel := sym.linePos - 1
-            } else {
-                minIndentLevel := minInd
-            }
             while {didConsume {statement}} do {
                 skipSeparators
                 if (values.isEmpty) then {
@@ -935,11 +881,6 @@ method doif {
                         lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
                 }
                 next
-                if (sym.line == lastToken.line) then {
-                    minIndentLevel := sym.linePos - 1
-                } else {
-                    minIndentLevel := minInd
-                }
                 while {(accept("rbrace")).not} do {
                     if (didNotConsume {statement}) then {
                         def suggestion = errormessages.suggestion.new
@@ -995,11 +936,6 @@ method doif {
                 next
                 // Just take all the statements and put them into
                 // curelse.
-                if (sym.line == lastToken.line) then {
-                    minIndentLevel := sym.linePos - 1
-                } else {
-                    minIndentLevel := minInd
-                }
                 while {(accept("rbrace")).not} do {
                     if (didNotConsume {statement}) then {
                         def suggestion = errormessages.suggestion.new
@@ -1061,8 +997,6 @@ method doif {
                   "the condition in parentheses.")
                   atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
         }
-        minIndentLevel := localMin
-        statementIndent := localStatementIndent
     }
 }
 
@@ -1079,7 +1013,6 @@ method identifier {
 }
 
 method prefixop {
-    def startIndent = minIndentLevel
     if (accept "op") then {
         var op := sym.value
         next
@@ -1132,7 +1065,6 @@ method prefixop {
             [ ast.requestPart.request("prefix" ++ op) withArgs( [] ) ] )
         call.end := ast.line (lastLine) column (lastToken.endPos)
         values.push(call)
-        minIndentLevel := startIndent
     }
 }
 
@@ -1200,7 +1132,6 @@ method trycatch {
     if (!(accept "identifier" && {sym.value == "try"})) then {
         return
     }
-    def localmin = minIndentLevel
     def tryTok = sym
     next
     if (accept "lbrace") then {
@@ -1369,13 +1300,11 @@ method trycatch {
     }
     util.setPosition(tryTok.line, tryTok.linePos)
     values.push(ast.tryCatchNode.new(mainblock, cases, finally))
-    minIndentLevel := localmin
 }
 method matchcase {
     if (!(accept("identifier") && (sym.value == "match"))) then {
         return 0
     }
-    def localmin = minIndentLevel
     def matchTok = sym
     next
     if (sym.kind != "lparen") then {
@@ -1471,7 +1400,6 @@ method matchcase {
     }
     util.setPosition(matchTok.line, matchTok.linePos)
     values.push(ast.matchCaseNode.new(matchee, cases))
-    minIndentLevel := localmin
 }
 // Accept a term. Terms consist only of single syntactic units and
 // do not contain any operators or parentheses, unlike expression.
@@ -1568,7 +1496,7 @@ method toprec(ops) {
 
 
 method typeexpressionrest {
-    if (acceptSameLine("op")) then {
+    if (accept("op")) then {
         expressionrest "type expression" recursingWith {typeexpression} blocks (noBlocks)
     }
 }
@@ -1586,7 +1514,6 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
     // left-associative.  It is parameterised so that it
     // can be used for both type- and value- expressions.
     
-    def startIndent = minIndentLevel
     var terms := [] // List of operands yet to be used
     var ops := [] // Operator stack
     var o
@@ -1725,7 +1652,6 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
     if (terms.size > 0) then {
         errormessages.syntaxError("values left on term stack.")atPosition(sym.line, sym.linePos)
     }
-    minIndentLevel := startIndent
 }
 
 method dotrest(acceptBlocks) {
@@ -1735,8 +1661,7 @@ method dotrest(acceptBlocks) {
     // parts of a following method name and its arguments.   Any following
     // dotted requests will also be parsed, by recursive invocations.
 
-    if (acceptSameLine("dot")) then {
-        def startIndent = minIndentLevel
+    if (accept("dot")) then {
         util.setPosition(sym.line, sym.linePos)
         var lookuptarget := values.pop
         next
@@ -1765,7 +1690,6 @@ method dotrest(acceptBlocks) {
             errormessages.syntaxError("a field or method name must follow a '.'.")atPosition(
                 sym.line, sym.linePos)withSuggestions(suggestions)
         }
-        minIndentLevel := startIndent
     }
 }
 
@@ -1805,7 +1729,7 @@ method callrest(acceptBlocks) {
         // been parse and are in `meth`.  When used to parse a type expression,
         // they are in the unparsed input.  This is probably a bug!
     if (false == g) then {
-        if (acceptSameLine "lgeneric") then {
+        if (accept "lgeneric") then {
             genericIdents := typeArgs
         }
     } else {
@@ -1830,7 +1754,7 @@ method callrest(acceptBlocks) {
             if (argsFound.not) then {
                 def suggestion = errormessages.suggestion.new
                 suggestion.insert "(‹expression›)" afterToken (lastToken)
-                def more = if (indentHasIncreased) then {
+                def more = if (isOnAContinationLine) then {
                     "  The indentation tells me that this is a continuation of" ++
                         " the previous line; is that what you intended?"
                 } else { "" }
@@ -1860,7 +1784,7 @@ method parseArgumentsFor(meth) into (part) acceptBlocks (acceptBlocks) {
 
 
     var tok := lastToken
-    if (acceptSameLine "lparen") then {
+    if (accept "lparen") then {
         tok := sym
         parenthesizedArgs(part) startingWith (tok)
         true
@@ -2019,7 +1943,6 @@ method defdec {
     // Accept definition of a constant
 
     if (acceptKeyword "def") then {
-        def startIndent = minIndentLevel
         def line = sym.line
         def pos = sym.linePos
         def defTok = sym
@@ -2050,7 +1973,6 @@ method defdec {
         o.startToken := defTok
         values.push(o)
         reconcileComments
-        minIndentLevel := startIndent
     }
 }
 
@@ -2058,7 +1980,6 @@ method vardec {
     // Accept a var declaration
 
     if (acceptKeyword "var") then {
-        def startIndent = minIndentLevel
         def line = sym.line
         def pos = sym.linePos
         def varTok = sym
@@ -2122,7 +2043,6 @@ method vardec {
         if (false != anns) then { o.annotations.addAll(anns) }
         values.push(o)
         reconcileComments
-        minIndentLevel := startIndent
     }
 }
 
@@ -2302,7 +2222,6 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
     // values stack.  Common code for parsing object and class
     // bodies; constructName says which, so that error messages are correct.
     // btok is the keyword token that started the construct: class, object, or trait.
-    def localMinIndentLevel = minIndentLevel
     def anns = doannotation
     if (sym.kind != "lbrace") then {
         def suggestion = errormessages.suggestion.new
@@ -2317,11 +2236,6 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
             withSuggestion(suggestion)
     }
     next
-    if (sym.line == statementToken.line) then {
-        minIndentLevel := sym.linePos - 2
-    } else {
-        minIndentLevel := statementToken.indent + 2
-    }
     def originalValues = values
     values := []
     var superObject := false
@@ -2365,7 +2279,6 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
     if (false != anns) then { objNode.annotations.addAll(anns) }
     objNode.usedTraits := usedTraits
     values.push(objNode)
-    minIndentLevel := localMinIndentLevel
 }
 
 method doclass {
@@ -2406,7 +2319,6 @@ method doclass {
 
     def btok = sym
     next
-    def localMinIndentLevel = minIndentLevel
     if (sym.kind != "identifier") then {
         def suggestions = [ ]
         if (sym.kind == "lbrace") then {
@@ -2448,7 +2360,6 @@ method doclass {
     }
     values.push(meth)
     reconcileComments
-    minIndentLevel := localMinIndentLevel
     separator
 }
 
@@ -2474,20 +2385,12 @@ method methoddec {
         statementToken := sym
         next
         def methNode = methodsignature(false).setPositionFrom(btok)
-        var localMin
         def anns = doannotation
         def originalValues = values
         values := []
         if (accept "lbrace") then {
             next
-            localMin := minIndentLevel
             // sym is now the first token in the method body
-            if (sym.line == btok.line) then {
-                // first statement is on the same line as `method` keyword
-                minIndentLevel := sym.linePos - 1
-            } else {
-                minIndentLevel := btok.indent + 2
-            }
             while { didConsume { statement } } do { }
                 // The body is a sequence of statements; the method ends
                 // when no further statement is found.
@@ -2512,7 +2415,6 @@ method methoddec {
                     sym.line, sym.linePos)withSuggestion(suggestion)
             }
             next
-            minIndentLevel := localMin
         } else {
             def suggestion = errormessages.suggestion.new
             def closingBrace = findClosingBrace(btok, true)
@@ -2562,7 +2464,7 @@ method methodDecRest(tm, sameline) {
     // tm is a methodNode.  This method modifies tm.params in place.
 
     var signature := tm.signature
-    while {(!sameline && accept("identifier")) || acceptSameLine("identifier")} do {
+    while {(!sameline && accept("identifier")) || accept("identifier")} do {
         pushidentifier
         def part = ast.signaturePart.partName(values.pop.nameString)
         if ((accept("lparen")).not) then {
@@ -2700,7 +2602,7 @@ method methodsignature(sameline) {
         }
         next
         if ((!sameline && accept("identifier")) ||
-            acceptSameLine("identifier")) then {
+            accept("identifier")) then {
             // The presence of an identifier here means
             // a multi-part method name.
             methodDecRest(result, sameline)
@@ -2962,7 +2864,6 @@ method statement {
     // can be any arbitrary expression).
 
     skipSeparators
-    statementIndent := sym.indent
     statementToken := sym
     def btok = sym
     pushComments
@@ -3066,8 +2967,8 @@ method reconcileComments {
         return
     }
     def oLine = node.line
-    def preComments = emptyList
-    def postComments = emptyList
+    def preComments = list.empty
+    def postComments = list.empty
 
     var ix := comments.size
     while { ix > 0 } do {
@@ -3186,13 +3087,6 @@ method parse(toks) {
     tokens := toks
     while { next ; acceptSeparator } do { }
 
-    if (sym.indent > 0) then {
-        def sugg = errormessages.suggestion.new
-        sugg.deleteRange(1, sym.indent) onLine(sym.line)
-        errormessages.syntaxError "the first line must not be indented."
-            atRange(sym.line, 1, sym.indent)
-            withSuggestion(sugg)
-    }
     var oldlength := tokens.size
     while {tokens.size > 0} do {
         pushComments
