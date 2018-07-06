@@ -5,17 +5,17 @@
 
 
 This file describes the purpose of some of the top-level makefile targets.  Type `make <targetName>` to use one.
-All of these taregts use the version of minigrace that compiles to JavaScipt.
+All of these targets use the version of minigrace that compiles to JavaScipt.
 The C, Java and LLVM backends are no longer supported. 
 
 ### minigrace-js-env
 
-Builds everything necessary to use the minigrace compiler with the JS-backend, _using_ the C-language backend.
+Builds everything necessary to use the minigrace compiler with the JS-backend.
 
 ### install
 
 Installs a complete set of files into the directory tree rooted at PREFIX.  PREFIX is typically set to something like
-`usr/local` in the environment or on the make command line.  Files are written to $(PREFIX)/bin, $(PREFIX)/include, $(PREFIX)/lib/grace/modules, and $(PREFIX)/lib/grace.
+`/usr/local` in the environment or on the make command line.  Files are written to $(PREFIX)/bin, $(PREFIX)/include, $(PREFIX)/lib/grace/modules, and $(PREFIX)/lib/grace.
 
 ### self.test
 
