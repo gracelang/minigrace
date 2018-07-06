@@ -88,15 +88,15 @@ class new {
     var lineNumber := 1
     var linePosition := 0
     var startPosition := 1
-    var indentLevel := 0
+    var currentLineIndent := 0
     var startLine := 1
     var stringStart
     var unichars := 0
     var braceChange
     var currentLineBraceDepth := 0
-    // var currentLineIndent is replaced by indentLevel; rename?
     var indentOfLineBeingContinued := noSuchLine
-    var indentStack := list.with 0
+    var indentStack := list.with 0  // the indent is the number of leading spaces,
+        // and hence one less than the position of the first non-space character.
     var maxIndentOfContinuation
     var priorLineBraceDepth := 0
     var priorLineIndent := 0
@@ -111,7 +111,7 @@ class new {
 
     class token {
         def line is public = lineNumber
-        def indent is public = indentLevel
+        def indent is public = currentLineIndent
         def linePos is public = startPosition
 
         def null = object {
@@ -133,6 +133,7 @@ class new {
         method value { abstract }
         method size { abstract }
         method kind { abstract }
+        method endLine { line }
         method endPos { linePos + size - 1 }
         method isHeader { false }
         method hasPrev { prev.isHeader.not }
@@ -156,12 +157,10 @@ class new {
         def kind is public = "string"
         def value is public = s
         def size is public = s.size + 2
-        def line' = startLine
-        def linePos' = stringStart
-        method line is override { line' }
-        method linePos is override { linePos' }
-        method endLine { lineNumber }
-        method endPos is override { linePosition }
+        def linePos is public = stringStart
+        def line is override, public = startLine
+        def endLine is override, public = lineNumber
+        def endPos is override, public = linePosition
     }
     class commentToken(s) {
         inherit token
@@ -260,12 +259,16 @@ class new {
         def value is public = ";"
         def size is public = 1
     }
-    class separatorToken {
+    class separatorTokenAt(lineNum, pos) {
         inherit token
         def kind is public = "separator"
         def value is public = "\n"
         def size is public = 1
         method asString { "({line}.{linePos}){self.kind} \\n" }
+        def line is override, public = lineNum
+        def linePos is override, public = pos
+        def endLine is override, public = lineNumber
+        def endPos is override, public = currentLineIndent
     }
     class lGenericToken {
         inherit token
@@ -299,6 +302,13 @@ class new {
     method emit(t) {
         tokens.push(t)
         accum := ""
+    }
+    method emitNewlineSeparator {
+        // we have already consumed the leading spaces on the following line.
+        // We want the newline's coordinates to be those of the end of the prior line.
+        if (tokens.isEmpty) then { return }
+        def lastToken = tokens.last
+        emit(separatorTokenAt(lineNumber - 1, lastToken.endPos + 1))
     }
     method store(c) { accum := accum ++ c }
 
@@ -426,7 +436,7 @@ class new {
             } elseif {c == ";"} then {
                 emit(semicolonToken)
             } elseif {c == "\n"} then {
-                indentLevel := 0
+                currentLineIndent := 0
                 advanceTo(indentationState)
             } else {
                 if((unicode.isSeparator(ordval).not) &&
@@ -815,7 +825,7 @@ class new {
     def indentationState = object {
         method consume (c) {
             if (spaceChars.contains(c)) then {
-                indentLevel := linePosition
+                currentLineIndent := linePosition
             } else {
                 checkIndentation(c)
                 advanceTo(defaultState)
@@ -836,7 +846,7 @@ class new {
         method consume (c) {
             if (c == "\n") then {
                 emit (commentToken(accum))
-                indentLevel := 0
+                currentLineIndent := 0
                 advanceTo(indentationState)
             } else {
                 store(c)
@@ -862,7 +872,7 @@ class new {
             if (priorLineEndsWithOpenBracket) then {
                 return
             } else {
-                emit(separatorToken)
+                emitNewlineSeparator
                 return
             }
         }
@@ -875,7 +885,7 @@ class new {
         if (currentLineIndent < priorLineIndent) then { checkOutdent }
         saveDataForPriorLine
         if ( ")]}⟧".contains(currentCharacter) ) then { return }
-        emit(separatorToken)
+        emitNewlineSeparator
     }
 
     method isLineEmpty(currentCharacter) {
@@ -890,7 +900,6 @@ class new {
         return "/" == followingCharacter
     }
     method followingCharacter {
-        // TODO: this is horrible!  How to make it nice?
         def currentLine = inputLines.at (lineNumber)
         if (currentLine.size == linePosition) then {
             "\n"
@@ -926,7 +935,6 @@ class new {
             braceChange := braceChange - 1
         }
     }
-    method currentLineIndent { indentLevel }  // TODO: refactor
     method isBlockStart {
         braceChange > 0
     }
