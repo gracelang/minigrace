@@ -4,7 +4,7 @@ import "unicode" as unicode
 import "typeComparison" as tc
     // TODO: make the gracelib version of canonicalName
     // available as a method
-import "minispec" as minispec
+import "nospec" as minispec
 inherit minispec.methods
     exclude list
     exclude list(_)
@@ -183,14 +183,12 @@ def bsVisitor = object {
             DialectError.raise "no return type given to method '{v.canonicalName}'" 
                 with (ast.start(v.start)
                             end(v.signature.last.end))
-        } elseif {
-            (v.dtype.nameString ≠ "Done") && {
-                ((lowerCommentString.contains "returns") || (lowerCommentString.contains "answers")).not
-            }
-        } then {
+        } elseif {(v.dtype.nameString ≠ "Done") && {
+              ((lowerCommentString.contains "returns") || (lowerCommentString.contains "answers")).not} } then {
             DialectError.raise ("purpose statement of method '{v.canonicalName}" ++
                 "does not describe what it returns") with (v.comments)
         }
+            
         true
     }
     method visitBlock(v) -> Boolean {

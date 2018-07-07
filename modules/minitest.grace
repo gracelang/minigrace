@@ -63,6 +63,10 @@ method assert(b:Block) shouldRaise (desired:prelude.ExceptionKind) {
     mtAssertion.assert(b) shouldRaise (desired)
 }
 
+method assert(b:Block) shouldRaise (undesired:prelude.ExceptionKind) mentioning(error:String){
+    mtAssertion.assert(b) shouldRaise (undesired) mentioning(error)
+}
+
 method assert(b:Block) shouldntRaise (undesired:prelude.ExceptionKind) {
     mtAssertion.assert(b) shouldntRaise (undesired)
 }

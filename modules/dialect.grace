@@ -284,14 +284,15 @@ class aPatternMatchingNode(kind : String) -> Pattern {
     inherit BasicPattern.new
 
     method match(obj : Object) -> MatchResult {
-        match(obj) 
-          case { node : AstNode ->
+        match(obj) case { node : AstNode ->
             if(kind == node.kind) then {
                 SuccessfulMatch.new(node, [])
             } else {
                 FailedMatch.new(node)
             }
-          } case { _ -> FailedMatch.new(obj) }
+        } case { _ ->
+            FailedMatch.new(obj)
+        }
     }
 }
 
@@ -332,16 +333,15 @@ class RequestOf(methodName:String) -> Pattern {
     inherit BasicPattern.new
 
     method match(obj:Object) -> MatchResult {
-        match(obj) 
-            case { node:AstNode ->
-                if (node.isCall && {node.canonicalName == methodName}) then {
-                    SuccessfulMatch.new(node, makeBindings(node))
-                } else {
-                    FailedMatch.new(node)
-                }
-            } case { _ ->
-                FailedMatch.new(obj)
+        match(obj) case { node:AstNode ->
+            if (node.isCall && {node.canonicalName == methodName}) then {
+                SuccessfulMatch.new(node, makeBindings(node))
+            } else {
+                FailedMatch.new(node)
             }
+        } case { _ ->
+            FailedMatch.new(obj)
+        }
     }
 
     method makeBindings(node) { [] }

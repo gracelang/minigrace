@@ -146,10 +146,10 @@ def aMethodType = object {
             }
 
             def rType = match (meth) case { m: Method | Class ->
-                            m.dtype
-                        } case { m: MethodSignature ->
-                            meth.rtype
-                        } case { _ -> }
+                m.dtype
+            } case { m: MethodSignature ->
+                meth.rtype
+            } case { _ -> }
 
             return signature (signature)
                 returnType (objectType.fromDType (rType))
@@ -664,12 +664,12 @@ rule { req: Request ->
             def name = innerReq.canonicalName
 
             match (rType.getMethod (name))
-                case { (noSuchMethod) ->
-                    RequestError.raise ("no method `{name}` in " ++
-                        "`{rec.toGrace (0)}` of type `{rType}`") with (innerReq)
-                } case { meth: MethodType ->
-                    check (req) against (meth)
-                }
+              case { (noSuchMethod) ->
+                RequestError.raise ("no method `{name}` in " ++
+                    "`{rec.toGrace (0)}` of type `{rType}`") with (innerReq)
+            } case { meth: MethodType ->
+                check (req) against (meth)
+            }
         }
     } case { ident: Identifier ->
         find (req) atScope (scope.methods.stack.size)

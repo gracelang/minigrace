@@ -91,6 +91,9 @@ class assertion {
         assert ((n1 - n2).abs ≤ epsilon) description "‹{n1.asDebugString}› should be approximately ‹{n2.asDebugString}›"
     }
     method assert(block0) shouldRaise (desiredException) {
+        assert(block0) shouldRaise (desiredException) mentioning ""
+    }
+    method assert(block0) shouldRaise (desiredException) mentioning (error) {
         var completedNormally
         countOneAssertion
         try {
@@ -98,6 +101,11 @@ class assertion {
             completedNormally := true
         } catch { raisedException:desiredException ->
             completedNormally := false
+            if (raisedException.message.contains(error).not) then {
+                failBecause("code raised exception {raisedException.exception}"
+                    ++ ", but the message was \"{raisedException.message}\", "
+                    ++ ", which does not mention \"{error}\"")
+            }
         } catch { raisedException ->
             failBecause("code raised exception {raisedException.exception}" ++
                 ": \"{raisedException.message}\" instead of {desiredException}")
@@ -157,13 +165,11 @@ class assertion {
         return s
     }
     method deny(value) hasType (Undesired:Type) {
-        match (value)
-            case { _:Undesired ->
-                failBecause "{value.asDebugString} has type {Undesired}"
-            }
-            case { _ -> 
-                countOneAssertion 
-            }
+        match (value) case { _:Undesired ->
+            failBecause "{value.asDebugString} has type {Undesired}"
+        } case { _ -> 
+            countOneAssertion 
+        }
     }
 }
 
