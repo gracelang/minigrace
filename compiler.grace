@@ -15,87 +15,91 @@ util.parseargs(buildinfo)
 
 util.log_verbose "starting compilation"
 
-var tokens := lexer.new.lexfile(util.infile)
-if (util.target == "lex") then {
-    // Print the lexed tokens and quit.
-    for (tokens) do { v ->
-        def val = if ("\n" == v.value) then { "\\n" } else { v.value }
-        if (util.verbosity > 30) then {
-            util.outprint "{v.kind}: {val}  [pos: {v.line}.{v.linePos} size: {v.size} indent: {v.indent}]"
-        } else {
-            util.outprint "{v.kind}: {val}"
+try {
+    var tokens := lexer.new.lexfile(util.infile)
+    if (util.target == "lex") then {
+        // Print the lexed tokens and quit.
+        for (tokens) do { v ->
+            def val = if ("\n" == v.value) then { "\\n" } else { v.value }
+            if (util.verbosity > 30) then {
+                util.outprint "{v.kind}: {val}  [pos: {v.line}.{v.linePos} size: {v.size} indent: {v.indent}]"
+            } else {
+                util.outprint "{v.kind}: {val}"
+            }
         }
+        util.outfile.close
+        sys.exit(0)
     }
-    util.outfile.close
-    sys.exit(0)
-}
 
-var moduleObject := parser.parse(tokens)
+    var moduleObject := parser.parse(tokens)
 
-if (util.extensions.contains "NativePrelude") then {
-    moduleObject.theDialect := ast.dialectNode.new "none"
-    // for backward compatibility
-}
-
-var values := moduleObject.value
-
-if (util.target == "parse") then {
-    // Parse mode pretty-prints the parse tree and quits.
-//    util.log 60 verbose "target = parse, outfile = {util.outfile}."
-    util.outprint(moduleObject.pretty(0))
-//    util.log 60 verbose "done writing {util.outfile}."
-    util.outfile.close
-    sys.exit(0)
-}
-if (util.target == "grace") then {
-    for (values) do { v ->
-        util.outprint(v.toGrace(0))
+    if (util.extensions.contains "NativePrelude") then {
+        moduleObject.theDialect := ast.dialectNode.new "none"
+        // for backward compatibility
     }
-    util.outfile.close
-    sys.exit(0)
-}
 
-xmodule.checkDialect(moduleObject)
-xmodule.doParseCheck(moduleObject)
+    var values := moduleObject.value
 
-if (util.extensions.contains("Plugin")) then {
-    mirrors.loadDynamicModule(util.extensions.get("Plugin")).processAST(values)
-}
-if (util.target == "imports") then {
-    def imps = emptySet
-    def vis = object {
-        inherit ast.baseVisitor
-        method visitImport(o) -> Boolean {
-            imps.add(o.path)
-            false
+    if (util.target == "parse") then {
+        // Parse mode pretty-prints the parse tree and quits.
+    //    util.log 60 verbose "target = parse, outfile = {util.outfile}."
+        util.outprint(moduleObject.pretty(0))
+    //    util.log 60 verbose "done writing {util.outfile}."
+        util.outfile.close
+        sys.exit(0)
+    }
+    if (util.target == "grace") then {
+        for (values) do { v ->
+            util.outprint(v.toGrace(0))
         }
+        util.outfile.close
+        sys.exit(0)
     }
-    moduleObject.accept(vis)
 
-    list(imps).sort.do { im ->
-        util.outprint(im)
+    xmodule.checkDialect(moduleObject)
+    xmodule.doParseCheck(moduleObject)
+
+    if (util.extensions.contains("Plugin")) then {
+        mirrors.loadDynamicModule(util.extensions.get("Plugin")).processAST(values)
     }
-    util.outfile.close
-    sys.exit(0)
-}
-moduleObject := identifierresolution.resolve(moduleObject)
-if ((util.target == "processed-ast") || (util.target == "ast")) then {
-    util.outprint "====================================="
-    util.outprint "module-level symbol table"
-    util.outprint (moduleObject.scope.asStringWithParents)
-    util.outprint "====================================="
-    util.outprint(moduleObject.pretty(0))
-    util.outfile.close
-    sys.exit(0)
-}
+    if (util.target == "imports") then {
+        def imps = emptySet
+        def vis = object {
+            inherit ast.baseVisitor
+            method visitImport(o) -> Boolean {
+                imps.add(o.path)
+                false
+            }
+        }
+        moduleObject.accept(vis)
 
-xmodule.doAstCheck(moduleObject)
+        list(imps).sort.do { im ->
+            util.outprint(im)
+        }
+        util.outfile.close
+        sys.exit(0)
+    }
+    moduleObject := identifierresolution.resolve(moduleObject)
+    if ((util.target == "processed-ast") || (util.target == "ast")) then {
+        util.outprint "====================================="
+        util.outprint "module-level symbol table"
+        util.outprint (moduleObject.scope.asStringWithParents)
+        util.outprint "====================================="
+        util.outprint(moduleObject.pretty(0))
+        util.outfile.close
+        sys.exit(0)
+    }
 
-// Perform the actual compilation
-match(util.target)
-  case { "js" ->
-    genjs.compile(moduleObject, util.outfile, util.buildtype, util.gracelibPath)
-} case { _ ->
-    io.error.write("minigrace: no such target '" ++ util.target ++ "'\n")
-    sys.exit(1)
+    xmodule.doAstCheck(moduleObject)
+
+    // Perform the actual compilation
+    match(util.target)
+      case { "js" ->
+        genjs.compile(moduleObject, util.outfile, util.buildtype, util.gracelibPath)
+    } case { _ ->
+        io.error.write("minigrace: no such target '" ++ util.target ++ "'\n")
+        sys.exit(1)
+    }
+} catch { se:util.SyntaxError ->
+    util.generalError("Syntax error: {se.message}", se.data.lineNum, se.data.position, se.data.arrow, se.data.sugg)
 }

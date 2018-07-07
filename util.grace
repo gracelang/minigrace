@@ -242,8 +242,9 @@ method outprint(s) {
     outfilev.write("\n")
 }
 
+def SyntaxError is public = Exception.refine "SyntaxError"
 
-method syntaxError(message, errlinenum, position, arr, suggestions) {
+method syntaxError(message, errLinenum, errPosition, arr, suggestions) {
     // Used by various wrapper methods in the errormessages module.
     // The parameters mean:
     //   - message: The text of the error message.
@@ -251,7 +252,13 @@ method syntaxError(message, errlinenum, position, arr, suggestions) {
     //   - position: A string used to show the position of the error in the error message.
     //   - arr: The string used to draw an arrow showing the position of the error.
     //   - suggestions: A (possibly empty) list of suggestions to correct the error.
-    generalError("Syntax error: {message}", errlinenum, position, arr, suggestions)
+    def errorObj = object {
+        def lineNum is public = errLinenum
+        def position is public = errPosition
+        def arrow is public = arr
+        def sugg is public = suggestions
+    }
+    SyntaxError.raise (message) with (errorObj)
 }
 
 method startupFailure (message) {
