@@ -941,7 +941,7 @@ class set⟦T⟧ {
         a.do { x -> result.add(x) }
         result
     }
-    method with(x) -> List⟦T⟧ {
+    method with(x:T) -> Set⟦T⟧ {
         empty.add(x)
     }
     method empty -> Set⟦T⟧ {
