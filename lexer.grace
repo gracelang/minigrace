@@ -138,6 +138,27 @@ class new {
         method isHeader { false }
         method hasPrev { prev.isHeader.not }
         method hasNext { next.isHeader.not }
+        method isIdentifier { false }
+        method isString { false }
+        method isComment { false }
+        method isLBrace { false }
+        method isRBrace { false }
+        method isLParen { false }
+        method isRParen { false }
+        method isLSquare { false }
+        method isRSquare { false }
+        method isComma { false }
+        method isColon { false }
+        method isDot { false }
+        method isNum { false }
+        method isKeyword { false }
+        method isOp { false }
+        method isArrow { false }
+        method isBind { false }
+        method isSeparator { false }
+        method isLGeneric { false }
+        method isRGeneric { false }
+        method isEof { false }
     }
 
     class identifierToken(s) {
@@ -145,12 +166,14 @@ class new {
         def kind is public = "identifier"
         def value is public = s
         def size is public = s.size
+        method isIdentifier { true }
     }
     class stringToken(s) {
         inherit token
         def kind is public = "string"
         def value is public = s
         def size is public = linePosition - startPosition + 1
+        method isString { true }
     }
     class multiLineStringToken(s) {
         inherit token
@@ -161,66 +184,77 @@ class new {
         def line is override, public = startLine
         def endLine is override, public = lineNumber
         def endPos is override, public = linePosition
+        method isString { true }
     }
     class commentToken(s) {
         inherit token
         def kind is public = "comment"
         def value is public = s
         def size is public = s.size + 2
+        method isComment { true }
     }
     class lBraceToken {
         inherit token
         def kind is public = "lbrace"
         def value is public = "\{"
         def size is public = 1
+        method isLBrace { true }
     }
     class rBraceToken {
         inherit token
         def kind is public = "rbrace"
         def value is public = "}"
         def size is public = 1
+        method isRBrace { true }
     }
     class lParenToken {
         inherit token
         def kind is public = "lparen"
         def value is public = "("
         def size is public = 1
+        method isLParen { true }
     }
     class rParenToken {
         inherit token
         def kind is public = "rparen"
         def value is public = ")"
         def size is public = 1
+        method isRParen { true }
     }
     class lSquareToken {
         inherit token
         def kind is public = "lsquare"
         def value is public = "["
         def size is public = 1
+        method isLSquare { true }
     }
     class rSquareToken {
         inherit token
         def kind is public = "rsquare"
         def value is public = "]"
         def size is public = 1
+        method isRSquare { true }
     }
     class commaToken {
         inherit token
         def kind is public = "comma"
         def value is public = ","
         def size is public = 1
+        method isComma { true }
     }
     class colonToken {
         inherit token
         def kind is public = "colon"
         def value is public = ":"
         def size is public = 1
+        method isColon { true }
     }
     class dotToken {
         inherit token
         def kind is public = "dot"
         def value is public = "."
         def size is public = 1
+        method isDot { true }
     }
     class numToken(v, b) {
         inherit token
@@ -228,36 +262,42 @@ class new {
         def value is public = v
         def base is public = b
         def size is public = linePosition - startPosition + 1
+        method isNum { true }
     }
     class keywordToken(v) {
         inherit token
         def kind is public = "keyword"
         def value is public = v
         def size is public = v.size
+        method isKeyword { true }
     }
     class opToken(v) {
         inherit token
         def kind is public = "op"
         def value is public = v
         def size is public = v.size
+        method isOp { true }
     }
     class arrowToken {
         inherit token
         def kind is public = "arrow"
         def value is public = "→"
         def size is public = 1
+        method isArrow { true }
     }
     class bindToken {
         inherit token
         def kind is public = "bind"
         def value is public = ":="
         def size is public = 2
+        method isBind { true }
     }
     class semicolonToken {
         inherit token
         def kind is public = "semicolon"
         def value is public = ";"
         def size is public = 1
+        method isSeparator { true }
     }
     class separatorTokenAt(lineNum, pos) {
         inherit token
@@ -269,24 +309,28 @@ class new {
         def linePos is override, public = pos
         def endLine is override, public = lineNumber
         def endPos is override, public = currentLineIndent
+        method isSeparator { true }
     }
     class lGenericToken {
         inherit token
         def kind is public = "lgeneric"
         def value is public = "⟦"
         def size is public = 1
+        method isLGeneric { true }
     }
     class rGenericToken {
         inherit token
         def kind is public = "rgeneric"
         def value is public = "⟧"
         def size is public = 1
+        method isRGeneric { true }
     }
     class eofToken {
         inherit token
         def kind is public = "eof"
         def value is public = ""
         def size is public = 0
+        method isEof { true }
     }
 
     var state
