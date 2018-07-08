@@ -12,6 +12,9 @@
 // that are components of the program being compiled.  In particular,
 // this will be so when the compiler is being bootstrapped.
 
+// This script also allocates more memory, because the compiler was
+// running out when compiling ast.grace.
+
 // Eventually, the code common to this file, grace.in, and js/minigrace.js
 // should be factored out and placed in a single file.
 
