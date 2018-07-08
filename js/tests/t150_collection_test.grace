@@ -317,8 +317,8 @@ def sequenceTest = object {
             assert(evens.size) shouldBe 4
         }
         method testSingletonSequenceSize {
-            def singleton = sequence.with "a word"
-            assert (singleton.size) shouldBe 1
+            def singletonSeq = sequence.with "a word"
+            assert (singletonSeq.size) shouldBe 1
         }
         method testSequenceEmptyDo {
             empty.do {each -> failBecause "emptySequence.do did with {each}"}
@@ -596,8 +596,8 @@ def listTest = object {
         }
         
         method testSingletonListeSize {
-            def singleton = list.with "a word"
-            assert (singleton.size) shouldBe 1
+            def singletonSeq = list.with "a word"
+            assert (singletonSeq.size) shouldBe 1
         }
 
         method testListEmptyDo {
@@ -1082,8 +1082,8 @@ def setTest = object {
             assert(evens.size) shouldBe 4
         }
         method testSingletonSetSize {
-            def singleton = set.with "a word"
-            assert (singleton.size) shouldBe 1
+            def singletonSeq = set.with "a word"
+            assert (singletonSeq.size) shouldBe 1
         }
 
         method testSetEmptyDo {
