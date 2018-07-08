@@ -1319,6 +1319,13 @@ class new {
         lexInputLines
     }
 
+    method lexString (inputString) {
+        // this method is here to make it easier to test the lexer
+        def input = inputString.split "\n"
+        util.lines.addAll(input)
+        lexInputLines
+    }
+
     method lexInputLines {
         // tokens is a doubly-linked list of tokens.
         tokens := object {
