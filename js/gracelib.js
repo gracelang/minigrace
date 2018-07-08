@@ -1808,6 +1808,13 @@ GraceType.prototype = {
                     return GraceFalse;
                 }
             }
+            for (var nm in this.typeTypes) {
+                if (this.typeTypes.hasOwnProperty(nm)) {
+                    if (!other.methods[nm]) {
+                        return GraceFalse;
+                    }
+                }
+            }
             return new GraceSuccessfulMatch(other);
         },
         "|(1)": function type_or(argcv, other) {
