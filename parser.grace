@@ -2272,6 +2272,7 @@ method parseObjectConstructorBody (constructName) startingWith (btok) after (pre
                 "of {constructName}")
                 atRange(sym.line, sym.linePos, sym.endPos)
         }
+        skipSeparators
     }
     def body = values
     values := originalValues
