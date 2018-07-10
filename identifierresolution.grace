@@ -685,6 +685,7 @@ method transformIdentifier(node) ancestors(anc) {
     checkForAmbiguityOf (node) definedIn (definingScope) asA (nodeKind)
     def v = definingScope.variety
     if (v == "built-in") then { return node }
+    if (v == "typedec") then { return node }
     if (v == "dialect") then {
         def p = ast.identifierNode.new("prelude", false) scope(nodeScope)
         return ast.memberNode.new(nm, p) scope(nodeScope).onSelf
