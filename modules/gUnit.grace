@@ -103,7 +103,7 @@ class assertion {
             completedNormally := false
             if (raisedException.message.contains(error).not) then {
                 failBecause("code raised exception {raisedException.exception}"
-                    ++ ", but the message was \"{raisedException.message}\", "
+                    ++ ", but the message was \"{raisedException.message}\""
                     ++ ", which does not mention \"{error}\"")
             }
         } catch { raisedException ->
