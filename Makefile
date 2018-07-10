@@ -166,9 +166,6 @@ gencheck:
 
 gracedoc: tools/gracedoc
 
-grace-debug: js/grace-debug
-	ln -f $< $@
-
 grace-web-editor/index.html: pull-web-editor grace-web-editor/index.in.html
 	./tools/includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	./tools/calc-IDE-version
@@ -217,6 +214,10 @@ j1-minigrace: $(J1-MINIGRACE)
 
 j2/animation.js: j2/timer.gct j2/timer.js
 
+j2/compiler-inspect: j2/compiler-js
+	sed -e "s|#!/usr/bin/env node|#!/usr/bin/env node --inspect|" $< > $@
+	chmod a+x $@
+
 j2/rtobjectdraw.js: j2/requireTypes.js
 
 j2/stobjectdraw.js: j2/staticTypes.js
@@ -231,10 +232,10 @@ $(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
 
 $(JS-KG)/compiler-js: js/compiler-js
 	if [ ! -e $(JS-KG) ] ; then mkdir -p $(JS-KG) ; fi
-	cp -p js/compiler-js $(JS-KG)
+	cp -p $< $@
 
-$(JS-KG)/minigrace-js: $(JS-KG)/compiler-js
-	cp -p js/minigrace-js $(JS-KG)
+$(JS-KG)/minigrace-js: js/minigrace-js
+	cp -p $< $@
 
 $(JSONLY:%.grace=js/%.js): js/%.js: modules/%.grace js/dom.gct minigrace js/timer.gct
 	GRACE_MODULE_PATH=js:modules ./minigrace --dir js --make $(VERBOSITY) $<
@@ -248,6 +249,9 @@ $(JSRUNNERS:%=j1/%): j1/%: $(JS-KG)/%
 	cp -p $< $@
 
 $(JSRUNNERS:%=j2/%): j2/%: js/%
+	cp -p $< $@
+
+$(JSRUNNERS): %: js/%
 	cp -p $< $@
 
 js/ace/ace.js:
@@ -299,7 +303,7 @@ $(MGSOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace $(J1-MINIGRXCE)
 
 minigrace: $(J2-MINIGRACE)
 
-minigrace.env: minigrace $(EXTERNAL_STUBS:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct)
+minigrace.env: minigrace $(EXTERNAL_STUBS:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct) $(JSRUNNERS)
 
 module.test: minigrace.env $(TYPE_DIALECTS:%=j2/%.js)
 	modules/tests/harness-js-js j2/minigrace-js
@@ -322,6 +326,10 @@ $(JS-KG):
 	npm install
 	mkdir -p $(JS-KG)
 	cp -R node_modules/minigrace/* $(JS-KG)
+
+$(JS-KG)/compiler-inspect: $(JS-KG)/compiler-js
+	sed -e "s|#!/usr/bin/env node|#!/usr/bin/env node --inspect|" $< > $@
+	chmod a+x $@
 
 npm-build-kg: minigrace.env
 	mkdir -p npm-build
