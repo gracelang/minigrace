@@ -2217,11 +2217,12 @@ method doobject {
     }
 }
 
-method parseObjectConstructorBody(constructName) startingWith (btok) after (prev) {
+method parseObjectConstructorBody (constructName) startingWith (btok) after (prev) {
     // Parse the body of an object constructor, leaving the node on the
-    // values stack.  Common code for parsing object and class
+    // values stack.  This method is used for parsing object, class, and trait
     // bodies; constructName says which, so that error messages are correct.
     // btok is the keyword token that started the construct: class, object, or trait.
+
     def anns = doannotation
     if (sym.kind != "lbrace") then {
         def suggestion = errormessages.suggestion.new
@@ -2231,7 +2232,7 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
         } else {
             suggestion.insert(" \{")afterToken(lastToken)
         }
-        errormessages.syntaxError "{constructName} must have a '\{' after the {prev}."
+        errormessages.syntaxError "{constructName} must have a '\{' after {prev}."
             atPosition(lastToken.line, lastToken.linePos + lastToken.size)
             withSuggestion(suggestion)
     }
@@ -2268,7 +2269,7 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
             inPreamble := false
         } else {
             errormessages.syntaxError("unexpected symbol '{sym.value}' in body " ++
-                "of of {constructName}")
+                "of {constructName}")
                 atRange(sym.line, sym.linePos, sym.endPos)
         }
     }
@@ -2281,7 +2282,7 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
     values.push(objNode)
 }
 
-method doclass {
+method classOrTrait {
     // Accepts a class declaration.
     // Class declarations were formerly of the form:
     //
@@ -2344,7 +2345,8 @@ method doclass {
     }
     def meth = methodsignature(false)
     meth.setPositionFrom(btok)
-    parseObjectConstructorBody "a class" startingWith (btok) after "method header"
+    def myKind = btok.value
+    parseObjectConstructorBody "a {myKind}" startingWith (btok) after "the {myKind} header"
     def objNode = values.pop
     meth.body := [objNode]
     meth.usesClassSyntax := true
@@ -2776,7 +2778,7 @@ method checkForSeparatorInInterface {
 
 method interfaceLiteral {
     // parses an interface literal between braces, with optional
-    // leading 'type' or 'interface' keyword.
+    // leading 'interface' keyword.
     def startToken = sym
     if (acceptKeyword "interface") then {
         next
@@ -2886,9 +2888,9 @@ method statement {
         } elseif { sym.value == "type" } then {
             typedec
         } elseif { sym.value == "class" } then {
-            doclass
+            classOrTrait
         } elseif { sym.value == "trait" } then {
-            doclass
+            classOrTrait
         } elseif { sym.value == "factory" } then {
             dofactoryMethod
         } elseif { sym.value == "return" } then {
