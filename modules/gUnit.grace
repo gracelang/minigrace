@@ -21,7 +21,7 @@ type Assertion = {
     failBecause(Message:String) -> Done
 }
    
-type TestCase = Assertion & type {
+type TestCase = Assertion & interface {
     run(_:TestResult) -> Done
     debug(_:TestResult) -> Done
     size -> Number
@@ -51,7 +51,7 @@ type TestResult =  {
     doRerunErrors -> Done
 }
 
-type TestSuite = TestCase & type {
+type TestSuite = TestCase & interface {
     add(t:TestCase) -> Done
     rerunErrors(r:TestResult) -> Done
 }

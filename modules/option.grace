@@ -1,4 +1,4 @@
-type Option⟦T⟧ = Collection⟦T⟧ & type {
+type Option⟦T⟧ = Collection⟦T⟧ & interface {
     value → T
     valueIfEmpty⟦U⟧ (eValue:Block0⟦U⟧) → T | U
     iterator → Iterator

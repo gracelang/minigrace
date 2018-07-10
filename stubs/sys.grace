@@ -1,4 +1,4 @@
-type Environment = type {
+type Environment = interface {
     at(key:String) -> String
     at(key:String) put(value:String) -> Boolean
     contains(key:String) -> Boolean

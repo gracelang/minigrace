@@ -1,7 +1,7 @@
 // Constants distinguishing between different kinds of identifier.
 // Defines observers for their properties.
 
-type T = type {
+type T = interface {
     isParameter -> Boolean
     isAssignable -> Boolean
     isImplicit -> Boolean

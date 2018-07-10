@@ -13,15 +13,15 @@ method required is confidential {
 }
 
 
-type Function0⟦ResultT⟧  = type {
+type Function0⟦ResultT⟧  = interface {
     apply -> ResultT     // Function with no arguments and a result of type ResultT
     //  matches -> Boolean   // answers true
 }
-type Function1⟦ArgT1, ResultT⟧ = type {
+type Function1⟦ArgT1, ResultT⟧ = interface {
     apply(a1:ArgT1) -> ResultT    // Function with argument a1 of type ArgT1, and a result of type ResultT
     //  matches(a1:Object) -> Boolean   // answers true if a1 <: ArgT1
 }
-type Function2⟦ArgT1, ArgT2, ResultT⟧ = type {
+type Function2⟦ArgT1, ArgT2, ResultT⟧ = interface {
     apply(a1:ArgT1, a2:ArgT2) -> ResultT
     // Function with arguments of types ArgT1 and ArgT2, and a result of type ResultT
     //  matches(a1:Object, a2:Object) -> Boolean
@@ -39,7 +39,7 @@ type Predicate1⟦ArgT1⟧ = Function1⟦ArgT1, Boolean⟧
 
 type SelfType = Unknown     // becuase it's not yet in the language
 
-type Collection⟦T⟧ = Object & type {
+type Collection⟦T⟧ = Object & interface {
     iterator -> Iterator⟦T⟧
         // the iterator on which I am based
     isEmpty -> Boolean
@@ -69,14 +69,14 @@ type Collection⟦T⟧ = Object & type {
         // returns the reverse concatentation target ++ self; used for writing pipelines
 }
 
-type Expandable⟦T⟧ = Collection⟦T⟧ & type {
+type Expandable⟦T⟧ = Collection⟦T⟧ & interface {
     add(x: T) -> SelfType
     addAll(xs: Collection⟦T⟧) -> SelfType
 }
 
 type Iterable⟦T⟧ = Collection⟦T⟧    // for backward compatibility
 
-type Enumerable⟦T⟧ = Collection⟦T⟧ & type {
+type Enumerable⟦T⟧ = Collection⟦T⟧ & interface {
     values -> Collection⟦T⟧
     asDictionary -> Dictionary⟦Number,T⟧
     keysAndValuesDo(action:Function2⟦Number,T,Object⟧) -> Done
@@ -85,7 +85,7 @@ type Enumerable⟦T⟧ = Collection⟦T⟧ & type {
     sorted -> SelfType
 }
 
-type Sequence⟦T⟧ = Enumerable⟦T⟧ & type {
+type Sequence⟦T⟧ = Enumerable⟦T⟧ & interface {
     size -> Number
     at(n:Number) -> T
     indices -> Sequence⟦Number⟧
@@ -101,7 +101,7 @@ type Sequence⟦T⟧ = Enumerable⟦T⟧ & type {
     reversed -> Sequence⟦T⟧
 }
 
-type List⟦T⟧ = Sequence⟦T⟧ & type {
+type List⟦T⟧ = Sequence⟦T⟧ & interface {
     add(x: T) -> List⟦T⟧
     addAll(xs: Collection⟦T⟧) -> List⟦T⟧
     addFirst(x: T) -> List⟦T⟧
@@ -126,7 +126,7 @@ type List⟦T⟧ = Sequence⟦T⟧ & type {
     reversed -> List⟦T⟧
 }
 
-type Set⟦T⟧ = Collection⟦T⟧ & type {
+type Set⟦T⟧ = Collection⟦T⟧ & interface {
     size -> Number
     add(x:T) -> SelfType
     addAll(elements: Collection⟦T⟧) -> SelfType
@@ -147,7 +147,7 @@ type Set⟦T⟧ = Collection⟦T⟧ & type {
     into(existing: Expandable⟦Unknown⟧) -> Collection⟦Unknown⟧
 }
 
-type Dictionary⟦K,T⟧ = Collection⟦T⟧ & type {
+type Dictionary⟦K,T⟧ = Collection⟦T⟧ & interface {
     size -> Number
     containsKey(k:K) -> Boolean
     containsValue(v:T) -> Boolean
@@ -173,7 +173,7 @@ type Dictionary⟦K,T⟧ = Collection⟦T⟧ & type {
     asDictionary -> Dictionary⟦K, T⟧
 }
 
-type Iterator⟦T⟧ = type {
+type Iterator⟦T⟧ = interface {
     hasNext -> Boolean
     next -> T
 }
@@ -603,7 +603,7 @@ class sequence⟦T⟧ {
     }
 }
 
-type MinimalyIterable = type {
+type MinimalyIterable = interface {
     iterator -> Iterator
 }
 
@@ -1252,7 +1252,7 @@ def binding is public = object {
     }
 }
 
-type ComparableToDictionary⟦K,T⟧ = type {
+type ComparableToDictionary⟦K,T⟧ = interface {
     size -> Number
     at(_:K)ifAbsent(_) -> T
 }

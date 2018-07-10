@@ -16,7 +16,7 @@ var d := object {
     method ==(other) { isMe(other) }
 }
 
-type EType = type {x -> String; z -> String}
+type EType = interface {x -> String; z -> String}
 
 var e := object {
     def x = "test"

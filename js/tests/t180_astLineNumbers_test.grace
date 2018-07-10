@@ -4,7 +4,7 @@ import "ast" as ast
 import "util" as util
 
 def input = list [
-    "type Person = type \{",
+    "type Person = interface \{",
     "  age -> Number",
     "  name -> String",
     "\}",

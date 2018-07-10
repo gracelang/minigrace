@@ -1,4 +1,4 @@
-method foo(x : type { bar -> String }) {
+method foo(x : interface { bar -> String }) {
     print(x.bar)
 }
 

@@ -1,4 +1,4 @@
-type Date = type {
+type Date = interface {
     year -> Number
         // the year, e.g., 2016
     month -> Number

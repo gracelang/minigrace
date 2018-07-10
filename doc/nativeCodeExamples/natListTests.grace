@@ -425,7 +425,7 @@ class typeTest.forMethod(m) {
     }
     method testListTypeNotTypeWithWombat {
         def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
-        deny (witness) hasType (List<Number> & type { wombat })
+        deny (witness) hasType (List<Number> & interface { wombat })
     }
 }
 

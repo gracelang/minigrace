@@ -20,13 +20,13 @@ match (obj2)
     case { _ : A -> print "OK; obj2 is of type A" }
     case { _ -> print "fail: type did not match" }
 
-type B = type { a -> String } & type { b -> Number }
+type B = interface { a -> String } & interface { b -> Number }
 
 match (obj2)
     case { _ : B -> print "OK; obj2 is also of type B" }
     case { _ -> print "fail: type did not match" }
 
-type C = B & type { c -> Exception }
+type C = B & interface { c -> Exception }
 
 match (obj2)
     case { _ : C -> print "fail: obj2 is also of type C" }

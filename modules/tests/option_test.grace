@@ -97,7 +97,7 @@ testSuiteNamed "sequence tests" with {
     }
     test "test Option not type with wombat" by {
         def witness =  option.full ⟦Number⟧ 1
-        deny (witness) hasType (Sequence⟦Number⟧ & type { wombat })
+        deny (witness) hasType (Sequence⟦Number⟧ & interface { wombat })
     }
     test "test Option sizes" by {
         assert(empty.size) shouldBe 0

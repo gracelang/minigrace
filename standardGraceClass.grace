@@ -5,11 +5,11 @@ def traits = object {
     // these definitions are at module-level to avoid problems with outer
     // and the c-backend
 
-    type Block1⟦Arg, Res⟧ = type {
+    type Block1⟦Arg, Res⟧ = interface {
         apply(a:Arg) -> Res
     }
 
-    type Block2⟦Arg1, Arg2, Res⟧ = type {
+    type Block2⟦Arg1, Arg2, Res⟧ = interface {
         apply(a:Arg1, b:Arg2) -> Res
     }
 
@@ -392,7 +392,7 @@ class standardGrace {
         }
         method asString {
             if (name == "") then { "type ‹anon›" }
-                            else { "type {name}" }
+                            else { "interface {name}" }
         }
     }
 
@@ -499,7 +499,7 @@ class standardGrace {
         extract
     }
 
-    type MatchResult = Boolean & type {
+    type MatchResult = Boolean & interface {
         result -> Unknown
         bindings -> List⟦Unknown⟧
     }
@@ -510,7 +510,7 @@ class standardGrace {
         match(value:Object) -> MatchResult
     }
 
-    type ExceptionKind = Pattern & type {
+    type ExceptionKind = Pattern & interface {
         refine (parentKind:ExceptionKind) -> ExceptionKind
         parent -> ExceptionKind
         raise (message:String) -> Done
@@ -599,19 +599,19 @@ class standardGrace {
     // useful types
     //
 
-    type Block0⟦R⟧ = type {
+    type Block0⟦R⟧ = interface {
         apply -> R
     }
 
-    type Block1⟦T,R⟧ = type {
+    type Block1⟦T,R⟧ = interface {
         apply(a:T) -> R
     }
 
-    type Block2⟦S,T,R⟧ = type {
+    type Block2⟦S,T,R⟧ = interface {
         apply(a:S, b:T) -> R
     }
 
-    type Block3⟦S,T,U,R⟧ = type {
+    type Block3⟦S,T,U,R⟧ = interface {
         apply(a:S, b:T, c:U) -> R
     }
 
@@ -629,7 +629,7 @@ class standardGrace {
     // start collections
     //
 
-    type Iterable⟦T⟧ = Object & type {
+    type Iterable⟦T⟧ = Object & interface {
         iterator -> Iterator⟦T⟧
             // the iterator on which I am based
         isEmpty -> Boolean
@@ -655,14 +655,14 @@ class standardGrace {
             // returns a new iterator that yields those of my elements for which condition holds
     }
 
-    type Expandable⟦T⟧ = Iterable⟦T⟧ & type {
+    type Expandable⟦T⟧ = Iterable⟦T⟧ & interface {
         add(x: T) -> SelfType
         addAll(xs: Iterable⟦T⟧) -> SelfType
     }
 
     type Collection⟦T⟧ = Iterable⟦T⟧
 
-    type Enumerable⟦T⟧ = Collection⟦T⟧ & type {
+    type Enumerable⟦T⟧ = Collection⟦T⟧ & interface {
         values -> Collection⟦T⟧
         asDictionary -> Dictionary⟦Number,T⟧
         keysAndValuesDo(action:Block2⟦Number,T,Object⟧) -> Done
@@ -671,7 +671,7 @@ class standardGrace {
         sorted -> SelfType
     }
 
-    type Sequence⟦T⟧ = Enumerable⟦T⟧ & type {
+    type Sequence⟦T⟧ = Enumerable⟦T⟧ & interface {
         size -> Number
         at(n:Number) -> T
         indices -> Sequence⟦Number⟧
@@ -687,7 +687,7 @@ class standardGrace {
         reversed -> Sequence⟦T⟧
     }
 
-    type List⟦T⟧ = Sequence⟦T⟧ & type {
+    type List⟦T⟧ = Sequence⟦T⟧ & interface {
         add(x: T) -> List⟦T⟧
         addAll(xs: Iterable⟦T⟧) -> List⟦T⟧
         addFirst(x: T) -> List⟦T⟧
@@ -712,7 +712,7 @@ class standardGrace {
         reversed -> List⟦T⟧
     }
 
-    type Set⟦T⟧ = Collection⟦T⟧ & type {
+    type Set⟦T⟧ = Collection⟦T⟧ & interface {
         size -> Number
         add(x:T) -> SelfType
         addAll(elements: Iterable⟦T⟧) -> SelfType
@@ -733,7 +733,7 @@ class standardGrace {
         into(existing: Expandable⟦Unknown⟧) -> Collection⟦Unknown⟧
     }
 
-    type Dictionary⟦K,T⟧ = Collection⟦T⟧ & type {
+    type Dictionary⟦K,T⟧ = Collection⟦T⟧ & interface {
         size -> Number
         containsKey(k:K) -> Boolean
         containsValue(v:T) -> Boolean
@@ -759,7 +759,7 @@ class standardGrace {
         asDictionary -> Dictionary⟦K, T⟧
     }
 
-    type Iterator⟦T⟧ = type {
+    type Iterator⟦T⟧ = interface {
         hasNext -> Boolean
         next -> T
     }
@@ -1017,7 +1017,7 @@ class standardGrace {
         }
     }
 
-    type MinimalyIterable = type {
+    type MinimalyIterable = interface {
         iterator -> Iterator
     }
 
@@ -1646,7 +1646,7 @@ class standardGrace {
         }
     }
 
-    type ComparableToDictionary⟦K,T⟧ = type {
+    type ComparableToDictionary⟦K,T⟧ = interface {
         size -> Number
         at(_:K)ifAbsent(_) -> T
     }

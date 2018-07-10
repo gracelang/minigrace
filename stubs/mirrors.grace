@@ -1,13 +1,13 @@
 // This stub exists to generate the .gct file for mirrors.
 // The real implementation of mirrors is in gracelib.js
 
-type Mirror = Object & type {
+type Mirror = Object & interface {
     methods -> List⟦MethodMirror⟧
     methodNames ->Set⟦String⟧
     getMethod(nm:String) -> MethodMirror
 }
 
-type MethodMirror = Object & type {
+type MethodMirror = Object & interface {
     name -> String
     partcount -> Number
     paramcounts -> List⟦Number⟧

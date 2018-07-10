@@ -360,7 +360,7 @@ type Extractable = {
     extract
 }
 
-type MatchResult = Boolean | (Boolean & type {
+type MatchResult = Boolean | (Boolean & interface {
     result -> Unknown
     bindings -> List⟦Unknown⟧
 })
@@ -371,7 +371,7 @@ type Pattern = {
     match(value:Object) -> MatchResult
 }
 
-type ExceptionKind = Pattern & type {
+type ExceptionKind = Pattern & interface {
     refine (parentKind:ExceptionKind) -> ExceptionKind
     parent -> ExceptionKind
     raise (message:String) -> Done
@@ -504,21 +504,21 @@ def collections is public = coll
 
 // New names for Blocks: FunctionN == BlockN
 
-type Function0⟦ResultT⟧  = type {
+type Function0⟦ResultT⟧  = interface {
     apply -> ResultT     // Function with no arguments and a result of type ResultT
     //  matches -> Boolean   // answers true
 }
-type Function1⟦ArgT1, ResultT⟧ = type {
+type Function1⟦ArgT1, ResultT⟧ = interface {
     apply(a1:ArgT1) -> ResultT    // Function with argument a1 of type ArgT1, and a result of type ResultT
     //  matches(a1:Object) -> Boolean   // answers true if a1 <: ArgT1
 }
-type Function2⟦ArgT1, ArgT2, ResultT⟧ = type {
+type Function2⟦ArgT1, ArgT2, ResultT⟧ = interface {
     apply(a1:ArgT1, a2:ArgT2) -> ResultT
     // Function with arguments of types ArgT1 and ArgT2, and a result of type ResultT
     //  matches(a1:Object, a2:Object) -> Boolean
         // answers true if a1 <: ArgT1 and a2 <: ArgT2
 }
-type Function3⟦ArgT1, ArgT2, ArgT3, ResultT⟧  = type {
+type Function3⟦ArgT1, ArgT2, ArgT3, ResultT⟧  = interface {
     apply(a1:ArgT1, a2:ArgT2, a3:ArgT3) -> ResultT
     //  matches(a1:Object, a2:Object, a3:Object) -> Boolean
         // answers true if a1 <: ArgT1 and a2 <: ArgT2 and a3 :< ArgT3

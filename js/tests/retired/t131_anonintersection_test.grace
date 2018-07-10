@@ -2,7 +2,7 @@ type A = {
     bar -> String
 }
 
-type B = A & type {
+type B = A & interface {
     quux -> Number
 }
 

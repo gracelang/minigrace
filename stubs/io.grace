@@ -1,4 +1,4 @@
-type FileStream = Object & type {
+type FileStream = Object & interface {
     // The type FileStream describes the interface of an opened file.  Notice that
     // FileStream conforms to Iterator, so FileStreams can also be treated like Iterators.
     read -> String
@@ -49,7 +49,7 @@ type FileStream = Object & type {
         // makes the contents of this FileStream empty. The read/write position becomes 0
 }
 
-type IO = Object & type {
+type IO = Object & interface {
     IoException -> ExceptionKind    // the parent of all IO-specific exceptions; a specialization of EnvironmentException
     input -> FileStream             // answers stdin
     output -> FileStream            // answers stdout
@@ -89,7 +89,7 @@ type IO = Object & type {
         // creates a new Process `executable` using `args` as the command-line arguments
 }
 
-type Process = Object & type {
+type Process = Object & interface {
     wait -> Number
         // wait for me to terminate, and answer my exit status.
         // +ve indicates that I terminated normally.  Other
