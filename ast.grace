@@ -1256,10 +1256,8 @@ def callNode is public = object {
         method end -> Position {
             if (endPos == noPosition) then {
                 if (isRequestOfPrefixOperator) then {
-                    util.log 60 verbose "guessing at end of {pretty 1} with {receiver.end}"
                     receiver.end
                 } else {
-                    util.log 60 verbose "guessing at end of {pretty 1} with {parts.last.end}"
                     parts.last.end
                 }
             } else {
@@ -1526,7 +1524,7 @@ def objectNode is public = object {
                 return positionOfNext "}" after (value.last.end)
             }
             def iEnd = if (false == superclass) then { noPosition } else { superclass.end }
-            def tEnd = if (usedTraits.isEmpty) then { noPosition } else { usedTraits.end }
+            def tEnd = if (usedTraits.isEmpty) then { noPosition } else { usedTraits.last.end }
             if (iEnd ≠ tEnd) then {
                 positionOfNext "}" after (max(iEnd, tEnd))
             } else {
