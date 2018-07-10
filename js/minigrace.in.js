@@ -146,12 +146,12 @@ MiniGrace.prototype.trapErrors = function(func) {
                 stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".");
             } else {
                 callmethod(e, "printBacktrace", [0]);
-                stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".");
+                stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".\n");
                 if (originalSourceLines[e.moduleName]) {
                     var lines = originalSourceLines[e.moduleName];
                     for (var i = e.lineNumber - 1; i <= e.lineNumber + 1; i++) {
-                        if (lines[i-1] != undefined) {
-                            stderr_write(padToFour(i) + ": " + lines[i-1]);
+                        if (lines[i-1]) {
+                            stderr_write(padToFour(i) + ": " + lines[i-1] + "\n");
                         }
                     }
                     stderr_write("");
