@@ -16,7 +16,7 @@ def x:A.B = 3
 
 testSuite {
     test "type methods" by {
-        assert (A.methodNames) shouldBe (set.with "m(_)")
+        assert (A.methodNames) shouldBe (set.withAll ["m(_)", "B"])
     }
     test "type types" by {
         assert (A.typeNames) shouldBe (set.with "B")
