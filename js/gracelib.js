@@ -3067,6 +3067,13 @@ function gracecode_util() {
         minigrace.stdout_write(s._value + "\n");
         return GraceDone;
     };
+
+    var var_SyntaxError = new GraceException("SyntaxError", ExceptionObject);
+
+    this.methods.SyntaxError = function util_SyntaxError(argcv) {
+        return var_SyntaxError;
+    };
+
     var obj_requiredModules = Grace_allocObject(GraceObject, "requiredModules");
     var obj_init_requiredModules = function () {
         var meth_isAlready = function(argcv) {    // method isAlready(1)
