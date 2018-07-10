@@ -2446,7 +2446,7 @@ method methoddec {
 method separator {
     pushComments
     if (acceptSeparator) then {
-        next
+        skipSeparators
     } elseif { (accept "eof") || { accept "rbrace" } } then {
         // do nothing
     } else {
