@@ -2450,9 +2450,8 @@ method separator {
     } elseif { (accept "eof") || { accept "rbrace" } } then {
         // do nothing
     } else {
-        errormessages.syntaxError "statments must be separated by newlines (or semicolons)"
-                    atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size)
+        errormessages.syntaxError "statements must be separated by newlines (or semicolons)"
+                    atPosition(lastToken.line, lastToken.linePos + lastToken.size)
     }
 }
 
@@ -2566,7 +2565,7 @@ method methodsignature(sameline) {
             // annotations.
             if (accept "op") then {
                 next
-                errormessages.syntaxError("variable length parameters (parameters prefixed by '*') are no longer part of Grace.  Consider making {sym.value} an Iterable.")
+                errormessages.syntaxError("variable length parameters (parameters prefixed by '*') are no longer part of Grace.  Consider making {sym.value} a sequence.")
                     atPosition(lastToken.line, lastToken.linePos)
             }
             pushidentifier
@@ -2755,17 +2754,21 @@ method domethodtype {
     o.typeParams := methNode.typeParams
     values.push(o)
     reconcileComments
+}
+
+method checkForSeparatorInInterface {
     if (acceptSeparator) then {
         next
     } else {
-        if (!accept("rbrace")) then {
+        if (accept "rbrace" .not) then {
             if (lastToken.line == sym.line) then {
                 def suggestion = errormessages.suggestion.new
                 def newLine = util.lines.at(sym.line).substringFrom(1)to(lastToken.linePos - 1) ++ sym.value
                 suggestion.addLine(sym.line + 0.1, newLine)
                 suggestion.deleteToken(sym)leading(true)trailing(true)
-                errormessages.syntaxError("methods in a type literal must be on separate lines, or separated by semicolons.")atPosition(
-                    sym.line, sym.linePos)withSuggestion(suggestion)
+                errormessages.syntaxError "methods and types in an interface literal must be on separate lines (or separated by semicolons)"
+                    atPosition (sym.line, sym.linePos)
+                    withSuggestion(suggestion)
             }
         }
     }
@@ -2800,6 +2803,7 @@ method dotypeLiteral {
                 domethodtype
                 meths.push(values.pop)
             }
+            checkForSeparatorInInterface
         }
         next
         util.setPosition(typeLiteralTok.line, typeLiteralTok.linePos)
@@ -2841,7 +2845,7 @@ method typedec {
                   withSuggestion(suggestion)
         }
         next
-        // Special case for type Literals without leading 'type' keyword.
+        // Special case for interface Literals without leading 'interface' keyword.
         if (accept "lbrace") then {
             dotypeLiteral
         } else {
@@ -2933,7 +2937,7 @@ method pushComments {
     comments.push(o)
     while { 
         previousCommentToken := sym
-        sym := tokens.poll
+        sym := tokens.poll    // we can't request `next`, because `next` requests this method
         accept "comment"
     } do {
         util.setPosition(sym.line, sym.linePos)
