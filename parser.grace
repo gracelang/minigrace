@@ -370,8 +370,8 @@ method dotypeterm {
         generic
         dotrest(noBlocks)
     } else {
-        if (acceptKeyword "type" or "interface") then {
-            dotypeLiteral
+        if (acceptKeyword "interface") then {
+            interfaceLiteral
         }
     }
 }
@@ -1417,8 +1417,8 @@ method term {
         identifier
     } elseif { acceptKeyword "object" } then {
         doobject
-    } elseif { acceptKeyword "type" or "interface" } then {
-        dotypeLiteral
+    } elseif { acceptKeyword "interface" } then {
+        interfaceLiteral
     } elseif { accept "lbrace" } then {
         block
     } elseif { accept "lsquare" } then {
@@ -1878,7 +1878,7 @@ method typeArg {
             values.push(ast.genericNode.new(values.pop, typeArgs))
         }
     } else {
-        dotypeLiteral
+        interfaceLiteral
     }
 }
 
@@ -2741,8 +2741,8 @@ method doreturn {
     }
 }
 
-method domethodtype {
-    // parses a method in a type literal
+method methodInInterface {
+    // parses a method signature in an interface literal
     def methodTypeTok = sym
     var methNode := methodsignature(true)
     var dtype := methNode.dtype
@@ -2774,16 +2774,16 @@ method checkForSeparatorInInterface {
     }
 }
 
-method dotypeLiteral {
+method interfaceLiteral {
     // parses an interface literal between braces, with optional
     // leading 'type' or 'interface' keyword.
-    def typeLiteralTok = sym
-    if (acceptKeyword "type" or "interface") then {
+    def startToken = sym
+    if (acceptKeyword "interface") then {
         next
         if (!accept("lbrace")) then {
             def suggestion = errormessages.suggestion.new
             suggestion.replaceToken(sym) with("\{")
-            errormessages.syntaxError "{typeLiteralTok.value} literals must open with a brace."
+            errormessages.syntaxError "interface literals must open with a brace."
                 atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
             return
         }
@@ -2800,13 +2800,13 @@ method dotypeLiteral {
                 typedec
                 types.push(values.pop)
             } else {
-                domethodtype
+                methodInInterface
                 meths.push(values.pop)
             }
             checkForSeparatorInInterface
         }
         next
-        util.setPosition(typeLiteralTok.line, typeLiteralTok.linePos)
+        util.setPosition(startToken.line, startToken.linePos)
         def t = ast.typeLiteralNode.new(meths, types)
         values.push(t)
     }
@@ -2847,7 +2847,10 @@ method typedec {
         next
         // Special case for interface Literals without leading 'interface' keyword.
         if (accept "lbrace") then {
-            dotypeLiteral
+            interfaceLiteral
+        } elseif {acceptKeyword "type"} then {
+            errormessages.syntaxError "an interface literal must start with 'interface', not 'type'."
+                  atRange(sym.line, sym.linePos, sym.endPos)
         } else {
             expression(noBlocks)
         }
