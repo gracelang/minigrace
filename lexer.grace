@@ -125,8 +125,10 @@ class new {
         method == (other) {
             if (null == other) then {
                 false
+            } elseif {false == other} then {
+                false
             } else {
-                (other.line == line) && (other.linePos == linePos)
+                (line == other.line) && (linePos == other.linePos)
             }
         }
         method asString { "({line}.{linePos}){self.kind} {self.value}" }
