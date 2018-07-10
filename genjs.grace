@@ -748,6 +748,8 @@ method compileNormalMethod(o, selfobj) {
         out "var ouc = emptyGraceObject(\"{o.ilkName}\", {modNameAsString}, {o.line});"
         out "var ouc_init = {selfobj}.methods[\"{name}$build(3)\"].call(this, null{argList}, ouc, [], []);"
         out "ouc_init.call(ouc);"
+        compileCheckThat "ouc" called "object returned from {o.canonicalName}"
+            hasType (o.dtype) onLine (o.end.line);
         out "return ouc;"
     } else {
         def result = compileMethodBodyWithTypecheck(o)
