@@ -1849,9 +1849,16 @@ GraceType.prototype = {
                 var methName = canonicalMethodName(this.typeMethods[i]);
                 callmethod(result, "add(1)", [1], new GraceString(methName));
             }
+            for (var nm in this.typeTypes) {
+                if (this.typeTypes.hasOwnProperty(nm)) {
+                    callmethod(result, "add(1)", [1], new GraceString(nm));
+                }
+            }
             return result;
         },
         "typeNames": function type_typeNames (argcv) {
+            // typeNames are included in methodNames, but are also available
+            // as methods on this type
             var result = callmethod(Grace_prelude, "emptySet", [0]);
             for (var nm in this.typeTypes) {
                 if (this.typeTypes.hasOwnProperty(nm)) {
