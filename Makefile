@@ -151,6 +151,8 @@ echo:
 	@echo WEBFILES_SIMPLE = $(WEBFILES_SIMPLE)
 	@echo WEB_DIRECTORY = $(WEB_DIRECTORY)
 	@echo WEB_GRAPHICS_MODULES = $(WEB_GRAPHICS_MODULES)
+	@echo MODULE_PATH = $(MODULE_PATH)
+	@echo INCLUDE_PATH = $(INCLUDE_PATH)
 
 $(EXTERNAL_STUBS:%.grace=j2/%.js): j2/%.js: js/%.js
 	cp -p $< $@
@@ -201,7 +203,7 @@ install: minigrace $(COMPILER_MODULES:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct)
 	install -p -m 755 js/gracelib.js js/unicodedata.js $(MODULE_PATH)
 	install -p -m 644 j2/mirrors.gct $(MODULE_PATH)
 	install -p -m 644 $(COMPILER_MODULES:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct) $(MODULE_PATH)
-	install -p -m 644 $(LIBRARY_MODULES:%.grace=j2/%.js) js/dom.js $(MODULE_PATH)
+	install -p -m 644 $(PRELUDESOURCEFILES:%.grace=j2/%.js) $(LIBRARY_MODULES:%.grace=j2/%.js) js/dom.js $(MODULE_PATH)
 	@./tools/warnAbout PATH $(PREFIX)/bin
 	@./tools/warnAbout GRACE_MODULE_PATH $(MODULE_PATH)
 
