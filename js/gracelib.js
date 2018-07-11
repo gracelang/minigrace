@@ -3160,15 +3160,14 @@ function gracecode_util() {
             this._linepos._value + ": type error: " + s._value);
         throw "ErrorExit";
     };
-    // This is called by various wrapper methods in the errormessages module.
-    // The parameters are as follows:
-    // - message: The text of the error message.
-    // - errlinenum: The line number on which the error occurred.
-    // - position: A string used to show the position of the error in the error message.
-    // - arr: The string used to draw an arrow showing the position of the error.
-    // - spacePos: The position in the error line that a space should be inserted, or false.
-    // - suggestions: A (possibly empty) list of suggestions to correct the error.
     this.methods['syntaxError(5)'] = function util_syntaxError(argcv, message, errlinenum, position, arr, suggestions) {
+          // This is called by various wrapper methods in the errormessages module.
+          // The parameters are as follows:
+          // - message: The text of the error message.
+          // - errlinenum: The line number on which the error occurred.
+          // - position: A string used to show the position of the error in the error message.
+          // - arr: The string used to draw an arrow showing the position of the error.
+          // - suggestions: A (possibly empty) list of suggestions to correct the error.
         callmethod(this, "generalError(5)", [5], new GraceString("Syntax error: " + message._value), errlinenum,
             position, arr, suggestions);
     };
@@ -3544,7 +3543,8 @@ function handleRequestException(ex, obj, methname, methodArgs) {
         }
         return dealWithNoMethod(methname, obj, argsGL);
     } else {
-        var newEx = new GraceExceptionPacket(MinigraceErrorObject,
+        throwStackOverflowIfAppropriate(ex);
+        const newEx = new GraceExceptionPacket(MinigraceErrorObject,
             new GraceString("Implementation error in JavaScript method. " + ex.toString()));
         newEx.exitStack.unshift({
             className: obj.className,
@@ -3553,7 +3553,7 @@ function handleRequestException(ex, obj, methname, methodArgs) {
             lineNumber: 0,
             toString: GraceCallStackToString
         });
-        throw newEx;
+        throw ex;
     }
 }
 
@@ -3846,12 +3846,7 @@ function tryCatch(obj, cases, finallyblock) {
             }
             throw ex;
         } else {
-            var eStr = ex.toString();
-            if ((eStr === "RangeError: Maximum call stack size exceeded") ||    // Chrome
-                (eStr === "InternalError: too much recursion") ) {              // Firefox
-                ex = new GraceExceptionPacket(new GraceException("TooMuchRecursion", ProgrammingErrorObject),
-                       new GraceString("Does one of your methods request execution of itself without limit?"));
-            }
+            throwStackOverflowIfAppropriate(ex);
             throw ex;
         }
     } finally {
@@ -3861,6 +3856,21 @@ function tryCatch(obj, cases, finallyblock) {
     return ret;
 }
 
+function isStackOverflow(ex) {
+    const eStr = ex.toString();
+    if (eStr.includes("call stack size exceeded")) { return true; }  // Chrome
+    if (eStr.includes("stack overflow")) { return true; }
+    if (eStr.includes("too much recursion")) { return true; }        // Firefox
+    return false;
+}
+function throwStackOverflowIfAppropriate(ex) {
+    if (isStackOverflow(ex)) {
+        const newEx = new GraceExceptionPacket(
+            new GraceException("TooMuchRecursion", ProgrammingErrorObject),
+            new GraceString("Does one of your methods request execution of itself without limit?"));
+        throw newEx;
+    }
+}
 function matchCase(obj, cases) {
     setModuleName("match()case()…");
     for (var i = 0, len = cases.length; i<len; i++) {
