@@ -960,7 +960,7 @@ class new {
 
     method terminateContinuationIfNecessary {
         if (indentOfLineBeingContinued == noSuchLine) then { return }
-        if ((braceChange < 1) && { currentLineIndent >= maxIndentOfContinuation }) then {
+        if ((braceChange == 0) && { currentLineIndent >= maxIndentOfContinuation }) then {
             maxIndentOfContinuation := currentLineIndent
             return
         }
