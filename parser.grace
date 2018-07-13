@@ -548,12 +548,6 @@ method blockBody(params) beginningWith (btok) {
     def etok = sym  // the closing rbrace
     next
     def body = values
-    if ((etok.line ≠ btok.line) && (body.isEmpty.not)) then {
-        if (body.last.linePos == (btok.indent + 1)) then {
-            errormessages.syntaxError "the body of a block must be indented."
-                atRange(body.first.range)
-        }
-    }
     values := originalValues
     return ast.blockNode.new(params, body).setPositionFrom(btok)
 }
@@ -565,9 +559,6 @@ method blockBody(params) beginningWith (btok) {
 method doif {
     if (sym.isIdentifier && (sym.value == "if")) then {
         def btok = sym
-        def minStartColumn = sym.indent + 3
-            // if the `if` has indent 0, then `then`, `else` etc. must
-            // start in column 3 or more.
         next
         def opener = if (sym.isLParen || {sym.isLBrace})
                         then { sym.value } else { "-missing-" }
@@ -718,11 +709,6 @@ method doif {
                 // Currently, the parser just accepts arbitrarily many
                 // "elseifs", turning them into ifs inside the else.
                 // TODO: allow blocks after elseif to contain a sequence of expressions.
-                if (sym.linePos < minStartColumn) then {
-                    errormessages.syntaxError("the 'elseif' part of an " ++
-                        "'if(_)then(_)…elseif(_)' must be indented more than the 'if'")
-                        atRange(sym.line, sym.linePos, sym.linePos + 5)
-                }
                 statementToken := sym
                 next
                 if (sym.isLBrace.not) then {
@@ -800,11 +786,6 @@ method doif {
                 next
                 econd := values.pop
                 if (sym.isIdentifier && (sym.value == "then")) then {
-                    if (sym.linePos < minStartColumn) then {
-                        errormessages.syntaxError("the 'then' part of an " ++
-                            "'if(_)…elseif(_)then(_)' must be indented more than the 'if'")
-                            atRange(sym.line, sym.linePos, sym.linePos + 3)
-                    }
                     next
                     ebody := []
                 } else {
@@ -883,11 +864,6 @@ method doif {
                 curelse := newelse
             }
             if (sym.isIdentifier && (sym.value == "else")) then {
-                if (sym.linePos < minStartColumn) then {
-                    errormessages.syntaxError("the 'else' part of an " ++
-                        "'if(_)then(_)…else(_)' must be indented more than the 'if'")
-                        atRange(sym.line, sym.linePos, sym.linePos + 3)
-                }
                 next
                 if (sym.isLBrace.not) then {
                     def suggestion = errormessages.suggestion.new
