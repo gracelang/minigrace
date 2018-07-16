@@ -437,6 +437,12 @@ var methodtypes := list [ ]
 def typeVisitor = object {
     inherit ast.baseVisitor
     var literalCount := 1
+
+    method visitIdentifier(ident) {
+        methodtypes.push("& {ident.value}")
+        return false
+    }
+
     method visitTypeLiteral(lit) {
         for (lit.methods) do { meth ->
             var mtstr := "{literalCount} "
