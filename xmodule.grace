@@ -443,6 +443,13 @@ def typeVisitor = object {
         return false
     }
 
+    method visitMember(member) {
+        var receiver : String := member.receiver.nameString
+
+        opTree.push("{receiver}.{member.value}")
+        return false
+    }
+
     method visitTypeLiteral(lit) {
         for (lit.methods) do { meth ->
             var mtstr := "{literalCount} "
