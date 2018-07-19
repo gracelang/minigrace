@@ -1324,6 +1324,7 @@ class new {
     method lexString (inputString) {
         // this method is here to make it easier to test the lexer
         def input = inputString.split "\n"
+        util.lines.clear
         util.lines.addAll(input)
         lexInputLines
     }
