@@ -33,6 +33,9 @@ method do(action)while(condition) {
 }
 
 method repeat(n)times(action) {
+    if (n.isInteger.not) then {
+        ProgrammingError.raise "you can't repeat {n} times, because {n} is not an integer"
+    }
     var ix := n
     while {ix > 0} do {
         ix := ix - 1
