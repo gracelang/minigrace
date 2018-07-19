@@ -372,8 +372,33 @@ method min3(a, b, c) is confidential {
     if (sf < c) then { sf } else { c }
 }
 
+// Methods to raise a SyntaxError exception, with an accompanying
+// data object that contains information and suggestions.
+// The exception will normally be caught by a try(_)catch(_) in
+// the compiler module, which requests util.generalError to
+// actually print the message
 
-// Methods to actually display an error message and suggestions, then exit.
+def CompilationError is public = Exception.refine "CompilationError"
+def SyntaxError is public = CompilationError.refine "SyntaxError"
+def ReuseError is public = CompilationError.refine "ReuseError"
+
+method syntaxError(message, errLinenum, errPosition, arr, suggestions) {
+    // Used by various wrapper methods declared below.
+    // The parameters mean:
+    //   - message: The text of the error message.
+    //   - errlinenum: The line number on which the error occurred.
+    //   - position: A string used to show the position of the error in the error message.
+    //   - arr: The string used to draw an arrow showing the position of the error.
+    //   - suggestions: A (possibly empty) list of suggestions to correct the error.
+
+    def errorObj = object {
+        def lineNum is public = errLinenum
+        def position is public = errPosition
+        def arrow is public = arr
+        def sugg is public = suggestions
+    }
+    SyntaxError.raise (message) with (errorObj)
+}
 
 method syntaxError (message) atRange (r) {
     def more = if (r.start.line < r.end.line) then {
@@ -393,14 +418,14 @@ method syntaxError (message) atRange (r) withSuggestions (s) {
 }
 
 method syntaxError(message)atRange(errlinenum, startpos, endpos) {
-    syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions([])
+    syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions []
 }
 
-method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestion(suggestion') {
-    syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions([suggestion'])
+method syntaxError(message) atRange(errlinenum, startpos, endpos) withSuggestion(suggestion') {
+    syntaxError(message) atRange(errlinenum, startpos, endpos) withSuggestions [suggestion']
 }
 
-method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions(suggestions) {
+method syntaxError(message) atRange(errlinenum, startpos, endpos) withSuggestions(suggestions) {
     syntaxError (message)
           atRange (errlinenum, startpos, errlinenum, endpos)
           withSuggestions (suggestions)
@@ -423,7 +448,7 @@ method syntaxError (message)
     for (startpos..endpos) do { _ ->
         arr := arr ++ "^"
     }
-    util.syntaxError(message, startline, ":{loc}", arr, suggestions)
+    syntaxError(message, startline, ":{loc}", arr, suggestions)
 }
 
 method error (message) atRange (r) {
@@ -431,6 +456,7 @@ method error (message) atRange (r) {
         atRange (r.start.line, r.start.column, r.end.line, r.end.column)
         withSuggestions []
 }
+
 method error (message)
           atRange (startline, startpos, endline, endpos)
           withSuggestions (suggestions) {
@@ -450,25 +476,27 @@ method error (message)
     }
     util.generalError(message, startline, ":{loc}", arr, suggestions)
 }
-method error(message)atRange(errlinenum, startpos, endpos)withSuggestions(suggestions) {
+
+method error(message) atRange(errlinenum, startpos, endpos) withSuggestions(suggestions) {
     error (message)
           atRange (errlinenum, startpos, errlinenum, endpos)
           withSuggestions (suggestions)
 }
+
 method error(message) atRange(errlinenum, startpos, endpos) {
-    error (message) atRange(errlinenum, startpos, endpos) withSuggestions([])
+    error (message) atRange(errlinenum, startpos, endpos) withSuggestions []
 }
 
-method syntaxError(message)atPosition(errlinenum, errpos) {
-    syntaxError(message)atPosition(errlinenum, errpos)withSuggestions([])
+method syntaxError(message) atPosition(errlinenum, errpos) {
+    syntaxError(message)atPosition(errlinenum, errpos)withSuggestions []
 }
 
 method error(message) atPosition(errlinenum, errpos) {
-    error(message) atPosition(errlinenum, errpos) withSuggestions([])
+    error(message) atPosition(errlinenum, errpos) withSuggestions []
 }
 
-method syntaxError(message)atPosition(errlinenum, errpos)withSuggestion(suggestion') {
-    syntaxError(message)atPosition(errlinenum, errpos)withSuggestions([suggestion'])
+method syntaxError(message) atPosition(errlinenum, errpos) withSuggestion(suggestion') {
+    syntaxError(message) atPosition(errlinenum, errpos) withSuggestions [suggestion']
 }
 
 method syntaxError(message)atPosition(errlinenum, errpos)withSuggestions(suggestions) {
@@ -477,7 +505,7 @@ method syntaxError(message)atPosition(errlinenum, errpos)withSuggestions(suggest
         arr := arr ++ "-"
     }
     arr := arr ++ "^"
-    util.syntaxError(message, errlinenum, ":{errpos}", arr, suggestions)
+    syntaxError(message, errlinenum, ":{errpos}", arr, suggestions)
 }
 
 method error(message) atPosition(errlinenum, errpos)
@@ -506,15 +534,15 @@ method error(message)atLine(errlinenum)withSuggestions(suggestions) {
 }
 
 method error(message)atLine(errlinenum) {
-    error(message)atLine(errlinenum)withSuggestions([])
+    error(message)atLine(errlinenum)withSuggestions []
 }
 
 method syntaxError(message)atLine(errlinenum) {
-    syntaxError(message)atLine(errlinenum)withSuggestions([])
+    syntaxError(message)atLine(errlinenum)withSuggestions []
 }
 
-method syntaxError(message)atLine(errlinenum)withSuggestion(suggestion') {
-    syntaxError(message)atLine(errlinenum)withSuggestions([suggestion'])
+method syntaxError(message) atLine(errlinenum) withSuggestion(suggestion') {
+    syntaxError(message) atLine(errlinenum) withSuggestions [suggestion']
 }
 
 method syntaxError(message)atLine(errlinenum)withSuggestions(suggestions) {
@@ -525,5 +553,5 @@ method syntaxError(message)atLine(errlinenum)withSuggestions(suggestions) {
     for (1..util.lines.at(errlinenum).size) do { _ ->
         arr := arr ++ "^"
     }
-    util.syntaxError(message, errlinenum, "", arr, suggestions)
+    syntaxError(message, errlinenum, "", arr, suggestions)
 }

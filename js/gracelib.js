@@ -3068,12 +3068,6 @@ function gracecode_util() {
         return GraceDone;
     };
 
-    var var_SyntaxError = new GraceException("SyntaxError", ExceptionObject);
-
-    this.methods.SyntaxError = function util_SyntaxError(argcv) {
-        return var_SyntaxError;
-    };
-
     var obj_requiredModules = Grace_allocObject(GraceObject, "requiredModules");
     var obj_init_requiredModules = function () {
         var meth_isAlready = function(argcv) {    // method isAlready(1)
@@ -3159,17 +3153,6 @@ function gracecode_util() {
         minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
             this._linepos._value + ": type error: " + s._value);
         throw "ErrorExit";
-    };
-    this.methods['syntaxError(5)'] = function util_syntaxError(argcv, message, errlinenum, position, arr, suggestions) {
-          // This is called by various wrapper methods in the errormessages module.
-          // The parameters are as follows:
-          // - message: The text of the error message.
-          // - errlinenum: The line number on which the error occurred.
-          // - position: A string used to show the position of the error in the error message.
-          // - arr: The string used to draw an arrow showing the position of the error.
-          // - suggestions: A (possibly empty) list of suggestions to correct the error.
-        callmethod(this, "generalError(5)", [5], new GraceString("Syntax error: " + message._value), errlinenum,
-            position, arr, suggestions);
     };
     this.methods['generalError(5)'] = function util_generalError(argcv, message, errlinenum, position, arr, suggestions) {
         minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value +
@@ -3297,7 +3280,7 @@ function gracecode_util() {
 }
 
 if (typeof(process) === "undefined" && typeof gctCache !== "undefined")
-    gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=(1)\n dynamicModule\n dynamicModule:=(1)\n importDynamic\n importDynamic:=(1)\n jobs\n jobs:=(1)\n cLines\n cLines:=(1)\n lines\n lines:=(1)\n filename\n filename:=(1)\n errno\n errno:=(1)\n parseargs\n previousElapsed\n previousElapsed:=(1)\n log_verbose\n outprint\n syntaxError\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath(1)\n file(1)on(1)orPath(1)otherwise(1)\n file(1)onPath(1)otherwise(1)\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n stringMap\n buildinfo\n sys\n io\n";
+    gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=(1)\n dynamicModule\n dynamicModule:=(1)\n importDynamic\n importDynamic:=(1)\n jobs\n jobs:=(1)\n cLines\n cLines:=(1)\n lines\n lines:=(1)\n filename\n filename:=(1)\n errno\n errno:=(1)\n parseargs\n previousElapsed\n previousElapsed:=(1)\n log_verbose\n outprint\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath(1)\n file(1)on(1)orPath(1)otherwise(1)\n file(1)onPath(1)otherwise(1)\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n stringMap\n buildinfo\n sys\n io\n";
 
 function GraceMirrorMethod(o, k) {
     this.name = k;

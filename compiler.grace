@@ -2,6 +2,7 @@ import "ast" as ast
 import "buildinfo" as buildinfo
 import "genjs" as genjs
 import "identifierresolution" as identifierresolution
+import "errormessages" as errormessages
 import "io" as io
 import "lexer" as lexer
 import "mirrors" as mirrors
@@ -100,6 +101,10 @@ try {
         io.error.write("minigrace: no such target '" ++ util.target ++ "'\n")
         sys.exit(1)
     }
-} catch { se:util.SyntaxError ->
+} catch { se:errormessages.SyntaxError ->
     util.generalError("Syntax error: {se.message}", se.data.lineNum, se.data.position, se.data.arrow, se.data.sugg)
+} catch { se:errormessages.ReuseError ->
+    util.generalError("Reuse error: {se.message}", se.data.lineNum, se.data.position, se.data.arrow, se.data.sugg)
+} catch { se:errormessages.CompilationError ->
+    util.generalError("Compilation error: {se.message}", se.data.lineNum, se.data.position, se.data.arrow, se.data.sugg)
 }
