@@ -341,7 +341,7 @@ class new {
     var inStr := false
     var escaped := false
     var codepoint := 0
-    var interpdepth := 0
+    var interpDepth := 0
     var interpString := false
 
     method advanceTo(s) { state := s }
@@ -482,6 +482,7 @@ class new {
             } elseif {c == ";"} then {
                 emit(semicolonToken)
             } elseif {c == "\n"} then {
+                if (interpDepth > 0) then { newlineInInterpolationError }
                 currentLineIndent := 0
                 advanceTo(indentationState)
             } else {
@@ -500,7 +501,7 @@ class new {
 
     def rBraceState = object {
         method consume (c){
-            if (interpdepth > 0) then {
+            if (interpDepth > 0) then {
                 if (tokens.last.kind == "lparen") then {
                     def lastPos = tokens.last.linePos
                     def lineLength = inputLines.at(lineNumber).size
@@ -523,7 +524,7 @@ class new {
                 }
                 emit (rParenToken)
                 emit (opToken("++"))
-                interpdepth := interpdepth - 1
+                interpDepth := interpDepth - 1
                 inStr := true
                 advanceTo(quotedStringState)
             } else {
@@ -608,14 +609,14 @@ class new {
             checkSeparatorString (c)
             if (c == "\"") then {
                 emit(stringToken(accum))
-                if (interpString && (interpdepth == 0)) then {
+                if (interpString && (interpDepth == 0)) then {
                     emit(rParenToken)
                     interpString := false
                 }
                 advanceTo(defaultState)
                 inStr := false
             } elseif {c == "\n"} then {
-                newLineError
+                unclosedStringError
             } elseif {c == "\{"} then {
                 def strToken = stringToken(accum)
                 startPosition := linePosition
@@ -628,7 +629,7 @@ class new {
                 emit(lParenToken)
                 advanceTo(defaultState)
                 inStr := false
-                interpdepth := interpdepth + 1
+                interpDepth := interpDepth + 1
             } elseif {c == "\\"} then {
                 advanceTo(quotedStringEscapedState)
             } else {
@@ -655,7 +656,7 @@ class new {
             checkSeparatorString (c)
             advanceTo(quotedStringState)
             if (c == "\n") then {
-               newLineError
+                escapedNewlineError
             } elseif { c == "n" } then {
                 // Newline escape
                 accum := accum ++ "\u000a"
@@ -1045,8 +1046,21 @@ class new {
             syntaxError (message)
             atRange (lineNumber, 1, linePosition)
     }
-    method newLineError {
-        if (interpdepth > 0) then {
+    method escapedNewlineError {
+        errormessages.syntaxError "to include a newline in a string use '\\n'"
+              atPosition(lineNumber, linePosition - accum.size - 1)
+    }
+
+    method newlineInInterpolationError {
+        errormessages.syntaxError("A string interpolation may not "
+              ++ "contain a newline. ")
+              atPosition(lineNumber, linePosition)
+    }
+
+    method unclosedStringError {
+        // We have found a newline inside a string.  Report the error
+
+        if (interpDepth > 0) then {
             // Find closest {.
             var line := lineNumber
             var i := inputLines.at(line).size
@@ -1061,61 +1075,64 @@ class new {
             var suggestion := errormessages.suggestion.new
             suggestion.insert("\\")atPosition(i)onLine(line)
             suggestions.push(suggestion)
-            if((line == lineNumber) && (i == (linePosition - 2))) then {
-                errormessages.syntaxError("for a '\{' character in a string use '\\\{'.")atPosition(
-                    line, i)withSuggestions(suggestions)
+            if ((line == lineNumber) && (i == (linePosition - 2))) then {
+                errormessages.syntaxError("for a '\{' character in a string use '\\\{'.")
+                    atPosition(line, i)
+                    withSuggestions(suggestions)
             } else {
                 suggestion := errormessages.suggestion.new
                 suggestion.insert("}")atPosition(linePosition - accum.size - 1)onLine(lineNumber)
                 suggestions.push(suggestion)
-                errormessages.syntaxError("a string interpolation must end with a '}'. For a '\{' character in a string use '\\\{'.")atPosition(
-                    lineNumber, linePosition - accum.size - 1)withSuggestions(suggestions)
+                errormessages.syntaxError("a string interpolation must end with a '}'; for a '\{' character in a string use '\\\{'.")
+                    atPosition(lineNumber, linePosition - accum.size - 1)
+                    withSuggestions(suggestions)
             }
+        }
+
+        def errorLine = inputLines.at(lineNumber)
+        def nextLine = if (inputLines.size >= (lineNumber + 1)) then {
+            inputLines.at(lineNumber + 1)
         } else {
-            def errorLine = inputLines.at(lineNumber)
-            def nextLine = if (inputLines.size >= (lineNumber + 1)) then {
-                inputLines.at(lineNumber + 1)
-            } else {
-                ""
-            }
-            // Count the number of literal quotes in the next line.
-            var i := 1
-            var count := 0
-            while { i <= nextLine.size } do {
-                if (nextLine.at(i) == "\"") then {
-                    count := count + 1
-                } elseif {
-                    nextLine.at(i) == "\\"
-                } then {
-                    i := i + 1
-                }
+            ""
+        }
+
+        // Count the number of literal quotes in nextLine.
+        var i := 1
+        var count := 0
+        while { i <= nextLine.size } do {
+            if (nextLine.at(i) == "\"") then {
+                count := count + 1
+            } elseif {
+                nextLine.at(i) == "\\"
+            } then {
                 i := i + 1
             }
-            if ((count % 2) == 1) then {
-                def suggestions = []
-                var suggestion := errormessages.suggestion.new
-                suggestion.addLine(lineNumber, errorLine ++ nextLine)
-                suggestion.addLine(lineNumber + 1, "")
-                suggestions.push(suggestion)
-                suggestion := errormessages.suggestion.new
-                suggestion.addLine(lineNumber, errorLine ++ "\"")
-                suggestion.addLine(lineNumber + 1, "    ++ \"" ++ nextLine)
-                suggestions.push(suggestion)
-                suggestion := errormessages.suggestion.new
-                suggestion.addLine(lineNumber, errorLine ++ "\\n" ++ nextLine)
-                suggestion.addLine(lineNumber + 1, "")
-                suggestions.push(suggestion)
-                errormessages.syntaxError("a string must be terminated by a \" before the end of the line. To insert a newline in a string, use '\\n'. To split a string over multiple lines, use '++' to join strings together.")
-                    atRange(lineNumber, linePosition, linePosition)
-                    withSuggestions(suggestions)
-            } else {
-                def suggestion = errormessages.suggestion.new
-                suggestion.addLine(lineNumber, errorLine ++ "\"")
-                errormessages.syntaxError("a string must be terminated " ++
-                    "by a \" before the end of the line.")
-                    atPosition(lineNumber, linePosition)
-                    withSuggestion(suggestion)
-            }
+            i := i + 1
+        }
+        if (count.isOdd) then {
+            def suggestions = []
+            var suggestion := errormessages.suggestion.new
+            suggestion.addLine(lineNumber, errorLine ++ nextLine)
+            suggestion.addLine(lineNumber + 1, "")
+            suggestions.push(suggestion)
+            suggestion := errormessages.suggestion.new
+            suggestion.addLine(lineNumber, errorLine ++ "\"")
+            suggestion.addLine(lineNumber + 1, "    ++ \"" ++ nextLine)
+            suggestions.push(suggestion)
+            suggestion := errormessages.suggestion.new
+            suggestion.addLine(lineNumber, errorLine ++ "\\n" ++ nextLine)
+            suggestion.addLine(lineNumber + 1, "")
+            suggestions.push(suggestion)
+            errormessages.syntaxError("a string must be terminated by a \" before the end of the line. To insert a newline in a string, use '\\n'. To spread a string over multiple lines, use separate strings joined together with '++'")
+                atPosition(lineNumber, linePosition)
+                withSuggestions(suggestions)
+        } else {
+            def suggestion = errormessages.suggestion.new
+            suggestion.addLine(lineNumber, errorLine ++ "\"")
+            errormessages.syntaxError("a string must be terminated " ++
+                "by a \" before the end of the line.")
+                atPosition(lineNumber, linePosition)
+                withSuggestion(suggestion)
         }
     }
 
