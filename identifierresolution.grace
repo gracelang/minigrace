@@ -439,8 +439,7 @@ class newScopeIn(parent') kind(variety') {
             def suggs = [ ]
             def sugg = errormessages.suggestion.new
             if (sugg.replaceUntil("=")with("{name} :=")
-                    onLine(ident.line)
-                ) then {
+                    onLine(ident.line)) then {
                 suggs.push(sugg)
             }
             if (priorKind == k.vardec) then {
@@ -530,24 +529,24 @@ method rewritematchblockterm(arg) {
         }
         def callpat = ast.callNode.new(
                 ast.memberNode.new("MatchAndDestructuringPattern",
-                    ast.identifierNode.new("prelude", false)),
-            [ast.requestPart.request "new" withArgs( [arg.receiver, ast.arrayNode.new(subpats)] )]
-        )
+                ast.identifierNode.new("prelude", false)),
+                [ ast.requestPart.request "new"
+                    withArgs( [arg.receiver, ast.arrayNode.new(subpats)] )] )
         return [callpat, bindings]
     }
     if (arg.isIdentifier) then {
         def varpat = ast.callNode.new(
                 ast.memberNode.new("VariablePattern",
-                    ast.identifierNode.new("prelude", false)),
-            [ast.requestPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )]
-        )
+                ast.identifierNode.new("prelude", false)),
+                [   ast.requestPart.request "new"
+                    withArgs( [ast.stringNode.new(arg.value)] ) ] )
         if (false != arg.dtype) then {
             if (arg.dtype.isIdentifier) then {
-                return [ast.callNode.new(
-                        ast.memberNode.new("AndPattern",
-                            ast.identifierNode.new("prelude", false)),
+                return [ ast.callNode.new(
+                    ast.memberNode.new("AndPattern",
+                    ast.identifierNode.new("prelude", false)),
                     [ast.requestPart.request "new" withArgs( [varpat, arg.dtype] )]
-                ), [arg] ]
+                    ), [arg] ]
             }
             def tmp = rewritematchblockterm(arg.dtype)
             def bindings = [arg]
@@ -556,9 +555,9 @@ method rewritematchblockterm(arg) {
             }
             def bindingpat = ast.callNode.new(
                     ast.memberNode.new("AndPattern",
-                        ast.identifierNode.new("prelude", false)),
-                [ast.requestPart.request "new" withArgs( [varpat, tmp.first ] )]
-            )
+                    ast.identifierNode.new("prelude", false)),
+                    [ast.requestPart.request "new" withArgs( [varpat, tmp.first ] )]
+                    )
             return [bindingpat, bindings]
         }
         return [varpat, [arg] ]
@@ -584,21 +583,21 @@ method rewritematchblock(blk) {
     }
     if (arg.kind == "identifier") then {
         def varpat = ast.callNode.new(
-                ast.memberNode.new("VariablePattern",
-                    ast.identifierNode.new("prelude", false)),
+            ast.memberNode.new("VariablePattern",
+            ast.identifierNode.new("prelude", false)),
             [ast.requestPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )] )
         if (false != arg.dtype) then {
             match (arg.dtype.kind)
               case { "identifier" | "op" ->
                 pattern := ast.callNode.new(
-                        ast.memberNode.new("AndPattern",
-                            ast.identifierNode.new("prelude", false)),
-                    [ast.requestPart.request "new" withArgs( [varpat, arg.dtype] )] )
+                    ast.memberNode.new("AndPattern",
+                        ast.identifierNode.new("prelude", false)),
+                        [ast.requestPart.request "new" withArgs( [varpat, arg.dtype] )] )
             } case { _ ->
                 def tmp = rewritematchblockterm(arg.dtype)
                 def bindingpat = ast.callNode.new(
-                        ast.memberNode.new("AndPattern",
-                            ast.identifierNode.new("prelude", false)),
+                    ast.memberNode.new("AndPattern",
+                    ast.identifierNode.new("prelude", false)),
                     [ast.requestPart.request "new" withArgs( [varpat, tmp.first ] )] )
                 pattern := bindingpat
                 for (tmp.second) do {p->
@@ -1482,9 +1481,8 @@ method transformInherits(inhNode) ancestors(anc) {
         def newCall = ast.callNode.new(inhNode.value.receiver, [
             ast.requestPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
             ast.requestPart.request "$object" withArgs (
-                [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope)
-            ]
-        ) scope(currentScope)
+            [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope) ]
+            ) scope(currentScope)
         newCall.isSelfRequest := superExpr.isSelfRequest
         newCall.end := superExpr.end
         inhNode.value := newCall

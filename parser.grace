@@ -1196,8 +1196,8 @@ method trycatch {
         errormessages.syntaxError("a 'try(_)catch(_)…' statement starts with a "
                 ++ "'try', followed by zero or more 'catch' blocks; there "
                 ++ "are no 'case' blocks.")
-            atRange(sym.line, sym.linePos, sym.linePos + 3)
-            withSuggestion(suggestion)
+                atRange(sym.line, sym.linePos, sym.linePos + 3)
+                withSuggestion(suggestion)
     }
     if (sym.isIdentifier && (sym.value == "finally")) then {
         next

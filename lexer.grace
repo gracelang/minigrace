@@ -967,7 +967,12 @@ class new {
         // The continuation has ended, either because we have opened a new block,
         // or because currentLineIndent < maxIndentOfContinuation
         priorLineIndent := indentOfLineBeingContinued
-        indentOfLineBeingContinued := noSuchLine    // receord termination of continuation
+        if ((braceChange == 0) && {currentLineIndent ≠ priorLineIndent}) then {
+            lexicalError ("if this line continues the previous line, its indentation "
+                ++ "must be at least {maxIndentOfContinuation}; if it starts a new "
+                ++ "statement, its indentation must be {indentOfLineBeingContinued}")
+        }
+        indentOfLineBeingContinued := noSuchLine    // record termination of continuation
     }
 
     method checkAndRecordIndentStatus (currentCharacter) {
@@ -1026,8 +1031,6 @@ class new {
         if (noSuchLine == indentOfLineBeingContinued) then {
             indentOfLineBeingContinued := indentStack.last
             maxIndentOfContinuation := currentLineIndent
-        } elseif {currentLineIndent < indentOfLineBeingContinued} then {
-            lexicalError "if this line continues the previous line, its indentation must be at least {indentOfLineBeingContinued}; if it is not part of the continuation, its indentation must be {indentStack.last}"
         }
     }
     method checkOutdent {
