@@ -70,15 +70,19 @@ method isLetter(ch) {
     return false
 }
 
-method padl(s, l, w) {
-    if (s.size >= l) then {
+method padl(s, width, padCh) {
+    if (s.size >= width) then {
         return s
     }
     var s' := s
-    while {s'.size < l} do {
-        s' := w ++ s'
+    while {s'.size < width} do {
+        s' := padCh ++ s'
     }
     return s'
+}
+
+method hex4(num) {
+    padl(num.inBase 16, 4, "0")
 }
 
 def noSuchLine = singleton "noSuchLine"
@@ -435,9 +439,11 @@ class new {
             } elseif {isDigit(c)} then {
                 if ((tokens.size > 0) && {tokens.last.kind == "num"}) then {
                     def suggestion = errormessages.suggestion.new
-                    suggestion.deleteRange(tokens.last.linePos+tokens.last.size, linePosition - 1)onLine(lineNumber)
+                    suggestion.deleteRange(tokens.last.linePos+tokens.last.size, linePosition - 1)
+                        onLine(lineNumber)
                     errormessages.syntaxError("Consecutive numbers are not allowed.")
-                        atRange(lineNumber, tokens.last.linePos, linePosition)withSuggestion(suggestion)
+                        atRange(lineNumber, tokens.last.linePos, linePosition)
+                        withSuggestion(suggestion)
                 }
                 startPosition := linePosition
                 advanceTo(numberStartState)
@@ -491,9 +497,9 @@ class new {
                         (ordval != 10) &&
                         (ordval != 13) &&
                         (ordval != 32)) then {
-                    errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                        ++ "is not a valid character")atRange(
-                        lineNumber, linePosition, linePosition)
+                    errormessages.syntaxError("{unicode.name(c)} (U+{hex4(ordval)}) "
+                        ++ "is not a valid character")
+                        atPosition(lineNumber, linePosition)
                 }
             }
         }
@@ -1000,7 +1006,8 @@ class new {
             lexicalError "Please indent the body of a block"
         }
         if (braceChange > 1) then {
-            lexicalError "The prior line opened two blocks. There is no way for you to close them correctly! Please split the prior line into two."
+            lexicalError("The prior line opened two blocks. There is no way for you "
+                ++ "to close them correctly! Please split the prior line into two.")
         }
         repeat (braceChange) times {
             indentStack.addLast (currentLineIndent)
@@ -1019,7 +1026,8 @@ class new {
 
         repeat (- braceChange) times { indentStack.removeLast }
         if (currentLineIndent ≠ indentStack.last) then {
-            lexicalError "on closing a block, the indentation must return to the same level as when the block was opened\ncurrentLineIndent = {currentLineIndent}; indentStack.last = {indentStack.last}; braceChange = {braceChange}"
+            lexicalError("on closing a block, the indentation must return to that "
+                ++ "of the line on which the block was opened ({indentStack.last})")
         }
     }
     method isContinuationLine {
@@ -1081,9 +1089,12 @@ class new {
                     withSuggestions(suggestions)
             } else {
                 suggestion := errormessages.suggestion.new
-                suggestion.insert("}")atPosition(linePosition - accum.size - 1)onLine(lineNumber)
+                suggestion.insert("}")
+                      atPosition(linePosition - accum.size - 1)
+                      onLine(lineNumber)
                 suggestions.push(suggestion)
-                errormessages.syntaxError("a string interpolation must end with a '}'; for a '\{' character in a string use '\\\{'.")
+                errormessages.syntaxError("a string interpolation must end with a '}';"
+                    ++ "for a '\{' character in a string use '\\\{'.")
                     atPosition(lineNumber, linePosition - accum.size - 1)
                     withSuggestions(suggestions)
             }
@@ -1123,7 +1134,10 @@ class new {
             suggestion.addLine(lineNumber, errorLine ++ "\\n" ++ nextLine)
             suggestion.addLine(lineNumber + 1, "")
             suggestions.push(suggestion)
-            errormessages.syntaxError("a string must be terminated by a \" before the end of the line. To insert a newline in a string, use '\\n'. To spread a string over multiple lines, use separate strings joined together with '++'")
+            errormessages.syntaxError("a string must be terminated by a \" before "
+                ++ "the end of the line. To insert a newline in a string, use '\\n'. "
+                ++ "To spread a string over multiple lines, use several strings "
+                ++ "joined together with '++'")
                 atPosition(lineNumber, linePosition)
                 withSuggestions(suggestions)
         } else {
@@ -1156,44 +1170,39 @@ class new {
                     ++ "use the string escape \\t instead")
                     atRange(lineNumber, linePosition, linePosition)
                     withSuggestion(suggestion)
-                errormessages.syntaxError("tabs are not allowed; use spaces instead.")atRange(lineNumber,
-                    linePosition, linePosition)withSuggestion(suggestion)
+                errormessages.syntaxError("tabs are not allowed; use spaces instead.")
+                    atPosition(lineNumber, linePosition) withSuggestion(suggestion)
             } else {
                 suggestion.replaceRange(linePosition, linePosition)
-                    with("\\u{padl(ordval.inBase 16, 4, "0")}")
+                    with("\\u{hex4(ordval)}")
                     onLine(lineNumber)
-                errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                    ++ "is not a valid whitespace character"
-                    ++ " and cannot be "
-                    ++ "written in the source code; "
-                    ++ "use the Unicode escape \\u"
-                    ++ padl(ordval.inBase 16, 4, "0")
-                    ++ " instead")
+                errormessages.syntaxError("{unicode.name(c)} (U+{hex4(ordval)})"
+                    ++ " is not a valid whitespace character"
+                    ++ " and cannot be written in the source code;"
+                    ++ " use the Unicode escape \\u{hex4(ordval)} instead")
                     atRange(lineNumber, linePosition, linePosition)
                     withSuggestion(suggestion)
-                errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                    ++ "is not a valid whitespace character; use spaces instead.")atRange(lineNumber,
-                    linePosition, linePosition)withSuggestion(suggestion)
+                errormessages.syntaxError("{unicode.name(c)} (U+{hex4(ordval)}) "
+                    ++ "is not a valid whitespace character; use spaces instead.")
+                    atPosition(lineNumber, linePosition) withSuggestion(suggestion)
             }
         } elseif {isBadControl(c)} then {
             // Character is a control character other than
             // carriage return or line feed.
             def suggestion = errormessages.suggestion.new
             suggestion.replaceRange(linePosition, linePosition)
-                with("\\u{padl(ordval.inBase 16, 4, "0")}")
+                with("\\u{hex4(ordval)}")
                 onLine(lineNumber)
-            errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                ++ "is a control character and cannot be "
-                ++ "written in the source code; "
-                ++ "use the Unicode escape \\u"
-                ++ padl(ordval.inBase 16, 4, "0")
-                ++ " instead")
+            errormessages.syntaxError("{unicode.name(c)} (U+{hex4(ordval)}) "
+                ++ "is a control character and cannot be written in the source code; "
+                ++ "use the Unicode escape \\u{hex4(ordval)} instead")
                 atRange(lineNumber, linePosition, linePosition)
                 withSuggestion(suggestion)
             suggestion.deleteChar(linePosition)onLine(lineNumber)
-            errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                ++ "is a control character and cannot be written in the source code; consider using spaces instead.")atRange(lineNumber,
-                linePosition, linePosition)withSuggestion(suggestion)
+            errormessages.syntaxError("{unicode.name(c)} (U+{hex4(ordval)}) "
+                ++ "is a control character and cannot be written in the source code; "
+                ++ "consider using spaces instead.")
+                atPosition(lineNumber, linePosition) withSuggestion(suggestion)
         }
     }
 
@@ -1206,21 +1215,22 @@ class new {
             def suggestion = errormessages.suggestion.new
             suggestion.replaceChar(linePosition)with(" ")onLine(lineNumber)
             if (ordval == 9) then {
-                errormessages.syntaxError("tabs are not allowed; use spaces instead.")atRange(lineNumber,
-                    linePosition, linePosition)withSuggestion(suggestion)
+                errormessages.syntaxError("tabs are not allowed; use spaces instead.")
+                    atPosition(lineNumber, linePosition) withSuggestion(suggestion)
             } else {
-                errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                    ++ "is not a valid whitespace character; use spaces instead.")atRange(lineNumber,
-                    linePosition, linePosition)withSuggestion(suggestion)
+                errormessages.syntaxError("{unicode.name(c)} (U+{hex4(ordval)}) "
+                    ++ "is not a valid whitespace character; use spaces instead.")
+                    atPosition(lineNumber, linePosition) withSuggestion(suggestion)
             }
         } elseif {isBadControl(c)} then {
             // Character is a control character other than
             // carriage return or line feed.
             def suggestion = errormessages.suggestion.new
             suggestion.deleteChar(linePosition)onLine(lineNumber)
-            errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                ++ "is a control character and cannot be written in the source code; consider using spaces instead.")atRange(lineNumber,
-                linePosition, linePosition)withSuggestion(suggestion)
+            errormessages.syntaxError("{unicode.name(c)} (U+{hex4(ordval)}) "
+                ++ "is a control character and cannot be written in the source "
+                ++ "code; consider using spaces instead.")
+                atPosition(lineNumber, linePosition) withSuggestion(suggestion)
         }
     }
 
@@ -1241,23 +1251,29 @@ class new {
             if (inc >= base) then {
                 if((str.first == "0") && (inc < 16)) then {
                     def suggestion = errormessages.suggestion.new
-                    suggestion.insert("x")atPosition(linePosition - str.size + 1)onLine(lineNumber)
-                    errormessages.syntaxError("a number in base 16 must start with '0x'.")atPosition(
-                        lineNumber, linePosition - str.size + 1)withSuggestion(suggestion)
+                    suggestion.insert("x")
+                        atPosition(linePosition - str.size + 1) onLine(lineNumber)
+                    errormessages.syntaxError("a number in base 16 must start with '0x'.")
+                        atPosition(lineNumber, linePosition - str.size + 1)
+                        withSuggestion(suggestion)
                 } else {
                     def suggestion = errormessages.suggestion.new
                     if(str.size == 1) then {
-                        suggestion.deleteRange(linePosition - str.size - 1, linePosition - 1)onLine(lineNumber)
+                        suggestion.deleteRange(linePosition - str.size - 1, linePosition - 1)
+                            onLine(lineNumber)
                     } else {
-                        suggestion.deleteChar(linePosition - str.size + i)onLine(lineNumber)
+                        suggestion.deleteChar(linePosition - str.size + i)
+                            onLine(lineNumber)
                     }
                     def validDigits = if(base <= 10) then {
                         "'0' to '{base - 1}'"
                     } else {
                         "'0' to '9', 'a' to '{unicode.create(87 + base)}'"
                     }
-                    errormessages.syntaxError("'{c}' is not a valid digit in base {base}. Valid digits are {validDigits}.")atRange(
-                        lineNumber, linePosition - str.size + i, linePosition - str.size + i)withSuggestion(suggestion)
+                    errormessages.syntaxError("'{c}' is not a valid digit in base {base}. "
+                        ++ "Valid digits are {validDigits}.")
+                        atRange(lineNumber, linePosition - str.size + i, linePosition - str.size + i)
+                        withSuggestion(suggestion)
                 }
             }
             val := val + inc
@@ -1280,7 +1296,7 @@ class new {
             cOrd - zeroOrd
         } else {
             errormessages.syntaxError("the character '{c}' must be a hexadecimal digit")
-                atRange(lineNumber, linePosition, linePosition)
+                atPosition(lineNumber, linePosition)
         }
     }
 

@@ -74,7 +74,7 @@ def good = "this line is not indented"
   method another { "this method is indented by 2, should be 0" }›
         assert { lexer.new.lexString(s) }
             shouldRaise (errormessages.SyntaxError)
-            mentioning "indentation must return to the same level"
+            mentioning "indentation must return to that of the line on which the block was opened"
     }
 
     test "bad continuation" by {
