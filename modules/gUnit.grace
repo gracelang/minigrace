@@ -79,16 +79,20 @@ class assertion {
         assert (! bb)
     }
     method assert(s1:Object) shouldBe (s2:Object) {
-        assert (s1 == s2) description "‹{s1.asDebugString}› should be ‹{s2.asDebugString}›"
+        assert (s1 == s2)
+            description "‹{s1.asDebugString}› should be ‹{s2.asDebugString}›"
     }
     method assert(s1:Object) shouldntBe (s2:Object) {
-        assert ((s1 == s2).not) description "‹{s1.asDebugString}› should not be ‹{s2.asDebugString}›"
+        assert ((s1 == s2).not)
+            description "‹{s1.asDebugString}› should not be ‹{s2.asDebugString}›"
     }
     method deny(s1:Object) shouldBe (s2:Object) {
-        assert ((s1 == s2).not) description "‹{s1.asDebugString}› should not be ‹{s2.asDebugString}›"
+        assert ((s1 == s2).not)
+            description "‹{s1.asDebugString}› should not be ‹{s2.asDebugString}›"
     }
     method assert(n1:Number) shouldEqual (n2:Number) within (epsilon:Number) {
-        assert ((n1 - n2).abs ≤ epsilon) description "‹{n1.asDebugString}› should be approximately ‹{n2.asDebugString}›"
+        assert ((n1 - n2).abs ≤ epsilon)
+            description "‹{n1.asDebugString}› should be approximately ‹{n2.asDebugString}›"
     }
     method assert(block0) shouldRaise (desiredException) {
         assert(block0) shouldRaise (desiredException) mentioning ""
@@ -102,9 +106,9 @@ class assertion {
         } catch { raisedException:desiredException ->
             completedNormally := false
             if (raisedException.message.contains(error).not) then {
-                failBecause("code raised exception {raisedException.exception}"
-                    ++ ", but the message was \"{raisedException.message}\""
-                    ++ ", which does not mention \"{error}\"")
+                failBecause("code raised exception {raisedException.exception},"
+                    ++ " but the message was \"{raisedException.message}\","
+                    ++ " which does not mention \"{error}\"")
             }
         } catch { raisedException ->
             failBecause("code raised exception {raisedException.exception}" ++
