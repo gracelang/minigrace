@@ -18,8 +18,9 @@ def input = list [
     "}"
 ]
 
+util.lines.clear
 util.lines.addAll(input)
-def tokens = lexer.new.lexInputLines
+def tokens = lexer.lexInputLines
 def module = parser.parse(tokens)
 
 print (module.pretty 0)

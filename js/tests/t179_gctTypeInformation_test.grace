@@ -27,7 +27,7 @@ def input = list [
 
 
 util.lines.addAll(input)
-def tokens = lexer.new.lexInputLines
+def tokens = lexer.lexInputLines
 def module = parser.parse(tokens)
 module.name := "test_179_output"
 util.extensions.put("gctfile", true)

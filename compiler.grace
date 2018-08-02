@@ -17,7 +17,7 @@ util.parseargs(buildinfo)
 util.log_verbose "starting compilation"
 
 try {
-    var tokens := lexer.new.lexfile(util.infile)
+    var tokens := lexer.lexfile(util.infile)
     if (util.target == "lex") then {
         // Print the lexed tokens and quit.
         for (tokens) do { v ->

@@ -50,7 +50,7 @@ def input = sequence [
 ]
 
 util.lines.addAll(input)
-def tokens = lexer.new.lexInputLines
+def tokens = lexer.lexInputLines
 def module = parser.parse(tokens)
 def nodes = module.value
 

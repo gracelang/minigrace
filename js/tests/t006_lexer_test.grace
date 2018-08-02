@@ -10,7 +10,7 @@ testSuiteNamed "Indentation" with {
         def s = ‹  def x = 3
   def y = 7
 ›
-        assert { lexer.new.lexString(s) }
+        assert { lexer.lexString(s) }
             shouldRaise (errormessages.SyntaxError)
             mentioning "first line"
     }
@@ -20,7 +20,7 @@ testSuiteNamed "Indentation" with {
     def good = "this line is indented with spaces"
 	def bad = "this line is indented with a tab"
 }›
-        assert { lexer.new.lexString(s) }
+        assert { lexer.lexString(s) }
             shouldRaise (errormessages.SyntaxError)
             mentioning "spaces, not tabs"
     }
@@ -30,7 +30,7 @@ testSuiteNamed "Indentation" with {
 def good = "this line is not indented"
     def bad = "this line is indented"
 }›
-        assert { lexer.new.lexString(s) }
+        assert { lexer.lexString(s) }
             shouldRaise (errormessages.SyntaxError)
             mentioning "Please indent"
     }
@@ -40,7 +40,7 @@ def good = "this line is not indented"
     def good = "this line is indented correctly"
   def bad = "this line is indented less than the prior line"
 }›
-        assert { lexer.new.lexString(s) }
+        assert { lexer.lexString(s) }
             shouldRaise (errormessages.SyntaxError)
             mentioning "do not reduce the indentation"
     }
@@ -50,7 +50,7 @@ def good = "this line is not indented"
     def good = "this line is indented correctly"
      def bad = "this line is indented one space more than the prior line"
 }›
-        assert { lexer.new.lexString(s) }
+        assert { lexer.lexString(s) }
             shouldRaise (errormessages.SyntaxError)
             mentioning "change of indentation of 1"
     }
@@ -61,7 +61,7 @@ def good = "this line is not indented"
     def bad = "this line is also indented correctly"
   }
 }›
-        assert { lexer.new.lexString(s) }
+        assert { lexer.lexString(s) }
             shouldRaise (errormessages.SyntaxError)
             mentioning "prior line opened two blocks"
     }
@@ -72,7 +72,7 @@ def good = "this line is not indented"
     def bad = "this line is also indented correctly"
   }  // the close brace should have indentation 0
   method another { "this method is indented by 2, should be 0" }›
-        assert { lexer.new.lexString(s) }
+        assert { lexer.lexString(s) }
             shouldRaise (errormessages.SyntaxError)
             mentioning "indentation must return to that of the line on which the block was opened"
     }
@@ -83,7 +83,7 @@ def good = "this line is not indented"
           " and this is a continuation" ++
         "but what is this?"
 }›
-        assert { lexer.new.lexString(s) }
+        assert { lexer.lexString(s) }
             shouldRaise (errormessages.SyntaxError)
             mentioning "indentation must be at least 10"
     }
@@ -95,7 +95,7 @@ testSuiteNamed "Strings" with {
 
     test "unclosed string interpolation" by {
         def s = ‹def badString = "Here is a { string with an unmatched brace"›
-        assert { lexer.new.lexString(s) }
+        assert { lexer.lexString(s) }
             shouldRaise (errormessages.SyntaxError)
             mentioning "string interpolation must end with a '\}'"
     }
@@ -103,7 +103,7 @@ testSuiteNamed "Strings" with {
     test "string interpolation at end of line" by {
         def s = ‹def badString = "Here is a {
 def goodString = "that's all"›
-        assert { lexer.new.lexString(s) }
+        assert { lexer.lexString(s) }
             shouldRaise (errormessages.SyntaxError)
             mentioning "A string interpolation may not contain a newline."
     }
@@ -111,8 +111,27 @@ def goodString = "that's all"›
     test "unclosed string" by {
         def s = ‹def badString = "Here is a string
 def goodString = "and here is another"›
-        assert { lexer.new.lexString(s) }
+        assert { lexer.lexString(s) }
             shouldRaise (errormessages.SyntaxError)
             mentioning "string must be terminated by a \""
+    }
+}
+
+testSuiteNamed "Single line" with {
+    test "interface" by {
+        def s = ‹interface { x -> Boolean ; y(arg:String) -> Done }›
+        def toks = lexer.lexLine(s)
+        def first = toks.poll
+        assert (first.kind) shouldBe "keyword"
+        assert (first.value) shouldBe "interface"
+    }
+    test "multiple lines" by {
+        def s = ‹interface {
+    x -> Boolean
+    y(arg:String) -> Done
+}›
+        assert { lexer.lexLine(s) }
+            shouldRaise (ProgrammingError)
+            mentioning "not a single line"
     }
 }
