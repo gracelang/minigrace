@@ -93,7 +93,7 @@ method doParseCheck(moduleNode) {
     if (currentDialect.hasParseChecker.not) then { return }
     try {
         currentDialect.moduleObject.thisDialect.parseChecker(moduleNode)
-    } catch { e:CheckerFailure | DialectError ->
+    } catch { e:CheckerFailure | DialectError | errormessages.SyntaxError ->
         reportDialectError(e)
     } catch { e:Exception ->      // some unknown Grace exception
         printBacktrace (e) asFarAs "thisDialect.parseChecker"
@@ -106,7 +106,7 @@ method doAstCheck(moduleNode) {
     if (currentDialect.hasAstChecker.not) then { return }
     try {
         currentDialect.moduleObject.thisDialect.astChecker(moduleNode)
-    } catch { e:CheckerFailure | DialectError ->
+    } catch { e:CheckerFailure | DialectError | errormessages.SyntaxError ->
         reportDialectError(e)
     } catch { e:Exception ->      // some unknown Grace exception
         printBacktrace (e) asFarAs "thisDialect.astChecker"
