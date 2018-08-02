@@ -1410,6 +1410,7 @@ method lexInputLines {
             method asString { "⏚" }
             method == (other) { isMe (other) }
             method isHeader { true }
+            method indent { 0 }
         }
         header.next := header
         var last is readable := header
@@ -1434,12 +1435,7 @@ method lexInputLines {
 
             last.next := t
             t.prev := last
-            if (isEmpty) then {
-                if (t.indent ≠ 0) then {
-                    def msg = "the first line must not be indented"
-                    errormessages.syntaxError(msg) atRange(t.line, 1, t.indent)
-                }
-            } elseif {(t.indent - last.indent).abs == 1} then {
+            if {(t.indent - last.indent).abs == 1} then {
                 def m1 = "the indentation for this line can't differ "
                 def m2 = "from that of the previous line by 1.\n  To start a block, or "
                 def m3 = "continue a statement on the next line line, indent by 2 or more. "

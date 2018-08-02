@@ -1,5 +1,6 @@
 dialect "minitest"
 import "lexer" as lexer
+import "parser" as parser
 import "errormessages" as errormessages
 
 testSuiteNamed "Indentation" with {
@@ -10,7 +11,7 @@ testSuiteNamed "Indentation" with {
         def s = ‹  def x = 3
   def y = 7
 ›
-        assert { lexer.lexString(s) }
+        assert { parser.parse(lexer.lexString(s)) }
             shouldRaise (errormessages.SyntaxError)
             mentioning "first line"
     }
