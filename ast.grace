@@ -777,7 +777,10 @@ def methodTypeNode is public = object {
     }
     method toGrace(depth : Number) -> String {
         var s := ""
-        signature.do { part -> s:= s ++ part.toGrace(depth + 1) }
+        signature.do { part -> s:= s ++ part.toGrace(depth + 2) }
+        if (false != rtype) then {
+            s := "{s} → {rtype.toGrace(depth + 2)}"
+        }
         s
     }
     method shallowCopy {
@@ -846,8 +849,7 @@ def typeLiteralNode is public = object {
     }
     method toGrace(depth : Number) -> String {
         def spc = "    " * depth
-        var s := "type"
-        s := s ++ " = \{"
+        var s := "interface \{"
         for (self.methods) do { each ->
             s := s ++ "\n" ++ spc ++ "    " ++ each.toGrace(depth + 1)
         }
