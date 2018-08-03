@@ -148,7 +148,7 @@ class token {
 
     def null = object {
         method asString { "⏚" }
-        method == (other) { isMe (other) }
+        method == (other) { self.isMe (other) }
         method isHeader { true }
     }
     var next is public := null
@@ -1408,7 +1408,7 @@ method lexInputLines {
         def header = object {
             var next is public
             method asString { "⏚" }
-            method == (other) { isMe (other) }
+            method == (other) { self.isMe (other) }
             method isHeader { true }
             method indent { 0 }
         }
