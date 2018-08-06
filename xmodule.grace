@@ -591,6 +591,7 @@ method buildGctFor(module) {
             if (v.isReadable) then {
                 meths.add(v.name.value)
                 publicMethodTypes.push(varRead)
+                gct.at("publicMethod:{v.name.value}") put(list [varRead])
             } else {
                 confidentials.push(v.name.value)
             }
@@ -598,6 +599,7 @@ method buildGctFor(module) {
             if (v.isWritable) then {
                 meths.add(v.name.value ++ ":=(1)")
                 publicMethodTypes.push(varWrite)
+                gct.at("publicMethod:{v.name.value}:=(1)") put(list[varWrite])
             } else {
                 confidentials.push(varWrite)
             }
@@ -627,6 +629,7 @@ method buildGctFor(module) {
                 meths.add(v.nameString)
                 def gctType = if (false != v.dtype) then {v.dtype.toGrace(0)} else {"Unknown"}
                 publicMethodTypes.push("{v.name.value} → {gctType}")
+                gct.at("publicMethod:{v.name.value}") put (list["{v.name.value} → {gctType}"])
             } else {
                 confidentials.push(v.nameString)
             }
