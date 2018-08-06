@@ -877,10 +877,10 @@ def typeDecNode is public = object {
     var name is public := name'
     var value is public := typeValue
     var parentKind is public := "unset"
-    def nameString is public = name.value
     var annotations is public := [ ]
     var typeParams is public := false
 
+    method nameString → String { name.value }
     method end -> Position { value.end }
     method isLegalInTrait { true }
     method isTypeDec { true }
@@ -2300,8 +2300,8 @@ def bindNode is public = object {
     var value is public := val'
 
     method end -> Position { value.end }
-    method nameString { value ++ ":=(1)" }
-    method canonicalName { value ++ ":=(_)" }
+    method nameString { dest.asString ++ ":=(1)" }
+    method canonicalName { dest.asString ++ ":=(_)" }
     method isBind { true }
     method asString { "bind {value}" }
     method accept(visitor : AstVisitor) from(ac) {
