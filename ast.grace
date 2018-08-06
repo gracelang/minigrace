@@ -2946,7 +2946,7 @@ def signaturePart is public = object {
             var s := name
             if (params.isEmpty.not) then {
                 s := s ++ "("
-                params.do { each -> s := each.toGrace(depth + 1) }
+                params.do { each -> s := s ++ each.toGrace(depth + 1) }
                     separatedBy { s := s ++ ", " }
                 s := s ++ ")"
             }
