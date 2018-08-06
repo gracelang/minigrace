@@ -2300,8 +2300,8 @@ def bindNode is public = object {
     var value is public := val'
 
     method end -> Position { value.end }
-    method nameString { dest.asString ++ ":=(1)" }
-    method canonicalName { dest.asString ++ ":=(_)" }
+    method nameString { dest.nameString ++ ":=(1)" }
+    method canonicalName { dest.nameString ++ ":=(_)" }
     method isBind { true }
     method asString { "bind {value}" }
     method accept(visitor : AstVisitor) from(ac) {
