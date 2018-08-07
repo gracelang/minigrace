@@ -2277,14 +2277,14 @@ method classOrTrait {
         def suggestions = [ ]
         if (sym.isLBrace) then {
             var suggestion := errormessages.suggestion.new
-            suggestion.insert(" «class name».new")afterToken(lastToken)
+            suggestion.insert(" «class name»")afterToken(lastToken)
             suggestions.push(suggestion)
             suggestion := errormessages.suggestion.new
             suggestion.replaceToken(lastToken)with("object")
             suggestions.push(suggestion)
         } else {
             def suggestion = errormessages.suggestion.new
-            suggestion.insert(" «class name».new \{}")afterToken(lastToken)
+            suggestion.insert(" «class name» \{}")afterToken(lastToken)
             suggestions.push(suggestion)
         }
         errormessages.syntaxError "a class must have a name after the keyword 'class'."
