@@ -1209,9 +1209,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
 
         inherit ast.baseVisitor
         method visitDefDec (o) up (anc) {
-            if (o.returnsObject) then {
-                o.scope.at(o.nameString)
-                    putScope(o.returnedObjectScope)
+            def rhs = o.value
+            if (rhs.returnsObject) then {
+                o.scope.at(o.nameString) putScope(rhs.returnedObjectScope)
             }
             true
         }

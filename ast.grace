@@ -378,6 +378,7 @@ class fakeSymbolTable is public {
     }
     method variety { "fake" }
     method ==(other) { self.isMe(other) }
+    method elementScopesAsString { "[fake]" }
 }
 
 def ifNode is public = object {
@@ -2366,14 +2367,6 @@ def defDecNode is public = object {
         method isFieldDec { true }
         method isWritable { false }
         method isReadable { isPublic }
-
-        method returnsObject {
-            value.returnsObject
-        }
-        method returnedObjectScope {
-            // precondition: returnsObject
-            value.returnedObjectScope
-        }
         method usesAsType(aNode) {
             aNode == dtype
         }
