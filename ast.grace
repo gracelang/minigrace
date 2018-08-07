@@ -1038,9 +1038,9 @@ def typeDecNode is public = object {
     method toGrace(depth : Number) -> String {
         def spc = "    " * depth
         var s := ""
-        s := "type {self.name}"
+        s := "type {self.name.nameString}"
         if (false != typeParams) then {
-            typeParams.toGrace(0)
+            s := s ++ typeParams.toGrace(0)
         }
         s ++ " = " ++ value.toGrace(depth + 2)
     }
