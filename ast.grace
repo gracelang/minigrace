@@ -878,7 +878,17 @@ class methodSignatureNode(parts', rtype') {
     }
     method toGrace(depth : Number) -> String {
         var s := ""
-        signature.do { part -> s:= s ++ part.toGrace(depth + 2) }
+        var first := true
+        for(signature) do {part →
+            if (first) then {
+                s := s ++ part.name ++ typeParams ++ "("
+                part.params.do { each → s := s ++ each.toGrace(depth + 1) }
+                s := s ++ ")"
+                first := false
+            } else {
+                s:= s ++ part.toGrace(depth + 2)
+            }
+        }
         if (false != rtype) then {
             s := "{s} → {rtype.toGrace(depth + 2)}"
         }
