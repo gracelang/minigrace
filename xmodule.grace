@@ -1,6 +1,8 @@
 import "io" as io
 import "sys" as sys
 import "util" as util
+import "lexer" as lexer
+import "parser" as parser
 import "ast" as ast
 import "mirrors" as mirrors
 import "errormessages" as errormessages
@@ -560,6 +562,15 @@ method generateMethodHeader(methNode) -> String {
     s
 }
 
+// Set of prelude types; used by the importVisitor in this file as well as
+// inside StaticTyping.grace and ObjectTypeModule.grace.
+//
+// Please update this set when new prelude types are added.
+def preludeTypes: Set⟦String⟧ = emptySet⟦String⟧
+preludeTypes.addAll( ["Done", "Pattern", "Iterator", "Boolean", "Number",
+                      "String", "List", "Set", "Sequence", "Dictionary","Point",
+                      "Binding", "Collection", "Enumerable", "Range", "Object"])
+
 method buildGctFor(module) {
     def gct = emptyDictionary
     def classes = emptyList
@@ -591,11 +602,13 @@ method buildGctFor(module) {
             if (v.isReadable) then {
                 meths.add(v.name.value)
                 publicMethodTypes.push(varRead)
-                gct.at("publicMethod:{v.name.value}") put(list [varRead])
+                gct.at("publicMethod:{v.name.value}") put(list[varRead])
             } else {
                 confidentials.push(v.name.value)
             }
-            def varWrite: String = "{v.name.value}:=({v.name.value}': {gctType}) → Done"   
+
+            def varWrite: String = "{v.name.value}:=({v.name.value}': " ++
+                                                            "{gctType}) → Done"
             if (v.isWritable) then {
                 meths.add(v.name.value ++ ":=(1)")
                 publicMethodTypes.push(varWrite)
