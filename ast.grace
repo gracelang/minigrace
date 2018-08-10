@@ -880,10 +880,13 @@ class methodSignatureNode(parts', rtype') {
         var s := ""
         var first := true
         for(signature) do {part →
-            if (first) then {
-                s := s ++ part.name ++ typeParams ++ "("
-                part.params.do { each → s := s ++ each.toGrace(depth + 1) }
-                s := s ++ ")"
+            if ((first) && {false ≠ typeParams}) then {
+                s := s ++ part.name ++ typeParams.toGrace(depth)
+                if (part.params.size > 0) then {
+                    s := s ++ "("
+                    part.params.do { each → s := s ++ each.toGrace(depth + 1) }
+                    s := s ++ ")"
+                }
                 first := false
             } else {
                 s:= s ++ part.toGrace(depth + 2)
