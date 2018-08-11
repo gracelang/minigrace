@@ -298,7 +298,7 @@ class newScopeIn(parent') kind(variety') {
                 if (s.variety == "dialect") then {
                     return ast.memberNode.new(name,
                           ast.identifierNode.new("prelude", false)
-                                scope(self)) scope(self).onSelf
+                                scope(self)) scope(self).onSelf.withGenericArgs(aNode.generics)
                 } elseif { s.variety == "module" } then {
                     return ast.memberNode.new(name, thisModule) scope(self).onSelf
                 }
@@ -310,7 +310,7 @@ class newScopeIn(parent') kind(variety') {
                           setStart(ast.noPosition)
                 }
                 return ast.memberNode.new(name, rcvr).setScope(self).
-                      setPositionFrom(aNode).onSelf
+                      setPositionFrom(aNode).onSelf.withGenericArgs(aNode.generics)
             }
             if (s.variety == "object") then {
                 def definingObjNode = s.node
@@ -687,7 +687,8 @@ method transformIdentifier(node) ancestors(anc) {
     if (v == "typedec") then { return node }
     if (v == "dialect") then {
         def p = ast.identifierNode.new("prelude", false) scope(nodeScope)
-        return ast.memberNode.new(nm, p) scope(nodeScope).onSelf
+        return ast.memberNode.new(nm, p)
+              scope(nodeScope).onSelf.withGenericArgs(node.generics)
     }
     if (nodeKind.isParameter) then { return node }
 
@@ -699,7 +700,7 @@ method transformIdentifier(node) ancestors(anc) {
     if (definingScope == nodeScope.enclosingObjectScope) then {
         return ast.memberNode.new(nm,
             ast.identifierNode.new("self", false) scope(nodeScope)
-        ) scope(nodeScope).onSelf
+        ) scope(nodeScope).onSelf.withGenericArgs(node.generics)
     }
     if (nodeScope.isObjectScope.not
              && {nodeScope.isInSameObjectAs(definingScope)}) then {

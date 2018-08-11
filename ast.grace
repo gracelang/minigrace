@@ -1786,6 +1786,10 @@ def memberNode is public = object {
             isSelfRequest := true
             self
         }
+        method withGenericArgs(gens) {
+            generics := gens
+            self
+        }
         method reqPos is confidential {
             // the position of the start of the ‹request› in this ‹receiver›.‹request›
             if (receiver.isImplicit) then {
@@ -2118,6 +2122,8 @@ def identifierNode is public = object {
             isDeclaredByParent := other.isDeclaredByParent
             isAssigned := other.isAssigned
             inRequest := other.inRequest
+            isDeclaredByParent := other.isDeclaredByParent
+            generics := other.generics
             end := other.end
             canonicalName := other.canonicalName
             self
@@ -2312,6 +2318,8 @@ def bindNode is public = object {
             self.value.accept(visitor) from(newChain)
         }
     }
+    method generics { false }   // an assignable variable can't have type params.
+                                // But perhaps a writer method can?
     method map(blk) ancestors(ac) {
         var n := shallowCopy
         def newChain = ac.extend(n)
