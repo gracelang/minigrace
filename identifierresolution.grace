@@ -494,148 +494,6 @@ def universalScope = object {
     method isUniversal { true }
 }
 
-method rewritematchblockterm(arg) {
-    // arg is an AstNode prepresenting the pattern from a pattern-block
-    // Answer a pair consisting of a new AstNode that does the pattren-match,
-    // and a list of bindings.
-    util.setPosition(arg.line, arg.linePos)
-    if (arg.kind == "num") then {
-        return [arg, [] ]
-    }
-    if (arg.kind == "string") then {
-        return [arg, [] ]
-    }
-    if (arg.kind == "boolean") then {
-        return [arg, [] ]
-    }
-    if ((arg.kind == "call") && {arg.receiver.nameString.substringFrom(1)to(6)
-        == "prefix"}) then {
-        return [arg, [] ]
-    }
-    if (arg.kind == "member") then {
-        return [arg, [] ]
-    }
-    if (arg.kind == "call") then {
-        def bindings = []
-        def subpats = []
-        for (arg.parts) do { part ->
-            for (part.args) do { a ->
-                def tmp = rewritematchblockterm(a)
-                subpats.push(tmp.first)
-                for (tmp.second) do {b->
-                    bindings.push(b)
-                }
-            }
-        }
-        def callpat = ast.callNode.new(
-                ast.memberNode.new("MatchAndDestructuringPattern",
-                ast.identifierNode.new("prelude", false)),
-                [ ast.requestPart.request "new"
-                    withArgs( [arg.receiver, ast.arrayNode.new(subpats)] )] )
-        return [callpat, bindings]
-    }
-    if (arg.isIdentifier) then {
-        def varpat = ast.callNode.new(
-                ast.memberNode.new("VariablePattern",
-                ast.identifierNode.new("prelude", false)),
-                [   ast.requestPart.request "new"
-                    withArgs( [ast.stringNode.new(arg.value)] ) ] )
-        if (false != arg.dtype) then {
-            if (arg.dtype.isIdentifier) then {
-                return [ ast.callNode.new(
-                    ast.memberNode.new("AndPattern",
-                    ast.identifierNode.new("prelude", false)),
-                    [ast.requestPart.request "new" withArgs( [varpat, arg.dtype] )]
-                    ), [arg] ]
-            }
-            def tmp = rewritematchblockterm(arg.dtype)
-            def bindings = [arg]
-            for (tmp.second) do {b->
-                bindings.push(b)
-            }
-            def bindingpat = ast.callNode.new(
-                    ast.memberNode.new("AndPattern",
-                    ast.identifierNode.new("prelude", false)),
-                    [ast.requestPart.request "new" withArgs( [varpat, tmp.first ] )]
-                    )
-            return [bindingpat, bindings]
-        }
-        return [varpat, [arg] ]
-    }
-    if (arg.kind == "typeliteral") then {
-        return [arg, [] ]
-    }
-    ProgrammingError.raise("Internal error in compiler: fell through when rewriting "
-        ++ "match block of unexpected kind '{arg.kind}'.")
-}
-method rewritematchblock(blk) {
-    def arg = blk.params.first
-    var pattern := false
-    var newparams := [ ]
-    for (blk.params) do { p ->
-        newparams.push(p)
-    }
-    if ((arg.kind == "num") || (arg.kind == "string") ||
-        (arg.kind == "boolean")) then {
-        def tmp = rewritematchblockterm(arg)
-        pattern := tmp.first
-        newparams := tmp.second
-    }
-    if (arg.kind == "identifier") then {
-        def varpat = ast.callNode.new(
-            ast.memberNode.new("VariablePattern",
-            ast.identifierNode.new("prelude", false)),
-            [ast.requestPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )] )
-        if (false != arg.dtype) then {
-            match (arg.dtype.kind)
-              case { "identifier" | "op" ->
-                pattern := ast.callNode.new(
-                    ast.memberNode.new("AndPattern",
-                        ast.identifierNode.new("prelude", false)),
-                        [ast.requestPart.request "new" withArgs( [varpat, arg.dtype] )] )
-            } case { _ ->
-                def tmp = rewritematchblockterm(arg.dtype)
-                def bindingpat = ast.callNode.new(
-                    ast.memberNode.new("AndPattern",
-                    ast.identifierNode.new("prelude", false)),
-                    [ast.requestPart.request "new" withArgs( [varpat, tmp.first ] )] )
-                pattern := bindingpat
-                for (tmp.second) do {p->
-                    // We can't name both p and the extra param binding
-                    // occurences, because then there would be shadowing.
-                    if (p.wildcard) then {
-                        p.isBindingOccurrence := true
-                    } else {
-                        def extraParam = p.deepCopy
-                        // The deepCopy copies the type too.
-                        // Does this cause an unnecessary dynamic type-check?
-                        extraParam.isBindingOccurrence := true
-                        newparams.push(extraParam)
-                    }
-                }
-            }
-        } else {
-            if (false != blk.matchingPattern) then {
-                if (blk.matchingPattern.value == arg.value) then {
-                    pattern := arg
-                    newparams := []
-                }
-            }
-        }
-    } else {
-        if (false != blk.matchingPattern) then {
-            if (blk.matchingPattern.value == arg.value) then {
-                pattern := arg
-                newparams := []
-            }
-        }
-    }
-    def newblk = ast.blockNode.new(newparams, blk.body)
-    newblk.matchingPattern := pattern
-    newblk.line := blk.line
-    return newblk
-}
-
 method transformIdentifier(node) ancestors(anc) {
     // node is a (copy of an) ast node that represents an applied occurence of
     // an identifer id.
@@ -1539,16 +1397,6 @@ method callReturnsFreshObject(cNode) {
     ansrScope.isObjectScope
 }
 
-method rewriteMatches(topNode) {
-    topNode.map { node, anc ->
-        if (node.isMatchingBlock) then {
-            rewritematchblock(node)
-        } else {
-            node
-        }
-    } ancestors (ast.ancestorChain.empty)
-}
-
 method resolve(moduleObject) {
     util.log_verbose "rewriting tree."
     setupContext(moduleObject)
@@ -1557,15 +1405,6 @@ method resolve(moduleObject) {
     def preludeObject = ast.moduleNode.body([moduleObject])
         named "prelude" scope (preludeScope)
     def preludeChain = ast.ancestorChain.with(preludeObject)
-
-    if (util.target == "patterns") then {
-        util.outprint "====================================="
-        util.outprint "module after pattern-match re-writing"
-        util.outprint "====================================="
-        util.outprint(moduleObject.pretty(0))
-        util.log_verbose "done"
-        sys.exit(0)
-    }
 
     buildSymbolTableFor(moduleObject) ancestors(preludeChain)
     util.log_verbose "symbol tables built."

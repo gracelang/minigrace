@@ -171,7 +171,6 @@ method parseargs(buildinfo) {
             case { "processed-ast" -> io.open(outDir ++ modnamev ++ ".ast", "w") }
             case { "ast" -> io.open(outDir ++ modnamev ++ ".ast", "w") }
             case { "symbols" -> io.open(outDir ++ modnamev ++ ".symbols", "w") }
-            case { "patterns" -> io.open(outDir ++ modnamev ++ ".patterns", "w") }
             case { "grace" -> io.open(outDir ++ modnamev ++ "_new.grace", "w") }
             case { "imports" -> io.output }
             case { _ ->
