@@ -982,7 +982,8 @@ def methodNode is public = object {
         var usesClassSyntax is public := false
         var cachedIdentifier := uninitialized
         var isBindingOccurence is readable := true
-            // the only exception is the oldMethodName in an alias clause
+            // the only exceptions are the oldMethodName in an alias clause,
+            // and an excluded name
 
         method end -> Position {
             if (body.isEmpty.not) then {
@@ -2774,8 +2775,8 @@ def inheritNode is public = object {
                 def newChain = ac.extend(self)
                 value.accept(visitor) from(newChain)
                 aliases.do { a ->
-                    a.newName.accept(visitor) from(newChain)
-                    a.oldName.accept(visitor) from(newChain)
+                    a.newSignature.accept(visitor) from(newChain)
+                    a.oldSignature.accept(visitor) from(newChain)
                 }
                 exclusions.do { e -> e.accept(visitor) from(newChain) }
             }
@@ -2828,11 +2829,11 @@ def inheritNode is public = object {
             if (isUse) then { "use " } else { "inherit " } ++ value.toGrace 0
         }
         method nameString { value.toGrace(0) }
-        method addAlias (newName) for (oldName) {
-            aliases.push(aliasNew(newName) old(oldName))
+        method addAlias (newSig) for (oldSig) {
+            aliases.push(aliasNew(newSig) old(oldSig.appliedOccurence))
         }
-        method addExclusion(ident) {
-            exclusions.push(ident)
+        method addExclusion(meth) {
+            exclusions.push(meth)
         }
         method shallowCopy {
             inheritNode.new(nullNode).shallowCopyFieldsFrom(self)
@@ -2852,22 +2853,28 @@ def inheritNode is public = object {
 type AliasPair = {
     newName
     oldName
+    newSignature
+    oldSignature
 }
 
 class aliasNew(n) old(o) {
-    method newName {n}
-    method oldName {o}
-    method asString { "alias {n.nameString} = {o.nameString}" }
+    method newName {newSignature.asIdentifier}
+    method oldName {oldSignature.asIdentifier}
+    def newSignature is public = n
+    def oldSignature is public = o
+    method asString { "alias {newSignature.nameString} = {oldSignature.nameString}" }
     method pretty(depth) {
         def spc = "  " * (depth+1)
-        "{spc}  alias {n.pretty(depth)} = {o.pretty(depth)}"
+        "{spc}  alias {newSignature.pretty(depth)} = {oldSignature.pretty(depth)}"
     }
-    method hash { (n.hash * 1171) + o.hash }
+    method hash { (newSignature.hash * 1171) + oldSignature.hash }
     method isExecutable { false }
     method == (other) {
-        match (other)
-            case { that:AliasPair -> (n == that.newName) && (o == that.oldName) }
-            case { _ -> false }
+        match (other) case { that:AliasPair ->
+            (newSignature == that.newSignature) && (oldSignature == that.oldSignature)
+        } case { _ ->
+            false
+        }
     }
 }
 def signaturePart is public = object {

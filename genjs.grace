@@ -1626,7 +1626,7 @@ method aliasList(inhNode) {
 method exclusionList(inhNode) {
     var res := "["
     inhNode.exclusions.do { e ->
-        res := res ++ "\"{e.quoted}\""
+        res := res ++ "\"{e.nameString.quoted}\""
     } separatedBy {
         res := res ++ ", "
     }

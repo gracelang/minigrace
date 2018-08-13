@@ -992,9 +992,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             def ident = o.asIdentifier
             checkForReservedName(ident)
-            surroundingScope.addNode(ident) asA(k.methdec)
-            ident.isDeclaredByParent := true
             if (ident.isBindingOccurrence) then {
+                surroundingScope.addNode(ident) asA(k.methdec)
+                ident.isDeclaredByParent := true
                 // aliased and excluded names are appliedOccurences
                 o.scope := newScopeIn(surroundingScope) kind "method"
                 if (o.returnsObject) then {
@@ -1164,11 +1164,11 @@ method gatherInheritedNames(node) is confidential {
                     atRange(a.oldName.range)
             }
         }
-        inhNode.exclusions.do { exId ->
-            inhNode.providedNames.remove(exId.nameString) ifAbsent {
-                errormessages.syntaxError("can't exclude {exId.canonicalName} " ++
+        inhNode.exclusions.do { exMeth ->
+            inhNode.providedNames.remove(exMeth.nameString) ifAbsent {
+                errormessages.syntaxError("can't exclude {exMeth.canonicalName} " ++
                     "because it is not present in the inherited object")
-                    atRange(exId.range)
+                    atRange(exMeth.range)
             }
         }
     }
@@ -1202,11 +1202,11 @@ method gatherUsedNames(objNode) is confidential {
                     atRange(a.oldName.range)
             }
         }
-        t.exclusions.do { exId ->
-            t.providedNames.remove(exId.nameString) ifAbsent {
-                errormessages.syntaxError("can't exclude {exId.canonicalName} " ++
-                    "because it is not available in the trait")
-                    atRange(exId.range)
+        t.exclusions.do { exMeth ->
+            t.providedNames.remove(exMeth.nameString) ifAbsent {
+                errormessages.syntaxError("can't exclude {exMeth.canonicalName} " ++
+                    "because it is not available in the used trait")
+                    atRange(exMeth.range)
             }
         }
         t.providedNames.do { methName ->
