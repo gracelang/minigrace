@@ -1385,11 +1385,7 @@ method lexString (inputString) {
     lexInputLines
 }
 
-method lexLine (aSingleInputLine) {
-    def input = aSingleInputLine.split "\n"
-    if ((input.size > 2) || {(input.size == 2) && {input.second.isEmpty.not}}) then {
-        ProgrammingError.raise "argument to lexLine is not a single line"
-    }
+method lexLines (input) {
     def oldInput = util.lines.copy
     try {
         util.lines.clear
