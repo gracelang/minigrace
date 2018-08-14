@@ -696,10 +696,6 @@ method doif {
                 errormessages.syntaxError("an if statement must end with a '}'.")atPosition(
                     sym.line, sym.linePos)withSuggestion(suggestion)
             }
-
-            if (util.verbosity ≥ 50) then {
-                util.log 50 verbose "0: {sym} closes if opened by {btok}"
-            }
             next
             var econd
             var eif
@@ -908,9 +904,6 @@ method doif {
                     }
                     v := values.pop
                     curelse.push(v)
-                }
-                if (util.verbosity ≥ 50) then {
-                    util.log 50 verbose "1: {sym} closes if opened by {btok}"
                 }
                 next
             }
