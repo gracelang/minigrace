@@ -2,6 +2,7 @@ dialect "minitest"
 import "lexer" as lexer
 import "parser" as parser
 import "errormessages" as errormessages
+import "util" as util
 
 testSuiteNamed "Indentation" with {
     // These tests are for the version of the lexer that
@@ -33,7 +34,7 @@ def good = "this line is not indented"
 }›
         assert { lexer.lexString(s) }
             shouldRaise (errormessages.SyntaxError)
-            mentioning "Please indent"
+            mentioning "indent the body of a block"
     }
 
     test "indent consistently, not decreasing" by {
@@ -118,21 +119,42 @@ def goodString = "and here is another"›
     }
 }
 
-testSuiteNamed "Single line" with {
-    test "interface" by {
-        def s = ‹interface { x -> Boolean ; y(arg:String) -> Done }›
-        def toks = lexer.lexLine(s)
+testSuiteNamed "lexLines" with {
+    test "interface on one line" by {
+        def s = ‹interface { w -> Boolean ; y(arg:String) -> Done }›
+        def toks = lexer.lexLines [s]
         def first = toks.poll
         assert (first.kind) shouldBe "keyword"
         assert (first.value) shouldBe "interface"
     }
-    test "multiple lines" by {
+    test "interface on multiple lines" by {
         def s = ‹interface {
-    x -> Boolean
+    w -> Boolean
     y(arg:String) -> Done
 }›
-        assert { lexer.lexLine(s) }
-            shouldRaise (ProgrammingError)
-            mentioning "not a single line"
+        def toks = lexer.lexLines [s]
+        def first = toks.poll
+        assert (first.kind) shouldBe "keyword"
+        assert (first.value) shouldBe "interface"
+    }
+}
+
+testSuiteNamed "lexString" with {
+    test "interface on one line" by {
+        def s = ‹interface { w -> Boolean ; y(arg:String) -> Done }›
+        def toks = lexer.lexString(s)
+        def first = toks.poll
+        assert (first.kind) shouldBe "keyword"
+        assert (first.value) shouldBe "interface"
+    }
+    test "interface on multiple lines" by {
+        def s = ‹interface {
+    w -> Boolean
+    y(arg:String) -> Done
+}›
+        def toks = lexer.lexString(s)
+        def first = toks.poll
+        assert (first.kind) shouldBe "keyword"
+        assert (first.value) shouldBe "interface"
     }
 }

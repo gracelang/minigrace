@@ -1,3 +1,4 @@
 Indentation: 8 run, 0 failed, 0 errors
 Strings: 3 run, 0 failed, 0 errors
-Single line: 2 run, 0 failed, 0 errors
+lexLines: 2 run, 0 failed, 0 errors
+lexString: 2 run, 0 failed, 0 errors

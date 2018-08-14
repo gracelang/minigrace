@@ -1003,7 +1003,7 @@ method terminateContinuationIfNecessary {
 
 method checkAndRecordIndentStatus (currentCharacter) {
     if ("\t" == currentCharacter) then {
-        lexicalError "Please indent with spaces, not tabs"
+        lexicalError "please indent with spaces, not tabs"
     }
     braceChange := currentLineBraceDepth - priorLineBraceDepth
     if ("}" == currentCharacter) then {
@@ -1025,7 +1025,7 @@ method recordNewIndentation {
         lexicalError "Please indent the body of a block"
     }
     if (braceChange > 1) then {
-        lexicalError("The prior line opened two blocks. There is no way for you "
+        lexicalError("the prior line opened two blocks. There is no way for you "
             ++ "to close them correctly! Please split the prior line into two.")
     }
     repeat (braceChange) times {
@@ -1378,11 +1378,7 @@ method lexfile(file) {
 
 method lexString (inputString) {
     // this method is here to make it easier to test the lexer
-    def input = inputString.split "\n"
-    util.lines.clear
-    util.lines.addAll(input)
-    initialize
-    lexInputLines
+    lexLines(inputString.split "\n")
 }
 
 method lexLines (input) {
