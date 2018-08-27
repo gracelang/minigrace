@@ -22,11 +22,14 @@ def suggestion is public = object {
 
     method replaceRange(start, end)with(s)onLine(lineNumber) {
         def line = getLine(lineNumber)
-        if(start == 1) then {
-            addLine(lineNumber, s ++ line.substringFrom(end + 1)to(line.size))
+        def size = line.size
+        if (size == 0) then {
+            addLine(lineNumber, s)
         } else {
-            addLine(lineNumber, line.substringFrom(1)to(start - 1)
-                ++ s ++ line.substringFrom(end + 1)to(line.size))
+            def newStart = min(start, size)
+            def newEnd = max(end, size)
+            addLine(lineNumber, line.substringFrom 1 to (newStart - 1)
+                    ++ s ++ line.substringFrom (newEnd + 1))
         }
     }
 
@@ -75,8 +78,8 @@ def suggestion is public = object {
 
     method insert(s)atPosition(pos)onLine(lineNumber) {
         def line = getLine(lineNumber)
-        if(pos == 1) then {
-            addLine(lineNumber, s ++ line)
+        if (pos > line.size) then {
+            addLine(lineNumber, line ++ s)
         } else {
             addLine(lineNumber, line.substringFrom(1)to(pos - 1) ++ s
                 ++ line.substringFrom(pos)to(line.size))
