@@ -4,7 +4,6 @@ import "ast" as ast
 import "util" as util
 import "errormessages" as errormessages
 
-var lastLine := 0
 var tokens := false
 var moduleObject
 var comments := list.empty   // so we can request `removeAt`
@@ -59,7 +58,6 @@ var sym := object {
 }
 
 var lastToken := sym
-var previousCommentToken := lastToken
 var statementToken := lastToken     // the token starting the current statement
 var comment := false
 
@@ -68,17 +66,20 @@ method next {
     // Put the position in the input into util module variables.
 
     if (tokens.size > 0) then {
-        lastToken := sym
-        lastLine := lastToken.line
-        sym := tokens.poll
-        if (util.verbosity > 110) then { io.error.write "{sym}\n" }
+        nextToken
         pushComments
-        util.setPosition(sym.line, sym.linePos)
     } else {
         errormessages.syntaxError("unexpectedly found the end of the input. " 
             ++ "This is often caused by a missing '\}'")
             atPosition(sym.line, sym.linePos)
     }
+}
+
+method nextToken is confidential {
+    lastToken := sym
+    sym := tokens.poll
+    if (util.verbosity > 110) then { io.error.write "{sym}\n" }
+    util.setPosition(sym.line, sym.linePos)
 }
 
 method isOnAContinationLine {
@@ -473,6 +474,7 @@ method blockParameters {
     while {blockParameter(params)} do {
         if (sym.isArrow) then {
             next
+            skipSeparators
             return params
         }
         if (sym.isComma) then {
@@ -544,6 +546,7 @@ method blockBody(params) beginningWith (btok) {
             errormessages.syntaxError "a block must end with a '}'."
                 atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
         }
+        separator
     }
     def etok = sym  // the closing rbrace
     next
@@ -846,6 +849,7 @@ method doif {
                         errormessages.syntaxError("an 'elseif' clause must end with a '}'.")atPosition(
                             sym.line, sym.linePos)withSuggestion(suggestion)
                     }
+                    separator
                     v := values.pop
                     ebody.push(v)
                 }
@@ -904,6 +908,7 @@ method doif {
                     }
                     v := values.pop
                     curelse.push(v)
+                    separator
                 }
                 next
             }
@@ -1008,7 +1013,7 @@ method prefixop {
         def rcvr = values.pop
         def call = ast.callNode.new(rcvr,
             [ ast.requestPart.request("prefix" ++ op) withArgs( [] ) ] )
-        call.end := ast.line (lastLine) column (lastToken.endPos)
+        call.end := ast.line (lastToken.line) column (lastToken.endPos)
         values.push(call)
     }
 }
@@ -1712,7 +1717,7 @@ method callrest(acceptBlocks) {
             }
             argumentParts.addLast(namePart)
         }
-        meth.end := ast.line (lastLine) column (lastToken.endPos)
+        meth.end := ast.line (lastToken.line) column (lastToken.endPos)
         // we do this indside the if, because outside meth might be an
         // identifierNode or a memberNode
     }
@@ -1829,14 +1834,14 @@ method typeArg {
 
 method errorDefNoName {
     def suggestion = errormessages.suggestion.new
-    def nextToken = findNextToken({ t -> (t.isOp)
+    def nextTok = findNextToken({ t -> (t.isOp)
         && (t.value == "=") && (t.line == sym.line)})
-    if (false == nextToken) then {
+    if (false == nextTok) then {
         suggestion.insert(" «name» =")afterToken(lastToken)
-    } elseif { nextToken == sym } then {
+    } elseif { nextTok == sym } then {
         suggestion.insert(" «name»")afterToken(lastToken)
     } else {
-        suggestion.replaceTokenRange(sym, nextToken.prev)
+        suggestion.replaceTokenRange(sym, nextTok.prev)
               leading(false)trailing(true)with("«name» ")
     }
     errormessages.syntaxError("a definition must have a name, '=', " ++
@@ -1931,12 +1936,12 @@ method vardec {
         next
         if (sym.kind != "identifier") then {
             def suggestion = errormessages.suggestion.new
-            def nextToken = findNextToken({ t -> (t.isBind)
+            def nextTok = findNextToken({ t -> (t.isBind)
                 && (t.line == sym.line)})
-            if ((false == nextToken) || {nextToken == sym}) then {
+            if ((false == nextTok) || {nextTok == sym}) then {
                 suggestion.insert(" «name»")afterToken(lastToken)
             } else {
-                suggestion.replaceTokenRange(sym, nextToken.prev)
+                suggestion.replaceTokenRange(sym, nextTok.prev)
                       leading(false)trailing(true)with("«name» ")
             }
             errormessages.syntaxError "a variable declaration must have a name after the 'var'."
@@ -2073,7 +2078,6 @@ method dodialect {
 
 method inheritOrUse {
     // Parses "inherit «object expression»"
-    if ( sym.isSeparator ) then { separator }
     if (sym.isKeyword.not) then { return }
     if ((sym.value == "inherit") || (sym.value == "use")) then {
         statementToken := sym
@@ -2182,12 +2186,13 @@ method parseObjectConstructorBody (constructName) startingWith (btok) after (pre
             withSuggestion(suggestion)
     }
     next
+    skipSeparators
     def originalValues = values
     values := []
     var superObject := false
     def usedTraits = []
     var inPreamble := true  // => processing inherit and use statements
-    while {(sym.isRBrace).not && {sym.isEof.not}} do {
+    while {sym.isRBrace.not && sym.isEof.not} do {
         pushComments
         if (successfulParse {inheritOrUse}) then {
             def parentNode = values.pop
@@ -2217,7 +2222,7 @@ method parseObjectConstructorBody (constructName) startingWith (btok) after (pre
                 "of {constructName}")
                 atRange(sym.line, sym.linePos, sym.endPos)
         }
-        skipSeparators
+        separator
     }
     def body = values
     values := originalValues
@@ -2308,7 +2313,6 @@ method classOrTrait {
     }
     values.push(meth)
     reconcileComments
-    separator
 }
 
 method dofactoryMethod {
@@ -2338,8 +2342,9 @@ method methoddec {
         values := []
         if (sym.isLBrace) then {
             next
+            skipSeparators
             // sym is now the first token in the method body
-            while { successfulParse { statement } } do { }
+            while { successfulParse { statement } } do { separator }
                 // The body is a sequence of statements; the method ends
                 // when no further statement is found.
             if (sym.isRBrace.not) then {
@@ -2384,10 +2389,7 @@ method methoddec {
         util.setline(btok.line)
         if (false != anns) then { methNode.annotations.addAll(anns) }
         values.push(methNode)
-        pushComments
-        separator
         reconcileComments
-        pushComments
     }
 }
 
@@ -2818,7 +2820,6 @@ method statement {
     // bind AST node out of the expressions on either side (which at this point
     // can be any arbitrary expression).
 
-    skipSeparators
     statementToken := sym
     def btok = sym
     pushComments
@@ -2885,12 +2886,11 @@ method pushComments {
         o.isPreceededByBlankLine := true
     }
     comments.push(o)
-    while { 
-        previousCommentToken := sym
-        sym := tokens.poll    // we can't request `next`, because `next` requests this method
+    while {
+        nextToken
         sym.isComment
     } do {
-        util.setPosition(sym.line, sym.linePos)
+        util.log 40 verbose "continuation comment \"{sym.value}\""
         o := ast.commentNode.new(sym.value)
         if ( comments.last.endLine == (sym.line - 1) ) then {
             comments.last.extendCommentUsing(o)
@@ -2901,6 +2901,7 @@ method pushComments {
             }
         }
     }
+    util.log 40 verbose "finished pushing comment \"{lastToken.value}\"; sym = {sym}"
 }
 
 method reconcileComments {
@@ -3047,8 +3048,8 @@ method parse(toks) {
               atRange (sym.line, 1, sym.indent)
     }
 
-    var oldlength := tokens.size
-    while {tokens.size > 0} do {
+    while {sym.isEof.not} do {
+        def oldlength = tokens.size
         pushComments
         methoddec
         pushComments
@@ -3065,6 +3066,7 @@ method parse(toks) {
                     parentNode.linePos + 6)
             }
         }
+        pushComments
         statement
         pushComments
         if (tokens.size == oldlength) then {
@@ -3075,9 +3077,7 @@ method parse(toks) {
                 atRange (sym.line, sym.linePos, sym.endPos)
                 withSuggestion (suggestion)
         }
-        oldlength := tokens.size
+        separator
     }
-    statement
-    pushComments
     return moduleObject
 }
