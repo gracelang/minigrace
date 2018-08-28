@@ -91,6 +91,7 @@ method initialize {
     lineNumber := 1
     startPosition := 1
     currentLineIndent := 0
+    unmatchedLeftBraces := 0
     startLine := 1
     unichars := 0
     currentLineBraceDepth := 0
@@ -115,6 +116,7 @@ var stringStart             // the start position of the current string, if ther
 var unichars                // the number of character remaining in a unicode escape
 var braceChange             // the number of { minus the number of } on the current line
 var currentLineBraceDepth   // the brace-depth of the current line
+var unmatchedLeftBraces     // the number of unmatched left braces on the current line
 var indentOfLineBeingContinued  // noSuchLine if there is no continuation in progress
 var indentStack             // the indent is the number of leading spaces,
                             // and hence one less than the position
@@ -134,11 +136,19 @@ initialize
 
 def inputLines = util.lines // an alias for the list util.lines
 
-method incrementBraceDepth {
+method tallyLeftBrace {
+    unmatchedLeftBraces := unmatchedLeftBraces + 1
     currentLineBraceDepth := currentLineBraceDepth + 1
 }
-method decrementBraceDepth {
+method rightBrace {
+    if (unmatchedLeftBraces > 0) then {
+        unmatchedLeftBraces := unmatchedLeftBraces - 1
+    }
     currentLineBraceDepth := currentLineBraceDepth - 1
+    if ((currentLineBraceDepth < 0)) then {
+        errormessages.syntaxError "there is no opening brace corresponding to this closing brace"
+          atRange (lineNumber, startPosition, linePosition)
+    }
 }
 
 class token {
@@ -366,6 +376,14 @@ class eofToken {
     def size is public = 0
     method isEof { true }
 }
+class sofToken {
+    inherit token
+    def kind is public = "sof"
+    def value is public = "⏚"
+    def size is public = 0
+    method isHeader { true }
+    method == (other) { self.isMe (other) }
+}
 
 method advanceTo(s) { state := s }
 method emit(t) {
@@ -482,7 +500,7 @@ def defaultState = object {
         } elseif {c == ","} then {
             emit(commaToken)
         } elseif {c == "\{"} then {
-            incrementBraceDepth
+            tallyLeftBrace
             emit(lBraceToken)
         } elseif {c == "}"} then {
             advanceTo(rBraceState)
@@ -553,7 +571,7 @@ def rBraceState = object {
             inStr := true
             advanceTo(quotedStringState)
         } else {
-            decrementBraceDepth
+            rightBrace
             emit (rBraceToken)
             advanceTo (defaultState)
         }
@@ -899,7 +917,7 @@ def indentationState = object {
         if (spaceChars.contains(c)) then {
             currentLineIndent := linePosition
         } else {
-            checkIndentation(c)
+            newline(c)
             advanceTo(defaultState)
             state.consume(c)
         }
@@ -926,7 +944,7 @@ def commentState = object {
     }
 }
 
-method checkIndentation(currentCharacter) {
+method newline(currentCharacter) {
     // a newline has been matched (including the spaces that follow it).
     // Depending on the state of the lexer, classify it as <whitespace> (when
     // the following line is a continuation line) or a real <newline> token."
@@ -938,25 +956,21 @@ method checkIndentation(currentCharacter) {
                         atRange (lineNumber, linePosition, linePosition)
     }
     terminateContinuationIfNecessary
-    if (isBlockStart) then {
-        recordNewIndentation
-        saveDataForPriorLine
-        if (priorLineEndsWithOpenBracket) then {
-            return
-        } else {
-            emitNewlineSeparator
-            return
-        }
-    }
-    if (isBlockEnd) then { checkIndentationReset }
     if (isContinuationLine) then {
         recordContinuationStatus
         saveDataForPriorLine
         return
     }
-    if (currentLineIndent < priorLineIndent) then { checkOutdent }
+    if (isBlockStart(currentCharacter)) then {
+        recordNewIndentation
+    } elseif {isBlockEnd(currentCharacter)} then {
+        checkIndentationReset
+    } else {
+        checkConstantIndent
+    }
     saveDataForPriorLine
-    if ( ")]}⟧".contains(currentCharacter) ) then { return }
+    if (priorLineEndsWithOpenBracket) then { return }
+    if (currentLineStartsWithCloseBracket(currentCharacter)) then { return }
     emitNewlineSeparator
 }
 
@@ -983,7 +997,9 @@ method isIndentationChangeOne {
     def indentationChange = currentLineIndent - priorLineIndent
     return indentationChange.abs == 1
 }
-
+method currentLineStartsWithCloseBracket(currentCharacter) {
+    ")]\}⟧".contains (currentCharacter)
+}
 method terminateContinuationIfNecessary {
     if (indentOfLineBeingContinued == noSuchLine) then { return }
     if ((braceChange == 0) && { currentLineIndent >= maxIndentOfContinuation }) then {
@@ -1012,16 +1028,27 @@ method checkAndRecordIndentStatus (currentCharacter) {
         braceChange := braceChange - 1
     }
 }
-method isBlockStart {
-    braceChange > 0
+method isBlockStart(currentCharacter) {
+    (unmatchedLeftBraces > 0) && { currentCharacter ≠ "\}" }
 }
-method isBlockEnd {
-    braceChange < 0
+method isBlockEnd(currentCharacter) {
+    // if we are ending a block that was begun on the current line, we don't
+    // consider this to be a block ending, because there are no indented lines,
+    // and no entry on the indentStack to remove
+    if ((unmatchedLeftBraces > 0) && { currentCharacter ≠ "\}" }) then {
+        return false
+    }
+    return (braceChange < 0)
 }
+
 method recordNewIndentation {
-    // One or more blocks have just started.  Record the new
-    // indentation(s)
-    if (currentLineIndent ≤ priorLineIndent) then {
+    // One or more blocks have just started.  Record the new indentation(s).
+    //
+    // Note that it is possible for a block to have started, but for braceChange
+    // to be 0, as in
+    //     } else {
+    // In this case, the indentation need not change.
+    if ((braceChange > 0) && { currentLineIndent ≤ priorLineIndent }) then {
         lexicalError "Please indent the body of a block"
     }
     if (braceChange > 1) then {
@@ -1035,14 +1062,22 @@ method recordNewIndentation {
 method saveDataForPriorLine {
     priorLineBraceDepth := priorLineBraceDepth + braceChange
     priorLineIndent := currentLineIndent
+    unmatchedLeftBraces := 0
 }
 method priorLineEndsWithOpenBracket {
-    "[(\{⟦".contains (tokens.last.value)
+    def tok = tokens.last
+    def result = tok.isLBrace || tok.isLParen || tok.isLSquare || tok.isLGeneric
+    result
 }
 method checkIndentationReset {
-    // A bock has ended.  Check that the indentation returns
-    // to the previous level
+    // A block has ended.  Check that the indentation returns to the previous level
+    // braceChange may nevertheless be 0, since a new block may have started,
+    // e.g., the prior line may be
+    //      } else {
 
+    if (indentStack.size < (1 - braceChange)) then {
+        lexicalError "this should never happen; braceChange = {braceChange}, but indentStack = {indentStack}"
+    }
     repeat (- braceChange) times { indentStack.removeLast }
     if (currentLineIndent ≠ indentStack.last) then {
         lexicalError("on closing a block, the indentation must return to that "
@@ -1051,8 +1086,10 @@ method checkIndentationReset {
 }
 method isContinuationLine {
     if (noSuchLine ≠ indentOfLineBeingContinued) then {
+        // we are already in a continuation
         return  true
     }
+    if (unmatchedLeftBraces > 0) then { return false }
     currentLineIndent > priorLineIndent
 }
 method recordContinuationStatus {
@@ -1061,12 +1098,15 @@ method recordContinuationStatus {
         maxIndentOfContinuation := currentLineIndent
     }
 }
-method checkOutdent {
-    // The indentation has decreased.  Check that this is ok
-
-    if (braceChange == 0) then {
+method checkConstantIndent {
+    // We have neither started nor ended a block, and this is not a continuation line
+    if ((priorLineIndent == currentLineIndent )) then {
+        return
+    }
+    if ((priorLineIndent > currentLineIndent )) then {
         lexicalError "do not reduce the indentation except when ending a block"
     }
+    lexicalError "this is not the body of a block, or a continuation line, so it should have indentation {priorLineIndent}, like the previous line"
 }
 method lexicalError (message) {
     errormessages.
@@ -1397,13 +1437,7 @@ method lexLines (input) {
 method lexInputLines {
     // tokens is a doubly-linked list of tokens.
     tokens := object {
-        def header = object {
-            var next is public
-            method asString { "⏚" }
-            method == (other) { self.isMe (other) }
-            method isHeader { true }
-            method indent { 0 }
-        }
+        def header = sofToken
         header.next := header
         var last is readable := header
         var size is readable := 0
