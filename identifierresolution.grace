@@ -624,7 +624,7 @@ method suggestionsForIdentifier(node) {
             if (errormessages.name (nm) mightBeIntendedToBe(v)) then {
                 def sug = errormessages.suggestion.new
                 sug.replaceRange(node.linePos, node.linePos +
-                    node.value.size - 1) with (v) onLine(node.line)
+                    node.value.size - 1) with (canonical(v)) onLine(node.line)
                 suggestions.push(sug)
                 if (suggestions.size ≥ thresh) then { return suggestions }
             }
@@ -639,6 +639,24 @@ method suggestionsForIdentifier(node) {
         }
     }
     suggestions
+}
+
+method canonical(numericName) {
+    def parts = numericName.split "("
+    var output := parts.first
+    for (2..parts.size) do { i ->
+        def part_split = parts.at(i).split ")"
+        def n = part_split.first.asNumber
+        if (n.isNaN) then {
+            output := output ++ part_split.first
+        } else {
+            output := output ++ "(" ++ ("_," * (n - 1)) ++ "_)"
+            if (part_split.size > 1) then {
+                output := output ++ part_split.second
+            }
+        }
+    }
+    return output
 }
 
 method reportUndeclaredIdentifier(node) {
