@@ -1047,13 +1047,12 @@ method compileop(o) {
     def opRight = o.right
     def right = compilenode(opRight)
     def opSym = o.value
-    def rnm =   if (opSym == "+") then { "sum"
-                } elseif {opSym == "*"} then { "prod"
-                } elseif {opSym == "-"} then { "diff"
-                } elseif {(opSym == "/") || (opSym == "÷")} then { "quotient"
-                } elseif {o.value == "%"} then { "modulus"
-                } else { "opresult"
-                }
+    def rnm = if (opSym == "+") then { "sum" }
+              elseif {opSym == "*"} then { "prod" }
+              elseif {opSym == "-"} then { "diff" }
+              elseif {(opSym == "/") || (opSym == "÷")} then { "quotient" }
+              elseif {o.value == "%"} then { "modulus" }
+              else { "opresult" }
     def register = uidWithPrefix(rnm)
     out("var {register} = request({left}, \"" ++
           "{escapestring(o.nameString)}\", [1], {right});")
