@@ -494,8 +494,8 @@ def sequenceTest = object {
                 shouldBe (list [11, 13, 15])
         }
         method testSequenceToSetDuplicates {
-            def theSet = set(sequence [1,1,2,2,4])
-            assert (theSet) shouldBe (set [1, 2, 4])
+            def theSet = set.withAll(sequence [1,1,2,2,4])
+            assert (theSet) shouldBe (set.withAll [1, 2, 4])
             assert (theSet) hasType (Set)
         }
         method testSequenceIteratorEmpty {
@@ -900,7 +900,7 @@ def listTest = object {
         }
 
         method testListMapEvensInto {
-            assert(evens.map{x -> x + 10}.into(list(evens)))
+            assert(evens.map{x -> x + 10}.into(list.withAll(evens)))
                 shouldBe (list [2, 4, 6, 8, 12, 14, 16, 18])
         }
 
@@ -940,14 +940,14 @@ def listTest = object {
         }
 
         method testListToSet1to5 {
-            assert (set(oneToFive)) shouldBe (set [1, 2, 3, 4, 5])
+            assert (set.withAll(oneToFive)) shouldBe (set.withAll [1, 2, 3, 4, 5])
         }
 
         method testListToSetEmpty {
-            assert (set(empty)) shouldBe (emptySet)
+            assert (set.withAll(empty)) shouldBe (set.empty)
         }
         method testListToSetDuplicates {
-            def theSet = set(list [1,1,2,2,4])
+            def theSet = set.withAll(list.withAll [1,1,2,2,4])
             assert (theSet) shouldBe (set [1, 2, 4])
             assert (theSet) hasType (Set)
         }
@@ -1224,7 +1224,7 @@ def setTest = object {
         }
 
         method testSetMapEvensInto {
-            assert(evens.map{x -> x + 10}.into(set(evens)))
+            assert(evens.map{x -> x + 10}.into(set.withAll(evens)))
                 shouldBe (set [2, 4, 6, 8, 12, 14, 16, 18])
         }
 
@@ -1517,7 +1517,7 @@ def dictionaryTest = object {
         }
 
         method testDictionaryMapEvensInto {
-            assert(evens.map{x -> x + 10}.into(set(evens)))
+            assert(evens.map{x -> x + 10}.into(set.withAll(evens)))
                 shouldBe (set [2, 4, 6, 8, 12, 14, 16, 18])
         }
 
@@ -1535,7 +1535,7 @@ def dictionaryTest = object {
         }
 
         method testDictionaryMapAndFilter {
-            assert(set(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1}))
+            assert(set.withAll(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1}))
                 shouldBe (set [11, 13, 15])
         }
         method testDictionaryBindings {
@@ -1581,7 +1581,7 @@ def dictionaryTest = object {
                 (sequence ["one"])
         }
         method testDictionaryBindingsEvens {
-            assert(set(evens.bindings)) shouldBe
+            assert(set.withAll(evens.bindings)) shouldBe
                 (set ["two"::2, "four"::4, "six"::6, "eight"::8])
         }
         method testDictionarySortedOnValues {

@@ -19,7 +19,7 @@ method relationship⟦From, To⟧ {
             res
         }
         method from(f) is public {
-            prelude.list(map.at(f))
+            prelude.list.withAll(map.at(f))
         }
     }
 }

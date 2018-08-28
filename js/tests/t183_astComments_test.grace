@@ -110,7 +110,7 @@ testSuiteNamed "comment tests" with {
     test "method signature name" by {
         def typeNodes = nodes.filter { each -> each.kind == "typedec" }
         def typePerson = typeNodes.filter { each -> each.nameString == "Person" }.first
-        def methodtypeName = list(typePerson.value.methods)
+        def methodtypeName = list.withAll(typePerson.value.methods)
             .filter { each -> each.nameString == "name" }.first
         def nameComments = methodtypeName.comments.value
         assert (nameComments.contains "pre-comment for methodtype name") 
@@ -125,7 +125,7 @@ testSuiteNamed "comment tests" with {
     test "method signature age" by {
         def typeNodes = nodes.filter { each -> each.kind == "typedec" }
         def typePerson = typeNodes.filter { each -> each.nameString == "Person" }.first
-        def methodtypeAge = list(typePerson.value.methods)
+        def methodtypeAge = list.withAll(typePerson.value.methods)
             .filter { each -> each.nameString == "age" }.first
         assert (methodtypeAge.comments == false) description "Comments found on methodtype age"
     }

@@ -160,7 +160,7 @@ class list⟦T⟧ {
         }
 
         method ++(o) {
-            def l = list(self)
+            def l = list.withAll(self)
             l.addAll(o)
         }
         

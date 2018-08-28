@@ -26,12 +26,12 @@ var filename is readable := nullFile
 var commandLineExtensions is readable := ""
 
 
-def targets = set [
+def targets = set.withAll [
     "lex", "parse", "grace", "ast", "processed-ast", "symbols", "imports", "js"
 ]
 
 def requiredModules is public = object {
-    def other is public = emptySet
+    def other is public = set.empty
     method isAlready ( moduleName ) -> Boolean {
         other.contains(moduleName)
     }
@@ -116,7 +116,7 @@ method parseargs(buildinfo) {
 
                     if (targetv == "help") then {
                         io.error.write "Valid targets:\n"
-                        list(targets).sort.do { t ->
+                        list.withAll(targets).sort.do { t ->
                             io.error.write "  {t}\n"
                         }
                         sys.exit(0)

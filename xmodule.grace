@@ -167,6 +167,7 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
         }
         return
     }
+    util.log 50 verbose "checking module \"{nm}\""
     def gmp = sys.environ.at "GRACE_MODULE_PATH"
     def pn = filePath.fromString(pathname).setExtension "js"
     def moduleFileJs = util.file(pn) on (util.outDir)
@@ -178,6 +179,7 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
             errormessages.error("I can't find {pn.shortName} " ++
                 "or {graceFileName.shortName}; looked in {rm}.") atRange (sourceRange)
         }
+        util.log 50 verbose "about to compile module \"{nm}\""
         compileModule (nm) inFile (moduleFileGrace.asString)
                 forDialect (isDialect) atRange (sourceRange)
         util.file(pn) on(util.outDir) orPath (gmp) otherwise { m ->
@@ -186,6 +188,7 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
                 "but can't find the .js file; looked in {rm}.") atRange (sourceRange)
         }
     }
+    util.log 50 verbose "found module \"{nm}\" in {moduleFileJs}"
 
     def gctDict = parseGCT(nm)
     def sourceFile = filePath.fromString(gctDict.at "path" .first)
@@ -411,9 +414,9 @@ method extractGctFromCache(module) {
 method writeGCT(modname, dict) is confidential {
     if (util.extensions.contains "gctfile") then {
         def fp = io.open("{util.outDir}{modname}.gct", "w")
-        list(dict.bindings).sortBy(keyCompare).do { b ->
+        list.withAll(dict.bindings).sortBy(keyCompare).do { b ->
             fp.write "{b.key}:\n"
-            list(b.value).sort.do { v ->
+            list.withAll(b.value).sort.do { v ->
                 fp.write " {v}\n"
             }
         }
@@ -428,9 +431,9 @@ method writeGctForModule(moduleObject) {
 
 method gctAsString(gctDict) {
     var ret := ""
-    list(gctDict.bindings).sortBy(keyCompare).do { b ->
+    list.withAll(gctDict.bindings).sortBy(keyCompare).do { b ->
         ret := ret ++ "{b.key}:\n"
-        list(b.value).sort.do { v ->
+        list.withAll(b.value).sort.do { v ->
             ret := ret ++ " {v}\n"
         }
     }
@@ -631,7 +634,7 @@ method buildGctFor(module) {
     }
     gct.at "classes" put(classes.sort)
     gct.at "confidential" put(confidentials.sort)
-    gct.at "modules" put(list(module.imports).sorted)
+    gct.at "modules" put(list.withAll(module.imports).sorted)
     def p = util.infile.pathname
     gct.at "path" put [ if (p.isEmpty) then {
         ""

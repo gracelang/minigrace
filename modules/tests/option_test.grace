@@ -251,7 +251,7 @@ testSuiteNamed "sequence tests" with {
             shouldBe (list [12])
     }
     test "test Option ToSetDuplicates" by {
-        def theSet = set( evens )
+        def theSet = set.withAll( evens )
         assert (theSet) shouldBe (set [2])
         assert (theSet) hasType (Set)
     }

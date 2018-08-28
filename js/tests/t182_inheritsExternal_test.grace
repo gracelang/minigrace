@@ -39,10 +39,10 @@ class newPrelude {
             def preludeExtras = mPrelude -- mSelf
             def selfExtras = mSelf -- mPrelude
             if (preludeExtras.isEmpty.not) then {
-                print "prelude contains additional methods {self.list(preludeExtras).sort}\n"
+                print "prelude contains additional methods {self.list.withAll(preludeExtras).sort}\n"
             }
             if (selfExtras.isEmpty.not) then {
-                print "newPrelude contains additional methods {self.list(selfExtras).sort}\n"
+                print "newPrelude contains additional methods {self.list.withAll(selfExtras).sort}\n"
             }
             false
         }

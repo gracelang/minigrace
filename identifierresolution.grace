@@ -177,7 +177,7 @@ class newScopeIn(parent') kind(variety') {
             referencedScopes.add (each.value)
         }
         result := result ++ "]\n____________\n"
-        list(referencedScopes)
+        list.withAll(referencedScopes)
             .sortBy { a, b -> a.serialNumber.compare(b.serialNumber) }
                 .do { each -> result := result ++ each.asString }
         result ++ "____________\n"
@@ -871,7 +871,7 @@ method setupContext(moduleObject) {
     if (dialectName ≠ "none") then {
         xmodule.checkExternalModule(dialectNode)
         def gctDict = xmodule.parseGCT(dialectName)
-        def typeDecls = set(gctDict.at "types" ifAbsent {emptySequence})
+        def typeDecls = set.withAll(gctDict.at "types" ifAbsent {sequence.empty})
         gctDict.at "public" ifAbsent {emptySequence}.do { mn ->
             preludeScope.addName(mn) asA (if (typeDecls.contains(mn))
                                            then { k.typedec } else { k.methdec })

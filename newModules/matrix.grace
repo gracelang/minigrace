@@ -112,7 +112,7 @@ class rows(rowCount:Number) columns(columnCount:Number) with (values:Iterable) {
     
     method column(n) {
         // returns the m_th column of this matrix
-        list((1..rowCount).map { m -> self.at(m, n) })
+        list.withAll((1..rowCount).map { m -> self.at(m, n) })
     }
     
     method at(i,j) put (val) {

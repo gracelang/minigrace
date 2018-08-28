@@ -304,7 +304,7 @@ def primitiveListTest = object {
         }
 
         method testListMapEvensInto {
-            assert(evens.map{x -> x + 10}.into(list(evens)))
+            assert(evens.map{x -> x + 10}.into(list.withAll(evens)))
                 shouldBe [2, 4, 6, 8, 12, 14, 16, 18]
         }
 
@@ -354,7 +354,7 @@ def primitiveListTest = object {
             assert (result) shouldBe [2, 4, 6, 8, 1, 2, 3, 4, 5]
         }
         method testListConcat {
-            def result = evens ++ list(oneToFive)
+            def result = evens ++ list.withAll(oneToFive)
             assert (result) shouldBe [2, 4, 6, 8, 1, 2, 3, 4, 5]
         }
         method testListIteratorRaisesExhausted {

@@ -1804,7 +1804,7 @@ def memberNode is public = object {
         method isMember { true }
         method isCall { true }
 
-        method parts { list [requestPart.request(nameString).setStart(reqPos)] }
+        method parts { list.with(requestPart.request(nameString).setStart(reqPos)) }
         method arguments { emptySeq }
         method argumentsDo(action) { }
         method numArgs { 0 }
@@ -2232,7 +2232,9 @@ def opNode is public = object {
     method receiver { left }
     method isCall { true }
 
-    method parts { list [requestPart.request (value) withArgs [right] .setStart(opPos)] }
+    method parts {
+        list.with(requestPart.request (value) withArgs [right] .setStart(opPos))
+    }
     method arguments { [ right ] }
     method argumentsDo(action) { action.apply(right) }
     method numArgs { 1 }
@@ -2806,7 +2808,7 @@ def inheritNode is public = object {
                 s := "{s} exclude {e} "
             }
             if (providedNames.isEmpty.not) then {
-                s := s ++ "\n{spc}Provided names: {list(providedNames).sort}"
+                s := s ++ "\n{spc}Provided names: {list.withAll(providedNames).sort}"
             }
             s
         }

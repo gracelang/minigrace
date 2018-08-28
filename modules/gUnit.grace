@@ -157,9 +157,9 @@ class assertion {
     }
     method protocolOf(value) notCoveredBy (Q:Type) -> String is confidential {
         var s := ""
-        def vMethods = set(mirror.reflect(value).methodNames)
-        def qMethods = set(Q.methodNames)
-        def missing = set((vMethods -- qMethods).filter{m ->
+        def vMethods = set.withAll(mirror.reflect(value).methodNames)
+        def qMethods = set.withAll(Q.methodNames)
+        def missing = set.withAll((vMethods -- qMethods).filter{m ->
             (! m.endsWith "()object") && (m != "outer")})
         if (missing.isEmpty.not) then {
             s := "{Q.asDebugString} is missing "
@@ -306,13 +306,13 @@ class testResult {
         var output := summary
         if (numberOfFailures > 0) then {
             output := output ++ "\nFailures:"
-            for (list(failSet).sort) do { each ->
+            for (list.withAll(failSet).sort) do { each ->
                 output := output ++ "\n    " ++ each
             }
         }
         if (numberOfErrors > 0) then {
             output := output ++ "\nErrors:"
-            for (list(errorSet).sort) do { each ->
+            for (list.withAll(errorSet).sort) do { each ->
                 output := output ++ "\n    " ++ each
             }
         }
@@ -324,11 +324,11 @@ class testResult {
     }
     
     method errors {
-        list(errorSet).sort
+        list.withAll(errorSet).sort
     }
     
     method erroredTestNames {
-        list(errorSet.map{each -> each.name}).sort
+        list.withAll(errorSet.map{each -> each.name}).sort
     }
     
     method numberOfFailures {
@@ -336,11 +336,11 @@ class testResult {
     }
     
     method failures {
-        list(failSet).sort
+        list.withAll(failSet).sort
     }
     
     method failedTestNames {
-        list(failSet.map{each -> each.name}).sort
+        list.withAll(failSet.map{each -> each.name}).sort
     }
     
     method numberRun {

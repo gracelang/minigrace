@@ -74,7 +74,7 @@ try {
         }
         moduleObject.accept(vis)
 
-        list(imps).sort.do { im ->
+        list.withAll(imps).sort.do { im ->
             util.outprint(im)
         }
         util.outfile.close

@@ -22,13 +22,13 @@ var constants := []
 var output := []
 var usedvars := []
 var declaredvars := []
-var initializedVars := emptySet
+var initializedVars := set.empty
 
 method saveInitializedVars {
     // returns the current set of initialized vars,
     // to be used in restoreInitializedVars
     def result = initializedVars
-    initializedVars := emptySet
+    initializedVars := set.empty
     result
 }
 
@@ -46,8 +46,8 @@ var modname := "main"
 var buildtype := "bc"
 var inBlock := false
 var compilationDepth := 0
-def importedModules = emptySet
-def topLevelTypes = emptySet
+def importedModules = set.empty
+def topLevelTypes = set.empty
 def imports = util.requiredModules
 var debugMode := false
 var priorLineSeen := 0
@@ -1503,7 +1503,7 @@ method outputModuleDefinition(moduleObject) {
 }
 
 method outputImportsList(moduleObject) {
-    def importList = list(moduleObject.directImports.
+    def importList = list.withAll(moduleObject.directImports.
                         map{ each -> "\"{each}\"" }).sort
     out "{formatModname(modname)}.imports = {importList};"
 }
