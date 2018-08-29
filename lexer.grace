@@ -1113,7 +1113,7 @@ method checkConstantIndent {
 method lexicalError (message) {
     errormessages.
         syntaxError (message)
-        atRange (lineNumber, 1, linePosition)
+        atRange (lineNumber, 1, linePosition - 1)
 }
 method escapedNewlineError {
     errormessages.syntaxError "to include a newline in a string use '\\n'"
