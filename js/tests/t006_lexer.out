@@ -2,3 +2,4 @@ Indentation: 8 run, 0 failed, 0 errors
 Strings: 3 run, 0 failed, 0 errors
 lexLines: 2 run, 0 failed, 0 errors
 lexString: 2 run, 0 failed, 0 errors
+continuations, and other non-separator newlines: 6 run, 0 failed, 0 errors
