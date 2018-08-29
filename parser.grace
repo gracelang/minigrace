@@ -2890,7 +2890,6 @@ method pushComments {
         nextToken
         sym.isComment
     } do {
-        util.log 40 verbose "continuation comment \"{sym.value}\""
         o := ast.commentNode.new(sym.value)
         if ( comments.last.endLine == (sym.line - 1) ) then {
             comments.last.extendCommentUsing(o)
@@ -2901,7 +2900,6 @@ method pushComments {
             }
         }
     }
-    util.log 40 verbose "finished pushing comment \"{lastToken.value}\"; sym = {sym}"
 }
 
 method reconcileComments {
