@@ -444,8 +444,8 @@ method syntaxError (message)
               then { startpos.asString }
               else { "{startpos}-{endpos}" }
     } else { "{startpos}-{endline}:{endpos}" }
-    var arr := "-" * (startpos + startline.asString.size + 3)
-    arr := arr ++ ("^" * (endpos - startpos + 1))
+    def arr = ("-" * (startpos + startline.asString.size + 3))
+          ++ ("^" * (endpos - startpos + 1))
     syntaxError(message, startline, ":{loc}", arr, suggestions)
 }
 
@@ -493,15 +493,13 @@ method syntaxError(message) atPosition(errLinenum, errpos) withSuggestion(sugges
 }
 
 method syntaxError(message)atPosition(errLinenum, errpos)withSuggestions(suggestions) {
-    var arr := "-" * (errLinenum.asString.size + 3)
-    arr := arr ++ "^"
+    def arr = ("-" * (errLinenum.asString.size + errpos + 4)) ++ "^"
     syntaxError(message, errLinenum, ":{errpos}", arr, suggestions)
 }
 
 method error(message) atPosition(errLinenum, errPosition)
         withSuggestions(suggestions) {
-    var arr := "-" * (errLinenum.asString.size + 3)
-    arr := arr ++ "^"
+    def arr = ("-" * (errLinenum.asString.size + 4)) ++ "^"
 
     def errorObj = object {
         def lineNum is public = errLinenum
@@ -517,12 +515,12 @@ method error(message) {
 }
 
 method error(message) atLine(errLinenum) withSuggestions(suggestions) {
-    var arr := "----"
-    arr := arr ++ ("-" * errLinenum.asString.size)
+    var arr := "-" * (errLinenum.asString.size + 4)
     if ((errLinenum > 0) && (errLinenum <= util.lines.size)) then {
         arr := arr ++ ("^" * util.lines.at(errLinenum).size)
+    } else {
+        arr := arr ++ "^"
     }
-
     def errorObj = object {
         def lineNum is public = errLinenum
         def position is public = ""
@@ -546,7 +544,7 @@ method syntaxError(message) atLine(errLinenum) withSuggestion(suggestion') {
 }
 
 method syntaxError(message) atLine(errLinenum) withSuggestions(suggestions) {
-    var arr := "-" * (errLinenum.asString.size + 4)
-    arr := arr ++ ("^" * util.lines.at(errLinenum).size)
+    def arr = ("-" * (errLinenum.asString.size + 4))
+          ++ ("^" * util.lines.at(errLinenum).size)
     syntaxError(message, errLinenum, "", arr, suggestions)
 }
