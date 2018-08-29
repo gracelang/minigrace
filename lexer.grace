@@ -104,9 +104,11 @@ method initialize {
     codepoint := 0
     interpDepth := 0
     interpString := false
+    lastNonCommentToken := sofToken
 }
 
 var tokens                  // a linked-list of output tokens
+var lastNonCommentToken     // the most last token pushed that was not a comment
 var lineNumber              // the current input line number
 var linePosition            // the character position on the input line
 var startLine               // the line on which the current token starts
@@ -388,6 +390,7 @@ class sofToken {
 method advanceTo(s) { state := s }
 method emit(t) {
     tokens.push(t)
+    if (t.isComment.not) then { lastNonCommentToken := t }
     accum := ""
 }
 method emitNewlineSeparator {
@@ -1065,9 +1068,8 @@ method saveDataForPriorLine {
     unmatchedLeftBraces := 0
 }
 method priorLineEndsWithOpenBracket {
-    def tok = tokens.last
-    def result = tok.isLBrace || tok.isLParen || tok.isLSquare || tok.isLGeneric
-    result
+    def tok = lastNonCommentToken
+    tok.isLBrace || tok.isLParen || tok.isLSquare || tok.isLGeneric
 }
 method checkIndentationReset {
     // A block has ended.  Check that the indentation returns to the previous level
