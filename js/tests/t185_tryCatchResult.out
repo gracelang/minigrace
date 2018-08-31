@@ -9,7 +9,7 @@ tryExceptionalFinally = 4
 OK
 tryReturnOKFinally = 5
 OK
-tryReturnExceptionalFinally = 4
+tryReturnExceptionalFinally = four
 tryOKFinallyReturns = OK
 tryExceptionalFinallyReturns = OK
 tryReturnOKFinallyReturns = OK
