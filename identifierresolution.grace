@@ -661,8 +661,8 @@ method canonical(numericName) {
 
 method reportUndeclaredIdentifier(node) {
     def suggestions = suggestionsForIdentifier(node)
-    errormessages.syntaxError("unknown variable or method '{node.canonicalName}'. " ++
-          "This may be a spelling mistake or an attempt to access a variable in another scope.")
+    errormessages.syntaxError("unknown variable or method '{node.canonicalName}'; " ++
+          "this may be a spelling mistake, or an attempt to access a variable in another scope")
           atRange (node.range) withSuggestions (suggestions)
 }
 

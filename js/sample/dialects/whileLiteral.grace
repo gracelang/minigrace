@@ -49,13 +49,13 @@ method reportWhile(whileCond) {
             onLine(whileCond.line)
         // Report an error to the user, highlighting the part of
         // the code that is incorrect, and including our suggestion.
-        errormessages.syntaxError "The condition of a while loop must be written in \{}"
+        errormessages.syntaxError "the condition of a while loop must be written in \{}"
             atRange (whileCond.range)
             withSuggestion(suggestion)
     }
     // Report an error to the user, highlighting the part of the
     // code that is incorrect.
-    errormessages.syntaxError "The condition of a while loop must be written in \{}"
+    errormessages.syntaxError "the condition of a while loop must be written in \{}"
         atRange (whileCond.args.first.range)
 }
 

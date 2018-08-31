@@ -394,7 +394,7 @@ method emit(t) {
     accum := ""
 }
 method emitNewlineSeparator {
-    // we have already consumed the leading spaces on the following line.
+    // We have already consumed the leading spaces on the following line.
     // We want the newline's coordinates to be those of the end of the prior line.
     if (tokens.isEmpty) then { return }
     def lastToken = tokens.last
@@ -417,14 +417,14 @@ def pragmaPrefixState = object {
     method consume(c){
         checkSeparator(c)
         if (c == "\n") then {
-            errormessages.syntaxError "Incomplete pragma definition "
+            errormessages.syntaxError "incomplete pragma definition"
                 atRange(lineNumber, startPosition, linePosition)
         } elseif {isSpaceChar(c)} then {
             if (accum == "pragma") then {
                 accum := ""
                 advanceTo(pragmaBodyState)
             } else {
-                errormessages.syntaxError "Pragmas must start with #pragma "
+                errormessages.syntaxError "pragmas must start with #pragma"
                     atRange(lineNumber, startPosition, linePosition)
             }
         } else {
@@ -454,7 +454,7 @@ def pragmaTrailingWhitespaceState = object {
         if (c == "\n") then {
             advanceTo(startState)
         } elseif {!isSpaceChar(c)} then {
-            errormessages.syntaxError "Pragmas must be a single word "
+            errormessages.syntaxError "pragmas must be a single word"
                 atRange(lineNumber, startPosition, linePosition)
         }
     }
@@ -481,7 +481,7 @@ def defaultState = object {
                 def suggestion = errormessages.suggestion.new
                 suggestion.deleteRange(tokens.last.linePos+tokens.last.size, linePosition - 1)
                     onLine(lineNumber)
-                errormessages.syntaxError("Consecutive numbers are not allowed.")
+                errormessages.syntaxError "consecutive numbers are not allowed"
                     atRange(lineNumber, tokens.last.linePos, linePosition)
                     withSuggestion(suggestion)
             }
@@ -512,8 +512,8 @@ def defaultState = object {
             emit(lParenToken)
         } elseif {c == ")"} then {
             if ((tokens.size > 0) && {tokens.last.kind == "lparen"}) then {
-                errormessages.syntaxError("empty parenthesis are not allowed. " ++
-                    "Remove them, or put something between them.")
+                errormessages.syntaxError("empty parenthesis are not allowed; " ++
+                    "remove them, or put something between them")
                     atRange(lineNumber, tokens.last.linePos, linePosition)
             }
             emit(rParenToken)
@@ -564,7 +564,7 @@ def rBraceState = object {
                                     onLine(lineNumber)
                     suggestions.add(suggestion2)
                 }
-                errormessages.syntaxError "a string interpolation cannot be empty."
+                errormessages.syntaxError "a string interpolation cannot be empty"
                       atRange (lineNumber, lastPos, linePosition)
                       withSuggestions (suggestions)
             }
@@ -1121,8 +1121,8 @@ method escapedNewlineError {
 }
 
 method newlineInInterpolationError {
-    errormessages.syntaxError("A string interpolation may not "
-          ++ "contain a newline. ")
+    errormessages.syntaxError("a string interpolation may not "
+          ++ "contain a newline")
           atPosition(lineNumber, linePosition)
 }
 

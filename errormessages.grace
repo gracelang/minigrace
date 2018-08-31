@@ -544,7 +544,7 @@ method syntaxError(message) atLine(errLinenum) withSuggestion(suggestion') {
 }
 
 method syntaxError(message) atLine(errLinenum) withSuggestions(suggestions) {
-    def arr = ("-" * (errLinenum.asString.size + 4))
-          ++ ("^" * util.lines.at(errLinenum).size)
+    var arr := "-" * (errLinenum.asString.size + 4)
+    arr := arr ++ ("^" * util.lines.at(errLinenum).size)
     syntaxError(message, errLinenum, "", arr, suggestions)
 }

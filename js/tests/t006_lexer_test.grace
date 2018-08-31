@@ -128,7 +128,7 @@ testSuiteNamed "Strings" with {
 def goodString = "that's all"›
         assert { lexer.lexString(s) }
             shouldRaise (errormessages.SyntaxError)
-            mentioning "A string interpolation may not contain a newline."
+            mentioning "string interpolation may not contain a newline"
     }
 
     test "unclosed string" by {

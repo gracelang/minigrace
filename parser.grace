@@ -1499,7 +1499,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
             suggestion.insert("(")beforeToken(lastToken.prev.prev.prev)
             suggestions.push(suggestion)
             errormessages.syntaxError("an expression containing both arithmetic " ++
-                  "and non-arithmetic operators requires parentheses.") atRange (
+                  "and non-arithmetic operators requires parentheses") atRange (
                   lastToken.prev.prev.prev.line, lastToken.prev.prev.prev.linePos,
                   lastToken.linePos) withSuggestions (suggestions)
         }
