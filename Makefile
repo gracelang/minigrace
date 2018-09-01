@@ -385,7 +385,7 @@ self.test: minigrace.env $(STUBS:%.grace=j2/%.gct)
 	cat selftest/compiler-js-head j2/gracelib.js $(MGSOURCEFILES:%.grace=j2/%.js) selftest/compiler-js-tail > selftest/mgc
 	chmod a+x selftest/mgc
 	rm -f $(MGSOURCEFILES:%.grace=./%.js)
-	GRACE_MODULE_PATH=.:modules:js $(PREAMBLE)selftest/mgc $(VERB) --make --dir selftest compiler.grace ; \
+	@GRACE_MODULE_PATH=.:modules:js $(PREAMBLE)selftest/mgc $(VERB) --make --dir selftest compiler.grace && \
 	cp js/compiler-js js/minigrace-js js/gracelib.js js/tests/harness-js j2/standardGrace.js j2/collectionsPrelude.js selftest
 	$(PREAMBLE)selftest/harness-js selftest/minigrace-js js/tests ""
 
