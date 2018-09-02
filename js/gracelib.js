@@ -3518,6 +3518,10 @@ function handleRequestException(ex, obj, methname, methodArgs) {
     } else if (!obj) {
         throw new GraceExceptionPacket(UninitializedVariableObject,
             new GraceString("requested method '" + methname + "' on uninitialised variable."));
+    } else if (methname === 'module initialization') {
+        ex.message = 'JavaScript error in initialization of module ' +
+                obj.definitionModule + ': ' + ex.message;
+        throw ex;
     } else if (typeof(obj.methods[methname]) !== "function") {
         var argsGL = callmethod(Grace_prelude, "emptyList", [0]);
         var argsLength = methodArgs.length;
