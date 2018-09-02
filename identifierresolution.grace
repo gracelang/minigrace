@@ -1440,6 +1440,7 @@ method resolve(moduleObject) {
         }
         util.outprint(moduleObject.pretty(0))
         util.log_verbose "done"
+        util.outfile.close
         sys.exit(0)
     }
     resolveIdentifiers(moduleObject)
