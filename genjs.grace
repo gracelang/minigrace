@@ -173,8 +173,7 @@ method compilearray(o) {
     o.register := "array" ++ myc
 }
 method compilemember(o) {
-    // Member in value position is actually a nullary method call.
-    o.generics := false     // because they are compiled wrongly
+    // member nodes are just method requests without arguments.
     compilecall(o)
 }
 method compileobjouter(o, outerRef) is confidential {
@@ -282,7 +281,7 @@ method installLocalAttributesOf(o) into (objr) {
 
     for (o.body) do { e ->
         if (e.kind == "method") then {
-            compilemethod(e, objr)
+            compilemethodnode(e) in (objr)
         } elseif { e.kind == "vardec" } then {
             create "var" field (e) in (objr)
             mutable := true
@@ -469,38 +468,49 @@ method compileblock(o) {
     restoreInitializedVars(oldInitializedVars)
     inBlock := origInBlock
 }
-method compiletypedec(o) {
-    def myc = auto_count
+method compiletypedec(o) in (obj) {
     def enclosing = o.scope.parent
-    auto_count := auto_count + 1
-    def reg = "type{myc}"
-    def tName = o.name.value
+    var reg := uidWithPrefix "type"
+    def tName = o.nameString
     out "// Type decl {tName}"
     declaredvars.push(escapeident(tName))
     if (o.value.kind == "typeliteral") then {o.value.name := tName }
-    def val = compilenode(o.value)
-    out "var {varf(tName)} = {val};"
-    out "var {reg} = {val};"
-    if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(enclosing)],
-            [o.name], ast.typeType) scope(enclosing))
+    def ntp = o.numTypeParams
+    if (0 == ntp) then {
+        reg := varf(tName)
+        def val = compilenode(o.value)
+        out "var {varf(tName)} = {val};"
+        if (compilationDepth == 1) then {
+            compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(enclosing)],
+                [o.name], ast.typeType) scope(enclosing))
+        }
+    } else {
+        def typeFun = compilenode(ast.methodNode.new(
+            [ast.signaturePart.partName(o.nameString) scope(enclosing)],
+            [o.value],
+            ast.unknownType) scope(enclosing).withTypeParams(o.typeParams)
+            // Why unknownType, rather than typeType?  Because the latter will
+            // compile a check that the return value is actually a type, which
+            // causes a circularity when trying to import collections. The check
+            // is also unnecessary, if the type operators are correctly implemented.
+        )
+        def unknowns = ", var_Unknown" * ntp
+        out "var {varf(tName)} = {typeFun}.call({obj}, [{ntp}]{unknowns});"
     }
     o.register := reg
     reg
 }
-method compiletypeliteral(o) {
-    def myc = auto_count
-    auto_count := auto_count + 1
-    def reg = "typeLit{myc}"
+method compiletypeliteral(o) in (obj) {
+    def reg = uidWithPrefix "typeLit"
     def escName = escapestring(o.name)
-    out("//   Type literal ")
-    out("var {reg} = new GraceType(\"{escName}\");")
+    out "//   Type literal "
+    out "var {reg} = new GraceType(\"{escName}\");"
     for (o.methods) do { meth ->
         def mnm = escapestring(meth.nameString)
         out "{reg}.typeMethods.push(\"{mnm}\");"
     }
     for (o.types) do { each ->
-        def typeVal = compiletypedec(each);
+        def typeVal = compiletypedec(each) in (reg);
         def tnm = escapeident(each.nameString)
         out "{reg}.typeTypes.{tnm} = {typeVal};"
     }
@@ -592,7 +602,7 @@ method compileDefaultsForTypeParameters(o) extraParams (extra) {
         def s = if (ntp == 1) then { "" } else { "s" }
         out "if ((numArgs > {np}) && (numArgs < {np + ntp})) \{"
         out "    throw new GraceExceptionPacket(RequestErrorObject, "
-        out "        new GraceString(\"method {o.canonicalName} expects {ntp} type parameter{s}, but was given \" + (numArgs - {np})));"
+        out "        new GraceString(\"{o.canonicalName} has {ntp} type parameter{s}, but was given \" + (numArgs - {np}) + \" type arguments\"));"
         out "\}"
     }
     out "// End type parameters"
@@ -697,7 +707,7 @@ method compileMetadata(o, funcName, name) {
     out "{funcName}.definitionModule = {modNameAsString};"
 }
 
-method compilemethod(o, selfobj) {
+method compilemethodnode(o) in (objref) {
     def oldusedvars = usedvars
     def olddeclaredvars = declaredvars
     def oldInitializedVars = saveInitializedVars
@@ -706,7 +716,7 @@ method compilemethod(o, selfobj) {
     if ((o.body.size == 1) && {o.body.first.isIdentifier}) then {
         compileSimpleAccessor(o)
     } else {
-        compileNormalMethod(o, selfobj)
+        compileNormalMethod(o, objref)
     }
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
@@ -745,8 +755,9 @@ method compileNormalMethod(o, selfobj) {
     debugModePrefix
     if (o.isFresh) then {
         def argList = paramlist(o)
+        def typeArgList = typeParamlist(o)
         out "var ouc = emptyGraceObject(\"{o.ilkName}\", {modNameAsString}, {o.line});"
-        out "var ouc_init = {selfobj}.methods[\"{name}$build(3)\"].call(this, null{argList}, ouc, [], []);"
+        out "var ouc_init = {selfobj}.methods[\"{name}$build(3)\"].call(this, null{argList}, ouc, [], []{typeArgList});"
         out "ouc_init.call(ouc);"
         compileCheckThat "ouc" called "object returned from {o.canonicalName}"
             hasType (o.dtype) onLine (o.end.line);
@@ -759,7 +770,7 @@ method compileNormalMethod(o, selfobj) {
     }
     debugModeSuffix
     compileMethodPostamble(o, funcName, canonicalMethName)
-    out "this.methods[\"{name}\"] = {funcName};"
+    out "{selfobj}.methods[\"{name}\"] = {funcName};"
     compileMetadata(o, funcName, name)
     if (o.isFresh) then {
         compileFreshMethod(o, selfobj)
@@ -1124,7 +1135,7 @@ method compileOuterRequest(o, args) {
 }
 
 method compileSelfRequest(o, args) {
-    out "// call case 4: self request"
+    out "// call case 4: self request with {o.numArgs} args and {o.numTypeArgs} typeArgs "
     def numArgs = o.numArgs + o.numTypeArgs
     def extra = if (numArgs > maxArgsToRequest) then { "WithArgs" } else { "" }
     out("var {o.register} = selfRequest{extra}(this" ++
@@ -1293,7 +1304,7 @@ method compilenode(o) {
     if { oKind == "identifier" } then {
         compileidentifier(o)
     } elseif { oKind == "method" } then {
-        compilemethod(o, "this")
+        compilemethodnode(o) in "this"
     } elseif { oKind == "generic" } then {
         o.register := compilenode(o.value)
     } else {
@@ -1345,9 +1356,9 @@ method compilenode(o) {
         } elseif { oKind == "object" } then {
             compileobject(o, "this")
         } elseif { oKind == "typedec" } then {
-            compiletypedec(o)
+            compiletypedec(o) in "this"
         } elseif { oKind == "typeliteral" } then {
-            compiletypeliteral(o)
+            compiletypeliteral(o) in "this"
         } elseif { oKind == "inherit" } then {
             compileInherit(o) forClass "irrelevant"
         } elseif { oKind == "outer" } then {
