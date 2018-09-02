@@ -551,7 +551,7 @@ type Predicate1⟦ArgT1⟧ = Function1⟦ArgT1, Boolean⟧
     // Function with 1 argument of type ArgT1, returning Boolean
 type Predicate2⟦ArgT1, ArgT2⟧ = Function2⟦ArgT1, ArgT2, Boolean⟧
     // Function with 2 arguments of types ArgT1 and ArgT2, returning Boolean
-type Predicate3⟦ArgT1, ArgT2, ArgT3⟧ = Function3⟦ArgT1, ArgT2, Arg3, Boolean⟧
+type Predicate3⟦ArgT1, ArgT2, ArgT3⟧ = Function3⟦ArgT1, ArgT2, ArgT3, Boolean⟧
     // Function with 3 arguments of types ArgT1, ArgT2, and ArgT3, returning Boolean
 
 type Collection⟦T⟧ = collections.Collection⟦T⟧

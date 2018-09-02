@@ -2495,7 +2495,7 @@ method methodsignature(sameline) {
         errormessages.syntaxError("methods named '[]' and '[]:=' are no longer part of Grace.")
             atRange(lastToken.line, lastToken.linePos, sym.linePos)
     }
-    if (sym.isLGeneric) then { result.typeParams := typeparameters }
+    if (sym.isLGeneric) then { part.typeParams := typeparameters }
     if (sym.isBind) then {
         part.name := part.name ++ ":="
         next
@@ -2701,7 +2701,6 @@ method methodInInterface {
     }
     def o = ast.methodTypeNode.new(methNode.signature, dtype)
                                             .setPositionFrom(methodTypeTok)
-    o.typeParams := methNode.typeParams
     values.push(o)
     reconcileComments
 }

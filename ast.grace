@@ -694,7 +694,6 @@ def methodTypeNode is public = object {
     def kind is public = "methodtype"
     var signature is public := signature'
     var rtype is public := rtype'
-    var typeParams is public := false
     var cachedIdentifier := uninitialized
 
     method end -> Position {
@@ -740,14 +739,11 @@ def methodTypeNode is public = object {
     method accept(visitor : AstVisitor) from(ac) {
         if (visitor.visitMethodType(self) up(ac)) then {
             def newChain = ac.extend(self)
-            if (false != typeParams) then {
-                typeParams.accept(visitor) from(newChain)
+            for (signature) do { part ->
+                part.accept(visitor) from(newChain)
             }
             if (false != rtype) then {
                 rtype.accept(visitor) from(newChain)
-            }
-            for (signature) do { part ->
-                part.accept(visitor) from(newChain)
             }
         }
     }
@@ -756,7 +752,6 @@ def methodTypeNode is public = object {
         def newChain = ac.extend(n)
         n.rtype := maybeMap(rtype, blk) ancestors(newChain)
         n.signature := listMap(signature, blk) ancestors(newChain)
-        n.typeParams := maybeMap(typeParams, blk) ancestors(newChain)
         blk.apply(n, ac)
     }
     method pretty(depth) {
@@ -765,10 +760,6 @@ def methodTypeNode is public = object {
         s := "{s}{spc}Name: {value}\n"
         if (false != rtype) then {
             s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth + 2)}"
-        }
-        if (false != typeParams) then {
-            s := "{s}\n{spc}TypeParams:\n"
-            s := s ++ typeParams.pretty(depth + 2)
         }
         s := "{s}\n{spc}Signature:"
         for (signature) do { part ->
@@ -975,7 +966,6 @@ def methodNode is public = object {
         var signature is public := signature'
         var body is public := body'
         var dtype is public := dtype'
-        var typeParams is public := false
         var selfclosure is public := false
         var annotations is public := [ ]
         var isFresh is public := false      // a method is 'fresh' if it answers a new object
@@ -1053,6 +1043,14 @@ def methodNode is public = object {
             return 1
         }
         method hasTypeParams { false ≠ signature.first.typeParams }
+        method typeParams {
+            def stp = signature.first.typeParams
+            if (false == stp) then { sequence.empty } else { stp }
+        }
+        method withTypeParams(tp) {
+            signature.first.typeParams := tp
+            self
+        }
         method isMethod { true }
         method isExecutable { false }
         method isLegalInTrait { true }
@@ -1109,13 +1107,8 @@ def methodNode is public = object {
             if (visitor.visitMethod(self) up(ac)) then {
                 def newChain = ac.extend(self)
                 self.value.accept(visitor) from(newChain)
-                if (false != typeParams) then {
-                    typeParams.accept(visitor) from(newChain)
-                }
                 for (self.signature) do { part ->
-                    for (part.params) do { p ->
-                        p.accept(visitor) from(newChain)
-                    }
+                    part.accept(visitor) from(newChain)
                 }
                 if (false != dtype) then {
                     dtype.accept(visitor) from(newChain)
@@ -1132,7 +1125,6 @@ def methodNode is public = object {
             var n := shallowCopy
             def newChain = ac.extend(n)
             n.body := listMap(body, blk) ancestors(newChain)
-            n.typeParams := maybeMap(typeParams, blk) ancestors(newChain)
             n.signature := listMap(signature, blk) ancestors(newChain)
             n.annotations := listMap(annotations, blk) ancestors(newChain)
             n.dtype := maybeMap(dtype, blk) ancestors(newChain)
@@ -1151,19 +1143,20 @@ def methodNode is public = object {
             s := "{s}{spc}Signature:"
             for (signature) do { part ->
                 s := "{s}\n  {spc}Part: {part.name}"
-                s := "{s}\n    {spc}Parameters:"
-                for (part.params) do { p ->
-                    s := "{s}\n      {spc}{p.pretty(depth + 4)}"
+                if (part.hasTypeParams) then {
+                    s := "{s}\n    {spc}Type Parameters:"
+                    for (part.typeParams) do { p ->
+                        s := "{s}\n      {spc}{p.pretty(depth + 4)}"
+                    }
+                }
+                if (hasParams) then {
+                    s := "{s}\n    {spc}Parameters:"
+                    for (part.params) do { p ->
+                        s := "{s}\n      {spc}{p.pretty(depth + 4)}"
+                    }
                 }
             }
             s := s ++ "\n"
-            if (false != typeParams) then {
-                s := "{s}{spc}Generics:"
-                typeParams.do {g->
-                    s := "{s}\n{spc}  {g.pretty(0)}"
-                }
-                s := s ++ "\n"
-            }
             if (annotations.size > 0) then {
                 s := "{s}{spc}Annotations:"
                 for (annotations) do {an->
@@ -1183,25 +1176,7 @@ def methodNode is public = object {
         method toGrace(depth : Number) -> String {
             def spc = "    " * depth
             var s := "method "
-            var firstPart := true
-            for (self.signature) do { part ->
-                s := s ++ part.name
-                if (firstPart && {false != typeParams}) then {
-                    s := s ++ typeParams.toGrace(depth + 1)
-                }
-                firstPart := false
-                if (part.params.size > 0) then {
-                    s := s ++ "("
-                    for (part.params.indices) do { pnr ->
-                        var p := part.params.at(pnr)
-                        s := s ++ p.toGrace(depth + 1)
-                        if (pnr < part.params.size) then {
-                            s := s ++ ", "
-                        }
-                    }
-                    s := s ++ ")"
-                }
-            }
+            for (self.signature) do { part -> s := s ++ part.toGrace(depth) }
             if (false != self.dtype) then {
                 s := s ++ " -> {self.dtype.toGrace(0)}"
             }
@@ -1838,9 +1813,9 @@ def memberNode is public = object {
             s := s ++ "‹" ++ self.value ++ "›\n"
             s := s ++ spc ++ receiver.pretty(depth)
             if (false != generics) then {
-                s := s ++ "\n" ++ spc ++ "  Generics:"
+                s := s ++ "\n" ++ spc ++ "Generics:"
                 for (generics) do {g->
-                    s := s ++ "\n" ++ spc ++ "    " ++ g.pretty(0)
+                    s := s ++ "\n" ++ spc ++ "  " ++ g.pretty(depth+1)
                 }
             }
             s
@@ -1952,7 +1927,11 @@ def typeParametersNode is public = object {
     method do(blk) {
         params.do(blk)
     }
+    method do(blk) separatedBy (sepBlk) {
+        params.do(blk) separatedBy (sepBlk)
+    }
     method size { params.size }
+    method last { params.last }
     method map(blk) ancestors(ac) {
         var n := shallowCopy
         def newChain = ac.extend(n)
@@ -2057,12 +2036,16 @@ def identifierNode is public = object {
                 if (false != self.dtype) then {
                     self.dtype.accept(visitor) from(newChain)
                 }
+                if (false != generics) then {
+                    generics.do { each -> each.accept(visitor) from(newChain) }
+                }
             }
         }
         method map(blk) ancestors(ac) {
             var n := shallowCopy
             def newChain = ac.extend(n)
             n.dtype := maybeMap(dtype, blk) ancestors(newChain)
+            n.generics := maybeListMap(generics, blk) ancestors(newChain)
             blk.apply(n, ac)
         }
         method pretty(depth) {
@@ -2913,6 +2896,8 @@ def signaturePart is public = object {
             }
             return line (line) column (linePos + name.size - 1)
         }
+        method hasTypeParams { false ≠ typeParams }
+        method numTypeParams { if (hasTypeParams) then {typeParams.size} else {0} }
         method numParams { params.size }
         method nameString {
             if (params.isEmpty) then {return name}
@@ -2929,10 +2914,11 @@ def signaturePart is public = object {
         method accept(visitor : AstVisitor) from(ac) {
             if (visitor.visitSignaturePart(self) up(ac)) then {
                 def newChain = ac.extend(self)
-                params.do { p -> p.accept(visitor) from(newChain) }
                 if (false != typeParams) then {
                     typeParams.accept(visitor) from(newChain)
                 }
+                params.do { p -> p.accept(visitor) from(newChain) }
+
             }
         }
         method declarationKindWithAncestors(ac) { k.parameter }
@@ -2946,6 +2932,12 @@ def signaturePart is public = object {
         method pretty(depth) {
             def spc = "  " * (depth+1)
             var s := "{basePretty(depth)}: {name}"
+            if (hasTypeParams) then {
+                s := "{s}\n{spc}Type Parameters:"
+                typeParams.do { tp ->
+                    s := "{s}\n  {spc}{tp.pretty(depth + 2)}"
+                }
+            }
             if (params.isEmpty.not) then { s := "{s}\n{spc}Parameters:" }
             for (params) do { p ->
                 s := "{s}\n  {spc}{p.pretty(depth + 2)}"
@@ -2954,6 +2946,9 @@ def signaturePart is public = object {
         }
         method toGrace(depth) {
             var s := name
+            if (false ≠ typeParams) then {
+                s := s ++ typeParams.toGrace(depth + 1)
+            }
             if (params.isEmpty.not) then {
                 s := s ++ "("
                 params.do { each -> s := s ++ each.toGrace(depth + 1) }
