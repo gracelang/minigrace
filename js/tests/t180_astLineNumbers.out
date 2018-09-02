@@ -42,7 +42,6 @@
           Name: 9:10-20 identifierBinding‹getShoeSize›
           Signature:
             Part: getShoeSize
-              Parameters:
           Body:
             10:5-41 return
               10:19-41 op‹+(1)›
