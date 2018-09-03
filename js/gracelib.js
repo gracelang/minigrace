@@ -4356,7 +4356,8 @@ function GraceRangeClass() {
 var _emptySequence;
 function GraceEmptySequence() {
     if (!_emptySequence)
-        _emptySequence = callmethod(Grace_prelude, "emptySequence", [0]);
+        _emptySequence =
+            callmethod(callmethod(Grace_prelude, "sequence", [0]), "empty", [0]);
     return _emptySequence;
 }
 
