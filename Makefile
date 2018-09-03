@@ -22,7 +22,8 @@ MGFLAGS = -XnoChecks
 J1-MINIGRACE = $(JS-KG) j1/compiler.js $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/gracelib.js
 J2-MINIGRACE = $(J1-MINIGRACE) j2/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) j2/gracelib.js
 JSJSFILES = gracelib.js unicodedata.js
-JSRUNNERS = grace grace-debug compiler-js minigrace-js
+JSRUNNERS_WITHOUT_COMPILER_INSPECT = grace grace-debug compiler-js minigrace-js
+JSRUNNERS = $(JSRUNNERS_WITHOUT_COMPILER_INSPECT) compiler-inspect
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
@@ -250,7 +251,7 @@ $(JSRUNNERS:%=j1/%): j1/%: $(JS-KG)/%
 # with the kg runners and libraries.
 	cp -p $< $@
 
-$(JSRUNNERS:%=j2/%): j2/%: js/%
+$(JSRUNNERS_WITHOUT_COMPILER_INSPECT:%=j2/%): j2/%: js/%
 	cp -p $< $@
 
 $(JSRUNNERS): %: js/%
