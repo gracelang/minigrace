@@ -892,7 +892,9 @@ def typeDecNode is public = object {
     method isPublic { isConfidential.not }
     method isWritable { false }
     method isReadable { isPublic }
-
+    method numTypeParams {
+        if (false == typeParams) then {0} else {typeParams.size}
+    }
     method accept(visitor : AstVisitor) from(ac) {
         if (visitor.visitTypeDec(self) up(ac)) then {
             def newChain = ac.extend(self)
@@ -1043,10 +1045,7 @@ def methodNode is public = object {
             return 1
         }
         method hasTypeParams { false ≠ signature.first.typeParams }
-        method typeParams {
-            def stp = signature.first.typeParams
-            if (false == stp) then { sequence.empty } else { stp }
-        }
+        method typeParams { signature.first.typeParams }
         method withTypeParams(tp) {
             signature.first.typeParams := tp
             self
