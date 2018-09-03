@@ -2005,8 +2005,10 @@ function checkBlockApply(numargs) {
 }
 
 function assertTypeOrMsg(obj, type, objDesc, typeDesc) {
+    if (type === var_Unknown) return;  // an optimization
     if (type.methods["match(1)"]) {
         if (!Grace_isTrue(request(type, "match(1)", [1], obj))) {
+            if (type.name !== typeDesc) typeDesc += " (= " + type.name + ")";
             let message = objDesc + " does not have type " + typeDesc;
             raiseTypeError(message, type, obj);
         }
