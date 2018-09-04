@@ -1303,6 +1303,8 @@ def callNode is public = object {
             if (false == generics) then { 0 } else { generics.size }
         }
 
+        method hasTypeArgs { false ≠ generics }
+
         method accept(visitor : AstVisitor) from(ac) {
             if (visitor.visitCall(self) up(ac)) then {
                 def newChain = ac.extend(self)
@@ -1785,6 +1787,7 @@ def memberNode is public = object {
         method numTypeArgs {
             if (false == generics) then { 0 } else { generics.size }
         }
+        method hasTypeArgs { false ≠ generics }
 
         method accept(visitor : AstVisitor) from(ac) {
             if (visitor.visitMember(self) up(ac)) then {
@@ -2029,6 +2032,10 @@ def identifierNode is public = object {
         method usesAsType(aNode) {
             aNode == dtype
         }
+        method numTypeArgs {
+            if (false == generics) then { 0 } else { generics.size }
+        }
+        method hasTypeArgs { false ≠ generics }
         method accept(visitor : AstVisitor) from(ac) {
             if (visitor.visitIdentifier(self) up(ac)) then {
                 def newChain = ac.extend(self)
