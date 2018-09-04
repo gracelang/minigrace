@@ -713,7 +713,8 @@ method compilemethodnode(o) in (objref) {
     def oldInitializedVars = saveInitializedVars
     clearLineNumber(o.line)
     o.register := uidWithPrefix "func"
-    if ((o.body.size == 1) && {o.body.first.isIdentifier}) then {
+    if ((o.body.size == 1) &&
+            {o.body.first.isIdentifier} && {o.hasTypeParams.not}) then {
         compileSimpleAccessor(o)
     } else {
         compileNormalMethod(o, objref)
