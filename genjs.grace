@@ -12,8 +12,6 @@ import "stringMap" as map
 
 def nodeTally = map.new
 
-def maxArgsToRequest = 10
-
 var indent := ""
 var verbosity := 30
 var pad1 := 1
@@ -596,11 +594,12 @@ method compileDefaultsForTypeParameters(o) extraParams (extra) {
         out "if ({gName} === undefined) {gName} = var_Unknown;"
     }
     if (emitArgChecks) then {
-        out "var numArgs = arguments.length - 1 - {extra};"  // subtract 1 for argcv
+        def correction = if (extra == 0) then { "" } else { " - {extra}" }
+        out "var numArgs = arguments.length - 1{correction};"  // subtract 1 for argcv
         def np = o.numParams
         def ntp = o.typeParams.size
         def s = if (ntp == 1) then { "" } else { "s" }
-        out "if ((numArgs > {np}) && (numArgs < {np + ntp})) \{"
+        out "if ((numArgs > {np}) && (numArgs !== {np + ntp})) \{"
         out "    throw new GraceExceptionPacket(RequestErrorObject, "
         out "        new GraceString(\"{o.canonicalName} has {ntp} type parameter{s}, but was given \" + (numArgs - {np}) + \" type arguments\"));"
         out "\}"
@@ -1129,8 +1128,7 @@ method compileOuterRequest(o, args) {
     out "// call case 2: outer request"
     compilenode(o.receiver)
     def numArgs = o.numArgs + o.numTypeArgs
-    def extra = if (numArgs > maxArgsToRequest) then { "WithArgs" } else { "" }
-    out("var {o.register} = selfRequest{extra}({o.receiver.register}" ++
+    out("var {o.register} = selfRequest({o.receiver.register}" ++
           ", \"{escapestring(o.nameString)}\"" ++
           ", [{partl(o)}]{assembleArguments(args)});")
 }
@@ -1138,15 +1136,13 @@ method compileOuterRequest(o, args) {
 method compileSelfRequest(o, args) {
     out "// call case 4: self request with {o.numArgs} args and {o.numTypeArgs} typeArgs "
     def numArgs = o.numArgs + o.numTypeArgs
-    def extra = if (numArgs > maxArgsToRequest) then { "WithArgs" } else { "" }
-    out("var {o.register} = selfRequest{extra}(this" ++
+    out("var {o.register} = selfRequest(this" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compilePreludeRequest(o, args) {
     out "// call case 5: prelude request"
     def numArgs = o.numArgs + o.numTypeArgs
-    def extra = if (numArgs > maxArgsToRequest) then { "WithArgs" } else { "" }
-    out("var {o.register} = request{extra}(var_prelude" ++
+    out("var {o.register} = request(var_prelude" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compileOtherRequest(o, args) {
@@ -1154,8 +1150,7 @@ method compileOtherRequest(o, args) {
     def target = compilenode(o.receiver)
     def cm = if (o.isSelfRequest) then { "selfRequest" } else { "request" }
     def numArgs = o.numArgs + o.numTypeArgs
-    def extra = if (numArgs > maxArgsToRequest) then { "WithArgs" } else { "" }
-    out("var {o.register} = {cm}{extra}({target}" ++
+    out("var {o.register} = {cm}({target}" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compilecall(o) {
@@ -1608,9 +1603,8 @@ method compileReuseCall(callNode) forClass (className) aliases (aStr) exclusions
     // why +3?  Becuase of the 3 args to $build(3).  In fact, it should
     // be +2, because of the $object(1) suffix that is replaced by $build(3)
     def req = if (callNode.isSelfRequest) then { "selfRequest" } else { "request" }
-    def extra = if (numArgs > maxArgsToRequest) then { "WithArgs" } else { "" }
     def initFun = uidWithPrefix "initFun"
-    out("var {initFun} = {req}{extra}({target}, \"{escapestring(buildMethodName)}\"" ++
+    out("var {initFun} = {req}({target}, \"{escapestring(buildMethodName)}\"" ++
           ", [null]{arglist}, this, {aStr}, {eStr}{typeArgs});  // compileReuseCall")
     initFun     // return the register that holds the initialization function
 }

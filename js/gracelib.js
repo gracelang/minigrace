@@ -3546,7 +3546,7 @@ function handleRequestException(ex, obj, methname, methodArgs) {
     }
 }
 
-function request(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
+function request(obj, methname, ...args) {
     var origModuleName = moduleName;
     var origLineNumber = lineNumber;
     var returnTarget = invocationCount;  // will be incremented by invoked method
@@ -3555,7 +3555,7 @@ function request(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
         if (meth.confidential) {
             raiseConfidentialMethod(methname, obj);
         }
-        var ret = meth.call(obj, argcv, a, b, c, d, e, f, g, h, i, j);
+        var ret = meth.apply(obj, args);
     } catch(ex) {
         if (ex.exctype === 'return') {
             if (ex.target == returnTarget) {
@@ -3574,17 +3574,12 @@ function request(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
 
 var callmethod = request;       // for backward compatibility
 
-function requestWithArgs(obj, methname, argcv) {
-    // allow unlimited arguments using reflection
+function selfRequest(obj, methname, ...args) {
     var origModuleName = moduleName;
     var origLineNumber = lineNumber;
     var returnTarget = invocationCount;  // will be incremented by invoked method
     try {
         var meth = obj.methods[methname];
-        if (meth.confidential) {
-            raiseConfidentialMethod(methname, obj);
-        }
-        var args = Array.prototype.slice.call(arguments, 2);
         var ret = meth.apply(obj, args);
     } catch(ex) {
         if (ex.exctype === 'return') {
@@ -3595,70 +3590,6 @@ function requestWithArgs(obj, methname, argcv) {
         } else {
             return handleRequestException(ex, obj, methname, arguments);
         }
-    } finally {
-        setModuleName(origModuleName);
-        setLineNumber(origLineNumber);
-    }
-    return ret;
-}
-
-function selfRequest(obj, methname, argcv, a, b, c, d, e, f, g, h, i, j) {
-    var origModuleName = moduleName;
-    var origLineNumber = lineNumber;
-    var returnTarget = invocationCount;  // will be incremented by invoked method
-    try {
-        var meth = obj.methods[methname];
-        var ret = meth.call(obj, argcv, a, b, c, d, e, f, g, h, i, j);
-    } catch(ex) {
-        if (ex.exctype === 'return') {
-            if (ex.target == returnTarget) {
-                return ex.returnvalue;
-            }
-            throw ex;
-        } else {
-            return handleRequestException(ex, obj, methname, arguments);
-        }
-    } finally {
-        setModuleName(origModuleName);
-        setLineNumber(origLineNumber);
-    }
-    return ret;
-}
-
-function selfRequestWithArgs(obj, methname, argcv) {
-    // allow unlimited arguments using reflection
-    var origModuleName = moduleName;
-    var origLineNumber = lineNumber;
-    var returnTarget = invocationCount;  // will be incremented by invoked method
-    try {
-        var meth = obj.methods[methname];
-        var args = Array.prototype.slice.call(arguments, 2);
-        var ret = meth.apply(obj, args);
-    } catch(ex) {
-        if (ex.exctype === 'return') {
-            if (ex.target == returnTarget) {
-                return ex.returnvalue;
-            }
-        } else if (ex.exctype === 'graceexception') {
-            ex.exitStack.unshift({
-                className: obj.className,
-                methname: methname,
-                moduleName: moduleName,
-                lineNumber: lineNumber,
-                toString: GraceCallStackToString
-            });
-        } else if (!obj) {
-            throw new GraceExceptionPacket(UninitializedVariableObject,
-                new GraceString("requested method '" + methname + "' on uninitialised variable."));
-        } else if (typeof(obj.methods[methname]) !== "function") {
-            var argsGL = callmethod(Grace_prelude, "emptyList", [0]);
-            var argsLength = arguments.length;
-            for (var ix = 3; ix < argsLength; ix++) {
-                callmethod(argsGL, "push(1)", [1], arguments[ix]);
-            }
-            return dealWithNoMethod(methname, obj, argsGL);
-        }
-        throw ex;
     } finally {
         setModuleName(origModuleName);
         setLineNumber(origLineNumber);
@@ -4496,13 +4427,11 @@ if (typeof global !== "undefined") {
     global.raiseTypeError = raiseTypeError;
     global.raiseUninitializedVariable = raiseUninitializedVariable;
     global.request = request;
-    global.requestWithArgs = requestWithArgs;
     global.ResourceExceptionObject = ResourceExceptionObject;
     global.ReturnException = ReturnException;
     global.RequestErrorObject = RequestErrorObject;
     global.RuntimeErrorObject = RuntimeErrorObject;
     global.selfRequest = selfRequest;
-    global.selfRequestWithArgs = selfRequestWithArgs;
     global.setLineNumber = setLineNumber;
     global.setModuleName = setModuleName;
     global.StackFrame = StackFrame;
