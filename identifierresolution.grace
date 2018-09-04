@@ -298,9 +298,11 @@ class newScopeIn(parent') kind(variety') {
                 if (s.variety == "dialect") then {
                     return ast.memberNode.new(name,
                           ast.identifierNode.new("prelude", false)
-                                scope(self)) scope(self).onSelf.withGenericArgs(aNode.generics)
+                                scope(self)) scope(self).
+                                      onSelf.withGenericArgs(aNode.generics)
                 } elseif { s.variety == "module" } then {
-                    return ast.memberNode.new(name, thisModule) scope(self).onSelf
+                    return ast.memberNode.new(name, thisModule) scope(self).
+                          onSelf.withGenericArgs(aNode.generics)
                 }
                 def rcvr = if (outerChain.isEmpty) then {
                     ast.identifierNode.new("self", false) scope(self).
@@ -310,7 +312,8 @@ class newScopeIn(parent') kind(variety') {
                           setStart(ast.noPosition)
                 }
                 return ast.memberNode.new(name, rcvr).setScope(self).
-                      setPositionFrom(aNode).onSelf.withGenericArgs(aNode.generics)
+                      setPositionFrom(aNode).
+                        onSelf.withGenericArgs(aNode.generics)
             }
             if (s.variety == "object") then {
                 def definingObjNode = s.node
@@ -542,7 +545,7 @@ method transformIdentifier(node) ancestors(anc) {
     checkForAmbiguityOf (node) definedIn (definingScope) asA (nodeKind)
     def v = definingScope.variety
     if (v == "built-in") then { return node }
-    if (v == "typedec") then { return node }
+    if ((v == "typedec") && { node.hasTypeArgs.not }) then { return node }
     if (v == "dialect") then {
         def p = ast.identifierNode.new("prelude", false) scope(nodeScope)
         return ast.memberNode.new(nm, p)
