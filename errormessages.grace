@@ -493,7 +493,7 @@ method syntaxError(message) atPosition(errLinenum, errpos) withSuggestion(sugges
 }
 
 method syntaxError(message)atPosition(errLinenum, errpos)withSuggestions(suggestions) {
-    def arr = ("-" * (errLinenum.asString.size + errpos + 4)) ++ "^"
+    def arr = ("-" * (errLinenum.asString.size + errpos + 3)) ++ "^"
     syntaxError(message, errLinenum, ":{errpos}", arr, suggestions)
 }
 
