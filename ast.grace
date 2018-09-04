@@ -1811,9 +1811,9 @@ def memberNode is public = object {
         method pretty(depth) {
             def spc = "  " * (depth+1)
             var s := basePretty(depth)
-            s := s ++ if (isSelfRequest) then { " on self " } else { " " }
-            s := s ++ "‹" ++ self.value ++ "›\n"
-            s := s ++ spc ++ receiver.pretty(depth)
+            s := s ++ if (isSelfRequest) then { " on self\n" } else { "\n" }
+            s := s ++ spc ++ "Receiver: " ++ receiver.pretty(depth) ++ "\n"
+            s := s ++ spc ++ "Method Name: " ++ parts.first.pretty(depth)
             if (false != generics) then {
                 s := s ++ "\n" ++ spc ++ "Generics:"
                 for (generics) do {g->

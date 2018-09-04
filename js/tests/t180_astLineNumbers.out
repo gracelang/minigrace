@@ -44,10 +44,14 @@
             Part: getShoeSize
           Body:
             10:5-41 return
-              10:19-41 op‹+(1)›
-                10:19-34 op‹*(1)›
-                  10:19-22 member ‹size›
-                    10:14-17 identifier‹name›
-                  10:31-34 member ‹size›
-                    10:26-29 identifier‹name›
+              10:14-41 op‹+(1)›
+                10:14-34 op‹*(1)›
+                  10:14-22 member
+                    Receiver: 10:14-17 identifier‹name›
+                    Method Name: 10:19-22 callwithpart: size
+                    Args:
+                  10:26-34 member
+                    Receiver: 10:26-29 identifier‹name›
+                    Method Name: 10:31-34 callwithpart: size
+                    Args:
                 10:39-41 identifier‹age›

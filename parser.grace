@@ -1028,7 +1028,7 @@ method generic {
             identifier
             while {sym.isDot} do {
                 next
-                def memberIn = values.pop
+                def receiver = values.pop
                 if (sym.kind != "identifier") then {
                     def suggestions = [ ]
                     var suggestion := errormessages.suggestion.new
@@ -1041,10 +1041,9 @@ method generic {
                         lastToken.line, lastToken.linePos + 1)withSuggestions(suggestions)
                 }
                 identifier
-                def memberName = values.pop
-                def memberNd = ast.memberNode.new(memberName.value, memberIn)
-                memberNd.line := memberName.line
-                memberNd.linePos := memberName.linePos
+                def attributeName = values.pop
+                def memberNd = ast.memberNode.new(attributeName.value, receiver).
+                      setPositionFrom(receiver)
                 values.push(memberNd)
             }
             generic
@@ -1613,11 +1612,11 @@ method dotrest(acceptBlocks) {
 
     if (sym.isDot) then {
         util.setPosition(sym.line, sym.linePos)
-        var lookuptarget := values.pop
+        var receiver := values.pop
         next
         if (sym.isIdentifier) then {
-            util.setPosition(sym.line, sym.linePos)
-            def dro = ast.memberNode.new(sym.value, lookuptarget)
+            def dro = ast.memberNode.new(sym.value, receiver)
+                  .setPositionFrom(receiver)
             values.push(dro)
             next
             if (sym.isDot) then {
