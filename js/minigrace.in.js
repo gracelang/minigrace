@@ -54,7 +54,6 @@ function MiniGrace() {
 
 MiniGrace.prototype.compile = function(grace_code) {
     importedModules = {};
-    do_import('collectionsPrelude', gracecode_collectionsPrelude);
     do_import('standardGrace', gracecode_standardGrace);
 
     // Change stdin to read from code.
@@ -198,7 +197,6 @@ MiniGrace.prototype.trapErrors = function(func) {
 
 MiniGrace.prototype.run = function() {
     importedModules = {};
-    do_import('collectionsPrelude', gracecode_collectionsPrelude);
     do_import('standardGrace', gracecode_standardGrace);
     stackFrames = [];
     lineNumber = 1;
