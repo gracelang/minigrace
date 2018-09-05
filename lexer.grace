@@ -1078,7 +1078,13 @@ method checkIndentationReset {
     //      } else {
 
     if (indentStack.size < (1 - braceChange)) then {
-        lexicalError "this should never happen; braceChange = {braceChange}, but indentStack = {indentStack}"
+        // this can happen when the unmatched closing brace is the first symbol
+        // on the next line.  Because it has not yet been lexed, it won't yet have
+        // triggered the lexical eror "no opening brace" in the rightBrace method.
+
+        errormessages.
+            syntaxError "there is no opening brace corresponding to this closing brace"
+            atPosition (lineNumber, linePosition)
     }
     repeat (- braceChange) times { indentStack.removeLast }
     if (currentLineIndent ≠ indentStack.last) then {
