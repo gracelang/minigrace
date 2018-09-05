@@ -1444,7 +1444,7 @@ method initializeCodeGenerator(moduleObject) {
     topLevelTypes.add "Type"
     topLevelTypes.add "Unknown"
     topLevelTypes.add "Object"
-    if (! util.extensions.contains "noStrict") then {
+    if (util.extensions.contains "strict") then {
         util.outprint ";\"use strict\";"
     }
     if (isPrelude.not) then {
