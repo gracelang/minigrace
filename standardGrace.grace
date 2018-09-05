@@ -207,101 +207,79 @@ method singleton { Singleton.new }
 
 method singleton (nameString) { Singleton.named(nameString) }
 
-def BaseType = object {
-    class new(name) {
-        method &(o) {
-            TypeIntersection.new(self, o)
-        }
-        method |(o) {
-            TypeVariant.new(self, o)
-        }
-        method +(o) {
-            TypeUnion.new(self, o)
-        }
-        method -(o) {
-            TypeSubtraction.new(self, o)
-        }
-        method asString {
-            if (name == "") then { "type ‹anon›" }
-                            else { "type {name}" }
-        }
+trait BaseType {
+    method &(o) {
+        TypeIntersection.new(self, o)
+    }
+    method |(o) {
+        TypeVariant.new(self, o)
+    }
+    method +(o) {
+        TypeUnion.new(self, o)
+    }
+    method -(o) {
+        TypeSubtraction.new(self, o)
+    }
+    method asString {
+        "type {self.name}"
+    }
+    method ==(o) {
+        isMe(o)
+    }
+    method setName(nu) is confidential {
+        self.name:=(nu)
+        return self     // for chaining
     }
 }
 
 def TypeIntersection is public = object {
     class new(t1, t2) {
         inherit AndPattern.new(t1, t2)
-        // inherit BaseType.new
-        method &(o) {
-            TypeIntersection.new(self, o)
-        }
-        method |(o) {
-            TypeVariant.new(self, o)
-        }
-        method +(o) {
-            TypeUnion.new(self, o)
-        }
-        method -(o) {
-            TypeSubtraction.new(self, o)
-        }
+        use BaseType
+        var name is readable := "‹anon›"
         method methodNames {
             t1.methodNames.addAll(t2.methodNames)
         }
         method typeNames {
             t1.typeNames.addAll(t2.typeNames)
         }
-        method ==(o) {
-            isMe(o)
+        method asString {
+            if (self.name == "‹anon›") then {
+                "({t1} & {t2})"
+            } else {
+                "type {self.name}"
+            }
         }
-        method asString { "({t1} & {t2})" }
+
     }
 }
 
 def TypeVariant is public = object {
     class new(t1, t2) {
         inherit OrPattern.new(t1, t2)
-        // inherit BaseType.new
-        method &(o) {
-            TypeIntersection.new(self, o)
-        }
-        method |(o) {
-            TypeVariant.new(self, o)
-        }
-        method +(o) {
-            TypeUnion.new(self, o)
-        }
-        method -(o) {
-            TypeSubtraction.new(self, o)
-        }
+        use BaseType
+        var name is readable := "‹anon›"
         method methodNames {
             self.MethodsInTypeVariantsNotImplemented
         }
         method typeNames {
             self.TypesInTypeVariantsNotImplemented
         }
-        method ==(o) {
-            isMe(o)
+        method asString {
+            if (self.name == "‹anon›") then {
+                "({t1} | {t2})"
+            } else {
+                "type {self.name}"
+            }
         }
-        method asString { "({t1} | {t2})" }
     }
 }
 
 def TypeUnion is public = object {
     class new(t1, t2) {
         inherit BasicPattern.new
-    //    inherit BaseType.new
-        method &(o) {
-            TypeIntersection.new(self, o)
-        }
-        method |(o) {
-            TypeVariant.new(self, o)
-        }
-        method +(o) {
-            TypeUnion.new(self, o)
-        }
-        method -(o) {
-            TypeSubtraction.new(self, o)
-        }
+        use BaseType
+        var name is readable := "‹anon›"
         method methodNames {
             t1.methodNames ** t2.methodNames
         }
@@ -321,38 +299,34 @@ def TypeUnion is public = object {
         method typeNames {
             t1.typeNames ** t2.typeNames
         }
-        method ==(o) {
-            isMe(o)
+        method asString {
+            if (self.name == "‹anon›") then {
+                "({t1} + {t2})"
+            } else {
+                "type {self.name}"
+            }
         }
-        method asString { "({t1} + {t2})" }
     }
 }
 
 def TypeSubtraction is public = object {
     class new(t1, t2) {
         inherit BasicPattern.new
-        method &(o) {
-            TypeIntersection.new(self, o)
-        }
-        method |(o) {
-            TypeVariant.new(self, o)
-        }
-        method +(o) {
-            TypeUnion.new(self, o)
-        }
-        method -(o) {
-            TypeSubtraction.new(self, o)
-        }
+        use BaseType
+        var name is readable := "‹anon›"
         method methodNames {
             t1.methodNames.removeAll(t2.methodNames)
         }
         method typeNames {
             t1.typeNames.removeAll(t2.typeNames)
         }
-        method ==(o) {
-            isMe(o)
+        method asString {
+            if (self.name == "‹anon›") then {
+                "({t1} - {t2})"
+            } else {
+                "type {self.name}"
+            }
         }
-        method asString { "({t1} - {t2})" }
     }
 }
 

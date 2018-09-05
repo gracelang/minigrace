@@ -477,6 +477,10 @@ method compiletypedec(o) in (obj) {
     if (0 == ntp) then {
         reg := varf(tName)
         def val = compilenode(o.value)
+        if (o.value.kind == "op") then {
+            // this guard prevents us from renaming the rhs in decls like type A = B
+            out "selfRequest({val}, \"setName(1)\", [1], new GraceString(\"{tName}\"));"
+        }
         out "var {varf(tName)} = {val};"
         if (compilationDepth == 1) then {
             compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(enclosing)],
@@ -485,7 +489,7 @@ method compiletypedec(o) in (obj) {
     } else {
         def typeFun = compilenode(ast.methodNode.new(
             [ast.signaturePart.partName(o.nameString) scope(enclosing)],
-            [o.value],
+            typeFunBody (o.value) named (tName),
             ast.unknownType) scope(enclosing).withTypeParams(o.typeParams)
             // Why unknownType, rather than typeType?  Because the latter will
             // compile a check that the return value is actually a type, which
@@ -497,6 +501,18 @@ method compiletypedec(o) in (obj) {
     }
     o.register := reg
     reg
+}
+method typeFunBody(typeExpr) named (tName) {
+    if (typeExpr.kind == "op") then {
+        // this guard prevents us from renaming the rhs in decls like type A⟦T⟧ = B⟦T⟧
+        [ ast.callNode.new(
+                typeExpr,
+                [ast.requestPart.request "setName"
+                     withArgs[ ast.stringNode.new(tName) ] ]
+        ).onSelf ]
+    } else {
+        [ typeExpr ]
+    }
 }
 method compiletypeliteral(o) in (obj) {
     def reg = uidWithPrefix "typeLit"
@@ -601,7 +617,7 @@ method compileDefaultsForTypeParameters(o) extraParams (extra) {
         def s = if (ntp == 1) then { "" } else { "s" }
         out "if ((numArgs > {np}) && (numArgs !== {np + ntp})) \{"
         out "    throw new GraceExceptionPacket(RequestErrorObject, "
-        out "        new GraceString(\"{o.canonicalName} has {ntp} type parameter{s}, but was given \" + (numArgs - {np}) + \" type arguments\"));"
+        out "        new GraceString(\"{o.canonicalName} requires {ntp} type argument{s}, but was given \" + (numArgs - {np})));"
         out "\}"
     }
     out "// End type parameters"
@@ -699,6 +715,7 @@ method stringList(l) {
 }
 
 method compileMetadata(o, funcName, name) {
+    out "{funcName}.methodName = \"{name}\";"
     out "{funcName}.paramCounts = {paramCounts(o)};"
     out "{funcName}.paramNames = {stringList(paramNames(o))};"
     out "{funcName}.typeParamNames = {stringList(typeParamNames(o))};"

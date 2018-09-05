@@ -1869,12 +1869,22 @@ GraceType.prototype = {
         },
         "==(1)": function type_identity (argcv, other) {
             return selfRequest(this, "isMe(1)", [1], other)
+        },
+        "setName(1)": function type_setName (argcv, nu) {
+            if (nu.className !== "string") nu = request(nu, "asString", [0]);
+            this.name = nu._value;
+            return this;
+        },
+        "name": function type_name (argcv) {
+            return new GraceString(this.name);
         }
     },
     className: "Type",
     definitionModule: "basic library",
     definitionLine: 0
 };
+
+GraceType.prototype.methods["setName(1)"].confidential = true;
 
 function evaluateTypeInType(name, type) {
 	return type.typeTypes[name];
@@ -3525,7 +3535,7 @@ function handleRequestException(ex, obj, methname, methodArgs) {
                 obj.definitionModule + ': ' + ex.message;
         throw ex;
     } else if (typeof(obj.methods[methname]) !== "function") {
-        var argsGL = callmethod(Grace_prelude, "emptyList", [0]);
+        var argsGL = new PrimitiveGraceList( [] );
         var argsLength = methodArgs.length;
         for (var ix = 3; ix < argsLength; ix++) {
             callmethod(argsGL, "push(1)", [1], methodArgs[ix]);
