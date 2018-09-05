@@ -22,6 +22,16 @@ function getModuleName() {
     return moduleName;
 }
 
+var identityHashSeed = 1001;
+
+function identityHash(obj) {
+    if (! obj.identityHash) {
+        obj.identityHash = new GraceNum(identityHashSeed ^ 0xdeadbeef);
+        identityHashSeed = identityHashSeed + 1;
+    }
+    return obj.identityHash;
+}
+
 function identifierAvailable(category, identifier) {
     if (inBrowser) {
         return !(localStorage.hasOwnProperty(category + ":" + identifier));
@@ -442,9 +452,10 @@ GraceString.prototype = {
             return GraceTrue;
         },
         "split(1)": function string_split (argcv, spliter) {
-            var self = this._value;
-            var ary = self.split(spliter._value);
-            for (let i = 0, len = ary.length ; i < len ; i++) {
+            const self = this._value;
+            const ary = self.split(spliter._value);
+            const len = ary.length;
+            for (var i = 0 ; i < len ; i++) {
                 ary[i] = new GraceString(ary[i]);
             }
             return new GraceList(ary);
@@ -3512,15 +3523,16 @@ function GraceCallStackToString() {
     } else {
         errorString += " at line " + errorLine + " of ";
     }
-    return errorString + this.moduleName;
+    return errorString + this.method.definitionModule + "(= " + this.moduleName + ")";
 }
 
-function handleRequestException(ex, obj, methname, methodArgs) {
+function handleRequestException(ex, obj, methname, method, methodArgs) {
     if (ex.exctype === 'graceexception') {
         ex.exitStack.unshift({
             className: obj.className,
             methname: methname,
             moduleName: moduleName,
+            method: method,
             lineNumber: lineNumber,
             toString: GraceCallStackToString
         });
@@ -3529,15 +3541,11 @@ function handleRequestException(ex, obj, methname, methodArgs) {
         throw new GraceExceptionPacket(UninitializedVariableObject,
             new GraceString("requested method '" + methname + "' on uninitialised variable."));
     } else if (methname === 'module initialization') {
-        ex.message = 'JavaScript error in initialization of module ' +
-                obj.definitionModule + ': ' + ex.message;
+        ex.message = "error in initialisation of module " +
+                obj.definitionModule + ": " + ex.message;
         throw ex;
     } else if (typeof(obj.methods[methname]) !== "function") {
-        var argsGL = new PrimitiveGraceList( [] );
-        var argsLength = methodArgs.length;
-        for (var ix = 3; ix < argsLength; ix++) {
-            callmethod(argsGL, "push(1)", [1], methodArgs[ix]);
-        }
+        var argsGL = new PrimitiveGraceList( methodArgs.slice(1) );
         return dealWithNoMethod(methname, obj, argsGL);
     } else {
         throwStackOverflowIfAppropriate(ex);
@@ -3547,6 +3555,7 @@ function handleRequestException(ex, obj, methname, methodArgs) {
             className: obj.className,
             methname: methname,
             moduleName: "native code",
+            method: method,
             lineNumber: 0,
             toString: GraceCallStackToString
         });
@@ -3558,8 +3567,9 @@ function request(obj, methname, ...args) {
     var origModuleName = moduleName;
     var origLineNumber = lineNumber;
     var returnTarget = invocationCount;  // will be incremented by invoked method
+    var meth
     try {
-        var meth = obj.methods[methname];
+        meth = obj.methods[methname];
         if (meth.confidential) {
             raiseConfidentialMethod(methname, obj);
         }
@@ -3571,7 +3581,7 @@ function request(obj, methname, ...args) {
             }
             throw ex;
         } else {
-            return handleRequestException(ex, obj, methname, arguments);
+            return handleRequestException(ex, obj, methname, meth, args);
         }
     } finally {
         setModuleName(origModuleName);
@@ -3586,8 +3596,9 @@ function selfRequest(obj, methname, ...args) {
     var origModuleName = moduleName;
     var origLineNumber = lineNumber;
     var returnTarget = invocationCount;  // will be incremented by invoked method
+    var meth
     try {
-        var meth = obj.methods[methname];
+        meth = obj.methods[methname];
         var ret = meth.apply(obj, args);
     } catch(ex) {
         if (ex.exctype === 'return') {
@@ -3596,7 +3607,7 @@ function selfRequest(obj, methname, ...args) {
             }
             throw ex;
         } else {
-            return handleRequestException(ex, obj, methname, arguments);
+            return handleRequestException(ex, obj, methname, meth, args);
         }
     } finally {
         setModuleName(origModuleName);
@@ -3832,6 +3843,7 @@ function GraceExceptionPacket(exception, message, data) {
     this.data = data;
     this.lineNumber = lineNumber;
     this.moduleName = moduleName;
+    this.method = arguments.callee.caller;
     this.stackFrames = [];
     this.exitStack = [];
     for (var j=0; j < stackFrames.length; j++)
@@ -3863,7 +3875,8 @@ GraceExceptionPacket.prototype = {
             return new GraceNum(this.lineNumber);
         },
         "moduleName": function(argcv) {
-            return new GraceString(this.moduleName);
+            const moduleNm = this.method.definitionModule || "native code";
+            return new GraceString(this.moduleNm);
         },
         "backtrace": function(argcv) {
             var es = new GraceList([]);
@@ -3872,12 +3885,8 @@ GraceExceptionPacket.prototype = {
             return es;
         },
         "printBacktrace": function(argcv) {
-            var exceptionName = callmethod(callmethod(this, "exception", [0]), "asString", [0]);
-            var ln = callmethod(this, "lineNumber", [0]);
-            var mn = callmethod(this, "moduleName", [0]);
-            var errMsg = callmethod(exceptionName, "++(1)", [1], new GraceString(" on line "));
-            errMsg = callmethod(callmethod(errMsg, "++(1)", [1], ln), "++(1)", [1], new GraceString(" of "));
-            errMsg = callmethod(callmethod(errMsg, "++(1)", [1], mn), "++(1)", [1], new GraceString(": "));
+            const exceptionName = callmethod(callmethod(this, "exception", [0]), "asString", [0]);
+            let errMsg = callmethod(exceptionName, "++(1)", [1], new GraceString(": "));
             errMsg = callmethod(errMsg, "++(1)", [1], callmethod(this, "message", [0]));
             Grace_errorPrint(errMsg);
             var bt = callmethod(this, "backtrace", [0]);
@@ -4011,6 +4020,7 @@ function do_import(modname, moduleCodeFunc) {
         return handleRequestException(ex,
                                       {className: "module"},
                                       "module initialization",
+                                      newModule,
                                       []);
     } finally {
         importedModules[modname] = f;
