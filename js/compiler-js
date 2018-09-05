@@ -1,6 +1,5 @@
 #!/usr/bin/env node --max-old-space-size=2048
 
-"use strict";
 // Runs the minigrace compiler using the components in the same directory
 // as this script.  Expects to be invoked by minigrace-js.
 

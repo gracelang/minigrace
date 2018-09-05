@@ -3,8 +3,6 @@
 // this file, `grace.in`, is used to generate `grace`, which executes
 // compiled Grace code at the command line
 
-"use strict";
-
 var path = require("path");
 var fs = require("fs");
 

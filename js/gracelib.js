@@ -1,5 +1,3 @@
-"use strict";
-
 var inBrowser = (typeof global === "undefined");
 
 if (!inBrowser) {  // if we are in Node.js
