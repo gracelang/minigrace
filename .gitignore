@@ -15,6 +15,7 @@ l2
 j1
 j2
 compiler-js
+compiler-inspect
 grace
 js/mgc
 minigrace
