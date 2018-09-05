@@ -295,7 +295,6 @@ method installLocalAttributesOf(o) into (objr) {
 }
 
 method compileOwnInitialization(o, selfr) {
-    out "setModuleName({modNameAsString});"
     o.body.do { e ->
         if (e.kind == "method") then {
         } elseif { e.kind == "vardec" } then {
@@ -405,7 +404,6 @@ method compileGuard(o, paramList) {
     def matchFun = uidWithPrefix "matches"
     out "var {matchFun} = function({paramList}) \{"
     increaseindent
-    out "setModuleName({modNameAsString});"
     noteLineNumber(o.line) comment "block matches function"
     o.params.do { p ->
         def pName = varf(p.value)
@@ -452,7 +450,6 @@ method compileblock(o) {
     out "{myId}.guard = {compileGuard(o, paramList)};"
     out "{myId}.real = function({paramList}) \{"
     increaseindent
-    out "setModuleName({modNameAsString});"
     priorLineEmitted := 0
     noteLineNumber (o.line) comment ("compileBlock")
     var ret := "GraceDone"
@@ -691,7 +688,6 @@ method compileMethodBody(methNode) {
     // compiles the body of method represented by methNode.
     // answers the register containing the result.
 
-    out "setModuleName({modNameAsString});"
     var ret := "GraceDone"
     methNode.body.do { nd -> ret := compilenode(nd) }
     ret
@@ -1052,7 +1048,6 @@ method compiletrycatch(o) {
     }
     noteLineNumber(o.line)comment("compiletrycatch")
     out("var catchres{myc} = tryCatch({mainblock},cases{myc},{finally});")
-    out("setModuleName({modNameAsString});")
     o.register := "catchres" ++ myc
 }
 method compilematchcase(o) {
@@ -1067,7 +1062,6 @@ method compilematchcase(o) {
     }
     noteLineNumber(o.line)comment("compilematchcase")
     out("var matchres{myc} = matchCase({matchee},cases{myc});")
-    out("setModuleName({modNameAsString});")
     o.register := "matchres" ++ myc
 }
 method compileop(o) {
@@ -1231,7 +1225,6 @@ method compileimport(o) {
     }
     compileCheckThat(var_nm) called "module '{o.nameString.quoted}'"
         hasType(o.dtype) onLine (o.line)
-    out "setModuleName({modNameAsString});"
     o.register := "GraceDone"
 }
 method compilereturn(o) {
@@ -1461,7 +1454,6 @@ method outputModuleDefinition(moduleObject) {
     def generatedModuleName = formatModname(modname)
     out "function {generatedModuleName}() \{"
     increaseindent
-    out "setModuleName({modNameAsString});"
     out "importedModules[{modNameAsString}] = this;"
     def selfr = "module$" ++ emod
     moduleObject.register := selfr
