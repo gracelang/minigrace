@@ -4,10 +4,8 @@ if (!inBrowser) {  // if we are in Node.js
     var fs = require("fs");
     var child_process = require('child_process');
     global.lineNumber = 0;
-    global.moduleName = "null";
 } else {
     var lineNumber = 0;
-    var moduleName = "null";
 }
 function setLineNumber(n) {
     lineNumber = n;
@@ -16,10 +14,10 @@ function getLineNumber() {
     return lineNumber;
 }
 function setModuleName(m) {
-    moduleName = m;
+    ;
 }
 function getModuleName() {
-    return moduleName;
+    return arguments.callee.caller.definitionModule || "native code"
 }
 
 var identityHashSeed = 1001;
@@ -1986,7 +1984,6 @@ function checkBlockApply(numargs) {
         // makes a copy of arguments, without element at index 0
     var nArgs = args.length;
     setLineNumber(this.definitionLine);
-    setModuleName(this.definitionModule);
     if (nArgs !== this.numParams) {
         var plural = (this.numParams === 1) ? "" : "s";
         throw new GraceExceptionPacket(RequestErrorObject,
@@ -3091,9 +3088,8 @@ function gracecode_util() {
 
     var obj_requiredModules = Grace_allocObject(GraceObject, "requiredModules");
     var obj_init_requiredModules = function () {
-        var meth_isAlready = function(argcv) {    // method isAlready(1)
-            var var_moduleName = arguments[1];
-            setModuleName("util");
+        var meth_isAlready = function(argcv, var_moduleName) {    // method isAlready(1)
+            setLineNumber(0);
             var staticv = selfRequest(this, "static", [0]);
             var sc = callmethod(staticv, "contains(1)", [1], var_moduleName);
             if (Grace_isTrue(sc)) {
@@ -3536,7 +3532,6 @@ function handleRequestException(ex, obj, methname, method, methodArgs) {
         ex.exitStack.unshift({
             className: obj.className,
             methname: methname,
-            moduleName: moduleName,
             method: method,
             lineNumber: lineNumber,
             toString: GraceCallStackToString
@@ -3559,7 +3554,6 @@ function handleRequestException(ex, obj, methname, method, methodArgs) {
         newEx.exitStack.unshift({
             className: obj.className,
             methname: methname,
-            moduleName: "native code",
             method: method,
             lineNumber: 0,
             toString: GraceCallStackToString
@@ -3569,7 +3563,6 @@ function handleRequestException(ex, obj, methname, method, methodArgs) {
 }
 
 function request(obj, methname, ...args) {
-    var origModuleName = moduleName;
     var origLineNumber = lineNumber;
     var returnTarget = invocationCount;  // will be incremented by invoked method
     var meth
@@ -3589,7 +3582,6 @@ function request(obj, methname, ...args) {
             return handleRequestException(ex, obj, methname, meth, args);
         }
     } finally {
-        setModuleName(origModuleName);
         setLineNumber(origLineNumber);
     }
     return ret;
@@ -3598,7 +3590,6 @@ function request(obj, methname, ...args) {
 var callmethod = request;       // for backward compatibility
 
 function selfRequest(obj, methname, ...args) {
-    var origModuleName = moduleName;
     var origLineNumber = lineNumber;
     var returnTarget = invocationCount;  // will be incremented by invoked method
     var meth
@@ -3615,7 +3606,6 @@ function selfRequest(obj, methname, ...args) {
             return handleRequestException(ex, obj, methname, meth, args);
         }
     } finally {
-        setModuleName(origModuleName);
         setLineNumber(origLineNumber);
     }
     return ret;
@@ -3751,13 +3741,11 @@ function describe(obj) {
     var classString = "object";
     var shortClassString = "object";
     try {
-        var origModuleName = moduleName;    // because the asString method
-        var origLineNumber = lineNumber;    // will change them
+        var origLineNumber = lineNumber;    // because the asString method will change it
         var m = findMethod(obj, "asString");
         objString = m.call(obj, [0])._value;
     } catch (ex) {
     } finally {
-        setModuleName(origModuleName);
         setLineNumber(origLineNumber);
     }
     try {
@@ -3776,8 +3764,6 @@ function describe(obj) {
 }
 
 function tryCatch(obj, cases, finallyblock) {
-    setModuleName("try(_)catch(_)...finally(_)");
-    setLineNumber(0);
     var ret;
     try {
         return callmethod(obj, "apply", [0]);
@@ -3816,7 +3802,6 @@ function throwStackOverflowIfAppropriate(ex) {
     }
 }
 function matchCase(obj, cases) {
-    setModuleName("match()case()…");
     for (var i = 0, len = cases.length; i<len; i++) {
         var eachCase = cases[i];
         if (eachCase.guard.call(eachCase.receiver, obj)) {
@@ -3847,7 +3832,6 @@ function GraceExceptionPacket(exception, message, data) {
     this.message = message;
     this.data = data;
     this.lineNumber = lineNumber;
-    this.moduleName = moduleName;
     this.method = arguments.callee.caller;
     this.stackFrames = [];
     this.exitStack = [];
@@ -3919,15 +3903,20 @@ GraceExceptionPacket.prototype = {
             var rf = new GraceString("  requested from ");
             for (var i = this.exitStack.length - 1; i >= 0; i--) {
                 var nextFrame = this.exitStack[i];
-                mn = new GraceString(nextFrame.moduleName);
+                mn = new GraceString(nextFrame.method.definitionModule || "native code");
                 if (! Grace_isTrue(callmethod(skipable, "contains(1)", [1], mn))) {
                     Grace_errorPrint(callmethod(prefix, "++(1)", [1], new GraceString(nextFrame.toString())));
                     prefix = rf;
                 }
             }
-            if (! Grace_isTrue(callmethod(skipable, "contains(1)", [1], new GraceString(this.moduleName)))) {
-                Grace_errorPrint(callmethod(prefix, "++(1)", [1],
-                    new GraceString("line " + this.lineNumber + " of module " + this.moduleName + ".")));
+            if (! Grace_isTrue(callmethod(skipable, "contains(1)", [1], mn))) {
+                var msg
+                if (mn._value === "native code") {
+                    msg = "in native code";
+                } else {
+                    msg = "line " + this.lineNumber + " of module " + mn._value + ".";
+                }
+                Grace_errorPrint(callmethod(prefix, "++(1)", [1], new GraceString(msg)));
             }
         },
         "reraise": function exception_reraise(argcv) {
@@ -4006,7 +3995,6 @@ GraceException.prototype = {
 var importedModules = {};
 
 function do_import(modname, moduleCodeFunc) {
-    var origModuleName = moduleName;
     if (importedModules[modname]) {
         return importedModules[modname];
     }
@@ -4029,7 +4017,6 @@ function do_import(modname, moduleCodeFunc) {
                                       []);
     } finally {
         importedModules[modname] = f;
-        setModuleName(origModuleName);
     }
 }
 
@@ -4112,7 +4099,6 @@ var UninitializedVariableObject = new GraceException("UninitializedVariable", Pr
 function nullFunction() {}
 
 function traitObjectFromInto(obj, that, aliases, exclusions) {
-    setModuleName("built-in");
     if (obj.hasOwnProperty('_value')) {
         that._value = obj._value;
     }
