@@ -339,7 +339,21 @@ function string_indices(argcv) {
                       new GraceNum(1), new GraceNum(size));
 }
 
+function escapeRegExp(str) {
+    return str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');  // prefixes special chars with \
+}
+
+function escapeReplacement(str) {
+    return str.replace(/\$/g, '$$$$');  // replaces a single $ by $$
+}
+
+function failStringMethodArgCheck(desc, className, methodName) {
+    raiseClassError(desc + 'argument to "' + escapestring(this._value) +
+                     '".' + methodName + ' is not a ' + className);
+}
+
 GraceString.prototype = {
+    failArgCheck: failStringMethodArgCheck,
     methods: {
         "isMe(1)":          object_isMe,
         "≠(1)":             object_notEquals,
@@ -381,30 +395,45 @@ GraceString.prototype = {
         "replace(1)with(1)": function(argcv, what, wth) {
             var s = this._value;
             var os = "";
-            var sl = what._value.length;
-            var i;
-            while ((i = s.indexOf(what._value)) !== -1) {
-                os += s.substr(0, i);
-                os += wth._value;
-                s = s.substr(i + sl);
+            if (what.className !== "string") {
+                  this.failArgCheck('first ', "string", "replace(_)with(_)");
             }
-            os += s;
+            if (wth.className !== "string") {
+                  this.failArgCheck('second ', "string", "replace(_)with(_)");
+
+            }
+            var sl = what._value.length;
+            let pattern = new RegExp(escapeRegExp(what._value), 'gm');
+            let replacement = escapeReplacement(wth._value);
+                // a string, not a RegExp, but must escape any $ characters
+            os = s.replace(pattern, replacement);
             return new GraceString(os);
         },
         "indexOf(1)": function string_indexOf (argcv, needle) {
             var self = this._value;
+            if (needle.className !== "string") {
+                  this.failArgCheck('', "string", "indexOf(_)");
+            }
             var result = self.indexOf(needle._value);
-            if (result === -1) { return new GraceNum(0); }
             return new GraceNum(result + 1);
         },
         "indexOf(1)ifAbsent(1)": function string_indexOf_ifAbsent (argcv, needle, block0) {
             var self = this._value;
+            if (needle.className !== "string") {
+                  this.failArgCheck('first ', "string", "indexOf(_)ifAbsent(_)");
+            }
             var result = self.indexOf(needle._value);
             if (result === -1) { return callmethod(block0, "apply", [0]); }
             return new GraceNum(result + 1);
         },
         "indexOf(1)startingAt(1)": function string_indexOf_startingAt (argcv, needle, startPos) {
             var self = this._value;
+            if (needle.className !== "string") {
+                  this.failArgCheck('first ', "string", "indexOf(_)startingAt(_)");
+            }
+            if (startPos.className !== "number") {
+                  this.failArgCheck('second ', "number", "indexOf(_)startingAt(_)");
+            }
             var start = startPos._value - 1;
             var result = self.indexOf(needle._value, start);
             if (result === -1) { return new GraceNum(0); }
@@ -412,26 +441,46 @@ GraceString.prototype = {
         },
         "indexOf(1)startingAt(1)ifAbsent(1)": function string_indexOf_startingAt_ifAbsent (argcv, needle, startPos, block0) {
             var self = this._value;
+            if (needle.className !== "string") {
+                  this.failArgCheck('first ', "string", "indexOf(_)startingAt(_)ifAbsent(_)");
+            }
             var start = startPos._value - 1;
+            if (startPos.className !== "number") {
+                  this.failArgCheck('second ', "number", "indexOf(_)startingAt(_)ifAbsent(_)");
+            }
+            var start = startPos._value - 1
             var result = self.indexOf(needle._value, start);
             if (result === -1) { return callmethod(block0, "apply", [0]); }
             return new GraceNum(result + 1);
         },
         "lastIndexOf(1)": function string_lastIndexOf_ifAbsent (argcv, needle, block0) {
             var self = this._value;
+            if (needle.className !== "string") {
+                  this.failArgCheck('', "string", "indexOf(_)");
+            }
             var result = self.lastIndexOf(needle._value);
-            if (result === -1) { return new GraceNum(0); }
             return new GraceNum(result + 1);
         },
         "lastIndexOf(1)startingAt(1)": function string_lastIndexOf_startingAt (argcv, needle, startPos) {
+            if (needle.className !== "string") {
+                  this.failArgCheck('first ', "string", "indexOf(_)startingAt(_)");
+            }
+            if (startPos.className !== "number") {
+                  this.failArgCheck('second ', "number", "indexOf(_)startingAt(_)");
+            }
             var self = this._value;
             var start = startPos._value - 1;
             var result = self.lastIndexOf(needle._value, start);
-            if (result === -1) { return new GraceNum(0); }
             return new GraceNum(result + 1);
         },
         "lastIndexOf(1)startingAt(1)ifAbsent(1)": function string_lastIndexOf_startingAt_ifAbsent (argcv, needle, startPos, block0) {
             var self = this._value;
+            if (needle.className !== "string") {
+                  this.failArgCheck('first ', "string", "lastIndexOf(_)startingAt(_)ifAbsent(_)");
+            }
+            if (startPos.className !== "number") {
+                  this.failArgCheck('second ', "number", "lastIndexOf(_)startingAt(_)ifAbsent(_)");
+            }
             var start = startPos._value - 1;
             var result = self.lastIndexOf(needle._value, start);
             if (result === -1) { return callmethod(block0, "apply", [0]); }
@@ -439,18 +488,27 @@ GraceString.prototype = {
         },
         "lastIndexOf(1)ifAbsent(1)": function string_lastIndexOf (argcv, needle, block0) {
             var self = this._value;
+            if (needle.className !== "string") {
+                  this.failArgCheck('first ', "string", "lastIndexOf(_)ifAbsent(_)");
+            }
             var result = self.lastIndexOf(needle._value);
             if (result === -1) { return callmethod(block0, "apply", [0]); }
             return new GraceNum(result + 1);
         },
         "contains(1)": function string_contains(argcv, needle) {
             var self = this._value;
+            if (needle.className !== "string") {
+                  this.failArgCheck('', "string", "contains(_)");
+            }
             var result = self.indexOf(needle._value);
             if (result === -1) { return GraceFalse; }
             return GraceTrue;
         },
         "split(1)": function string_split (argcv, spliter) {
             const self = this._value;
+            if (spliter.className !== "string") {
+                  this.failArgCheck('', "string", "split(_)");
+            }
             const ary = self.split(spliter._value);
             const len = ary.length;
             for (var i = 0 ; i < len ; i++) {
@@ -464,6 +522,12 @@ GraceString.prototype = {
         },
         "substringFrom(1)to(1)": function string_substringFrom_to(argcv, from, to) {
             var s = this._value;
+            if (from.className !== "number") {
+                  this.failArgCheck('first ', "number", "substringFrom(_)to(_)");
+            }
+            if (to.className !== "number") {
+                  this.failArgCheck('second ', "number", "substringFrom(_)to(_)");
+            }
             var start = from._value;
             var stop = to._value;
             // we deliberately allow "abc".substringFrom 4 to (stop)
@@ -478,6 +542,12 @@ GraceString.prototype = {
         },
         "substringFrom(1)size(1)": function string_substringFrom_size(argcv, from, size) {
             var s = this._value;
+            if (from.className !== "number") {
+                  this.failArgCheck('first ', "number", "substringFrom(_)to(_)");
+            }
+            if (size.className !== "number") {
+                  this.failArgCheck('second ', "number", "substringFrom(_)to(_)");
+            }
             var start = from._value;
             var n = size._value;
             // we deliberatly allow "abc".substringFrom 4 size (size)
@@ -492,6 +562,9 @@ GraceString.prototype = {
         },
         "substringFrom(1)": function string_substringFrom_size(argcv, from) {
             var s = this._value;
+            if (from.className !== "number") {
+                  this.failArgCheck('', "number", "substringFrom(_)to(_)");
+            }
             var start = from._value;
             var n = s.length;
             // we deliberatly allow "abc".substringFrom 4
@@ -505,12 +578,18 @@ GraceString.prototype = {
         },
         "startsWith(1)": function string_startsWith(argcv, needle) {
             var self = this._value;
+            if (needle.className !== "string") {
+                  this.failArgCheck('', "string", "startsWith(_)");
+            }
             var n = needle._value;
             if (self.lastIndexOf(n, 0) === 0) return GraceTrue;
             return GraceFalse;
         },
         "endsWith(1)": function string_endsWith(argvc, needle) {
             var self = this._value;
+            if (needle.className !== "string") {
+                  this.failArgCheck('', "string", "endsWith(_)");
+            }
             var n = needle._value;
             var startPosition = self.length - n.length;
             if (startPosition < 1) return GraceFalse;
@@ -540,6 +619,9 @@ GraceString.prototype = {
         },
         "compare(1)": function string_compare (argcv, that) {
             var self = this._value;
+            if (that.className !== "string") {
+                  this.failArgCheck('', "string", "compare(_)");
+            }
             var other = that._value;
             if (self === other) return new GraceNum(0);
             if (self > other) return new GraceNum(+1);
@@ -547,12 +629,18 @@ GraceString.prototype = {
         },
         ">(1)": function string_greaterThan (argcv, that) {
             var self = this._value;
+            if (that.className !== "string") {
+                  this.failArgCheck('', "string", ">(_)");
+            }
             var other = that._value;
             if (self > other) return GraceTrue;
             return GraceFalse;
         },
         "<(1)": function string_lessThan (argcv, that) {
             var self = this._value;
+            if (that.className !== "string") {
+                  this.failArgCheck('', "string", "<(_)");
+            }
             var other = that._value;
             if (self < other) return GraceTrue;
             return GraceFalse;
@@ -562,7 +650,7 @@ GraceString.prototype = {
         "==(1)": function string_equal(argcv, other) {
             if (this === other)
                 return GraceTrue;
-            if (this.prototype === other.prototype &&
+            if ("string" === other.className &&
                   this._value === other._value)
                 return GraceTrue;
             return GraceFalse;
@@ -644,8 +732,7 @@ GraceString.prototype = {
             // but this simpler algorithm will usually use fewer string operations.
             var n;
             if ((num.className !== 'number') || (! Number.isInteger(n = num._value))) {
-                throw new GraceExceptionPacket(TypeErrorObject,
-                    new GraceString("argument to string *(_) must be an integer"));
+                raiseClassError("argument to string *(_) must be an integer");
             }
             var output = this._value;
             var requiredLength = output.length * n;
@@ -4089,6 +4176,14 @@ var TypeErrorObject = new GraceException("TypeError", ProgrammingErrorObject);
 var NoSuchMethodErrorObject = new GraceException("NoSuchMethod", ProgrammingErrorObject);
 var BoundsErrorObject = new GraceException("BoundsError", ProgrammingErrorObject);
 var UninitializedVariableObject = new GraceException("UninitializedVariable", ProgrammingErrorObject);
+
+function raiseException(ex, msg) {
+    throw new GraceExceptionPacket(ex, new GraceString(msg));
+}
+
+function raiseClassError(msg) {
+    raiseException(TypeErrorObject, msg)
+}
 
 //
 // Define "Grace_prelude" as a Grace object to which some methods are added here,
