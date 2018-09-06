@@ -3512,18 +3512,23 @@ function stripDollarSuffix(str) {
 }
 
 function GraceCallStackToString() {
-    var errorLine = this.lineNumber;
-    var effectiveName = canonicalMethodName(stripDollarSuffix(this.methname));
-    var errorString = effectiveName;
+    let errorLine = this.lineNumber;
+    let modName = this.method.definitionModule
+    if (!modName) {
+        modName = "native code";
+        errorLine = 0;
+    }
+    const effectiveName = canonicalMethodName(stripDollarSuffix(this.methname));
+    let errorString = effectiveName;
     if (this.className !== "module") {
         errorString = this.className + "." + effectiveName;
     }
-    if (typeof(errorLine) === "undefined" || errorLine === 0) {
-        errorString += " in ";
+    if (errorLine) {
+        errorString += " at line " + errorLine + " of " + modName;
     } else {
-        errorString += " at line " + errorLine + " of ";
+        errorString += " in " + modName;
     }
-    return errorString + this.method.definitionModule + "(= " + this.moduleName + ")";
+    return errorString;
 }
 
 function handleRequestException(ex, obj, methname, method, methodArgs) {
