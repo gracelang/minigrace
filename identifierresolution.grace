@@ -261,7 +261,9 @@ class newScopeIn(parent') kind(variety') {
             }
             resultScope
         } elseif { rcvrNode.isConstant } then {
-            universalScope  //  TODO: deine scopes for strings and numbers
+            universalScope  //  TODO: define scopes for strings and numbers
+        } elseif { rcvrNode.isSequenceConstructor } then {
+            universalScope  //  TODO: define scope for Sequences
         } else {
             ProgrammingError.raise("unexpected receiver {rcvrNode.toGrace 0} " ++
                   "on line {rcvrNode.line}")

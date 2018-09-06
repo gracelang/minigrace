@@ -249,6 +249,7 @@ class baseNode {
     method isExternal { false }
     method isFresh { false }
     method isConstant { false }
+    method isSequenceConstructor { false }
     method canInherit { false }
     method returnsObject { false }
     method isImplicit { false }
@@ -1665,6 +1666,7 @@ def arrayNode is public = object {
     inherit baseNode
     def kind is public = "array"
     var value is public := values
+    method isSequenceConstructor { true }
     method end -> Position {
         if (value.isEmpty) then {
             positionOfNext "]" after (start)
