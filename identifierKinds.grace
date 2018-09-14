@@ -1,16 +1,16 @@
 // Constants distinguishing between different kinds of identifier.
 // Defines observers for their properties.
 
-type T = interface {
+type T = EqualityObject & interface {
     isParameter -> Boolean
     isAssignable -> Boolean
     isImplicit -> Boolean
     forUsers -> Boolean
     fromParent -> Boolean
-    ==(o:T) -> Boolean
 }
 
 class kindConstant(name) {
+    use identityEquality
     method asString { name }
     method isParameter { false }
     method isAssignable { false }
@@ -18,7 +18,6 @@ class kindConstant(name) {
     method forUsers { true }
     method fromParent { false }
     method forGct { true }
-    method ==(other) { self.isMe(other) }
 }
 
 def undefined is public = kindConstant "undefined"

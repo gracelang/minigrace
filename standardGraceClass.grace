@@ -362,6 +362,7 @@ class standardGrace {
     def Singleton is public = object {
         class new {
             inherit BasicPattern.new
+            use identityEquality
             method match(other) {
                 if (self.isMe(other)) then {
                     SuccessfulMatch.new(other, [])
@@ -369,7 +370,6 @@ class standardGrace {
                     FailedMatch.new(other)
                 }
             }
-            method ==(other) { self.isMe(other) }
         }
         class named(printString) {
             inherit Singleton.new
@@ -1318,14 +1318,15 @@ class standardGrace {
 
 
     def unused = object {
+        use identityEquality
         var unused := true
         def key is public = self
         def value is public = self
         method asString { "unused" }
-        method == (other) { self.isMe(other) }
     }
 
     def removed = object {
+        use identityEquality
         var removed := true
         def key is public = self
         def value is public = self
@@ -1350,6 +1351,7 @@ class standardGrace {
 
         class ofCapacity(cap) -> Set⟦T⟧ is confidential {
             inherit traits.collection⟦T⟧
+            use equality
             var mods is readable := 0
             var inner := _prelude.primitiveArray.new(cap)
             var size is readable := 0

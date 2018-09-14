@@ -42,9 +42,9 @@ method hmaker {
     }
 }
 class testHello {
+    use identityEquality
     def x = "test"
     method z { g ; "hello" }
-    method ==(other) { isMe(other) }
 }
 var i := testHello
 var j := object {

@@ -31,6 +31,7 @@ def keyOrdering = { a, b -> a.key.compare(b.key) }
 type DeclKind = k.T
 
 class newScopeIn(parent') kind(variety') {
+    use identityEquality
     def elements is public = map.new
     def elementScopes is public = map.new
     def elementLines is public = map.new
@@ -48,7 +49,6 @@ class newScopeIn(parent') kind(variety') {
         addName "self" asA(k.selfDef)
         at "self" putScope(self)
     }
-    method == (other) { self.isMe(other) }
     method isEmpty { elements.size == 0 }
     method addName(n) {
         elements.put(n, k.methdec)
@@ -827,6 +827,7 @@ method setupContext(moduleObject) {
     preludeScope.addName "++(1)"
     preludeScope.addName "==(1)"
     preludeScope.addName "≠(1)"
+    preludeScope.addName "hash"
     preludeScope.addName "for(1)do(1)"
     preludeScope.addName "while(1)do(1)"
     preludeScope.addName "print(1)"
@@ -851,11 +852,9 @@ method setupContext(moduleObject) {
     preludeScope.addName "engine"
 
     graceObjectScope.addName "isMe(1)" asA (k.graceObjectMethod)
-    graceObjectScope.addName "≠(1)" asA (k.graceObjectMethod)
-    graceObjectScope.addName "basicAsString" asA (k.graceObjectMethod)
+    graceObjectScope.addName "myIdentityHash" asA (k.graceObjectMethod)
     graceObjectScope.addName "asString" asA (k.graceObjectMethod)
     graceObjectScope.addName "asDebugString" asA (k.graceObjectMethod)
-    graceObjectScope.addName "::(1)" asA (k.graceObjectMethod)
 
     booleanScope.addName "prefix!"
     booleanScope.addName "&&(1)"

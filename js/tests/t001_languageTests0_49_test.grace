@@ -298,8 +298,8 @@ def aGraceLangTest = object {
             deny("Hello" == "world") description "Hello = world"
             assert("Hello" == "Hello") description "Hello ≠ Hello"
             var x := object {
+                use identityEquality
                 var v := 1
-                method ==(other) { self.isMe(other) }
             }
             var y := object {
                 var v := 1
@@ -323,8 +323,8 @@ def aGraceLangTest = object {
             assert("Hello" != "world") description "Hello = world"
             deny("Hello" != "Hello") description "Hello ≠ Hello"
             var x := object {
+                use identityEquality
                 var v := 1
-                method ==(other) { self.isMe(other) }
             }
             var y := object {
                 var v := 1

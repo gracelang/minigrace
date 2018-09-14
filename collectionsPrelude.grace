@@ -262,7 +262,7 @@ class lazyConcatenation⟦T⟧(left, right) -> Enumerable⟦T⟧{
 }
 
 trait collection⟦T⟧ {
-    
+
     method asString { "a collection trait" }
     method sizeIfUnknown(action) {
         action.apply
@@ -339,6 +339,7 @@ trait enumerable⟦T⟧ {
     method ==(other) {
         isEqual (self) toCollection (other)
     }
+    method ≠ (other) { (self == other).not }
     method do(block1:Procedure1⟦T⟧) -> Done {
         def selfIterator = self.iterator
         while {selfIterator.hasNext} do {
@@ -451,6 +452,7 @@ def emptySequence is confidential = object {
             false
         }
     }
+    method ≠ (other) { (self == other).not }
     class iterator {
         method asString { "emptySequenceIterator" }
         method hasNext { false }
@@ -575,6 +577,7 @@ class sequence⟦T⟧ {
             method ==(other) {
                 isEqual (self) toCollection (other)
             }
+            method ≠ (other) { (self == other).not }
             method iterator {
                 object {
                     var idx := 1
@@ -858,6 +861,7 @@ class list⟦T⟧ {
             method ==(other) {
                 isEqual (self) toCollection (other)
             }
+            method ≠ (other) { (self == other).not }
             method iterator {
                 object {
                     def iMods = mods
@@ -921,6 +925,8 @@ def unused = object {
     def value is public = self
     method asString { "unused" }
     method == (other) { self.isMe(other) }
+    method ≠ (other) { self.isMe(other).not }
+    method hash { self.myIdentityHash }
 }
 
 def removed = object {
@@ -929,6 +935,8 @@ def removed = object {
     def value is public = self
     method asString { "removed" }
     method == (other) { self.isMe(other) }
+    method ≠ (other) { self.isMe(other).not }
+    method hash { self.myIdentityHash }
 }
 
 class set⟦T⟧ {
@@ -1187,6 +1195,7 @@ class set⟦T⟧ {
                 false
             }
         }
+        method ≠ (other) { (self == other).not }
         method copy {
             outer.withAll(self)
         }
@@ -1249,6 +1258,7 @@ def binding is public = object {
                 case {o:Binding -> (k == o.key) && (v == o.value) }
                 case {_ -> return false }
         }
+        method ≠ (other) { (self == other).not }
     }
 }
 
@@ -1615,6 +1625,7 @@ class dictionary⟦K,T⟧ {
                 return false
             }
         }
+        method ≠ (other) { (self == other).not }
 
         method copy {
             def newCopy = dictionary.empty
@@ -1743,6 +1754,7 @@ class range {
             method ==(other) {
                 isEqual (self) toCollection (other)
             }
+            method ≠ (other) { (self == other).not }
             method sorted { self }
 
             method sortedBy(c) { list.withAll(self).sortBy(c) }
@@ -1836,6 +1848,7 @@ class range {
             method ==(other) {
                 isEqual (self) toCollection (other)
             }
+            method ≠ (other) { (self == other).not }
             method sorted { self.reversed }
 
             method sortedBy(c) { list.withAll(self).sortBy(c) }

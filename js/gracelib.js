@@ -17,17 +17,7 @@ function setModuleName(m) {
     ;
 }
 function getModuleName() {
-    return arguments.callee.caller.definitionModule || "native code"
-}
-
-var identityHashSeed = 1001;
-
-function identityHash(obj) {
-    if (! obj.identityHash) {
-        obj.identityHash = new GraceNum(identityHashSeed ^ 0xdeadbeef);
-        identityHashSeed = identityHashSeed + 1;
-    }
-    return obj.identityHash;
+    return arguments.callee.caller.definitionModule || "native code" ;
 }
 
 function identifierAvailable(category, identifier) {
@@ -129,6 +119,21 @@ function object_isMe (argcv, o) {
 }
 object_isMe.confidential = true;
 
+function object_Equals (argcv, o) {
+    return Object.is(this, o) ? GraceTrue : GraceFalse;
+}
+
+var identityHashSeed = 1001;
+
+function object_identityHash(obj) {
+    if (! obj.identityHash) {
+        obj.identityHash = new GraceNum(identityHashSeed ^ 0xdeadbeef);
+        identityHashSeed = identityHashSeed + 1;
+    }
+    return obj.identityHash;
+}
+object_identityHash.confidential = true;
+
 function object_basicAsString (argcv) {
     var s = "object {";
     var firstTime = true;
@@ -171,13 +176,12 @@ function object_colonColon (argcv, other) {
 GraceObject.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
-        "≠(1)":             object_notEquals,
+        "myIdentityHash":   object_identityHash,
         "basicAsString":    object_basicAsString,
         "asString":         object_asString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator,
-        "::(1)":            object_colonColon
+        "debugIterator":    object_debugIterator
     }
 //    data: {}  The prototype should NOT have a data object — data should go in the
 //    child (non-shared) object.
@@ -201,16 +205,38 @@ function trait_asString (argcv) {
     return new GraceString(article + this.className + " trait");
 }
 
+function confidentialVersion(fun, optionalName) {
+    const newFun = Object.assign({}, fun);
+    newFun.confidential = true;
+    if (optionalName) newFun.methodName = optionalName;
+    return newFun;
+}
+
+function publicVersion(fun, optionalName) {
+    const newFun = Object.assign({}, fun);
+    if (newFun.confidential) newFun.confidential = undefined;
+    if (optionalName) newFun.methodName = optionalName;
+    return newFun;
+}
+
+function memoized(methodFun, memoCellName) {
+    return function() {
+        if (! this[memoCellName]) {
+            this[memoCellName] = methodFun.call(this);
+        }
+        return this[memoCellName];
+    }
+}
+
 GraceTrait.prototype = {
     methods: {
-        "isMe(1)":             object_isMe,
-        "≠(1)":                object_notEquals,
+        "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
         "basicAsString":    object_basicAsString,
         "asString":         trait_asString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator,
-        "::(1)":               object_colonColon
+        "debugIterator":    object_debugIterator
     }
 };
 
@@ -252,13 +278,12 @@ function emptyGraceObject(givenName, modname, line) {
     return {
         methods: {
             "isMe(1)":          object_isMe,
-            "≠(1)":             object_notEquals,
+            "myIdentityHash":   object_identityHash,
             "basicAsString":    object_basicAsString,
             "asString":         object_asString,
             "asDebugString":    object_asDebugString,
             "debugValue":       object_debugValue,
-            "debugIterator":    object_debugIterator,
-            "::(1)":            object_colonColon
+            "debugIterator":    object_debugIterator
         },
         data: {},
         className: givenName,
@@ -356,6 +381,7 @@ GraceString.prototype = {
     failArgCheck: failStringMethodArgCheck,
     methods: {
         "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debugValue":       object_debugValue,
@@ -786,6 +812,7 @@ function GraceNum(n) {
 GraceNum.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debugValue":       object_debugValue,
@@ -958,10 +985,6 @@ GraceNum.prototype = {
             var raw = self * 13;
             return new GraceNum(Math.abs(raw & raw));  // & converts to 32-bit int
         },
-        "hashcode": function num_hashcode (argcv) {
-            var raw = this._value * 13;
-            return new GraceNum(Math.abs(raw & raw));  // & converts to 32-bit int
-        },
         "inBase(1)": function(argcv, other) {
             var mine = this._value;
             var base = other._value;
@@ -1063,6 +1086,7 @@ function GracePredicatePattern(pred) {
 GracePredicatePattern.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debugValue":       object_debugValue,
@@ -1101,6 +1125,7 @@ function GraceBoolean(b) {
 GraceBoolean.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debugValue":       object_debugValue,
@@ -1205,6 +1230,7 @@ function list_indices(argcv) {
 PrimitiveGraceList.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debugValue":       object_debugValue,
@@ -1488,6 +1514,7 @@ function Lineup(jsList) {
 Lineup.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "::(1)":            object_colonColon,
@@ -1663,6 +1690,7 @@ function GracePrimitiveArray(len) {
 GracePrimitiveArray.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "::(1)":            object_colonColon,
@@ -1898,6 +1926,7 @@ function GraceType(name) {
 GraceType.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debugValue":       object_debugValue,
@@ -1994,12 +2023,11 @@ function GraceBlock(recvr, lineNum, numParams) {
 GraceBlock.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
-        "≠(1)":             object_notEquals,
+        "myIdentityHash":   object_identityHash,
         "basicAsString":    object_basicAsString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
         "debugIterator":    object_debugIterator,
-        "::(1)":            object_colonColon,
         "apply": function(argcv) {
             return this.real.call(this.receiver); },
         "apply(1)": function(argcv, a1) {
@@ -2291,12 +2319,11 @@ function GraceStringIterator(s) {
 GraceStringIterator.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
-        "≠(1)":             object_notEquals,
+        "myIdentityHash":   object_identityHash,
         "basicAsString":    object_basicAsString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
         "debugIterator":    object_debugIterator,
-        "::(1)":            object_colonColon,
         hasNext: function() {
             return ((this._index < this._max) ? GraceTrue : GraceFalse);
         },
@@ -2809,6 +2836,10 @@ function gracecode_io() {
             o.methods['iterator'] = function () { return this; };
             o.methods['isatty'] = function () { return GraceFalse;}; //tty not currently possible
             o.methods['==(1)'] = function (argcv, other) { return (this===other) ? GraceTrue : GraceFalse; };
+            o.methods['≠(1)'] = function (argcv, other) { return (this!==other) ? GraceTrue : GraceFalse; };
+            o.methods['hash'] = publicVersion(object_identityHash, 'hash');
+            o.methods['isMe(1)'] = object_isMe;
+            o.methods['myIdentityHash'] = object_identityHash;
         return o;
     };
     function checkSeekInput(className, value, method) {
@@ -3034,13 +3065,12 @@ function GraceUnicodePattern(pos, neg) {
 GraceUnicodePattern.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
-        "≠(1)":             object_notEquals,
+        "myIdentityHash":   object_identityHash,
         "basicAsString":    object_basicAsString,
         "asString":         object_asString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
         "debugIterator":    object_debugIterator,
-        "::(1)":            object_colonColon,
         'match(1)': function(argcv, o) {
             var success = false;
             var cc = o._value;
@@ -3501,13 +3531,12 @@ function GraceMirror(subj) {       // constructor function
 GraceMirror.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
-        "≠(1)":             object_notEquals,
+        "myIdentityHash":   object_identityHash,
         "basicAsString":    object_basicAsString,
         "asString":         object_asString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
         "debugIterator":    object_debugIterator,
-        "::(1)":            object_colonColon,
         methods: function mirror_methods(argcv) {
             var meths = [];
             var current = this.subject;
@@ -3567,7 +3596,7 @@ function gracecode_mirrors() {
 }
 
 if (typeof gctCache !== "undefined")
-    gctCache['mirrors'] = "path:\n mirrors\nclasses:\npublic:\n Mirror\n MethodMirror\n ArgList\n loadDynamicModule(1)\n reflect(1)\nconfidential:\nfresh-methods:\n reflect(1)\nfresh:reflect(1):\n basicAsString\n asDebugString\n ::\n methodNames\n ==(1)\n getMethod(1)\n methods\n ≠(1)\n self\n asString\nmodules:\n";
+    gctCache['mirrors'] = "path:\n mirrors\nclasses:\npublic:\n Mirror\n MethodMirror\n ArgList\n loadDynamicModule(1)\n reflect(1)\nconfidential:\nfresh-methods:\n reflect(1)\nfresh:reflect(1):\n basicAsString\n asDebugString\n ::\n methodNames\n getMethod(1)\n methods\n self\n asString\nmodules:\n";
 
 function safeJsString (obj) {
     // Don't use callmethod!  This function is called from within callmethod.
@@ -3928,12 +3957,11 @@ function GraceExceptionPacket(exception, message, data) {
 GraceExceptionPacket.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
-        "≠(1)":             object_notEquals,
+        "myIdentityHash":   object_identityHash,
         "basicAsString":    object_basicAsString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
         "debugIterator":    object_debugIterator,
-        "::(1)":            object_colonColon,
         "data": function(argcv) {
             return this.data;
         },
@@ -4020,6 +4048,7 @@ function GraceException(name, parent) {
 GraceException.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "asDebugString":    object_asDebugString,

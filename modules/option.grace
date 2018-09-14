@@ -32,6 +32,7 @@ trait optionAsCollection⟦T⟧ {
 }
 class full⟦T⟧(contents:T) → Option {
     use optionAsCollection⟦T⟧
+    use equality
     def value is public = contents
     method valueIfEmpty(_) { value }
     method asString { "option.full({value})" }
@@ -105,6 +106,7 @@ class full⟦T⟧(contents:T) → Option {
 }
 class empty⟦T⟧ → Option {
     use optionAsCollection⟦T⟧
+    use equality
     method asString { "option.empty" }
     method value → T { ValueError.raise "{self} has no value." }
     method valueIfEmpty(eValue:Block0) { eValue.apply }

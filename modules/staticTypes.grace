@@ -334,9 +334,9 @@ def objectType = object {
     class fromMethods (methods': List⟦MethodType⟧)
             withName (name: String) -> ObjectType {
         inherit fromMethods (methods')
+        use identityEquality
 
         method asString is override { name }
-        method ==(other) { self.isMe(other) }
     }
 
     method fromDType (dtype) -> ObjectType {
@@ -434,6 +434,7 @@ def objectType = object {
     }
 
     def unknown:ObjectType is public = object {
+        use identityEquality
         def methods is public = []
         method getMethod (_: String) -> noSuchMethod { noSuchMethod }
         def isUnknown: Boolean is public = true
@@ -441,7 +442,6 @@ def objectType = object {
         method |(_: ObjectType) -> unknown { unknown }
         method &(_: ObjectType) -> unknown { unknown }
         def asString: String is public, override = "Unknown"
-        method ==(other) { self.isMe(other) }
     }
 
     method blockTaking (params: List⟦Parameter⟧)

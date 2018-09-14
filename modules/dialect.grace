@@ -528,22 +528,22 @@ def astVisitor = object {
 
 def aTypeAnnotation is confidential = object {
     class fromNode(node) -> TypeAnnotation {
+        use identityEquality
         def kind is public = "dtype"
         def value is public = node
         def line is public = node.line
         def linePos is public = node.linePos
-        method == (o) { self.isMe(o) }
     }
 }
 
 def aParameter is confidential = object {
     class fromNode(node) -> Parameter {
+        use identityEquality
         def kind is public = "parameter"
         def value is public = node.value
         def dtype is public = node.dtype
         def line is public = node.line
         def linePos is public = node.linePos
-        method == (o) { self.isMe(o) }
     }
 }
 

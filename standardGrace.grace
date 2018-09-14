@@ -187,6 +187,7 @@ def OrPattern is public = object {
 def Singleton is public = object {
     class new {
         inherit BasicPattern.new
+        use identityEquality
         method match(other) {
             if (self.isMe(other)) then {
                 SuccessfulMatch.new(other, [])
@@ -195,7 +196,6 @@ def Singleton is public = object {
             }
         }
         method matches(other) { self.isMe(other) }
-        method ==(other) { self.isMe(other) }
     }
     class named(printString) {
         inherit Singleton.new
@@ -208,6 +208,7 @@ method singleton { Singleton.new }
 method singleton (nameString) { Singleton.named(nameString) }
 
 trait BaseType {
+    use identityEquality
     method &(o) {
         TypeIntersection.new(self, o)
     }
@@ -222,9 +223,6 @@ trait BaseType {
     }
     method asString {
         "type {self.name}"
-    }
-    method ==(o) {
-        isMe(o)
     }
     method setName(nu) is confidential {
         self.name:=(nu)
@@ -403,13 +401,8 @@ type Point =  {
     // the hash of self
 }
 
-class alwaysEqual {     // a trait
-    method == (other) {
-        self.isMe(other)
-    }
-}
-
 class point2Dx (x') y (y') {
+    use equality
     def x is readable = x'
     def y is readable = y'
     method asString { "({x}@{y})" }
@@ -478,6 +471,18 @@ import "collectionsPrelude" as coll
 // not fully implemented.  So instead we create an alias:
 def collections is public = coll
 
+trait equality {
+    method == (other) is required { required }
+    method hash is required { required }    // should obey invariant (a == b) => (a.hash == b.hash)
+    method ≠ (other)  { (self == other).not }
+    method :: (obj) { binding.key (self) value (obj) }
+}
+
+trait identityEquality {
+    use equality
+    method == (other) { self.isMe(other) }
+    method hash { self.myIdentityHash }
+}
 
 // New names for Blocks: FunctionN == BlockN
 
@@ -499,6 +504,13 @@ type Function3⟦ArgT1, ArgT2, ArgT3, ResultT⟧  = interface {
     apply(a1:ArgT1, a2:ArgT2, a3:ArgT3) -> ResultT
     //  matches(a1:Object, a2:Object, a3:Object) -> Boolean
         // answers true if a1 <: ArgT1 and a2 <: ArgT2 and a3 :< ArgT3
+}
+
+type EqualityObject = Object & interface {
+    ::(o:Object) -> Binding
+    ==(other:Object) -> Boolean
+    ≠(other:Object) -> Boolean
+    hash -> Number
 }
 
 // for backward compatibility

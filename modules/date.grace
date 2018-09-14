@@ -37,6 +37,8 @@ type Date = interface {
 
 trait basic {
     // all in local time
+
+    use equality
     method year -> Number {
         // the year, e.g., 2016
         native "js" code "return new GraceNum(this.data.value.getFullYear())"

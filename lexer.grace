@@ -159,8 +159,8 @@ class token {
     def linePos is public = startPosition
 
     def null = object {
+        use identityEquality
         method asString { "⏚" }
-        method == (other) { self.isMe (other) }
         method isHeader { true }
     }
     var next is public := null
@@ -380,11 +380,11 @@ class eofToken {
 }
 class sofToken {
     inherit token
+    use identityEquality
     def kind is public = "sof"
     def value is public = "⏚"
     def size is public = 0
     method isHeader { true }
-    method == (other) { self.isMe (other) }
 }
 
 method advanceTo(s) { state := s }

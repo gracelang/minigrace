@@ -28,6 +28,7 @@ type Range = interface {
     end -> Position
 }
 class line (l:Number) column (c:Number) -> Position {
+    use equality
     def line is public = l
     def column is public = c
     method > (other:Position) -> Boolean {
@@ -52,6 +53,7 @@ class line (l:Number) column (c:Number) -> Position {
     method asString { "{line}:{column}" }
 }
 class start (s:Position) end (e:Position) -> Range {
+    use equality
     def start is public = s
     def end is public = e
     method asString {
@@ -191,6 +193,7 @@ type SymbolTable = Unknown
 
 class baseNode {
     // the superclass of all AST nodes
+    use identityEquality
     var register is public := ""
     var line is public := util.linenum
     var linePos is public := util.linepos
@@ -218,7 +221,6 @@ class baseNode {
     method end -> Position { line (line) column (linePos + self.value.size - 1) }
     method range { start (start) end (end) }
     method kind { abstract }
-    method ==(other) { self.isMe(other) }       // for usesAsType
     method isAppliedOccurenceOfIdentifier { false }
     method isMatchingBlock { false }
     method isFieldDec { false }
@@ -340,7 +342,6 @@ def implicit is public = object {
     method isImplicit { true }
     method toGrace(depth) { "implicit" }
     method asString { "the implicit receiver" }
-    method == (other) { self.isMe(other) }
     method map(blk) ancestors(ac) { self }
     method accept(visitor) from (ac) {
         visitor.visitImplicit(self) up (ac)
@@ -360,6 +361,7 @@ def nullNode is public = object {
 }
 
 class fakeSymbolTable is public {
+    use identityEquality
     var node is public    // will be initialized when this node
       // is placed in an AstNode using scope:=(_).
       // Can't make it nullNode now, because nullNode
@@ -2851,6 +2853,7 @@ type AliasPair = {
 }
 
 class aliasNew(n) old(o) {
+    use equality
     method newName {newSignature.asIdentifier}
     method oldName {oldSignature.asIdentifier}
     def newSignature is public = n

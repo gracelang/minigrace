@@ -3,6 +3,8 @@ import "io" as io
 class null {
     // creates a unixFilePath with empty components
 
+    use equality
+
     var dir := ""
     // the directory part; "" if in current directory
 
@@ -82,6 +84,10 @@ class null {
         if (base != other.base) then { return false }
         if (extension != other.extension) then { return false }
         return true
+    }
+
+    method hash {
+        hashCombine(hashCombine(directory.hash, base.hash), extension.hash)
     }
 }
 

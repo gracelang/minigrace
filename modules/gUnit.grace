@@ -349,6 +349,7 @@ class testResult {
 }
 
 class testRecordFor(testName)message(testMsg) {
+    use equality
     method name {testName}
     method message {testMsg}
     method asString {"{name}: {testMsg}"}
