@@ -59,7 +59,7 @@ all: minigrace.env ideBuild
 
 alltest: test module.test self.test
 
-.PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects dev-ide dev-ideDeploy echo ide ideBuild ideDeploy fullclean install j1-minigrace j2-minigrace just-minigrace minigrace.env pull-web-editor pull-objectdraw selfhost-stats self.test samples sample-% test test.compile uninstall
+.PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects dev-ide dev-ideDeploy echo ide ideBuild ideDeploy fullclean install j1-minigrace j2-minigrace just-minigrace minigrace.env pull-web-editor pull-objectdraw self.test samples sample-% test test.compile uninstall
 
 # clear out the default rules: produces far less --debug output
 .SUFFIXES:
