@@ -23,15 +23,15 @@ testSuiteNamed "option tests" with {
         assert true
     }
     test "empty ifFull … ifEmpty" by {
-        e.ifFull { failBecause "empty.ifFull executes the full block" }
+        e.ifFull { _ → failBecause "empty.ifFull executes the full block" }
           ifEmpty { assert true }
     }
     test "empty ifEmpty … ifFull" by {
         e.ifEmpty { assert true }
-          ifFull { failBecause "empty.ifEmpty executes the full block" }
+          ifFull { _ → failBecause "empty.ifEmpty executes the full block" }
     }
     test "empty ifFull" by {
-        e.ifFull { failBecause "empty.ifFull executes the full block" }
+        e.ifFull { _ → failBecause "empty.ifFull executes the full block" }
         assert true
     }
     test "empty ifEmpty" by {
@@ -92,7 +92,7 @@ testSuiteNamed "sequence tests" with {
         assert (evens) hasType (Sequence⟦Number⟧)
     }
     test "testFiltered Option TypeEnumerable" by {
-        def witness =  option.full⟦Number⟧ 3.filter{x -> true}
+        def witness =  option.full⟦Number⟧ 3.filter{x → true}
         assert (witness) hasType (Enumerable⟦Number⟧)
     }
     test "test Option not type with wombat" by {
@@ -104,7 +104,7 @@ testSuiteNamed "sequence tests" with {
         assert(evens.size) shouldBe 1
     }
     test "test Option EmptyDo" by {
-        empty.do {each -> failBecause "empty empty.do did with {each}"}
+        empty.do {each → failBecause "empty empty.do did with {each}"}
         assert(true)
     }
 
@@ -131,7 +131,7 @@ testSuiteNamed "sequence tests" with {
     }
 
     test "test Option evens do" by {
-        evens.do { each ->
+        evens.do { each →
             assert (each) shouldBe 2
         }
     }
@@ -174,7 +174,7 @@ testSuiteNamed "sequence tests" with {
     }
 
     test "test Option Fold" by {
-        assert(option.full 4.fold {a, each -> a + each} startingWith 0) shouldBe 4
+        assert(option.full 4.fold {a, each → a + each} startingWith 0) shouldBe 4
     }
     
     test "test Option doSeparatedBy empty" by {
@@ -186,7 +186,7 @@ testSuiteNamed "sequence tests" with {
 
     test "test Option doSeparatedBy full" by {
         var f := "nothing"
-        option.full(1).do { each -> assert(each)shouldBe(1) }
+        option.full(1).do { each → assert(each)shouldBe(1) }
             separatedBy { f := "kilroy" }
         assert (f) shouldBe ("nothing")
     }
@@ -194,7 +194,7 @@ testSuiteNamed "sequence tests" with {
     test "test Option KeysAndValuesDo" by {
         def accum = emptyDictionary
         var e := 1
-        evens.keysAndValuesDo { k, v ->
+        evens.keysAndValuesDo { k, v →
             accum.at(k)put(v)
             assert (accum.size) shouldBe (e)
             e := e + 1
@@ -220,34 +220,34 @@ testSuiteNamed "sequence tests" with {
     }
 
     test "test Option Map Empty" by {
-        assert (empty.map{x -> x * x}.into (emptyList)) shouldBe (emptyList)
+        assert (empty.map{x → x * x}.into (emptyList)) shouldBe (emptyList)
     }
 
     test "test Option Map Evens" by {
-        assert(evens.map{x -> x + 1}.into (emptyList)) shouldBe (list [3])
+        assert(evens.map{x → x + 1}.into (emptyList)) shouldBe (list [3])
     }
 
     test "test Option Filter Evens" by {
-        deny(evens.filter{x -> false}.iterator.hasNext)
+        deny(evens.filter{x → false}.iterator.hasNext)
     }
     
     test "test Option Filter Empty" by {
-        deny(empty.filter{x -> false}.iterator.hasNext)
-        deny(empty.filter{x -> true}.iterator.hasNext)
+        deny(empty.filter{x → false}.iterator.hasNext)
+        deny(empty.filter{x → true}.iterator.hasNext)
     }
 
     test "test Option Filter Even" by {
-        assert(evens.filter{x -> (x % 2) == 0}.into (emptyList))
+        assert(evens.filter{x → (x % 2) == 0}.into (emptyList))
             shouldBe (list [2])
     }
 
     test "test even Filter Odd" by {
-        assert(evens.filter{x -> (x % 2) == 1}.into (emptyList))
+        assert(evens.filter{x → (x % 2) == 1}.into (emptyList))
             shouldBe (list [])
     }
 
     test "test Option MapAndFilter" by {
-        assert(evens.map{x -> x + 10}.filter{x -> (x % 2) == 0}.into (emptyList))
+        assert(evens.map{x → x + 10}.filter{x → (x % 2) == 0}.into (emptyList))
             shouldBe (list [12])
     }
     test "test Option ToSetDuplicates" by {
@@ -270,8 +270,8 @@ testSuiteNamed "sequence tests" with {
             (dictionary [1::2])
     }
     test "test Option LazyConcat" by {
-        def s0 = evens.filter{x -> (x % 2) == 1}
-        def s2 = evens.filter{x -> true}
+        def s0 = evens.filter{x → (x % 2) == 1}
+        def s2 = evens.filter{x → true}
         assert(s0 ++ s2) shouldBe ( option.full⟦Number⟧ 2)
     }
     test "test Option ExplicitLazyConcat" by {

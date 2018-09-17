@@ -1,13 +1,13 @@
 type Option⟦T⟧ = Collection⟦T⟧ & interface {
     value → T
-    valueIfEmpty⟦U⟧ (eValue:Block0⟦U⟧) → T | U
+    valueIfEmpty⟦U⟧ (eValue:Function0⟦U⟧) → T | U
     iterator → Iterator
     isFull → Boolean
     isEmpty → Boolean
-    ifFull⟦U⟧ (fAction:Block1⟦T, U⟧) ifEmpty (eAction:Block0⟦U⟧) → U
-    ifEmpty⟦U⟧ (eAction:Block0⟦U⟧) ifFull (fAction:Block1⟦T, U⟧) → U
-    ifFull (fAction:Block1⟦T, Done⟧) → Done
-    ifEmpty (eAction:Block0⟦Done⟧) → Done
+    ifFull⟦U⟧ (fAction:Function1⟦T, U⟧) ifEmpty (eAction:Function0⟦U⟧) → U
+    ifEmpty⟦U⟧ (eAction:Function0⟦U⟧) ifFull (fAction:Function1⟦T, U⟧) → U
+    ifFull (fAction:Function1⟦T, Done⟧) → Done
+    ifEmpty (eAction:Function0⟦Done⟧) → Done
 }
 
 def ValueError is public = ProgrammingError.refine "ValueError"
@@ -37,8 +37,8 @@ class full⟦T⟧(contents:T) → Option {
     method valueIfEmpty(_) { value }
     method asString { "option.full({value})" }
     method first { value }
-    method do(action:Block1⟦T, Done⟧) → Done { action.apply(value) }
-    method keysAndValuesDo(action:Block2⟦Number,T,Object⟧) -> Done { action.apply(1, value) }
+    method do(action:Function1⟦T, Done⟧) → Done { action.apply(value) }
+    method keysAndValuesDo(action:Function2⟦Number,T,Object⟧) -> Done { action.apply(1, value) }
     method contains(v) { value == v }
     method indices { sequence [1] }
     method keys { sequence [1] }
@@ -71,18 +71,18 @@ class full⟦T⟧(contents:T) → Option {
         }
     }
     method isFull → Boolean { true }
-    method ifFull⟦U⟧ (fAction:Block1⟦T, U⟧) ifEmpty (eAction:Block0⟦U⟧) → U {
+    method ifFull⟦U⟧ (fAction:Function1⟦T, U⟧) ifEmpty (eAction:Function0⟦U⟧) → U {
         fAction.apply(value)
     }
-    method ifEmpty⟦U⟧ (eAction:Block0⟦U⟧) ifFull (fAction:Block1⟦T, U⟧) → U {
+    method ifEmpty⟦U⟧ (eAction:Function0⟦U⟧) ifFull (fAction:Function1⟦T, U⟧) → U {
         fAction.apply(value)
     }
-    method ifFull (fAction:Block1⟦T, Done⟧) → Done {
+    method ifFull (fAction:Function1⟦T, Done⟧) → Done {
         fAction.apply(value)
         done
     }
-    method ifEmpty (eAction:Block0⟦Done⟧) → Done { done }
-    method indexOf⟦W⟧ (sought:T) ifAbsent (action:Block0⟦W⟧) -> W { 
+    method ifEmpty (eAction:Function0⟦Done⟧) → Done { done }
+    method indexOf⟦W⟧ (sought:T) ifAbsent (action:Function0⟦W⟧) -> W { 
         if (value == sought) then { 1 }
             else { action.apply }
     }
@@ -93,13 +93,13 @@ class full⟦T⟧(contents:T) → Option {
     method ++(other: Collection⟦T⟧) -> Collection⟦T⟧ { 
         collections.lazyConcatenation(self, other)
     }
-    method fold(binaryFunction:Block2⟦T, T, T⟧) startingWith(initial:T) -> T {
+    method fold(binaryFunction:Function2⟦T, T, T⟧) startingWith(initial:T) -> T {
         binaryFunction.apply(initial, value)
     }
-    method map⟦U⟧(function:Block1⟦T, U⟧) -> Option⟦U⟧ {
+    method map⟦U⟧(function:Function1⟦T, U⟧) -> Option⟦U⟧ {
         full(function.apply(value))
     }
-    method filter(condition:Block1⟦T,Boolean⟧) -> Collection⟦T⟧ {
+    method filter(condition:Function1⟦T,Boolean⟧) -> Collection⟦T⟧ {
         if (condition.apply(value)) then { self } else { empty⟦T⟧ }
     }
     method asDictionary { dictionary [1::value] }
@@ -109,10 +109,10 @@ class empty⟦T⟧ → Option {
     use equality
     method asString { "option.empty" }
     method value → T { ValueError.raise "{self} has no value." }
-    method valueIfEmpty(eValue:Block0) { eValue.apply }
+    method valueIfEmpty(eValue:Function0) { eValue.apply }
     method first { BoundsError.raise "attemp to use first on {self}." }
-    method do(action:Block1⟦T, Done⟧) → Done { done }
-    method keysAndValuesDo(action:Block2⟦Number,T,Object⟧) -> Done { done }
+    method do(action:Function1⟦T, Done⟧) → Done { done }
+    method keysAndValuesDo(action:Function2⟦Number,T,Object⟧) -> Done { done }
     method contains(_) { false }
     method indices { emptySequence }
     method keys { emptySequence }
@@ -134,24 +134,24 @@ class empty⟦T⟧ → Option {
         BoundsError.raise "attemp to use index {ix} on {self}."
     } 
     method isFull → Boolean { false }
-    method ifFull⟦U⟧ (fAction:Block1⟦T, U⟧) ifEmpty (eAction:Block0⟦U⟧) → U {
+    method ifFull⟦U⟧ (fAction:Function1⟦T, U⟧) ifEmpty (eAction:Function0⟦U⟧) → U {
         eAction.apply
     }
-    method ifEmpty⟦U⟧ (eAction:Block0⟦U⟧) ifFull (fAction:Block1⟦T, U⟧) → U {
+    method ifEmpty⟦U⟧ (eAction:Function0⟦U⟧) ifFull (fAction:Function1⟦T, U⟧) → U {
         eAction.apply
     }
-    method ifFull (fAction:Block1⟦T, Done⟧) → Done { done }
-    method ifEmpty (eAction:Block0⟦Done⟧) → Done {
+    method ifFull (fAction:Function1⟦T, Done⟧) → Done { done }
+    method ifEmpty (eAction:Function0⟦Done⟧) → Done {
         eAction.apply
         done
     }
-    method indexOf⟦W⟧ (elem:T) ifAbsent (action:Block0⟦W⟧) -> W { action.apply }
+    method indexOf⟦W⟧ (elem:T) ifAbsent (action:Function0⟦W⟧) -> W { action.apply }
     method indexOf(sought:T) -> Number { NoSuchObject.raise "collection does not contain {sought}" }
     method ++(other: Collection⟦T⟧) -> Collection⟦T⟧ { other }
-    method fold (binaryFunction:Block2⟦T, T, T⟧) startingWith(initial:T) -> T {
+    method fold (binaryFunction:Function2⟦T, T, T⟧) startingWith(initial:T) -> T {
         initial
     }
-    method map⟦U⟧ (function:Block1⟦T, U⟧) -> Option⟦U⟧ { empty⟦U⟧ }
-    method filter (condition:Block1⟦T,Boolean⟧) -> Collection⟦T⟧ { self }
+    method map⟦U⟧ (function:Function1⟦T, U⟧) -> Option⟦U⟧ { empty⟦U⟧ }
+    method filter (condition:Function1⟦T,Boolean⟧) -> Collection⟦T⟧ { self }
     method asDictionary { emptyDictionary }
 }
