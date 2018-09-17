@@ -3,6 +3,7 @@ import "gUnit" as gu
 inherit prelude.methods
 
 def MinitestError = prelude.ProgrammingError.refine "MinitestError"
+type Block = prelude.Procedure0
 
 def nullSuite = prelude.Singleton.named "nullSuite"
 def nullBlock = prelude.Singleton.named "nullBlock"

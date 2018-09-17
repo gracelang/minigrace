@@ -15,8 +15,8 @@ type Assertion = {
     assert(s1:Object) shouldBe(s2:Object) -> Done
     assert(s1:Object) shouldntBe(s2:Object) -> Done
     assert(n1:Number) shouldEqual(n2:Number) within(epsilon:Number) -> Done
-    assert(b:Block) shouldRaise(desireed:ExceptionKind) -> Done
-    assert(b:Block) shouldntRaise(undesired:ExceptionKind) -> Done
+    assert(b:Procedure0) shouldRaise(desireed:ExceptionKind) -> Done
+    assert(b:Procedure0) shouldntRaise(undesired:ExceptionKind) -> Done
     assert(s:Object) hasType(t:Type) -> Done
     failBecause(Message:String) -> Done
 }
@@ -231,15 +231,15 @@ class testCaseNamed(name') -> TestCase {
         def ex = exceptionPacket.exception
         def msg = exceptionPacket.message
         def lineNr = exceptionPacket.lineNumber
-        print "{ex} on line {lineNr}: {msg}"
+        def modName = exceptionPacket.moduleName
+        print "{ex} on line {lineNr} of {modName}: {msg}"
         def bt = exceptionPacket.backtrace
         while {bt.size > 0} do {
             def frameDescription = bt.pop
-            print("  called from " ++ frameDescription)
+            print("  requested from " ++ frameDescription)
             if (frameDescription.contains(testName)) then { return }
-            if (frameDescription.contains "test(_)by(_)")
-                    then {  
-                // this is for minitest, where the name won't be on the stack
+            if (frameDescription.contains "test(_)by(_)") then {  
+                // this is for minitest, where testName won't be on the stack
                 return
             }
         }

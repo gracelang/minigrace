@@ -448,7 +448,7 @@ method compileblock(o) {
     }
 
     out "{myId}.guard = {compileGuard(o, paramList)};"
-    out "{myId}.real = function({paramList}) \{"
+    out "{myId}.real = function {myId}({paramList}) \{"
     increaseindent
     priorLineEmitted := 0
     noteLineNumber (o.line) comment ("compileBlock")
@@ -458,7 +458,21 @@ method compileblock(o) {
     }
     if ("never returns" ≠ ret) then { out("return " ++ ret ++ ";") }
     decreaseindent
-    out("\};")
+    out "\};"
+    def applyMeth = uidWithPrefix "applyMeth"
+    def applyMethName = if (nParams == 0) then { "apply" } else { "apply({nParams})" }
+    if (nParams == 0) then {
+        out "let {applyMeth} = function apply (argcv) \{"
+        out "    return this.real.apply(this.receiver);"
+        out "\};"
+    } else {
+        out "let {applyMeth} = function apply_{nParams} (argcv, ...args) \{"
+        out "    checkBlockArgs.apply(this, args);"
+        out "    return this.real.apply(this.receiver, args);"
+        out "\};"
+    }
+    compileMetadata(o, applyMeth, applyMethName)
+    out "{myId}.methods['{applyMethName}'] = {applyMeth};"
     o.register := myId
     restoreInitializedVars(oldInitializedVars)
     inBlock := origInBlock
@@ -527,13 +541,6 @@ method compiletypeliteral(o) in (obj) {
     }
     o.register := reg
     reg
-}
-method paramCounts(o) {
-    def result = [ ]
-    o.signature.do { part ->
-        result.push(part.params.size)
-    }
-    result
 }
 method paramNames(o) {
     def result = [ ]
@@ -712,9 +719,11 @@ method stringList(l) {
 
 method compileMetadata(o, funcName, name) {
     out "{funcName}.methodName = \"{name}\";"
-    out "{funcName}.paramCounts = {paramCounts(o)};"
-    out "{funcName}.paramNames = {stringList(paramNames(o))};"
-    out "{funcName}.typeParamNames = {stringList(typeParamNames(o))};"
+    out "{funcName}.paramCounts = {o.parameterCounts};"
+    out "{funcName}.paramNames = {stringList(o.parameterNames)};"
+    if (o.hasTypeParams) then {
+        out "{funcName}.typeParamNames = {stringList(o.typeParameterNames)};"
+    }
     out "{funcName}.definitionLine = {o.line};"
     out "{funcName}.definitionModule = {modNameAsString};"
 }
@@ -1432,7 +1441,6 @@ method initializeCodeGenerator(moduleObject) {
     topLevelTypes.add "String"
     topLevelTypes.add "Number"
     topLevelTypes.add "Boolean"
-    topLevelTypes.add "Block"
     topLevelTypes.add "Done"
     topLevelTypes.add "Type"
     topLevelTypes.add "Unknown"

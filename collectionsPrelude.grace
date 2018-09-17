@@ -31,7 +31,7 @@ type Procedure0 = Function0⟦Done⟧
     // Function with no arguments and no result
 type Procedure1⟦ArgT1⟧ = Function1⟦ArgT1, Done⟧
     // Function with 1 argument of type ArgT1, and no result
-type Procedure2⟦ArgT1, ArgT2⟧ = Function1⟦ArgT1, ArgT2, Done⟧
+type Procedure2⟦ArgT1, ArgT2⟧ = Function2⟦ArgT1, ArgT2, Done⟧
     // Function with 2 argument of types ArgT1, and ArgT2, and no result
 type Predicate1⟦ArgT1⟧ = Function1⟦ArgT1, Boolean⟧
     // Function with 1 argument of type ArgT1, returning Boolean

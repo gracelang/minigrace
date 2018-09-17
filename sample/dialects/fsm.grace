@@ -1,6 +1,6 @@
 var current is public, readable := false
 
-method state(b : Block) is public {
+method state(b : Procedure0) is public {
     def st = object {
         method do is public {
             b.apply

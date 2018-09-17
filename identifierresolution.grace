@@ -808,7 +808,6 @@ method setupContext(moduleObject) {
     builtInsScope.addName "String" asA(k.typedec)
     builtInsScope.addName "Number" asA(k.typedec)
     builtInsScope.addName "Boolean" asA(k.typedec)
-    builtInsScope.addName "Block" asA(k.typedec)
     builtInsScope.addName "Done" asA(k.typedec)
     builtInsScope.addName "done" asA(k.defdec)
     builtInsScope.addName "true"

@@ -1,7 +1,7 @@
 def InvariantFailure = ProgrammingError.refine "InvariantFailure"
 def IllegalArguments = ProgrammingError.refine "IllegalArguments"
 
-type Predicate = { apply -> Boolean } 
+type Predicate = interface { apply -> Boolean }
 
 method assert( condition : Predicate ) {
     if (!condition.apply) then { InvariantFailure.raise }
@@ -12,7 +12,7 @@ method assume( condition : Predicate ) {
 }
 
 method require (precondition:Predicate)
-       do (body:Block)
+       do (body:Procedure0)
        ensure (postcondition:Predicate) {
     print "RDE"
     if (!precondition.apply) then {
@@ -64,10 +64,10 @@ method while(c)invariant(inv)do(blk) {
 }
 
 
-method loop (body : Block) 
-       invariant (invariant : Block)
-       until (condition : Block) 
-       variant (variant :Block) { 
+method loop (body : Procedure0)
+       invariant (invariant : Procedure0)
+       until (condition : Procedure0) 
+       variant (variant :Procedure0) { 
 
     if (!invariant.apply) then {
         InvariantFailure.raise "loop invariant failed before loop"

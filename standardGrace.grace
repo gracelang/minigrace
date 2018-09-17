@@ -513,12 +513,6 @@ type EqualityObject = Object & interface {
     hash -> Number
 }
 
-// for backward compatibility
-
-type Block0⟦R⟧ = Function0⟦R⟧
-type Block1⟦T,R⟧ = Function1⟦T,R⟧
-type Block2⟦S,T,R⟧ = Function2⟦S,T,R⟧
-
 // Procedures are fuctions that have no result
 
 type Procedure0 = Function0⟦Done⟧

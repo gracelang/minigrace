@@ -419,7 +419,7 @@ def objectType = object {
 
         match (apply) case { (noSuchMethod) ->
             TypeError.raise ("the expression `{block.toGrace (0)}` of " ++
-                "type '{bType}' does not satisfy the type 'Block'") with (block)
+                "type '{bType}' does not satisfy the type 'Procedure0'") with (block)
         } case { meth: MethodType ->
             return meth.returnType
         } case { _ -> }
@@ -449,7 +449,7 @@ def objectType = object {
         def signature = [mixPartNamed "apply" parameters (params)]
         def meths = [aMethodType.signature (signature) returnType (rType)]
 
-        fromMethods (meths) withName "Block"
+        fromMethods (meths) withName "Procedure0"
     }
 
     method blockReturning (rType: ObjectType) -> ObjectType {

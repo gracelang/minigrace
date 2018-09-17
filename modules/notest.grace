@@ -19,9 +19,9 @@ method assert(s1:Object) shouldntBe (s2:Object) { }
 
 method assert(n1:Number) shouldEqual (n2:Number) within (epsilon) { }
 
-method assert(b:Block) shouldRaise (desired) { }
+method assert(b:Procedure0) shouldRaise (desired) { }
 
-method assert(b:Block) shouldntRaise (undesired) { }
+method assert(b:Procedure0) shouldntRaise (undesired) { }
 
 method assert(s:Object) hasType (desired:Type) { }
 

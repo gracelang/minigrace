@@ -490,6 +490,12 @@ def blockNode is public = object {
     method parametersDo(b) {
         params.do(b)
     }
+    method parameterCounts { [ params.size ] }
+    method parameterNames {
+        list.withAll(params.map { each -> each.nameString })
+    }
+    method typeParameterNames { list.empty }
+    method hasTypeParams { false }
     method end -> Position {
         if (body.size > 0) then { return body.last.end }
         if (params.isEmpty) then {
@@ -1012,6 +1018,30 @@ def methodNode is public = object {
             signature.do { part ->
                 part.params.do { each -> b.apply(each) }
             }
+        }
+        method parameterCounts {
+            def result = [ ]
+            signature.do { part ->
+                result.push(part.params.size)
+            }
+            result
+        }
+        method parameterNames {
+            def result = [ ]
+            signature.do { part ->
+                part.params.do { param ->
+                    result.push(param.nameString)
+                }
+            }
+            result
+        }
+        method typeParameterNames {
+            if (hasTypeParams.not) then { return [ ] }
+            def result = [ ]
+            signature.first.typeParams.do { each ->
+                result.push(each.nameString)
+            }
+            result
         }
         method endPos {
             def lastPart = signature.last

@@ -1,7 +1,9 @@
 import "io" as io
 
-class null {
-    // creates a unixFilePath with empty components
+class filePath {
+    // creates a unixFilePath with empty components.
+    // Why is this not called null?  Because that name emits confusing error
+    // messages.  Instead, null redirects to this method.
 
     use equality
 
@@ -71,7 +73,7 @@ class null {
 
     method copy {
     // a copy of this filePath
-        def p = null
+        def p = filePath
         p.directory := directory
         p.base := base
         p.extension := extension
@@ -91,26 +93,28 @@ class null {
     }
 }
 
+method null { filePath }
+
 method withDirectory(d) {
-    null.setDirectory(d)
+    filePath.setDirectory(d)
 }
 
 method withBase(b) {
-    null.setBase(b)
+    filePath.setBase(b)
 }
 
 method withExtension(e) {
-    null.setExtension(e)
+    filePath.setExtension(e)
 }
 
 method withDirectory(d) base(b) extension(e) {
     // creates a unixFilePath with directory d, base b and extension e
-    null.setDirectory(d).setBase(b).setExtension(e)
+    filePath.setDirectory(d).setBase(b).setExtension(e)
 }
 
 method fromString(s) {
     // parses the filename s into components and answers the approriate unixFilePath
-    def p = null
+    def p = filePath
     var slashPosn := 0
     def sSize = s.size
     var ix := sSize

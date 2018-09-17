@@ -19,6 +19,9 @@ function setModuleName(m) {
 function getModuleName() {
     return arguments.callee.caller.definitionModule || "native code" ;
 }
+function jsTrue() {
+    return true;
+}
 
 function identifierAvailable(category, identifier) {
     if (inBrowser) {
@@ -206,15 +209,14 @@ function trait_asString (argcv) {
 }
 
 function confidentialVersion(fun, optionalName) {
-    const newFun = Object.assign({}, fun);
+    const newFun = (...args) => fun.apply(this, args);
     newFun.confidential = true;
     if (optionalName) newFun.methodName = optionalName;
     return newFun;
 }
 
 function publicVersion(fun, optionalName) {
-    const newFun = Object.assign({}, fun);
-    if (newFun.confidential) newFun.confidential = undefined;
+    const newFun = function (...args) { return fun.apply(this, args) };
     if (optionalName) newFun.methodName = optionalName;
     return newFun;
 }
@@ -2018,16 +2020,30 @@ function GraceBlock(recvr, lineNum, numParams) {
     this.definitionLine = lineNum;
     this.numParams = numParams;
     this.receiver = recvr;
-}
-
-GraceBlock.prototype = {
-    methods: {
+    this.className = 'block';
+    this.methods = {
         "isMe(1)":          object_isMe,
         "myIdentityHash":   object_identityHash,
         "basicAsString":    object_basicAsString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
         "debugIterator":    object_debugIterator,
+        "match(1)":         GraceBlock_match,
+        "asString":         function GraceBlock_asString (argcv) {
+            return new GraceString("block" + this.numParams + "<" +
+                    this.definitionModule + ":" + this.definitionLine + ">");
+        }
+    }
+}
+
+ObsoleteGraceBlock_prototype = {
+    methods: {
+        "isMe(1)":          confidentialVersion(object_isMe, 'isMe(1)'),
+        "myIdentityHash":   confidentialVersion(object_identityHash, 'myIdentityHash'),
+        "basicAsString":    publicVersion(object_basicAsString, 'basicAsString'),
+        "asDebugString":    publicVersion(object_asDebugString, 'asDebugString'),
+        "debugValue":       publicVersion(object_debugValue, 'debugValue'),
+        "debugIterator":    publicVersion(object_debugIterator, 'debugIterator'),
         "apply": function(argcv) {
             return this.real.call(this.receiver); },
         "apply(1)": function(argcv, a1) {
@@ -2094,16 +2110,14 @@ function blockWrongArityException(numArgs) {
                 plural + " but given " + numArgs + " arguments."));
 }
 
-function checkBlockApply(numargs) {
-    var args = Array.prototype.slice.call(arguments, 1);
-        // makes a copy of arguments, without element at index 0
-    var nArgs = args.length;
+function checkBlockArgs(...args) {
+    var numArgs = args.length;
     setLineNumber(this.definitionLine);
-    if (nArgs !== this.numParams) {
+    if (numArgs !== this.numParams) {     // should be unnecessay now
         var plural = (this.numParams === 1) ? "" : "s";
         throw new GraceExceptionPacket(RequestErrorObject,
             new GraceString("block takes " + this.numParams + " argument" +
-                plural + " but given " + nArgs + "."));
+                plural + " but given " + numArgs + "."));
     }
     if (this.guard.apply(this.receiver, args)) return;
     for (var ix = 0; ix < this.paramTypes.length; ix++) {
@@ -2112,13 +2126,13 @@ function checkBlockApply(numargs) {
         if ( ! Grace_isTrue(match)) {
             var n = ix + 1;
             var canonicalName = "apply(_";
-            for (var i = 1; i < numargs; i++) { canonicalName += ",_"; }
+            for (var i = 1; i < numArgs; i++) { canonicalName += ",_"; }
             canonicalName += ")";
             var typeName = callmethod(typeSpec, "asString", [0])._value;
             if (typeName.match(/type ‹anon›/)) {
                 typeName = "required type";
             }
-            var argDesc = (numargs === 1) ? "argument" : "argument " + n ;
+            var argDesc = (numArgs === 1) ? "argument" : "argument " + n ;
             if (typeSpec.className.startsWith("Type")) {
                 // startsWith("Type") catches TypeIntersection, TypeUnion,
                 // etc, as well as class "Type" itself.
@@ -2220,11 +2234,6 @@ var type_Boolean = var_Boolean;
 var type_Object = var_Object;
 var type_Unknown = var_Unknown;
 var type_Type = var_Type;
-var var_Block = new GraceType("Block");
-var_Block.typeMethods.push("apply");
-var_Block.typeMethods.push("applyIndirectly(1)");
-var_Block.typeMethods.push("match(1)");
-var type_Block = var_Block;
 var type_Done = var_Done;
 
 var var_HashMap = { methods: { 'new':
@@ -3422,19 +3431,20 @@ function GraceMirrorMethod(o, k) {
     this.obj = o;
 }
 GraceMirrorMethod.prototype = Grace_allocObject(GraceObject, "methodMirror");
-GraceMirrorMethod.prototype.methods['asString'] = function(argcv) {
+GraceMirrorMethod.prototype.methods['asString'] = function mMirror_asString (argcv) {
     return new GraceString("mirror on method '" + this.canonicalName + "'");
 };
-GraceMirrorMethod.prototype.methods['name'] = function(argcv) {
+GraceMirrorMethod.prototype.methods['name'] = function mMirror_name (argcv) {
     return new GraceString(this.canonicalName);
 };
-GraceMirrorMethod.prototype.methods['partcount'] = function(argcv) {
+GraceMirrorMethod.prototype.methods['partcount'] = function mMirror_partcount (argcv) {
     var count = this.name.split("(").length;
     if (count === 1) return new GraceNum(1);
     return new GraceNum(count - 1);
 };
 
-GraceMirrorMethod.prototype.methods['paramcounts'] = function(argcv) {
+GraceMirrorMethod.prototype.methods['paramcounts'] =
+      function mMirror_paramcounts (argcv) {
     var theFunction = this.obj.methods[this.name];
     var l = theFunction.paramCounts ? theFunction.paramCounts.length : 0;
     var countArray = new Array(l);
@@ -3444,7 +3454,8 @@ GraceMirrorMethod.prototype.methods['paramcounts'] = function(argcv) {
     return new GraceList(countArray);
 };
 
-GraceMirrorMethod.prototype.methods['request(1)'] = function(argcv, argList) {
+GraceMirrorMethod.prototype.methods['request(1)'] =
+      function mMirror_request (argcv, argList) {
     if (! argList) {
         throw new GraceExceptionPacket(ProgrammingErrorObject,
                 new GraceString("'request(_)' requires one argument (a list of argument lists)"));
@@ -3470,7 +3481,8 @@ GraceMirrorMethod.prototype.methods['request(1)'] = function(argcv, argList) {
     return selfRequest.apply(null, allArgs);
 };
 
-GraceMirrorMethod.prototype.methods['requestWithArgs(1)'] = function(argcv, argList) {
+GraceMirrorMethod.prototype.methods['requestWithArgs(1)'] =
+      function mMirror_requestWithArgs (argcv, argList) {
     if (! argList) {
         throw new GraceExceptionPacket(ProgrammingErrorObject,
                 new GraceString("'requestWithArgs(_)' requires one argument (a list of arguments)"));
@@ -3481,7 +3493,7 @@ GraceMirrorMethod.prototype.methods['requestWithArgs(1)'] = function(argcv, argL
     }
     var paramcv = theFunction.paramCounts;
     var np = theFunction.paramNames.length;
-    var ntp = theFunction.typeParamNames.length;
+    var ntp = (theFunction.typeParamNames) ? theFunction.typeParamNames.length : 0;
     var providedLen = callmethod(argList, "size", [0])._value;
     if ((providedLen !== np) && (providedLen != (np + ntp))) {
         throw new GraceExceptionPacket(ProgrammingErrorObject,
@@ -3497,7 +3509,7 @@ GraceMirrorMethod.prototype.methods['requestWithArgs(1)'] = function(argcv, argL
     return selfRequest.apply(null, allArgs);
 };
 
-GraceMirrorMethod.prototype.methods['hash'] = function methodMirror_hash (argcv) {
+GraceMirrorMethod.prototype.methods['hash'] = function mMirror_hash (argcv) {
     return callmethod(new GraceString(this.name), "hash", [0]);
 };
 
@@ -3680,6 +3692,7 @@ function handleRequestException(ex, obj, methname, method, methodArgs) {
 
 function request(obj, methname, ...args) {
     var origLineNumber = lineNumber;
+    lineNumber = 0;                      // to avoid reporting line number in native code
     var returnTarget = invocationCount;  // will be incremented by invoked method
     var meth
     try {
@@ -3707,6 +3720,7 @@ var callmethod = request;       // for backward compatibility
 
 function selfRequest(obj, methname, ...args) {
     var origLineNumber = lineNumber;
+    lineNumber = 0;                      // to avoid reporting line number in native code
     var returnTarget = invocationCount;  // will be incremented by invoked method
     var meth
     try {
@@ -3979,8 +3993,7 @@ GraceExceptionPacket.prototype = {
             return new GraceNum(this.lineNumber);
         },
         "moduleName": function(argcv) {
-            const moduleNm = this.method.definitionModule || "native code";
-            return new GraceString(this.moduleNm);
+            return new GraceString(this.moduleName);
         },
         "backtrace": function(argcv) {
             var es = new GraceList([]);
@@ -4038,7 +4051,8 @@ GraceExceptionPacket.prototype = {
             throw this;
         }
     },
-    exctype: 'graceexception'
+    exctype: 'graceexception',
+    get moduleName() { return this.method.definitionModule || "native code"; }
 };
 
 function GraceException(name, parent) {
@@ -4497,6 +4511,7 @@ if (typeof global !== "undefined") {
     global.Alias = Alias;
     global.assertTypeOrMsg = assertTypeOrMsg;
     global.callmethod = callmethod;
+    global.checkBlockArgs = checkBlockArgs;
     global.classType = classType;
     global.dbg = dbg;
     global.dbgp = dbgp;
@@ -4549,6 +4564,7 @@ if (typeof global !== "undefined") {
     global.GraceUnicodePattern = GraceUnicodePattern;
     global.importedModules = importedModules;
     global.ImportErrorObject = ImportErrorObject;
+    global.jsTrue = jsTrue;
     global.Lineup = Lineup;
     global.loadDate = loadDate;
     global.matchCase = matchCase;
@@ -4570,7 +4586,6 @@ if (typeof global !== "undefined") {
     global.StackFrame = StackFrame;
     global.tryCatch = tryCatch;
     global.type_Boolean = type_Boolean;
-    global.type_Block = type_Block;
     global.type_Done = type_Done;
     global.type_Number = type_Number;
     global.type_Object = type_Object;
@@ -4581,7 +4596,6 @@ if (typeof global !== "undefined") {
     global.var___95__prelude = Grace_prelude;
     global.var_Done = var_Done;
     global.var_done = var_done;
-    global.var_Block = var_Block;
     global.var_Boolean = var_Boolean;
     global.var_graceObject = var_graceObject;
     global.var_GraceType = var_GraceType;
