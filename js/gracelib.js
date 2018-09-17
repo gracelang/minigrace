@@ -4020,9 +4020,16 @@ GraceExceptionPacket.prototype = {
             var ln = callmethod(this, "lineNumber", [0]);
             var mn = callmethod(this, "moduleName", [0]);
             if (! Grace_isTrue(callmethod(skipable, "contains(1)", [1], mn))) {
-                var errMsg = callmethod(exceptionName, "++(1)", [1], new GraceString(" on line "));
-                errMsg = callmethod(callmethod(errMsg, "++(1)", [1], ln), "++(1)", [1], new GraceString(" of "));
-                errMsg = callmethod(callmethod(errMsg, "++(1)", [1], mn), "++(1)", [1], new GraceString(": "));
+                var errMsg = exceptionName;
+                if (ln) {
+                    errMsg = callmethod(errMsg, "++(1)", [1], new GraceString(" on line "));
+                    errMsg = callmethod(errMsg, "++(1)", [1], ln);
+                }
+                if (mn._value !== 'native code') {
+                    errMsg = callmethod(errMsg, "++(1)", [1], new GraceString(" of "));
+                    errMsg = callmethod(errMsg, "++(1)", [1], mn)
+                }
+                errMsg = callmethod(errMsg, "++(1)", [1], new GraceString(": "));
                 errMsg = callmethod(errMsg, "++(1)", [1], callmethod(this, "message", [0]));
                 Grace_errorPrint(errMsg);
             }

@@ -232,7 +232,15 @@ class testCaseNamed(name') -> TestCase {
         def msg = exceptionPacket.message
         def lineNr = exceptionPacket.lineNumber
         def modName = exceptionPacket.moduleName
-        print "{ex} on line {lineNr} of {modName}: {msg}"
+        if (lineNr == 0) then {
+            if (modName == "native code") then {
+                print "{ex}: {msg}"
+            } else {
+                print "{ex} in {modName}: {msg}"
+            }
+        } else {
+            print "{ex} on line {lineNr} of {modName}: {msg}"
+        }
         def bt = exceptionPacket.backtrace
         while {bt.size > 0} do {
             def frameDescription = bt.pop
