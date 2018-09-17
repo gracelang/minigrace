@@ -20,7 +20,7 @@ GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
 MGFLAGS = -XnoChecks
 J1-MINIGRACE = $(JS-KG) j1/compiler.js $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/gracelib.js
-J2-MINIGRACE = $(J1-MINIGRACE) j2/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) j2/gracelib.js
+J2-MINIGRACE = $(J1-MINIGRACE) j2/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) j2/gracelib.js genjs.grace
 JSJSFILES = gracelib.js unicodedata.js
 JSRUNNERS_WITHOUT_COMPILER_INSPECT = grace grace-debug compiler-js minigrace-js
 JSRUNNERS = $(JSRUNNERS_WITHOUT_COMPILER_INSPECT) compiler-inspect
@@ -208,9 +208,9 @@ install: minigrace $(COMPILER_MODULES:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct)
 	@./tools/warnAbout PATH $(PREFIX)/bin
 	@./tools/warnAbout GRACE_MODULE_PATH $(MODULE_PATH)
 
-$(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
+$(JSJSFILES:%.js=j1/%.js): j1/%.js: $(JS-KG)/%.js
 # The j1/*.js files are used to run the j1 compiler, and so need to be
-# consistent with the code generated from the current js files.
+# consistent with the code generated from the known-good compiler.
 	cp -p $< $@
 
 j1-minigrace: $(J1-MINIGRACE)
@@ -301,7 +301,7 @@ Makefile.conf: configure stubs modules
 $(MGSOURCEFILES:%.grace=j1/%.js): j1/%.js: %.grace $(JS-KG)/minigrace-js
 	GRACE_MODULE_PATH=j1 $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
 
-$(MGSOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace $(J1-MINIGRXCE)
+$(MGSOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace $(J1-MINIGRACE)
 	GRACE_MODULE_PATH=modules j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
 
 minigrace: $(J2-MINIGRACE)
