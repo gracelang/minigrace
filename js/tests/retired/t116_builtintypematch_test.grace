@@ -1,12 +1,12 @@
 method tryMatch(pattern, obj) {
-    if (pattern.match(obj)) then {
+    if (pattern.matches(obj)) then {
         print "OK"
     } else {
         print "Not OK; {obj} should have matched"
     }
 }
 method tryNoMatch(pattern, obj) {
-    if (pattern.match(obj)) then {
+    if (pattern.matches(obj)) then {
         print "Not OK; {obj} should not have matched"
     } else {
         print "OK"

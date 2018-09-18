@@ -45,41 +45,41 @@ def patternTest = object {
 
         method testPatternBadSeparatorNNBS {
             def badSeparator = u.pattern ["Z", 9] not [32, 8232]
-            assert(badSeparator.match "\u202f") 
+            assert(badSeparator.matches "\u202f") 
                 description "badSeparator doesn't match \\u202f (Narrow no-break space)"
         }
 
         method testPatternClasses {
             def letters = u.pattern ["L", "N", "Z"] not [32, "N"]
-            assert(letters.match "a")
+            assert(letters.matches "a")
                 description "letters doesn't match `a`"
-            deny(letters.match " ")
+            deny(letters.matches " ")
                 description "letters matches space"
-            assert(letters.match "\u2029")
+            assert(letters.matches "\u2029")
                 description "letters doesn't match paragraph separator"
         }
 
         method testPatternBadSeparatorTab {
             def badSeparator = u.pattern ["Z", "\t".ord] not [32, 160]
-            assert(badSeparator.match "\t") 
+            assert(badSeparator.matches "\t") 
                 description "badSeparator doesn't match \\t"
         }
 
         method testPatternBadSeparatorParaSep {
             def badSeparator = u.pattern ["Z", "\t".ord] not [32, 160]
-            assert(badSeparator.match "\u2029") 
+            assert(badSeparator.matches "\u2029") 
                 description "badSeparator doesn't match \\u2029 (Paragraph Separator)"
         }
             
         method testPatternBadSeparatorSpace {
             def badSeparator = u.pattern ["Z", 9] not [32, 160]
-            deny(badSeparator.match " ") 
+            deny(badSeparator.matches " ") 
                 description "badSeparator matches space"
         }
 
         method testPatternBadSeparatorNBS {
             def badSeparator = u.pattern ["Z", 9] not [32, 160]
-            deny(badSeparator.match "\u00A0") 
+            deny(badSeparator.matches "\u00A0") 
                 description "badSeparator matches non-breaking space"
         }
     }
@@ -87,8 +87,3 @@ def patternTest = object {
 
 def patternTests = gU.testSuite.fromTestMethodsIn(patternTest)
 patternTests.runAndPrintResults
-//def failingTests = gU.testSuite.empty
-//failingTests.add(patternTest.forMethod("testInCategorySpace"))
-//failingTests.add(patternTest.forMethod("testInCategoryNBS"))
-//failingTests.debugAndPrintResults
-

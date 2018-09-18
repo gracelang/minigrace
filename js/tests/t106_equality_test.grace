@@ -27,7 +27,7 @@ var e := object {
     def x = "test"
     def z = "hello"
     method ==(other) {
-        EType.match(other) && { x == other.x } && { z == other.z }
+        EType.matches(other) && { x == other.x } && { z == other.z }
     }
     method asString { "e" }
 }

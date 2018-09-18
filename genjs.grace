@@ -401,31 +401,35 @@ method compileobject(o, outerRef) {
     objRef
 }
 method compileGuard(o, paramList) {
-    def matchFun = uidWithPrefix "matches"
-    out "var {matchFun} = function({paramList}) \{"
-    increaseindent
-    noteLineNumber(o.line) comment "block matches function"
-    o.params.do { p ->
-        def pName = varf(p.value)
-        if (p.dtype != false) then {
-            def dtype = compilenode(p.dtype)
-            out "if (!Grace_isTrue(request({dtype}, \"match(1)\", [1], {pName})))"
-            out "    return false;"
+    if (o.aParametersHasATypeAnnotation) then {
+        def matchFun = uidWithPrefix "matches"
+        out "var {matchFun} = function({paramList}) \{"
+        increaseindent
+        noteLineNumber(o.line) comment "block matches function"
+        o.params.do { p ->
+            if (false ≠ p.dtype) then {
+                def pName = varf(p.value)
+                def dtype = compilenode(p.dtype)
+                out "if (!Grace_isTrue(request({dtype}, \"matches(1)\", [1], {pName})))"
+                out "    return false;"
+            }
         }
+        out "return true;"
+        decreaseindent
+        out "};"
+        matchFun
+    } else {
+        "jsTrue"    // the constant true function, defined in gracelib
     }
-    out "return true;"
-    decreaseindent
-    out "};"
-    matchFun
 }
 
 method compileblock(o) {
     def origInBlock = inBlock
     def oldInitializedVars = saveInitializedVars
     inBlock := true
-    def myId = uidWithPrefix "block"
+    def blockId = uidWithPrefix "block"
     def nParams = o.params.size
-    out "var {myId} = new GraceBlock(this, {o.line}, {nParams});"
+    out "var {blockId} = new GraceBlock(this, {o.line}, {nParams});"
     var paramList := ""
     var paramTypes :=  [ ]
     var paramsAreTyped := false
@@ -444,11 +448,11 @@ method compileblock(o) {
         }
     }
     if (paramsAreTyped) then {
-        out "{myId}.paramTypes = {paramTypes};"
+        out "{blockId}.paramTypes = {paramTypes};"
     }
 
-    out "{myId}.guard = {compileGuard(o, paramList)};"
-    out "{myId}.real = function {myId}({paramList}) \{"
+    out "{blockId}.guard = {compileGuard(o, paramList)};"
+    out "{blockId}.real = function {blockId}({paramList}) \{"
     increaseindent
     priorLineEmitted := 0
     noteLineNumber (o.line) comment ("compileBlock")
@@ -456,10 +460,10 @@ method compileblock(o) {
     for (o.body) do {l->
         ret := compilenode(l)
     }
-    if ("never returns" ≠ ret) then { out("return " ++ ret ++ ";") }
+    if ("never returns" ≠ ret) then { out "return {ret};" }
     decreaseindent
     out "\};"
-    def applyMeth = uidWithPrefix "applyMeth"
+    def applyMeth = blockId.replace "block" with "applyMeth"
     def applyMethName = if (nParams == 0) then { "apply" } else { "apply({nParams})" }
     if (nParams == 0) then {
         out "let {applyMeth} = function apply (argcv) \{"
@@ -472,8 +476,17 @@ method compileblock(o) {
         out "\};"
     }
     compileMetadata(o, applyMeth, applyMethName)
-    out "{myId}.methods['{applyMethName}'] = {applyMeth};"
-    o.register := myId
+    out "{blockId}.methods['{applyMethName}'] = {applyMeth};"
+    def matchesMeth = applyMeth.replace "applyMeth" with "matchesMeth"
+    def matchesMethName = "matches({nParams})"
+    if (nParams > 0) then {
+        out "let {matchesMeth} = function matches_{nParams} (argcv, ...args) \{"
+        out "    return this.guard.apply(this.receiver, args) ? GraceTrue : GraceFalse;"
+        out "\};"
+        compileMetadata(o, matchesMeth, matchesMethName)
+        out "{blockId}.methods['{matchesMethName}'] = {matchesMeth};"
+    }
+    o.register := blockId
     restoreInitializedVars(oldInitializedVars)
     inBlock := origInBlock
 }
@@ -918,8 +931,8 @@ method compilemethodtypes(func, o) {
     }
 }
 method compileif(o) {
-    def myId = uidWithPrefix "if"
-    outUnnumbered "var {myId} = GraceDone;"  // TODO: remove - this is unncessary
+    def ifId = uidWithPrefix "if"
+    outUnnumbered "var {ifId} = GraceDone;"  // TODO: remove - this is unncessary
     out("if (Grace_isTrue(" ++ compilenode(o.value) ++ ")) \{")
     var tret := "GraceDone"
     increaseindent
@@ -929,7 +942,7 @@ method compileif(o) {
         tret := compilenode(l)
     }
     if (tret != "never returns") then {
-        out "{myId} = {tret};"
+        out "{ifId} = {tret};"
     }
     restoreInitializedVars(thenSavedVars)
     decreaseindent
@@ -943,13 +956,13 @@ method compileif(o) {
             fret := compilenode(l)
         }
         if (fret != "never returns") then {
-            out "{myId} = {fret};"
+            out "{ifId} = {fret};"
         }
         restoreInitializedVars(elseSavedVars)
         decreaseindent
     }
     out "\}"
-    o.register := myId
+    o.register := ifId
 }
 method compileidentifier(o) {
     var name := o.value

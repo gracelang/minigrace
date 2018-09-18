@@ -611,7 +611,7 @@ type MinimalyIterable = interface {
 }
 
 method isEqual(left) toCollection(right) {
-    if (MinimalyIterable.match(right)) then {
+    if (MinimalyIterable.matches(right)) then {
         def leftIter = left.iterator
         def rightIter = right.iterator
         while {leftIter.hasNext && rightIter.hasNext} do {
@@ -1182,7 +1182,7 @@ class set⟦T⟧ {
             }
         }
         method ==(other) {
-            if (Collection.match(other)) then {
+            if (Collection.matches(other)) then {
                 var otherSize := 0
                 other.do { each ->
                     otherSize := otherSize + 1

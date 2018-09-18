@@ -508,7 +508,7 @@ def objectType = object {
     addTo (done) name "asString" returns (string)
 
     extend (pattern) with (base)
-    addTo (pattern) name "match(_)" params [base] returns (unknown)
+    addTo (pattern) name "matches(_)" params [base] returns (unknown)
     addTo (pattern) name "|(_)" params [pattern] returns (pattern)
     addTo (pattern) name "&(_)" params [pattern] returns (pattern)
 

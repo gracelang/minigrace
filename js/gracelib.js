@@ -724,10 +724,8 @@ GraceString.prototype = {
         "asNumber": function string_asNumber(argcv) {
             return new GraceNum(+this._value);
         },
-        "match(1)": function string_match (argcv, o) {
-            if (Grace_isTrue(callmethod(this, "==(1)", [1], o)))
-                return new GraceSuccessfulMatch(o);
-            return GraceFalse;
+        "matches(1)": function string_match (argcv, o) {
+            return callmethod(this, "==(1)", [1], o);
         },
         "|(1)": function string_orPattern(argcv, o) {
             return new GraceOrPattern(this, o);
@@ -1064,10 +1062,8 @@ GraceNum.prototype = {
         "sqrt": function(argcv) {
             return new GraceNum(Math.sqrt(this._value));
         },
-        "match(1)": function(argcv, o) {
-            if (Grace_isTrue(callmethod(this, "==(1)", [1], o)))
-                return new GraceSuccessfulMatch(o);
-            return GraceFalse;
+        "matches(1)": function(argcv, o) {
+            return callmethod(this, "==(1)", [1], o);
         },
         "|(1)": function(argcv, o) {
             return new GraceOrPattern(this, o);
@@ -1100,11 +1096,11 @@ GracePredicatePattern.prototype = {
         "asDebugString": function(argcv) {
             return new GraceString("a predicate pattern");
         },
-        "match(1)": function predicate_match (argcv, o) {
+        "matches(1)": function predicate_match (argcv, o) {
             if (o._value) {
                 // if o has no _value, it is not a number, and so can't match
                 if (this._value(o._value)) {
-                    return new GraceSuccessfulMatch(o);
+                    return GraceTrue;
                 }
             }
             return GraceFalse;
@@ -1174,10 +1170,8 @@ GraceBoolean.prototype = {
                 return GraceTrue;
             return GraceFalse;
         },
-        "match(1)": function(argcv, o) {
-            if (Grace_isTrue(callmethod(this, "==(1)", [1], o)))
-                return new GraceSuccessfulMatch(o);
-            return GraceFalse;
+        "matches(1)": function(argcv, o) {
+            return (callmethod(this, "==(1)", [1], o));
         },
         "hash": function(argcv) {
             return new GraceNum(this._value ? 3637 : 1741);
@@ -1861,48 +1855,6 @@ function Grace_length(obj) {
     return new GraceNum(obj._value.length);
 }
 
-var GraceMatchResultPrototype = Grace_allocObject(GraceBoolean, "matchResult");
-GraceMatchResultPrototype.methods.result = function() {
-    return this.data['result'];
-};
-GraceMatchResultPrototype.methods.bindings = function() {
-    return this.data['bindings'];
-};
-GraceMatchResultPrototype.methods.asString = function() {
-    var s = "";
-    if (Grace_isTrue(this)) {
-        s = "SuccessfulMatch(result = ";
-    } else {
-        s = "FailedMatch(result = ";
-    }
-    s += callmethod(this.data['result'], "asString", [0])._value;
-    s += ", bindings = ";
-    s += callmethod(this.data['bindings'], "asString", [0])._value;
-    s += ")";
-    return new GraceString(s);
-};
-GraceMatchResultPrototype.methods['::'] = function(argcv, other) {
-    return callmethod(GraceBindingClass(), "key(1)value(1)", [1, 1], this, other);
-};
-
-function GraceSuccessfulMatch(result, bindings) {
-    this.data = {};
-    this.data['result'] = result;
-    if (bindings === undefined)
-        bindings = GraceEmptySequence();
-    this.data['bindings'] = bindings;
-    this._value = true;
-}
-GraceSuccessfulMatch.prototype = GraceMatchResultPrototype;
-
-function GraceFailedMatch(result) {
-    this.data = {};
-    this.data['result'] = result;
-    this.data['bindings'] = GraceEmptySequence();
-    this._value = false;
-}
-GraceFailedMatch.prototype = GraceMatchResultPrototype;
-
 function GraceTypeIntersection(l, r) {
     var opClass = callmethod(Grace_prelude, "TypeIntersection", [0]);
     return callmethod(opClass, "new(2)", [2], l, r);
@@ -1934,7 +1886,7 @@ GraceType.prototype = {
         "debugValue":       object_debugValue,
         "debugIterator":    object_debugIterator,
         "::(1)":            object_colonColon,
-        "match(1)": function type_match (argcv, other) {
+        "matches(1)": function type_match (argcv, other) {
             for (var i=0; i<this.typeMethods.length; i++) {
                 var m = this.typeMethods[i];
                 if (!other.methods[m]) {
@@ -1948,7 +1900,7 @@ GraceType.prototype = {
                     }
                 }
             }
-            return new GraceSuccessfulMatch(other);
+            return GraceTrue;
         },
         "|(1)": function type_or(argcv, other) {
             return new GraceTypeVariant(this, other);
@@ -2028,80 +1980,12 @@ function GraceBlock(recvr, lineNum, numParams) {
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
         "debugIterator":    object_debugIterator,
-        "match(1)":         GraceBlock_match,
         "asString":         function GraceBlock_asString (argcv) {
             return new GraceString("block" + this.numParams + "<" +
                     this.definitionModule + ":" + this.definitionLine + ">");
         }
     }
 }
-
-ObsoleteGraceBlock_prototype = {
-    methods: {
-        "isMe(1)":          confidentialVersion(object_isMe, 'isMe(1)'),
-        "myIdentityHash":   confidentialVersion(object_identityHash, 'myIdentityHash'),
-        "basicAsString":    publicVersion(object_basicAsString, 'basicAsString'),
-        "asDebugString":    publicVersion(object_asDebugString, 'asDebugString'),
-        "debugValue":       publicVersion(object_debugValue, 'debugValue'),
-        "debugIterator":    publicVersion(object_debugIterator, 'debugIterator'),
-        "apply": function(argcv) {
-            return this.real.call(this.receiver); },
-        "apply(1)": function(argcv, a1) {
-            checkBlockApply.call(this, 1, a1);
-            return this.real.call(this.receiver, a1); },
-        "apply(2)": function(argcv, a1, a2) {
-            checkBlockApply.call(this, 2, a1, a2);
-            return this.real.call(this.receiver, a1, a2); },
-        "apply(3)": function(argcv, a1, a2, a3) {
-            checkBlockApply.call(this, 3, a1, a2, a3);
-            return this.real.call(this.receiver, a1, a2, a3); },
-        "apply(4)": function(argcv, a1, a2, a3, a4) {
-            checkBlockApply.call(this, 4, a1, a2, a3, a4);
-            return this.real.call(this.receiver, a1, a2, a3, a4); },
-        "apply(5)": function(argcv, a1, a2, a3, a4, a5) {
-            checkBlockApply.call(this, 5, a1, a2, a3, a4, a5);
-            return this.real.call(this.receiver, a1, a2, a3, a4, a5); },
-        "apply(6)": function(argcv, a1, a2, a3, a4, a5, a6) {
-            checkBlockApply.call(this, 6, a1, a2, a3, a4, a5, a6);
-            return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6); },
-        "apply(7)": function(argcv, a1, a2, a3, a4, a5, a6, a7) {
-            checkBlockApply.call(this, 7, a1, a2, a3, a4, a5, a6, a7);
-            return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6, a7); },
-        "apply(8)": function(argcv, a1, a2, a3, a4, a5, a6, a7, a8) {
-            checkBlockApply.call(this, 8, a1, a2, a3, a4, a5, a6, a7, a8);
-            return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6, a7, a8); },
-        "apply(9)": function(argcv, a1, a2, a3, a4, a5, a6, a7, a8, a9) {
-            checkBlockApply.call(this, 9, a1, a2, a3, a4, a5, a6, a7, a8, a9);
-            return this.real.call(this.receiver, a1, a2, a3, a4, a5, a6, a7, a8, a9); },
-        "applyIndirectly(1)": function GraceBlock_applyIndirectly (argcv, a) {
-            var argList = a._value;
-            if (! argList) {
-                if (a.data && a.data.jsArray) {
-                    argList = a.data.jsArray;
-                }
-            }
-            // APB: 2015 09 08.  This is a horrible hack.
-            // a._value          => a is a PrimitiveGraceList or Lineup
-            // a.data.jsArray    => a is a native code list from collectionsPrelude
-            // in these cases, extract the JS Array burried in the object.
-            if (! argList) {
-                argList = [];
-                var iter = callmethod(a, "iterator", [0]);
-                while (Grace_isTrue(callmethod(iter, "hasNext", [0]))) {
-                    var arg = callmethod(iter, "next", [0]);
-                    argList.push(arg);
-                }
-            }
-            return this.real.apply(this.receiver, argList);
-        },
-        "match(1)": GraceBlock_match,
-        "asString": function GraceBlock_asString (argcv) {
-            return new GraceString("block<" + this.definitionModule +
-                                   ":" + this.definitionLine + ">");
-        }
-    },
-    className: "block"
-};
 
 function blockWrongArityException(numArgs) {
     var plural = (this.numParams === 1) ? "" : "s";
@@ -2122,7 +2006,7 @@ function checkBlockArgs(...args) {
     if (this.guard.apply(this.receiver, args)) return;
     for (var ix = 0; ix < this.paramTypes.length; ix++) {
         var typeSpec = this.paramTypes[ix]
-        var match = callmethod(typeSpec, "match(1)", [1], args[ix]);
+        var match = callmethod(typeSpec, "matches(1)", [1], args[ix]);
         if ( ! Grace_isTrue(match)) {
             var n = ix + 1;
             var canonicalName = "apply(_";
@@ -2151,7 +2035,15 @@ function checkBlockArgs(...args) {
 
 function assertTypeOrMsg(obj, type, objDesc, typeDesc) {
     if (type === var_Unknown) return;  // an optimization
-    if (type.methods["match(1)"]) {
+    if (type.methods["matches(1)"]) {
+        if (!Grace_isTrue(request(type, "matches(1)", [1], obj))) {
+            if ((type.name) && (type.name !== typeDesc)) {
+                typeDesc += " (= " + type.name + ")";
+            }
+            let message = objDesc + " does not have type " + typeDesc;
+            raiseTypeError(message, type, obj);
+        }
+    } else if (type.methods["match(1)"]) {
         if (!Grace_isTrue(request(type, "match(1)", [1], obj))) {
             if (type.name !== typeDesc) typeDesc += " (= " + type.name + ")";
             let message = objDesc + " does not have type " + typeDesc;
@@ -2160,7 +2052,7 @@ function assertTypeOrMsg(obj, type, objDesc, typeDesc) {
     } else {
         throw new GraceExceptionPacket(ProgrammingErrorObject,
                 new GraceString("while checking that " + objDesc + " has type " +
-                  typeDesc + ", found that " + typeDesc + " is not a type"));
+                  typeDesc + ", found that " + typeDesc + " is not a type (has no match or matches"));
     }
 }
 
@@ -2183,22 +2075,6 @@ function raiseTypeError(msg, type, value) {
     var ex = new GraceExceptionPacket(TypeErrorObject,
                                       new GraceString(msg + diff));
     throw ex;
-}
-
-function GraceBlock_match(argcv, o) {
-    if (!this.guard) {
-        if (argcv.length !== 1 || argcv[0] !== 1) {
-            throw new GraceExceptionPacket(ProgrammingErrorObject,
-                    new GraceString("block is not a matching block"));
-        }
-        var rv1 = callmethod(this, "apply(1)", [1], o);
-        return new GraceSuccessfulMatch(rv1);
-    }
-    if (this.guard(o)) {
-        var rv2 = callmethod(this, "apply(1)", [1], o);
-        return new GraceSuccessfulMatch(rv2);
-    }
-    return GraceFalse;
 }
 
 function classType(o) {
@@ -3080,7 +2956,7 @@ GraceUnicodePattern.prototype = {
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
         "debugIterator":    object_debugIterator,
-        'match(1)': function(argcv, o) {
+        'matches(1)': function(argcv, o) {
             var success = false;
             var cc = o._value;
             if (cc.charCodeAt)
@@ -3117,9 +2993,7 @@ GraceUnicodePattern.prototype = {
                     }
                 }
             }
-            if (success)
-                return new GraceSuccessfulMatch(o);
-            return GraceFalse;
+            return success ? GraceTrue : GraceFalse;
         }
     },
     typeMethods: [],
@@ -3816,19 +3690,24 @@ function closeMatchesForMethodNamed(mName, obj) {
     // Returns a list of up to 4 close matches to mName.
     var matchesFound = 0;
     var matches = [];
-    var gName = new GraceString(mName);
-    for (var candidate in obj.methods) {
-        if (obj.methods.hasOwnProperty(candidate)) {
-            var gCand = new GraceString(candidate);
-            var mm = do_import("mirrors", gracecode_mirrors);
-            var em = request(mm, "loadDynamicModule(1)", [1], new GraceString("errormessages"));
-            if (Grace_isTrue(request(em, "name(1)mightBeIntendedToBe(1)",
-                    [1, 1], gCand, gName))) {
-                matches.push(canonicalMethodName(gCand._value));
-                matchesFound = matchesFound + 1;
-                if (matchesFound === 4)  { return matches; }
+    try {
+        // wrap everything in a try-catch, so that if there is a further
+        // error, we don't recurse infinitely
+        var mm = do_import("mirrors", gracecode_mirrors);
+        var em = request(mm, "loadDynamicModule(1)", [1], new GraceString("errormessages"));
+        var gName = new GraceString(mName);
+        for (var candidate in obj.methods) {
+            if (obj.methods.hasOwnProperty(candidate)) {
+                var gCand = new GraceString(candidate);
+                if (Grace_isTrue(request(em, "name(1)mightBeIntendedToBe(1)",
+                        [1, 1], gCand, gName))) {
+                    matches.push(canonicalMethodName(gCand._value));
+                    matchesFound = matchesFound + 1;
+                    if (matchesFound === 4)  { return matches; }
+                }
             }
         }
+    } catch (ex) {
     }
     return matches;
 }
@@ -4085,15 +3964,15 @@ GraceException.prototype = {
         "raise(1)with(1)": function(argcv, msg, data) {
             throw new GraceExceptionPacket(this, msg, data);
         },
-        "match(1)": function(argcv, other) {
+        "matches(1)": function(argcv, other) {
             if (!other.exception)
                 return GraceFalse;
             if (other.exception.name === this.name)
-                return new GraceSuccessfulMatch(other);
+                return GraceTrue;   // TODO: delete these four lines!
             var exc = other.exception;
             while (exc) {
                 if (exc.name === this.name)
-                    return new GraceSuccessfulMatch(other);
+                    return GraceTrue;
                 exc = exc.parent;
             }
             return GraceFalse;
@@ -4537,7 +4416,6 @@ if (typeof global !== "undefined") {
     global.Grace_prelude = Grace_prelude;
     global.Grace_print = Grace_print;
     global.GraceBindingClass = GraceBindingClass;
-    global.GraceBlock_match = GraceBlock_match;
     global.GraceBoolean = GraceBoolean;
     global.gracecode_io = gracecode_io;
     global.gracecode_mirrors = gracecode_mirrors;
@@ -4551,7 +4429,6 @@ if (typeof global !== "undefined") {
     global.GraceDone = GraceDone;
     global.GraceException = GraceException;
     global.GraceExceptionPacket = GraceExceptionPacket;
-    global.GraceFailedMatch = GraceFailedMatch;
     global.GraceFalse = GraceFalse;
     global.GraceHashMap = GraceHashMap;
     global.Grace_isTrue = Grace_isTrue;
@@ -4564,7 +4441,6 @@ if (typeof global !== "undefined") {
     global.GracePrimitiveArray = GracePrimitiveArray;
     global.GraceString = GraceString;
     global.GraceStringIterator = GraceStringIterator;
-    global.GraceSuccessfulMatch = GraceSuccessfulMatch;
     global.GraceTrait = GraceTrait;
     global.GraceTrue = GraceTrue;
     global.GraceType = GraceType;

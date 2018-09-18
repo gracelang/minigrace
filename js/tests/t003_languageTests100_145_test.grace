@@ -11,28 +11,28 @@ method t108_a {
   out("out")
 }
 method t116_tryMatch(pattern, obj) {
-    if (pattern.match(obj)) then {
+    if (pattern.matches(obj)) then {
         out "OK"
     } else {
         out "Not OK; {obj} should have matched"
     }
 }
 method t116_tryNoMatch(pattern, obj) {
-    if (pattern.match(obj)) then {
+    if (pattern.matches(obj)) then {
         out "Not OK; {obj} should not have matched"
     } else {
         out "OK"
     }
 }
 method t117_tryMatch(pattern, value) {
-    if (pattern.match(value)) then {
+    if (pattern.matches(value)) then {
         out "OK"
     } else {
         out "Not OK; {pattern} should have matched {value}"
     }
 }
 method t117_tryNoMatch(pattern, value) {
-    if (pattern.match(value)) then {
+    if (pattern.matches(value)) then {
         out "Not OK; {pattern} should not have matched {value}"
     } else {
         out "OK"
@@ -441,12 +441,12 @@ def aGraceLangTest = object {
             def y = object {
                 def baz = 2
             }
-            if (Foo.match(x)) then {
+            if (Foo.matches(x)) then {
                 out "OK"
             } else {
                 out "Not OK; x conforms to type Foo"
             }
-            if (Foo.match(y)) then {
+            if (Foo.matches(y)) then {
                 out "Not OK; y does not conform to type Foo"
             } else {
                 out "OK"
@@ -701,7 +701,7 @@ def aGraceLangTest = object {
         }
         
         method test_142_anontypevalue {
-            if (interface { y -> String }.match(t142_x)) then {
+            if (interface { y -> String }.matches(t142_x)) then {
                 out(t142_x.y)
             }
 

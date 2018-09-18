@@ -22,7 +22,7 @@ method abstract {
 
 
 method required {
-    SubobjectResponsibility.raise "required method not overriden by subobject"
+    SubobjectResponsibility.raise "required method not provided by subobject"
 }
 
 method do(action)while(condition) {
@@ -76,74 +76,6 @@ def BasicPattern is public = object {
         }
     }
 }
-def MatchAndDestructuringPattern is public = object {
-    class new(pat, items') {
-        inherit BasicPattern.new
-        def pattern = pat
-        def items = items'
-        method match(o) {
-            def m = pat.match(o)
-            if (m) then{
-                var mbindings := m.bindings
-                def bindings = []
-                if (mbindings.size < items.size) then {
-                    if (Extractable.match(o)) then {
-                        mbindings := o.extract
-                    } else {
-                        return FailedMatch.new(o)
-                    }
-                }
-                for (items.indices) do {i->
-                    def b = items.at(i).match(mbindings.at(i))
-                    if (!b) then {
-                        return FailedMatch.new(o)
-                    }
-                    for (b.bindings) do {bb->
-                        bindings.push(bb)
-                    }
-                }
-                SuccessfulMatch.new(o, bindings)
-            } else {
-                FailedMatch.new(o)
-            }
-        }
-    }
-}
-
-def VariablePattern is public = object {
-    class new(nm) {
-        inherit BasicPattern.new
-        method match(o) {
-            SuccessfulMatch.new(o, [o])
-        }
-    }
-}
-
-def BindingPattern is public = object {
-    class new(pat) {
-        inherit BasicPattern.new
-        method match(o) {
-            def bindings = [o]
-            def m = pat.match(o)
-            if (!m) then {
-                return m
-            }
-            for (m.bindings) do {b->
-                bindings.push(b)
-            }
-            SuccessfulMatch.new(o, bindings)
-        }
-    }
-}
-
-def WildcardPattern is public = object {
-    class new {
-        inherit BasicPattern.new
-        method match(o) {
-            SuccessfulMatch.new(done, [])
-        }
-    }
-}
 
 def AndPattern is public = object {
     class new(p1, p2) {
@@ -166,6 +98,13 @@ def AndPattern is public = object {
             }
             SuccessfulMatch.new(o, bindings)
         }
+        method matches(obj) {
+            if (p1.matches(obj)) then {
+                p2.matches(obj)
+            } else {
+                false
+            }
+        }
     }
 }
 
@@ -173,13 +112,26 @@ def OrPattern is public = object {
     class new(p1, p2) {
         inherit BasicPattern.new
         method match(o) {
-            if (p1.match(o)) then {
-                return SuccessfulMatch.new(o, [])
+            def m1 = p1.match(o)
+            if (!m1) then {
+                return m1
             }
-            if (p2.match(o)) then {
-                return SuccessfulMatch.new(o, [])
+            def m2 = p2.match(o)
+            if (!m2) then {
+                return m2
             }
-            FailedMatch.new(o)
+            def bindings = []
+            for (m1.bindings) do {b->
+                bindings.push(b)
+            }
+            for (m2.bindings) do {b->
+                bindings.push(b)
+            }
+            SuccessfulMatch.new(o, bindings)
+        }
+        method matches(o) {
+            if (p1.matches(o)) then { return true }
+            p2.matches(o)
         }
     }
 }
@@ -283,16 +235,19 @@ def TypeUnion is public = object {
         }
         method match(o) {
             ResourceException.raise "matching against a TypeUnion not yet implemented"
+        }
+        method matches(o) {
+            ResourceException.raise "matching against a TypeUnion not yet implemented"
             // Why not?  Becuase it requires reflection, which
             // requires the mirror module, which requires this module.
             def mirror = ...
             def oMethodNames = mirror.reflect(o).methodNames
             for (self.methodNames) do { each ->
                 if (! oMethodNames.contains(each)) then {
-                    return FailedMatch.new(o)
+                    return false
                 }
             }
-            return SuccessfulMatch.new(o, [])
+            return true
         }
         method typeNames {
             t1.typeNames ** t2.typeNames
@@ -343,7 +298,7 @@ type MatchResult = Boolean | (Boolean & interface {
 type Pattern = {
     & (other:Pattern) -> Pattern
     | (other:Pattern) -> Pattern
-    match(value:Object) -> MatchResult
+    matches(value:Object) -> Boolean
 }
 
 type ExceptionKind = Pattern & interface {

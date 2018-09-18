@@ -169,8 +169,7 @@ method fail (msg) when (pat) -> Done {
     // applied to a node x such that pat.match(x), and pat.apply(x) is true
 
     rule { x ->
-        def mat = pat.match(x)
-        if (mat && {mat.result}) then {
+        if (pat.matches(x) && {pat.apply(x)}) then {
             fail(msg)
         }
     }
@@ -249,19 +248,18 @@ method typeOf(node) {
 }
 
 method runRules(node) {
-    // apply all rules to node; returns the last SuccessfulMatch.
-    // if there is no successful match, returns FailedMatch(node).
+    // apply all rules to node; returns the result of the last applicable rule.
+    // if there are no applicable rules, returns false
     cache.atKey(node) do { value -> return value }
     currentLine := node.line
 
-    var result := FailedMatch.new(node)
+    var result := false
     for (rules) do { each ->
-        def matched = each.match(node)
-        if(matched) then {
-            result := matched.result
+        if (each.matches(node)) then {
+            result := each.apply(node)
             if (result.asString == "done") then {
                 ProgrammingError.raise
-                    "rule.match(node) has result 'done' when rule is {each} and node = {node}"
+                    "rule.apply(node) has result 'done' when rule is {each} and node = {node}"
             }
             cache.at(node) put(result)
         }
@@ -280,19 +278,13 @@ method check(module) -> Done {
 
 type AstNode = { kind -> String }
 
-class aPatternMatchingNode(kind : String) -> Pattern {
+class aPatternMatchingNode(kind:String) -> Pattern {
     inherit BasicPattern.new
 
-    method match(obj : Object) -> MatchResult {
-        match(obj) case { node : AstNode ->
-            if(kind == node.kind) then {
-                SuccessfulMatch.new(node, [])
-            } else {
-                FailedMatch.new(node)
-            }
-        } case { _ ->
-            FailedMatch.new(obj)
-        }
+    method matches(obj:Object) -> Boolean {
+        match(obj)
+            case { node:AstNode -> kind == node.kind }
+            case { _ -> false }
     }
 }
 
@@ -332,19 +324,13 @@ class RequestOf(methodName:String) -> Pattern {
 
     inherit BasicPattern.new
 
-    method match(obj:Object) -> MatchResult {
+    method matches(obj:Object) -> Boolean {
         match(obj) case { node:AstNode ->
-            if (node.isCall && {node.canonicalName == methodName}) then {
-                SuccessfulMatch.new(node, makeBindings(node))
-            } else {
-                FailedMatch.new(node)
-            }
+            node.isCall && {node.canonicalName == methodName}
         } case { _ ->
-            FailedMatch.new(obj)
+            false
         }
     }
-
-    method makeBindings(node) { [] }
 }
 
 def WhileRequest is public = RequestOf "while(_)do(_)"

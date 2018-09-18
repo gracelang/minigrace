@@ -16,7 +16,7 @@ testSuite {
     }
 
     test "singleton matches itself" by {
-        assert (v1.match(v1)) description "singleton doesn't match itself!"
+        assert (v1.matches(v1)) description "singleton doesn't match itself!"
     }
     
     test "singleton not equal other" by {
@@ -24,7 +24,7 @@ testSuite {
     }
 
     test "singleton doesn't match itself" by {
-        deny (v1.match(v2)) description "singleton matches other!"
+        deny (v1.matches(v2)) description "singleton matches other!"
     }
 
     def n1 = Singleton.named "n1"
@@ -35,7 +35,7 @@ testSuite {
     }
 
     test "named singleton matches itself" by {
-        assert (n1.match(n1)) description "named singleton doesn't match itself!"
+        assert (n1.matches(n1)) description "named singleton doesn't match itself!"
     }
     
     test "named singleton not equal other" by {
@@ -43,7 +43,7 @@ testSuite {
     }
 
     test "named singleton doesn't match itself" by {
-        deny (n1.match(n2)) description "named singleton matches other!"
+        deny (n1.matches(n2)) description "named singleton matches other!"
     }
     
     test "named singleton asString" by {

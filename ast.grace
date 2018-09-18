@@ -496,6 +496,10 @@ def blockNode is public = object {
     }
     method typeParameterNames { list.empty }
     method hasTypeParams { false }
+    method aParametersHasATypeAnnotation {
+        params.do { p -> if (false ≠ p.dtype) then { return true } }
+        return false
+    }
     method end -> Position {
         if (body.size > 0) then { return body.last.end }
         if (params.isEmpty) then {

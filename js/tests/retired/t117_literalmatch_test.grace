@@ -1,6 +1,6 @@
 
 method tryMatch(pattern, value) {
-    if (pattern.match(value)) then {
+    if (pattern.matches(value)) then {
         print "OK"
     } else {
         print "Not OK; {pattern} should have matched {value}"
@@ -8,7 +8,7 @@ method tryMatch(pattern, value) {
 }
 
 method tryNoMatch(pattern, value) {
-    if (pattern.match(value)) then {
+    if (pattern.matches(value)) then {
         print "Not OK; {pattern} should not have matched {value}"
     } else {
         print "OK"
