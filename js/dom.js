@@ -55,6 +55,10 @@ function wrapDOMObject(obj) {
     o.methods["==(1)"] = function(argcv, other) {
         return (this === other) ? GraceTrue : GraceFalse;
     };
+    o.methods["≠(1)"] = function(argcv, other) {
+        return (this !== other) ? GraceTrue : GraceFalse;
+    };
+    o.methods.hash = publicVersion(object_identityHash, 'hash');
     for (var k in obj) {
         switch(typeof obj[k]) {
             case "function":
@@ -141,6 +145,10 @@ function gracecode_dom() {
     domNoObject.methods["==(1)"] = function(argcv, other) {
         return (this === other) ? GraceTrue : GraceFalse;
     };
+    domNoObject.methods["≠(1)"] = function(argcv, other) {
+        return (this !== other) ? GraceTrue : GraceFalse;
+    };
+    domNoObject.methods.hash = publicVersion(object_identityHash, 'hash');
 
     this.methods.document = function(argcv) {
         if (typeof(document) === "undefined") {

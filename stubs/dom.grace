@@ -9,4 +9,4 @@ method framedOval(ctx, g) -> Done  { }
 method filledOval(ctx, g) -> Done  { }
 method image(ctx, g) -> Done  { }
 method draw(ctx, graphics, width, height) -> Done  { }
-method noObject -> Object { }
+method noObject -> EqualityObject { }
