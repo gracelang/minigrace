@@ -5,6 +5,8 @@
 
 inherit prelude.methods
 
+type Procedure0 = prelude.Procedure0
+
 method assert(bb:Boolean) description(str:String) { }
 
 method deny(bb:Boolean) description(str:String) { }
