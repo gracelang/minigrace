@@ -3543,16 +3543,20 @@ function handleRequestException(ex, obj, methname, method, methodArgs) {
         throw new GraceExceptionPacket(UninitializedVariableObject,
             new GraceString("requested method '" + methname + "' on uninitialised variable."));
     } else if (methname === 'module initialization') {
-        ex.message = "error in initialisation of module " +
-                obj.definitionModule + ": " + ex.message;
-        throw ex;
+        const where = lineNumber ? "on line " + lineNumber : "in initialisation";
+        const newEx = new GraceExceptionPacket(RequestErrorObject,
+            new GraceString("error " + where + " of module " +
+            obj.definitionModule + ": " + ex.message));
+        Object.defineProperty(newEx, 'moduleName', {value: obj.definitionModule});
+        newEx.lineNumber = lineNumber;
+        throw newEx;
     } else if (typeof(obj.methods[methname]) !== "function") {
         var argsGL = new PrimitiveGraceList( methodArgs.slice(1) );
         return dealWithNoMethod(methname, obj, argsGL);
     } else {
         throwStackOverflowIfAppropriate(ex);
         const newEx = new GraceExceptionPacket(MinigraceErrorObject,
-            new GraceString("Implementation error in JavaScript method. " + ex.toString()));
+            new GraceString("implementation error in JavaScript method. " + ex.toString()));
         newEx.exitStack.unshift({
             className: obj.className,
             methname: methname,
@@ -3560,7 +3564,7 @@ function handleRequestException(ex, obj, methname, method, methodArgs) {
             lineNumber: 0,
             toString: GraceCallStackToString
         });
-        throw ex;
+        throw newEx;
     }
 }
 
@@ -4020,19 +4024,16 @@ function do_import(modname, moduleCodeFunc) {
     var newModule = (modname === "standardGrace") ? Grace_prelude : new GraceModule(modname);
     // importing "standardGrace" adds to the built-in prelude.
     try {
+        lineNumber = 0;
         var f = Function.prototype.call.call(moduleCodeFunc, newModule);
           // Almost like moduleCodeFunc.call(newModule), which executes
           // moduleCodeFunc with this === newModule.  The difference is that we
           // ensure that the `call` function is the one from Function.prototype
+        importedModules[modname] = f;
         return f;
     } catch (ex) {
-        return handleRequestException(ex,
-                                      {className: "module"},
-                                      "module initialization",
-                                      newModule,
-                                      []);
-    } finally {
-        importedModules[modname] = f;
+        return handleRequestException(ex, newModule, "module initialization",
+                                      {definitionModule: modname}, []);
     }
 }
 
