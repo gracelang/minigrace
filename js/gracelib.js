@@ -4399,6 +4399,7 @@ if (typeof global !== "undefined") {
     global.callmethod = callmethod;
     global.checkBlockArgs = checkBlockArgs;
     global.classType = classType;
+    global.confidentialVersion = confidentialVersion;
     global.dbg = dbg;
     global.dbgp = dbgp;
     global.do_import = do_import;
@@ -4454,8 +4455,10 @@ if (typeof global !== "undefined") {
     global.MinigraceErrorObject = MinigraceErrorObject;
     global.NoSuchMethodErrorObject = NoSuchMethodErrorObject;
     global.nullFunction = nullFunction;
+    global.object_identityHash = object_identityHash;
     global.PrimitiveGraceList = PrimitiveGraceList;
     global.ProgrammingErrorObject = ProgrammingErrorObject;
+    global.publicVersion = publicVersion;
     global.raiseTypeError = raiseTypeError;
     global.raiseUninitializedVariable = raiseUninitializedVariable;
     global.request = request;
