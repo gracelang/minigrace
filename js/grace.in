@@ -123,11 +123,11 @@ MiniGrace.prototype.trapErrors = function(func) {
         } else if (e.exctype === "return") {
             this.stderr_write("ProgrammingError: you are attempting to return " +
                 "from a method that has already returned, at line " +
-                lineNumber + " of " + moduleName);
+                lineNumber);
             process.exit(2);
         } else if (e != "SystemExit") {
             this.stderr_write("Internal error around line " +
-                lineNumber + " of " + moduleName + ": " + e);
+                lineNumber + ": " + e);
             throw e;
             process.exit(2);
         }
