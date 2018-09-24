@@ -1,21 +1,6 @@
 #pragma NativePrelude
 #pragma ExtendedLineups
 
-def SuccessfulMatch is public = object {
-    class new(result', bindings') {
-        inherit true
-        method result { result' }
-        method bindings { bindings' }
-        method asString {
-            "SuccessfulMatch(result = {result}, bindings = {bindings})"
-        }
-    }
-}
-
-def FailedMatch is public = object {
-    method new(_) { false }
-}
-
 method abstract {
     SubobjectResponsibility.raise "abstract method not overriden by subobject"
 }
@@ -80,24 +65,6 @@ def BasicPattern is public = object {
 def AndPattern is public = object {
     class new(p1, p2) {
         inherit BasicPattern.new
-        method match(o) {
-            def m1 = p1.match(o)
-            if (!m1) then {
-                return m1
-            }
-            def m2 = p2.match(o)
-            if (!m2) then {
-                return m2
-            }
-            def bindings = []
-            for (m1.bindings) do {b->
-                bindings.push(b)
-            }
-            for (m2.bindings) do {b->
-                bindings.push(b)
-            }
-            SuccessfulMatch.new(o, bindings)
-        }
         method matches(obj) {
             if (p1.matches(obj)) then {
                 p2.matches(obj)
@@ -111,24 +78,6 @@ def AndPattern is public = object {
 def OrPattern is public = object {
     class new(p1, p2) {
         inherit BasicPattern.new
-        method match(o) {
-            def m1 = p1.match(o)
-            if (!m1) then {
-                return m1
-            }
-            def m2 = p2.match(o)
-            if (!m2) then {
-                return m2
-            }
-            def bindings = []
-            for (m1.bindings) do {b->
-                bindings.push(b)
-            }
-            for (m2.bindings) do {b->
-                bindings.push(b)
-            }
-            SuccessfulMatch.new(o, bindings)
-        }
         method matches(o) {
             if (p1.matches(o)) then { return true }
             p2.matches(o)
@@ -140,13 +89,6 @@ def Singleton is public = object {
     class new {
         inherit BasicPattern.new
         use identityEquality
-        method match(other) {
-            if (self.isMe(other)) then {
-                SuccessfulMatch.new(other, [])
-            } else {
-                FailedMatch.new(other)
-            }
-        }
         method matches(other) { self.isMe(other) }
     }
     class named(printString) {
@@ -233,9 +175,6 @@ def TypeUnion is public = object {
         method methodNames {
             t1.methodNames ** t2.methodNames
         }
-        method match(o) {
-            ResourceException.raise "matching against a TypeUnion not yet implemented"
-        }
         method matches(o) {
             ResourceException.raise "matching against a TypeUnion not yet implemented"
             // Why not?  Becuase it requires reflection, which
@@ -289,11 +228,6 @@ def TypeSubtraction is public = object {
 type Extractable = {
     extract
 }
-
-type MatchResult = Boolean | (Boolean & interface {
-    result -> Unknown
-    bindings -> List⟦Unknown⟧
-})
 
 type Pattern = {
     & (other:Pattern) -> Pattern
