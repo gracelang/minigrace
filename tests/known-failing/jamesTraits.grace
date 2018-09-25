@@ -60,3 +60,4 @@ print(allTraits2.move)
 print(twoTraitsAndMove.move)
 print(justInherits)
 print(useClasses.move)
+print(twoTraitsAndMove.fishMove)  // should fail because fishMove is confidential

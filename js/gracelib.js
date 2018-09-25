@@ -209,14 +209,20 @@ function trait_asString (argcv) {
 }
 
 function confidentialVersion(fun, optionalName) {
-    const newFun = (...args) => fun.apply(this, args);
+    const newFun = function confidentialV (...args) { return fun.apply(this, args) };
     newFun.confidential = true;
+    if (fun.paramCounts) newFun.paramCounts = fun.paramCounts;
+    if (fun.paramNames) newFun.paramNames = fun.paramNames;
+    if (fun.typeParamNames) newFun.typeParamNames = fun.typeParamNames;
     if (optionalName) newFun.methodName = optionalName;
     return newFun;
 }
 
 function publicVersion(fun, optionalName) {
-    const newFun = function (...args) { return fun.apply(this, args) };
+    const newFun = function publicV (...args) { return fun.apply(this, args) };
+    if (fun.paramCounts) newFun.paramCounts = fun.paramCounts;
+    if (fun.paramNames) newFun.paramNames = fun.paramNames;
+    if (fun.typeParamNames) newFun.typeParamNames = fun.typeParamNames;
     if (optionalName) newFun.methodName = optionalName;
     return newFun;
 }

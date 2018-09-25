@@ -6,3 +6,4 @@ class dancingCat {
     use cat        // this should fail, because cat is not a trait.
     method move {  "dance" }
 }
+print(dancingCat.move)

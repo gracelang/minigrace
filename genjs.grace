@@ -357,8 +357,11 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
     }
     installLocalAttributesOf(o) into "this"
     out "for (var aix = 0, aLen = aliases.length; aix < aLen; aix++) \{"
-    out "    var oneAlias = aliases[aix];"
-    out "    this.methods[oneAlias.newName] = this.methods[oneAlias.oldName];"
+    out "    const a = aliases[aix];"
+    out "    const m = confidentialVersion(this.methods[a.oldName], a.newName);"
+    out "    m.definitionLine = {o.line};"
+    out "    m.definitionModule = {modNameAsString};"
+    out "    this.methods[a.newName] = m;"
     out "}"
     out "for (var exName in inheritedExclusions) \{"
     out "    if (inheritedExclusions.hasOwnProperty(exName)) \{"
