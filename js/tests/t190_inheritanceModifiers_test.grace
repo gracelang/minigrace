@@ -17,7 +17,7 @@ class sub {
         alias foo2 = foo
         exclude bar
         
-    method baz { foo ++ foo2 }
+    method baz { foo ++ " " ++ foo2 }
     method asString is override { "the subobject" }
     method foo is override { "override" }
     method bad { foo ++ bar }
@@ -28,7 +28,7 @@ class subp {
         alias foo2 = foo
         exclude bar
         
-    method baz { foo ++ foo2 }
+    method baz { foo ++ " " ++ foo2 }
     method asString is override { "the subobject" }
     method foo is override { "override" }
     method bad { foo ++ bar }
@@ -36,8 +36,11 @@ class subp {
 
 testSuite {
     def o = sub
-    test "alias o" by {
-        assert (o.foo2) shouldBe "foo"
+    test "access alias in o" by {
+        assert {o.foo2} shouldRaise (NoSuchMethod) mentioning "confidential"
+    }
+    test "internal use of alias in o" by {
+        assert (o.baz) shouldBe "override foo"
     }
     test "override o" by {
         assert (o.foo) shouldBe "override"
@@ -46,12 +49,15 @@ testSuite {
         assert {o.bar} shouldRaise (NoSuchMethod)
     }
     test "used exclusion o" by {
-        assert {o.bad} shouldRaise (NoSuchMethod)
+        assert {o.bad} shouldRaise (NoSuchMethod) mentioning "bad"
     }
     
     def p = subp
-    test "alias p" by {
-        assert (p.foo2) shouldBe "not foo"
+    test "access alias in p" by {
+        assert {p.foo2} shouldRaise (NoSuchMethod) mentioning "confidential"
+    }
+    test "internal use of alias in p" by {
+        assert (p.baz) shouldBe "override not foo"
     }
     test "override p" by {
         assert (p.foo) shouldBe "override"
@@ -60,6 +66,6 @@ testSuite {
         assert {p.bar} shouldRaise (NoSuchMethod)
     }
     test "used exclusion p" by {
-        assert {p.bad} shouldRaise (NoSuchMethod)
+        assert {p.bad} shouldRaise (NoSuchMethod) mentioning "bad"
     }
 }
