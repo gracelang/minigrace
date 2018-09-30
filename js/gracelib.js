@@ -209,8 +209,10 @@ function trait_asString (argcv) {
 }
 
 function confidentialVersion(fun, optionalName) {
+    if (fun.wrappedFunction) fun = fun.wrappedFunction;  // avoid multiple wrappers
     const newFun = function confidentialV (...args) { return fun.apply(this, args) };
     newFun.confidential = true;
+    newFun.wrappedFunction = fun;
     if (fun.paramCounts) newFun.paramCounts = fun.paramCounts;
     if (fun.paramNames) newFun.paramNames = fun.paramNames;
     if (fun.typeParamNames) newFun.typeParamNames = fun.typeParamNames;
@@ -219,7 +221,9 @@ function confidentialVersion(fun, optionalName) {
 }
 
 function publicVersion(fun, optionalName) {
+    if (fun.wrappedFunction) fun = fun.wrappedFunction;  // avoid multiple wrappers
     const newFun = function publicV (...args) { return fun.apply(this, args) };
+    newFun.wrappedFunction = fun;
     if (fun.paramCounts) newFun.paramCounts = fun.paramCounts;
     if (fun.paramNames) newFun.paramNames = fun.paramNames;
     if (fun.typeParamNames) newFun.typeParamNames = fun.typeParamNames;
