@@ -33,7 +33,7 @@ method t040_assertValue(v) andThen (trueBlock) otherwise (falseBlock) {
     }
 }
 method t042_test(n) {
-    out(n);
+    out(n)
 }
 method t044_runFirst(a)second(b)third(c) {
     a.apply
