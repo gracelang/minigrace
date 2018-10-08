@@ -112,7 +112,7 @@ def suggestion is public = object {
         // Include trailing space.
         if (true == includeTrailing) then {
             if (token.hasNext && {token.next.line == token.line}) then {
-                end := token.next.linePos - 1;
+                end := token.next.linePos - 1
             } else {
                 end := getLine(token.line).size
             }
@@ -341,7 +341,7 @@ method name (p:String) matches (t:String) within (k:Number) {
     var top := k + 1  // the location where the topmost diagonal under
                       // threshold intersects the current column
     var maxResult := 0
-    def h = emptyList
+    def h = list.empty
     for (0..m) do { i -> h.at(i+1) put(i) }
     try {
         for (1..n) do { j ->
