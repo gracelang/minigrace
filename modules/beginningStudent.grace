@@ -2,8 +2,6 @@ import "ast" as ast
 import "mirrors" as mirror
 import "unicode" as unicode
 import "typeComparison" as tc
-    // TODO: make the gracelib version of canonicalName
-    // available as a method
 import "minispec" as minispec
 inherit minispec.methods
     exclude list

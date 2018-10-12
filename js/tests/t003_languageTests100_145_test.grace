@@ -718,11 +718,11 @@ def aGraceLangTest = object {
             assert (str) shouldBe "once\nfour times\nfour times\nfour times\nfour times\n"
         }
         
-        method test_145_builtInListDo {
+        method test_145_lineupDo {
             def l = [1, 2, 3, 4]
             out(l)
             l.do { each -> out(each) }
-            assert (str) shouldBe "[1, 2, 3, 4]\n1\n2\n3\n4\n"
+            assert (str) shouldBe "⟨1, 2, 3, 4⟩\n1\n2\n3\n4\n"
         }
 
     }

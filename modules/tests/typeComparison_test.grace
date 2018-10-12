@@ -9,7 +9,7 @@ testSuite {
 
     test "missing — Sequence and string" by {
         assert (tc.methodsIn (Sequence) missingFrom "x") shouldBe
-            "asDictionary, into(_), reversed, sorted, sortedBy(_), and values"
+            "reversed, sorted, sortedBy(_), and values"
     }
 
     test "coverage – false and Iterable" by {

@@ -78,9 +78,7 @@ type Iterable⟦T⟧ = Collection⟦T⟧    // for backward compatibility
 
 type Enumerable⟦T⟧ = Collection⟦T⟧ & interface {
     values -> Collection⟦T⟧
-    asDictionary -> Dictionary⟦Number,T⟧
     keysAndValuesDo(action:Function2⟦Number,T,Object⟧) -> Done
-    into(existing: Expandable⟦Unknown⟧) -> Collection⟦Unknown⟧
     sortedBy(comparison:Function2⟦T,T,Number⟧) -> SelfType
     sorted -> SelfType
 }
@@ -144,7 +142,6 @@ type Set⟦T⟧ = Collection⟦T⟧ & interface {
     isSuperset(s2: Collection⟦T⟧) -> Boolean
     removeAll(elems: Collection⟦T⟧)
     removeAll(elems: Collection⟦T⟧)ifAbsent(action:Procedure0) -> Set⟦T⟧
-    into(existing: Expandable⟦Unknown⟧) -> Collection⟦Unknown⟧
 }
 
 type Dictionary⟦K,T⟧ = Collection⟦T⟧ & interface {
@@ -170,7 +167,6 @@ type Dictionary⟦K,T⟧ = Collection⟦T⟧ & interface {
     copy -> Dictionary⟦K,T⟧
     ++ (other:Dictionary⟦K, T⟧) -> Dictionary⟦K, T⟧
     -- (other:Dictionary⟦K, T⟧) -> Dictionary⟦K, T⟧
-    asDictionary -> Dictionary⟦K, T⟧
 }
 
 type Iterator⟦T⟧ = interface {
@@ -699,8 +695,9 @@ class list⟦T⟧ {
             }
             method addAll(l) {
                 mods := mods + 1
-                if ((size + l.size) > inner.size) then {
-                    expandTo(max(size + l.size, size * 2))
+                def lSize = l.sizeIfUnknown { 1 }
+                if ((size + lSize) > inner.size) then {
+                    expandTo(max(size + lSize, size * 2))
                 }
                 for (l) do {each ->
                     inner.at(size)put(each)

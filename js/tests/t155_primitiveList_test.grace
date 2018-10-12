@@ -82,7 +82,8 @@ def primitiveListTest = object {
             assert (oneToFive.at(5)) shouldBe (5)
             assert (evens.at(4)) shouldBe (8)
             assert {evens.at(5)} shouldRaise (BoundsError)
-            assert {evens.at(naN)} shouldRaise (TypeError)
+            assert {evens.at(naN)} shouldRaise (BoundsError)
+            assert {evens.at "foobar"} shouldRaise (TypeError)
         }
 
         method testListOrdinals {
