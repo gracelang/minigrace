@@ -3632,6 +3632,8 @@ function handleRequestException(ex, obj, methname, method, methodArgs) {
     } else if (typeof(obj.methods[methname]) !== "function") {
         var argsGL = new PrimitiveGraceList( methodArgs.slice(1) );
         return dealWithNoMethod(methname, obj, argsGL);
+    } else if (ex == "ErrorExit") {
+        throw ex;
     } else {
         throwStackOverflowIfAppropriate(ex);
         const newEx = new GraceExceptionPacket(MinigraceErrorObject,
