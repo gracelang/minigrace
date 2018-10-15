@@ -1204,6 +1204,15 @@ method gatherUsedNames(objNode) is confidential {
     objNode.usedTraits.do { t ->
         def traitScope = objScope.scopeReferencedBy(t.value)
         def traitNode = traitScope.node
+        if (traitNode.isNull.not) then {
+            // if traitNode is null, the trait's scope comes from a gct, and
+            // we have no information as to whether or not it references a trait.
+            if (traitNode.isTrait.not) then {
+                errormessages.syntaxError("{t.value.toGrace 0} is not a trait,"
+                      + " so it may not appear in a 'use' statement")
+                      atRange(t)
+            }
+        }
         if (traitNode.isObject) then {
             collectParentNames(traitScope.node)
         }
