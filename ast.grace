@@ -44,6 +44,9 @@ class line (l:Number) column (c:Number) -> Position {
     method == (other:Position) -> Boolean {
         (line == other.line) && (column == other.column)
     }
+    method hash -> Number {
+        hashCombine(line.hash, column.hash)
+    }
     method ≤ (other:Position) -> Boolean {
         (other > self).not
     }
@@ -67,6 +70,9 @@ class start (s:Position) end (e:Position) -> Range {
     }
     method == (other) {
         (start == other.start) && (end == other.end)
+    }
+    method hash -> Number {
+        hashCombine(start.hash, end.hash)
     }
 }
 def noPosition is public = line 0 column 0
@@ -221,6 +227,7 @@ class baseNode {
     method end -> Position { line (line) column (linePos + self.value.size - 1) }
     method range { start (start) end (end) }
     method kind { abstract }
+    method isNull { false }
     method isAppliedOccurenceOfIdentifier { false }
     method isMatchingBlock { false }
     method isFieldDec { false }
@@ -357,7 +364,7 @@ def nullNode is public = object {
     }
     method range { emptyRange }
     method asString { "the nullNode" }
-    method == (other) { self.isMe(other) }
+    method isNull { true }
 }
 
 class fakeSymbolTable is public {
@@ -380,7 +387,6 @@ class fakeSymbolTable is public {
         ProgrammingError.raise "fakeSymbolTable(on node {node}).enclosingObjectScope"
     }
     method variety { "fake" }
-    method ==(other) { self.isMe(other) }
     method elementScopesAsString { "[fake]" }
 }
 
