@@ -256,24 +256,14 @@ method compileModule (nm) inFile (sourceFile)
         errormessages.error "Please \"Run\" module {nm} before using it."
             atRange (sourceRange)
     }
-    var slashed := false
-    for (sys.argv.first) do {letter ->
-        if(letter == "/") then {
-            slashed := true
-        }
-    }
     var cmd
-    if (slashed) then {
+    if (sys.argv.first.contains "/") then {
         cmd := io.realpath(sys.argv.first)
     } else {
         cmd := io.realpath "{sys.execPath}/{sys.argv.first}"
     }
-    def cmdSz = cmd.size
-    if (cmd.substringFrom(cmdSz-2) to (cmdSz) == ".js") then {
-        cmd := "grace \"{cmd}\""
-    } else {
-        cmd := "\"{cmd}\""
-    }
+    cmd := "\"{cmd}\""
+    cmd := cmd.replace "compiler-js" with "minigrace-js"
     if (util.verbosity != util.defaultVerbosity) then {
         cmd := cmd ++ " --verbose {util.verbosity}"
     }
