@@ -314,7 +314,8 @@ method compileOwnInitialization(o, selfr) {
 method compileBuildAndInitFunctions(o) inMethod (methNode) {
     // o is an objectNode.  In the compiled code, `this` references the current
     // object, which will become the outer object of `selfr`, the object here
-    // being constructed
+    // being constructed.  methNode respresents the method containing o;
+    // if o is not inside a method, methdNode is false.
 
     // The build function adds the attributes defined by o to `this`,
     // and returns as its result the init function, which, when called, will
@@ -337,18 +338,17 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
         // `outerObj` will be the current object, which
         // will become the `outer` of the object under construction.
         // `aliases` and `exclusions` are JS arrays of aliases and method names,
-        // ultimately from an `inherit` statement.
+        // ultimately from an `inherit` or `use` statement.
     increaseindent
     compileobjouter(o, "outerObj")
-    out "var inheritedExclusions = \{ };"
+    out "const inheritedExclusions = \{ };"
         // this object is used to save methods already in the ouc that
-        // would be overridden by local or reused methods, were those local
-        // or reused method not excluded from the combinaiton.
+        // would be overridden by local methods, aliases or excluded methods, were
+        // the excluded methods not excluded.
     out "for (var eix = 0, eLen = exclusions.length; eix < eLen; eix ++) \{"
-    out "    var exMeth = exclusions[eix];"
-    out "    inheritedExclusions[exMeth] = this.methods[exMeth];"
+    out "    const exMeth = exclusions[eix];"
+    out "    inheritedExclusions[exMeth] = this.methods[exMeth]; \};"
             // some of these methods will be undefined; that's OK
-    out "}"
     if (false != inheritsStmt) then {
         compileInherit(inheritsStmt) forClass (o.nameString)
     }
@@ -356,14 +356,18 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
         compileUse(t) in (o)
     }
     installLocalAttributesOf(o) into "this"
-    out "for (var aix = 0, aLen = aliases.length; aix < aLen; aix++) \{"
+    out "const overridenByAliases = \{ };"
+    out "for (let aix = 0, aLen = aliases.length; aix < aLen; aix ++) \{"
     out "    const a = aliases[aix];"
-    out "    const m = confidentialVersion(this.methods[a.oldName], a.newName);"
+    out "    const newNm = a.newName;"
+    out "    const oldNm = a.oldName;"
+    out "    overridenByAliases[newNm] = this.methods[newNm];"
+    out "    const m = confidentialVersion(inheritedExclusions[oldNm] || overridenByAliases[oldNm] || this.methods[oldNm], newNm);"
     out "    m.definitionLine = {o.line};"
     out "    m.definitionModule = {modNameAsString};"
-    out "    this.methods[a.newName] = m;"
+    out "    this.methods[newNm] = m;"
     out "}"
-    out "for (var exName in inheritedExclusions) \{"
+    out "for (let exName in inheritedExclusions) \{"
     out "    if (inheritedExclusions.hasOwnProperty(exName)) \{"
     out "        if (inheritedExclusions[exName]) \{"
     out "            this.methods[exName] = inheritedExclusions[exName];"
