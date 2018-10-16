@@ -7,5 +7,5 @@ absolutePath(){
 
 HERE=`absolutePath $0`
 HERE=`dirname ${HERE}`
-# echo "${HERE}/compiler-js $*"
-${HERE}/compiler-js $*
+NODE=`which node`
+${NODE} --max-old-space-size=2048 ${HERE}/compiler-js $*
