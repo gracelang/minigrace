@@ -342,7 +342,7 @@ npm-build-kg: minigrace.env
 	-@cp js/minigrace-js js/compiler-js npm-build/
 # "-" prefix means ignore exit status!
 
-npm-publish:
+npm-publish: npm-build-kg
 	cd npm-build && npm version $(VERSION) && npm publish
 	@echo Published minigrace version $(VERSION) to npmjs.com
 
