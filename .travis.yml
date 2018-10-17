@@ -3,7 +3,7 @@ language:
 compiler:
   - clang
 install:
-  - nvm install 5.0.0
+  - nvm install 10.6.0
 before_script:
   - git fetch --unshallow
 script:
