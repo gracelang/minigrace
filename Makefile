@@ -381,7 +381,8 @@ self.test: minigrace.env $(STUBS:%.grace=j2/%.gct)
 	mkdir -p selftest
 	cd selftest && ln -sf $(STUBS:%.grace=../j2/%.gct) .
 	cd selftest && ln -sf ../js/unicodedata.js .
-	awk '1;/^\/\/ end of preamble/{exit}' js/compiler-js > selftest/compiler-js-head
+	echo '#!'"`which node` --max-old-space-size=2048" > selftest/compiler-js-head
+	awk 'NR>1;/^\/\/ end of preamble/{exit}' js/compiler-js >> selftest/compiler-js-head
 	awk 'f;/^\/\/ end of preamble/{f=1}' js/compiler-js  > selftest/compiler-js-tail
 	cat selftest/compiler-js-head j2/gracelib.js $(MGSOURCEFILES:%.grace=j2/%.js) selftest/compiler-js-tail > selftest/mgc
 	chmod a+x selftest/mgc
