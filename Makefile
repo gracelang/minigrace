@@ -276,7 +276,8 @@ js/mgc: minigrace.env $(STUBS:%.grace=j2/%.gct)
 	rm -rf mgcTemp js/mgc
 	mkdir mgcTemp
 	cd mgcTemp && ln -sf $(STUBS:%.grace=../j2/%.gct) .
-	awk '1;/^\/\/ end of preamble/{exit}' js/compiler-js > mgcTemp/compiler-js-head
+	echo '#!'"`which node` --max-old-space-size=2048" > mgcTemp/compiler-js-head
+	awk 'NR>1;/^\/\/ end of preamble/{exit}' js/compiler-js > mgcTemp/compiler-js-head
 	awk 'f;/^\/\/ end of preamble/{f=1}' js/compiler-js  > mgcTemp/compiler-js-tail
 	cat mgcTemp/compiler-js-head j2/gracelib.js $(MGSOURCEFILES:%.grace=j2/%.js) mgcTemp/compiler-js-tail > mgcTemp/mgc
 	chmod a+x mgcTemp/mgc
