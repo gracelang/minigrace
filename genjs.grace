@@ -478,8 +478,9 @@ method compileblock(o) {
         out "\};"
     } else {
         out "let {applyMeth} = function apply_{nParams} (argcv, ...args) \{"
-        out "    checkBlockArgs.apply(this, args);"
-        out "    return this.real.apply(this.receiver, args);"
+        out "    if (this.guard.apply(this.receiver, args))"
+        out "        return this.real.apply(this.receiver, args);"
+        out "    badBlockArgs.apply(this, args);"
         out "\};"
     }
     compileMetadata(o, applyMeth, applyMethName)

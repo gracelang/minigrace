@@ -2106,6 +2106,8 @@ function blockWrongArityException(numArgs, recvr) {
 }
 
 function checkBlockArgs(...args) {
+    // no longer used by the code generator.  Can be removed once STABLE no longer
+    // needs it — if not sooner.
     var numArgs = args.length;
     setLineNumber(this.definitionLine);
     if (numArgs !== this.numParams) {     // should be unnecessay now
@@ -2115,6 +2117,41 @@ function checkBlockArgs(...args) {
                 plural + " but given " + numArgs + "."));
     }
     if (this.guard.apply(this.receiver, args)) return;
+    for (var ix = 0; ix < this.paramTypes.length; ix++) {
+        var typeSpec = this.paramTypes[ix]
+        var match = callmethod(typeSpec, "matches(1)", [1], args[ix]);
+        if ( ! Grace_isTrue(match)) {
+            var n = ix + 1;
+            var canonicalName = "apply(_";
+            for (var i = 1; i < numArgs; i++) { canonicalName += ",_"; }
+            canonicalName += ")";
+            var typeName = callmethod(typeSpec, "asString", [0])._value;
+            if (typeName.match(/type ‹anon›/)) {
+                typeName = "required type";
+            }
+            var argDesc = (numArgs === 1) ? "argument" : "argument " + n ;
+            if (typeSpec.className.startsWith("Type")) {
+                // startsWith("Type") catches TypeIntersection, TypeUnion,
+                // etc, as well as class "Type" itself.
+                raiseTypeError(argDesc + " to block." + canonicalName +
+                            " does not have " + typeName,
+                            typeSpec, args[ix]);
+            } else {
+                throw new GraceExceptionPacket(RequestErrorObject,
+                   new GraceString(argDesc + " to block." +
+                       canonicalName + " does not match pattern"));
+            }
+
+        }
+    }
+}
+
+function badBlockArgs(...args) {
+    // called by compiled code after the guard of a block has failed
+    // in its `apply(…)` method. `this` is the block itself.
+    // We simulate the evaluation of the guard, and report an error on
+    // the first failure.
+    const numArgs = args.length;
     for (var ix = 0; ix < this.paramTypes.length; ix++) {
         var typeSpec = this.paramTypes[ix]
         var match = callmethod(typeSpec, "matches(1)", [1], args[ix]);
@@ -4512,6 +4549,7 @@ var var_done = GraceDone;
 if (typeof global !== "undefined") {
     global.Alias = Alias;
     global.assertTypeOrMsg = assertTypeOrMsg;
+    global.badBlockArgs = badBlockArgs;
     global.callmethod = callmethod;
     global.checkBlockArgs = checkBlockArgs;
     global.classType = classType;
