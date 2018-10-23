@@ -2066,11 +2066,43 @@ function GraceBlock(recvr, lineNum, numParams) {
     }
 }
 
-function blockWrongArityException(numArgs) {
-    var plural = (this.numParams === 1) ? "" : "s";
-    throw new GraceExceptionPacket(RequestErrorObject,
-        new GraceString("block requires " + this.numParams + " argument" +
-                plural + " but given " + numArgs + " arguments."));
+GraceBlock.prototype.noSuchMethodHandler = {
+    numParams: 3,
+    className: 'block',
+    methods: {
+        "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
+        "basicAsString":    object_basicAsString,
+        "asDebugString":    object_asDebugString,
+        "debugValue":       object_debugValue,
+        "debugIterator":    object_debugIterator,
+        "asString":         function GraceBlock_asString (argcv) {
+            return new GraceString("intrinsic noSuchMethodHandler for blocks");
+        },
+        "apply(3)":         function GraceBlock_noMethod(argcv, name, arglist, recvr) {
+            let jsName = name._value;
+            let matches = jsName.match( /^apply\((\d+)\)$/ );
+            if (matches) {
+              blockWrongArityException(matches[1], recvr);
+            } else {
+                const closeMatches = closeMatchesForMethodNamed(name, recvr);
+                let suggestions = "";
+                if (closeMatches.length !== 0) {
+                    suggestions = "  Did you mean " + readableOptions(closeMatches) + "?";
+                }
+                throw new GraceExceptionPacket(NoSuchMethodErrorObject,
+                    new GraceString("no method " + canonicalMethodName(jsName) + " on " +
+                        describe(target) + "." + suggestions));
+            }
+        }
+    }
+};
+
+function blockWrongArityException(numArgs, recvr) {
+    const plural = (recvr.numParams === 1) ? "" : "s";
+    throw new GraceExceptionPacket(NoSuchMethodErrorObject,
+        new GraceString(describe(recvr) + " requires " + recvr.numParams + " argument" +
+                plural + " but given " + numArgs));
 }
 
 function checkBlockArgs(...args) {
@@ -3482,6 +3514,8 @@ function mirror_getMethod (argcv, methName) {
 function mirror_NoSuchMethodHandler (argcv, handlerBlock) {
     // sets up handlerBlock (a Block with 2 arguments) to be applied
     // when a requested method is not found.
+    const Function3 = request(var___95__prelude, "Function3", [0]);
+    assertTypeOrMsg(handlerBlock, Function3, "argument to request of `whenNoMethodDo(_)`", "Function3");
     this.subject.noSuchMethodHandler = handlerBlock;
     return GraceDone;
 }
@@ -3738,8 +3772,8 @@ function dealWithNoMethod(name, target, argList) {
         if (target.typeTypes && target.typeTypes[name]) {
             return evaluateTypeInType(name, target);
         } else if (target.noSuchMethodHandler) {
-            return callmethod(target.noSuchMethodHandler, "apply(2)", [2],
-                new GraceString(name), argList);
+            return callmethod(target.noSuchMethodHandler, "apply(3)", [2],
+                new GraceString(name), argList, target);
         } else {
             var closeMatches = closeMatchesForMethodNamed(name, target);
             var suggestions = "";
@@ -3760,7 +3794,7 @@ function dealWithNoMethod(name, target, argList) {
         } else {
             closeMatches = closeMatchesForMethodNamed(name, target);
             suggestions = "";
-            if (closeMatches.length === 0) {
+            if (closeMatches.length !== 0) {
                 suggestions = "  Did you mean " + readableOptions(closeMatches) + "?";
             }
             throw new GraceExceptionPacket(NoSuchMethodErrorObject,

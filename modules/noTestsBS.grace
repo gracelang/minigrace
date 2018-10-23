@@ -86,7 +86,7 @@ method dictionary⟦T⟧(a, b, c, d) {
 
 def selfImage = mirror.reflect(self)
 
-selfImage.whenNoMethodDo { name, args ->
+selfImage.whenNoMethodDo { name, args, receiver ->
     if (isName (name) requesting "list") then {
         prelude.collections.list.withAll (args)
     } elseif {isName (name) requesting "sequence"} then {
@@ -97,7 +97,7 @@ selfImage.whenNoMethodDo { name, args ->
         prelude.collections.dictionary.withAll (args)
     } else {
         def cName = tc.canonical(name)
-        NoSuchMethod.raise "no method {cName} on {self}."
+        NoSuchMethod.raise "no method {cName} on {receiver}."
     }
 }
 
