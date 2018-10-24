@@ -734,7 +734,7 @@ method resolveIdentifiers(topNode) {
     // descendents have already been mapped.
 
     def newModule = topNode.map { node, anc ->
-        if ( node.isAppliedOccurenceOfIdentifier ) then {
+        if ( node.isAppliedOccurence ) then {
             transformIdentifier(node) ancestors(anc)
         } elseif { node.isCall } then {
             transformCall(node)
@@ -1338,7 +1338,7 @@ method transformInherits(inhNode) ancestors(anc) {
         errormessages.syntaxError "{inhNode.statementName} statements must be directly inside an object."
                     atRange(inhNode.range)
     }
-    if (superExpr.isAppliedOccurenceOfIdentifier) then {
+    if (superExpr.isAppliedOccurence) then {
         def nm = superExpr.nameString
         def definingScope = currentScope.thatDefines(nm)
         if (definingScope == currentScope) then {

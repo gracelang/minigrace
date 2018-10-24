@@ -228,7 +228,7 @@ class baseNode {
     method range { start (start) end (end) }
     method kind { abstract }
     method isNull { false }
-    method isAppliedOccurenceOfIdentifier { false }
+    method isAppliedOccurence { false }
     method isMatchingBlock { false }
     method isFieldDec { false }
     method isInherits { false }
@@ -985,16 +985,23 @@ def methodNode is public = object {
         inherit baseNode
         def kind is public = "method"
         var signature is public := signature'
+        var hasBody is public := true
         var body is public := body'
+        if (false == body') then {
+            body := sequence.empty
+            hasBody := false
+        }
         var dtype is public := dtype'
         var selfclosure is public := false
         var annotations is public := [ ]
         var isFresh is public := false      // a method is 'fresh' if it answers a new object
+        var isOnceMethod is public := false
         var usesClassSyntax is public := false
         var cachedIdentifier := uninitialized
         var isBindingOccurence is readable := true
             // the only exceptions are the oldMethodName in an alias clause,
             // and an excluded name
+        method isAppliedOccurence { isBindingOccurence.not }
 
         method end -> Position {
             if (body.isEmpty.not) then {
@@ -1174,7 +1181,8 @@ def methodNode is public = object {
         }
         method pretty(depth) {
             def spc = "  " * (depth+1)
-            var s := basePretty(depth) ++ "\n"
+            var s := basePretty(depth) ++
+                  if (isOnceMethod) then { " (once)\n" } else { "\n" }
             s := s ++ spc ++ "Name: " ++ value.pretty(depth+1) ++ "\n"
             if (false != self.dtype) then {
                 s := s ++ spc ++ "Returns:\n" ++ spc ++ "  "
@@ -1217,7 +1225,8 @@ def methodNode is public = object {
         }
         method toGrace(depth : Number) -> String {
             def spc = "    " * depth
-            var s := "method "
+            var s := if (isOnceMethod) then { "once "} else { "" }
+            s := s ++ "method "
             for (self.signature) do { part -> s := s ++ part.toGrace(depth) }
             if (false != self.dtype) then {
                 s := s ++ " -> {self.dtype.toGrace(0)}"
@@ -1228,14 +1237,16 @@ def methodNode is public = object {
                     if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0)
                 } startingWith ""
             }
-            s := s ++ " \{"
-            if (false != comments) then {
-                s := s ++ comments.toGrace(depth + 1)
+            if (self.hasBody) then {
+                s := s ++ " \{"
+                if (false != comments) then {
+                    s := s ++ comments.toGrace(depth + 1)
+                }
+                for (self.body) do { mx ->
+                    s := s ++ "\n" ++ spc ++ "    " ++ mx.toGrace(depth + 1)
+                }
+                s := s ++ "\n" ++ spc ++ "\}"
             }
-            for (self.body) do { mx ->
-                s := s ++ "\n" ++ spc ++ "    " ++ mx.toGrace(depth + 1)
-            }
-            s := s ++ "\n" ++ spc ++ "\}"
             s
         }
         method shallowCopy {
@@ -1243,8 +1254,10 @@ def methodNode is public = object {
         }
         method postCopy(other) {
             isFresh := other.isFresh
+            isOnceMethod := other.isOnceMethod
+            hasBody := other.hasBody
             selfclosure := other.selfclosure
-            if (other.isBindingOccurence.not) then {
+            if (other.isAppliedOccurence) then {
                 self.appliedOccurence
             }
             self
@@ -2056,7 +2069,7 @@ def identifierNode is public = object {
             if (isOuter) then { return true }
             return false
         }
-        method isAppliedOccurenceOfIdentifier {
+        method isAppliedOccurence {
             if (wildcard) then {
                 false
             } else {
