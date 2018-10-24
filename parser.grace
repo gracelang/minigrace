@@ -1909,6 +1909,9 @@ method defdec {
         name.isBindingOccurrence := true
         var dtype := optionalTypeAnnotation
         def anns = doannotation
+        def o = ast.defDecNode.new(name, val, dtype).setPositionFrom(defTok)
+        if (false != anns) then { o.annotations.addAll(anns) }
+        o.startToken := defTok
         if (sym.isOp && (sym.value == "=")) then {
             next
             if (unsuccessfulParse {expression(blocksOK)}) then {
@@ -1917,13 +1920,9 @@ method defdec {
             val := values.pop
         } elseif { sym.isBind } then {
             errorDefUsesAssign(defTok)
-        } else {
+        } elseif { o.isAnnotationDecl.not }
             errorDefMissingRhs(defTok)
         }
-        util.setPosition(defTok.line, defTok.linePos)
-        var o := ast.defDecNode.new(name, val, dtype)
-        if (false != anns) then { o.annotations.addAll(anns) }
-        o.startToken := defTok
         values.push(o)
         reconcileComments
     }
