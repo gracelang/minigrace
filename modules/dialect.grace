@@ -94,21 +94,12 @@ class aMutableMap {
     }
 
     method asString -> String is override {
-        if(isEmpty) then {
-            return "\{\}"
-        }
-
         var out := "\{"
-
-        var once := false
-        for(entries) do { entry ->
-            if(once) then {
-                out := "{out},"
-            }
+        entries.do { entry ->
             out := "{out} {entry.key} => {entry.value}"
-            once := true
+        } separatedBy {
+            out := "{out},"
         }
-
         return "{out} \}"
     }
 

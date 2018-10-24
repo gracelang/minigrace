@@ -11,20 +11,20 @@ keywords.put("class", true)
 keywords.put("def", true)
 keywords.put("dialect", true)
 keywords.put("exclude", true)
-keywords.put("factory", true)
 keywords.put("import", true)
 keywords.put("inherit", true)
 keywords.put("interface", true)
 keywords.put("is", true)
 keywords.put("method", true)
 keywords.put("object", true)
+keywords.put("once", true)
 keywords.put("prefix", true)
 keywords.put("return", true)
-keywords.put("super", true)
 keywords.put("trait", true)
 keywords.put("type", true)
 keywords.put("use", true)
 keywords.put("var", true)
+keywords.put("where", true)
 
 def operatorChars = "-&|:$#\\%^@?*/+!~"
 method isOperatorChar(c, ordval) {
@@ -628,16 +628,6 @@ def identifierState = object {
         checkSeparator(c)
         if (!isIdentifierChar(c)) then {
             if (keywords.contains(accum)) then {
-                if (accum == "super") then {
-                    errormessages.syntaxError(
-                        "`super` is no longer part of Grace.\n" ++
-                          "Consider using an `alias` clause on the inherit statement.")
-                          atRange(lineNumber, startPosition, linePosition-1)
-                } elseif {accum == "inherits"} then {
-                    errormessages.syntaxError(
-                        "The reserved word `inherits` has been replaced by `inherit`.")
-                          atRange(lineNumber, startPosition, linePosition-1)
-                }
                 emit(keywordToken(accum))
             } else {
                 emit(identifierToken(accum))

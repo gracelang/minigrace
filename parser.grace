@@ -2314,20 +2314,6 @@ method classOrTrait {
     reconcileComments
 }
 
-method dofactoryMethod {
-    // Accept a factory method declaration
-    if ((acceptKeyword "factory") && { tokens.first.isKeyword } && {
-        tokens.first.value == "method"
-    }) then {
-        def btok = sym
-        next
-        errormessages.syntaxError("the keyword combination 'factory method' is " ++
-                "no longer supported. Use 'class' instead.")
-                atRange(btok.line, btok.linePos, sym.line, sym.endPos)
-                withSuggestions []
-    }
-}
-
 method methoddec {
     // Parse a method declaration
 

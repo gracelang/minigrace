@@ -69,15 +69,12 @@ def aMethodType = object {
             signature.do { part ->
                 name:= "{name}{part.name}("
                 show:= "{show}{part.name}("
-                var once:= false
                 part.parameters.do { param ->
-                    if (once) then {
-                        show := show ++ ", "
-                        name := name ++ ","
-                    }
                     show := show ++ param
                     name := name ++ "_"
-                    once:= true
+                } separatedBy {
+                    show := show ++ ", "
+                    name := name ++ ","
                 }
                 show := show ++ ")"
                 name := name ++ ")"
@@ -694,7 +691,7 @@ method check (req: Request)
 
         if (aSize != pSize) then {
             def which = if (aSize > pSize) then { "many" } else { "few" }
-            def where = if (aSize > pSize) then {
+            def location = if (aSize > pSize) then {
                 args.at (pSize + 1)
             } else {
                 // Can we get beyond the final argument?
@@ -704,7 +701,7 @@ method check (req: Request)
             RequestError
                 .raise ("too {which} arguments to method part " ++
                     "'{part.name}', expected {pSize} but got {aSize}")
-                    with (where)
+                    with (location)
         }
 
         prelude.for (params) and (args) do { param, arg ->
