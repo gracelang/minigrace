@@ -904,10 +904,7 @@ def typeDecNode is public = object {
 
     method isExecutable { true }
     method declarationKindWithAncestors(ac) { k.typeparam }
-    method isConfidential {
-        if (annotations.size == 0) then { return false }
-        findAnnotation(self, "confidential")
-    }
+    method isConfidential { findAnnotation(self, "confidential") }
     method isPublic { isConfidential.not }
     method isWritable { false }
     method isReadable { isPublic }
@@ -1129,13 +1126,12 @@ def methodNode is public = object {
             st.node := self
         }
         method declarationKindWithAncestors(ac) { k.parameter }
-        method isConfidential {
-            if (annotations.size == 0) then { return false }
-            findAnnotation(self, "confidential")
-        }
+        method isConfidential { findAnnotation(self, "confidential") }
         method isPublic { isConfidential.not }
         method isWritable { false }
         method isReadable { isPublic }
+        method isAbstract { findAnnotation(self, "abstract") }
+        method isRequired { findAnnotation(self, "required") }
         method usesAsType(aNode) {
             aNode == dtype
         }
@@ -2417,7 +2413,6 @@ def defDecNode is public = object {
         method end -> Position { value.end }
         method isPublic {
             // defs are confidential by default
-            if (annotations.size == 0) then { return false }
             if (findAnnotation(self, "public")) then { return true }
             findAnnotation(self, "readable")
         }
@@ -2519,18 +2514,14 @@ def varDecNode is public = object {
     }
     method isPublic {
         // vars are confidential by default
-        if (annotations.size == 0) then { return false }
-        if (findAnnotation(self, "public")) then { return true }
-        findAnnotation(self, "readable")
+        findAnnotation(self, "public")
     }
     method isWritable {
-        if (annotations.size == 0) then { return false }
         if (findAnnotation(self, "public")) then { return true }
         if (findAnnotation(self, "writable")) then { return true }
         false
     }
     method isReadable {
-        if (annotations.size == 0) then { return false }
         if (findAnnotation(self, "public")) then { return true }
         if (findAnnotation(self, "readable")) then { return true }
         false
@@ -2630,7 +2621,6 @@ def importNode is public = object {
     method nameString { value.nameString }
     method isPublic {
         // imports, like defs, are confidential by default
-        if (annotations.size == 0) then { return false }
         if (findAnnotation(self, "public")) then { return true }
         findAnnotation(self, "readable")
     }
@@ -3362,9 +3352,8 @@ def patternMarkVisitor = object {
 }
 
 method findAnnotation(node, annName) {
-    for (node.annotations) do {ann->
-        if ((ann.kind == "identifier") && {
-            ann.value == annName }) then {
+    node.annotations.do { ann ->
+        if (ann.nameString == annName) then {
             return object {
                 inherit true
                 def value is public = ann
