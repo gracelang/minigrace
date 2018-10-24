@@ -607,7 +607,7 @@ method doif {
         if (unsuccessfulParse {expression(blocksOK)}) then {
             def suggestion = errormessages.suggestion.new
             // Look ahead for a rparen.
-            var nextTok := findNextToken({ t -> (t.line == lastToken.line) && (t.isRParen) })
+            var nextTok := findNextToken { t -> (t.line == lastToken.line) && (t.isRParen) }
             if (false == nextTok) then {
                 nextTok := findNextValidToken( ["rparen"] )
                 if (nextTok == sym) then {
@@ -715,8 +715,8 @@ method doif {
                     // Look ahead for a rbrace or then.
                     def nextTok = findNextToken { t ->
                         (t.line == statementToken.line)
-                            && ((t.isRBrace || t.isLBrace)
-                            || (t.isIdentifier && (t.value == "then"))) }
+                              && ((t.isRBrace || t.isLBrace)
+                              || (t.isIdentifier && (t.value == "then"))) }
                     if (false == nextTok) then {
                         suggestion.insert(" \{ «expression» \} then \{")afterToken(statementToken)
                     } elseif { nextTok.isRBrace } then {
@@ -1089,9 +1089,11 @@ method trycatch {
         if (sym.kind != "lparen") then {
             def suggestion = errormessages.suggestion.new
             // Look ahead for a rbrace, rparen, or catch.
-            def nextTok = findNextToken({ t -> (t.isRBrace)
-                || ((t.isRParen) && (t.line == tryTok.line))
-                || ((t.isIdentifier) && (t.value == "catch")) })
+            def nextTok = findNextToken { t ->
+                  (t.isRBrace)
+                      || ((t.isRParen) && (t.line == tryTok.line))
+                      || ((t.isIdentifier) && (t.value == "catch"))
+            }
             if (false == nextTok) then {
                 suggestion.insert(" \{}")afterToken(tryTok)
             } elseif { nextTok.isRBrace } then {
@@ -1259,8 +1261,9 @@ method matchcase {
     if (sym.kind != "lparen") then {
         def suggestion = errormessages.suggestion.new
         // Look ahead for a rparen or case.
-        def nextTok = findNextToken({ t -> ((t.isRParen) && (t.line == matchTok.line))
-            || ((t.isIdentifier) && (t.value == "case")) })
+        def nextTok = findNextToken { t ->
+            ((t.isRParen) && (t.line == matchTok.line))
+                  || ((t.isIdentifier) && (t.value == "case")) }
         if (false == nextTok) then {
             suggestion.insert("(«expression»)")afterToken(matchTok)
         } elseif { nextTok.isRParen } then {
@@ -1833,8 +1836,9 @@ method typeArg {
 
 method errorDefNoName {
     def suggestion = errormessages.suggestion.new
-    def nextTok = findNextToken({ t -> (t.isOp)
-        && (t.value == "=") && (t.line == sym.line)})
+    def nextTok = findNextToken { t ->
+        (t.isOp) && (t.value == "=") && (t.line == sym.line)
+    }
     if (false == nextTok) then {
         suggestion.insert(" «name» =")afterToken(lastToken)
     } elseif { nextTok == sym } then {
@@ -1935,8 +1939,9 @@ method vardec {
         next
         if (sym.kind != "identifier") then {
             def suggestion = errormessages.suggestion.new
-            def nextTok = findNextToken({ t -> (t.isBind)
-                && (t.line == sym.line)})
+            def nextTok = findNextToken { t ->
+                  (t.isBind) && (t.line == sym.line)
+            }
             if ((false == nextTok) || {nextTok == sym}) then {
                 suggestion.insert(" «name»")afterToken(lastToken)
             } else {
@@ -2131,10 +2136,10 @@ method inheritModifier(node) {
 
 method parseAlias(node) {
     next    // skip the alias keyword
-    def newMeth = methodsignature(true)
+    def newMeth = methodsignature
     if (sym.isOp && (sym.value == "=")) then {
         next
-        def oldMeth = methodsignature(true).appliedOccurence
+        def oldMeth = methodsignature.appliedOccurence
         if (newMeth.numParams ≠ oldMeth.numParams) then {
             errormessages.syntaxError "a method and its alias must have the same number of parameters"
                 atRange (newMeth.line, newMeth.linePos, oldMeth.endPos)
@@ -2149,7 +2154,7 @@ method parseAlias(node) {
 }
 method parseExclude(node) {
     next    // skip the exclude keyword
-    def excludedMeth = methodsignature(true).appliedOccurence
+    def excludedMeth = methodsignature.appliedOccurence
     node.addExclusion (excludedMeth)
     return true
 }
@@ -2293,7 +2298,7 @@ method classOrTrait {
                 "Consider using a class, or a class inside an object constructor.")
                 atPosition(tokens.first.line, tokens.first.linePos)
     }
-    def meth = methodsignature(false)
+    def meth = methodsignature
     meth.setPositionFrom(btok)
     def myKind = btok.value
     parseObjectConstructorBody "a {myKind}" startingWith (btok) after "the {myKind} header"
@@ -2316,66 +2321,83 @@ method classOrTrait {
 
 method methoddec {
     // Parse a method declaration
-
-    if (acceptKeyword "method") then {
-        def btok = sym
+    var isOnceMethod := false
+    var btok
+    if (acceptKeyword "once") then {
+        isOnceMethod := true
+        btok := sym
         statementToken := sym
         next
-        def methNode = methodsignature(false).setPositionFrom(btok)
-        def anns = doannotation
-        def originalValues = values
-        values := []
-        if (sym.isLBrace) then {
-            next
-            skipSeparators
-            // sym is now the first token in the method body
-            while { successfulParse { statement } } do { separator }
-                // The body is a sequence of statements; the method ends
-                // when no further statement is found.
-            if (sym.isRBrace.not) then {
-                def suggestion = errormessages.suggestion.new
-                def closingBrace = findClosingBrace(btok, false)
-                if (closingBrace.found.not) then {
-                    if (sym.isEof) then {
-                        errormessages.syntaxError("end of program " ++
-                            "found while searching for the '}' to close " ++
-                              "a method declaration.")
-                                atPosition(sym.line, sym.linePos)
-                    }
-                    if (closingBrace.tok == sym) then {
-                        suggestion.insert("}")afterToken(lastToken)
-                    } else {
-                        suggestion.addLine(closingBrace.tok.line + 0.1, "}")
-                    }
-                }
-                suggestion.deleteToken(sym)
-                errormessages.syntaxError("a method must end with a '}'.")atPosition(
-                    sym.line, sym.linePos)withSuggestion(suggestion)
-            }
-            next
-        } else {
+        if (acceptKeyword "method" .not) then {
             def suggestion = errormessages.suggestion.new
-            def closingBrace = findClosingBrace(btok, true)
+            suggestion.insert " method" afterToken(btok)
+            errormessages.syntaxError "'once' must be followed by 'method'"
+                  atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
+        }
+    } elseif { acceptKeyword "method" } then {
+        btok := sym
+        statementToken := sym
+    } else {
+        return      // there is no method declaration to parse
+    }
+    next
+    def methNode = methodsignature.setPositionFrom(btok)
+    methNode.isOnceMethod := isOnceMethod
+    def anns = doannotation
+    def originalValues = values
+    values := []
+    if (sym.isLBrace) then {
+        next
+        skipSeparators
+        // sym is now the first token in the method body
+        while { successfulParse { statement } } do { separator }
+            // The body is a sequence of statements; the method ends
+            // when no further statement is found.
+        if (sym.isRBrace.not) then {
+            def suggestion = errormessages.suggestion.new
+            def closingBrace = findClosingBrace(btok, false)
             if (closingBrace.found.not) then {
-                if (closingBrace.tok == lastToken) then {
-                    suggestion.insert(" \{}")afterToken(lastToken)andTrailingSpace(true)
+                if (sym.isEof) then {
+                    errormessages.syntaxError("end of program " ++
+                        "found while searching for the '}' to close " ++
+                          "a method declaration.")
+                            atPosition(sym.line, sym.linePos)
+                }
+                if (closingBrace.tok == sym) then {
+                    suggestion.insert("}")afterToken(lastToken)
                 } else {
                     suggestion.addLine(closingBrace.tok.line + 0.1, "}")
-                    suggestion.insert(" \{")afterToken(lastToken)andTrailingSpace(true)
                 }
+            }
+            suggestion.deleteToken(sym)
+            errormessages.syntaxError("a method must end with a '}'.")atPosition(
+                sym.line, sym.linePos)withSuggestion(suggestion)
+        }
+        next
+    } elseif {false == anns} then {
+        def suggestion = errormessages.suggestion.new
+        def closingBrace = findClosingBrace(btok, true)
+        if (closingBrace.found.not) then {
+            if (closingBrace.tok == lastToken) then {
+                suggestion.insert(" \{}")afterToken(lastToken)andTrailingSpace(true)
             } else {
+                suggestion.addLine(closingBrace.tok.line + 0.1, "}")
                 suggestion.insert(" \{")afterToken(lastToken)andTrailingSpace(true)
             }
-            errormessages.syntaxError("a method must have a '\{' after the name.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+        } else {
+            suggestion.insert(" \{")afterToken(lastToken)andTrailingSpace(true)
         }
-        methNode.body := values
-        values := originalValues
-        util.setline(btok.line)
-        if (false != anns) then { methNode.annotations.addAll(anns) }
-        values.push(methNode)
-        reconcileComments
+        errormessages.syntaxError("a method must have a '\{' after the name.")atPosition(
+            lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+    } else {
+        methNode.hasBody := false
     }
+    methNode.body := values
+    values := originalValues
+    util.setline(btok.line)
+    if (false != anns) then { methNode.annotations.addAll(anns) }
+    values.push(methNode)
+    reconcileComments
 }
 
 method separator {
@@ -2390,15 +2412,14 @@ method separator {
     }
 }
 
-method methodDecRest(tm, sameline) {
+method methodDecRest(tm) {
     // Process the remainder of a method header. These follow
-    // mostly the same rules as calls, but aren't strictly enforced to be on
-    // a single line (because they are ended by "{"). 
+    // mostly the same rules as requests
     //
     // tm is a methodNode.  This method modifies tm.params in place.
 
     var signature := tm.signature
-    while {(!sameline && sym.isIdentifier) || sym.isIdentifier} do {
+    while {sym.isIdentifier} do {
         pushidentifier
         def part = ast.signaturePart.partName(values.pop.nameString)
         if (sym.isLParen.not) then {
@@ -2463,7 +2484,7 @@ method optionalTypeAnnotation {
     }
 }
 
-method methodsignature(sameline) {
+method methodsignature {
     // Accept a method signature
     if ((! acceptKeyword "prefix") && (sym.isIdentifier.not) && (sym.isOp.not)) then {
         def suggestion = errormessages.suggestion.new
@@ -2522,7 +2543,7 @@ method methodsignature(sameline) {
         }
         if (sym.kind != "rparen") then {
             def suggestion = errormessages.suggestion.new
-            def rparen = findNextToken({ t -> (t.isRParen) && (t.line == lastToken.line) })
+            def rparen = findNextToken { t -> (t.isRParen) && (t.line == lastToken.line) }
             if (false == rparen) then {
                 suggestion.replaceToken(lastToken)with(")")
             } else {
@@ -2535,11 +2556,10 @@ method methodsignature(sameline) {
             part.lineLength := sym.linePos - part.linePos
         }
         next
-        if ((!sameline && sym.isIdentifier) ||
-            sym.isIdentifier) then {
+        if (sym.isIdentifier) then {
             // The presence of an identifier here means
             // a multi-part method name.
-            methodDecRest(result, sameline)
+            methodDecRest(result)
         }
     }
     if (sym.isArrow) then {
@@ -2679,7 +2699,7 @@ method doreturn {
 method methodInInterface {
     // parses a method signature in an interface literal
     def methodTypeTok = sym
-    var methNode := methodsignature(true)
+    var methNode := methodsignature
     var dtype := methNode.dtype
     if (false == methNode.dtype) then {
         dtype := ast.identifierNode.new("Done", false)
@@ -2823,8 +2843,6 @@ method statement {
             classOrTrait
         } elseif { symValue == "trait" } then {
             classOrTrait
-        } elseif { symValue == "factory" } then {
-            dofactoryMethod
         } elseif { symValue == "return" } then {
             doreturn
         } else {
@@ -2954,8 +2972,7 @@ method checkBadTypeLiteral {
 
 method checkUnexpectedTokenAfterStatement {
     if (sym.line == lastToken.line) then {
-        if ((sym.isOp) && (sym.value == "=")
-            && (lastToken.isIdentifier)) then {
+        if ((sym.isOp) && (sym.value == "=") && (lastToken.isIdentifier)) then {
             def sugg = errormessages.suggestion.new
             def suggestions = [ ]
             sugg.replaceToken(sym)leading(false)trailing(false)with(":=")
