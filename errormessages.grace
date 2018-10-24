@@ -424,6 +424,10 @@ method syntaxError(message)atRange(errLinenum, startpos, endpos) {
     syntaxError(message)atRange(errLinenum, startpos, endpos)withSuggestions []
 }
 
+method syntaxError (message) atRange (sl, sp, el, ep) {
+    syntaxError (message) atRange (sl, sp, el, ep) withSuggestions []
+}
+
 method syntaxError(message) atRange(errLinenum, startpos, endpos) withSuggestion(suggestion') {
     syntaxError(message) atRange(errLinenum, startpos, endpos) withSuggestions [suggestion']
 }
