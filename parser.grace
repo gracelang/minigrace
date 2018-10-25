@@ -1904,12 +1904,11 @@ method defdec {
             errorDefNoName
         }
         pushidentifier
-        var val := false
-        var name := values.pop
+        def name = values.pop
         name.isBindingOccurrence := true
-        var dtype := optionalTypeAnnotation
+        def dtype = optionalTypeAnnotation
         def anns = doannotation
-        def o = ast.defDecNode.new(name, val, dtype).setPositionFrom(defTok)
+        def o = ast.defDecNode.new(name, ast.nullNode, dtype).setPositionFrom(defTok)
         if (false != anns) then { o.annotations.addAll(anns) }
         o.startToken := defTok
         if (sym.isOp && (sym.value == "=")) then {
@@ -1917,10 +1916,10 @@ method defdec {
             if (unsuccessfulParse {expression(blocksOK)}) then {
                 errorDefNoExpression
             }
-            val := values.pop
+            o.value := values.pop       // overwrite nullNode with initializer
         } elseif { sym.isBind } then {
             errorDefUsesAssign(defTok)
-        } elseif { o.isAnnotationDecl.not }
+        } elseif { o.isAnnotationDecl.not } then {
             errorDefMissingRhs(defTok)
         }
         values.push(o)

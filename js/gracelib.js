@@ -4202,6 +4202,10 @@ if (typeof global === "undefined") {
 } else {
     Object.defineProperty(global, "ellipsis", { get: ellipsisFun });
 }
+function nullDefinition() {
+    throw new GraceExceptionPacket(ProgrammingErrorObject,
+         new GraceString("attempt to evaluate a marker defintion"));
+}
 
 var ExceptionObject = new GraceException("Exception", false);
 var MinigraceErrorObject = new GraceException("MinigraceError", ExceptionObject);
@@ -4567,6 +4571,7 @@ if (typeof global !== "undefined") {
     global.matchCase = matchCase;
     global.MinigraceErrorObject = MinigraceErrorObject;
     global.NoSuchMethodErrorObject = NoSuchMethodErrorObject;
+    global.nullDefinition = nullDefinition;
     global.nullFunction = nullFunction;
     global.object_identityHash = object_identityHash;
     global.PrimitiveGraceList = PrimitiveGraceList;

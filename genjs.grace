@@ -284,7 +284,9 @@ method installLocalAttributesOf(o) into (objr) {
             create "var" field (e) in (objr)
             mutable := true
         } elseif { e.kind == "defdec" } then {
-            create "def" field (e) in (objr)
+            if (e.value.isNull.not) then {
+                create "def" field (e) in (objr)
+            }
         } elseif { e.kind == "typedec" } then {
             create "type" field (e) in (objr)
         }
@@ -758,6 +760,10 @@ method compilemethodnode(o) in (objref) {
     if ((o.body.size == 1) &&
             {o.body.first.isIdentifier} && {o.hasTypeParams.not}) then {
         compileSimpleAccessor(o)
+    } elseif { o.isAbstract } then {
+        compileDummyMethod(o, objref, "abstract")
+    } elseif { o.isRequired } then {
+        compileDummyMethod(o, objref, "required")
     } else {
         compileNormalMethod(o, objref)
     }
@@ -818,6 +824,29 @@ method compileNormalMethod(o, selfobj) {
     if (o.isFresh) then {
         compileFreshMethod(o, selfobj)
     }
+}
+method compileDummyMethod(o, selfobj, kind) {
+    def canonicalMethName = o.canonicalName
+    def funcName = o.register
+    priorLineEmitted := 0
+    def name = escapestring(o.nameString)
+    out "if (! {selfobj}.methods[\"{name}\"]) \{"
+    increaseindent
+    compileMethodPreamble (o, funcName, canonicalMethName)
+        withParams (paramlist(o) ++ typeParamlist(o))
+    compileParameterDebugFrame(o, name)
+    compileDefaultsForTypeParameters(o) extraParams 0
+    compileArgumentTypeChecks(o)
+    noteLineNumber (o.line) comment "{kind} method"
+    debugModePrefix
+    out "throw new GraceExceptionPacket(ProgrammingErrorObject,"
+    out "          new GraceString('{kind} method {canonicalMethName} was not supplied'));"
+    debugModeSuffix
+    compileMethodPostamble(o, funcName, canonicalMethName)
+    out "{selfobj}.methods[\"{name}\"] = {funcName};"
+    compileMetadata(o, funcName, name)
+    decreaseindent
+    out "\};"
 }
 method compileBuildMethodFor(methNode) withObjCon (objNode) inside (outerRef) {
     // the $build method for a fresh method executes the statements in the
@@ -1315,7 +1344,9 @@ method compileNativeCode(o) {
     o.register := reg
     out "   // end native code insertion"
 }
-
+method compileNull(o) {
+    out "nullDefinition();"
+}
 method stripLeadingZeros(str) {
     // returns str without ang leading zeros
     if (str.first ≠ "0") then { return str }
@@ -1403,6 +1434,8 @@ method compilenode(o) {
             compiledialect(o)
         } elseif { oKind == "import" } then {
             compileimport(o)
+        } elseif {o.isNull} then {
+            compileNull(o)
         } else {
             ProgrammingError.raise "unrecognized ast node \"{oKind}\"."
         }
