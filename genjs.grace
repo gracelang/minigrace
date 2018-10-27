@@ -819,7 +819,19 @@ method compileNormalMethod(o, selfobj) {
     }
     debugModeSuffix
     compileMethodPostamble(o, funcName, canonicalMethName)
-    out "{selfobj}.methods[\"{name}\"] = {funcName};"
+    if (o.isOnceMethod) then {
+        if (o.hasParams || o.hasTypeParams) then {
+            errormessages.syntaxError "a 'once' method cannot have parameters"
+                atRange (o.headerRange)
+        }
+        out "{selfobj}.methods[\"{name}\"] = function memo${funcName}(argcv) \{"
+        out "    if (! this.data.memo${funcName})"
+        out "        this.data.memo${funcName} = {funcName}.call(this, argcv);"
+        out "    return this.data.memo${funcName};"
+        out "\};"
+    } else {
+        out "{selfobj}.methods[\"{name}\"] = {funcName};"
+    }
     compileMetadata(o, funcName, name)
     if (o.isFresh) then {
         compileFreshMethod(o, selfobj)
