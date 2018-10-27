@@ -79,6 +79,14 @@ def noPosition is public = line 0 column 0
 def emptyRange is public = start (noPosition) end (noPosition)
 
 method positionOfNext (needle:String) after (pos:Position) -> Position {
+    // returns the Position of the end of needle in the source
+
+    if (needle == "⟦") then {
+        return positionOfNext "[[" or "⟦" after (pos)
+    }
+    if (needle == "⟧") then {
+        return positionOfNext "]]" or "⟧" after (pos)
+    }
     def sourceLines = util.lines
     var lineNr := pos.line
     if (lineNr == 0) then { return noPosition }
@@ -88,27 +96,33 @@ method positionOfNext (needle:String) after (pos:Position) -> Position {
         if (lineNr > sourceLines.size) then { return noPosition }
         found := sourceLines.at(lineNr).indexOf (needle)
     }
-    line (lineNr) column (found)
+    line (lineNr) column (found + needle.size - 1)
 }
 
 method positionOfNext (needle1:String) or (needle2:String)
           after (pos:Position) -> Position {
     def sourceLines = util.lines
-    var lineNr := pos.line
-    if (lineNr == 0) then { return noPosition }
-    var found := sourceLines.at(lineNr).indexOf (needle1) startingAt (pos.column + 1)
-    if (found == 0) then {
-        found := sourceLines.at(lineNr).indexOf (needle2) startingAt (pos.column + 1)
+    def startLine = pos.line
+    if (startLine == 0) then { return noPosition }
+    var found := sourceLines.at(startLine).indexOf (needle1) startingAt (pos.column + 1)
+    if (found ≠ 0) then {
+        return line (startLine) column (found + needle1.size - 1)
     }
-    while { found == 0 } do {
-        lineNr := lineNr + 1
-        if (lineNr > sourceLines.size) then { return noPosition }
-        found := sourceLines.at(lineNr).indexOf (needle1)
-        if (found == 0) then {
-            found := sourceLines.at(lineNr).indexOf (needle2)
+    found := sourceLines.at(startLine).indexOf (needle2) startingAt (pos.column + 1)
+    if (found ≠ 0) then {
+        return line (startLine) column (found + needle2.size - 1)
+    }
+    for (startLine..sourceLines.size) do { ln ->
+        if (ln > sourceLines.size) then { return noPosition }
+        found := sourceLines.at(ln).indexOf (needle1)
+        if (found ≠ 0) then {
+            return line (ln) column (found + needle1.size - 1)
+        }
+        found := sourceLines.at(ln).indexOf (needle2)
+        if (found ≠ 0) then {
+            return line (ln) column (found + needle2.size - 1)
         }
     }
-    line (lineNr) column (found)
 }
 
 def lineLength is public = 80
@@ -1061,6 +1075,9 @@ def methodNode is public = object {
             def lastPart = signature.last
             lastPart.linePos + lastPart.name.size - 1
         }
+        method headerRange {
+            start ( self.start ) end ( signature.last.end )
+        }
 
         method nameString {
             signature.fold { acc, each -> acc ++ each.nameString }
@@ -1810,7 +1827,11 @@ def memberNode is public = object {
         var isSelfRequest is public := false
         var isTailCall is public := false
         method end -> Position {
-            line (reqPos.line) column (reqPos.column + request.size - 1)
+            if (receiver.isImplicit) then {
+                positionOfNext (request) after (start)
+            } else {
+                positionOfNext (request) after (receiver.end)
+            }
         }
         method onSelf {
             isSelfRequest := true
@@ -1820,12 +1841,13 @@ def memberNode is public = object {
             generics := gens
             self
         }
-        method reqPos is confidential {
+        method reqStart is confidential {
             // the position of the start of the ‹request› in this ‹receiver›.‹request›
             if (receiver.isImplicit) then {
                 start
             } else {
-                positionOfNext (request) after (receiver.end)
+                def reqEnd = positionOfNext (request) after (receiver.end)
+                line (reqEnd.line) column (reqEnd.column - request.size + 1)
             }
         }
         method nameString { value }
@@ -1833,7 +1855,7 @@ def memberNode is public = object {
         method isMember { true }
         method isCall { true }
 
-        method parts { list.with(requestPart.request(nameString).setStart(reqPos)) }
+        method parts { list.with(requestPart.request(nameString).setStart(reqStart)) }
         method arguments { emptySeq }
         method argumentsDo(action) { }
         method numArgs { 0 }
@@ -1968,7 +1990,7 @@ def typeParametersNode is public = object {
     method asString { toGrace 0 }
     method declarationKindWithAncestors(ac) { k.typeparam }
     method end -> Position {
-        positionOfNext "]]" or "⟧" after (params.last.end)
+        positionOfNext "⟧" after (params.last.end)
     }
 
     method accept(visitor : AstVisitor) from(ac) {
