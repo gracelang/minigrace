@@ -32,15 +32,13 @@ REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace
 
 SOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES)
 MGSOURCEFILES = buildinfo.grace $(SOURCEFILES)
-STABLE=1e6315be77eff662cf99876c2ac8964a81f2abc7
 TYPE_DIALECTS = staticTypes requireTypes
 TEST_DEPENDENCIES = ast lexer stringMap collectionsPrelude parser xmodule errormessages standardGrace identifierKinds standardGrace
 #   these are modules used in running the full test suite
 NPM_VERSION_PREFIX=1.0
 VERSION := $(NPM_VERSION_PREFIX).$(shell ./tools/git-calculate-generation)
-NPM_STABLE_VERSION=1.0.4326
+NPM_STABLE_VERSION=1.0.4343
 
-VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
 WEBFILES_STATIC = $(filter-out sample,$(sort index.html global.css minigrace.js tabs.js  gtk.js debugger.js ace  debugger.html  importStandardGrace.js $(ICONS)))
 WEBFILES_DYNAMIC = $(sort $(ALL_LIBRARY_MODULES:%.grace=%.js) $(filter-out util.js,$(MGSOURCEFILES:%.grace=%.js) gracelib.js dom.js timer.js unicodedata.js))
@@ -154,12 +152,13 @@ echo:
 	@echo WEB_GRAPHICS_MODULES = $(WEB_GRAPHICS_MODULES)
 	@echo MODULE_PATH = $(MODULE_PATH)
 	@echo INCLUDE_PATH = $(INCLUDE_PATH)
+	@echo NPM_STABLE_VERSION = $(NPM_STABLE_VERSION)
 
 $(EXTERNAL_STUBS:%.grace=j2/%.js): j2/%.js: js/%.js
 	cp -p $< $@
 
 fullclean: clean
-	rm -rf $$(ls -d known-good/*/* | grep -v $(STABLE))
+	rm -rf $$(ls -d js-kg/*/* | grep -v $(NPM_STABLE_VERSION))
 
 fulltest: gencheck clean self.test test module-test
 
