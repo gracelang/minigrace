@@ -825,9 +825,9 @@ method compileNormalMethod(o, selfobj) {
                 atRange (o.headerRange)
         }
         out "{selfobj}.methods[\"{name}\"] = function memo${funcName}(argcv) \{"
-        out "    if (! this.data.memo${funcName})"
-        out "        this.data.memo${funcName} = {funcName}.call(this, argcv);"
-        out "    return this.data.memo${funcName};"
+        out "    if (! this.data['memo${name}'])"
+        out "        this.data['memo${name}'] = {funcName}.call(this, argcv);"
+        out "    return this.data['memo${name}'];"
         out "\};"
     } else {
         out "{selfobj}.methods[\"{name}\"] = {funcName};"
