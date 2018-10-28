@@ -159,7 +159,6 @@ $(EXTERNAL_STUBS:%.grace=j2/%.js): j2/%.js: js/%.js
 	cp -p $< $@
 
 fullclean: clean
-	rm -rf .git-generation-cache
 	rm -rf $$(ls -d known-good/*/* | grep -v $(STABLE))
 
 fulltest: gencheck clean self.test test module-test
