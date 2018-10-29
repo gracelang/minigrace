@@ -1,5 +1,15 @@
 dialect "minitest"
 
+trait ab {
+    method a { "a" }
+    method b { "b" }
+}
+
+trait ac {
+    method a is required
+    method c { "c" }
+}
+
 class speedClass {
     var speed is public := 0
 }
@@ -29,6 +39,15 @@ class brokenVelocity {
     use choiceOfUnits
 }
 
+class abac {
+    use ab
+    use ac
+}
+
+class acab {
+    use ac
+    use ab
+}
 
 testSuite {
     test "required method does not override inherited method" by {
@@ -45,5 +64,17 @@ testSuite {
             shouldRaise (ProgrammingError) mentioning "required method direction:=(_)"
         assert { v1.direction }
             shouldRaise (ProgrammingError) mentioning "not supplied"
+    }
+    test "ab + ac has a" by {
+        def o = abac
+        assert (o.a) shouldBe "a"
+        assert (o.b) shouldBe "b"
+        assert (o.c) shouldBe "c"
+    }
+    test "ac + ab has a" by {
+        def o = acab
+        assert (o.a) shouldBe "a"
+        assert (o.b) shouldBe "b"
+        assert (o.c) shouldBe "c"
     }
 }

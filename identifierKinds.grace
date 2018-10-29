@@ -5,6 +5,7 @@ type T = EqualityObject & interface {
     isParameter -> Boolean
     isAssignable -> Boolean
     isImplicit -> Boolean
+    isRequired -> Boolean
     forUsers -> Boolean
     fromParent -> Boolean
 }
@@ -18,6 +19,7 @@ class kindConstant(name) {
     method forUsers { true }
     method fromParent { false }
     method forGct { true }
+    method isRequired { false }
 }
 
 def undefined is public = kindConstant "undefined"
@@ -39,6 +41,11 @@ def inherited is public = object {
     inherit kindConstant "inherited"
     method isImplicit { true }
     method fromParent { true }
+}
+def required is public = object {
+    inherit kindConstant "required"
+    method isRequired {true}
+    method isImplicit { true }
 }
 def vardec is public = object {
     inherit kindConstant "vardec"

@@ -1014,7 +1014,12 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             def ident = o.asIdentifier
             checkForReservedName(ident)
             if (ident.isBindingOccurrence) then {
-                surroundingScope.addNode(ident) asA(k.methdec)
+                def knd = if (o.isRequired) then {
+                    k.required
+                } else {
+                    k.methdec
+                }
+                surroundingScope.addNode (ident) asA (knd)
                 ident.isDeclaredByParent := true
                 // aliased and excluded names are appliedOccurences
                 o.scope := newScopeIn(surroundingScope) kind "method"
@@ -1204,6 +1209,7 @@ method gatherUsedNames(objNode) is confidential {
     objNode.usedTraits.do { t ->
         def traitScope = objScope.scopeReferencedBy(t.value)
         def traitNode = traitScope.node
+        def requiredNames = list.empty
         if (traitNode.isNull.not) then {
             // if traitNode is null, the trait's scope comes from a gct, and
             // we have no information as to whether or not it references a trait.
@@ -1220,6 +1226,9 @@ method gatherUsedNames(objNode) is confidential {
             if (kd.forUsers) then {
                 objScope.addName(nm) asA(k.fromTrait)
                 t.providedNames.add(nm)
+                if (kd.isRequired) then {
+                    requiredNames.add(nm)
+                }
             }
         }
         t.aliases.do { a ->
@@ -1240,9 +1249,11 @@ method gatherUsedNames(objNode) is confidential {
             }
         }
         t.providedNames.do { methName ->
-            def definingTraits = traitMethods.get(methName) ifAbsent { [] }
-            definingTraits.push(t)
-            traitMethods.put(methName, definingTraits)
+            if (requiredNames.contains(methName).not) then {
+                def definingTraits = traitMethods.get(methName) ifAbsent { [] }
+                definingTraits.push(t)
+                traitMethods.put(methName, definingTraits)
+            }
         }
     }
     checkForConflicts(objNode, traitMethods)
@@ -1267,15 +1278,15 @@ method checkForConflicts(objNode, traitMethods) {
 
     var maxSourceLine := 0
     var message := if (conflicts.size > 1) then {
-        "Trait conflicts found:\n    "
+        "trait conflicts found.\n    "
     } else {
-        "Trait conflict found: "
+        "trait conflict found. "
     }
     conflicts.do { each ->
         def sourceList = each.sources.map { s -> s.nameString }
         maxSourceLine := each.sources.fold {a, s -> max(a, s.line) }
               startingWith(maxSourceLine)
-        message := message ++ "method `{each.methodName}` is defined in " ++
+        message := message ++ "Method `{each.methodName}` is defined in " ++
               errormessages.readableStringFrom(sourceList) ++ ".\n    "
     }
     if (maxSourceLine == 0) then {
