@@ -2,8 +2,8 @@
 // Its interface is strange, but is designed to mimic that of mgcollecitons.map.new
 // For a general-purpose mapping obejct, use dictonary from standardGrace.
 //
-// The implementation for C is based on that from mgcollections; that for JS uses
-// native code, since hashing is built-in to JavaScript objects.
+// The implementation for non-JS targets is based on that from mgcollections;
+// that for JS uses native code, since hashing is built-in to JavaScript objects.
 // External iterators are not implemented.  Instead, the internal iterators
 // keysDo and valuesDo are provided.
 
@@ -13,13 +13,13 @@ def unused = object {
 }
 
 class new {
+    native "js" code ‹this.data.inner = { }; return GraceDone;›
+        // avoid initializeing elems, or inner with a primitiveArray
     var elems := 0
     var inner := primitiveArray.new(4)
     for (0..(inner.size-1)) do {i->
         inner.at(i)put(unused)
     }
-    native "js" code ‹this.data.inner = { };›  
-        // override the primitiveArray with an empty object
 
     method size {
         // The number of bindings that I contain.
