@@ -1484,7 +1484,7 @@ def moduleNode is public = object {
         def sourceLines = util.lines
         var theDialect is public := dialectNode.new "standardGrace"
         theDialect.setStart(noPosition)     // dialect is implicit
-        setStart(noPosition)                // so is the module
+        setStart(line 1 column 1)           // always starts at the start of the puput
         var imports is public := [ ]
         var directImports is public := [ ]
 
@@ -1531,7 +1531,7 @@ def moduleNode is public = object {
         method basePretty(depth) {
             def spc = "  " * (depth+1)
             prettyPrefix(depth) ++ "\n" ++
-                "{spc}{theDialect.toGrace 0}"
+                "{spc}{theDialect.pretty 0}"
         }
         method shallowCopy {
             moduleNode.body(emptySeq).shallowCopyFieldsFrom(self)
@@ -2743,7 +2743,7 @@ def dialectNode is public = object {
     method pretty(depth) {
         def spc = "  " * (depth+1)
         var s := basePretty(depth) ++ "\n"
-        s := s ++ "{spc}Path: {self.value}\n"
+        s := s ++ "{spc}    Path: {self.value}"
         s
     }
     method toGrace(depth : Number) -> String {

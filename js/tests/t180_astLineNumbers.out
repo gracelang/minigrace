@@ -1,5 +1,6 @@
-0:0-12:1 module
-  dialect "standardGrace"
+1:1-12:1 module
+  0:0-0 dialect
+      Path: standardGrace
   Name: standardInput
   1:1-4:1 typedec
     1:6-11 identifierBinding‹Person›

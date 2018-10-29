@@ -2047,6 +2047,7 @@ method dodialect {
     // Parses "dialect «quoted-string»"
 
     if (acceptKeyword "dialect") then {
+        def dialectToken = sym
         next
         if (sym.kind != "string") then {
             def suggestion = errormessages.suggestion.new
@@ -2062,18 +2063,18 @@ method dodialect {
                 "of the dialect in quotes after the word 'dialect'.")
                 atPosition(lastToken.line, errorPos)withSuggestion(suggestion)
         }
+        def dn = ast.dialectNode.fromToken(sym).setPositionFrom(dialectToken)
+        next
         if (values.isEmpty) then {
-            def dn = ast.dialectNode.fromToken(sym)
-            next
             if (moduleObject.theDialect.line == 0) then {
                 moduleObject.theDialect := dn
             } else {
                 errormessages.syntaxError("at most one dialect statement may appear in a module.")
-                  atLine(lastToken.line)
+                  atRange(dn)
             }
         } else {
             errormessages.syntaxError("a dialect statement must be at the start of the module.")
-                  atLine(lastToken.line)
+                  atRange(dn)
         }
     }
 }
