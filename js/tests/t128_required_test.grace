@@ -10,7 +10,7 @@ class velocity {
 }
 
 trait choiceOfUnits {
-    method direction is required { print "this should never execute" }
+    method direction is required
     method direction:=(nu) is required
     method directionInDegrees { direction * 180 / π }
     method directionInDegrees:= (d) { direction := d / 180 * π }

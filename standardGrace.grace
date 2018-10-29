@@ -361,8 +361,8 @@ import "collectionsPrelude" as coll
 def collections is public = coll
 
 trait equality {
-    method == (other) is required { required }
-    method hash is required { required }    // should obey invariant (a == b) => (a.hash == b.hash)
+    method == (other) is required
+    method hash is required    // should obey invariant (a == b) => (a.hash == b.hash)
     method ≠ (other)  { (self == other).not }
     method :: (obj) { binding.key (self) value (obj) }
 }

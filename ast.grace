@@ -1149,6 +1149,7 @@ def methodNode is public = object {
         method isReadable { isPublic }
         method isAbstract { findAnnotation(self, "abstract") }
         method isRequired { findAnnotation(self, "required") }
+        method isAnnotationDecl { findAnnotation(self, "annotation") }
         method usesAsType(aNode) {
             aNode == dtype
         }
@@ -2441,6 +2442,7 @@ def defDecNode is public = object {
         method isFieldDec { true }
         method isWritable { false }
         method isReadable { isPublic }
+        method isAnnotationDecl { findAnnotation(self, "annotation") }
         method usesAsType(aNode) {
             aNode == dtype
         }

@@ -266,8 +266,8 @@ trait collection⟦T⟧ {
     method size {
         SizeUnknown.raise "collection {asDebugString} does not know its size"
     }
-    method do { required }
-    method iterator { required }
+    method do is required
+    method iterator is required
     method isEmpty {
         // override if size is known
         iterator.hasNext.not
@@ -317,7 +317,7 @@ trait collection⟦T⟧ {
 
 trait enumerable⟦T⟧ {
     use collection⟦T⟧
-    method iterator { required }
+    method iterator is required
     method asDictionary {
         def result = dictionary.empty
         keysAndValuesDo { k, v ->
@@ -379,8 +379,8 @@ trait enumerable⟦T⟧ {
 
 trait indexable⟦T⟧ {
     use collection⟦T⟧
-    method at(index) { required }
-    method size { required }
+    method at(index) is required
+    method size is required
     method sizeIfUnknown(action) { size }
     method isEmpty { size == 0 }
     method keysAndValuesDo(action:Procedure2⟦Number,T⟧) -> Done {

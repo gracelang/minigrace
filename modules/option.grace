@@ -13,10 +13,10 @@ type Option⟦T⟧ = Collection⟦T⟧ & interface {
 def ValueError is public = ProgrammingError.refine "ValueError"
 
 trait optionAsCollection⟦T⟧ {
-    method value → T { required }
-    method do(_) → Done { required }
-    method size → Number { required }
-    method first → T { required }
+    method value → T is required
+    method do(_) → Done is required
+    method size → Number is required
+    method first → T is required
     method sizeIfUnknown(_) → Number { size }
     method do (action) separatedBy (_) { do(action) }
     method sorted → Option⟦T⟧ { self }

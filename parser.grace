@@ -2344,7 +2344,9 @@ method methoddec {
     def anns = doannotation
     def originalValues = values
     values := []
+    var lBraceSym
     if (sym.isLBrace) then {
+        lBraceSym := sym
         next
         skipSeparators
         // sym is now the first token in the method body
@@ -2391,9 +2393,17 @@ method methoddec {
         methNode.hasBody := false
     }
     methNode.body := values
+    if (false != anns) then { methNode.annotations.addAll(anns) }
+    if (methNode.hasBody) then {
+        def abst = methNode.isAbstract
+        if ( abst || methNode.isRequired ) then {
+            def which = if (abst) then { "an abstract" } else { "a required" }
+            errormessages.syntaxError "{which} method must not have a method body"
+                  atRange(lBraceSym.line, lBraceSym.linePos, lastToken.line, lastToken.linePos)
+        }
+    }
     values := originalValues
     util.setline(btok.line)
-    if (false != anns) then { methNode.annotations.addAll(anns) }
     values.push(methNode)
     reconcileComments
 }
