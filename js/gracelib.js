@@ -315,12 +315,18 @@ function GraceString(s) {
 }
 function string_greaterThanOrEqual (argcv, that) {
     var self = this._value;
+    if (that.className !== "string") {
+          this.failArgCheck('', "string", "≥(_)");
+    }
     var other = that._value;
     if (self >= other) return GraceTrue;
     return GraceFalse;
 }
 function string_lessThanOrEqual (argcv, that) {
     var self = this._value;
+    if (that.className !== "string") {
+          this.failArgCheck('', "string", "≤(_)");
+    }
     var other = that._value;
     if (self <= other) return GraceTrue;
     return GraceFalse;
@@ -385,8 +391,10 @@ function escapeReplacement(str) {
 }
 
 function failStringMethodArgCheck(desc, className, methodName) {
-    raiseClassError(desc + 'argument to "' + escapestring(this._value) +
-                     '".' + methodName + ' is not a ' + className);
+    const idStart = /^[a-zA-Z_]/;
+    const sep = methodName.match(idStart) ? "." : " ";
+    raiseClassError(desc + 'argument to "' + escapestring(this._value) + '"' +
+                    sep + methodName + ' is not a ' + className);
 }
 
 GraceString.prototype = {
