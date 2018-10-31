@@ -14,7 +14,7 @@ function getLineNumber() {
     return lineNumber;
 }
 function setModuleName(m) {
-    ;
+    return;
 }
 function getModuleName() {
     return arguments.callee.caller.definitionModule || "native code" ;
@@ -404,7 +404,10 @@ GraceString.prototype = {
             return new GraceString(this._value + o._value);
         },
         ">>(1)": function(argcv, target) {
-            return callmethod(target, "++(1)", [1], this);
+            return callmethod(target, "<<(1)", [1], this);
+        },
+        "<<(1)": function(argcv, source) {
+            return callmethod(this, "++(1)", [1], source);
         },
         "at(1)": string_at,
         "size": function(argcv) {
@@ -1507,7 +1510,10 @@ PrimitiveGraceList.prototype = {
             return new PrimitiveGraceList(l);
         },
         ">>(1)": function(argcv, target) {
-            return callmethod(target, "++(1)", [1], this);
+            return callmethod(target, "<<(1)", [1], this);
+        },
+        "<<(1)": function(argcv, source) {
+            return callmethod(this, "++(1)", [1], source);
         }
     },
     className: "extendedLineup",
@@ -1721,7 +1727,10 @@ Lineup.prototype = {
             return new Lineup(l);
         },
         ">>(1)": function(argcv, target) {
-            return callmethod(target, "++(1)", [1], this);
+            return callmethod(target, "<<(1)", [1], this);
+        },
+        "<<(1)": function(argcv, source) {
+            return callmethod(this, "++(1)", [1], source);
         },
         "sortedBy(1)": function sequence_sortedBy(argcv, compareBlock) {
             const result = new GraceSequence(this._value.slice(0));

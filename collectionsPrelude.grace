@@ -12,6 +12,12 @@ method required is confidential {
     SubobjectResponsibility.raise "required method not overriden by subobject"
 }
 
+type EqualityObject = Object & interface {
+    ::(o:Object) -> Binding
+    ==(other:Object) -> Boolean
+    ≠(other:Object) -> Boolean
+    hash -> Number
+}
 
 type Function0⟦ResultT⟧  = interface {
     apply -> ResultT     // Function with no arguments and a result of type ResultT
@@ -39,6 +45,15 @@ type Predicate1⟦ArgT1⟧ = Function1⟦ArgT1, Boolean⟧
 
 type SelfType = Unknown     // becuase it's not yet in the language
 
+type CollectionFactory⟦T⟧ = interface {
+    empty -> Collection⟦T⟧
+        // an empty collection
+    with(element:T) -> Collection⟦T⟧
+        // a collection containing a single element
+    withAll(elements:Collection⟦T⟧) -> Collection⟦T⟧
+        // a collection containing elements
+}
+
 type Collection⟦T⟧ = Object & interface {
     iterator -> Iterator⟦T⟧
         // the iterator on which I am based
@@ -53,20 +68,22 @@ type Collection⟦T⟧ = Object & interface {
         // other and self have the same size, and contain the same elements.
     first -> T
         // my first element; raises BoundsError if I have none.
-    do(body: Procedure1⟦T⟧) -> Done
+    do (body: Procedure1⟦T⟧) -> Done
         // an internal iterator; applies body to each of my elements
-    do(body:Procedure1⟦T⟧) separatedBy(separator:Procedure0) -> Done
+    do (body:Procedure1⟦T⟧) separatedBy(separator:Procedure0) -> Done
         // an internal iterator; applies body to each of my elements, and applies separator in between
-    ++(other: Collection⟦T⟧) -> Collection⟦T⟧
+    ++ (other: Collection⟦T⟧) -> Collection⟦T⟧
         // returns a new Collection over the concatenation of self and other
-    fold(binaryFunction:Function2⟦T, T, T⟧) startingWith(initial:T) -> T
+    fold (binaryFunction:Function2⟦T, T, T⟧) startingWith(initial:T) -> T
         // the left-associative fold of binaryFunction over self, starting with initial
-    map⟦U⟧(function:Function1⟦T, U⟧) -> Collection⟦U⟧
-        // returns a new iterator that yields my elements mapped by function
-    filter(condition:Predicate1⟦T⟧) -> Collection⟦T⟧
-        // returns a new iterator that yields those of my elements for which condition holds
-    >>(target: Collection⟦T⟧) -> Collection⟦T⟧
-        // returns the reverse concatentation target ++ self; used for writing pipelines
+    map⟦U⟧ (function:Function1⟦T, U⟧) -> Collection⟦U⟧
+        // returns a new collection that yields my elements mapped by function
+    filter (condition:Predicate1⟦T⟧) -> Collection⟦T⟧
+        // returns a new collection that yields those of my elements for which condition holds
+    >> (target: Collection⟦T⟧ | CollectionFactory⟦T⟧) -> Collection⟦T⟧
+        // returns target << self; used for writing pipelines
+//    << (source: Collection⟦T⟧) -> Collection⟦T⟧
+        // returns self ++ source; used for writing pipelines
 }
 
 type Expandable⟦T⟧ = Collection⟦T⟧ & interface {
@@ -311,9 +328,10 @@ trait collection⟦T⟧ {
         lazySequenceOver(self) filteredBy(selectionCondition)
     }
     method iter { self.iterator }
-    method >>(target:Collection⟦T⟧) -> Collection⟦T⟧ { target ++ self }
+    method >>(target) { target << self }
+    method <<(source) { self ++ source }
 
-}
+}   // end of trait collection
 
 trait enumerable⟦T⟧ {
     use collection⟦T⟧
@@ -375,7 +393,7 @@ trait enumerable⟦T⟧ {
         do { each -> s := s ++ each.asString } separatedBy { s := s ++ ", " }
         s ++ "⟩"
     }
-}
+}   // end of trait enumerable
 
 trait indexable⟦T⟧ {
     use collection⟦T⟧
@@ -421,7 +439,7 @@ trait indexable⟦T⟧ {
         }
         existing
     }
-}
+}   // end of trait indexable
 
 method max(a,b) is confidential {       // copied from standard prelude
     if (a > b) then { a } else { b }
@@ -507,6 +525,9 @@ class sequence⟦T⟧ {
         if (ix == 0) then { return emptySequence }
         self.fromprimitiveArray(inner, ix)
     }
+
+    method << (source) { self.withAll(source) }
+
     method fromprimitiveArray(pArray, sz) is confidential {
         // constructs a sequence from the first sz elements of pArray
 
@@ -599,7 +620,7 @@ class sequence⟦T⟧ {
                 sequence.withAll(list.withAll(self).sortBy(sortBlock))
             }
         }
-    }
+    }   // end of sequence.fromPrimitiveAArray
 }
 
 type MinimalyIterable = interface {
@@ -623,7 +644,7 @@ method isEqual(left) toCollection(right) {
 
 class list⟦T⟧ {
     
-    method asString { "the list class" }
+    method asString { "the list factory" }
     
     method empty -> List⟦T⟧ {
         withAll(emptySequence)
@@ -911,9 +932,15 @@ class list⟦T⟧ {
             method copy {
                 outer.withAll(self)
             }
+            method << (source) {
+                self.addAll(source)
+            }
         }
-    }
-}
+    }   // end of list.withAll
+
+    method << (source) { self.withAll(source) }
+
+}   // end of list class
 
 
 def unused = object {
@@ -938,7 +965,7 @@ def removed = object {
 
 class set⟦T⟧ {
 
-    method asString { "a set class" }
+    method asString { "the set factory" }
 
     method withAll(a: Collection⟦T⟧) -> Set⟦T⟧ {
         def cap = max (a.sizeIfUnknown{2} * 3 + 1, 8)
@@ -952,6 +979,8 @@ class set⟦T⟧ {
     method empty -> Set⟦T⟧ {
         ofCapacity 8
     }
+    
+    method << (source) { self.withAll(source) }
 
     class ofCapacity(cap) -> Set⟦T⟧ is confidential {
         use collection⟦T⟧
@@ -1227,9 +1256,8 @@ class set⟦T⟧ {
             }
             return true
         }
-        method into(existing: Expandable⟦T⟧) -> Collection⟦T⟧ {
-            do { each -> existing.add(each) }
-            existing
+        method << (source) {
+            self.addAll(source)
         }
     }
 }
@@ -1242,7 +1270,7 @@ type Binding⟦K,T⟧ = {
 }
 
 def binding is public = object {
-    method asString { "the binding class" }
+    method asString { "the binding factory" }
 
     class key(k)value(v) {
         method key {k}
@@ -1266,13 +1294,19 @@ type ComparableToDictionary⟦K,T⟧ = interface {
 
 class dictionary⟦K,T⟧ {
 
-    method asString { "a dictionary class" }
+    method asString { "the dictionary factory" }
+
+    method with(aBinding) {
+        empty.add(aBinding)
+    }
 
     method withAll(initialBindings: Collection⟦Binding⟦K,T⟧⟧) -> Dictionary⟦K,T⟧ {
         def result = empty
-        for (initialBindings) do { b -> result.add(b) }
+        initialBindings.do { b:Binding -> result.add(b) }
         result
     }
+    
+    method << (source:Collection⟦Binding⟦K,T⟧⟧) { self.withAll(source) }
 
     class empty -> Dictionary⟦K,T⟧ {
         use collection⟦T⟧
@@ -1301,6 +1335,10 @@ class dictionary⟦K,T⟧ {
             }
             inner.at(t)put(aBinding)
             if ((size * 2) > inner.size) then { expand }
+            self    // for chaining
+        }
+        method addAll(bindings) {
+            bindings.do{ each -> add(each) }
             self    // for chaining
         }
         method at(k) {
@@ -1637,6 +1675,8 @@ class dictionary⟦K,T⟧ {
         }
 
         method ++ (other:Collection⟦T⟧) {
+            // answers a new dictionary containing all my keys and the keys of other;
+            // if other contains one of my keys, other's value overrides mine
             def newDict = self.copy
             other.keysAndValuesDo {k, v ->
                 newDict.at(k) put(v)
@@ -1645,6 +1685,7 @@ class dictionary⟦K,T⟧ {
         }
 
         method -- (other:Collection⟦T⟧) {
+            // answers a new dictionary like me but excluding the keys of other
             def newDict = dictionary.empty
             keysAndValuesDo { k, v ->
                 if (! other.containsKey(k)) then {
@@ -1653,10 +1694,19 @@ class dictionary⟦K,T⟧ {
             }
             return newDict
         }
+
+        method >>(target) is override {
+            target << self.bindings
+        }
+
+        method <<(source) is override {
+            self.addAll(source)
+        }
     }
 }
 
 class range {
+    method asString { "the range factory" }
     method from(lower)to(upper) -> Sequence⟦Number⟧ {
         match (lower)
           case { _:Number ->
