@@ -18,6 +18,7 @@ type Assertion = {
     assert(b:Procedure0) shouldRaise(desireed:ExceptionKind) -> Done
     assert(b:Procedure0) shouldntRaise(undesired:ExceptionKind) -> Done
     assert(s:Object) hasType(t:Type) -> Done
+    deny(s:Object) hasType(t:Type) -> Done
     failBecause(Message:String) -> Done
 }
    
@@ -130,10 +131,6 @@ class assertion {
         match (value)
             case { _:Desired -> countOneAssertion }
             case { _ ->
-                var typeName := Desired.asString
-                if (! typeName.startsWith "type ") then {
-                    typeName := typeName ++ "type "
-                }
                 def m = methodsIn(Desired) missingFrom (value)
                 failBecause "{value.asDebugString} does not have {Desired}; it's missing methods {m}." }
     }
