@@ -24,13 +24,13 @@ def primitiveListTest = object {
         }
 
         method testListEmptyDo {
-            empty.do {each -> failBecause "emptyList.do did with {each}"}
+            empty.do {each -> failBecause "empty.do did with {each}"}
             assert(true)
         }
 
         method testListEqualityEmpty {
-            assert(empty == emptyList) description "empty list ≠ itself!"
-            assert(empty == emptySequence) description "empty list ≠ empty sequence"
+            assert(empty == list.empty) description "empty list ≠ itself!"
+            assert(empty == sequence.empty) description "empty list ≠ empty sequence"
         }
 
         method testListInequalityEmpty {
@@ -269,7 +269,7 @@ def primitiveListTest = object {
         }
 
         method testListKeysAndValuesDo {
-            def accum = emptyDictionary
+            def accum = dictionary.empty
             var n := 1
             evens.keysAndValuesDo { k, v ->
                 accum.at(k)put(v)
@@ -288,24 +288,24 @@ def primitiveListTest = object {
         }
 
         method testListMapEmpty {
-            assert (empty.map{x -> x * x}.into(emptyList)) shouldBe (emptyList)
+            assert (empty.map{x -> x * x} >> list) shouldBe (list.empty)
         }
 
         method testListMapEvensIntoCollection {
-            def result = evens.map{x -> x + 1}.into(empty)
+            def result = evens.map{x -> x + 1} >> empty
             assert(result) shouldBe [3, 5, 7, 9]
             assert(result) hasType (Collection)
             result.unshift 0    // checks that its really a lineup
         }
 
         method testListMapEvensIntoList {
-            def result = evens.map{x -> x + 1}.into(emptyList)
+            def result = evens.map{x -> x + 1} >> list
             assert(result) shouldBe (list [3, 5, 7, 9])
             assert(result) hasType (List)
         }
 
         method testListMapEvensInto {
-            assert(evens.map{x -> x + 10}.into(list.withAll(evens)))
+            assert(evens.map{x -> x + 10} >> list.withAll(evens))
                 shouldBe [2, 4, 6, 8, 12, 14, 16, 18]
         }
 
@@ -318,12 +318,12 @@ def primitiveListTest = object {
         }
 
         method testListFilterOdd {
-            assert(oneToFive.filter{x -> (x % 2) == 1}.into(emptyList))
+            assert(oneToFive.filter{x -> (x % 2) == 1} >> list)
                 shouldBe [1, 3, 5]
         }
 
         method testListMapAndFilter {
-            assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1}.into(emptyList))
+            assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1} >> list)
                 shouldBe [11, 13, 15]
         }
 
@@ -339,13 +339,13 @@ def primitiveListTest = object {
                 description "empty iterator has an element"
         }
         method testListIteratorNonEmpty {
-            def accum = emptySet
+            def accum = set.empty
             def iter = oneToFive.iterator
             while { iter.hasNext } do { accum.add(iter.next) }
             assert (accum) shouldBe (set [1, 2, 3, 4, 5])
         }
         method testListIteratorToSetDuplicates {
-            def accum = emptySet
+            def accum = set.empty
             def iter = [1, 1, 2, 2, 4].iterator
             while { iter.hasNext } do { accum.add(iter.next) }
             assert (accum) shouldBe (set [1, 2, 4])

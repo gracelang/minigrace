@@ -220,11 +220,11 @@ testSuiteNamed "sequence tests" with {
     }
 
     test "test Option Map Empty" by {
-        assert (empty.map{x → x * x}.into (emptyList)) shouldBe (emptyList)
+        assert (empty.map{x → x * x} >> list) shouldBe (list.empty)
     }
 
     test "test Option Map Evens" by {
-        assert(evens.map{x → x + 1}.into (emptyList)) shouldBe (list [3])
+        assert(evens.map{x → x + 1} >> list) shouldBe (list [3])
     }
 
     test "test Option Filter Evens" by {
@@ -237,17 +237,17 @@ testSuiteNamed "sequence tests" with {
     }
 
     test "test Option Filter Even" by {
-        assert(evens.filter{x → (x % 2) == 0}.into (emptyList))
+        assert(evens.filter{x → (x % 2) == 0} >> list)
             shouldBe (list [2])
     }
 
     test "test even Filter Odd" by {
-        assert(evens.filter{x → (x % 2) == 1}.into (emptyList))
+        assert(evens.filter{x → (x % 2) == 1} >> list)
             shouldBe (list [])
     }
 
     test "test Option MapAndFilter" by {
-        assert(evens.map{x → x + 10}.filter{x → (x % 2) == 0}.into (emptyList))
+        assert(evens.map{x → x + 10}.filter{x → (x % 2) == 0} >> list)
             shouldBe (list [12])
     }
     test "test Option ToSetDuplicates" by {

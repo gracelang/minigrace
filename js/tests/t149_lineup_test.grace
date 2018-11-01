@@ -231,7 +231,7 @@ def lineUpTest = object {
         }
 
         method testSequenceMapAndFilter {
-            assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1}.into (emptyList))
+            assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1} >> list)
                 shouldBe (list [11, 13, 15])
         }
         method testSequenceToSetDuplicates {

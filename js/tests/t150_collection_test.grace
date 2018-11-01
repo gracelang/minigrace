@@ -205,7 +205,7 @@ def rangeTest = object {
             assert{rangeFilteredIterator.next} shouldRaise (IteratorExhausted)
         }
         method testRangeFilterEmptyList {
-            assert (rangeUp.filter{each -> each > 10}.into (list.empty)) shouldBe (list.empty)
+            assert (rangeUp.filter{each -> each > 10} >> list) shouldBe (list.empty)
         }
         method testRangeFilterEmpty {
             assert (rangeUp.filter{each -> each > 10}.isEmpty)
@@ -476,15 +476,15 @@ def sequenceTest = object {
         }
 
         method testSequenceMapEmpty {
-            assert (empty.map{x -> x * x}.into (list.empty)) shouldBe (list.empty)
+            assert (empty.map{x -> x * x} >> list) shouldBe (list.empty)
         }
 
         method testSequenceMapEvens {
-            assert(evens.map{x -> x + 1}.into (list.empty)) shouldBe (list [3, 5, 7, 9])
+            assert(evens.map{x -> x + 1} >> list) shouldBe (list [3, 5, 7, 9])
         }
 
         method testSequenceMapEvensInto {
-            assert(evens.map{x -> x + 10}.into(list (evens)))
+            assert(evens.map{x -> x + 10} >> evens >> list)
                 shouldBe (list [2, 4, 6, 8, 12, 14, 16, 18])
         }
 
@@ -497,12 +497,12 @@ def sequenceTest = object {
         }
 
         method testSequenceFilterOdd {
-            assert(oneToFive.filter{x -> (x % 2) == 1}.into (list.empty))
+            assert(oneToFive.filter{x -> (x % 2) == 1} >> list)
                 shouldBe (list [1, 3, 5])
         }
 
         method testSequenceMapAndFilter {
-            assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1}.into (list.empty))
+            assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1} >> list)
                 shouldBe (list [11, 13, 15])
         }
         method testSequenceToSetDuplicates {
@@ -915,15 +915,15 @@ def listTest = object {
         }
 
         method testListMapEmpty {
-            assert (empty.map{x -> x * x}.into (list.empty)) shouldBe (list.empty)
+            assert (empty.map{x -> x * x} >> list) shouldBe (list.empty)
         }
 
         method testListMapEvens {
-            assert(evens.map{x -> x + 1}.into (list.empty)) shouldBe (list [3, 5, 7, 9])
+            assert(evens.map{x -> x + 1} >> list) shouldBe (list [3, 5, 7, 9])
         }
 
-        method testListMapEvensInto {
-            assert(evens.map{x -> x + 10}.into(list.withAll(evens)))
+        method testListMapEvensIntoExisting {
+            assert(evens.map{x -> x + 10} >> evens.copy)
                 shouldBe (list [2, 4, 6, 8, 12, 14, 16, 18])
         }
 
@@ -936,12 +936,12 @@ def listTest = object {
         }
 
         method testListFilterOdd {
-            assert(oneToFive.filter{x -> (x % 2) == 1}.into (list.empty))
+            assert(oneToFive.filter{x -> (x % 2) == 1} >> list)
                 shouldBe (list [1, 3, 5])
         }
 
         method testListMapAndFilter {
-            assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1}.into (list.empty))
+            assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1} >> list)
                 shouldBe (list [11, 13, 15])
         }
 
@@ -1254,15 +1254,15 @@ def setTest = object {
         }
 
         method testSetMapEmpty {
-            assert (empty.map{x -> x * x}.into (set.empty)) shouldBe (set.empty)
+            assert (empty.map{x -> x * x} >> set) shouldBe (set.empty)
         }
 
         method testSetMapEvens {
-            assert(evens.map{x -> x + 1}.into (set.empty)) shouldBe (set [3, 5, 7, 9])
+            assert(evens.map{x -> x + 1} >> set) shouldBe (set [3, 5, 7, 9])
         }
 
         method testSetMapEvensInto {
-            assert(evens.map{x -> x + 10}.into(set.withAll(evens)))
+            assert(evens.map{x -> x + 10} >> evens.copy)
                 shouldBe (set [2, 4, 6, 8, 12, 14, 16, 18])
         }
 
@@ -1277,12 +1277,12 @@ def setTest = object {
         }
 
         method testSetFilterOdd {
-            assert(oneToFive.filter{x -> (x % 2) == 1}.into (set.empty))
+            assert(oneToFive.filter{x -> (x % 2) == 1} >> set)
                 shouldBe (set [1, 3, 5])
         }
 
         method testSetMapAndFilter {
-            assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1}.into (set.empty))
+            assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1} >> set)
                 shouldBe (set [11, 13, 15])
         }
 
@@ -1457,12 +1457,12 @@ def dictionaryTest = object {
         method testDictionaryAdd {
             assert (empty.at "nine" put(9))
                 shouldBe (dictionary ["nine"::9])
-            assert (evens.at "ten" put(10).values.into (set.empty))
+            assert (evens.at "ten" put(10).values >> set)
                 shouldBe (set [2, 4, 6, 8, 10])
         }
         method testDictionaryRemoveKeyTwo {
-            assert (evens.removeKey "two".values.into (set.empty)) shouldBe (set [4, 6, 8])
-            assert (evens.values.into (set.empty)) shouldBe (set [4, 6, 8])
+            assert (evens.removeKey "two".values >> set) shouldBe (set [4, 6, 8])
+            assert (evens.values >> set) shouldBe (set [4, 6, 8])
         }
         method testDictionaryRemoveValue4 {
             assert (evens.size == 4) description "evens doesn't contain 4 elements"
@@ -1474,9 +1474,9 @@ def dictionaryTest = object {
             assert (evens.containsKey "six") description "Can't find key \"six\""
             assert (evens.containsKey "eight") description "Can't find key \"eight\""
             deny (evens.containsKey "four") description "Found key \"four\""
-            assert (evens.removeValue 4 ifAbsent { }.values.into (set.empty)) shouldBe (set [2, 6, 8])
-            assert (evens.values.into (set.empty)) shouldBe (set [2, 6, 8])
-            assert (evens.keys.into (set.empty)) shouldBe (set ["two", "six", "eight"])
+            assert (evens.removeValue 4 ifAbsent { }.values >> set) shouldBe (set [2, 6, 8])
+            assert (evens.values >> set) shouldBe (set [2, 6, 8])
+            assert (evens.keys >> set) shouldBe (set ["two", "six", "eight"])
         }
         method testDictionaryRemoveMultiple {
             evens.removeValue 4 .removeValue 6 .removeValue 8
@@ -1490,7 +1490,7 @@ def dictionaryTest = object {
         }
         method testDictionaryChaining {
             oneToFive.at "eleven" put(11).at "twelve" put(12).at "thirteen" put(13)
-            assert (oneToFive.values.into (set.empty)) shouldBe (set [1, 2, 3, 4, 5, 11, 12, 13])
+            assert (oneToFive.values >> set) shouldBe (set [1, 2, 3, 4, 5, 11, 12, 13])
         }
         method testDictionaryPushAndExpand {
             evens.removeKey "two"
@@ -1502,7 +1502,7 @@ def dictionaryTest = object {
             evens.at "sixteen" put(16)
             evens.at "eighteen" put(18)
             evens.at "twenty" put(20)
-            assert (evens.values.into (set.empty))
+            assert (evens.values >> set)
                 shouldBe (set [8, 10, 12, 14, 16, 18, 20])
         }
 
@@ -1559,15 +1559,15 @@ def dictionaryTest = object {
         }
 
         method testDictionaryMapEmpty {
-            assert (empty.map{x -> x * x}.into (set.empty)) shouldBe (set.empty)
+            assert (empty.map{x -> x * x} >> set) shouldBe (set.empty)
         }
 
         method testDictionaryMapEvens {
-            assert(evens.map{x -> x + 1}.into (set.empty)) shouldBe (set [3, 5, 7, 9])
+            assert(evens.map{x -> x + 1} >> set) shouldBe (set [3, 5, 7, 9])
         }
 
         method testDictionaryMapEvensInto {
-            assert(evens.map{x -> x + 10}.into(set.withAll(evens)))
+            assert(evens.map{x -> x + 10} >> set.withAll(evens))
                 shouldBe (set [2, 4, 6, 8, 12, 14, 16, 18])
         }
 
@@ -1580,7 +1580,7 @@ def dictionaryTest = object {
         }
 
         method testDictionaryFilterOdd {
-            assert(oneToFive.filter{x -> (x % 2) == 1}.into (set.empty))
+            assert(oneToFive.filter{x -> (x % 2) == 1} >> set)
                 shouldBe (set [1, 3, 5])
         }
 
@@ -1589,15 +1589,15 @@ def dictionaryTest = object {
                 shouldBe (set [11, 13, 15])
         }
         method testDictionaryBindings {
-            assert(oneToFive.bindings.into (set.empty)) shouldBe (
+            assert(oneToFive.bindings >> set) shouldBe (
                 set ["one"::1, "two"::2, "three"::3, "four"::4, "five"::5])
         }
         method testDictionaryKeys {
-            assert(oneToFive.keys.into (set.empty)) shouldBe (
+            assert(oneToFive.keys >> set) shouldBe (
                 set ["one", "two", "three", "four", "five"] )
         }
         method testDictionaryValues {
-            assert(oneToFive.values.into (set.empty)) shouldBe (
+            assert(oneToFive.values >> set) shouldBe (
                 set [1, 2, 3, 4, 5] )
         }
 
