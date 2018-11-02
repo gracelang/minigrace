@@ -3,7 +3,7 @@ import "io" as io
 import "sys" as sys
 import "ast" as ast
 import "util" as util
-import "unixFilePath" as unixFilePath
+import "unixFilePath" as filePath
 import "xmodule" as xmodule
 import "mirrors" as mirrors
 import "errormessages" as errormessages
@@ -1732,15 +1732,25 @@ method compileUse(useNode) in (objNode) {
 
 method runJsCode(of, glPath) {
     def gmp = sys.environ.at "GRACE_MODULE_PATH"
-    def pathList = unixFilePath.split(gmp)
-    def libPath = if (glPath.at(glPath.size) == "/") then { glPath }
-                        else { glPath ++ "/" }
+    def pathList = filePath.split(gmp)
+    def libPath = if (glPath.endsWith "/")
+            then { glPath } else { glPath ++ "/" }
     if (io.exists(libPath ++ "gracelib.js")) then {
         if (pathList.contains(libPath).not) then {
             sys.environ.at "GRACE_MODULE_PATH" put "{libPath}:{gmp}"
         }
     }
-    def runExitCode = io.spawn("grace", [of.pathname]).wait
+    def p = sys.environ.at "PATH"
+    def grace = filePath.withBase "grace"
+    def executor = filePath.file (grace) onPath (p)
+          otherwise { firstTries ->
+        filePath.file (grace) onPath (gmp) otherwise { secondTries ->
+            def places = errormessages.readableStringFrom(firstTries ++ secondTries)
+            io.error.write "minigrace: can't run {modname} because I can't find the `grace` runner;\nI looked in {places}.\n"
+            sys.exit 3
+        }
+    }
+    def runExitCode = io.spawn(executor, [of.pathname]).wait
     if (runExitCode < 0) then {
         io.error.write "minigrace: program {modname} exited with error {-runExitCode}.\n"
         sys.exit(4)
