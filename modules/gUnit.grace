@@ -140,10 +140,13 @@ class assertion {
     }
 
     method methodsIn(DesiredType) missingFrom (value) -> String is confidential {
-        def vMethods = mirror.reflect(value).methodNames
+        def vMirror = mirror.reflect(value)
+        def allMethods = vMirror.methodNames
+        def publicMethods = allMethods.filter{ each ->
+            vMirror.onMethod(each).isPublic} >> set
         def tMethods = DesiredType.methodNames
-        def missing = tMethods -- vMethods
-        if (missing.size == 0) then {
+        def missing = tMethods -- publicMethods
+        if (missing.isEmpty) then {
             ProgrammingError.raise "{value.asDebugString} seems to have all the methods of {DesiredType}"
         } else {
             var s := ""
@@ -154,12 +157,14 @@ class assertion {
     }
     method protocolOf(value) notCoveredBy (Q:Type) -> String is confidential {
         var s := ""
-        def vMethods = set.withAll(mirror.reflect(value).methodNames)
+        def vMirror = mirror.reflect(value)
+        def allMethods = vMirror.methodNames
+        def publicMethods = allMethods.filter{ each ->
+            vMirror.onMethod(each).isPublic} >> set
         def qMethods = set.withAll(Q.methodNames)
-        def missing = set.withAll((vMethods -- qMethods).filter{m ->
-            (! m.endsWith "()object") && (m != "outer")})
+        def missing = publicMethods -- qMethods
         if (missing.isEmpty.not) then {
-            s := "{Q.asDebugString} is missing "
+            s := "{Q} is missing "
             missing.do { each -> s := s ++ each } 
                 separatedBy { s := s ++ ", " }
         }
@@ -220,8 +225,8 @@ class testCaseNamed(name') -> TestCase {
     }
     
     method runTest {
-        def methodImage = mirror.reflect(self).getMethod(name)
-        methodImage.requestWithArgs(emptySequence)
+        def methodImage = mirror.reflect(self).onMethod(name)
+        methodImage.requestWithArgs []
     }
 
     method printBackTrace(exceptionPacket) limitedTo(testName) {
