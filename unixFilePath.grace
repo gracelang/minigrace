@@ -167,7 +167,7 @@ method split(pathString) {
 method file(name) onPath(pathString) otherwise(action) {
     def locations = split(pathString)
     def candidate = name.copy
-    def originalDir = name.dir
+    def originalDir = name.directory
     if (originalDir.first == "/") then {
         if (candidate.exists) then {
             return candidate
