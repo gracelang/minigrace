@@ -3,6 +3,7 @@ def foo = object {
     method example (a)  { print "a = {a}" }
     method example (a1,a2) and (b1) {print "a1 = {a1}, a2 = {a2}, b1 = {b1}"}
     method noParams { print "no params" }
+    method notInherited is confidential { "not requestable from outside" }
 }
 
 foo.example("a")
@@ -10,23 +11,25 @@ foo.example("a1", "a2")and("b1")
 foo.noParams
 
 method describe (methodMirror) {
-    print "method {methodMirror.name} has {methodMirror.paramcounts} parameters."
+    var s := ""
+    s := s ++ if (methodMirror.isConfidential) then
+                { "Confidential" }  else { "" }
+    s := s ++ if (methodMirror.isPublic) then
+                { "Public" } else { "" }
+    s := s ++ " method {methodMirror.name} has {methodMirror.numberOfParams} parameters"
+    print(s)
 }
 
 def fooMirror = mirror.reflect(foo)
-def exampleMirror = fooMirror.getMethod "example(_)"
+def exampleMirror = fooMirror.onMethod "example(_)"
 print "got exampleMirror"
 describe(exampleMirror)
-def exampleAndMirror = mirror.reflect(foo).getMethod "example(_,_)and(_)"
+def exampleAndMirror = fooMirror.onMethod "example(_,_)and(_)"
 describe(exampleAndMirror)
-def noParamsMirror = mirror.reflect(foo).getMethod "noParams"
+def noParamsMirror = fooMirror.onMethod "noParams"
 describe(noParamsMirror)
-
-print "\nrequests using `request`"
-
-exampleMirror.request [ ["a"] ]
-exampleAndMirror.request [ ["a1", "a2"], ["b1"] ]
-noParamsMirror.request [ [] ]
+def notInhMirror = fooMirror.onMethod "notInherited"
+describe(notInhMirror)
 
 print "\nrequests using `requestWithArgs`"
 

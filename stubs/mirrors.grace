@@ -4,16 +4,18 @@
 type Mirror = Object & interface {
     methods -> List⟦MethodMirror⟧
     methodNames ->Set⟦String⟧
-    getMethod(nm:String) -> MethodMirror
+    onMethod(nm:String) -> MethodMirror
 }
 
 type MethodMirror = Object & interface {
-    name -> String
-    partcount -> Number
-    paramcounts -> List⟦Number⟧
-    isVariableArity -> List⟦Boolean⟧
-    request(args:List⟦ArgList⟧) -> Unknown
-    requestWithArgs(args:List⟦Object⟧) -> Unknown
+     name -> String
+     numberOfParams -> Number
+     partCount -> Number
+     paramCounts -> List⟦Number⟧
+     paramNames -> List⟦String⟧
+     requestWithArgs(args:List⟦Object⟧) -> Unknown
+     isConfidential -> Boolean
+     isPublic -> Boolean
 }
 type ArgList = List⟦Object⟧
 
@@ -21,13 +23,16 @@ method loadDynamicModule(name:String) -> Done { }
 class reflect(obj:Unknown) -> Mirror {
     method methods -> List⟦MethodMirror⟧  { }
     method methodNames -> List⟦String⟧ { }
-    class getMethod(nm:String) -> MethodMirror { 
+    class onMethod(nm:String) -> MethodMirror {
         method name -> String { }
-        method partcount -> Number { }
-        method paramcounts -> List⟦Number⟧  { }
-        method isVariableArity -> List⟦Boolean⟧ { }
-        method request(args:List⟦ArgList⟧) -> Unknown { }
+        method partCount -> Number { }
+        method paramCounts -> List⟦Number⟧  { }
+        method paramNames -> List⟦String⟧  { }
+        method numberOfParams -> Number { }
         method requestWithArgs(args:List⟦Object⟧) -> Unknown { }
+        method isConfidential -> Boolean { }
+        method isPublic -> Boolean { }
     }
+    method getMethod(nm) { onMethod(nm) }
 }
 

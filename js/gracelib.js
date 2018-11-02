@@ -3435,13 +3435,14 @@ GraceMirrorMethod.prototype.methods['asString'] = function mMirror_asString (arg
 GraceMirrorMethod.prototype.methods['name'] = function mMirror_name (argcv) {
     return new GraceString(this.canonicalName);
 };
-GraceMirrorMethod.prototype.methods['partcount'] = function mMirror_partcount (argcv) {
+GraceMirrorMethod.prototype.methods['partCount'] = function mMirror_partCount (argcv) {
     var count = this.name.split("(").length;
     if (count === 1) return new GraceNum(1);
     return new GraceNum(count - 1);
 };
-
-GraceMirrorMethod.prototype.methods['paramcounts'] =
+GraceMirrorMethod.prototype.methods['partcount'] =
+    GraceMirrorMethod.prototype.methods['partCount'] =
+GraceMirrorMethod.prototype.methods['paramCounts'] =
       function mMirror_paramcounts (argcv) {
     var theFunction = this.obj.methods[this.name];
     var l = theFunction.paramCounts ? theFunction.paramCounts.length : 0;
@@ -3451,32 +3452,36 @@ GraceMirrorMethod.prototype.methods['paramcounts'] =
     }
     return new GraceList(countArray);
 };
-
-GraceMirrorMethod.prototype.methods['request(1)'] =
-      function mMirror_request (argcv, argList) {
-    if (! argList) {
-        throw new GraceExceptionPacket(ProgrammingErrorObject,
-                new GraceString("'request(_)' requires one argument (a list of argument lists)"));
-    }
+GraceMirrorMethod.prototype.methods['paramcounts'] =
+    GraceMirrorMethod.prototype.methods['paramCounts'];
+GraceMirrorMethod.prototype.methods['paramNames'] =
+      function mMirror_paramNames (argcv) {
     var theFunction = this.obj.methods[this.name];
-    var requiredLen = theFunction.paramCounts ? theFunction.paramCounts.length : 0;
-    var providedLen = callmethod(argList, "size", [0])._value;
-    if (providedLen !== requiredLen) {
-        throw new GraceExceptionPacket(ProgrammingErrorObject,
-                   new GraceString("wrong number of argument lists in 'request'" ));
+    var names = theFunction.paramNames || []
+    var nameArray = new Array(l);
+    for (let i = 0, len = names.length; i < len; i++) {
+        nameArray[i] = new GraceString(names[i]);
     }
-    var allArgs = [this.obj, this.name, []];
-    var outerIter = callmethod(argList, "iterator", [0]);
-    while (Grace_isTrue(callmethod(outerIter, "hasNext", [0]))) {
-        var innerArray = callmethod(outerIter, "next", [0]);
-        var innerSize = callmethod(innerArray, "size", [0])._value;
-        allArgs[2].push(innerSize);    // incrementally build list of argument list lengths
-        var innerIter = callmethod(innerArray, "iterator", [0]);
-        while (Grace_isTrue(callmethod(innerIter, "hasNext", [0]))) {
-            allArgs.push(callmethod(innerIter, "next"));
-        }
-    }
-    return selfRequest.apply(null, allArgs);
+    return new GraceList(nameArray);
+};
+GraceMirrorMethod.prototype.methods['isConfidential'] =
+      function mMirror_isConfidential (argcv) {
+        const theFunction = this.obj.methods[this.name];
+        if (theFunction.confidential) return GraceTrue;
+        return GraceFalse;
+};
+
+GraceMirrorMethod.prototype.methods['isPublic'] =
+      function mMirror_isPublic (argcv) {
+        const theFunction = this.obj.methods[this.name];
+        if (theFunction.confidential) return GraceFalse;
+        return GraceTrue;
+};
+
+GraceMirrorMethod.prototype.methods['numberOfParams'] =
+      function mMirror_numberOfParams (argcv) {
+        const theFunction = this.obj.methods[this.name];
+        return new GraceNum(theFunction.paramNames.length);
 };
 
 GraceMirrorMethod.prototype.methods['requestWithArgs(1)'] =
@@ -3608,7 +3613,7 @@ function gracecode_mirrors() {
 }
 
 if (typeof gctCache !== "undefined")
-    gctCache['mirrors'] = "path:\n mirrors\nclasses:\npublic:\n Mirror\n MethodMirror\n ArgList\n loadDynamicModule(1)\n reflect(1)\nconfidential:\nfresh-methods:\n reflect(1)\nfresh:reflect(1):\n basicAsString\n asDebugString\n ::\n methodNames\n getMethod(1)\n methods\n self\n asString\nmodules:\n";
+    gctCache['mirrors'] = "classes:\nconfidential:\ndialect:\n standardGrace\nfresh-methods:\n reflect(1)\nfresh:reflect(1):\n getMethod(1)\n methodNames\n methods\n onMethod(1)\nmethodtypes-of:ArgList:\nmethodtypes-of:MethodMirror:\n & 3\n & Object\n 3 isConfidential \u2192 Boolean\n 3 isPublic \u2192 Boolean\n 3 name \u2192 String\n 3 numberOfParams \u2192 Number\n 3 paramCounts \u2192 List\u27e6Number\u27e7\n 3 paramNames \u2192 List\u27e6String\u27e7\n 3 partCount \u2192 Number\n 3 requestWithArgs(args:List\u27e6Object\u27e7) \u2192 Unknown\nmethodtypes-of:Mirror:\n & 2\n & Object\n 2 methodNames \u2192 Set\u27e6String\u27e7\n 2 methods \u2192 List\u27e6MethodMirror\u27e7\n 2 onMethod(nm:String) \u2192 MethodMirror\nmodules:\n collectionsPrelude\n standardGrace\npath:\n /Users/black/Development/mg/gracelang/minigrace/stubs/mirrors.grace\npublic:\n ArgList\n MethodMirror\n Mirror\n loadDynamicModule(1)\n reflect(1)\npublicMethodTypes:\n loadDynamicModule(name:String) \u2192 Done\n reflect(obj:Unknown) \u2192 Mirror\ntypes:\n ArgList\n MethodMirror\n Mirror\n";
 
 function safeJsString (obj) {
     // Don't use callmethod!  This function is called from within callmethod.
