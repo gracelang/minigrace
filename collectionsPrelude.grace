@@ -1273,14 +1273,14 @@ def binding is public = object {
     method asString { "the binding factory" }
 
     class key(k)value(v) {
-        method key {k}
-        method value {v}
-        method asString { "{k}::{v}" }
-        method hashcode { (k.hashcode * 1021) + v.hashcode }
-        method hash { (k.hash * 1021) + v.hash }
+        def key is public = k
+        def value is public = v
+        method asString { "{key}::{value}" }
+        method hashcode { (key.hashcode * 1021) + value.hashcode }
+        method hash { (key.hash * 1021) + value.hash }
         method == (other) {
             match (other)
-                case {o:Binding -> (k == o.key) && (v == o.value) }
+                case {o:Binding -> (key == o.key) && (value == o.value) }
                 case {_ -> return false }
         }
         method ≠ (other) { (self == other).not }
