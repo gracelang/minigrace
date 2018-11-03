@@ -37,7 +37,7 @@ TEST_DEPENDENCIES = ast lexer stringMap collectionsPrelude parser xmodule errorm
 #   these are modules used in running the full test suite
 NPM_VERSION_PREFIX=1.0
 VERSION := $(NPM_VERSION_PREFIX).$(shell ./tools/git-calculate-generation)
-NPM_STABLE_VERSION=1.0.4343
+NPM_STABLE_VERSION=1.0.4359
 
 VERBOSITY =
 WEBFILES_STATIC = $(filter-out sample,$(sort index.html global.css minigrace.js tabs.js  gtk.js debugger.js ace  debugger.html  importStandardGrace.js $(ICONS)))
@@ -361,7 +361,7 @@ pull-web-editor:
        else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi
 
 pull-objectdraw:
-	@if [ -e objectdraw ] ; \
+	#@if [ -e objectdraw ] ; \
        then printf "objectdraw: " ; cd objectdraw; git pull ; \
        else git clone https://github.com/gracelang/objectdraw/ ; fi
 
