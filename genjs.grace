@@ -799,7 +799,10 @@ method compileNormalMethod(o, selfobj) {
     compileMethodPreamble (o, funcName, canonicalMethName)
         withParams (paramlist(o) ++ typeParamlist(o))
     compileParameterDebugFrame(o, name)
-    compileDefaultsForTypeParameters(o) extraParams 0
+    if (o.isOnceMethod.not) then {
+        // it o is a once method, we compile the defaults in the wrapper
+        compileDefaultsForTypeParameters(o) extraParams 0
+    }
     compileArgumentTypeChecks(o)
     debugModePrefix
     if (o.isFresh) then {
@@ -820,38 +823,7 @@ method compileNormalMethod(o, selfobj) {
     debugModeSuffix
     compileMethodPostamble(o, funcName, canonicalMethName)
     if (o.isOnceMethod) then {
-        def totalParams = o.numParams + o.numTypeParams
-        if ( totalParams == 0 ) then {
-            out "{selfobj}.methods[\"{name}\"] = function memo${funcName}(argcv) \{"
-            out "    if (! this.data['memo${name}'])    // parameterless memo function"
-            out "        this.data['memo${name}'] = {funcName}.call(this, argcv);"
-            out "    return this.data['memo${name}'];"
-            out "\};"
-        } elseif { totalParams == 1 } then {
-            def commaParamName = paramlist(o) ++ typeParamlist(o);
-            out "{selfobj}.methods[\"{name}\"] = function memo${funcName}(argcv{commaParamName}) \{"
-            increaseindent
-            compileDefaultsForTypeParameters(o) extraParams 0
-            out "let memoTable = this.data['memo${name}'] ||"
-            out "      ( this.data['memo${name}'] ="
-            out "           request(request({standardPrelude}, 'dictionary', [0]), 'empty', [0]) );"
-            out "let absentBlock = new GraceBlock(this, {o.line}, 0);"
-            out "absentBlock.guard = jsTrue;"
-            out "absentBlock.real = function ifAbsentBlock() \{"
-            out "    let newResult = {funcName}.call(this, argcv{commaParamName});"
-            out "    request(memoTable, 'at(1)put(1)', [1,1]{commaParamName}, newResult);"
-            out "    return newResult;"
-            out "\};"
-            out "absentBlock.methods.apply = function apply (argcv) \{"
-            out "    return this.real.apply(this.receiver);"
-            out "\};"
-            out "return request(memoTable, 'at(1)ifAbsent(1)', [1,1]{commaParamName}, absentBlock);"
-            decreaseindent
-            out "\};"
-        } else {
-            errormessages.syntaxError "'once' method with multiple parameters not yet supported"
-                atRange (o.headerRange)
-        }
+        compileOnceWrapper(o, selfobj, name)
     } else {
         out "{selfobj}.methods[\"{name}\"] = {funcName};"
     }
@@ -860,6 +832,43 @@ method compileNormalMethod(o, selfobj) {
         compileFreshMethod(o, selfobj)
     }
 }
+
+method compileOnceWrapper(o, selfobj, name) {
+    def totalParams = o.numParams + o.numTypeParams
+    def funcName = o.register
+    if ( totalParams == 0 ) then {
+        out "{selfobj}.methods[\"{name}\"] = function memo${funcName}(argcv) \{"
+        out "    if (! this.data['memo${name}'])    // parameterless memo function"
+        out "        this.data['memo${name}'] = {funcName}.call(this, argcv);"
+        out "    return this.data['memo${name}'];"
+        out "\};"
+    } elseif { totalParams == 1 } then {
+        def commaParamName = paramlist(o) ++ typeParamlist(o);
+        out "{selfobj}.methods[\"{name}\"] = function memo${funcName}(argcv{commaParamName}) \{"
+        increaseindent
+        compileDefaultsForTypeParameters(o) extraParams 0
+        out "let memoTable = this.data['memo${name}'] ||"
+        out "      ( this.data['memo${name}'] ="
+        out "           request(request({standardPrelude}, 'dictionary', [0]), 'empty', [0]) );"
+        out "let absentBlock = new GraceBlock(this, {o.line}, 0);"
+        out "absentBlock.guard = jsTrue;"
+        out "absentBlock.real = function ifAbsentBlock() \{"
+        out "    let newResult = {funcName}.call(this, argcv{commaParamName});"
+        out "    request(memoTable, 'at(1)put(1)', [1,1]{commaParamName}, newResult);"
+        out "    return newResult;"
+        out "\};"
+        out "absentBlock.methods.apply = function apply (argcv) \{"
+        out "    return this.real.apply(this.receiver);"
+        out "\};"
+        out "return request(memoTable, 'at(1)ifAbsent(1)', [1,1]{commaParamName}, absentBlock);"
+        decreaseindent
+        out "\};"
+    } else {
+        errormessages.syntaxError "'once' method with multiple parameters not yet supported"
+            atRange (o.headerRange)
+    }
+}
+
 method compileDummyMethod(o, selfobj, kind) {
     def canonicalMethName = o.canonicalName
     def funcName = o.register
