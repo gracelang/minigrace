@@ -75,7 +75,7 @@ method decreaseindent {
     if(indent.size <= 2) then {
         indent := ""
     } else {
-        indent := indent.substringFrom(1)to(indent.size - 2)
+        indent := indent.substringFrom 3
     }
 }
 
@@ -634,13 +634,13 @@ method compileDefaultsForTypeParameters(o) extraParams (extra) {
     out "// Start type parameters"
     o.typeParams.do { g->
         def gName = varf(g.value)
-        out "if ({gName} === undefined) {gName} = var_Unknown;"
+        out "if (! {gName}) {gName} = var_Unknown;"
     }
     if (emitArgChecks) then {
         def correction = if (extra == 0) then { "" } else { " - {extra}" }
         out "var numArgs = arguments.length - 1{correction};"  // subtract 1 for argcv
         def np = o.numParams
-        def ntp = o.typeParams.size
+        def ntp = o.numTypeParams
         def s = if (ntp == 1) then { "" } else { "s" }
         out "if ((numArgs > {np}) && (numArgs !== {np + ntp})) \{"
         out "    throw new GraceExceptionPacket(RequestErrorObject, "
@@ -820,15 +820,38 @@ method compileNormalMethod(o, selfobj) {
     debugModeSuffix
     compileMethodPostamble(o, funcName, canonicalMethName)
     if (o.isOnceMethod) then {
-        if (o.hasParams || o.hasTypeParams) then {
-            errormessages.syntaxError "a 'once' method cannot have parameters"
+        def totalParams = o.numParams + o.numTypeParams
+        if ( totalParams == 0 ) then {
+            out "{selfobj}.methods[\"{name}\"] = function memo${funcName}(argcv) \{"
+            out "    if (! this.data['memo${name}'])    // parameterless memo function"
+            out "        this.data['memo${name}'] = {funcName}.call(this, argcv);"
+            out "    return this.data['memo${name}'];"
+            out "\};"
+        } elseif { totalParams == 1 } then {
+            def commaParamName = paramlist(o) ++ typeParamlist(o);
+            out "{selfobj}.methods[\"{name}\"] = function memo${funcName}(argcv{commaParamName}) \{"
+            increaseindent
+            compileDefaultsForTypeParameters(o) extraParams 0
+            out "let memoTable = this.data['memo${name}'] ||"
+            out "      ( this.data['memo${name}'] ="
+            out "           request(request({standardPrelude}, 'dictionary', [0]), 'empty', [0]) );"
+            out "let absentBlock = new GraceBlock(this, {o.line}, 0);"
+            out "absentBlock.guard = jsTrue;"
+            out "absentBlock.real = function ifAbsentBlock() \{"
+            out "    let newResult = {funcName}.call(this, argcv{commaParamName});"
+            out "    request(memoTable, 'at(1)put(1)', [1,1]{commaParamName}, newResult);"
+            out "    return newResult;"
+            out "\};"
+            out "absentBlock.methods.apply = function apply (argcv) \{"
+            out "    return this.real.apply(this.receiver);"
+            out "\};"
+            out "return request(memoTable, 'at(1)ifAbsent(1)', [1,1]{commaParamName}, absentBlock);"
+            decreaseindent
+            out "\};"
+        } else {
+            errormessages.syntaxError "'once' method with multiple parameters not yet supported"
                 atRange (o.headerRange)
         }
-        out "{selfobj}.methods[\"{name}\"] = function memo${funcName}(argcv) \{"
-        out "    if (! this.data['memo${name}'])"
-        out "        this.data['memo${name}'] = {funcName}.call(this, argcv);"
-        out "    return this.data['memo${name}'];"
-        out "\};"
     } else {
         out "{selfobj}.methods[\"{name}\"] = {funcName};"
     }
@@ -1515,10 +1538,12 @@ method initializeCodeGenerator(moduleObject) {
         util.outprint ";\"use strict\";"
     }
     if (isPrelude.not) then {
-        util.outprint "var___95__prelude = do_import(\"standardGrace\", gracecode_standardGrace);"
+        util.outprint "{standardPrelude} = do_import(\"standardGrace\", gracecode_standardGrace);"
     }
     util.setline(1)
 }
+
+def standardPrelude = "var_" ++ escapeident "_prelude"
 
 method outputModuleDefinition(moduleObject) {
     // output the definition of the module function, conventionally
@@ -1534,7 +1559,7 @@ method outputModuleDefinition(moduleObject) {
     out "var {selfr} = this;"
     out "this.definitionModule = {modNameAsString};"
     out "this.definitionLine = 0;"
-    out "var var_prelude = var___95__prelude;"
+    out "var var_prelude = {standardPrelude};"
         // var_prelude must be local to the module function, because its
         // value varies from module to module.
 
