@@ -128,12 +128,12 @@ function object_Equals (argcv, o) {
 
 var identityHashSeed = 1001;
 
-function object_identityHash(obj) {
-    if (! obj.identityHash) {
-        obj.identityHash = new GraceNum(identityHashSeed ^ 0xdeadbeef);
+function object_identityHash(argcv) {
+    if (! this.identityHash) {
+        this.identityHash = new GraceNum(identityHashSeed ^ 0xdeadbeef);  // ^ means XOR
         identityHashSeed = identityHashSeed + 1;
     }
-    return obj.identityHash;
+    return this.identityHash;
 }
 object_identityHash.confidential = true;
 
