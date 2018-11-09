@@ -1071,6 +1071,7 @@ def methodNode is public = object {
             }
             result
         }
+        method numTypeParams { signature.first.numTypeParams }
         method endPos {
             def lastPart = signature.last
             lastPart.linePos + lastPart.name.size - 1
