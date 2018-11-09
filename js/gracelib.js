@@ -2041,7 +2041,10 @@ GraceType.prototype = {
             return result;
         },
         "==(1)": function type_identity (argcv, other) {
-            return selfRequest(this, "isMe(1)", [1], other)
+            return selfRequest(this, "isMe(1)", argcv, other)
+        },
+        "hash": function type_hash (argcv) {
+            return selfRequest(this, "myIdentityHash", argcv)
         },
         "setName(1)": function type_setName (argcv, nu) {
             if (nu.className !== "string") nu = request(nu, "asString", [0]);
