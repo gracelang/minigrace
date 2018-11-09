@@ -2112,7 +2112,7 @@ GraceBlock.prototype.noSuchMethodHandler = {
                 }
                 throw new GraceExceptionPacket(NoSuchMethodErrorObject,
                     new GraceString("no method " + canonicalMethodName(jsName) + " on " +
-                        describe(target) + "." + suggestions));
+                        describe(recvr) + "." + suggestions));
             }
         }
     }
