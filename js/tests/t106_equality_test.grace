@@ -80,4 +80,7 @@ testSuite {
     test "g ≠ e" by { assert(g ≠ e) }
     test "e == hmaker" by { assert(e == hmaker) }
     test "hmaker == hmaker" by { deny(hmaker == hmaker) }
+    test "g.hash == g.hash" by { assert (g.hash) shouldBe (g.hash) }
+    test "c.hash == c.hash" by { assert (c.hash) shouldBe (c.hash) }
+    test "c.hash ≠ g.hash" by { assert (c.hash) shouldntBe (g.hash) }
 }
