@@ -9,6 +9,16 @@ class produceT {
         executed := true
         nums.fold{a, b -> a + b} startingWith 0
     }
+
+    once method tabulate(a, b, c) {
+        executed := true
+        return a * b * c
+    }
+
+    once method concatenate(a, b, c) {
+        executed := true
+        return "" ++ a ++ b ++ c
+    }
 }
 
 testSuite {
@@ -47,6 +57,28 @@ testSuite {
         o.executed := false
         assert (o.sum) shouldBe 55
         deny (o.executed) description "o.sum executed again"
+    }
+
+    test "3 parameter method" by {
+        assert (t1.tabulate(1, 2, 3)) shouldBe 6
+        assert (t1.tabulate(3, 3, 2)) shouldBe 18
+        assert (t1.executed) description "t1.tabulate didn't execute"
+        t1.executed := false
+        assert (t1.tabulate(1, 2, 3)) shouldBe 6
+        deny (t1.executed) description "t1 executed for tabulate(1, 2, 3)"
+        assert (t1.tabulate(3, 3, 2)) shouldBe 18
+        deny (t1.executed) description "t1 executed for tabulate(3, 3, 2)"
+    }
+
+    test "3 parameter nono-commutative method" by {
+        assert (t1.concatenate(1, 2, 3)) shouldBe "123"
+        assert (t1.executed) description "t1.concatenate(3, 2, 1) didn't execute"
+        t1.executed := false
+        assert (t1.concatenate(3, 2, 1)) shouldBe "321"
+        assert (t1.executed) description "t1.concatenate(3, 2, 1) didn't execute"
+        t1.executed := false
+        assert (t1.concatenate(3, 2, 1)) shouldBe "321"
+        deny (t1.executed) description "t1.concatenate(3, 2, 1) wasn't cached"
     }
 }
 

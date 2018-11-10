@@ -842,30 +842,32 @@ method compileOnceWrapper(o, selfobj, name) {
         out "        this.data['memo${name}'] = {funcName}.call(this, argcv);"
         out "    return this.data['memo${name}'];"
         out "\};"
-    } elseif { totalParams == 1 } then {
-        def commaParamName = paramlist(o) ++ typeParamlist(o);
-        out "{selfobj}.methods[\"{name}\"] = function memo${funcName}(argcv{commaParamName}) \{"
+    } else {
+        def commaParamNames = paramlist(o) ++ typeParamlist(o);
+        out "{selfobj}.methods[\"{name}\"] = function memo${funcName}(argcv{commaParamNames}) \{"
         increaseindent
         compileDefaultsForTypeParameters(o) extraParams 0
         out "let memoTable = this.data['memo${name}'] ||"
         out "      ( this.data['memo${name}'] ="
         out "           request(request({standardPrelude}, 'dictionary', [0]), 'empty', [0]) );"
+        if (totalParams == 1) then {
+            out "let tableKey = {commaParamNames.substringFrom 3};"
+        } else {
+            out "let tableKey = new Lineup([{commaParamNames.substringFrom 3}]);"
+        }
         out "let absentBlock = new GraceBlock(this, {o.line}, 0);"
         out "absentBlock.guard = jsTrue;"
         out "absentBlock.real = function ifAbsentBlock() \{"
-        out "    let newResult = {funcName}.call(this, argcv{commaParamName});"
-        out "    request(memoTable, 'at(1)put(1)', [1,1]{commaParamName}, newResult);"
+        out "    let newResult = {funcName}.call(this, argcv{commaParamNames});"
+        out "    request(memoTable, 'at(1)put(1)', [1,1], tableKey, newResult);"
         out "    return newResult;"
         out "\};"
         out "absentBlock.methods.apply = function apply (argcv) \{"
         out "    return this.real.apply(this.receiver);"
         out "\};"
-        out "return request(memoTable, 'at(1)ifAbsent(1)', [1,1]{commaParamName}, absentBlock);"
+        out "return request(memoTable, 'at(1)ifAbsent(1)', [1,1], tableKey, absentBlock);"
         decreaseindent
         out "\};"
-    } else {
-        errormessages.syntaxError "'once' method with multiple parameters not yet supported"
-            atRange (o.headerRange)
     }
 }
 
