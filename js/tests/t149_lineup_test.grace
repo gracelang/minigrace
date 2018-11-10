@@ -69,6 +69,26 @@ def lineUpTest = object {
             assert(empty == emptyList) description "empty sequence ≠ empty list"
         }
 
+        method testSequenceHashEmpty {
+            assert(empty.hash == [].hash) description "empty lineup hash ≠ [] hash"
+            assert(empty.hash == sequence.empty.hash) description "empty lineup hash ≠ empty sequence hash"
+        }
+
+        method testSequenceHashNonEmpty {
+            assert(oneToFive.hash == [1, 2, 3, 4, 5].hash) description "1 to 5 hash ≠ [1..5] hash"
+        }
+
+        method testLineUpHashAndSequenceHash {
+            def one = [1]
+            def oneSeq = sequence.withAll(one)
+            assert(one.hash == oneSeq.hash) description "[1].hash = {one.hash}, but {oneSeq}.hash = {oneSeq.hash}"
+        }
+
+        method testSequenceHashEqualsRangeHash {
+            assert(oneToFive) shouldBe (1..5)
+            assert(oneToFive.hash) shouldBe ((1..5).hash)
+        }
+
         method testSequenceInequalityEmpty {
             deny(empty == [1])
             assert(empty != [1])
