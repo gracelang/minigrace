@@ -439,6 +439,15 @@ trait indexable⟦T⟧ {
         }
         existing
     }
+    method ==(other) {
+        isEqual (self) toCollection (other)
+    }
+    method hash {
+        self.fold { acc, each ->
+            hashAndCombine(acc, each)
+        } startingWith (emptySequence.hash)
+    }
+    method ≠ (other) { (self == other).not }
 }   // end of trait indexable
 
 method max(a,b) is confidential {       // copied from standard prelude
@@ -466,6 +475,7 @@ def emptySequence is confidential = object {
             false
         }
     }
+    method hash { [].hash }
     method ≠ (other) { (self == other).not }
     class iterator {
         method asString { "emptySequenceIterator" }
@@ -640,6 +650,13 @@ method isEqual(left) toCollection(right) {
     } else { 
         false
     }
+}
+
+
+method hashAndCombine(aHash, anObj) {
+    def objHash = anObj.hash
+    native "js" code ‹return new GraceNum((var_aHash._value * 2) ^ var_objHash._value);
+›       //  ^ is bitwsie XOR
 }
 
 class list⟦T⟧ {
@@ -875,11 +892,6 @@ class list⟦T⟧ {
                     i := i + 1
                 }
             }
-
-            method ==(other) {
-                isEqual (self) toCollection (other)
-            }
-            method ≠ (other) { (self == other).not }
             method iterator {
                 object {
                     def iMods = mods
@@ -1221,6 +1233,10 @@ class set⟦T⟧ {
                 false
             }
         }
+        method hash {
+            // we have to sort our elements to obtain the same hash for two equal sets
+            list.withAll(self).sort.hash
+        }
         method ≠ (other) { (self == other).not }
         method copy {
             outer.withAll(self)
@@ -1276,7 +1292,6 @@ def binding is public = object {
         def key is public = k
         def value is public = v
         method asString { "{key}::{value}" }
-        method hashcode { (key.hashcode * 1021) + value.hashcode }
         method hash { (key.hash * 1021) + value.hash }
         method == (other) {
             match (other)
@@ -1741,8 +1756,6 @@ class range {
             def stop = upper
             def size is public =
                 if ((upper-lower+1) < 0) then { 0 } else {upper-lower+1}
-
-            def hash is public = { ((start.hash * 1021) + stop.hash) * 3 }
 
             method iterator -> Iterator {
                 object {

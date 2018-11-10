@@ -102,6 +102,13 @@ if (!Array.prototype.includes) {
     };
 }
 
+function hashAndCombine(aHash, objB) {
+    // aHash is a JS number; objB is a Grace object
+    // returns a JS Number
+    var bHash = request(objB, 'hash', [0])._value;
+    return (aHash * 2) ^ bHash;     // ^ is bitwise XOR
+}
+
 function GraceObject() {       // constructor function
     // gets its methods from the prototype.  Don't add to them!
     this.data = {};
@@ -1671,6 +1678,13 @@ Lineup.prototype = {
             var collections = callmethod(var___95__prelude, "collections", [0]);
             return selfRequest(collections,
                         "isEqual(1)toCollection(1)", [1, 1], this, other);
+        },
+        "hash": function(argcv) {
+            var result = 0x5E0EACE;     // sort of like SEQENCE
+            for (var i=0; i<this._value.length; i++) {
+                result = hashAndCombine(result, this._value[i]);
+            }
+            return new GraceNum(result);
         },
         "iterator": function(argcv) {
             return new GraceListIterator(this._value);
