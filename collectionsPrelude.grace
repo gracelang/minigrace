@@ -8,9 +8,9 @@ def RequestError is public = ProgrammingError.refine "RequestError"
 def ConcurrentModification is public = ProgrammingError.refine "ConcurrentModification"
 def SizeUnknown is public = Exception.refine "SizeUnknown"
 
-method required is confidential {
-    SubobjectResponsibility.raise "required method not overriden by subobject"
-}
+method annotation is annotation
+method required is annotation
+method abstract is annotation
 
 type EqualityObject = Object & interface {
     ::(o:Object) -> Binding
@@ -82,7 +82,7 @@ type Collection⟦T⟧ = Object & interface {
         // returns a new collection that yields those of my elements for which condition holds
     >> (target: Collection⟦T⟧ | CollectionFactory⟦T⟧) -> Collection⟦T⟧
         // returns target << self; used for writing pipelines
-//    << (source: Collection⟦T⟧) -> Collection⟦T⟧
+    << (source: Collection⟦T⟧) -> Collection⟦T⟧
         // returns self ++ source; used for writing pipelines
 }
 
@@ -283,14 +283,14 @@ trait collection⟦T⟧ {
     method size {
         SizeUnknown.raise "collection {asDebugString} does not know its size"
     }
-    method do is required
+    method do(action) is required
     method iterator is required
     method isEmpty {
         // override if size is known
         iterator.hasNext.not
     }
     method first {
-        def it = self.iterator
+        def it = iterator
         if (it.hasNext) then { 
             it.next
         } else {
@@ -300,7 +300,7 @@ trait collection⟦T⟧ {
     method do(block1) separatedBy(block0) {
         var firstTime := true
         var i := 0
-        self.do { each ->
+        do { each ->
             if (firstTime) then {
                 firstTime := false
             } else {
@@ -316,7 +316,7 @@ trait collection⟦T⟧ {
     }
     method fold(blk)startingWith(initial) {
         var result := initial
-        self.do {it ->
+        do {it ->
             result := blk.apply(result, it)
         }
         return result
@@ -327,7 +327,6 @@ trait collection⟦T⟧ {
     method filter(selectionCondition:Predicate1⟦T⟧) -> Enumerable⟦T⟧ {
         lazySequenceOver(self) filteredBy(selectionCondition)
     }
-    method iter { self.iterator }
     method >>(target) { target << self }
     method <<(source) { self ++ source }
 
