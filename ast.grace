@@ -1448,6 +1448,7 @@ def callNode is public = object {
                 cachedIdentifier.line := parts.first.line
                 cachedIdentifier.linePos := parts.first.linePos
                 cachedIdentifier.canonicalName := canonicalName
+                cachedIdentifier.end := end
             }
             cachedIdentifier
         }
