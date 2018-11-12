@@ -1,19 +1,30 @@
-#pragma ExtendedLineups
 import "io" as io
 import "sys" as sys
 import "util" as util
 
-// Contains modified lines used as suggestions for error messages.
-// When a line is added using one of the utility methods such as
-// insert()afterToken()onLine(), the line is copied from util.lines to the
-// internal lines array in the suggestion, and when a line that is already in
-// the array is modified, the internal lines array is updated.
-// There is no sorting of the order of the lines at any point, so
-// lines must be added in ascending order.
 def suggestion is public = object {
+    // Contains modified lines used as suggestions for error messages.
+    // When a line is added using one of the utility methods such as
+    // insert()afterToken()onLine(), the line is copied from util.lines to the
+    // lines array in the suggestion. When a line that is already in
+    // the array is modified, the lines array is updated.
+    // There is no sorting of the order of the lines at any point, so
+    // lines must be added in ascending order.
+
   class new {
-    def lineNumbers is confidential = []
-    def lines is confidential = []
+    use equality
+
+    def lineNumbers is public = list.empty     // two parallel arrays,
+    def lines is public = list.empty           // simulating a dictionary
+
+    method ==(other) {
+        if (lineNumbers == other.lineNumbers) then {
+            if (lines == other.lines) then { return true }
+        }
+        return false
+    }
+
+    method hash { lines.hash }
 
     // Methods that deal with inserting/replacing/deleting character positions
     // and ranges. These methods are usually called by lexing error messages
@@ -299,8 +310,12 @@ method readableStringFrom(xs:Collection) {
 }
 
 method name (p:String) mightBeIntendedToBe (target:String) {
+    // heuristics for finding typos, mis-spellings, etc.
+
     if (p == "module()object") then { return false }
     if (p.contains "$") then { return false }
+    if (p.startsWithLetter ≠ target.startsWithLetter) then { return false }
+        // either both operators, or both names
     def parenIx = p.indexOf "(" ifAbsent { p.size + 1 }
     def pPrefix = p.substringFrom 1 to (parenIx - 1)
     if (target.startsWith(pPrefix)) then { return true }

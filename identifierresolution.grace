@@ -330,8 +330,7 @@ class newScopeIn(parent') kind(variety') {
         if (aNode.nameString == "explOde(1)") then {
             ProgrammingError.raise "the compiler exploded."
         }
-        errormessages.syntaxError "there is no method {aNode.canonicalName}."
-                atRange(aNode.range)
+        reportUndeclaredIdentifier(aNode.asIdentifier)
     }
     method isSpecial(name) is confidential {
         if (name.startsWith "list") then {
@@ -621,7 +620,7 @@ method checkForReservedName(node) {
 
 method suggestionsForIdentifier(node) {
     def nm = node.nameString
-    def suggestions = [ ]
+    def suggestions = set.empty
     def nodeScope = node.scope
     def thresh = 4      // max number of suggestions
     nodeScope.withSurroundingScopesDo { s ->
@@ -630,7 +629,7 @@ method suggestionsForIdentifier(node) {
                 def sug = errormessages.suggestion.new
                 sug.replaceRange(node.linePos, node.linePos +
                     node.value.size - 1) with (canonical(v)) onLine(node.line)
-                suggestions.push(sug)
+                suggestions.add(sug)
                 if (suggestions.size ≥ thresh) then { return suggestions }
             }
         }
@@ -639,7 +638,7 @@ method suggestionsForIdentifier(node) {
         if (nodeScope.elementScopes.get(s).contains(nm)) then {
             def sug = errormessages.suggestion.new
             sug.insert "{s}." atPosition (node.linePos) onLine(node.line)
-            suggestions.push(sug)
+            suggestions.add(sug)
             if (suggestions.size ≥ thresh) then { return suggestions }
         }
     }
@@ -666,8 +665,10 @@ method canonical(numericName) {
 
 method reportUndeclaredIdentifier(node) {
     def suggestions = suggestionsForIdentifier(node)
-    errormessages.syntaxError("unknown variable or method '{node.canonicalName}'; " ++
-          "this may be a spelling mistake, or an attempt to access a variable in another scope")
+    def cn = node.canonicalName
+    def varBit = if (cn.endsWith ")") then { "" } else { " variable or" }
+    errormessages.syntaxError("unknown{varBit} method '{cn}'; " ++
+          "this may be a spelling mistake, or an attempt to access a{varBit} method in another scope")
           atRange (node.range) withSuggestions (suggestions)
 }
 
