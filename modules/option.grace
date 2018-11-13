@@ -43,7 +43,6 @@ class full⟦T⟧(contents:T) → Option {
     method contains(v) { value == v }
     method indices { sequence [1] }
     method keys { sequence [1] }
-    method into (other) { other.add(value) }
     method ==(other) {
         match (other) 
             case {c:Collection → (c.size == 1) && {c.first == value} }
@@ -117,7 +116,6 @@ class empty⟦T⟧ → Option {
     method contains(_) { false }
     method indices { emptySequence }
     method keys { emptySequence }
-    method into (other) { other }
     method ==(other) {
         match (other) 
             case {c:Collection → c.isEmpty}

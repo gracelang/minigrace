@@ -73,8 +73,11 @@ def traits = object {
         method filter(selectionCondition:Block1⟦T,Boolean⟧) -> Stream⟦T⟧ {
             standardGrace.lazySequenceOver⟦T⟧(self) filteredBy(selectionCondition)
         }
-        method >> (collFactory) {
-            collFactory.withAll(self)
+        method >> (sink) {
+            sink << self
+        }
+        method << (source) {
+            self.withAll(source)
         }
     }
 
@@ -91,13 +94,6 @@ def traits = object {
                 result.at(k) put(v)
             }
             return result
-        }
-        method into(existing) -> Collection⟦T⟧ {
-            def selfIterator = self.iterator
-            while {selfIterator.hasNext} do {
-                existing.add(selfIterator.next)
-            }
-            existing
         }
         method ==(other) {
             standardGrace.isEqual (self) toIterable (other)
@@ -180,13 +176,6 @@ def traits = object {
                 result.at(k) put(v)
             }
             return result
-        }
-        method into(existing) -> Collection⟦T⟧ {
-            def selfIterator = self.iterator
-            while {selfIterator.hasNext} do {
-                existing.add(selfIterator.next)
-            }
-            existing
         }
     }
 }
@@ -1616,10 +1605,6 @@ class standardGrace {
                     if (self.contains(each).not) then { return false }
                 }
                 return true
-            }
-            method into(existing: Expandable⟦T⟧) -> Collection⟦T⟧ {
-                do { each -> existing.add(each) }
-                existing
             }
         }
     }

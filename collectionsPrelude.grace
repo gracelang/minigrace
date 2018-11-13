@@ -342,13 +342,6 @@ trait enumerable⟦T⟧ {
         }
         return result
     }
-    method into(existing: Expandable⟦T⟧) -> Collection⟦T⟧ {
-        def selfIterator = self.iterator
-        while {selfIterator.hasNext} do {
-            existing.add(selfIterator.next)
-        }
-        existing
-    }
     method ==(other) {
         isEqual (self) toCollection (other)
     }
@@ -430,13 +423,6 @@ trait indexable⟦T⟧ {
             result.at(k) put(v)
         }
         return result
-    }
-    method into(existing: Expandable⟦T⟧) -> Collection⟦T⟧ {
-        def selfIterator = self.iterator
-        while {selfIterator.hasNext} do {
-            existing.add(selfIterator.next)
-        }
-        existing
     }
     method ==(other) {
         isEqual (self) toCollection (other)
