@@ -486,7 +486,7 @@ method compileblock(o) {
         out "\};"
     }
     compileMetadata(o, applyMeth, applyMethName)
-    out "{blockId}.methods['{applyMethName}'] = {applyMeth};"
+    out "{blockId}.methods[\"{applyMethName}\"] = {applyMeth};"
     def matchesMeth = applyMeth.replace "applyMeth" with "matchesMeth"
     def matchesMethName = "matches({nParams})"
     if (nParams > 0) then {
@@ -494,7 +494,7 @@ method compileblock(o) {
         out "    return this.guard.apply(this.receiver, args) ? GraceTrue : GraceFalse;"
         out "\};"
         compileMetadata(o, matchesMeth, matchesMethName)
-        out "{blockId}.methods['{matchesMethName}'] = {matchesMeth};"
+        out "{blockId}.methods[\"{matchesMethName}\"] = {matchesMeth};"
     }
     o.register := blockId
     restoreInitializedVars(oldInitializedVars)
@@ -827,17 +827,17 @@ method compileOnceWrapper(o, selfobj, name) {
     def funcName = o.register
     if ( totalParams == 0 ) then {
         out "{selfobj}.methods[\"{name}\"] = function memo${funcName}(argcv) \{"
-        out "    if (! this.data['memo${name}'])    // parameterless memo function"
-        out "        this.data['memo${name}'] = {funcName}.call(this, argcv);"
-        out "    return this.data['memo${name}'];"
+        out "    if (! this.data[\"memo${name}\"])    // parameterless memo function"
+        out "        this.data[\"memo${name}\"] = {funcName}.call(this, argcv);"
+        out "    return this.data[\"memo${name}\"];"
         out "\};"
     } else {
         def commaParamNames = paramlist(o) ++ typeParamlist(o);
         out "{selfobj}.methods[\"{name}\"] = function memo${funcName}(argcv{commaParamNames}) \{"
         increaseindent
         compileDefaultsForTypeParameters(o) extraParams 0
-        out "let memoTable = this.data['memo${name}'] ||"
-        out "      ( this.data['memo${name}'] ="
+        out "let memoTable = this.data[\"memo${name}\"] ||"
+        out "      ( this.data[\"memo${name}\"] ="
         out "           request(request({standardPrelude}, 'dictionary', [0]), 'empty', [0]) );"
         if (totalParams == 1) then {
             out "let tableKey = {commaParamNames.substringFrom 3};"
@@ -875,7 +875,7 @@ method compileDummyMethod(o, selfobj, kind) {
     noteLineNumber (o.line) comment "{kind} method"
     debugModePrefix
     out "throw new GraceExceptionPacket(ProgrammingErrorObject,"
-    out "          new GraceString('{kind} method {canonicalMethName} was not supplied'));"
+    out "          new GraceString(\"{kind} method {canonicalMethName} was not supplied\"));"
     debugModeSuffix
     compileMethodPostamble(o, funcName, canonicalMethName)
     out "{selfobj}.methods[\"{name}\"] = {funcName};"
@@ -1317,7 +1317,7 @@ method compileimport(o) {
     if (o.isReadable.not) then {
         out "{accessor.register}.confidential = true;"
     }
-    compileCheckThat(var_nm) called "module '{o.nameString.quoted}'"
+    compileCheckThat(var_nm) called "module \"{o.nameString.quoted}\""
         hasType(o.dtype) onLine (o.line)
     o.register := "GraceDone"
 }
