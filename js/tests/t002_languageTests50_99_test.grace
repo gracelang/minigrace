@@ -182,11 +182,11 @@ def aGraceLangTest = object {
             
             assert(str)shouldBe("Hello world\n25\nfalse\n")
         }
+        type X = {
+            foo(s : String) -> String
+        }
 
         method test_065_types2 {
-            type X = {
-                foo(s : String) -> String
-            }
             
             var x : X := object {
                 method foo(s : String) -> String {
@@ -225,33 +225,33 @@ def aGraceLangTest = object {
             
             assert(str)shouldBe("Hello\n")
         }
+        type A83 = {
+            +(other : Number) -> A83
+            asString -> String
+        }
         method test_083_structural3 {
-            type A = {
-                +(other : Number) -> A
-                asString -> String
-            }
             
-            var a : A := 3
+            var a : A83 := 3
             a := a + 5
             out(a)
             
             assert(str)shouldBe("8\n")
         }
+            
+        type A84 = {
+            test(a:A84) -> A84
+        }
+        type B84 = {
+            test(b:B84) -> B84
+        }
 
         method test_084_structural4 {
             
-            type A = {
-                test(a:A) -> A
+            var a : A84 := object {
+                method test(x:A84) -> A84 { x }
             }
-            type B = {
-                test(b:B) -> B
-            }
-            
-            var a : A := object {
-                method test(x:A) -> A { x }
-            }
-            var b : B := object {
-                method test(x:B) -> B { x }
+            var b : B84 := object {
+                method test(x:B84) -> B84 { x }
             }
             a.test(a)
             b.test(b)
@@ -263,17 +263,17 @@ def aGraceLangTest = object {
             
             assert(str)shouldBe("OK\n")
         }
+        type A86 = {
+            foo(arg:String) -> String
+        }
+        
+        type B86 = {
+            bar(arg : Number) -> Number
+        }
 
         method test_086_intersection {
-            type A = {
-                foo(arg:String) -> String
-            }
             
-            type B = {
-                bar(arg : Number) -> Number
-            }
-            
-            def ab : A & B = object {
+            def ab : A86 & B86 = object {
                 method foo(s:String) -> String {
                     s
                 }
@@ -283,31 +283,31 @@ def aGraceLangTest = object {
                 }
             }
             out(ab.foo("Hello"))
-            def a:A = ab
-            def b : B = ab
+            def a:A86 = ab
+            def b : B86 = ab
             out(a.foo("World"))
             out(b.bar(73))
             
             assert(str)shouldBe("Hello\nWorld\n73\n")
         }
+        type A89⟦T⟧ = {
+            foo(_ : T) -> Number
+            bar(_ : Number) -> T
+        }
 
         method test_089_generic1 {
-            type A⟦T⟧ = {
-                foo(_ : T) -> Number
-                bar(_ : Number) -> T
-            }
             
-            var a : A⟦String⟧ := object {
+            var a : A89⟦String⟧ := object {
                 method foo(x : String) -> Number { x.size }
                 method bar(y : Number) -> String { "{y}" }
             }
             
-            def b : A⟦Boolean⟧ = object {
+            def b : A89⟦Boolean⟧ = object {
                 method foo(x : Boolean) -> Number { 1 }
                 method bar(y : Number) -> Boolean { y < 0 }
             }
             
-            def c : A⟦String⟧ = object {
+            def c : A89⟦String⟧ = object {
                 method foo(x : String) -> Number { x.size }
                 method bar(y : Number) -> String { "{y}" }
             }
@@ -320,22 +320,18 @@ def aGraceLangTest = object {
         }
         
         method test_089_generic2 {
-            type A⟦T⟧ = {
-                foo(_ : T) -> Number
-                bar(_ : Number) -> T
-            }
-            
-            var a : A⟦String⟧ := object {
+
+            var a : A89⟦String⟧ := object {
                 method foo(x : String) -> Number { x.size }
                 method bar(y : Number) -> String { "{y}" }
             }
             
-            def b : A⟦Boolean⟧ = object {
+            def b : A89⟦Boolean⟧ = object {
                 method foo(x : Boolean) -> Number { 1 }
                 method bar(y : Number) -> Boolean { y < 0 }
             }
             
-            def c : A⟦String⟧ = object {
+            def c : A89⟦String⟧ = object {
                 method foo(x : String) -> Number { x.size }
                 method bar(y : Number) -> String { "{y}" }
             }
@@ -348,22 +344,17 @@ def aGraceLangTest = object {
         }
 
         method test_089_generic3 {
-            type A[[T]] = {
-                foo(_ : T) -> Number
-                bar(_ : Number) -> T
-            }
-            
-            var a : A[[String]] := object {
+            var a : A89[[String]] := object {
                 method foo(x : String) -> Number { x.size }
                 method bar(y : Number) -> String { "{y}" }
             }
             
-            def b : A[[Boolean]] = object {
+            def b : A89[[Boolean]] = object {
                 method foo(x : Boolean) -> Number { 1 }
                 method bar(y : Number) -> Boolean { y < 0 }
             }
             
-            def c : A[[String]] = object {
+            def c : A89[[String]] = object {
                 method foo(x : String) -> Number { x.size }
                 method bar(y : Number) -> String { "{y}" }
             }
