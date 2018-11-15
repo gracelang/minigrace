@@ -1054,8 +1054,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.scope := newScopeIn(enclosingScope) kind "typedec"
             // this scope will be the home for any type parameters.
             // If there are no parameters, it won't be used.
-            // For now, we don't distinguish between type decs and type params
-            // TODO: fix this, because type decs are now methods
             true
         }
         method visitTypeLiteral (o) up (anc) {
