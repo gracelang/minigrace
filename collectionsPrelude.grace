@@ -1,3 +1,4 @@
+#pragma noTypeChecks
 dialect "none"
 
 def BoundsError is public = ProgrammingError.refine "BoundsError"
@@ -1300,7 +1301,10 @@ class dictionary⟦K,T⟧ {
         empty.add(aBinding)
     }
 
-    method withAll(initialBindings: Collection⟦Binding⟦K,T⟧⟧) -> Dictionary⟦K,T⟧ {
+    method withAll(initialBindings: Collection⟦Binding⟦K,T⟧⟧) {
+        // we can't say -> Dictionary⟦K,T⟧, because checking that (dynamically)
+        // requires building a dictionary for the memo table in the Dictionary type
+
         def result = empty
         initialBindings.do { b:Binding -> result.add(b) }
         result
@@ -1308,7 +1312,10 @@ class dictionary⟦K,T⟧ {
     
     method << (source:Collection⟦Binding⟦K,T⟧⟧) { self.withAll(source) }
 
-    class empty -> Dictionary⟦K,T⟧ {
+    class empty {
+        // we can't say -> Dictionary⟦K,T⟧, because checking that (dynamically)
+        // requires building a dictionary for the memo table in the Dictionary type
+
         use collection⟦T⟧
         var mods is readable := 0
         var numBindings := 0
