@@ -546,7 +546,6 @@ method transformIdentifier(node) ancestors(anc) {
     checkForAmbiguityOf (node) definedIn (definingScope) asA (nodeKind)
     def v = definingScope.variety
     if (v == "built-in") then { return node }
-    if ((v == "typedec") && { node.hasTypeArgs.not }) then { return node }
     if (v == "dialect") then {
         def p = ast.identifierNode.new("prelude", false) scope(nodeScope)
         return ast.memberNode.new(nm, p)
@@ -556,7 +555,6 @@ method transformIdentifier(node) ancestors(anc) {
 
     if (definingScope == moduleScope) then {
         if (nodeKind == k.defdec) then { return node }
-        if (nodeKind == k.typedec) then { return node }
         if (nodeKind == k.vardec) then { return node }
     }
     if (definingScope == nodeScope.enclosingObjectScope) then {
@@ -566,7 +564,7 @@ method transformIdentifier(node) ancestors(anc) {
     }
     if (nodeScope.isObjectScope.not
              && {nodeScope.isInSameObjectAs(definingScope)}) then {
-        if (nodeKind == k.methdec) then { return node }
+        if (nodeKind == k.methdec) then { return node }     // can this ever happen?
         if (nodeKind == k.defdec) then { return node }
         if (nodeKind == k.vardec) then { return node }
     }
@@ -1057,6 +1055,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             // this scope will be the home for any type parameters.
             // If there are no parameters, it won't be used.
             // For now, we don't distinguish between type decs and type params
+            // TODO: fix this, because type decs are now methods
             true
         }
         method visitTypeLiteral (o) up (anc) {

@@ -501,38 +501,27 @@ method compileblock(o) {
     inBlock := origInBlock
 }
 method compiletypedec(o) in (obj) {
+    // We compile type declarations as once methods. This allows the declarations
+    // to appear in any order.  Compiling them as defs won't work for types
+    // with type parameters, or for types that are used before they are declared
+    // (as must happen for mutually-recursive types)
+
     def enclosing = o.scope.parent
     var reg := uidWithPrefix "type"
     def tName = o.nameString
     out "// Type decl {tName}"
-    declaredvars.push(escapeident(tName))
+    // declaredvars.push(escapeident(tName))
     if (o.value.kind == "typeliteral") then {o.value.name := tName }
-    def ntp = o.numTypeParams
-    if (0 == ntp) then {
-        reg := varf(tName)
-        def val = compilenode(o.value)
-        if (o.value.kind == "op") then {
-            // this guard prevents us from renaming the rhs in decls like type A = B
-            out "selfRequest({val}, \"setName(1)\", [1], new GraceString(\"{tName}\"));"
-        }
-        out "var {varf(tName)} = {val};"
-        if (compilationDepth == 1) then {
-            compilenode(ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(enclosing)],
-                [o.name], ast.typeType) scope(enclosing))
-        }
-    } else {
-        def typeFun = compilenode(ast.methodNode.new(
+    def typeMethod = ast.methodNode.new(
             [ast.signaturePart.partName(o.nameString) scope(enclosing)],
-            typeFunBody (o.value) named (tName),
-            ast.unknownType) scope(enclosing).withTypeParams(o.typeParams)
+            typeFunBody (o.value) named (tName), ast.unknownType) scope(enclosing)
             // Why unknownType, rather than typeType?  Because the latter will
             // compile a check that the return value is actually a type, which
             // causes a circularity when trying to import collections. The check
             // is also unnecessary, if the type operators are correctly implemented.
-        )
-        def unknowns = ", var_Unknown" * ntp
-        out "var {varf(tName)} = {typeFun}.call({obj}, [{ntp}]{unknowns});"
-    }
+    typeMethod.isOnceMethod := true
+    typeMethod.withTypeParams(o.typeParams)
+    def typeFun = compilenode(typeMethod)
     o.register := reg
     reg
 }
