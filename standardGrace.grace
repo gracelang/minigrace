@@ -442,9 +442,9 @@ def SubobjectResponsibility is public = collections.SubobjectResponsibility
 def ConcurrentModification is public = collections.ConcurrentModification
 def UninitializedVariable is public = ProgrammingError.refine "UninitializedVariable"
 
-def collection is public = collections.collection
-def enumerable is public = collections.enumerable
-def indexable is public = collections.indexable
+method collection⟦T⟧ { collections.collection⟦T⟧ }
+method enumerable⟦T⟧ { collections.enumerable⟦T⟧ }
+method indexable⟦T⟧ { collections.indexable⟦T⟧ }
 
 method sequence⟦T⟧ { collections.sequence⟦T⟧ }
 method sequence⟦T⟧(arg) { collections.sequence⟦T⟧.withAll(arg) }
