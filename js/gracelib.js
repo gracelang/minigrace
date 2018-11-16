@@ -2902,9 +2902,16 @@ function gracecode_io() {
         }
         return new GraceList([]);
     };
-    this.methods['newer(2)'] = function io_browser_newer(argcv, jsFile, sourceFile) {
-        return GraceTrue;
-    };
+    function io_browser_newer(argcv, jsFile, sourceFile) { return GraceTrue; };
+    function node_newer(argcv, jsFile, sourceFile) {
+        let jsStats = fs.statSync(jsFile._value);
+        let sourceStats = fs.statSync(sourceFile._value);
+        let jsMtime = jsStats.mtimeMs;
+        let sourceMtime = sourceStats.mtimeMs;
+        return (jsMtime > sourceMtime ? GraceTrue : GraceFalse);
+    }
+    this.methods['newer(2)'] = (typeof global == "undefined") ? io_browser_newer : node_newer;
+
     this.methods['ask(1)'] = function io_ask(argcv, question) {
         return new GraceString(minigrace.ask(question._value));
     };
