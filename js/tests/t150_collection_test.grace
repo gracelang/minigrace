@@ -1541,7 +1541,7 @@ def dictionaryTest = object {
 
         method testDictionaryDoSeparatedBySingleton {
             var s := "nothing"
-            set [1].do { each -> assert(each)shouldBe(1) }
+            dictionary.withAll ["key"::1].do { each -> assert(each)shouldBe(1) }
                 separatedBy { s := "kilroy" }
             assert (s) shouldBe ("nothing")
         }
