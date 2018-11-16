@@ -4640,6 +4640,7 @@ if (typeof global !== "undefined") {
     global.var_Done = var_Done;
     global.var_done = var_done;
     global.var_Boolean = var_Boolean;
+    global.var_HashMap = var_HashMap;
     global.var_graceObject = var_graceObject;
     global.var_GraceType = var_GraceType;
     global.var_Number = var_Number;
