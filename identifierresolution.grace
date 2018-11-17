@@ -4,7 +4,7 @@ import "sys" as sys
 import "ast" as ast
 import "util" as util
 import "xmodule" as xmodule
-import "stringMap" as map
+import "fastDict" as map
 import "mirrors" as mirrors
 import "errormessages" as errormessages
 import "identifierKinds" as k
@@ -16,7 +16,7 @@ def undiscovered = Singleton.named "undiscovered"
 
 var stSerial := 100
 
-def reserved = sequence ["self", "super", "outer", "true", "false"]
+def reserved = sequence ["self", "outer", "true", "false"]
 // reserved names that cannot be re-assigned or re-declared
 
 method newScopeKind(variety') {
@@ -32,10 +32,10 @@ type DeclKind = k.T
 
 class newScopeIn(parent') kind(variety') {
     use identityEquality
-    def elements is public = map.new
-    def elementScopes is public = map.new
-    def elementLines is public = map.new
-    def elementTokens is public = map.new
+    def elements is public = map.dictionary.empty
+    def elementScopes is public = map.dictionary.empty
+    def elementLines is public = map.dictionary.empty
+    def elementTokens is public = map.dictionary.empty
     def parent is public = parent'
     var hasParent is public := true
     def variety is public = variety'
@@ -51,21 +51,21 @@ class newScopeIn(parent') kind(variety') {
     }
     method isEmpty { elements.size == 0 }
     method addName(n) {
-        elements.put(n, k.methdec)
-        elementLines.put(n, util.linenum)
+        elements.at(n)put(k.methdec)
+        elementLines.at(n)put(util.linenum)
     }
     method addName (n) asA (kind:DeclKind) {
-        def oldKind = elements.get(n) ifAbsent {
-            elements.put(n, kind)
-            elementLines.put(n, util.linenum)
+        def oldKind = elements.at(n) ifAbsent {
+            elements.at(n)put(kind)
+            elementLines.at(n)put(util.linenum)
             return
         }
         if (kind.isImplicit) then {
             return  // don't overwrite local id with id from trait or super
         }
         if (oldKind.isImplicit)  then {
-            elements.put(n, kind)
-            elementLines.put(n, util.linenum)
+            elements.at(n)put(kind)
+            elementLines.at(n)put(util.linenum)
             return
         }
         errormessages.syntaxError("'{n}' cannot be" ++
@@ -75,30 +75,30 @@ class newScopeIn(parent') kind(variety') {
     method addNode (nd) asA (kind) {
         def ndName = nd.value
         checkShadowing(nd) asA(kind)
-        def oldKind = elements.get(ndName) ifAbsent {
-            elements.put(ndName, kind)
-            elementLines.put(ndName, nd.line)
+        def oldKind = elements.at(ndName) ifAbsent {
+            elements.at(ndName)put(kind)
+            elementLines.at(ndName)put(nd.line)
             return
         }
         if (kind.isImplicit) then {
             return  // don't overwrite local id with id from trait or super
         }
         if (oldKind.isImplicit)  then {
-            elements.put(ndName, kind)
-            elementLines.put(ndName, nd.line)
+            elements.at(ndName)put(kind)
+            elementLines.at(ndName)put(nd.line)
             return
         }
         var more := " in this scope"
-        if (elementLines.contains(ndName)) then {
+        if (elementLines.containsKey(ndName)) then {
             more := " as a {oldKind}"
-                ++ " on line {elementLines.get(ndName)}"
+                ++ " on line {elementLines.at(ndName)}"
         }
         errormessages.syntaxError("'{nd.canonicalName}' cannot be"
             ++ " redeclared because it is already declared" ++ more )
             atRange(nd.range)
     }
     method contains (n) {
-        if (elements.contains(n)) then { return true }
+        if (elements.containsKey(n)) then { return true }
         if (isInBeginningStudentDialect.not) then { return false }
         if (self ≠ preludeScope) then { return false }
         return isSpecial(n)
@@ -122,23 +122,23 @@ class newScopeIn(parent') kind(variety') {
         if { isInBeginningStudentDialect } then {
             if (isSpecial(n)) then { return k.methdec }
         }
-        elements.get(n)
+        elements.at(n)
     }
     method kind (n) ifAbsent (action) {
         if { isInBeginningStudentDialect } then {
             if (isSpecial(n)) then { return k.methdec }
         }
-        elements.get(n) ifAbsent (action)
+        elements.at(n) ifAbsent (action)
     }
     method at(n) putScope(scp) {
-        elementScopes.put(n, scp)
+        elementScopes.at(n)put(scp)
     }
     method getScope(n) {
-        if (elementScopes.contains(n)) then {
-            return elementScopes.get(n)
+        if (elementScopes.containsKey(n)) then {
+            return elementScopes.at(n)
         }
-//        util.log 70 verbose ("scope {self}: elements.contains({n}) = {elements.contains(n)}" ++
-//              " but elementScopes.contains({n}) = {elementScopes.contains(n)}")
+//        util.log 70 verbose ("scope {self}: elements.containsKey({n}) = {elements.containsKey(n)}" ++
+//              " but elementScopes.containsKey({n}) = {elementScopes.containsKey(n)}")
         //  This occurs for names like `true` that are built-in, but for which there
         //  is no symbolTable describing their atttributes.
         //  TODO: add complete information for the built-in names.
@@ -161,7 +161,7 @@ class newScopeIn(parent') kind(variety') {
             if (each.hasParent) then { result := result ++ "➞" }
         }
         result := result ++  "):\n    "
-        elements.bindings.sortBy(keyOrdering).do { each ->
+        elements.bindings.sortedBy(keyOrdering).do { each ->
             result := "{result} {each.key}({kind(each.key)}) "
         }
         result ++ "\n"
@@ -172,7 +172,7 @@ class newScopeIn(parent') kind(variety') {
     method elementScopesAsString {
         def referencedScopes = emptySet
         var result := "\n    [elementScopes:"
-        elementScopes.bindings.sortBy(keyOrdering).do { each ->
+        elementScopes.bindings.sortedBy(keyOrdering).do { each ->
             result := "{result} {each.key}➞{each.value.asDebugString}"
             referencedScopes.add (each.value)
         }
@@ -433,10 +433,10 @@ class newScopeIn(parent') kind(variety') {
         }
         // new object attributes can shadow old, but other shadowing is illegal
         var more := ""
-        if (priorScope.elementLines.contains(name)) then {
-            def ln = priorScope.elementLines.get(name)
+        if (priorScope.elementLines.containsKey(name)) then {
+            def ln = priorScope.elementLines.at(name)
             if (ln > 0) then {
-                more := " on line {priorScope.elementLines.get(name)}"
+                more := " on line {priorScope.elementLines.at(name)}"
             }
         }
         if (newKind == k.vardec) then {
@@ -598,8 +598,8 @@ method checkForAmbiguityOf (node) definedIn (definingScope) asA (kind) {
                   // _directly_ in an enclosing scope.  
     }
     var more := ""
-    if (conflictingScope.elementLines.contains(name)) then {
-        def earlierDef = conflictingScope.elementLines.get(name)
+    if (conflictingScope.elementLines.containsKey(name)) then {
+        def earlierDef = conflictingScope.elementLines.at(name)
         if (earlierDef != 0) then {
             more := " at line {earlierDef}"
         }
@@ -633,7 +633,7 @@ method suggestionsForIdentifier(node) {
         }
     }
     nodeScope.elementScopes.keysDo { s ->
-        if (nodeScope.elementScopes.get(s).contains(nm)) then {
+        if (nodeScope.elementScopes.at(s).containsKey(nm)) then {
             def sug = errormessages.suggestion.new
             sug.insert "{s}." atPosition (node.linePos) onLine(node.line)
             suggestions.add(sug)
@@ -677,8 +677,8 @@ method reportAssignmentTo(node) declaredInScope(scp) {
     def kind = scp.kind(name)
     var more := ""
     def suggestions = []
-    if (scp.elementLines.contains(name)) then {
-        more := " on line {scp.elementLines.get(name)}"
+    if (scp.elementLines.containsKey(name)) then {
+        more := " on line {scp.elementLines.at(name)}"
     }
     if (kind == k.selfDef) then {
         errormessages.syntaxError("'{name}' cannot be re-bound; " ++
@@ -689,8 +689,8 @@ method reportAssignmentTo(node) declaredInScope(scp) {
               "cannot be re-bound.")
               atRange(node.range)
     } elseif { kind == k.defdec } then {
-        if (scp.elementTokens.contains(name)) then {
-            def tok = scp.elementTokens.get(name)
+        if (scp.elementTokens.containsKey(name)) then {
+            def tok = scp.elementTokens.at(name)
             def sugg = errormessages.suggestion.new
             if (tok.value == "def") then {
                 var eq := tok
@@ -940,7 +940,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.parentKind := myParent.kind
             def declaredName = o.nameString
             if (false != o.startToken) then {
-                myParent.scope.elementTokens.put(declaredName, o.startToken)
+                myParent.scope.elementTokens.at(declaredName)put(o.startToken)
             }
             if (o.value.isObject) then { o.value.name := declaredName }
             true
@@ -1202,7 +1202,7 @@ method gatherUsedNames(objNode) is confidential {
     // For each of objNodes's used traits, gather the names
     // introduced by that trait, as modified by alias and exclude.
 
-    def traitMethods = map.new
+    def traitMethods = map.dictionary.empty
     def objScope = objNode.scope
     objNode.usedTraits.do { t ->
         def traitScope = objScope.scopeReferencedBy(t.value)
@@ -1248,9 +1248,9 @@ method gatherUsedNames(objNode) is confidential {
         }
         t.providedNames.do { methName ->
             if (requiredNames.contains(methName).not) then {
-                def definingTraits = traitMethods.get(methName) ifAbsent { [] }
+                def definingTraits = traitMethods.at(methName) ifAbsent { [] }
                 definingTraits.push(t)
-                traitMethods.put(methName, definingTraits)
+                traitMethods.at(methName)put(definingTraits)
             }
         }
     }
@@ -1264,7 +1264,7 @@ method checkForConflicts(objNode, traitMethods) {
     def conflicts = emptyList
 
     traitMethods.keysDo { methName ->
-        def sources = traitMethods.get(methName)
+        def sources = traitMethods.at(methName)
         if (sources.size > 1) then {    // a method has more than one source trait
             if (objNode.localNames.contains(methName).not) then {
                 conflicts.addLast (conflictForMethodName(methName) from(sources))

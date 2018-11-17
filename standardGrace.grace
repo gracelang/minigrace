@@ -1,5 +1,5 @@
-#pragma NativePrelude
 #pragma ExtendedLineups
+dialect "none"
 
 method abstract {
     SubobjectResponsibility.raise "abstract method not overriden by subobject"

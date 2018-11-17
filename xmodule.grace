@@ -406,7 +406,7 @@ method extractGctFromCache(module) {
 
 
 method writeGCT(modname, dict) is confidential {
-    if (util.extensions.contains "gctfile") then {
+    if (util.extensions.containsKey "gctfile") then {
         def fp = io.open("{util.outDir}{modname}.gct", "w")
         list.withAll(dict.bindings).sortBy(keyCompare).do { b ->
             fp.write "{b.key}:\n"

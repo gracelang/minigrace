@@ -34,7 +34,7 @@ try {
 
     var moduleObject := parser.parse(tokens)
 
-    if (util.extensions.contains "NativePrelude") then {
+    if (util.extensions.containsKey "NativePrelude") then {
         moduleObject.theDialect := ast.dialectNode.new "none"
         // for backward compatibility
     }
@@ -60,8 +60,8 @@ try {
     xmodule.checkDialect(moduleObject)
     xmodule.doParseCheck(moduleObject)
 
-    if (util.extensions.contains("Plugin")) then {
-        mirrors.loadDynamicModule(util.extensions.get("Plugin")).processAST(values)
+    if (util.extensions.containsKey "Plugin") then {
+        mirrors.loadDynamicModule(util.extensions.at "Plugin").processAST(values)
     }
     if (util.target == "imports") then {
         def imps = emptySet

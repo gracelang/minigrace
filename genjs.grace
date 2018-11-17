@@ -8,9 +8,9 @@ import "xmodule" as xmodule
 import "mirrors" as mirrors
 import "errormessages" as errormessages
 import "identifierKinds" as k
-import "stringMap" as map
+import "fastDict" as map
 
-def nodeTally = map.new
+def nodeTally = map.dictionary.empty
 
 var indent := ""
 var verbosity := 30
@@ -1369,7 +1369,7 @@ method compileNativeCode(o) {
         errormessages.syntaxError "the second argument to native(_)code(_) must be a string literal"
             atLine(param2.line)
     }
-    def codeString = param2.value
+    def codeString = excludeLeadingNewlineFrom(param2.value)
     out "   // start native code from line {o.line}"
     out "var result = GraceDone;"
     out(codeString)
@@ -1378,6 +1378,9 @@ method compileNativeCode(o) {
     out "var {reg} = result;"
     o.register := reg
     out "   // end native code insertion"
+}
+method excludeLeadingNewlineFrom(s) {
+    if (s.startsWith "\n") then { s.substringFrom 2 } else { s }
 }
 method compileNull(o) {
     out "nullDefinition();"
@@ -1481,49 +1484,50 @@ method compilenode(o) {
 
 method tallyNode(kind) {
     if (util.verbosity > 50) then {
-        def count = nodeTally.get(kind) ifAbsent { 0 }
-        nodeTally.put (kind, count + 1)
+        def count = nodeTally.at(kind) ifAbsent { 0 }
+        nodeTally.at (kind) put (count + 1)
     }
 }
 
 def valueCompare = { a, b -> b.value.compare(a.value) }
 
 method printNodeTally {
-    def bindingList = nodeTally.bindings
-    bindingList.sortBy(valueCompare)
-    print "AST nodes compiled:"
-    bindingList.do { b ->
-        print "    {b.key}\t{b.value}"
+    if (util.verbosity > 50) then {
+        def bindingList = nodeTally.bindings
+        print "AST nodes compiled:"
+        bindingList.sortedBy(valueCompare).do { b ->
+            print "    {b.key}\t{b.value}"
+        }
     }
 }
 
 method initializeCodeGenerator(moduleObject) {
     def isPrelude = moduleObject.theDialect.value == "none"
-    if (util.extensions.contains "ExtendedLineups") then {
+    if (util.extensions.containsKey "ExtendedLineups") then {
         bracketConstructor := "PrimitiveGraceList"
     }
-    if (util.extensions.contains "noChecks") then {
+    if (util.extensions.containsKey "noChecks") then {
         emitTypeChecks := false
         emitUndefinedChecks := false
         emitArgChecks := false
         emitPositions := false
     }
-    if (util.extensions.contains "noTypeChecks") then {
+    if (util.extensions.containsKey "noTypeChecks") then {
         emitTypeChecks := false
     }
-    if (util.extensions.contains "noArgChecks") then {
+    if (util.extensions.containsKey "noArgChecks") then {
         emitArgChecks := false
     }
-    if (util.extensions.contains "noUndefChecks") then {
+    if (util.extensions.containsKey "noUndefChecks") then {
         emitUndefinedChecks := false
     }
-    if (util.extensions.contains "noLineNumbers") then {
+    if (util.extensions.containsKey "noLineNumbers") then {
         emitPositions := false
     }
     modname := moduleObject.name
     emod := escapeident(modname)
     modNameAsString := "\"{escapestring(modname)}\""
-    if (util.extensions.contains("Debug")) then {
+    if (util.extensions.containsKey("Debug")) then {
         debugMode := true
     }
     util.log_verbose("generating JavaScript code.")
@@ -1534,7 +1538,7 @@ method initializeCodeGenerator(moduleObject) {
     topLevelTypes.add "Type"
     topLevelTypes.add "Unknown"
     topLevelTypes.add "Object"
-    if (util.extensions.contains "strict") then {
+    if (util.extensions.containsKey "strict") then {
         util.outprint ";\"use strict\";"
     }
     if (isPrelude.not) then {
@@ -1666,9 +1670,7 @@ method compile(moduleObject, of, bt, glPath) {
     outputSource
 
     emitBufferedOutput
-    if (util.verbosity > 50) then {
-        printNodeTally
-    }
+    printNodeTally
     util.log_verbose "done."
     if (buildtype == "run") then { runJsCode(of, glPath) }
 }

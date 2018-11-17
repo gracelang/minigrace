@@ -2,7 +2,7 @@
 import "io" as io
 import "sys" as sys
 import "unixFilePath" as filePath
-import "stringMap" as map
+import "fastDict" as map
 
 def defaultVerbosity is public = 30
 var verbosity is public := defaultVerbosity
@@ -16,7 +16,7 @@ var lineposv := 1
 var vtagv := false
 var noexecv := false
 var targetv := "js"
-var extensionsv := map.new
+var extensionsv := map.dictionary.empty
 var recurse is readable := true
 var dynamicModule is public := false
 def cLines is readable = [ ]
@@ -122,7 +122,7 @@ method parseargs(buildinfo) {
                         sys.exit(0)
                     }
                 } case { "--gctfile" ->
-                    extensionsv.put("gctfile", true)
+                    extensionsv.at "gctfile" put true
                 } case { "--version" ->
                     print("minigrace version "
                         ++ "{buildinfo.gitgeneration}")
@@ -276,7 +276,7 @@ method generalError(message, errlinenum, position, arr, suggestions) {
 }
 
 method type_error(s) {
-    if (extensionsv.contains("IgnoreTypes")) then {
+    if (extensionsv.containsKey("IgnoreTypes")) then {
         return true
     }
     if (false ≠ vtagv) then {
@@ -439,7 +439,7 @@ method processExtension(ext) {
             }
         }
     }
-    extensionsv.put(extn, extv)
+    extensionsv.at (extn) put (extv)
 }
 method printhelp {
     print "Usage: {sys.argv.at(1)} [Mode] [Option]... [FILE]"

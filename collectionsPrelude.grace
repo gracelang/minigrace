@@ -1714,7 +1714,8 @@ class dictionary⟦K,T⟧ {
 
 class range {
     method asString { "the range factory" }
-    method from(lower)to(upper) -> Sequence⟦Number⟧ {
+    method from(lower)to(upper) {
+        //  returns Sequence⟦Number⟧
         match (lower)
           case { _:Number ->
         } case { _ ->
@@ -1741,7 +1742,8 @@ class range {
         uncheckedFrom (lower) to (upper)
     }
 
-    method uncheckedFrom (lower) to (upper) -> Sequence⟦Number⟧ {
+    method uncheckedFrom (lower) to (upper) {
+        //  returns Sequence⟦Number⟧
         object {
             use indexable⟦Number⟧
             def start = lower
