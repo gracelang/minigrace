@@ -3,8 +3,8 @@ import "mirrors" as mirror
 
 type T = interface {
     x -> Number
-    type U = String
-    y -> U
+    U -> Type[[String]]
+    y -> String
 }
 
 method foo -> T {
@@ -28,11 +28,7 @@ testSuite {
     test "type T has U method" by {
         assert (T.methodNames) shouldBe (set.withAll ["x", "y", "U"])
     }
-
-    test "type T's U attribute is String" by {
-        assert (T.U) shouldBe (String)
-    }
-
+    
     test "foo doesn't return a T" by {
         assert { foo } shouldRaise (TypeError) mentioning "missing method U"
     }
@@ -42,10 +38,12 @@ testSuite {
     }
 
     test "local type has method W" by {
-        type Local = interface {
-            type W = T
-            x -> Number
+        def local = object {
+            type L = interface {
+                W -> Type
+                x -> Number
+            }
         }
-        assert (Local.methodNames) shouldBe (set.withAll ["x", "W"])
+        assert (local.L.methodNames) shouldBe (set.withAll ["x", "W"])
     }
 }
