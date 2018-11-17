@@ -1049,6 +1049,10 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         }
         method visitTypeDec (o) up (anc) {
             def enclosingScope = anc.parent.scope
+            if (enclosingScope.isObjectScope.not) then {
+                errormessages.syntaxError("type declarations are permitted only" ++
+                    " inside an object") atRange(o.range)
+            }
             enclosingScope.addNode(o.name) asA(k.typedec)
             o.name.isDeclaredByParent := true
             o.scope := newScopeIn(enclosingScope) kind "typedec"
