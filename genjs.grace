@@ -838,7 +838,7 @@ method compileOnceWrapper(o, selfobj, name) {
         compileDefaultsForTypeParameters(o) extraParams 0
         out "let memoTable = this.data[\"memo${name}\"] ||"
         out "      ( this.data[\"memo${name}\"] ="
-        out "           request(request({standardPrelude}, 'dictionary', [0]), 'empty', [0]) );"
+        out "           request(var_HashMap, 'empty', [0]) );"
         if (totalParams == 1) then {
             out "let tableKey = {commaParamNames.substringFrom 3};"
         } else {
