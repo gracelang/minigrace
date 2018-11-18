@@ -1985,7 +1985,6 @@ function GraceTypeSubtraction(l, r) {
 function GraceType(name) {
     this.name = name;
     this.typeMethods = [];
-    this.typeTypes = {};
 }
 GraceType.prototype = {
     methods: {
@@ -2001,13 +2000,6 @@ GraceType.prototype = {
                 var m = this.typeMethods[i];
                 if (!other.methods[m]) {
                     return GraceFalse;
-                }
-            }
-            for (var nm in this.typeTypes) {
-                if (this.typeTypes.hasOwnProperty(nm)) {
-                    if (!other.methods[nm]) {
-                        return GraceFalse;
-                    }
                 }
             }
             return GraceTrue;
@@ -2036,22 +2028,6 @@ GraceType.prototype = {
                 var methName = canonicalMethodName(this.typeMethods[i]);
                 callmethod(result, "add(1)", [1], new GraceString(methName));
             }
-            for (var nm in this.typeTypes) {
-                if (this.typeTypes.hasOwnProperty(nm)) {
-                    callmethod(result, "add(1)", [1], new GraceString(nm));
-                }
-            }
-            return result;
-        },
-        "typeNames": function type_typeNames (argcv) {
-            // typeNames are included in methodNames, but are also available
-            // as methods on this type
-            var result = callmethod(Grace_prelude, "emptySet", [0]);
-            for (var nm in this.typeTypes) {
-                if (this.typeTypes.hasOwnProperty(nm)) {
-                    callmethod(result, "add(1)", [1], new GraceString(nm));
-                }
-            }
             return result;
         },
         "==(1)": function type_identity (argcv, other) {
@@ -2075,10 +2051,6 @@ GraceType.prototype = {
 };
 
 GraceType.prototype.methods["setName(1)"].confidential = true;
-
-function evaluateTypeInType(name, type) {
-	return type.typeTypes[name];
-};
 
 function GraceBlock(recvr, lineNum, numParams) {
     this.definitionModule = recvr.definitionModule;
@@ -2220,14 +2192,16 @@ function raiseTypeError(msg, type, value) {
 
 function classType(o) {
     var t = new GraceType(capitalize(o.className));
-    for (var m in o.methods) {
+    for (let m in o.methods) {
         if (! o.methods[m].confidential) {
             t.typeMethods.push(m);
         }
     };
     if (o.types) {
-        for (var t in o.types) {
-            t.typeTypes[t] = o.types[t]
+        for (let m in o.types) {
+            if (! o.types[m].confidential) {
+                t.typeMethods.push(m);
+            }
         }
     }
     return t;
@@ -3834,10 +3808,8 @@ function numericMethodName(name) {
 function dealWithNoMethod(name, target, argList) {
     var dollarIx = name.indexOf("$");
     if (dollarIx == -1) {
-        if (target.typeTypes && target.typeTypes[name]) {
-            return evaluateTypeInType(name, target);
-        } else if (target.noSuchMethodHandler) {
-            return callmethod(target.noSuchMethodHandler, "apply(3)", [2],
+        if (target.noSuchMethodHandler) {
+            return callmethod(target.noSuchMethodHandler, "apply(3)", [3],
                 new GraceString(name), argList, target);
         } else {
             var closeMatches = closeMatchesForMethodNamed(name, target);

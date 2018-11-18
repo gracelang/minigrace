@@ -546,11 +546,6 @@ method compiletypeliteral(o) in (obj) {
         def mnm = escapestring(meth.nameString)
         out "{reg}.typeMethods.push(\"{mnm}\");"
     }
-    for (o.types) do { each ->
-        def typeVal = compiletypedec(each) in (reg);
-        def tnm = escapeident(each.nameString)
-        out "{reg}.typeTypes.{tnm} = {typeVal};"
-    }
     o.register := reg
     reg
 }
