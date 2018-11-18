@@ -28,12 +28,12 @@ JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
 PRELUDESOURCEFILES = collectionsPrelude.grace standardGrace.grace
-REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace stringMap.grace unixFilePath.grace xmodule.grace identifierresolution.grace fastDict.grace)
+REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace unixFilePath.grace xmodule.grace identifierresolution.grace fastDict.grace)
 
 SOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES)
 MGSOURCEFILES = buildinfo.grace $(SOURCEFILES)
 TYPE_DIALECTS = staticTypes requireTypes
-TEST_DEPENDENCIES = ast lexer stringMap collectionsPrelude parser xmodule errormessages standardGrace identifierKinds standardGrace
+TEST_DEPENDENCIES = ast lexer fastDict collectionsPrelude parser xmodule errormessages standardGrace identifierKinds standardGrace
 #   these are modules used in running the full test suite
 NPM_VERSION_PREFIX=1.0
 VERSION := $(NPM_VERSION_PREFIX).$(shell ./tools/git-calculate-generation)
