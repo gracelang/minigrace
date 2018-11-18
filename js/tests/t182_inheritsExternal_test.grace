@@ -1,28 +1,14 @@
 dialect "minitest"
 import "mirrors" as mirror
-import "stringMap" as stringMap
+import "unixFilePath" as filePath
 
 method hook { abstract }
 
-class stringSet {
-    inherit stringMap.new
+class subFilePath {
+    inherit filePath.filePath
     
-    method add(key) {
-        put(key, true)
-    }
-    
-    method asString {
-        var s := "set\{"
-        var first := true
-        keysDo { each ->
-            if (first) then {
-                s := s ++ each
-                first := false
-            } else {
-                s := s ++ ", " ++ each
-            }
-        }
-        s ++ "\}"
+    method direct {
+        directory
     }
 }
 
@@ -76,30 +62,9 @@ testSuite {
             description "type 'Sequence' missing from newPrelude"
     }
 
-    test "stringSet get" by {
-        def s = stringSet
-        s.add "foo"
-        assert (s.get "foo")
-        assert (s.get "bar" ifAbsent {"absent"}) shouldBe "absent"
-    }
-    
-    test "stringSet contains" by {
-        def s = stringSet
-        s.add "foo"
-        assert (s.contains "foo")
-        deny (s.contains "bar")
-    }
-    
-    test "string set asString" by {
-        def s = stringSet
-        s.add "foo"
-        s.add "valueOf"
-        def sas = s.asString
-        assert ((sas == "set\{foo, valueOf\}") || (sas == "set\{valueOf, foo}"))
-            description "sas = {sas}"
-    }
-    
-    test "emptySet asString" by {
-        assert(stringSet.asString) shouldBe "set\{}"
+    test "firpath direct" by {
+        def f = subFilePath.setDirectory "root/a" .setBase "file" .setExtension "grace"
+        assert (f.asString) shouldBe "root/a/file.grace"
+        assert (f.direct) shouldBe "root/a/"
     }
 }
