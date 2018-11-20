@@ -192,7 +192,8 @@ GraceObject.prototype = {
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
         "debugIterator":    object_debugIterator
-    }
+    },
+    classUid: "graceObject-intrinsic"
 //    data: {}  The prototype should NOT have a data object — data should go in the
 //    child (non-shared) object.
 };
@@ -256,7 +257,8 @@ GraceTrait.prototype = {
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
         "debugIterator":    object_debugIterator
-    }
+    },
+    classUid: "graceTrait-intrinsic"
 };
 
 function isEmptyObject(obj) {
@@ -288,7 +290,8 @@ function Grace_allocObject(superConstructor, givenName) {
         mutable: false,
         closureKeys: [],
         definitionModule: "basic library",
-        definitionLine: 0
+        definitionLine: 0,
+        classUid: "givenName-intrinsic"
     };
     return resultObj;
 }
@@ -309,7 +312,8 @@ function emptyGraceObject(givenName, modname, line) {
         mutable: false,
         closureKeys: [],
         definitionModule: modname,
-        definitionLine: line
+        definitionLine: line,
+        classUid: givenName + "-" + modname + "-" + line
     };
 }
 
@@ -828,7 +832,8 @@ GraceString.prototype = {
     },
     className: "string",
     definitionModule: "basic library",
-    definitionLine: 0
+    definitionLine: 0,
+    classUid: "string-intrinsic"
 };
 
 var GraceEmptyString = new GraceString("");
@@ -1102,7 +1107,8 @@ GraceNum.prototype = {
     },
     className: "number",
     definitionModule: "basic library",
-    definitionLine: 0
+    definitionLine: 0,
+    classUid: "number-intrinsic"
 };
 
 function GracePredicatePattern(pred) {
@@ -1142,7 +1148,8 @@ GracePredicatePattern.prototype = {
     },
     className: "predicatePattern",
     definitionModule: "basic library",
-    definitionLine: 0
+    definitionLine: 0,
+    classUid: "predicatePattern-intrinsic"
 }
 
 function GraceBoolean(b) {
@@ -1207,7 +1214,8 @@ GraceBoolean.prototype = {
     },
     className: "boolean",
     definitionModule: "basic library",
-    definitionLine: 0
+    definitionLine: 0,
+    classUid: "boolean-intrinsic"
 };
 
 var GraceTrue = new GraceBoolean(true);
@@ -1533,7 +1541,8 @@ PrimitiveGraceList.prototype = {
     },
     className: "extendedLineup",
     definitionModule: "basic library",
-    definitionLine: 0
+    definitionLine: 0,
+    classUid: "extendedLineup-intrinsic"
 };
 
 function Lineup(jsList) {
@@ -1784,7 +1793,8 @@ Lineup.prototype = {
     },
     className: "lineup",
     definitionModule: "basic library",
-    definitionLine: 0
+    definitionLine: 0,
+    classUid: "lineup-intrinsic"
 };
 
 function GracePrimitiveArray(len) {
@@ -1919,7 +1929,8 @@ GracePrimitiveArray.prototype = {
     },
     className: "primitiveArray",
     definitionModule: "basic library",
-    definitionLine: 0
+    definitionLine: 0,
+    classUid: "primitiveArray-intrinsic"
 };
 
 function GraceOrPattern(l, r) {
@@ -1985,6 +1996,7 @@ function GraceTypeSubtraction(l, r) {
 function GraceType(name) {
     this.name = name;
     this.typeMethods = [];
+    this.matchCache = {};
 }
 GraceType.prototype = {
     methods: {
@@ -1996,12 +2008,22 @@ GraceType.prototype = {
         "debugIterator":    object_debugIterator,
         "::(1)":            object_colonColon,
         "matches(1)": function type_match (argcv, other) {
+            let cUid = other.classUid;
+            if (cUid) {
+                let c = this.matchCache[cUid];
+                if (c) return c;
+            } else {
+                cuid = null;
+                minigrace.stderr_write(dbgp(other) + " has no classUid\n");
+            }
             for (var i=0; i<this.typeMethods.length; i++) {
                 var m = this.typeMethods[i];
                 if (!other.methods[m]) {
+                    this.matchCache[cUid] = GraceFalse;
                     return GraceFalse;
                 }
             }
+            this.matchCache[cUid] = GraceTrue;
             return GraceTrue;
         },
         "|(1)": function type_or(argcv, other) {
@@ -2047,7 +2069,8 @@ GraceType.prototype = {
     },
     className: "Type",
     definitionModule: "basic library",
-    definitionLine: 0
+    definitionLine: 0,
+    classUid: "Type-intrinsic"
 };
 
 GraceType.prototype.methods["setName(1)"].confidential = true;
@@ -2069,7 +2092,8 @@ function GraceBlock(recvr, lineNum, numParams) {
             return new GraceString("block" + this.numParams + "<" +
                     this.definitionModule + ":" + this.definitionLine + ">");
         }
-    }
+    };
+    this.classUid = 'block-' + numParams
 }
 
 GraceBlock.prototype.noSuchMethodHandler = {
@@ -3144,7 +3168,8 @@ GraceUnicodePattern.prototype = {
     typeMethods: [],
     className: "unicodePattern",
     definitionModule: "unicode",
-    definitionLine: 0
+    definitionLine: 0,
+    classUid: "unicodePattern-intrinsic"
 };
 
 var util_module = false;
@@ -3562,8 +3587,6 @@ function mirror_NoSuchMethodHandler (argcv, handlerBlock) {
 function GraceMirror(subj) {       // constructor function
     this.subject = subj;
     this.mutable = false;
-    this.definitionModule = "mirrors";
-    this.definitionLine = 0;
 }
 
 GraceMirror.prototype = {
@@ -3602,7 +3625,10 @@ GraceMirror.prototype = {
         'whenNoMethodDo(1)': mirror_NoSuchMethodHandler,
         subject: this.subject
     },
-    className: 'objectMirror'
+    className: 'objectMirror',
+    definitionModule: "mirrors",
+    definitionLine: 0,
+    classUid: "mirror-intrinsic"
 };
 
 function gracecode_mirrors() {
@@ -4161,7 +4187,8 @@ GraceException.prototype = {
     },
     className: 'Exception',
     definitionModule: "basic library",
-    definitionLine: 0
+    definitionLine: 0,
+    classUid: "Exception-intrinsic"
 };
 
 var importedModules = {};
