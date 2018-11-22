@@ -32,9 +32,6 @@ method t040_assertValue(v) andThen (trueBlock) otherwise (falseBlock) {
         falseBlock.apply
     }
 }
-method t042_test(n) {
-    out(n)
-}
 method t044_runFirst(a)second(b)third(c) {
     a.apply
     b.apply
@@ -532,7 +529,7 @@ def aGraceLangTest = object {
         method test_042_semicolons {
             var i := 3 ; i := i * 3 ;
             out(i);
-            t042_test("Hello")
+            out "Hello"
             
             assert(str)shouldBe("9\nHello\n")
         }
@@ -581,13 +578,6 @@ def aGraceLangTest = object {
             out("not {c}")
             
             assert(str)shouldBe("Called & with 1\nCalled prefix&\ngot right object\nCalled & with right object\nnot wrong!\n")
-        }
-
-        method test_046_printinterp {
-            var x := "world"
-            out "Hello {x}!"
-            
-            assert(str)shouldBe("Hello world!\n")
         }
 
         method test_047_inherit {
