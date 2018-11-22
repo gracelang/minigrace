@@ -103,7 +103,7 @@ method initialize {
     inStr := false
     codepoint := 0
     interpDepth := 0
-    interpString := false
+    stringContainsInterp := false
     lastNonCommentToken := sofToken
 }
 
@@ -132,7 +132,10 @@ var accum                   // the accumulated characters of the current token
 var inStr                   // are we in a string?
 var codepoint               // calcultes the codepoint for a unicode escape
 var interpDepth             // string interpolation depth
-var interpString            // are we lexing a string interpolation?
+var stringContainsInterp    // does the current string contain an interpolation?
+                            // if so, we prenthesize it.
+var braceDepthAtStartOfInterp
+    // the brace depth when this string interpolation started
 
 initialize
 
@@ -549,35 +552,22 @@ def rBraceState = object {
     method consume (c){
         if (interpDepth > 0) then {
             if (tokens.last.kind == "lparen") then {
-                def lastPos = tokens.last.linePos
-                def lineLength = inputLines.at(lineNumber).size
-                def suggestions = []
-                if (lastPos < lineLength) then {
-                    def suggestion1 = errormessages.suggestion.new
-
-                    suggestion1.deleteRange(lastPos, linePosition)
-                                    onLine(lineNumber)
-                    suggestions.add(suggestion1)
-                    def suggestion2 = errormessages.suggestion.new
-                    suggestion2.insert "«expression»"
-                                    atPosition (lastPos + 1)
-                                    onLine(lineNumber)
-                    suggestions.add(suggestion2)
-                }
-                errormessages.syntaxError "a string interpolation cannot be empty"
-                      atRange (lineNumber, lastPos, linePosition)
-                      withSuggestions (suggestions)
+                reportEmptyStringInterpolation
             }
-            emit (rParenToken)
-            emit (opToken("++"))
-            interpDepth := interpDepth - 1
-            inStr := true
-            advanceTo(quotedStringState)
-        } else {
-            rightBrace
-            emit (rBraceToken)
-            advanceTo (defaultState)
+            if (currentLineBraceDepth == braceDepthAtStartOfInterp) then {
+                interpDepth := interpDepth - 1
+            }
+            if (interpDepth == 0) then {
+                emit (rParenToken)
+                emit (opToken("++"))
+                inStr := true
+                advanceTo(quotedStringState)
+                return
+            }
         }
+        rightBrace
+        emit (rBraceToken)
+        advanceTo (defaultState)
     }
 }
 
@@ -643,11 +633,11 @@ def quotedStringState = object {
     method consume (c) {
 
         checkSeparatorString (c)
-        if (c == "\"") then {
+        if (c == "\"") then {               // the end of the string
             emit(stringToken(accum))
-            if (interpString && (interpDepth == 0)) then {
+            if (stringContainsInterp && (interpDepth == 0)) then {
                 emit(rParenToken)
-                interpString := false
+                stringContainsInterp := false
             }
             advanceTo(defaultState)
             inStr := false
@@ -656,14 +646,15 @@ def quotedStringState = object {
         } elseif {c == "\{"} then {
             def strToken = stringToken(accum)
             startPosition := linePosition
-            if (!interpString) then {
+            if (!stringContainsInterp) then {
                 emit(lParenToken)
-                interpString := true
+                stringContainsInterp := true
             }
             emit(strToken)
             emit(opToken("++"))
             emit(lParenToken)
             advanceTo(defaultState)
+            braceDepthAtStartOfInterp := currentLineBraceDepth
             inStr := false
             interpDepth := interpDepth + 1
         } elseif {c == "\\"} then {
@@ -965,6 +956,27 @@ method newline(currentCharacter) {
     if (priorLineEndsWithOpenBracket) then { return }
     if (currentLineStartsWithCloseBracket(currentCharacter)) then { return }
     emitNewlineSeparator
+}
+
+method reportEmptyStringInterpolation {
+    def lastPos = tokens.last.linePos
+    def lineLength = inputLines.at(lineNumber).size
+    def suggestions = []
+    if (lastPos < lineLength) then {
+        def suggestion1 = errormessages.suggestion.new
+
+        suggestion1.deleteRange(lastPos, linePosition)
+                        onLine(lineNumber)
+        suggestions.add(suggestion1)
+        def suggestion2 = errormessages.suggestion.new
+        suggestion2.insert "«expression»"
+                        atPosition (lastPos + 1)
+                        onLine(lineNumber)
+        suggestions.add(suggestion2)
+    }
+    errormessages.syntaxError "a string interpolation cannot be empty"
+          atRange (lineNumber, lastPos, linePosition)
+          withSuggestions (suggestions)
 }
 
 method isLineEmpty(currentCharacter) {
