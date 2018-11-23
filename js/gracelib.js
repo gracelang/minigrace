@@ -838,11 +838,19 @@ GraceString.prototype = {
 
 var GraceEmptyString = new GraceString("");
 
+function failNumMethodArgCheck(desc, className, methodName) {
+    const idStart = /^[a-zA-Z_]/;
+    const sep = methodName.match(idStart) ? "." : " ";
+    raiseClassError(desc + 'argument to ' + this._value +
+                    sep + methodName + ' is not a ' + className);
+}
+
 function GraceNum(n) {
     this._value = n;
 }
 
 GraceNum.prototype = {
+    failArgCheck: failNumMethodArgCheck,
     methods: {
         "isMe(1)":          object_isMe,
         "myIdentityHash":   object_identityHash,
@@ -928,20 +936,35 @@ GraceNum.prototype = {
             var self = this._value;
             var other = that._value;
             if (self === other) return new GraceNum(0);
+            if (that.className !== "number") {
+                  this.failArgCheck(dbgp(other), "number", "compare(_)");
+            }
             if (self > other) return new GraceNum(+1);
             return new GraceNum(-1);
         },
         "<(1)": function(argcv, other) {
-            if (this._value < other._value) return GraceTrue; else return GraceFalse;
+            if (other.className === "number") {
+                return (this._value < other._value) ? GraceTrue : GraceFalse;
+            }
+            return request(other, "≥(1)", [1], this);
         },
         ">(1)": function(argcv, other) {
-            if (this._value > other._value) return GraceTrue; else return GraceFalse;
+            if (other.className === "number") {
+                return (this._value > other._value) ? GraceTrue : GraceFalse;
+            }
+            return request(other, "≤(1)", [1], this);
         },
         "≤(1)": function(argcv, other) {
-            if (this._value <= other._value) return GraceTrue; else return GraceFalse;
+            if (other.className === "number") {
+                return (this._value <= other._value) ? GraceTrue : GraceFalse;
+            }
+            return request(other, ">(1)", [1], this);
         },
         "≥(1)": function(argcv, other) {
-            if (this._value >= other._value) return GraceTrue; else return GraceFalse;
+            if (other.className === "number") {
+                return (this._value >= other._value) ? GraceTrue : GraceFalse;
+            }
+            return request(other, "<(1)", [1], this);
         },
         "isInteger": function(argcv, other) {
             if (Number.isInteger(this._value)) return GraceTrue; else return GraceFalse;
