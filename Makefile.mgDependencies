@@ -1,4 +1,4 @@
-
+j1/standardGrace.js: j1/fastDict.js
 j1/ast.js: j1/util.js j1/util.js j1/identifierKinds.js j1/standardGrace.js
 j1/buildinfo.js: j1/standardGrace.js
 j1/compiler.js: j1/util.js j1/genjs.js j1/lexer.js j1/parser.js j1/identifierresolution.js j1/buildinfo.js j1/standardGrace.js j1/typeComparison.js
@@ -17,6 +17,7 @@ j1/unixFilePath.js: j1/standardGrace.js
 j1/util.js: j1/io.gct j1/sys.gct j1/unixFilePath.js j1/stringMap.js j1/standardGrace.js j1/fastDict.js
 j1/xmodule.js: j1/io.gct j1/sys.gct j1/util.js j1/ast.js j1/mirrors.gct j1/errormessages.js j1/unixFilePath.js j1/standardGrace.js
 
+j2/standardGrace.js: j2/fastDict.js
 j2/ast.js: j2/util.js j2/util.js j2/identifierKinds.js j2/standardGrace.js
 j2/buildinfo.js: j2/standardGrace.js
 j2/compiler.js: j2/util.js j2/genjs.js j2/lexer.js j2/parser.js j2/identifierresolution.js j2/buildinfo.js j2/standardGrace.js j2/typeComparison.js

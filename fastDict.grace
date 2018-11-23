@@ -1,4 +1,12 @@
+dialect "none"
+import "collectionsPrelude" as collections
+
 def ConcurrentModification is public = ProgrammingError.refine "ConcurrentModification"
+
+type Binding⟦K,T⟧ = collections.Binding⟦K,T⟧
+type Collection⟦T⟧ = collections.Collection⟦T⟧
+def NoSuchObject = collections.NoSuchObject
+def IteratorExhausted = collections.IteratorExhausted
 
 def prims = object {
     method emptyJSObject {
@@ -8,8 +16,8 @@ def prims = object {
 }
 
 def removed = object {
-    // used as a tombestone to mark the location of a removed VALUE
-    // the key and the key-value binding object remain in the dictionary
+    // Used as a tombestone to mark the location of a removed VALUE.
+    // The key, and the key-value binding object, remain in the dictionary
     method asString { "removed" }
     method == (other) { self.isMe(other) }
     method ≠ (other) { self.isMe(other).not }

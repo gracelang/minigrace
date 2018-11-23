@@ -5,7 +5,6 @@ method abstract {
     SubobjectResponsibility.raise "abstract method not overriden by subobject"
 }
 
-
 method required {
     SubobjectResponsibility.raise "required method not provided by subobject"
 }
@@ -51,20 +50,19 @@ method valueOf (nullaryBlock) {
     nullaryBlock.apply
 }
 
-def BasicPattern is public = object {
-    class new {
-        method &(o) {
-            AndPattern.new(self, o)
-        }
-        method |(o) {
-            OrPattern.new(self, o)
-        }
+trait BasicPattern {
+    method &(o) {
+        AndPattern.new(self, o)
+    }
+    method |(o) {
+        OrPattern.new(self, o)
     }
 }
 
-def AndPattern is public = object {
-    class new(p1, p2) {
-        inherit BasicPattern.new
+once method AndPattern {
+  object {
+    trait new(p1, p2) {
+        use BasicPattern
         method matches(obj) {
             if (p1.matches(obj)) then {
                 p2.matches(obj)
@@ -73,26 +71,29 @@ def AndPattern is public = object {
             }
         }
     }
+  }
 }
 
-def OrPattern is public = object {
-    class new(p1, p2) {
-        inherit BasicPattern.new
+once method OrPattern {
+  object {
+    trait new(p1, p2) {
+        use BasicPattern
         method matches(o) {
             if (p1.matches(o)) then { return true }
             p2.matches(o)
         }
     }
+  }
 }
 
 def Singleton is public = object {
     class new {
-        inherit BasicPattern.new
+        use BasicPattern
         use identityEquality
         method matches(other) { self.isMe(other) }
     }
     class named(printString) {
-        inherit Singleton.new
+        use Singleton.new
         method asString { printString }
     }
 }
@@ -101,8 +102,22 @@ method singleton { Singleton.new }
 
 method singleton (nameString) { Singleton.named(nameString) }
 
-trait BaseType {
+once method hashMap is confidential {
+    native "js" code "result = var_HashMap;\n"
+}
+
+method classUid(obj) is confidential {
+    native "js" code "result = new GraceString(var_obj.classUid);\n"
+}
+
+once method mirror is confidential {
+    native "js" code ‹result = do_import("mirrors", gracecode_mirrors);
+        ›
+}
+
+class BaseType {
     use identityEquality
+
     method &(o) {
         TypeIntersection.new(self, o)
     }
@@ -122,18 +137,28 @@ trait BaseType {
         self.name:=(nu)
         return self     // for chaining
     }
+    method matchHook(obj) is required
+    method matches(obj) {
+        native "js" code ‹
+        if (! this.matchCache) this.matchCache = [];
+        let key = var_obj.classUid;
+        result = this.matchCache[key];
+        if (result) return result;
+        result = selfRequest(this, "matchHook(1)", [1], var_obj);
+        this.matchCache[key] = result;
+        ›
+    }
 }
 
-def TypeIntersection is public = object {
+once method TypeIntersection {
+  object {
     class new(t1, t2) {
         inherit AndPattern.new(t1, t2)
+            alias matchHook(_) = matches(_)
         use BaseType
         var name is readable := "‹anon›"
         method methodNames {
             t1.methodNames.addAll(t2.methodNames)
-        }
-        method typeNames {
-            t1.typeNames.addAll(t2.typeNames)
         }
         method asString {
             if (self.name == "‹anon›") then {
@@ -142,20 +167,19 @@ def TypeIntersection is public = object {
                 "type {self.name}"
             }
         }
-
     }
+  }
 }
 
-def TypeVariant is public = object {
+once method TypeVariant {
+  object {
     class new(t1, t2) {
         inherit OrPattern.new(t1, t2)
+            alias matchHook(_) = matches(_)
         use BaseType
         var name is readable := "‹anon›"
         method methodNames {
             self.MethodsInTypeVariantsNotImplemented
-        }
-        method typeNames {
-            self.TypesInTypeVariantsNotImplemented
         }
         method asString {
             if (self.name == "‹anon›") then {
@@ -165,21 +189,19 @@ def TypeVariant is public = object {
             }
         }
     }
+  }
 }
 
-def TypeUnion is public = object {
+once method TypeUnion {
+  object {
     class new(t1, t2) {
-        inherit BasicPattern.new
+        inherit BasicPattern
         use BaseType
         var name is readable := "‹anon›"
         method methodNames {
             t1.methodNames ** t2.methodNames
         }
-        method matches(o) {
-            ResourceException.raise "matching against a TypeUnion not yet implemented"
-            // Why not?  Becuase it requires reflection, which
-            // requires the mirror module, which requires this module.
-            def mirror = ...
+        method matchHook(o) {
             def oMethodNames = mirror.reflect(o).methodNames
             for (self.methodNames) do { each ->
                 if (! oMethodNames.contains(each)) then {
@@ -187,9 +209,6 @@ def TypeUnion is public = object {
                 }
             }
             return true
-        }
-        method typeNames {
-            t1.typeNames ** t2.typeNames
         }
         method asString {
             if (self.name == "‹anon›") then {
@@ -199,18 +218,17 @@ def TypeUnion is public = object {
             }
         }
     }
+  }
 }
 
-def TypeSubtraction is public = object {
+once method TypeSubtraction {
+  object {
     class new(t1, t2) {
-        inherit BasicPattern.new
+        inherit BasicPattern
         use BaseType
         var name is readable := "‹anon›"
         method methodNames {
             t1.methodNames.removeAll(t2.methodNames)
-        }
-        method typeNames {
-            t1.typeNames.removeAll(t2.typeNames)
         }
         method asString {
             if (self.name == "‹anon›") then {
@@ -220,6 +238,7 @@ def TypeSubtraction is public = object {
             }
         }
     }
+  }
 }
 
 // Now define the types.  Because some of the types are defined using &,
@@ -350,7 +369,7 @@ method hashCombine(a, b) {
         var b = var_b._value;
         var aHash = a * 1664525;
         var bHash = (b * 1664525 - 0xA21FE89) * 3;
-        return new GraceNum((aHash * 2) ^ bHash);›
+        result = new GraceNum((aHash * 2) ^ bHash);›
 }
 import "collectionsPrelude" as coll
 // collectionsPrelude defines types using &, so it can't be imported until
