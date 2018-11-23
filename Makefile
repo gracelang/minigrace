@@ -22,8 +22,8 @@ MGFLAGS = -XnoChecks
 J1-MINIGRACE = $(JS-KG) j1/compiler.js $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/gracelib.js
 J2-MINIGRACE = $(J1-MINIGRACE) j2/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) j2/gracelib.js genjs.grace
 JSJSFILES = gracelib.js unicodedata.js
-JSRUNNERS_WITHOUT_COMPILER_INSPECT = grace grace-debug compiler-js minigrace-js
-JSRUNNERS = $(JSRUNNERS_WITHOUT_COMPILER_INSPECT) compiler-inspect
+JSRUNNERS_WITHOUT_COMPILER = grace grace-debug minigrace-js
+JSRUNNERS = $(JSRUNNERS_WITHOUT_COMPILER) compiler-js compiler-inspect
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
@@ -215,8 +215,12 @@ j1-minigrace: $(J1-MINIGRACE)
 
 j2/animation.js: j2/timer.gct j2/timer.js
 
-j2/compiler-inspect: j2/compiler-js
-	sed -e "s|#!/usr/bin/env node|#!/usr/bin/env node --inspect|" $< > $@
+j2/compiler-inspect: js/compiler-js.in
+	sed -e "s|#!NODE|#!`which node` --inspect|" $< > $@
+	chmod a+x $@
+
+j2/compiler-js: js/compiler-js.in
+	sed -e "s|#!NODE|#!`which node`|" $< > $@
 	chmod a+x $@
 
 j2/rtobjectdraw.js: j2/requireTypes.js
@@ -231,9 +235,10 @@ j2-minigrace: $(J2-MINIGRACE)
 $(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
 	cp -p $< $@
 
-$(JS-KG)/compiler-js: js/compiler-js
+$(JS-KG)/compiler-js: js/compiler-js.in
 	if [ ! -e $(JS-KG) ] ; then mkdir -p $(JS-KG) ; fi
-	cp -p $< $@
+	sed -e "s|#!NODE|#!`which node`|" $< > $@
+	chmod a+x $@
 
 $(JS-KG)/minigrace-js: js/minigrace-js
 	cp -p $< $@
@@ -245,11 +250,11 @@ $(JSONLY:%.grace=js/%.gct): js/%.gct: modules/%.grace js/dom.gct minigrace js/ti
 	GRACE_MODULE_PATH=js:modules ./minigrace --dir js --make $(VERBOSITY) $<
 
 $(JSRUNNERS:%=j1/%): j1/%: $(JS-KG)/%
-# The j1/*.js files are created by the kg compiler, and so need to be run
-# with the kg runners and libraries.
+# The j1/*.js files are created by the kg compiler, and so need
+# to be run with the kg runners and libraries.
 	cp -p $< $@
 
-$(JSRUNNERS_WITHOUT_COMPILER_INSPECT:%=j2/%): j2/%: js/%
+$(JSRUNNERS_WITHOUT_COMPILER:%=j2/%): j2/%: js/%
 	cp -p $< $@
 
 $(JSRUNNERS): %: js/%
@@ -292,6 +297,10 @@ js/animation%js: js/timer.gct objectdraw/animation.grace
 
 js/compiler-inspect: js/compiler-js
 	sed -e "s|#!/usr/bin/env node|#!/usr/bin/env node --inspect|" $< > $@
+	chmod a+x $@
+
+js/compiler-js: js/compiler-js.in
+	sed -e "s|#!NODE|#!`which node`|" $< > $@
 	chmod a+x $@
 
 js/tests/gracelib.js: js/gracelib.js
