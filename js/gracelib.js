@@ -2019,7 +2019,7 @@ function GraceTypeSubtraction(l, r) {
 function GraceType(name) {
     this.name = name;
     this.typeMethods = [];
-    this.matchCache = {};
+    this.matchCache = [];
 }
 GraceType.prototype = {
     methods: {
@@ -2034,7 +2034,7 @@ GraceType.prototype = {
             let cUid = other.classUid;
             if (cUid) {
                 let c = this.matchCache[cUid];
-                if (c) return c;
+                if (c !== undefined) return c;
             } else {
                 cuid = null;
                 minigrace.stderr_write(dbgp(other) + " has no classUid\n");
