@@ -1346,10 +1346,6 @@ method compilePrint(o) {
     o.register := "GraceDone"
 }
 method compileNativeCode(o) {
-    if(o.parts.size != 2) then {
-        errormessages.syntaxError "method native()code takes two arguments"
-            atRange(o.line, o.linePos, o.linePos + 5)
-    }
     def param1 = o.parts.first.args.first
     if (param1.kind != "string") then {
         errormessages.syntaxError "the first argument to native(_)code(_) must be a string literal"
@@ -1364,18 +1360,10 @@ method compileNativeCode(o) {
         errormessages.syntaxError "the second argument to native(_)code(_) must be a string literal"
             atLine(param2.line)
     }
-    def codeString = excludeLeadingNewlineFrom(param2.value)
-    out "   // start native code from line {o.line}"
-    out "var result = GraceDone;"
-    out(codeString)
-    def reg = "nat" ++ auto_count
-    auto_count := auto_count + 1
-    out "var {reg} = result;"
-    o.register := reg
-    out "   // end native code insertion"
-}
-method excludeLeadingNewlineFrom(s) {
-    if (s.startsWith "\n") then { s.substringFrom 2 } else { s }
+    o.register := "result"
+    def codeString = param2.value
+    out "var result = GraceDone;    // start native code from line {o.line}"
+    out "{codeString}   // end native code insertion"
 }
 method compileNull(o) {
     out "nullDefinition();"
