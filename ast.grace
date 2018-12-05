@@ -1298,9 +1298,8 @@ def callNode is public = object {
         result
     }
     class new(receiver', parts') {
-        // requested ac callNode.new(receiver':AstNode, parts:List)
+        // requested as callNode.new(receiver':AstNode, parts:Sequence⟦RequestPart⟧)
         // Represents a method request with arguments.
-        // The argument list is in `parts`, ac a sequence of `requestPart`s.
 
         inherit baseNode
         def kind is public = "call"
@@ -1840,7 +1839,8 @@ def memberNode is public = object {
         var receiver is public := receiver'
         var generics is public := false
         var isSelfRequest is public := false
-        var isTailCall is public := false
+        var isTailCall is public := false      // is possibly the result of a method
+        var isFresh is public := false         // calls a fresh method
         method end -> Position {
             if (receiver.isImplicit) then {
                 positionOfNext (request) after (start)
