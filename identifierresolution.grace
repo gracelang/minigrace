@@ -264,6 +264,8 @@ class newScopeIn(parent') kind(variety') {
             universalScope  //  TODO: define scopes for strings and numbers
         } elseif { rcvrNode.isSequenceConstructor } then {
             universalScope  //  TODO: define scope for Sequences
+        } elseif { rcvrNode.isObject } then {
+            rcvrNode.scope  //  TODO: do we need to remove the confidential attributes?
         } else {
             ProgrammingError.raise("unexpected receiver {rcvrNode.toGrace 0} " ++
                   "on line {rcvrNode.line}")
