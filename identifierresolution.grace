@@ -633,7 +633,7 @@ method suggestionsForIdentifier(node) {
         }
     }
     nodeScope.elementScopes.keysDo { s ->
-        if (nodeScope.elementScopes.at(s).containsKey(nm)) then {
+        if (nodeScope.elementScopes.at(s).contains(nm)) then {
             def sug = errormessages.suggestion.new
             sug.insert "{s}." atPosition (node.linePos) onLine(node.line)
             suggestions.add(sug)
