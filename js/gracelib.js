@@ -4015,13 +4015,15 @@ function throwStackOverflowIfAppropriate(ex) {
         throw newEx;
     }
 }
-function matchCase(obj, cases) {
+function matchCase(obj, cases, elseCase) {
     for (var i = 0, len = cases.length; i<len; i++) {
         var eachCase = cases[i];
         if (eachCase.guard.call(eachCase.receiver, obj)) {
             return eachCase.real.call(eachCase.receiver, obj);
         }
     }
+    if (elseCase !== false)
+        return callmethod(elseCase, "apply", [0]);
     callmethod(ProgrammingErrorObject, "raise(1)", [1],
           new GraceString ("non-exhaustive match in match(_)case(_)…."));
     return GraceDone;       // should never happen
