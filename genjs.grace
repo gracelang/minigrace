@@ -1153,8 +1153,12 @@ method compilematchcase(o) {
         def e = compilenode(c)
         out("cases{myc}.push({e});")
     }
+    var elsecase := "false"
+    if (false != o.elsecase) then {
+        elsecase := compilenode(o.elsecase)
+    }
     noteLineNumber(o.line)comment("compilematchcase")
-    out("var matchres{myc} = matchCase({matchee},cases{myc});")
+    out("var matchres{myc} = matchCase({matchee},cases{myc},{elsecase});")
     o.register := "matchres" ++ myc
 }
 method compileop(o) {

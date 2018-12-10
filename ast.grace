@@ -667,13 +667,15 @@ def tryCatchNode is public = object {
   }
 }
 def matchCaseNode is public = object {
-  class new(matchee', cases') {
+  class new(matchee', cases', elsecase') {
     inherit baseNode
     def kind is public = "matchcase"
     var value is public := matchee'
     var cases is public := cases'
-    method isSimple { false }  // needs parens when used ac receiver
+    var elsecase is public := elsecase'
+    method isSimple { false }  // needs parens when used as receiver
     method end -> Position {
+        if (false ≠ elsecase) then { return elsecase.end }
         if (cases.isEmpty.not) then { return cases.last.end }
         return value.end
     }
@@ -685,6 +687,9 @@ def matchCaseNode is public = object {
             for (self.cases) do { mx ->
                 mx.accept(visitor) from(newChain)
             }
+            if (false != self.elsecase) then {
+                self.elsecase.accept(visitor) from(newChain)
+            }
         }
     }
     method map(blk) ancestors(ac) {
@@ -692,6 +697,7 @@ def matchCaseNode is public = object {
         def newChain = ac.extend(n)
         n.value := value.map(blk) ancestors(newChain)
         n.cases := listMap(cases, blk) ancestors(newChain)
+        n.elsecase := maybeMap(elsecase, blk) ancestors(newChain)
         blk.apply(n, ac)
     }
     method pretty(depth) {
@@ -701,6 +707,9 @@ def matchCaseNode is public = object {
         for (self.cases) do { mx ->
             s := s ++ "\n{spc}Case:\n{spc}  {mx.pretty(depth+2)}"
         }
+        if (false != self.elsecase) then {
+            s := s ++ "\n{spc}Else:\n{spc}  {self.elsecase.pretty(depth+2)}"
+        }
         s
     }
     method toGrace(depth : Number) -> String {
@@ -709,10 +718,13 @@ def matchCaseNode is public = object {
         for (self.cases) do { case ->
             s := s ++ "\n" ++ spc ++ "    " ++ "case " ++ case.toGrace(depth + 2)
         }
+        if (false != self.elsecase) then {
+            s := s ++ "\n" ++ spc ++ "    " ++ "else " ++ self.elsecase.toGrace(depth + 2)
+        }
         s
     }
     method shallowCopy {
-        matchCaseNode.new(nullNode, emptySeq).shallowCopyFieldsFrom(self)
+        matchCaseNode.new(nullNode, emptySeq, false).shallowCopyFieldsFrom(self)
     }
   }
 }
