@@ -1351,6 +1351,56 @@ method matchcase {
         }
         cases.push(values.pop)
     }
+    if (sym.isIdentifier && (sym.value == "else")) then {
+        next
+        if (sym.isLBrace) then {
+            block
+        } elseif {sym.isLParen} then {
+            next
+            if(successfulParse{ expression(blocksOK) }.not) then {
+                def suggestion = errormessages.suggestion.new
+                def nextTok = findNextValidToken ["rparen"]
+                if(nextTok == sym) then {
+                    suggestion.insert("«expression»")afterToken(lastToken)
+                } else {
+                    suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression»")
+                }
+                errormessages.syntaxError "A match(_)case(_) statement must have a block after the 'else'"
+                      atPosition (sym.line, sym.linePos) withSuggestion (suggestion)
+            }
+            if (sym.isRParen.not) then {
+                checkBadOperators
+                def suggestion = errormessages.suggestion.new
+                suggestion.insert ")" afterToken (lastToken)
+                errormessages.syntaxError "An expression beginning with a '(' must end with a ')'."
+                      atPosition (lastToken.line, lastToken.linePos + lastToken.size)
+                      withSuggestion (suggestion)
+            }
+            next
+        } else {
+            def suggestions = list.empty
+            def nextTok = findNextTokenIndentedAt(lastToken)
+            var suggestion := errormessages.suggestion.new
+            if (nextTok == false) then {
+                suggestion.insert " }" afterToken (tokens.first)
+                suggestion.insert " \{" afterToken (lastToken)
+                suggestions.push(suggestion)
+            } elseif {nextTok == sym} then {
+                suggestion.insert " («block expression»)" afterToken (lastToken)
+                suggestions.push(suggestion)
+                suggestion := errormessages.suggestion.new
+                suggestion.insert " \{ «expression» }" afterToken (lastToken)
+                suggestions.push(suggestion)
+            } else {
+                suggestion.insert " }" afterToken(nextTok.prev)
+                suggestion.insert " \{" afterToken(lastToken)
+                suggestions.push(suggestion)
+            }
+            errormessages.syntaxError "A match(_)case(_) must have a block after the 'else'"
+                  atPosition (sym.line, sym.linePos) withSuggestions (suggestions)
+        }
+        elsecase := values.pop
+    }
     util.setPosition(matchTok.line, matchTok.linePos)
     values.push(ast.matchCaseNode.new(matchee, cases, elsecase))
 }
