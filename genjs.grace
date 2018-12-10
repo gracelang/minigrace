@@ -820,24 +820,26 @@ method compileNormalMethod(o, selfobj) {
 method compileOnceWrapper(o, selfobj, name) {
     def totalParams = o.numParams + o.numTypeParams
     def funcName = o.register
+    def memoFuncName = "memo" ++ funcName
     if ( totalParams == 0 ) then {
-        out "{selfobj}.methods[\"{name}\"] = function memo${funcName}(argcv) \{"
+        out "function {memoFuncName}(argcv) \{"
         out "    if (! this.data[\"memo${name}\"])    // parameterless memo function"
         out "        this.data[\"memo${name}\"] = {funcName}.call(this, argcv);"
         out "    return this.data[\"memo${name}\"];"
         out "\};"
     } else {
         def commaParamNames = paramlist(o) ++ typeParamlist(o);
-        out "{selfobj}.methods[\"{name}\"] = function memo${funcName}(argcv{commaParamNames}) \{"
+        def paramNames = commaParamNames.substringFrom 3
+        out "function {memoFuncName}(argcv{commaParamNames}) \{"
         increaseindent
         compileDefaultsForTypeParameters(o) extraParams 0
         out "let memoTable = this.data[\"memo${name}\"] ||"
         out "      ( this.data[\"memo${name}\"] ="
         out "           request(var_HashMap, 'empty', [0]) );"
         if (totalParams == 1) then {
-            out "let tableKey = {commaParamNames.substringFrom 3};"
+            out "let tableKey = {paramNames};"
         } else {
-            out "let tableKey = new Lineup([{commaParamNames.substringFrom 3}]);"
+            out "let tableKey = new Lineup([{paramNames}]);"
         }
         out "let absentBlock = new GraceBlock(this, {o.line}, 0);"
         out "absentBlock.guard = jsTrue;"
@@ -853,6 +855,8 @@ method compileOnceWrapper(o, selfobj, name) {
         decreaseindent
         out "\};"
     }
+    out "{selfobj}.methods[\"{name}\"] = {memoFuncName};"
+    compileMetadata(o, memoFuncName, name)
 }
 
 method compileDummyMethod(o, selfobj, kind) {
@@ -1635,9 +1639,9 @@ method outputSource {
 }
 
 method compile(moduleObject, of, bt, glPath) {
-    // compile the module represente by the ast.moduleNode moduleObject.
-    // of is the output file, and bt the build type.
-    // glPath is the GRACE_MODULE_PATH to use when running the compiled code
+    // compile the module represented by the ast.moduleNode `moduleObject`.
+    // `of` is the output file, and `bt` the build type.
+    // `glPath` is the GRACE_MODULE_PATH to use when running the compiled code
 
     outfile := of
     buildtype := bt
