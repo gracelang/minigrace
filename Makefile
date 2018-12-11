@@ -37,7 +37,7 @@ TEST_DEPENDENCIES = ast lexer fastDict collectionsPrelude parser xmodule errorme
 #   these are modules used in running the full test suite
 NPM_VERSION_PREFIX=1.0
 VERSION := $(NPM_VERSION_PREFIX).$(shell ./tools/git-calculate-generation)
-NPM_STABLE_VERSION=1.0.4359
+NPM_STABLE_VERSION=1.0.4414
 
 VERBOSITY =
 WEBFILES_STATIC = $(filter-out sample,$(sort index.html global.css minigrace.js tabs.js  gtk.js debugger.js ace  debugger.html  importStandardGrace.js $(ICONS)))
