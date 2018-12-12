@@ -3797,6 +3797,7 @@ function request(obj, methname, ...args) {
     return ret;
 }
 
+request.isGraceRequest = true;  // marks this as a request dispatch
 var callmethod = request;       // for backward compatibility
 
 function selfRequest(obj, methname, ...args) {
@@ -3821,6 +3822,7 @@ function selfRequest(obj, methname, ...args) {
     }
     return ret;
 }
+selfRequest.isGraceRequest = true;  // marks this as a request dispatch
 
 function canonicalMethodName(name) {
     var parts = name.split("(");
@@ -3917,15 +3919,19 @@ function closeMatchesForMethodNamed(mName, obj) {
     return matches;
 }
 
-function readableOptions(methList) {
+function readableOptions(methList, joiner) {
     // if methList is ["foo", "bar"], returns "foo or bar"
+    // joiner is an optional String; if present, joiner replaces "or"
+    joiner = joiner || "or";
     var len = methList.length;
     if (len === 0) return "";
     if (len === 1) return methList[0];
     var result = "";
     for (var i = 0; i < len-2; i++) result = result + methList[i] + ", ";
-    return result + methList[len-2] + " or " + methList[len-1];
+    return result + methList[len-2] + " " + joiner + " " + methList[len-1];
 }
+
+function listWithAnd(lst) { return readableOptions(lst, "and") }
 
 function raiseConfidentialMethod(name, target) {
     throw new GraceExceptionPacket(NoSuchMethodErrorObject,
@@ -4016,17 +4022,32 @@ function throwStackOverflowIfAppropriate(ex) {
     }
 }
 function matchCase(obj, cases, elseCase) {
-    for (var i = 0, len = cases.length; i<len; i++) {
+    let trueCases = [];
+    var trueCount = 0;
+    var matchingBlock;
+    for (let i = 0, len = cases.length; i<len; i++) {
         var eachCase = cases[i];
         if (eachCase.guard.call(eachCase.receiver, obj)) {
-            return eachCase.real.call(eachCase.receiver, obj);
+            // if the guard is true …
+            trueCases.push(i);
+            trueCount++;
+            matchingBlock = eachCase;
         }
     }
-    if (elseCase !== false)
-        return callmethod(elseCase, "apply", [0]);
-    callmethod(ProgrammingErrorObject, "raise(1)", [1],
-          new GraceString ("non-exhaustive match in match(_)case(_)…."));
-    return GraceDone;       // should never happen
+    if (trueCount === 1) {
+        return matchingBlock.real.call(matchingBlock.receiver, obj);
+    }
+    if (trueCount === 0) {
+        if (elseCase !== false) return callmethod(elseCase, "apply", [0]);
+        raiseException(MatchErrorObject,
+                       "in match(_)case(_)…, no case matches",
+                       obj);
+    }
+    const matching = trueCases.map(i => "case " + i + " on line " + cases[i].definitionLine);
+    const matchingDesc = "(" + listWithAnd(matching) + ")";
+    raiseException(MatchErrorObject,
+                   "in match(_)case(_)…, " + trueCount + " cases match " + matchingDesc,
+                   obj);
 }
 
 function ReturnException(v, target) {
@@ -4222,17 +4243,13 @@ function do_import(modname, moduleCodeFunc) {
     if (importedModules[modname]) {
         return importedModules[modname];
     }
-    if (moduleCodeFunc === undefined)
+    if (typeof moduleCodeFunc !== "function")
         throw new GraceExceptionPacket(ImportErrorObject,
             new GraceString("could not find code for module '" + modname + "'"));
     var newModule = (modname === "standardGrace") ? Grace_prelude : new GraceModule(modname);
     // importing "standardGrace" adds to the built-in prelude.
     try {
-        lineNumber = 0;
-        var f = Function.prototype.call.call(moduleCodeFunc, newModule);
-          // Almost like moduleCodeFunc.call(newModule), which executes
-          // moduleCodeFunc with this === newModule.  The difference is that we
-          // ensure that the `call` function is the one from Function.prototype
+        var f = requestModuleInitialization(newModule, modname, moduleCodeFunc);
         importedModules[modname] = f;
         return f;
     } catch (ex) {
@@ -4240,6 +4257,14 @@ function do_import(modname, moduleCodeFunc) {
                                       {definitionModule: modname}, []);
     }
 }
+
+function requestModuleInitialization(moduleObject, modname, moduleInitializationFunction) {
+    // execute moduleInitializationFunction with moduleObject as `this`
+    lineNumber = 0;
+    return moduleInitializationFunction.call(moduleObject);
+    // no need for Function.prototype.call.call( ... )
+}
+requestModuleInitialization.isGraceRequest = true;
 
 function dbgp(o, d) {
     if (d === undefined)
@@ -4303,6 +4328,7 @@ function nullDefinition() {
 var ExceptionObject = new GraceException("Exception", false);
 var MinigraceErrorObject = new GraceException("MinigraceError", ExceptionObject);
 var ProgrammingErrorObject = new GraceException("ProgrammingError", ExceptionObject);
+var MatchErrorObject = new GraceException("MatchError", ProgrammingErrorObject);
 var RequestErrorObject = new GraceException("RequestError", ProgrammingErrorObject);
 var EnvironmentExceptionObject = new GraceException("EnvironmentException", ExceptionObject);
 var ResourceExceptionObject = new GraceException("ResourceException", ExceptionObject);
@@ -4315,8 +4341,18 @@ var NoSuchMethodErrorObject = new GraceException("NoSuchMethod", ProgrammingErro
 var BoundsErrorObject = new GraceException("BoundsError", ProgrammingErrorObject);
 var UninitializedVariableObject = new GraceException("UninitializedVariable", ProgrammingErrorObject);
 
-function raiseException(ex, msg) {
-    throw new GraceExceptionPacket(ex, new GraceString(msg));
+function raiseException(ex, msg, data) {
+    const newEx = new GraceExceptionPacket(ex, new GraceString(msg), data);
+    var callee = arguments.callee
+    var caller = callee.caller;
+    while (! caller.isGraceRequest) {
+        // searches for a request or selfRequest on the stack
+        callee = caller;
+        caller = caller.caller;
+    }
+    Object.defineProperty(newEx, 'moduleName', {value: callee.definitionModule});
+    Object.defineProperty(newEx, 'methodName', {value: canonicalMethodName(caller.arguments[1])} );
+    throw newEx;
 }
 
 function raiseClassError(msg) {
@@ -4662,6 +4698,7 @@ if (typeof global !== "undefined") {
     global.Lineup = Lineup;
     global.loadDate = loadDate;
     global.matchCase = matchCase;
+    global.MatchErrorObject = MatchErrorObject;
     global.MinigraceErrorObject = MinigraceErrorObject;
     global.NoSuchMethodErrorObject = NoSuchMethodErrorObject;
     global.nullDefinition = nullDefinition;
