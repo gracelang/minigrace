@@ -1349,7 +1349,14 @@ method matchcase {
             errormessages.syntaxError("a match statement must have either a matching block or an expression in parentheses after the 'case'.")atPosition(
                 sym.line, sym.linePos)withSuggestions(suggestions)
         }
-        cases.push(values.pop)
+        def case = values.pop
+        if (case.isBlock) then {
+            def guard = case.params.first.decType
+            if (ast.unknownType == guard) then {
+                util.log 20 verbose "case guard on line {case.params.first.line} is type Unknown; this is not useful, because it will always be true.  Perhaps you want an 'else' branch, which is true only when all other cases are false?"
+            }
+        }
+        cases.push(case)
     }
     if (sym.isIdentifier && (sym.value == "else")) then {
         next
