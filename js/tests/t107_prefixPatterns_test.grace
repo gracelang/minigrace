@@ -5,10 +5,10 @@ print (>40)
 method tryUnaryNumericPatterns(x) {
     match(x)
           case {>40 → "greater than 40"}
-          case {≥30 → "greater than or equal to 30"}
+          case {≥30 & ¬ >40 → "greater than or equal to 30"}
           case {17-> "equal to 17"}
-          case {≤18 → "less than or equal to 18"}
-          case {<20-> "less than a score"}
+          case {≤18 & ¬17 → "less than or equal to 18"}
+          case {<20 & ¬ ≤18 -> "less than a score"}
 }
 
 testSuite {

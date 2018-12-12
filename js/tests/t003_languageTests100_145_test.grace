@@ -45,9 +45,9 @@ type Pair = {
 method t118_tryMatch(o) {
     match(o)
         case { 1 -> "ONE" }
-        case { _ : Number -> "NUMBER" }
         case { "hello" -> "HELLO" }
-        case { x : String -> "STRING '{x}'" }
+        case { x : String & ¬ "hello" -> "STRING '{x}'" }
+        case { _ : > 1 -> "NUMBER" }
 }
 var t120_theBlock
 method t120_bar(n) {
@@ -67,13 +67,13 @@ method t123_tryMatch(x) {
     match(x)
         case { y : String -> out "STRING" }
         case { (t123_a) -> out "ONE" }
-        case { y : Number -> out "FALLTHROUGH {y}" }
+        case { y : > t123_a -> out "FALLTHROUGH {y}" }
 }
 method t124_tryMatch(x) {
     match(x)
         case { y : String -> out "STRING" }
         case { 2 -> out "TWO" }
-        case { y -> out "FALLTHROUGH {y}" }
+        else { out "FALLTHROUGH {x}" }
 }
 method t129_foo(x : interface { bar -> String }) {
     out(x.bar)
@@ -567,7 +567,7 @@ def aGraceLangTest = object {
             match ("success")
                 case { "fail" -> out "FAIL" }
                 case { "true" | "success" -> out "SUCCESS" }
-                case { _ -> out "FAIL 2" }
+                else { out "FAIL 2" }
             
             assert(str)shouldBe("SUCCESS\n")
         }
@@ -636,7 +636,7 @@ def aGraceLangTest = object {
                 case { 2 -> out "Failed; exception handler did not run." }
                 case { 1 -> out "Failed; finally block did not run." }
                 case { 0 -> out "Failed; neither exception handler nor finally ran." }
-                case { _ -> out "Failed; something is very broken." }
+                else { out "Failed; something is very broken." }
             
             
             assert(str)shouldBe("OK; inside main block.\nOK.\nOK.\nOK; both exception handler and finally ran.\n")
@@ -653,7 +653,7 @@ def aGraceLangTest = object {
                 case { 2 -> out "Failed; only middle finally ran." }
                 case { 1 -> out "Failed; only inner finally ran." }
                 case { 0 -> out "Failed; no finally blocks ran." }
-                case { _ -> out "Failed; something is very broken." }
+                else { out "Failed; something is very broken." }
             
             assert(str)shouldBe("OK.\nOK.\nOK.\nOK; all finallies ran.\n")
         }
