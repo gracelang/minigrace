@@ -57,6 +57,9 @@ trait BasicPattern {
     method |(o) {
         OrPattern.new(self, o)
     }
+    method prefix ¬ {
+        NotPattern(self)
+    }
 }
 
 once method AndPattern {
@@ -74,6 +77,13 @@ once method AndPattern {
   }
 }
 
+trait AndPattern(p1, p2) {
+    use BasicPattern
+    method matches(obj) {
+        if (p1.matches(obj)) then { p2.matches(obj) } else { false }
+    }
+}
+
 once method OrPattern {
   object {
     trait new(p1, p2) {
@@ -84,6 +94,20 @@ once method OrPattern {
         }
     }
   }
+}
+
+trait OrPattern(p1, p2) {
+    use BasicPattern
+    method matches(o) {
+        if (p1.matches(o)) then { true } else { p2.matches(o) }
+    }
+}
+
+trait NotPattern(p) {
+    use BasicPattern
+    method matches(o) {
+        p.matches(o).not
+    }
 }
 
 def Singleton is public = object {
@@ -322,21 +346,21 @@ class point2Dx (x') y (y') {
         match(other)
             case { o:Point -> point2Dx (x - o.x) y (y - o.y) }
             case { n:Number -> point2Dx (x - n) y (y - n) }
-            case { _ -> other.reverseMinusPoint(self) }
+            else { other.reverseMinusPoint(self) }
     }
     method +(other) {
         match(other)
             case { o:Point -> point2Dx (x + o.x) y (y + o.y) }
             case { n:Number -> point2Dx (x + n) y (y + n) }
-            case { _ -> other.reversePlusPoint(self) }
+            else { other.reversePlusPoint(self) }
     }
     method /(other:Number) { point2Dx (x / other) y (y / other) }
     method *(other:Number) { point2Dx (x * other) y (y * other) }
     method length { ((x^2) + (y^2)).sqrt }
     method ==(other) {
         match (other)
-            case {o:Point -> (x == o.x) && (y == o.y)}
-            case {_ -> false}
+            case { o:Point -> (x == o.x) && (y == o.y) }
+            else { false }
     }
     method prefix- { point2Dx (-x) y (-y) }
     method dot (other:Point) -> Number {

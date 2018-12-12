@@ -128,7 +128,7 @@ method parseargs(buildinfo) {
                         ++ "{buildinfo.gitgeneration}")
                     print("git revision " ++ buildinfo.gitrevision)
                     sys.exit(0)
-                } case { _ ->
+                } else {
                     if (arg.at(2) == "X") then {
                         var ext := arg.substringFrom(3)to(arg.size)
                         commandLineExtensions := "{commandLineExtensions} {arg}"
@@ -173,9 +173,7 @@ method parseargs(buildinfo) {
             case { "symbols" -> io.open(outDir ++ modnamev ++ ".symbols", "w") }
             case { "grace" -> io.open(outDir ++ modnamev ++ "_new.grace", "w") }
             case { "imports" -> io.output }
-            case { _ ->
-                startupFailure "unrecognized target '{targetv}'."
-        }
+            else { startupFailure "unrecognized target '{targetv}'." }
     }
     if (target != "js") then {
         buildtypev := "debug"

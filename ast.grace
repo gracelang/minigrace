@@ -2949,7 +2949,7 @@ class aliasNew(n) old(o) {
     method == (other) {
         match (other) case { that:AliasPair ->
             (newSignature == that.newSignature) && (oldSignature == that.oldSignature)
-        } case { _ ->
+        } else {
             false
         }
     }

@@ -97,7 +97,7 @@ try {
     match(util.target)
       case { "js" ->
         genjs.compile(moduleObject, util.outfile, util.buildtype, util.gracelibPath)
-    } case { _ ->
+    } else {
         io.error.write("minigrace: no such target '" ++ util.target ++ "'\n")
         sys.exit(1)
     }

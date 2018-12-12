@@ -127,7 +127,7 @@ method reportDialectError(ex) {
     } case { p:ast.Position ->
         errormessages.error "Dialect {currentDialect.name}: {ex.message}."
             atPosition(p.line, p.column)
-    } case { _ ->
+    } else {
         errormessages.error "Dialect {currentDialect.name}: {ex.message}."
             atLine(util.linenum)
     }

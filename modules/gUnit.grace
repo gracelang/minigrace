@@ -128,11 +128,12 @@ class assertion {
         }
     }
     method assert(value) hasType (Desired:Type) {
-        match (value)
-            case { _:Desired -> countOneAssertion }
-            case { _ ->
-                def m = methodsIn(Desired) missingFrom (value)
-                failBecause "{value.asDebugString} does not have {Desired}; it's missing methods {m}." }
+        if (Desired.matches(value)) then {
+            countOneAssertion
+        } else {
+            def m = methodsIn(Desired) missingFrom (value)
+            failBecause "{value.asDebugString} does not have {Desired}; it's missing methods {m}."
+        }
     }
     method assertType(T:Type) describes (value) {
         def missingFromT = protocolOf(value) notCoveredBy(T)
@@ -171,9 +172,9 @@ class assertion {
         return s
     }
     method deny(value) hasType (Undesired:Type) {
-        match (value) case { _:Undesired ->
+        if (Undesired.matches(value)) then {
             failBecause "{value.asDebugString} has type {Undesired}"
-        } case { _ -> 
+        } else { 
             countOneAssertion 
         }
     }

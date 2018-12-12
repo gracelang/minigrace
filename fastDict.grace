@@ -409,7 +409,7 @@ class dictionary⟦K,T⟧ {
                     }
                 }
                 return true
-            } case { _ ->
+            } else {
                 return false
             }
         }
