@@ -765,6 +765,9 @@ GraceString.prototype = {
         "&(1)": function string_andPattern (argcv, o) {
             return new GraceAndPattern(this, o);
         },
+        "prefix¬": function(argcv) {
+            return new GraceNotPattern(this);
+        },
         "startsWithSpace": function string_startsWithSpace (argcv) {
             var s = this._value.charCodeAt(0);
             return  ( (unicode.inCategory(s, "Zs") ) ? GraceTrue : GraceFalse);
@@ -1126,6 +1129,9 @@ GraceNum.prototype = {
         },
         "&(1)": function(argcv, o) {
             return new GraceAndPattern(this, o);
+        },
+        "prefix¬": function(argcv) {
+            return new GraceNotPattern(this);
         }
     },
     className: "number",
@@ -1167,6 +1173,9 @@ GracePredicatePattern.prototype = {
         },
         "&(1)": function predicate_andPattern (argcv, o) {
             return new GraceAndPattern(this, o);
+        },
+        "prefix¬": function predicate_notPattern (argcv) {
+            return new GraceNotPattern(this);
         }
     },
     className: "predicatePattern",
@@ -1198,6 +1207,9 @@ GraceBoolean.prototype = {
         },
         "|(1)": function(argcv, other) {
             return new GraceOrPattern(this, other);
+        },
+        "prefix¬": function(argcv) {
+            return new GraceNotPattern(this);
         },
         "&&(1)": function(argcv, other) {
             if (!this._value)
@@ -1966,6 +1978,10 @@ function GraceAndPattern(l, r) {
     return callmethod(andClass, "new(2)", [2], l, r);
 }
 
+function GraceNotPattern(o) {
+    return request(Grace_prelude, "NotPattern(1)", [1], o);
+}
+
 function Grace_isTrue(o) {
     if (o._value === false)
         return false;
@@ -2054,6 +2070,9 @@ GraceType.prototype = {
         },
         "&(1)": function type_and(argcv, other) {
             return new GraceTypeIntersection(this, other);
+        },
+        "prefix¬": function(argcv) {
+            return new GraceNotPattern(this);
         },
         "+(1)": function type_and(argcv, other) {
             return new GraceTypeUnion(this, other);
@@ -4217,6 +4236,9 @@ GraceException.prototype = {
         },
         "&(1)": function(argcv, o) {
             return new GraceAndPattern(this, o);
+        },
+        "prefix¬": function(argcv) {
+            return new GraceNotPattern(this);
         },
         "name": function(argcv) {
             return new GraceString(this.name);
