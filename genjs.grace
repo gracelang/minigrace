@@ -1553,7 +1553,7 @@ method outputModuleDefinition(moduleObject) {
     moduleObject.register := selfr
     out "var {selfr} = this;"
     out "this.definitionModule = {modNameAsString};"
-    out "this.definitionLine = 0;"
+    out "this.definitionLine = 1;"
     out "var var_prelude = {standardPrelude};"
         // var_prelude must be local to the module function, because its
         // value varies from module to module.
@@ -1612,10 +1612,12 @@ method outputModuleDefinition(moduleObject) {
     out "  window.{generatedModuleName} = {generatedModuleName};"
 }
 
-method outputImportsList(moduleObject) {
+method outputModuleMetadata(moduleObject) {
     def importList = list.withAll(moduleObject.directImports.
                         map{ each -> "\"{each}\"" }).sort
     out "{formatModname(modname)}.imports = {importList};"
+    out "{formatModname(modname)}.definitionModule = \"{basename(modname).quoted}\";"
+    out "{formatModname(modname)}.definitionLine = 1;"
 }
 
 method outputGct {
@@ -1652,7 +1654,7 @@ method compile(moduleObject, of, bt, glPath) {
 
     initializeCodeGenerator(moduleObject)
     outputModuleDefinition(moduleObject)
-    outputImportsList(moduleObject)
+    outputModuleMetadata(moduleObject)
     moduleObject.imports := imports.other
         // imports is modified by outputModuleDefinition; it is the
         // transitive closure of moduleObject.directImports.
