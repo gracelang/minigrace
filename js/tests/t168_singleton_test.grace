@@ -16,7 +16,7 @@ def block1 = { x:OptionNumber ->
       case {n:Number -> "Number {n}"}
       case {y:empty -> "Singleton {y}"}
       case {z:full -> "Singleton {z}"}
-      case {_ -> "should not happen"}
+      else {"should not happen"}
 }
 
 def block3 = {a:String, n, b:Boolean ->
