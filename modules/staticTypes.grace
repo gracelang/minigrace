@@ -146,7 +146,7 @@ def aMethodType = object {
                 m.dtype
             } case { m: MethodSignature ->
                 meth.rtype
-            } case { _ -> }
+            } else { }
 
             return signature (signature)
                 returnType (objectType.fromDType (rType))
@@ -154,7 +154,7 @@ def aMethodType = object {
             def signature = [mixPartNamed (defd.name.value) parameters [ ] ]
             def dtype = objectType.fromDType (defd.dtype)
             return signature (signature) returnType (dtype)
-        } case { _ ->
+        } else {
             prelude.Exception.raise "unrecognised method node" with (node)
         }
     }
@@ -398,7 +398,7 @@ def objectType = object {
         } case { generic: Generic ->
 //            TODO: figure out what to do here!
             objectType.fromIdentifier (generic.value)
-        } case { _ ->
+        } else {
             ProgrammingError.raise "No case for node of kind {dtype.kind}" with (dtype)
         }
     }
@@ -419,7 +419,7 @@ def objectType = object {
                 "type '{bType}' does not satisfy the type 'Procedure0'") with (block)
         } case { meth: MethodType ->
             return meth.returnType
-        } case { _ -> }
+        } else { }
     }
 
     method fromBlockBody (body) -> ObjectType {
@@ -1056,7 +1056,7 @@ rule { block: BlockLiteral ->
 rule { ident: Identifier ->
     match (ident.value) case { "outer" ->
         outerAt (scope.size)
-    } case { _ ->
+    } else {
         scope.variables.find (ident.value) butIfMissing { objectType.unknown }
     }
 }
@@ -1134,7 +1134,7 @@ method processBody (body: List) -> ObjectType is confidential {
             match (stmt) case { meth: Method ->
                 def mType = aMethodType.fromNode (meth)
                 allMethods.push (mType)
-                if (isPublic (meth)) then {
+                if (meth.isPublic) then {
                     publicMethods.push (mType)
                 }
 
@@ -1143,12 +1143,12 @@ method processBody (body: List) -> ObjectType is confidential {
                     scope.variables.at (mType.name) put (mType.returnType)
                 }
             } case { defd: Def | Var ->
-                if (isPublic (defd)) then {
+                if (defd.isPublic) then {
                     def mType = aMethodType.fromNode (defd)
                     allMethods.push (mType)
                     publicMethods.push (mType)
                 }
-            } case { _ -> }
+            } else { }
         }
 
         scope.types.at "Self" put (objectType.fromMethods (allMethods))
@@ -1196,34 +1196,12 @@ method collectTypes (nodes: List) -> Done is confidential {
             types.push (td)
             placeholders.push (placeholder)
             scope.types.at (td.nameString) put (placeholder)
-        } case { _ -> }
+        } else { }
     }
 
     prelude.for (types) and (placeholders) do { td, ph ->
         def oType = objectType.fromDType (td)
         prelude.become (ph, oType)
-    }
-}
-
-
-// Determines if a node is publicly available.
-method isPublic (node: Method | Def | Var) -> Boolean is confidential {
-    match (node) case { _: Method ->
-        node.annotations.do { ann ->
-            if (ann.value == "confidential") then {
-                return false
-            }
-        }
-
-        true
-    } case { _ ->
-        node.annotations.do { ann ->
-            if ((ann.value == "public") || (ann.value == "readable")) then {
-                return true
-            }
-        }
-
-        false
     }
 }
 

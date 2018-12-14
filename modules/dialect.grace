@@ -275,7 +275,7 @@ class aPatternMatchingNode(kind:String) -> Pattern {
     method matches(obj:Object) -> Boolean {
         match(obj)
             case { node:AstNode -> kind == node.kind }
-            case { _ -> false }
+            else { false }
     }
 }
 
@@ -316,9 +316,10 @@ class RequestOf(methodName:String) -> Pattern {
     inherit BasicPattern.new
 
     method matches(obj:Object) -> Boolean {
-        match(obj) case { node:AstNode ->
+        match(obj)
+          case { node:AstNode ->
             node.isCall && {node.canonicalName == methodName}
-        } case { _ ->
+        } else {
             false
         }
     }
@@ -424,9 +425,10 @@ def astVisitor = object {
     method visitCall(node) -> Boolean {
         checkMatch(node)
 
-        match(node.receiver) case { memb : Member ->
+        match(node.receiver)
+          case { memb : Member ->
             memb.receiver.accept(self)
-        } case { _ -> }
+        } else { }
 
         for(node.parts) do { part ->
             for(part.args) do { arg ->

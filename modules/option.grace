@@ -46,7 +46,7 @@ class full⟦T⟧(contents:T) → Option {
     method ==(other) {
         match (other) 
             case {c:Collection → (c.size == 1) && {c.first == value} }
-            case {_ → false}
+            else {false}
     }
     class iterator {
         var hasNext is readable := true
@@ -119,7 +119,7 @@ class empty⟦T⟧ → Option {
     method ==(other) {
         match (other) 
             case {c:Collection → c.isEmpty}
-            case {_ → false}
+            else {false}
     }
     class iterator {
         method hasNext { false }
