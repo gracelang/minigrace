@@ -4365,15 +4365,18 @@ var UninitializedVariableObject = new GraceException("UninitializedVariable", Pr
 
 function raiseException(ex, msg, data) {
     const newEx = new GraceExceptionPacket(ex, new GraceString(msg), data);
-    var callee = arguments.callee
+    var callee = arguments.callee;
     var caller = callee.caller;
-    while (! caller.isGraceRequest) {
+    var count = 0;      // to avoid an infinite loop if everything goes wrong
+    while ((! caller.isGraceRequest) && (count++ < 10)) {
         // searches for a request or selfRequest on the stack
         callee = caller;
         caller = caller.caller;
     }
-    Object.defineProperty(newEx, 'moduleName', {value: callee.definitionModule});
-    Object.defineProperty(newEx, 'methodName', {value: canonicalMethodName(caller.arguments[1])} );
+    if (caller.isGraceRequest) {
+        Object.defineProperty(newEx, 'moduleName', {value: callee.definitionModule});
+        Object.defineProperty(newEx, 'methodName', {value: canonicalMethodName(caller.arguments[1])} );
+    }
     throw newEx;
 }
 
