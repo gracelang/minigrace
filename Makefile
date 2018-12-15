@@ -179,7 +179,7 @@ grace-web-editor/scripts/setup.js: pull-web-editor $(filter-out %/setup.js,$(wil
 
 ide: ideDeploy
 
-ideBuild: $(J2-MINIGRACE) minigrace.env pull-brace grace-web-editor/scripts/setup.js grace-web-editor/scripts/background.js $(WEBFILES_STATIC:%=js/%) $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES_DYNAMIC:%=j2/%))) $(ALL_LIBRARY_MODULES:%.grace=j2/%.js)
+ideBuild: j2-minigrace minigrace.env pull-brace grace-web-editor/scripts/setup.js grace-web-editor/scripts/background.js $(WEBFILES_STATIC:%=js/%) $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES_DYNAMIC:%=j2/%))) $(ALL_LIBRARY_MODULES:%.grace=j2/%.js)
 	./tools/includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
 	./tools/calc-IDE-version
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
