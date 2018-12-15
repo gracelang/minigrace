@@ -303,7 +303,7 @@ class create(canvasWidth, canvasHeight) {
             match (s)
                   case { scalar:Number -> sz := scalar }
                   case { point:Point -> sz := (point.x + point.y)/2 }
-                  case { _ -> ProgrammingError.raise "argument to polyStar.setSize should be a Number or a Point." }
+                  else { ProgrammingError.raise "argument to polyStar.setSize should be a Number or a Point." }
         }
 
         method size { sz }
