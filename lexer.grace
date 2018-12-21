@@ -157,6 +157,7 @@ method rightBrace {
 }
 
 class token {
+    use equality
     def line is public = lineNumber
     def indent is public = currentLineIndent
     def linePos is public = startPosition
@@ -178,6 +179,7 @@ class token {
             (line == other.line) && (linePos == other.linePos)
         }
     }
+    method hash { hashCombine(line.hash, linePos.hash) }
     method asString { "({line}.{linePos}){self.kind} {self.value}" }
     method value { abstract }
     method size { abstract }
