@@ -38,7 +38,7 @@ def suggestion is public = object {
             addLine(lineNumber, s)
         } else {
             def newStart = min(start, size)
-            def newEnd = max(end, size)
+            def newEnd = min(end, size)
             addLine(lineNumber, line.substringFrom 1 to (newStart - 1)
                     ++ s ++ line.substringFrom (newEnd + 1))
         }

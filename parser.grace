@@ -2774,22 +2774,25 @@ method doreturn {
             if (unsuccessfulParse {expression(blocksOK)}) then {
                 def suggestions = [ ]
                 var suggestion := errormessages.suggestion.new
-                def nextTok = findNextValidToken( ["rbrace"] )
+                def nextTok = findNextValidToken( ["rbrace", "separator"] )
                 if (nextTok == sym) then {
                     suggestion.insert(" «expression»")afterToken(lastToken)
                     suggestions.push(suggestion)
-                    suggestion := errormessages.suggestion.new
-                    suggestion.deleteToken(sym)leading(true)trailing(false)
+                    if (sym.isSeparator.not) then {
+                        suggestion := errormessages.suggestion.new
+                        suggestion.deleteToken(sym)leading(true)trailing(false)
+                        suggestions.push(suggestion)
+                    }
                 } else {
                     suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with(" «expression»")
                     suggestions.push(suggestion)
                     suggestion := errormessages.suggestion.new
                     suggestion.deleteTokenRange(sym, nextTok.prev)leading(true)trailing(false)
+                    suggestions.push(suggestion)
                 }
-                suggestions.push(suggestion)
-                errormessages.syntaxError ("a return statement must have " ++
-                    "an expression or a newline after the word 'return'.")
-                    atRange (sym.line, sym.linePos, sym.endPos)
+                errormessages.syntaxError ("a `return` statement must be followed " ++
+                    "by an expression, or by the end of the block.")
+                    atRange (retTok.line, retTok.linePos, sym.linePos)
                     withSuggestions (suggestions)
             }
             retval := values.pop
