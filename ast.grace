@@ -242,7 +242,7 @@ class baseNode {
     method range { start (start) end (end) }
     method kind { abstract }
     method isNull { false }
-    method isAppliedOccurence { false }
+    method isAppliedOccurrence { false }
     method isMatchingBlock { false }
     method isFieldDec { false }
     method isInherits { false }
@@ -1021,10 +1021,10 @@ def methodNode is public = object {
         var isOnceMethod is public := false
         var usesClassSyntax is public := false
         var cachedIdentifier := uninitialized
-        var isBindingOccurence is readable := true
+        var isBindingOccurrence is readable := true
             // the only exceptions are the oldMethodName in an alias clause,
             // and an excluded name
-        method isAppliedOccurence { isBindingOccurence.not }
+        method isAppliedOccurrence { isBindingOccurrence.not }
 
         method end -> Position {
             if (body.isEmpty.not) then {
@@ -1044,10 +1044,10 @@ def methodNode is public = object {
                 canonicalName
             }
         }
-        method appliedOccurence {
-            isBindingOccurence := false
+        method appliedOccurrence {
+            isBindingOccurrence := false
             if (uninitialized ≠ cachedIdentifier) then {
-                cachedIdentifier.isBindingOccurence := false
+                cachedIdentifier.isBindingOccurrence := false
             }
             self
         }
@@ -1101,7 +1101,7 @@ def methodNode is public = object {
                 cachedIdentifier := identifierNode.new(nameString, false)
                 cachedIdentifier.line := signature.first.line
                 cachedIdentifier.linePos := signature.first.linePos
-                cachedIdentifier.isBindingOccurrence := isBindingOccurence
+                cachedIdentifier.isBindingOccurrence := isBindingOccurrence
                 cachedIdentifier.end := signature.last.end
                 cachedIdentifier.canonicalName := canonicalName
             }
@@ -1215,7 +1215,7 @@ def methodNode is public = object {
                 s := s ++ spc ++ "Returns:\n" ++ spc ++ "  "
                 s := s ++ self.dtype.pretty(depth + 2) ++ "\n"
             }
-            if (isBindingOccurence.not) then { s := s ++ spc ++ "Applied\n" }
+            if (isBindingOccurrence.not) then { s := s ++ spc ++ "Applied\n" }
             if (isFresh) then { s := s ++ spc ++ "Fresh\n" }
             s := "{s}{spc}Signature:"
             for (signature) do { part ->
@@ -1284,8 +1284,8 @@ def methodNode is public = object {
             isOnceMethod := other.isOnceMethod
             hasBody := other.hasBody
             selfclosure := other.selfclosure
-            if (other.isAppliedOccurence) then {
-                self.appliedOccurence
+            if (other.isAppliedOccurrence) then {
+                self.appliedOccurrence
             }
             self
         }
@@ -1327,7 +1327,7 @@ def callNode is public = object {
         method end:=(newPos) { endPos := newPos }
         method isRequestOfPrefixOperator { parts.first.name.startsWith "prefix" }
         method onSelf {
-            // mark ac a self-request.  Answers self for chaining.
+            // mark as a self-request.  Answers self for chaining.
             isSelfRequest := true
             self
         }
@@ -1997,15 +1997,19 @@ def genericNode is public = object {
   }
 }
 
-def typeParametersNode is public = object {
-  class new(params') {
+class typeParametersNode(params') whereClauses (conditions) {
     inherit baseNode
     def kind is public = "typeparams"
     var params is public := params'
+    var whereClauses is public := conditions
     method asString { toGrace 0 }
     method declarationKindWithAncestors(ac) { k.typeparam }
-    method end -> Position {
-        positionOfNext "⟧" after (params.last.end)
+    once method end -> Position {
+        if (whereClauses.isEmpty) then {
+            positionOfNext "⟧" after (params.last.end)
+        } else {
+            positionOfNext "⟧" after (whereClauses.last.end)
+        }
     }
 
     method accept(visitor : AstVisitor) from(ac) {
@@ -2013,6 +2017,9 @@ def typeParametersNode is public = object {
             def newChain = ac.extend(self)
             params.do { p ->
                 p.accept(visitor) from(newChain)
+            }
+            whereClauses.do { w ->
+                w.accept(visitor) from(newChain)
             }
         }
     }
@@ -2043,10 +2050,14 @@ def typeParametersNode is public = object {
             separatedBy { s := s ++ ", " }
         s ++ "⟧"
     }
-    method shallowCopy {
-        typeParametersNode.new(emptySeq).shallowCopyFieldsFrom(self)
+    method postCopy(other) {
+        params := other.params
+        whereClauses := other.whereClauses
+        self
     }
-  }
+    method shallowCopy {
+        typeParametersNode(emptySeq) whereClauses(emptySeq).shallowCopyFieldsFrom(self)
+    }
 }
 def identifierNode is public = object {
 
@@ -2078,6 +2089,9 @@ def identifierNode is public = object {
         var isDeclaredByParent is public := false
         var end:Position is public := line (line) column (linePos + value.size - 1)
 
+        method bindingOccurrence { isBindingOccurrence := true }
+        method appliedOccurrence { isBindingOccurrence := false }
+
         method name { value }
         method name:=(nu) {
             value := nu
@@ -2102,7 +2116,7 @@ def identifierNode is public = object {
             if (isOuter) then { return true }
             return false
         }
-        method isAppliedOccurence {
+        method isAppliedOccurrence {
             if (wildcard) then {
                 false
             } else {
@@ -2113,8 +2127,8 @@ def identifierNode is public = object {
             ac.parent.declarationKindWithAncestors(ac)
         }
         method inTypePositionWithAncestors(ac) {
-            // am I used by my parent node ac a type?
-            // This is a hack, used ac a subsitute for having information in the .gct
+            // am I used by my parent node as a type?
+            // This is a hack, used as a subsitute for having information in the .gct
             // telling us which identifiers represent types
             if (ac.isEmpty) then { return false }
             ac.parent.usesAsType(self)
@@ -2906,7 +2920,7 @@ def inheritNode is public = object {
         }
         method nameString { value.toGrace(0) }
         method addAlias (newSig) for (oldSig) {
-            aliases.push(aliasNew(newSig) old(oldSig.appliedOccurence))
+            aliases.push(aliasNew(newSig) old(oldSig.appliedOccurrence))
         }
         method addExclusion(meth) {
             exclusions.push(meth)

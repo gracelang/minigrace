@@ -501,7 +501,7 @@ def universalScope = object {
 }
 
 method transformIdentifier(node) ancestors(anc) {
-    // node is a (copy of an) ast node that represents an applied occurence of
+    // node is a (copy of an) ast node that represents an applied occurrence of
     // an identifer id.
     // This method may or may not transform node into another ast.
     // There is no spec for what this method should do.  The code below
@@ -513,7 +513,7 @@ method transformIdentifier(node) ancestors(anc) {
     // - id is super => do nothing
     // - id is outer => transform to an outerNode
     // - id is in an assignment position and a method ‹id›:=(_) is in scope => do nothing.  The enclosing bind will transform it.
-    // - id is in the lexical scope: store binding occurence of id in node
+    // - id is in the lexical scope: store binding occurrence of id in node
     // - id is a method in an outer object scope: transform into member nodes or requests on outerNodes
     // - id is a self-method: transform into a request on self
     // - id is not declared: generate an error message
@@ -735,7 +735,7 @@ method resolveIdentifiers(topNode) {
     // descendents have already been mapped.
 
     def newModule = topNode.map { node, anc ->
-        if ( node.isAppliedOccurence ) then {
+        if ( node.isAppliedOccurrence ) then {
             transformIdentifier(node) ancestors(anc)
         } elseif { node.isCall } then {
             transformCall(node)
@@ -1022,7 +1022,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 }
                 surroundingScope.addNode (ident) asA (knd)
                 ident.isDeclaredByParent := true
-                // aliased and excluded names are appliedOccurences
+                // aliased and excluded names are appliedOccurrences
                 o.scope := newScopeIn(surroundingScope) kind "method"
                 if (o.returnsObject) then {
                     o.isFresh := true
@@ -1355,7 +1355,7 @@ method transformInherits(inhNode) ancestors(anc) {
         errormessages.syntaxError "{inhNode.statementName} statements must be directly inside an object."
                     atRange(inhNode.range)
     }
-    if (superExpr.isAppliedOccurence) then {
+    if (superExpr.isAppliedOccurrence) then {
         def nm = superExpr.nameString
         def definingScope = currentScope.thatDefines(nm)
         if (definingScope == currentScope) then {

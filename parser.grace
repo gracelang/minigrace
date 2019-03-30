@@ -249,22 +249,24 @@ method unsuccessfulParse (aParsingBlock) {
     aParsingBlock.apply
     values.size == sz
 }
-method pushnum {
+method pushNum {
     // Push the current token onto the output stack as a number
     var o := ast.numNode.new(sym.value)
     values.push(o)
     next
+    return o
 }
 
-method pushstring {
+method pushString {
     // Push the current token onto the output stack as a string
     var o := ast.stringNode.new(sym.value)
     o.end := ast.line (sym.line) column (sym.endPos)
     values.push(o)
     next
+    return o
 }
 
-method pushidentifier {
+method pushIdentifier {
     // Push the current token onto the output stack as an identifier.
     // false means that this identifier has not yet been annotated with a dtype.
     util.setPosition(sym.line, sym.linePos)
@@ -275,6 +277,7 @@ method pushidentifier {
     }
     values.push(o)
     next
+    return o
 }
 
 method checkAnnotation(ann) {
@@ -336,7 +339,7 @@ method errorMissingAnnotation {
 
 method dotypeterm {
     if (sym.isIdentifier) then {
-        pushidentifier
+        pushIdentifier
         generic
         dotrest(noBlocks)
     } else {
@@ -957,7 +960,7 @@ method identifier {
         if (sym.value == "if") then {
             doif
         } else {
-            pushidentifier
+            pushIdentifier
         }
     }
 }
@@ -1416,9 +1419,9 @@ method matchcase {
 method term {
     util.setPosition(sym.line, sym.linePos)
     if (sym.isNum) then {
-        pushnum
+        pushNum
     } elseif { sym.isString } then {
-        pushstring
+        pushString
     } elseif { sym.isIdentifier && (sym.value == "match") } then {
         matchcase
     } elseif { sym.isIdentifier && (sym.value == "try") } then {
@@ -1961,7 +1964,7 @@ method defdec {
         if (sym.kind != "identifier") then {
             errorDefNoName
         }
-        pushidentifier
+        pushIdentifier
         def name = values.pop
         name.isBindingOccurrence := true
         def dtype = optionalTypeAnnotation
@@ -2007,7 +2010,7 @@ method vardec {
             errormessages.syntaxError "a variable declaration must have a name after the 'var'."
                   atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
         }
-        pushidentifier
+        pushIdentifier
         var val := false
         var name := values.pop
         name.isBindingOccurrence := true
@@ -2196,7 +2199,7 @@ method parseAlias(node) {
     def newMeth = methodsignature
     if (sym.isOp && (sym.value == "=")) then {
         next
-        def oldMeth = methodsignature.appliedOccurence
+        def oldMeth = methodsignature.appliedOccurrence
         if (newMeth.numParams ≠ oldMeth.numParams) then {
             errormessages.syntaxError "a method and its alias must have the same number of parameters"
                 atRange (newMeth.line, newMeth.linePos, oldMeth.endPos)
@@ -2211,7 +2214,7 @@ method parseAlias(node) {
 }
 method parseExclude(node) {
     next    // skip the exclude keyword
-    def excludedMeth = methodsignature.appliedOccurence
+    def excludedMeth = methodsignature.appliedOccurrence
     node.addExclusion (excludedMeth)
     return true
 }
@@ -2487,7 +2490,7 @@ method methodDecRest(tm) {
 
     var signature := tm.signature
     while {sym.isIdentifier} do {
-        pushidentifier
+        pushIdentifier
         def part = ast.signaturePart.partName(values.pop.nameString)
         if (sym.isLParen.not) then {
             def suggestion = errormessages.suggestion.new
@@ -2506,7 +2509,7 @@ method methodDecRest(tm) {
                 errormessages.syntaxError("variable length parameters (parameters prefixed by '*') are no longer part of Grace.  Consider making {sym.value} an Iterable.")
                     atPosition(lastToken.line, lastToken.linePos)
             }
-            pushidentifier
+            pushIdentifier
             def nxt = values.pop
             nxt.isBindingOccurrence := true
             nxt.dtype := optionalTypeAnnotation
@@ -2591,7 +2594,7 @@ method methodsignature {
                 errormessages.syntaxError("variable length parameters (parameters prefixed by '*') are no longer part of Grace.  Consider making {sym.value} a sequence.")
                     atPosition(lastToken.line, lastToken.linePos)
             }
-            pushidentifier
+            pushIdentifier
             id := values.pop
             id.isBindingOccurrence := true
             id.dtype := optionalTypeAnnotation
@@ -2643,28 +2646,65 @@ method methodsignature {
 }
 
 method typeparameters {
+    // precondition: sym.isLGeneric
     def openBracket = sym
     next
-    def typeIds = [ ]
-    while {sym.isIdentifier} do {
-        identifier
-        def id = values.pop
-        id.isBindingOccurrence := true
-        typeIds.push(id)
-        if (sym.isComma) then {
+    def typeIds = list.empty
+    def whereConditions = list.empty
+    if {sym.isIdentifier.not} then {
+        errormessages.syntaxError "a '⟦' must be followed by one or more identifiers naming the type parameters" atRange(sym.line, sym.linePos, sym.endPos)
+    }
+    pushIdentifier.bindingOccurrence         // does next
+    typeIds.add(values.pop)
+    while {sym.isComma} do {
+        next
+        if { sym.isIdentifier.not } then {
+            errormessages.syntaxError ("a comma in a list of type parameters must " ++
+                  "be followed by the name of another type parameter")
+                  atRange (sym.line, sym.linePos, sym.endPos)
+        }
+        pushIdentifier.bindingOccurrence         // does next
+        typeIds.push(values.pop)
+    }
+    if (acceptKeyword "where") then {
+        next
+        def conditionStart = sym
+        if (unsuccessfulParse {expression(noBlocks)}) then {
+            errormessages.syntaxError "`where` must be followed by a condition on one of the type parameters"
+                  atRange(conditionStart.line, conditionStart.linePos, conditionStart.endPos)
+        }
+        whereConditions.add(checkWhereCondition)
+        while {sym.isComma} do {
             next
+            if (unsuccessfulParse {expression(noBlocks)}) then {
+                errormessages.syntaxError "`where` must be followed by list of conditions on the type parameters"
+                      atRange(sym.line, sym.linePos, sym.endPos)
+            }
+            whereConditions.add(checkWhereCondition)
         }
     }
-    typeIds.do { each -> each.isBindingOccurrence := true }
-    def result = ast.typeParametersNode.new(typeIds).setPositionFrom(openBracket)
-    if (sym.kind != "rgeneric") then {
+    if (sym.isRGeneric.not) then {
         def suggestion = errormessages.suggestion.new
         suggestion.insert "⟧" afterToken (lastToken)
-        errormessages.syntaxError("a list of type parameters starting with '⟦' must end with '⟧'.")atPosition(
-            lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+        errormessages.syntaxError "a list of type parameters starting with '⟦' must end with '⟧'"
+              atRange(lastToken.line, lastToken.linePos, lastToken.endPos) withSuggestion (suggestion)
     }
     next
-    result
+    ast.typeParametersNode(typeIds) whereClauses(whereConditions).setPositionFrom(openBracket)
+}
+
+def typeRelations = ["<:", "<*", ":>", "*>"]
+
+method checkWhereCondition {
+    // an expression is on the values stack.  Check that it is a valid where
+    // condition, and if so, remove it from calues and return it.
+    def cond = values.pop
+    if ((cond.kind ≠ "op") || { typeRelations.contains(cond.value).not }) then {
+        errormessages.syntaxError("a where condition must be a relation using " ++
+              "one of the operators {errormessages.readableStringFrom(typeRelations)}")
+              atRange(cond)
+    }
+    cond
 }
 
 method doimport {
@@ -2686,7 +2726,7 @@ method doimport {
             errormessages.syntaxError("an import statement must have the name of the module to be imported (in quotes), 'as', and an identifier after 'import'.")atPosition(
                 lastToken.line, errorPos)withSuggestion(suggestion)
         }
-        pushstring
+        pushString
         def p = values.pop
         if (! acceptKeyword "as") then {
             var suggestion := errormessages.suggestion.new
@@ -2712,7 +2752,7 @@ method doimport {
             errormessages.syntaxError("an import statement must have an identifier after 'as'.")atPosition(
                 lastToken.line, errorPos)withSuggestion(suggestion)
         }
-        pushidentifier
+        pushIdentifier
         def name = values.pop
         name.isBindingOccurrence := true
         def dtype = optionalTypeAnnotation
@@ -2845,7 +2885,7 @@ method typedec {
             errormessages.syntaxError("a type declaration must have a name after the 'type'.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestion(suggestion)
         }
-        pushidentifier
+        pushIdentifier
         util.setPosition(line, pos)
         def nt = ast.typeDecNode.new(values.pop, false)
         if (sym.isLGeneric) then { nt.typeParams := typeparameters }
