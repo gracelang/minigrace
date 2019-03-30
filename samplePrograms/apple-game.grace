@@ -31,7 +31,7 @@ method maxNumberOfBadGuesses {
 
 method showLetter(l) -> String {
     // returns a string the same length as the secret word, with
-    // all occurences of letter `l` in their correct places, and 
+    // all occurrences of letter `l` in their correct places, and 
     // all other letters replaced by _
     "_________"
 }
