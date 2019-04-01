@@ -12,13 +12,13 @@ instructions in <doc/build>. These will cause the build system to
 rebuild the compiler with itself multiple times to ensure that it is
 functional.
 
-If you are using on the JavaScript backend in a web browser you will probably find that
+If you are using the JavaScript backend in a web browser, you will probably find that
 you need to perform a hard reload (commonly shift-reload) in your
 browser to cause it to pick up the new versions of files. If your
 modifications are only to js/gracelib.js you do not need to `make minigrace`
 after changes, but editing any .grace or .in.html always requires
-rebuilding. In order to run the compiler in the user
-interface the UI must be accessed over HTTP. Most browsers will not
+rebuilding. To run the compiler in the browser, the browser
+_must_ be accessed over HTTP;  browsers will not
 permit loading from file://.
 
 Configuring Git
@@ -37,21 +37,24 @@ Preparing a branch for integration
 Commits should be logical and self-contained. The subject (first line)
 of the commit message should be no longer than 50 characters. Further
 explanation should follow a blank line and be wrapped at no more than 72
-characters. The subject should be an imperative statement summarising
-the content and purpose of the commit, and should not end with
-punctuation. Unrelated changes should be in separate commits.
+characters. The *subject* should be an _imperative_ statement summarising
+the content and purpose of the commit, for example "Fixes issue #69", or
+"Checks constraints on type arguments".  Do not put punctuation after
+the subject.  More information can be added after a blank line.
 
-Eventually you will have a completed discrete change to the compiler you
-want to integrate. At this point please ensure that the branch is
+Unrelated changes should be in separate commits.
+
+When have a completed, discrete, change to the compiler that you
+want to integrate in your own branch, ensure that this branch is
 fast-forward from the upstream master (that is, the tip of upstream
 master is a direct ancestor of the tip of the branch to be merged). You
 may find the rebase command to be useful here: see `git help rebase`. Do
-not include merge commits in this branch.
+_not_ include merge commits in this branch.
 
 When you have a complete branch ready for integration please ensure that
 the compiler builds from the beginning and the test suite passes. If
 your changes are to the JavaScript backend or runtime library, please
-ensure that the tests succeed in the JavaScript user interface as well.
+ensure that the tests succeed in the web interface as well.
 
 Submitting changes
 ------------------

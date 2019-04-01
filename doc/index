@@ -4,6 +4,8 @@ authors:
     Lists the authors of Minigrace code
 build:
     Provides instructions for compiling Minigrace.
+contributing:
+    Provides guidelines for submitting modifications to Minigrace.
 errata:
     Describes the differences between Minigrace's implementation and the
     specified Grace language, including both specified features that are
@@ -14,21 +16,26 @@ errata:
 exceptions:
     Documents the design and implementation of exceptions and exception
     handlers in Minigrace.
-generics:
-    Describes the behaviour of generic parameters.
 gpl3:
     The text of the licence Minigrace is distributed under.
-hacking:
-    Provides guidelines for submitting modifications to Minigrace.
+grace-in-javascript:
+    Describes the JavaScript object structures generated from Grace objects.
 index:
     This file.
 interop:
     Provides hints for how to write glue code for interoperability
     between Grace code and other systems for use with Minigrace.
+make-targets:
+    Describes the targets in the Makefile
 modules:
     Describes the locations imported modules are found, and documents
     the modules included in the Minigrace distribution that might be
     useful in user code.
+nativeCode
+    Describes how to incorporate nateiv JavaScript code into minigrace modules.
+    The directory nativeCodeExamples contains some examples.
+typeParameters
+    Contains notes on the behaviour of type parameters.
 unicode:
     Defines the behaviour of Minigrace with regard to Unicode, including
     how strings behave and are defined, which characters are valid in

@@ -66,28 +66,28 @@ A fresh method x(1) is compiled into a method x(1)$build(3), as well as a method
 In non-inheritance contexts, the code will request x(1), which is implemented by
 
     * constructing a new graceObject (call it ouc, for object under construction)
-    * passing ouc to $build, which modified ouc, and then
+    * passing ouc to $build, which modifies ouc, and then
     * initializing ouc using the init function.
 
 In inheritance contexts, the code will request x(1)$build(3) with appropriate extra
 arguments.
 
 To support this, object constructors are also compiled in two ways.
-They generate a _build function, which is similar to the $build method of a
-fresh method, and which returns an _init function.   They also generate
+They generate an `_build` function, which is similar to the `$build` method of a
+fresh method, and which returns an `_init` function.   They also generate
 an ordinary JS function, which is used in non-inheritance contexts, and which is
-implemented by passing a new graceObject to the _build function.
-The register of the objectNode refers to this ordinary function; the _build function
-can be named by adding the suffix _build.
+implemented by passing a new graceObject to the `_build` function.
+The `register` attribute of the objectNode refers to this ordinary function;
+the _build function can be named by adding the suffix _build.
 
-Thus, the compiled form of a Grace object is a flat JavaScript object.  The
+Thus, the compiled form of a Grace object is a flat JavaScript object.  The Grace
 inheritance chain is compiled away, and need not be searched at runtime.
 
 ## Inheriting from "special" methods
 
 prelude.clone is treated as a fresh method, as are true and false.   They have
-hand-built $build(3) variants in the standard library, which are called by the
-compiled code just like the generted $build(3) variants for other fresh methods.
+hand-built `$build(3)` variants in the standard library, which are called by the
+compiled code just like the generated `$build(3)` variants for other fresh methods.
 Thus, from the persepctive of code-generation, they don't really need to be
 "special".  However, the .gct mechanism does not yet classify them as fresh, so
 these are still special cases in identifierresolution.

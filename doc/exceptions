@@ -15,9 +15,9 @@ match-case, except that the first argument must be a block.
     }
 
 Inside the catch blocks, e is the exception packet created from
-the raised exception. This object has a "message" field containing the
-message provided when the exception was raised, and an "exception" field
-pointing to the exception kind it was raised from.
+the raised exception. This object has a "message" attribute containing the
+message provided when the exception was raised, and an "exception" attribute
+indicating the exception kind from which it was raised.
 
 The first catch-block with a matching exception will be executed. Exceptions
 that are not handled by any catch-block propagate up the stack to the

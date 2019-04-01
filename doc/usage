@@ -8,7 +8,11 @@ Unless another location is specified, the resulting output file or files
 will be generated in the same directory as the input. It is best to
 compile code in the current directory, particularly when multiple
 modules may be imported. The minigrace executable may be located
-elsewhere, and will find its support files either alongside itself, or in a directory found on the environment variable `GRACE_MODULE_PATH`.
+elsewhere, and will find its support files either alongside itself, or in a
+directory found on the environment variable `GRACE_MODULE_PATH`.
+
+The remainder of this document assumes that `make install` has been run successfully, and
+that `mgc` has been installed on your `PATH` (e.g., in `/usr/local/bin`)
 
  * To compile _and run_ a Grace source file, use
  
@@ -32,14 +36,10 @@ elsewhere, and will find its support files either alongside itself, or in a dire
   `n` is  a number between 0 and 100; if omitted, the defult is 40.
   The higher the number, the more output is provided.
 
- * To pretty-print the input source code as Grace, use:
- 
-  `mgc --target grace -o file.js file.grace`
-
  * To compile to a specialised target, like a parse tree, use:
   
     `mgc --target parse file.js`
     
   There are several targets for specialised purposes. Use `mgc --target help`
-  to list them. Useful targets are `lex` (tokens) and `ast`.
+  to list them. Useful targets are `lex` (tokens) and `ast` (code generation tree).
 
