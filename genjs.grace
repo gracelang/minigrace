@@ -1585,7 +1585,7 @@ method outputModuleDefinition(moduleObject) {
         moduleObject.usedTraits.do { t ->
             compileUse(t) in (moduleObject)
         }
-        moduleObject.methodsDo { o ->
+        moduleObject.methodsAndTypesDo { o ->
             compilenode(o)
         }
         if (false != inheritsStmt) then {

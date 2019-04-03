@@ -928,7 +928,7 @@ def typeDecNode is public = object {
         st.node := self
     }
 
-    method isExecutable { true }
+    method isExecutable { false }
     method declarationKindWithAncestors(ac) { k.typeparam }
     method isConfidential { findAnnotation(self, "confidential") }
     method isPublic { isConfidential.not }
@@ -1642,6 +1642,13 @@ def objectNode is public = object {
 
             value.do { o ->
                 if (o.isMethod) then { action.apply(o) }
+            }
+        }
+
+        method methodsAndTypesDo(action) {
+            // iterate over my method and type declarations
+            value.do { o ->
+                if (o.isMethod || o.isTypeDec) then { action.apply(o) }
             }
         }
 
