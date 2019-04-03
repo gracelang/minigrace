@@ -399,8 +399,8 @@ method compileobject(o, outerRef) {
     // and {o.register}_init, which initializes the fields.  The _init function
     // is returned from the _build funciton, so that it can close over the context.
     // The object constructor itself is implemented by calling these functions
-    // in sequence, _except_ inside a fresh method, where the object may instead
-    // need to add its contents to an existing object
+    // in sequence, _except_ inside a fresh method, where the _build function may
+    // instead need to add the object's contents to an existing object.
     compileBuildAndInitFunctions(o) inMethod (false)
     def objRef = o.register
     def objName = "\"" ++ o.name.quoted ++ "\""
