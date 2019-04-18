@@ -193,7 +193,7 @@ type Iterator⟦T⟧ = interface {
 }
 
 class lazySequenceOver⟦T,R⟧ (source: Collection⟦T⟧)
-        mappedBy (function:Function1⟦T, R⟧) -> Enumerable⟦R⟧ is confidential {
+        mappedBy (function:Function1⟦T, R⟧) -> Enumerable⟦R⟧ {
     use enumerable⟦T⟧
     class iterator {
         def sourceIterator = source.iterator
@@ -207,7 +207,7 @@ class lazySequenceOver⟦T,R⟧ (source: Collection⟦T⟧)
 }
 
 class lazySequenceOver⟦T⟧ (source: Collection⟦T⟧)
-        filteredBy(predicate:Predicate1⟦T⟧) -> Enumerable⟦T⟧ is confidential {
+        filteredBy(predicate:Predicate1⟦T⟧) -> Enumerable⟦T⟧ {
     use enumerable⟦T⟧
     class iterator {
         var cache
