@@ -468,11 +468,11 @@ def sequenceTest = object {
         }
 
         method testSequenceAsStringNonEmpty {
-            assert (evens.asString) shouldBe ("⟨2, 4, 6, 8⟩")
+            assert (evens.asString) shouldBe ("[2, 4, 6, 8]")
         }
 
         method testSequenceAsStringEmpty {
-            assert (empty.asString) shouldBe ("⟨⟩")
+            assert (empty.asString) shouldBe ("[]")
         }
 
         method testSequenceMapEmpty {
@@ -907,11 +907,11 @@ def listTest = object {
         }
 
         method testListAsStringNonEmpty {
-            assert (evens.asString) shouldBe ("[2, 4, 6, 8]")
+            assert (evens.asString) shouldBe ("list [2, 4, 6, 8]")
         }
 
         method testListAsStringEmpty {
-            assert (empty.asString) shouldBe ("[]")
+            assert (empty.asString) shouldBe ("list []")
         }
 
         method testListMapEmpty {
@@ -1245,12 +1245,12 @@ def setTest = object {
 
         method testSetAsStringNonEmpty {
             evens.remove(6).remove(8)
-            assert ((evens.asString == "set\{2, 4\}") || (evens.asString == "set\{4, 2\}"))
-                description "set\{2, 4\}.asString is {evens.asString}"
+            assert ((evens.asString == "set [2, 4]") || (evens.asString == "set [4, 2]"))
+                description "set [2, 4].asString is {evens.asString}"
         }
 
         method testSetAsStringEmpty {
-            assert (empty.asString) shouldBe ("set\{\}")
+            assert (empty.asString) shouldBe ("set []")
         }
 
         method testSetMapEmpty {
@@ -1397,12 +1397,12 @@ def dictionaryTest = object {
         method testAsString {
             def dict2 = dictionary ["one"::1, "two"::2]
             def dStr = dict2.asString
-            assert((dStr == "dict⟬one::1, two::2⟭") || {dStr == "dict⟬two::2, one::1⟭"})
-                description "\"{dStr}\" should be \"dict⟬one::1, two::2⟭\""
+            assert((dStr == "dictionary [one::1, two::2]") || {dStr == "dictionary [two::2, one::1]"})
+                description "\"{dStr}\" should be \"dictionary [one::1, two::2]\""
         }
 
         method testAsStringEmpty {
-            assert(empty.asString) shouldBe "dict⟬⟭"
+            assert(empty.asString) shouldBe "dictionary []"
         }
 
         method testDictionaryEmptyDo {
@@ -1549,13 +1549,13 @@ def dictionaryTest = object {
         method testDictionaryAsStringNonEmpty {
             evens.removeValue(6)
             evens.removeValue(8)
-            assert ((evens.asString == "dict⟬two::2, four::4⟭") ||
-                        (evens.asString == "dict⟬four::4, two::2⟭"))
+            assert ((evens.asString == "dictionary [two::2, four::4]") ||
+                        (evens.asString == "dictionary [four::4, two::2]"))
                         description "evens.asString = {evens.asString}"
         }
 
         method testDictionaryAsStringEmpty {
-            assert (empty.asString) shouldBe ("dict⟬⟭")
+            assert (empty.asString) shouldBe ("dictionary []")
         }
 
         method testDictionaryMapEmpty {

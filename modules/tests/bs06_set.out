@@ -1,5 +1,5 @@
 prelude is the "beginningStudent" module
 outer is the "standardGrace" module
-set{}
-set{1}
+set []
+set [1]
 sets: 9 run, 0 failed, 0 errors

@@ -280,11 +280,11 @@ def primitiveListTest = object {
         }
 
         method testListAsStringNonEmpty {
-            assert (evens.asString) shouldBe ("[2, 4, 6, 8]")
+            assert (evens.asString) shouldBe ("list [2, 4, 6, 8]")
         }
 
         method testListAsStringEmpty {
-            assert (empty.asString) shouldBe ("[]")
+            assert (empty.asString) shouldBe ("list []")
         }
 
         method testListMapEmpty {

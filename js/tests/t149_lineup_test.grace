@@ -216,11 +216,11 @@ def lineUpTest = object {
         }
 
         method testSequenceAsStringNonEmpty {
-            assert (evens.asString) shouldBe ("⟨2, 4, 6, 8⟩")
+            assert (evens.asString) shouldBe ("[2, 4, 6, 8]")
         }
 
         method testSequenceAsStringEmpty {
-            assert (empty.asString) shouldBe ("⟨⟩")
+            assert (empty.asString) shouldBe ("[]")
         }
 
         method testSequenceMapEmpty {

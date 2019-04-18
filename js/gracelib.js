@@ -1448,7 +1448,7 @@ PrimitiveGraceList.prototype = {
             return this;
         },
         "asString": function prim_list_asString(argcv) {
-            var s = "[";
+            var s = "list [";
             var isFirst = true;
             for (var i=0; i<this._value.length; i++) {
                 var obj = this._value[i];
@@ -1468,7 +1468,7 @@ PrimitiveGraceList.prototype = {
             return new GraceString(s);
         },
         "asDebugString": function(argcv) {
-            var s = "[";
+            var s = "primitiveGraceList [";
             var isFirst = true;
             for (var i=0; i<this._value.length; i++) {
                 var obj = this._value[i];
@@ -1488,7 +1488,7 @@ PrimitiveGraceList.prototype = {
             return new GraceString(s);
         },
         "debugValue": function(argcv) {
-            return new GraceString("extendedLineup");
+            return new GraceString("primitiveGraceList");
         },
         "debugIterator": function(argcv) {
             return new GraceListIterator(this._value);
@@ -1673,7 +1673,7 @@ Lineup.prototype = {
                     new GraceString("collection does not contain " + safeJsString(other) + "."));
         },
         "asString": function(argcv) {
-            var s = "⟨";
+            var s = "[";
             var isFirst = true;
             for (var i=0; i<this._value.length; i++) {
                 var obj = this._value[i];
@@ -1689,11 +1689,11 @@ Lineup.prototype = {
                     s += "‹" + dbgp(obj, 2) + "›";
                 }
             }
-            s += "⟩";
+            s += "]";
             return new GraceString(s);
         },
         "asDebugString": function(argcv) {
-            var s = "sequence ⟨";
+            var s = "sequence [";
             var isFirst = true;
             for (var i=0; i<this._value.length; i++) {
                 var obj = this._value[i];
@@ -1709,7 +1709,7 @@ Lineup.prototype = {
                     s += "‹" + dbgp(obj, 2) + "›";
                 }
             }
-            s += "⟩";
+            s += "]";
             return new GraceString(s);
         },
         "debugValue": function(argcv) {
@@ -1874,7 +1874,7 @@ GracePrimitiveArray.prototype = {
             return this;
         },
         "asString": function(argcv) {
-            var s = "[";
+            var s = "primitiveArray [";
             s += this._value.length + ": ";
             for (var i=0; i<this._value.length; i++) {
                 if (i !== 0) s += ", ";
@@ -1890,7 +1890,7 @@ GracePrimitiveArray.prototype = {
             return new GraceString(s);
         },
         "asDebugString": function(argcv) {
-            var s = "primArray(";
+            var s = "primitiveArray [";
             s += this._value.length + ": ";
             for (var i=0; i<this._value.length; i++) {
                 if (i !== 0) s += ", ";
@@ -1902,7 +1902,7 @@ GracePrimitiveArray.prototype = {
                     s += "‹" + dbgp(obj, 2) + "›";
                 }
             }
-            s += ")";
+            s += "]";
             return new GraceString(s);
         },
         "debugValue": function(argcv) {

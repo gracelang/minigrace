@@ -3,7 +3,7 @@ type B has methods [b(_)]
 type A has methods [a(_)]
 type B has methods [b(_)]
 type AB has methods [a(_), b(_)]
-⟨2, 3, 4⟩ is a sequence
+[2, 3, 4] is a sequence
 The following list methods are not in sequence:
     add(_)
     addAll(_)

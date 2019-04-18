@@ -1498,8 +1498,8 @@ def moduleNode is public = object {
         var theDialect is public := dialectNode.new "standardGrace"
         theDialect.setStart(noPosition)     // dialect is implicit
         setStart(line 1 column 1)           // always starts at the start of the puput
-        var imports is public := [ ]
-        var directImports is public := [ ]
+        var imports is public := list.empty
+        var directImports is public := list.empty
 
         method end -> Position {
             line (util.lines.size) column (util.lines.last.size)

@@ -713,7 +713,7 @@ def aGraceLangTest = object {
             def l = [1, 2, 3, 4]
             out(l)
             l.do { each -> out(each) }
-            assert (str) shouldBe "⟨1, 2, 3, 4⟩\n1\n2\n3\n4\n"
+            assert (str) shouldBe "[1, 2, 3, 4]\n1\n2\n3\n4\n"
         }
 
     }

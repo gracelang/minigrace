@@ -382,9 +382,9 @@ trait enumerable⟦T⟧ {
         list.withAll(self).sort
     }
     method asString {
-        var s := "⟨"
+        var s := "["
         do { each -> s := s ++ each.asString } separatedBy { s := s ++ ", " }
-        s ++ "⟩"
+        s ++ "]"
     }
 }   // end of trait enumerable
 
@@ -440,37 +440,39 @@ method max(a,b) is confidential {       // copied from standard prelude
     if (a > b) then { a } else { b }
 }
 
-def emptySequence is confidential = object {
-    use indexable
-    method size { 0 }
-    method sizeIfUnknown(action) { 0 }
-    method isEmpty { true }
-    method at(n) { BoundsError.raise "index {n} of empty sequence" }
-    method keys { self }
-    method values { self }
-    method keysAndValuesDo(block2) { done }
-    method reversed { self }
-    method ++ (other: Collection) { sequence.withAll(other) }
-    method asString { "⟨⟩" }
-    method contains(element) { false }
-    method do(block1) { done }
-    method ==(other) {
-        match (other)
-          case {
-            o: Collection -> o.isEmpty
-        } else {
-            false
+once method emptySequence⟦T⟧ is confidential {
+    object {
+        use indexable
+        method size { 0 }
+        method sizeIfUnknown(action) { 0 }
+        method isEmpty { true }
+        method at(n) { BoundsError.raise "index {n} of empty sequence" }
+        method keys { self }
+        method values { self }
+        method keysAndValuesDo(block2) { done }
+        method reversed { self }
+        method ++ (other: Collection) { sequence.withAll(other) }
+        method asString { "[]" }
+        method contains(element) { false }
+        method do(block1) { done }
+        method ==(other) {
+            match (other)
+              case {
+                o: Collection -> o.isEmpty
+            } else {
+                false
+            }
         }
+        method hash { [].hash }
+        method ≠ (other) { (self == other).not }
+        class iterator {
+            method asString { "emptySequenceIterator" }
+            method hasNext { false }
+            method next { IteratorExhausted.raise "on empty sequence" }
+        }
+        method sorted { self }
+        method sortedBy(sortBlock:Function2){ self }
     }
-    method hash { [].hash }
-    method ≠ (other) { (self == other).not }
-    class iterator {
-        method asString { "emptySequenceIterator" }
-        method hasNext { false }
-        method next { IteratorExhausted.raise "on empty sequence" }
-    }
-    method sorted { self }
-    method sortedBy(sortBlock:Function2){ self }
 }
 
 class sequence⟦T⟧ {
@@ -570,12 +572,12 @@ class sequence⟦T⟧ {
                 sequence.withAll(lazyConcatenation(self, other))
             }
             method asString {
-                var s := "⟨"
+                var s := "["
                 for (0..(size-1)) do {i->
                     s := s ++ inner.at(i).asString
                     if (i < (size-1)) then { s := s ++ ", " }
                 }
-                s ++ "⟩"
+                s ++ "]"
             }
             method contains(element) {
                 do { each -> if (each == element) then { return true } }
@@ -849,7 +851,7 @@ class list⟦T⟧ {
                 l.addAll(o)
             }
             method asString {
-                var s := "["
+                var s := "list ["
                 for (0..(size-1)) do {i->
                     s := s ++ inner.at(i).asString
                     if (i < (size-1)) then { s := s ++ ", " }
@@ -1132,10 +1134,10 @@ class set⟦T⟧ {
         }
 
         method asString {
-            var s := "set\{"
+            var s := "set ["
             do {each -> s := s ++ each.asString }
                 separatedBy { s := s ++ ", " }
-            s ++ "\}"
+            s ++ "]"
         }
         method asDebugString {
             var s := "set\{"
@@ -1502,9 +1504,9 @@ class dictionary⟦K,T⟧ {
             return t
         }
         method asString {
-            // do()separatedBy won't work, because it iterates over values,
+            // do(_)separatedBy(_) won't work; it iterates over values,
             // and we need an iterator over bindings.
-            var s := "dict⟬"
+            var s := "dictionary ["
             var firstElement := true
             for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
@@ -1517,7 +1519,7 @@ class dictionary⟦K,T⟧ {
                     s := s ++ "{a.key}::{a.value}"
                 }
             }
-            s ++ "⟭"
+            s ++ "]"
         }
         method asDebugString {
             var s := "dict⟬"

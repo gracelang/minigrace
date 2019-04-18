@@ -159,16 +159,11 @@ method uidWithPrefix(str) {
 /////////////////////////////////////////////////////////////
 
 method compilearray(o) {
-    def myc = auto_count
-    auto_count := auto_count + 1
-    var r
+    def reg = uidWithPrefix "array"
     var vals := []
-    for (o.value) do {a ->
-        r := compilenode(a)
-        vals.push(r)
-    }
-    out "var array{myc} = new {bracketConstructor}({vals});"
-    o.register := "array" ++ myc
+    for (o.value) do { a -> vals.push(compilenode(a)) }
+    out "var {reg} = new {bracketConstructor}({literalList(vals)});"
+    o.register := reg
 }
 method compilemember(o) {
     // member nodes are just method requests without arguments.
@@ -457,7 +452,7 @@ method compileblock(o) {
         }
     }
     if (paramsAreTyped) then {
-        out "{blockId}.paramTypes = {paramTypes};"
+        out "{blockId}.paramTypes = {literalList(paramTypes)};"
     }
 
     out "{blockId}.guard = {compileGuard(o, paramList)};"
@@ -716,17 +711,26 @@ method compileMethodBodyWithoutLast(methNode) {
     }
 }
 
-method stringList(l) {
-    // answers the contents of the collection l quoted and between brackets.
+method stringList(strs) {
+    // answers the contents of the collection strs of strings quoted
+    // and between brackets.
     var res := "["
-    l.do { nm ->  res := res ++ "\"" ++ nm.quoted ++ "\""}
+    strs.do { s ->  res := res ++ "\"" ++ s.quoted ++ "\""}
+        separatedBy { res := res ++ ", " }
+    res ++ "]"
+}
+
+method literalList(lits) {
+    // answers the contents of the collection lits between brackets.
+    var res := "["
+    lits.do { n ->  res := res ++ n.asString }
         separatedBy { res := res ++ ", " }
     res ++ "]"
 }
 
 method compileMetadata(o, funcName, name) {
     out "{funcName}.methodName = \"{name}\";"
-    out "{funcName}.paramCounts = {o.parameterCounts};"
+    out "{funcName}.paramCounts = {literalList(o.parameterCounts)};"
     out "{funcName}.paramNames = {stringList(o.parameterNames)};"
     if (o.hasTypeParams) then {
         out "{funcName}.typeParamNames = {stringList(o.typeParameterNames)};"
@@ -1613,8 +1617,13 @@ method outputModuleDefinition(moduleObject) {
 }
 
 method outputModuleMetadata(moduleObject) {
-    def importList = list.withAll(moduleObject.directImports.
-                        map{ each -> "\"{each}\"" }).sort
+    var importList := "["
+    moduleObject.directImports.sorted.do { each ->
+        importList := importList ++ each.asDebugString
+    } separatedBy {
+        importList := importList ++ ", "
+    }
+    importList := importList ++ "]"
     out "{formatModname(modname)}.imports = {importList};"
     out "{formatModname(modname)}.definitionModule = \"{basename(modname).quoted}\";"
     out "{formatModname(modname)}.definitionLine = 1;"

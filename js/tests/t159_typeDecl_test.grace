@@ -10,7 +10,7 @@ type ABC = A & B & C
 type ABC' = A | B | C
 
 method showType(T) {
-    print "{T} has methods {list.withAll(T.methodNames).sort}"
+    print "{T} has methods {(T.methodNames >> list).sort >> sequence}"
 }
 
 showType(A)
