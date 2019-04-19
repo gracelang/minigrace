@@ -1005,11 +1005,13 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitMethod (o) up (anc) {
             def surroundingScope = anc.parent.scope
             if (surroundingScope.isObjectScope.not) then {
-                // This check needs to be here so long as the parser accepts
-                // class declarations as statments, rather than as method
-                // declarations.  Why does it do so?  Because of the old
-                // "dotted" class syntax, wherein a class decl was actually a def.
-                errormessages.syntaxError("class declarations are permitted only" ++
+                // The parser accepts method declarations as statments, and thus
+                // class and trait declarations as statements too.
+                // Here we check that they are inside an object.
+                // This produces better diagnostics than rejecting them in
+                // the parser, as well as simplifying the parser.
+
+                errormessages.syntaxError("{o.description} declarations are permitted only" ++
                     " inside an object") atRange(o.range)
             }
             def ident = o.asIdentifier

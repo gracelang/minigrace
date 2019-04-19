@@ -21,7 +21,7 @@
               3:3-6 signaturepart: name
 
 
-  6:1-12:1 method
+  6:1-12:1 class
     Name: 6:7-25 identifierBinding‹person(2)›
     Signature:
       Part: person
@@ -29,7 +29,7 @@
           6:14-18 identifierBinding‹name'›
           6:21-24 identifierBinding‹age'›
     Body:
-      6:1-12:1 object (class)
+      6:1-12:1 object (in class)
         Name: person(_,_)
         7:3-28 defdec
           7:7-10 identifierBinding‹name›

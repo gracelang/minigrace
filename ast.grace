@@ -1007,6 +1007,7 @@ def methodNode is public = object {
 
         inherit baseNode
         def kind is public = "method"
+        var description is public := kind   // changed to "class" or "trait" by parser
         var signature is public := signature'
         var hasBody is public := true
         var body is public := body'
@@ -1019,7 +1020,8 @@ def methodNode is public = object {
         var annotations is public := [ ]
         var isFresh is public := false      // a method is 'fresh' if it answers a new object
         var isOnceMethod is public := false
-        var usesClassSyntax is public := false
+        method usesClassSyntax { "class" == description }
+        method usesTraitSyntax { "trait" == description }
         var cachedIdentifier := uninitialized
         var isBindingOccurrence is readable := true
             // the only exceptions are the oldMethodName in an alias clause,
@@ -1130,14 +1132,8 @@ def methodNode is public = object {
         method isMethod { true }
         method isExecutable { false }
         method isLegalInTrait { true }
-        method isClass { isFresh || usesClassSyntax }
-        method isTrait {
-            if (isFresh) then {
-                body.last.isTrait
-            } else {
-                false
-            }
-        }
+        method isClass { usesClassSyntax || isFresh }
+        method isTrait { usesTraitSyntax || (isFresh && { body.last.isTrait } ) }
         method needsArgChecks {
             signature.do { part ->
                 part.params.do { p ->
@@ -1253,7 +1249,7 @@ def methodNode is public = object {
         method toGrace(depth : Number) -> String {
             def spc = "    " * depth
             var s := if (isOnceMethod) then { "once "} else { "" }
-            s := s ++ "method "
+            s := s ++ description ++ " "
             for (self.signature) do { part -> s := s ++ part.toGrace(depth) }
             if (false != self.dtype) then {
                 s := s ++ " -> {self.dtype.toGrace(0)}"
@@ -1282,6 +1278,7 @@ def methodNode is public = object {
         method postCopy(other) {
             isFresh := other.isFresh
             isOnceMethod := other.isOnceMethod
+            description := other.description
             hasBody := other.hasBody
             selfclosure := other.selfclosure
             if (other.isAppliedOccurrence) then {
@@ -1596,9 +1593,9 @@ def objectNode is public = object {
         }
         method description -> String {
             if (isTrait) then {
-                "{kind} (trait)"
+                "{kind} (is trait)"
             } elseif { inClass } then {
-                "{kind} (class)"
+                "{kind} (in class)"
             } else {
                 kind
             }
