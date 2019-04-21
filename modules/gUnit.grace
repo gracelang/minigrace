@@ -132,7 +132,8 @@ class assertion {
             countOneAssertion
         } else {
             def m = methodsIn(Desired) missingFrom (value)
-            failBecause "{value.asDebugString} does not have {Desired}; it's missing methods {m}."
+            def s = if (m.contains " ") then { "s" } else { "" }
+            failBecause "{value.asDebugString} does not have {Desired}; it's missing method{s} {m}."
         }
     }
     method assertType(T:Type) describes (value) {
