@@ -68,7 +68,7 @@ include Makefile.mgDependencies
 
 $(ALL_LIBRARY_MODULES:%.grace=j2/%.js): j2/%.js: modules/%.grace $(J1-MINIGRACE) genjs.grace
 	@if ( ! cmp --quiet j2/dom.js js/dom.js ) ; then echo "j2/dom.js and js/dom.js are different !" ; fi
-	GRACE_MODULE_PATH=modules:. j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
+	GRACE_MODULE_PATH=modules:j1:. j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
 	@if ( ! cmp --quiet j2/dom.js js/dom.js ) ; then echo "j2/dom.js and js/dom.js are different after compiling $<!" ; cp js/dom.js j2/dom.js ; fi
 
 $(ALL_LIBRARY_MODULES:%.grace=j1/%.js): j1/%.js: modules/%.grace
@@ -313,7 +313,7 @@ $(MGSOURCEFILES:%.grace=j1/%.js): j1/%.js: %.grace $(JS-KG)/minigrace-js
 	GRACE_MODULE_PATH=j1 $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
 
 $(MGSOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace $(J1-MINIGRACE)
-	GRACE_MODULE_PATH=modules j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
+	GRACE_MODULE_PATH=modules:j1 j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
 
 minigrace: $(J2-MINIGRACE)
 
