@@ -1580,13 +1580,11 @@ PrimitiveGraceList.prototype = {
     classUid: "extendedLineup-intrinsic"
 };
 
-function Lineup(jsList) {
+function GraceSequence(jsList) {
     this._value = jsList;
 }
 
-var GraceSequence = Lineup;             // an alias
-
-Lineup.prototype = {
+GraceSequence.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
         "myIdentityHash":   object_identityHash,
@@ -1603,7 +1601,7 @@ Lineup.prototype = {
             return new GraceNum(this._value.length);
         },
         "reversed": function sequence_reversed (argcv) {
-            return new Lineup(this._value.slice().reverse());
+            return new GraceSequence(this._value.slice().reverse());
         },
         "at(1)": prim_list_index,
         "first": function sequence_first(argcv) {
@@ -1730,6 +1728,7 @@ Lineup.prototype = {
             }
             return new GraceNum(result);
         },
+        "::(1)": object_colonColon,
         "iterator": function(argcv) {
             return new GraceListIterator(this._value);
         },
@@ -1790,7 +1789,7 @@ Lineup.prototype = {
             while (Grace_isTrue(callmethod(otherIter, "hasNext", [0]))) {
                 l.push(callmethod(otherIter, "next", [0]));
             }
-            return new Lineup(l);
+            return new GraceSequence(l);
         },
         ">>(1)": function(argcv, target) {
             return callmethod(target, "<<(1)", [1], this);
@@ -1826,7 +1825,7 @@ Lineup.prototype = {
             return result;
         }
     },
-    className: "lineup",
+    className: "sequence",
     definitionModule: "basic library",
     definitionLine: 0,
     classUid: "lineup-intrinsic"
@@ -3136,7 +3135,7 @@ function GraceUnicodePattern(pos, neg) {
     // this.pos and this.neg are Iterables of positive and negative items
     this.pos = pos._value;
         // APB: 2016 06 11     This is a horrible hack.
-        // pos._value          => pos is a PrimitiveGraceList or Lineup
+        // pos._value          => pos is a PrimitiveGraceList or GraceSequence
     if (! this.pos) {
         this.pos = [];
         var iter = callmethod(pos, "iterator", [0]);
@@ -4710,7 +4709,7 @@ if (typeof global !== "undefined") {
     global.GraceNum = GraceNum;
     global.GraceObject = GraceObject;
     global.GracePrimitiveArray = GracePrimitiveArray;
-    global.GraceSequence = Lineup;
+    global.GraceSequence = GraceSequence;
     global.GraceString = GraceString;
     global.GraceStringIterator = GraceStringIterator;
     global.GraceTrait = GraceTrait;
@@ -4720,7 +4719,7 @@ if (typeof global !== "undefined") {
     global.importedModules = importedModules;
     global.ImportErrorObject = ImportErrorObject;
     global.jsTrue = jsTrue;
-    global.Lineup = Lineup;
+    global.Lineup = GraceSequence;
     global.loadDate = loadDate;
     global.matchCase = matchCase;
     global.MatchErrorObject = MatchErrorObject;
