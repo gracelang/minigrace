@@ -172,7 +172,7 @@ method file(name) onPath(pathString) otherwise(action) {
         if (candidate.exists) then {
             return candidate
         } else {
-            return action.apply ""
+            return action.apply [originalDir]
         }
     }
     locations.do { each ->
