@@ -102,15 +102,21 @@ def typeTest = object {
             assert (typeIdentity⟦X⟧.asString) shouldBe "type X"
             assert (typeIdentity⟦Y⟧.asString) shouldBe "type Y"
         }
-        method testTypeComparisons {
+        method testTypeComparisonFirstConformsToSecond {
             assert (typeComparison⟦List,Collection⟧)
                 shouldBe "type List conforms to type Collection"
+        }
+        method testTypeComparisonEqual {
             assert (typeComparison⟦List,List⟧)
                 shouldBe "type List and type List are equal"
+        }
+        method testTypeComparisonIncomparable {
             assert (typeComparison⟦List,Boolean⟧)
                 shouldBe "type List and type Boolean are incomparable"
-            assert (typeComparison⟦Sequence,List⟧)
-                shouldBe "type List conforms to type Sequence"
+        }
+        method testTypeComparisonSecondConformsToFirst {
+            assert (typeComparison⟦Sequence,Collection⟧)
+                shouldBe "type Sequence conforms to type Collection"
         }
     }
 }

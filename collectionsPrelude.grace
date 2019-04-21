@@ -53,9 +53,13 @@ type CollectionFactory⟦T⟧ = interface {
         // a collection containing a single element
     withAll(elements:Collection⟦T⟧) -> Collection⟦T⟧
         // a collection containing elements
+    << (source:Collection⟦T⟧) -> Collection⟦T⟧
 }
 
 type Collection⟦T⟧ = Object & interface {
+    // Note that Collection does not include :: or hash, so collections
+    // cannot be used as keys in dictionaries (although Sequences can)
+
     iterator -> Iterator⟦T⟧
         // the iterator on which I am based
     isEmpty -> Boolean
@@ -67,6 +71,8 @@ type Collection⟦T⟧ = Object & interface {
         // my size; if not known, then the result of applying action
     == (other) -> Boolean
         // other and self have the same size, and contain the same elements.
+    ≠ (other) -> Boolean
+        // other and self do not contain the same elements.
     first -> T
         // my first element; raises BoundsError if I have none.
     do (body: Procedure1⟦T⟧) -> Done
@@ -101,7 +107,7 @@ type Enumerable⟦T⟧ = Collection⟦T⟧ & interface {
     sorted -> SelfType
 }
 
-type Sequence⟦T⟧ = Enumerable⟦T⟧ & interface {
+type Sequenceable⟦T⟧ = Enumerable⟦T⟧ & interface {
     size -> Number
     at(n:Number) -> T
     indices -> Sequence⟦Number⟧
@@ -117,7 +123,9 @@ type Sequence⟦T⟧ = Enumerable⟦T⟧ & interface {
     reversed -> Sequence⟦T⟧
 }
 
-type List⟦T⟧ = Sequence⟦T⟧ & interface {
+type Sequence⟦T⟧ = EqualityObject & Sequenceable⟦T⟧
+
+type List⟦T⟧ = Sequenceable⟦T⟧ & interface {
     add(x: T) -> List⟦T⟧
     addAll(xs: Collection⟦T⟧) -> List⟦T⟧
     addFirst(x: T) -> List⟦T⟧
@@ -279,10 +287,13 @@ trait collection⟦T⟧ {
 
     method asString { "a collection trait" }
     method sizeIfUnknown(action) {
+        // override if size is known
         action.apply
     }
     method size {
-        SizeUnknown.raise "collection {asDebugString} does not know its size"
+        sizeIfUnknown {
+            SizeUnknown.raise "collection {asDebugString} does not know its size"
+        }
     }
     method do(action) is required
     method iterator is required
@@ -336,13 +347,6 @@ trait collection⟦T⟧ {
 trait enumerable⟦T⟧ {
     use collection⟦T⟧
     method iterator is required
-    method asDictionary {
-        def result = dictionary.empty
-        keysAndValuesDo { k, v ->
-            result.at(k) put(v)
-        }
-        return result
-    }
     method ==(other) {
         isEqual (self) toCollection (other)
     }
@@ -418,13 +422,6 @@ trait indexable⟦T⟧ {
         }
         action.apply
     }
-    method asDictionary {
-        def result = dictionary.empty
-        keysAndValuesDo { k, v ->
-            result.at(k) put(v)
-        }
-        return result
-    }
     method ==(other) {
         isEqual (self) toCollection (other)
     }
@@ -464,6 +461,7 @@ once method emptySequence⟦T⟧ is confidential {
             }
         }
         method hash { [].hash }
+        method :: (obj) { binding.key (self) value (obj) }
         method ≠ (other) { (self == other).not }
         class iterator {
             method asString { "emptySequenceIterator" }
@@ -477,149 +475,19 @@ once method emptySequence⟦T⟧ is confidential {
 
 class sequence⟦T⟧ {
 
-    method asString { "a sequence factory" }
+    method asString { "the sequence factory" }
 
     method empty {
-        // this is an optimization: there need be just one empty sequence
-        emptySequence
+        // this is an optimization: there need be just one empty sequence of each type
+        emptySequence⟦T⟧
     }
 
-    method with(x:T) {
-        def inner = prelude.primitiveArray.new(8)
-        inner.at 0 put(x)
-        self.fromprimitiveArray(inner, 1)
-    }
+    method with(x:T) { [] ++ [x] }
 
-    method withAll(arg: Collection⟦T⟧) {
-        var sizeCertain := true
-        // size might be uncertain if arg is a lazy collection.
-        def forecastSize = arg.sizeIfUnknown {
-            sizeCertain := false
-            8
-        }
-        var inner := prelude.primitiveArray.new(forecastSize)
-        var innerSize := inner.size
-        var ix := 0
-        if (sizeCertain) then {
-            // common, fast path
-            for (arg) do { elt ->
-                inner.at(ix)put(elt)
-                ix := ix + 1
-            }
-        } else {
-            // less-than-optimal path
-            for (arg) do { elt ->
-                if (innerSize <= ix) then {
-                    def newInner = prelude.primitiveArray.new(innerSize * 2)
-                    for (0..(innerSize-1)) do { i ->
-                        newInner.at(i)put(inner.at(i))
-                    }
-                    inner := newInner
-                    innerSize := inner.size
-                }
-                inner.at(ix)put(elt)
-                ix := ix + 1
-            }
-        }
-        if (ix == 0) then { return emptySequence }
-        self.fromprimitiveArray(inner, ix)
-    }
+    method withAll(arg: Collection⟦T⟧) { [] ++ arg }
 
-    method << (source) { self.withAll(source) }
+    method << (source) { [] ++ source }
 
-    method fromprimitiveArray(pArray, sz) is confidential {
-        // constructs a sequence from the first sz elements of pArray
-
-        object {
-            use indexable
-            def size is public = sz
-            def inner = pArray
-
-            method boundsCheck(n) is confidential {
-                if (!(n >= 1) || !(n <= size)) then {
-                    // the condition is written this way because NaN always
-                    // compares false
-                    BoundsError.raise "index {n} out of bounds 1..{size}"
-                }
-            }
-            method at(n) {
-                boundsCheck(n)
-                inner.at(n-1)
-            }
-            method keys {
-                range.from(1)to(size)
-            }
-            method values {
-                self
-            }
-            method keysAndValuesDo(block2) {
-                var i := 0
-                while {i < size} do {
-                    block2.apply(i+1, inner.at(i))
-                    i := i + 1
-                }
-            }
-            method reversed {
-                def freshArray = prelude.primitiveArray.new(size)
-                var ix := size - 1
-                do { each ->
-                    freshArray.at (ix) put(each)
-                    ix := ix - 1
-                }
-                outer.fromprimitiveArray(freshArray, size)
-            }
-            method ++ (other:Collection⟦T⟧) {
-                sequence.withAll(lazyConcatenation(self, other))
-            }
-            method asString {
-                var s := "["
-                for (0..(size-1)) do {i->
-                    s := s ++ inner.at(i).asString
-                    if (i < (size-1)) then { s := s ++ ", " }
-                }
-                s ++ "]"
-            }
-            method contains(element) {
-                do { each -> if (each == element) then { return true } }
-                return false
-            }
-            method do(block1) {
-                var i := 0
-                while {i < size} do {
-                    block1.apply(inner.at(i))
-                    i := i + 1
-                }
-            }
-            method ==(other) {
-                isEqual (self) toCollection (other)
-            }
-            method ≠ (other) { (self == other).not }
-            method iterator {
-                object {
-                    var idx := 1
-                    method asDebugString { "{asString}⟪{idx}⟫" }
-                    method asString { "aSequenceIterator" }
-                    method hasNext { idx <= sz }
-                    method next {
-                        if (idx > sz) then { IteratorExhausted.raise "on sequence {outer}⟪{idx}⟫" }
-                        def ret = at(idx)
-                        idx := idx + 1
-                        ret
-                    }
-                }
-            }
-            method sorted {
-                sequence.withAll(list.withAll(self).sortBy { l, r ->
-                    if (l == r) then {0}
-                        elseif {l < r} then {-1}
-                        else {1}
-                })
-            }
-            method sortedBy(sortBlock:Function2){
-                sequence.withAll(list.withAll(self).sortBy(sortBlock))
-            }
-        }
-    }   // end of sequence.fromPrimitiveAArray
 }
 
 type MinimalyIterable = interface {
@@ -942,7 +810,6 @@ class list⟦T⟧ {
     method << (source) { self.withAll(source) }
 
 }   // end of list class
-
 
 def unused = object {
     var unused := true
@@ -1274,7 +1141,7 @@ type Binding⟦K,T⟧ = {
     ==(other) -> Boolean
 }
 
-def binding is public = object {
+class binding⟦K, T⟧ {
     method asString { "the binding factory" }
 
     class key(k)value(v) {
@@ -1681,10 +1548,6 @@ class dictionary⟦K,T⟧ {
             newCopy
         }
 
-        method asDictionary {
-            self
-        }
-
         method ++ (other:Collection⟦T⟧) {
             // answers a new dictionary containing all my keys and the keys of other;
             // if other contains one of my keys, other's value overrides mine
@@ -1716,7 +1579,7 @@ class dictionary⟦K,T⟧ {
     }
 }
 
-class range {
+def range is public = object {
     method asString { "the range factory" }
     method from(lower)to(upper) {
         //  returns Sequence⟦Number⟧
@@ -1812,6 +1675,15 @@ class range {
             method ==(other) {
                 isEqual (self) toCollection (other)
             }
+            method hash {
+                // must be compatable with hash on sequences
+                var result := 0x5E0EACE;     // sort of like SEQENCE
+                do { each ->
+                    result := hashAndCombine(result, each)
+                }
+                result
+            }
+            method :: (obj) { binding.key (self) value (obj) }
             method ≠ (other) { (self == other).not }
             method sorted { self }
 
@@ -1907,6 +1779,15 @@ class range {
             method ==(other) {
                 isEqual (self) toCollection (other)
             }
+            method hash {
+                // must be compatable with hash on sequences
+                var result := 0x5E0EACE;     // sort of like SEQENCE
+                do { each ->
+                    result := hashAndCombine(result, each)
+                }
+                result
+            }
+            method :: (obj) { binding.key (self) value (obj) }
             method ≠ (other) { (self == other).not }
             method sorted { self.reversed }
 

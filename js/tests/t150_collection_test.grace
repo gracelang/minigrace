@@ -250,13 +250,14 @@ def rangeTest = object {
             assert{rangeUp.at(0)} shouldRaise (BoundsError)
             assert{rangeUp.at(naN)} shouldRaise (BoundsError)
         }
-        method testRangeUpAsDictionary {
-            assert(rangeUp.asDictionary) shouldBe
-                (dictionary [1::3, 2::4, 3::5, 4::6])
+        method testHashRangeUp {
+            assert (rangeUp.hash) shouldBe (sequence(rangeUp).hash)
         }
-        method testRangeDownAsDictionary {
-            assert(rangeDown.asDictionary) shouldBe
-                (dictionary [1::10, 2::9, 3::8, 4::7])
+        method testHashRangeDown {
+            assert (rangeDown.hash) shouldBe (sequence(rangeDown).hash)
+        }
+        method testHashesDiffer {
+            assert (rangeDown.hash) shouldntBe (rangeUp.hash)
         }
     }
 }
@@ -547,10 +548,6 @@ def sequenceTest = object {
                 "sorted does not look like a sequence"
             assert (output) hasType (Sequence)
         }
-        method testSequenceAsDictionary {
-            assert(evens.asDictionary) shouldBe
-                (dictionary [1::2, 2::4, 3::6, 4::8])
-        }
         method testSequenceLazyConcat {
             def s1 = oneToFive.filter{x -> (x % 2) == 1}
             def s2 = evens.filter{x -> true}
@@ -587,10 +584,6 @@ def listTest = object {
         method testListTypeList {
             def witness = list⟦Number⟧ [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (List⟦Number⟧)
-        }
-        method testListTypeSequence {
-            def witness = list⟦Number⟧ [1, 2, 3, 4, 5, 6]
-            assert (witness) hasType (Sequence⟦Number⟧)
         }
         method testSingletonListTypeList {
             def witness = list.with "a word"
@@ -1013,10 +1006,6 @@ def listTest = object {
             def output = list [7, 6, 4, 1]
             assert (input.sortedBy{a, b -> b-a}) shouldBe (output)
             assert (input) shouldBe (list [6, 7, 4, 1])
-        }
-        method testListAsDictionary {
-            assert(evens.asDictionary) shouldBe
-                (dictionary [1::2, 2::4, 3::6, 4::8])
         }
         method testListFailFastDoRemove {
           assert {
@@ -1608,10 +1597,6 @@ def dictionaryTest = object {
             assert (evens.size) shouldBe 2
             assert (evensCopy) shouldBe
                 (dictionary ["two"::2, "four"::4, "six"::6, "eight"::8])
-        }
-
-        method testDictionaryAsDictionary {
-            assert(evens.asDictionary) shouldBe (evens)
         }
         method dict(a)equals(b) {
             // a helper method that shows where two dictionaries differ
