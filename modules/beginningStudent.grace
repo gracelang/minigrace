@@ -14,6 +14,12 @@ inherit minispec.methods
     exclude set(_)
 
 def DialectError = prelude.Exception.refine "DialectError"
+def BoundsError = prelude.BoundsError
+def IteratorExhausted = prelude.IteratorExhausted
+def binding = prelude.binding
+def Function2 = prelude.Function2
+
+type Collection = prelude.Collection
 
 method list⟦T⟧ {
     prelude.collections.list⟦T⟧.empty
@@ -32,7 +38,41 @@ method list⟦T⟧(a, b, c, d) {
 }
 
 class sequence⟦T⟧ {
-    inherit prelude.clone(prelude.emptySequence)
+    // returns an object that acts _both_ as an empty sequence, and as a collection
+    // factory.  Not sure why this is a good idea ...
+    use prelude.collections.indexable
+    method size { 0 }
+    method sizeIfUnknown(action) { 0 }
+    method isEmpty { true }
+    method at(n) { BoundsError.raise "index {n} of empty sequence" }
+    method keys { self }
+    method values { self }
+    method keysAndValuesDo(block2) { done }
+    method reversed { self }
+    method ++ (other: Collection) { sequence.withAll(other) }
+    method asString { "[]" }
+    method contains(element) { false }
+    method do(block1) { done }
+    method ==(other) {
+        match (other)
+          case {
+            o: Collection -> o.isEmpty
+        } else {
+            false
+        }
+    }
+    method hash { [].hash }
+    method :: (obj) { binding.key (self) value (obj) }
+    method ≠ (other) { (self == other).not }
+    class iterator {
+        method asString { "emptySequenceIterator" }
+        method hasNext { false }
+        method next { IteratorExhausted.raise "on empty sequence" }
+    }
+    method sorted { self }
+    method sortedBy(sortBlock:Function2){ self }
+
+    // finally the factory method
     method withAll(elements) {
         prelude.collections.sequence⟦T⟧.withAll(elements)
     }

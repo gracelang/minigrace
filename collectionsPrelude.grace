@@ -428,7 +428,7 @@ trait indexable⟦T⟧ {
     method hash {
         self.fold { acc, each ->
             hashAndCombine(acc, each)
-        } startingWith (emptySequence.hash)
+        } startingWith ([].hash)
     }
     method ≠ (other) { (self == other).not }
 }   // end of trait indexable
@@ -437,50 +437,16 @@ method max(a,b) is confidential {       // copied from standard prelude
     if (a > b) then { a } else { b }
 }
 
-once method emptySequence⟦T⟧ is confidential {
-    object {
-        use indexable
-        method size { 0 }
-        method sizeIfUnknown(action) { 0 }
-        method isEmpty { true }
-        method at(n) { BoundsError.raise "index {n} of empty sequence" }
-        method keys { self }
-        method values { self }
-        method keysAndValuesDo(block2) { done }
-        method reversed { self }
-        method ++ (other: Collection) { sequence.withAll(other) }
-        method asString { "[]" }
-        method contains(element) { false }
-        method do(block1) { done }
-        method ==(other) {
-            match (other)
-              case {
-                o: Collection -> o.isEmpty
-            } else {
-                false
-            }
-        }
-        method hash { [].hash }
-        method :: (obj) { binding.key (self) value (obj) }
-        method ≠ (other) { (self == other).not }
-        class iterator {
-            method asString { "emptySequenceIterator" }
-            method hasNext { false }
-            method next { IteratorExhausted.raise "on empty sequence" }
-        }
-        method sorted { self }
-        method sortedBy(sortBlock:Function2){ self }
-    }
-}
+// we used to define
+// once method emptySequence⟦T⟧ is confidential { ... }
+// and use this to defin esequence.empty, but it turns out that getting the
+// correct emptySequence from the cache is slower than just creating a [ ]
 
 class sequence⟦T⟧ {
 
     method asString { "the sequence factory" }
 
-    method empty {
-        // this is an optimization: there need be just one empty sequence of each type
-        emptySequence⟦T⟧
-    }
+    method empty { [] }
 
     method with(x:T) { [] ++ [x] }
 
