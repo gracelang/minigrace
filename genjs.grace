@@ -1,4 +1,3 @@
-#pragma ExtendedLineups
 import "io" as io
 import "sys" as sys
 import "ast" as ast
@@ -16,10 +15,10 @@ var indent := ""
 var verbosity := 30
 var pad1 := 1
 var auto_count := 0
-var constants := []
-var output := []
-var usedvars := []
-var declaredvars := []
+var constants := list []
+var output := list []
+var usedvars := list []
+var declaredvars := list []
 var initializedVars := set.empty
 
 method saveInitializedVars {
@@ -55,7 +54,7 @@ var emitTypeChecks := true
 var emitUndefinedChecks := true
 var emitArgChecks := true
 var emitPositions := true
-var bracketConstructor := "Lineup"
+var bracketConstructor := "GraceSequence"
 var emod        // the name of the module being compiled, escaped
                 // so that it is a legal identifier
 var modNameAsString     // the name of the module surrounded by quotes,
@@ -160,7 +159,7 @@ method uidWithPrefix(str) {
 
 method compilearray(o) {
     def reg = uidWithPrefix "array"
-    var vals := []
+    var vals := list []
     for (o.value) do { a -> vals.push(compilenode(a)) }
     out "var {reg} = new {bracketConstructor}({literalList(vals)});"
     o.register := reg
@@ -435,7 +434,7 @@ method compileblock(o) {
     def nParams = o.params.size
     out "var {blockId} = new GraceBlock(this, {o.line}, {nParams});"
     var paramList := ""
-    var paramTypes :=  [ ]
+    var paramTypes :=  list [ ]
     var paramsAreTyped := false
     var first := true
     for (o.params) do { each ->
@@ -545,7 +544,7 @@ method compiletypeliteral(o) in (obj) {
     reg
 }
 method paramNames(o) {
-    def result = [ ]
+    def result = list [ ]
     o.signature.do { part ->
         part.params.do { param ->
             result.push(param.nameString)
@@ -554,8 +553,8 @@ method paramNames(o) {
     result
 }
 method typeParamNames(o) {
-    if (false == o.typeParams) then { return [ ] }
-    def result = [ ]
+    if (false == o.typeParams) then { return list [ ] }
+    def result = list [ ]
     o.typeParams.do { each ->
         result.push(each.nameString)
     }
@@ -781,8 +780,8 @@ method compileNormalMethod(o, selfobj) {
     def canonicalMethName = o.canonicalName
     def funcName = o.register
     priorLineEmitted := 0
-    usedvars := []
-    declaredvars := []
+    usedvars := list []
+    declaredvars := list []
     def name = escapestring(o.nameString)
     compileMethodPreamble (o, funcName, canonicalMethName)
         withParams (paramlist(o) ++ typeParamlist(o))
@@ -843,7 +842,7 @@ method compileOnceWrapper(o, selfobj, name) {
         if (totalParams == 1) then {
             out "let tableKey = {paramNames};"
         } else {
-            out "let tableKey = new Lineup([{paramNames}]);"
+            out "let tableKey = new GraceSequence([{paramNames}]);"
         }
         out "let absentBlock = new GraceBlock(this, {o.line}, 0);"
         out "absentBlock.guard = jsTrue;"
@@ -927,7 +926,7 @@ method compileBuildMethodFor(methNode) withFreshCall (callExpr) inside (outerRef
     // normal calls.
     def calltemp = uidWithPrefix "call"
     callExpr.register := calltemp
-    var args := []
+    var args := list []
     compileNormalArguments(callExpr, args)
     args.addAll ["ouc", "aliases", "exclusions"]
     compileTypeArguments(callExpr, args)
@@ -981,7 +980,7 @@ method typeParamlist(o) {
     result
 }
 method compilemethodtypes(func, o) {
-    out("{func}.paramTypes = [];")
+    out "{func}.paramTypes = [];"
     for (o.signature) do { part ->
         for (part.params) do {p->
             // We store information for static top-level types only:
@@ -1134,7 +1133,7 @@ method compiletrycatch(o) {
     auto_count := auto_count + 1
     def cases = o.cases
     def mainblock = compilenode(o.value)
-    out("var cases{myc} = [];")
+    out "var cases{myc} = [];"
     for (cases) do {c->
         def e = compilenode(c)
         out("cases{myc}.push({e});")
@@ -1152,7 +1151,7 @@ method compilematchcase(o) {
     auto_count := auto_count + 1
     def cases = o.cases
     def matchee = compilenode(o.value)
-    out("var cases{myc} = [];")
+    out "var cases{myc} = [];"
     for (cases) do {c->
         def e = compilenode(c)
         out("cases{myc}.push({e});")
@@ -1268,7 +1267,7 @@ method compileOtherRequest(o, args) {
 method compilecall(o) {
     def calltemp = uidWithPrefix "call"
     o.register := calltemp
-    var args := []
+    var args := list []
     compileArguments(o, args)
     def receiver = o.receiver
     if ( receiver.isOuter ) then {
@@ -1342,7 +1341,7 @@ method compilereturn(o) {
 method compilePrint(o) {
     // TODO: simplify; we know that there is one argument
     // Why is this a special case ansyway?
-    var args := []
+    var args := list []
     for (o.parts) do { part ->
         for (part.args) do { prm ->
             var r := compilenode(prm)
