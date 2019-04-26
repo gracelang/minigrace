@@ -1,4 +1,3 @@
-#pragma ExtendedLineups
 dialect "none"
 import "standardGrace" as sg
 import "errormessages" as errormessages
@@ -26,7 +25,7 @@ class entryFrom(key') to(value') is confidential {
 
 class aMutableMap {
 
-    def entries = []
+    def entries = list []
 
     method isEmpty -> Boolean { size == 0 }
 
@@ -53,7 +52,7 @@ class aMutableMap {
     }
 
     method keys -> List {
-        def keys' = []
+        def keys' = list []
 
         for(entries) do { entry ->
             keys'.push(entry.key)
@@ -63,7 +62,7 @@ class aMutableMap {
     }
 
     method values -> List {
-        def values' = []
+        def values' = list []
 
         for(entries) do { entry ->
             values'.push(entry.value)
@@ -110,7 +109,7 @@ class aMutableMap {
 // Rules
 
 // The defined type rules.
-def rules = []
+def rules = list []
 
 // The cached type assignments.
 def cache = aMutableMap
@@ -179,7 +178,7 @@ method when(pat)error(msg) {
 // Scope
 
 class stackOfKind(kind : String) is confidential {
-    def stack is public = [aMutableMap]
+    def stack is public = list [aMutableMap]
 
     method at(name : String) put(value) -> Done {
         stack.last.at(name) put(value)

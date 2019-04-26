@@ -1,4 +1,3 @@
-#pragma ExtendedLineups
 import "dom" as dom
 import "sys" as sys
 
@@ -39,7 +38,7 @@ method turtlePosition {
 }
 
 // Each frame of the image is a step
-def steps = []
+def steps = list []
 
 method drawTurtle(angle) {
     initialise
