@@ -520,290 +520,245 @@ class list⟦T⟧ {
     
     method asString { "the list factory" }
     
-    method empty -> List⟦T⟧ {
-        withAll(emptySequence)
-    }
+    method empty -> List⟦T⟧ { withAll [] }
     
-    method with(x:T)  -> List⟦T⟧ {
-        def result = empty
-        result.add(x)
-        result
-    }
+    method with(x:T)  -> List⟦T⟧ { withAll [x] }
 
-    method withAll(a: Collection⟦T⟧) -> List⟦T⟧ {
-        object {
-            use indexable⟦T⟧
+    class withAll(a: Collection⟦T⟧) -> List⟦T⟧ {
+        use indexable⟦T⟧
 
-            var mods is readable := 0
-            var sizeCertain := true
-            // size might be uncertain if a is a lazy collection.
-            def initialSize = a.sizeIfUnknown{ sizeCertain := false ; 4 } * 2 + 1
-            var inner := prelude.primitiveArray.new(initialSize)
-            var size is readable := 0
-            if (sizeCertain) then {
-                // common, fast path
-                for (a) do { x ->
-                    inner.at(size)put(x)
-                    size := size + 1
-                }
-            } else {
-                // less-than-optimal path
-                var innerSize := initialSize
-                for (a) do { x ->
-                    if (innerSize <= size) then {
-                        def newInner = prelude.primitiveArray.new(innerSize * 2)
-                        for (0..(innerSize-1)) do { i ->
-                            newInner.at (i) put (inner.at(i) )
-                        }
-                        inner := newInner
-                        innerSize := inner.size
-                    }
-                    inner.at(size)put(x)
-                    size := size + 1
-                }
+        var mods is readable := 0
+        native "js" code ‹this._value = [];›
+        a.do { each ->
+            native "js" code ‹this._value.push(var_each);›
+        }
+        method size {
+            native "js" code ‹return new GraceNum(this._value.length);›
+        }
+        method boundsCheck(n) is confidential {
+            if ( !(n >= 1) || !(n <= size)) then {
+                BoundsError.raise "index {n} out of bounds 1..{size}"
             }
-            method boundsCheck(n) is confidential {
-                if ( !(n >= 1) || !(n <= size)) then {
-                    BoundsError.raise "index {n} out of bounds 1..{size}"
+        }
+        method at(n) {
+            native "js" code ‹var ix = var_n._value;
+                if ( !(ix >= 1) || !(ix <= this._value.length)) {
+                    var msg = "index " + ix + " out of bounds 1.." + this._value.length;
+                    var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
+                    callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
                 }
+                return this._value[ix - 1];›
+        }
+
+        method at(n)put(x) {
+            mods := mods + 1
+            native "js" code ‹var  ix = var_n._value;
+                if (!(ix >= 1) || !(ix <= this._value.length + 1)) {
+                    var msg = "index " + ix + " out of bounds 1.." + this._value.length;
+                    var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
+                    callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
+                }
+                this._value[ix-1] = var_x;
+                return this;›
+        }
+
+        method add(x:T) {
+            mods := mods + 1
+            native "js" code ‹this._value.push(var_x);
+                return this;›
+        }
+        method addAll(l) {
+            mods := mods + 1
+            l.do { each ->
+                native "js" code ‹this._value.push(var_each);›
             }
-            method at(n) {
-                boundsCheck(n)
-                inner.at(n-1)
+            self
+        }
+        method push(x) {        // backward compatibility
+            mods := mods + 1
+            native "js" code ‹this._value.push(var_x);
+                return this;›
+        }
+        method addLast(x) {
+            mods := mods + 1
+            native "js" code ‹this._value.push(var_x);
+                return this;›
+        }
+        method removeLast {
+            mods := mods + 1
+            native "js" code ‹if (this._value.length === 0) {
+                var msg = "you can't remove an element from an empty list";
+                var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
+                callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
+            } else
+                return this._value.pop();›
+        }
+        method addAllFirst(l) {
+            mods := mods + 1
+            var ix := l.size;
+            while {ix > 0} do {
+                def each = l.at(ix)
+                ix := ix - 1
+                native "js" code ‹this._value.unshift(var_each);›
             }
-            method at(n)put(x) {
-                mods := mods + 1
-                if (n == (size+1)) then {
-                    addLast(x)
+            self
+        }
+        method addFirst(elem) {
+            mods := mods + 1
+            native "js" code ‹this._value.unshift(var_elem);›
+            self
+        }
+        method clear {
+            mods := mods + 1
+            native "js" code ‹this._value = [];
+                return this;›
+        }
+
+        method removeFirst {
+            removeAt(1)
+        }
+        method removeAt(n) {
+            mods := mods + 1
+            def removed = self.at(n)    // does the bounds check
+            native "js" code ‹this._value.splice(var_n._value - 1, 1);›
+            return removed
+        }
+
+        method remove(elt:T) {
+            def ix = self.indexOf(elt) ifAbsent {
+                NoSuchObject.raise "list does not contain {elt}"
+            }
+            removeAt(ix)
+            self
+        }
+
+        method remove(elt:T) ifAbsent(action:Procedure0) {
+            def ix = self.indexOf(elt) ifAbsent {
+                action.apply
+                return self
+            }
+            removeAt(ix)
+            self
+        }
+
+        method removeAll(vs: Collection⟦T⟧) {
+            removeAll(vs) ifAbsent { NoSuchObject.raise "list does not contain object" }
+            self
+        }
+        method removeAll(vs: Collection⟦T⟧) ifAbsent(action:Procedure0)  {
+            for (vs) do { each ->
+                def ix = indexOf(each) ifAbsent { 0 }
+                if (ix ≠ 0) then {
+                    removeAt(ix)
                 } else {
-                    boundsCheck(n)
-                    inner.at(n-1)put(x)
-                }
-                self
-            }
-            method add(x) {
-                mods := mods + 1
-                if (size == inner.size) then { expandTo(inner.size * 2) }
-                inner.at(size)put(x)
-                size := size + 1
-                self
-            }
-            method addAll(l) {
-                mods := mods + 1
-                def lSize = l.sizeIfUnknown { 1 }
-                if ((size + lSize) > inner.size) then {
-                    expandTo(max(size + lSize, size * 2))
-                }
-                for (l) do {each ->
-                    inner.at(size)put(each)
-                    size := size + 1
-                }
-                self
-            }
-            method push(x) {
-                mods := mods + 1
-                if (size == inner.size) then { expandTo(inner.size * 2) }
-                inner.at(size)put(x)
-                size := size + 1
-                self
-            }
-            method addLast(x) { push(x) }    // compatibility
-            method removeLast {
-                mods := mods + 1
-                def result = inner.at(size - 1)
-                size := size - 1
-                result
-            }
-            method addAllFirst(l) {
-                mods := mods + 1
-                def increase = l.size
-                if ((size + increase) > inner.size) then {
-                    expandTo(max(size + increase, size * 2))
-                }
-                for (range.from(size-1)downTo(0)) do {i->
-                    inner.at(i+increase)put(inner.at(i))
-                }
-                var insertionIndex := 0
-                for (l) do {each ->
-                    inner.at(insertionIndex)put(each)
-                    insertionIndex := insertionIndex + 1
-                }
-                size := size + increase
-                self
-            }
-            method addFirst(elt:T) {
-                mods := mods + 1
-                if ((size + 1) > inner.size) then {
-                    expandTo(size * 2)
-                }
-                for (range.from (size-1) downTo 0) do {i->
-                    inner.at (i+1) put (inner.at(i) )
-                }
-                inner.at(0)put(elt)
-                size := size + 1
-                self
-            }
-            method clear {
-                mods := mods + 1
-                inner := prelude.primitiveArray.new(initialSize)
-                size := 0
-                self
-            }
-            method removeFirst {
-                removeAt(1)
-            }
-            method removeAt(n) {
-                mods := mods + 1
-                boundsCheck(n)
-                def removed = inner.at(n-1)
-                for (n..(size-1)) do {i->
-                    inner.at(i-1)put(inner.at(i))
-                }
-                size := size - 1
-                return removed
-            }
-
-            method remove(elt:T) {
-                def ix = self.indexOf(elt) ifAbsent {
-                    NoSuchObject.raise "list does not contain {elt}"
-                }
-                removeAt(ix)
-                self
-            }
-
-            method remove(elt:T) ifAbsent(action:Procedure0) {
-                def ix = self.indexOf(elt) ifAbsent {
                     action.apply
-                    return self
                 }
-                removeAt(ix)
-                self
             }
-
-            method removeAll(vs: Collection⟦T⟧) {
-                removeAll(vs) ifAbsent { NoSuchObject.raise "list does not contain object" }
-                self
+            self
+        }
+        method pop { removeLast }
+        method reversed {
+            def result = list.empty
+            do { each -> result.addFirst(each) }
+            result
+        }
+        method reverse {
+            mods := mods + 1
+            var hiIx := size
+            var loIx := 1
+            while {loIx < hiIx} do {
+                def hiVal = self.at(hiIx)
+                self.at(hiIx) put (self.at(loIx))
+                self.at(loIx) put (hiVal)
+                hiIx := hiIx - 1
+                loIx := loIx + 1
             }
-            method removeAll(vs: Collection⟦T⟧) ifAbsent(action:Procedure0)  {
-                for (vs) do { each ->
-                    def ix = indexOf(each) ifAbsent { 0 }
-                    if (ix ≠ 0) then {
-                        removeAt(ix)
-                    } else {
-                        action.apply
-                    }
+            self
+        }
+        method ++ (o:Collection⟦T⟧) {
+            def l = list.withAll(self)
+            l.addAll(o)
+        }
+        method asString {
+            var s := "list ["
+            do { each -> s := s ++ each.asString }
+                  separatedBy { s := s ++ ", " }
+            s ++ "]"
+        }
+        method asDebugString {
+            var s := "list ["
+            do { each -> s := s ++ each.asDebugString }
+                  separatedBy { s := s ++ ", " }
+            s ++ "]"
+        }
+        method contains(element) {
+            do { each -> if (each == element) then { return true } }
+            return false
+        }
+        method do(block1) {
+            def iMods = mods
+            var i := 1
+            while {i ≤ size} do {
+                if (iMods ≠ mods) then {
+                    ConcurrentModification.raise (asDebugString)
                 }
-                self
+                block1.apply(self.at(i))
+                i := i + 1
             }
-            method pop { removeLast }
-            method reversed {
-                def result = list.empty
-                do { each -> result.addFirst(each) }
-                result
-            }
-            method reverse {
-                mods := mods + 1
-                var hiIx := size
-                var loIx := 1
-                while {loIx < hiIx} do {
-                    def hiVal = self.at(hiIx)
-                    self.at(hiIx) put (self.at(loIx))
-                    self.at(loIx) put (hiVal)
-                    hiIx := hiIx - 1
-                    loIx := loIx + 1
-                }
-                self
-            }
-            method ++ (o:Collection⟦T⟧) {
-                def l = list.withAll(self)
-                l.addAll(o)
-            }
-            method asString {
-                var s := "list ["
-                for (0..(size-1)) do {i->
-                    s := s ++ inner.at(i).asString
-                    if (i < (size-1)) then { s := s ++ ", " }
-                }
-                s ++ "]"
-            }
-            method asDebugString {
-                var s := "["
-                for (0..(size-1)) do {i->
-                    s := s ++ inner.at(i).asDebugString
-                    if (i < (size-1)) then { s := s ++ ", " }
-                }
-                s ++ "]"
-            }
-            method contains(element) {
-                do { each -> if (each == element) then { return true } }
-                return false
-            }
-            method do(block1) {
+        }
+        method iterator {
+            object {
                 def iMods = mods
-                var i := 0
-                while {i < size} do {
-                    if (iMods ≠ mods) then {
+                var idx := 1
+                method asDebugString { "{asString}⟪{idx}⟫" }
+                method asString { "aListIterator" }
+                method hasNext { idx <= size }
+                method next {
+                    if (iMods != mods) then {
                         ConcurrentModification.raise (asDebugString)
                     }
-                    block1.apply(inner.at(i))
-                    i := i + 1
+                    if (idx > size) then { IteratorExhausted.raise "on list" }
+                    def ret = at(idx)
+                    idx := idx + 1
+                    ret
                 }
             }
-            method iterator {
-                object {
-                    def iMods = mods
-                    var idx := 1
-                    method asDebugString { "{asString}⟪{idx}⟫" }
-                    method asString { "aListIterator" }
-                    method hasNext { idx <= size }
-                    method next {
-                        if (iMods != mods) then {
-                            ConcurrentModification.raise (asDebugString)
-                        }
-                        if (idx > size) then { IteratorExhausted.raise "on list" }
-                        def ret = at(idx)
-                        idx := idx + 1
-                        ret
-                    }
-                }
+        }
+        method values {
+            self
+        }
+        method keys {
+            self.indices
+        }
+        method sortBy(sortBlock:Function2) {
+            mods := mods + 1
+            native "js" code ‹var compareFun = function compareFun(a, b) {
+                    var res = callmethod(var_sortBlock, "apply(2)", [2], a, b);
+                    if (res.className == "number") return res._value;
+                    throw new GraceExceptionPacket(TypeErrorObject,
+                           new GraceString("sort block in list.sortBy method did not return a number"));
+          };
+          this._value.sort(compareFun);›
+            self
+        }
+        method sort {
+            sortBy { l, r ->
+                if (l == r) then {0}
+                    elseif {l < r} then {-1}
+                    else {1}
             }
-            method values {
-                self
-            }
-            method keys {
-                self.indices
-            }
-            method expandTo(newSize) is confidential {
-                def newInner = prelude.primitiveArray.new(newSize)
-                for (0..(size-1)) do {i->
-                    newInner.at(i)put(inner.at(i))
-                }
-                inner := newInner
-            }
-            method sortBy(sortBlock:Function2) {
-                mods := mods + 1
-                inner.sortInitial(size) by(sortBlock)
-                self
-            }
-            method sort {
-                sortBy { l, r ->
-                    if (l == r) then {0}
-                        elseif {l < r} then {-1}
-                        else {1}
-                }
-            }
-            method sortedBy(sortBlock:Function2) {
-                copy.sortBy(sortBlock)
-            }
-            method sorted {
-                copy.sort
-            }
-            method copy {
-                outer.withAll(self)
-            }
-            method << (source) {
-                self.addAll(source)
-            }
+        }
+        method sortedBy(sortBlock:Function2) {
+            copy.sortBy(sortBlock)
+        }
+        method sorted {
+            copy.sort
+        }
+        method copy {
+            outer.withAll(self)
+        }
+        method << (source) {
+            self.addAll(source)
         }
     }   // end of list.withAll
 
