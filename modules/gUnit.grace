@@ -1,4 +1,3 @@
-#pragma ExtendedLineups
 // GUnit.grace
 // GUnit project
 //
@@ -379,7 +378,7 @@ def testSuite is public = object {
     class withAll(initialContents) {
         use collections.enumerable
         var name is public := ""
-        def tests = [ ]
+        def tests = list [ ]
         def testNames = emptySet
         var errorsToBeRerun := true
 
