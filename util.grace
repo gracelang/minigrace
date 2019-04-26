@@ -1,4 +1,3 @@
-#pragma ExtendedLineups
 import "io" as io
 import "sys" as sys
 import "unixFilePath" as filePath
@@ -19,8 +18,8 @@ var targetv := "js"
 var extensionsv := map.dictionary.empty
 var recurse is readable := true
 var dynamicModule is public := false
-def cLines is readable = [ ]
-def lines is readable = [ ]
+def cLines is readable = list [ ]
+def lines is readable = list [ ]
 def nullFile = filePath.null        // don't modify this one
 var filename is readable := nullFile
 var commandLineExtensions is readable := ""
@@ -440,8 +439,8 @@ method processExtension(ext) {
     extensionsv.at (extn) put (extv)
 }
 method printhelp {
-    print "Usage: {sys.argv.at(1)} [Mode] [Option]... [FILE]"
-    print "Compile, process, or run a Grace source file, or standard input."
+    print "Usage: {sys.argv.at(1)} [Mode] [Option]... FILE"
+    print "Compile, process, or run a Grace source file."
     print ""
     print "Modes:"
     print "  --make           Compile FILE, creating an executable."
@@ -451,7 +450,7 @@ method printhelp {
     print "  --dir DIR        Use the directory DIR for generated output files,"
     print "                   and for .gct files of imported modules."
     print "  --gctfile        Write a separate gct file, in addition to putting the"
-    print "                   GCT information in the compiled code."
+    print "                   gct information in the compiled code."
     print "  --gracelib DIR   Look in DIR for gracelib.  If not specified, looks in"
     print "                   the same directory as {sys.argv.at(1)}, and then on GRACE_MODULE_PATH."
     print "  --help           This text"
