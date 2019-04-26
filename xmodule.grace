@@ -1,4 +1,3 @@
-#pragma ExtendedLineups
 import "io" as io
 import "sys" as sys
 import "util" as util
@@ -299,7 +298,7 @@ method parseGCT(moduleName) sourceDir(dir) is confidential {
         if (line.size > 0) then {
             if (line.first ≠ " ") then {
                 key := line.substringFrom 1 to (line.size-1)  // dropping the ":"
-                gctData.at(key) put [ ]
+                gctData.at(key) put(list [ ])
             } else {
                 gctData.at(key).addLast(line.substringFrom 2 to (line.size))
             }
@@ -365,7 +364,7 @@ method extractGctFromGctFile(moduleName) sourceDir(dir) {
         EnvironmentException.raise "Can't find file {sought} for module {moduleName}; looked in {rl}."
     }
     def gctStream = io.open(filename, "r")
-    def result = []
+    def result = list []
     while { gctStream.eof.not } do {
         result.push(gctStream.getline)
     }
@@ -384,7 +383,7 @@ method splitJsString(jsLine:String) {
         var stringLit = arg.substr(keyStart + keyStr.length);
         var gctString = eval(stringLit);
         var jsStringArray = gctString.split("\n");
-        result = new PrimitiveGraceList([]);
+        result = GraceList([]);
         for (var ix = 0, len = jsStringArray.length ; ix < len; ix++) {
             callmethod(result, "push(1)", [1],
                 new GraceString (jsStringArray[ix]));
@@ -397,7 +396,7 @@ method extractGctFromCache(module) {
 
     native "js" code ‹var gctString = gctCache[var_module._value];
         var jsStringArray = gctString.split("\n");
-        result = new PrimitiveGraceList([]);
+        result = GraceList([]);
         for (var ix = 0, len = jsStringArray.length ; ix < len; ix++) {
             callmethod(result, "push(1)", [1],
                 new GraceString (jsStringArray[ix]));
@@ -434,7 +433,7 @@ method gctAsString(gctDict) {
     return ret
 }
 
-var methodtypes := [ ]
+var methodtypes := list [ ]
 def typeVisitor = object {
     inherit ast.baseVisitor
     var literalCount := 1
@@ -581,7 +580,7 @@ method buildGctFor(module) {
             if (v.isPublic) then {
                 meths.add(v.nameString)
                 types.push(v.name.value)
-                methodtypes := [ ]
+                methodtypes := list [ ]
                 v.accept(typeVisitor)
                 var typename := v.name.toGrace(0)
                 if (v.typeParams != false) then {
@@ -606,7 +605,7 @@ method buildGctFor(module) {
             }
             if (v.returnsObject) then {
                 def ob = v.returnedObjectScope.node
-                def obConstructors = [ ]
+                def obConstructors = list [ ]
                 if (ob.isObject) then {
                   for (ob.value) do {nd->
                     if (nd.isClass) then {
@@ -656,7 +655,7 @@ method addFreshMethodsOf (moduleObject) to (gct) is confidential {
     // TODO: doesn't this just duplicate what's in 'classes' ? No: 'classes'
     // lists only classes declared inside a def'd object constructor, i.e.,
     // something simulating he old "dotted" class
-    def freshmeths = [ ]
+    def freshmeths = list [ ]
     for (moduleObject.value) do { node->
         if (node.isClass) then {
             addFreshMethod (node) to (freshmeths) for (gct)
