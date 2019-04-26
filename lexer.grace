@@ -1,4 +1,3 @@
-#pragma ExtendedLineups
 import "util" as util
 import "unicode" as unicode
 import "errormessages" as errormessages
@@ -963,7 +962,7 @@ method newline(currentCharacter) {
 method reportEmptyStringInterpolation {
     def lastPos = tokens.last.linePos
     def lineLength = inputLines.at(lineNumber).size
-    def suggestions = []
+    def suggestions = list []
     if (lastPos < lineLength) then {
         def suggestion1 = errormessages.suggestion.new
 
@@ -1150,7 +1149,7 @@ method unclosedStringError {
                 ix := inputLines.at(line).size
             }
         }
-        def suggestions = []
+        def suggestions = list []
         var suggestion := errormessages.suggestion.new
         suggestion.insert "\\" atPosition (ix) onLine (line)
         suggestions.push(suggestion)
@@ -1192,7 +1191,7 @@ method unclosedStringError {
         i := i + 1
     }
     if (count.isOdd) then {
-        def suggestions = []
+        def suggestions = list []
         var suggestion := errormessages.suggestion.new
         suggestion.addLine(lineNumber, errorLine ++ nextLine)
         suggestion.addLine(lineNumber + 1, "")

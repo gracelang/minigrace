@@ -1,4 +1,3 @@
-#pragma ExtendedLineups
 import "io" as io
 import "sys" as sys
 import "ast" as ast
@@ -16,7 +15,7 @@ def undiscovered = Singleton.named "undiscovered"
 
 var stSerial := 100
 
-def reserved = sequence ["self", "outer", "true", "false"]
+def reserved = ["self", "outer", "true", "false"]
 // reserved names that cannot be re-assigned or re-declared
 
 method newScopeKind(variety') {
@@ -296,7 +295,7 @@ class newScopeIn(parent') kind(variety') {
     method resolveOuterMethod(name) fromNode (aNode) {
         // replace name by a request with receiver self, or an outerNode
 
-        def outerChain = [ ]
+        def outerChain = list [ ]
         withSurroundingScopesDo { s->
             if (s.contains(name)) then {
                 if (s.variety == "dialect") then {
@@ -442,7 +441,7 @@ class newScopeIn(parent') kind(variety') {
             }
         }
         if (newKind == k.vardec) then {
-            def suggs = [ ]
+            def suggs = list [ ]
             def sugg = errormessages.suggestion.new
             if (sugg.replaceUntil("=")with("{name} :=")
                     onLine(ident.line)) then {
@@ -472,7 +471,7 @@ def preludeScope = newScopeIn(builtInsScope) kind "dialect"
 def moduleScope = newScopeIn(preludeScope) kind "module"
 def graceObjectScope = newScopeIn(emptyScope) kind "object"
 def booleanScope = newScopeIn(builtInsScope) kind "object"
-def varFieldDecls = []   // a list of declarations of var fields
+def varFieldDecls = list []   // a list of declarations of var fields
 
 util.setPosition(0, 0)
 def thisModule = ast.identifierNode.new("module()object", false)
@@ -678,7 +677,7 @@ method reportAssignmentTo(node) declaredInScope(scp) {
     def name = node.nameString
     def kind = scp.kind(name)
     var more := ""
-    def suggestions = []
+    def suggestions = list []
     if (scp.elementLines.containsKey(name)) then {
         more := " on line {scp.elementLines.at(name)}"
     }
@@ -773,7 +772,6 @@ method addAssignmentMethodsToSymbolTable {
 
 method processGCT(gct, importedModuleScope) {
     gct.at "classes" ifAbsent {emptySequence}.do { c ->
-        def cmeths = []
         def constrs = gct.at "constructors-of:{c}"
         def classScope = newScopeIn(importedModuleScope) kind "class"
         for (constrs) do { constr ->
@@ -1258,7 +1256,7 @@ method gatherUsedNames(objNode) is confidential {
         }
         t.providedNames.do { methName ->
             if (requiredNames.contains(methName).not) then {
-                def definingTraits = traitMethods.at(methName) ifAbsent { [] }
+                def definingTraits = traitMethods.at(methName) ifAbsent { list [] }
                 definingTraits.push(t)
                 traitMethods.at(methName)put(definingTraits)
             }
