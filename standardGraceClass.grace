@@ -1,4 +1,3 @@
-#pragma ExtendedLineups
 dialect "none"
 
 def traits = object {
@@ -287,7 +286,7 @@ class standardGrace {
                     def m = pat.match(o)
                     if (m) then{
                         var mbindings := m.bindings
-                        def bindings = []
+                        def bindings = list []
                         if (mbindings.size < items.size) then {
                             if (Extractable.match(o)) then {
                                 mbindings := o.extract
@@ -324,7 +323,7 @@ class standardGrace {
             if (!m2) then {
                 return m2
             }
-            def bindings = []
+            def bindings = list []
             for (m1.bindings) do {b->
                 bindings.push(b)
             }

@@ -1,4 +1,3 @@
-#pragma ExtendedLineups
 dialect "none"
 
 method abstract {
@@ -163,6 +162,8 @@ class BaseType {
     }
     method matchHook(obj) is required
     method matches(obj) {
+        // this caches the result of matchHook, under the assumption
+        // that two objects with the same classUid will have the same type
         native "js" code ‹
         if (! this.matchCache) this.matchCache = [];
         let key = var_obj.classUid;
