@@ -1,5 +1,4 @@
 #pragma noTypeChecks
-#pragma ExtendedLineups
 import "util" as util
 import "identifierKinds" as k
 
@@ -128,7 +127,7 @@ method positionOfNext (needle1:String) or (needle2:String)
 def lineLength is public = 80
 def uninitialized = Singleton.named "uninitialized"
 method listMap(l, b) ancestors(ac) is confidential {
-    def newList = [ ]
+    def newList = list [ ]
     l.do { nd -> newList.addLast(nd.map(b) ancestors(ac)) }
     newList
 }
@@ -914,7 +913,7 @@ def typeDecNode is public = object {
     var name is public := name'
     var value is public := typeValue
     var parentKind is public := "unset"
-    var annotations is public := [ ]
+    var annotations is public := list [ ]
     var typeParams is public := false
 
     method nameString → String { name.value }
@@ -1017,7 +1016,7 @@ def methodNode is public = object {
         }
         var dtype is public := dtype'
         var selfclosure is public := false
-        var annotations is public := [ ]
+        var annotations is public := list [ ]
         var isFresh is public := false      // a method is 'fresh' if it answers a new object
         var isOnceMethod is public := false
         method usesClassSyntax { "class" == description }
@@ -1062,14 +1061,14 @@ def methodNode is public = object {
             }
         }
         method parameterCounts {
-            def result = [ ]
+            def result = list [ ]
             signature.do { part ->
                 result.push(part.params.size)
             }
             result
         }
         method parameterNames {
-            def result = [ ]
+            def result = list [ ]
             signature.do { part ->
                 part.params.do { param ->
                     result.push(param.nameString)
@@ -1078,8 +1077,8 @@ def methodNode is public = object {
             result
         }
         method typeParameterNames {
-            if (hasTypeParams.not) then { return [ ] }
-            def result = [ ]
+            if (hasTypeParams.not) then { return list [ ] }
+            def result = list [ ]
             signature.first.typeParams.do { each ->
                 result.push(each.nameString)
             }
@@ -1361,7 +1360,7 @@ def callNode is public = object {
             self.scope
         }
         method arguments {
-            def result = [ ]
+            def result = list [ ]
             for (parts) do { part ->
                 for (part.args) do { arg -> result.push(arg) }
             }
@@ -1572,12 +1571,12 @@ def objectNode is public = object {
         def kind is public = "object"
         var value is public := b
         var superclass is public := superclass'
-        var usedTraits is public := [ ]
+        var usedTraits is public := list [ ]
         var name is public := "object"
         var inClass is public := false
         var inTrait is public := false
         var myLocalNames := false
-        var annotations is public := [ ]
+        var annotations is public := list [ ]
 
         method end -> Position {
             if (value.isEmpty.not) then {
@@ -2462,7 +2461,7 @@ def defDecNode is public = object {
         var dtype is public := dtype'
         var parentKind is public := "unset"
         def nameString is public = name.nameString
-        var annotations is public := [ ]
+        var annotations is public := list [ ]
         var startToken is public := false
 
         method end -> Position { value.end }
@@ -2560,7 +2559,7 @@ def varDecNode is public = object {
     var dtype is public := dtype'
     var parentKind is public := "unset"
     def nameString is public = name.value
-    var annotations is public := [ ]
+    var annotations is public := list [ ]
 
     method end -> Position {
         if (false ≠ value) then { return value.end }
@@ -2667,7 +2666,7 @@ def importNode is public = object {
     def kind is public = "import"
     var value is public := name'
     var path is public := path'
-    var annotations is public := [ ]
+    var annotations is public := list [ ]
     var dtype is public := dtype'
     method end -> Position { value.end }
     method isImport { true }
@@ -2854,8 +2853,8 @@ def inheritNode is public = object {
         def kind is public = "inherit"
         var value is public := expr
         var providedNames is public := emptySet
-        var aliases is public := [ ]
-        var exclusions is public := [ ]
+        var aliases is public := list [ ]
+        var exclusions is public := list [ ]
         var isUse is public := false  // this is a `use trait` clause, not an inherit
 
         method end -> Position { value.end }
@@ -2974,10 +2973,10 @@ class aliasNew(n) old(o) {
 }
 def signaturePart is public = object {
     method new {
-        partName "" params []
+        partName "" params (list [])
     }
     method partName(n) scope(s) {
-        def result = partName(n) params []
+        def result = partName(n) params (list [])
         result.scope := s
         result
     }
@@ -2987,7 +2986,7 @@ def signaturePart is public = object {
         result
     }
     method partName(n) {
-        partName(n) params []
+        partName(n) params (list [])
     }
     class partName(n) params(ps) {
         inherit baseNode
