@@ -54,7 +54,6 @@ var emitTypeChecks := true
 var emitUndefinedChecks := true
 var emitArgChecks := true
 var emitPositions := true
-var bracketConstructor := "GraceSequence"
 var emod        // the name of the module being compiled, escaped
                 // so that it is a legal identifier
 var modNameAsString     // the name of the module surrounded by quotes,
@@ -161,7 +160,7 @@ method compilearray(o) {
     def reg = uidWithPrefix "array"
     var vals := list []
     for (o.value) do { a -> vals.push(compilenode(a)) }
-    out "var {reg} = new {bracketConstructor}({literalList(vals)});"
+    out "var {reg} = new GraceSequence({literalList(vals)});"
     o.register := reg
 }
 method compilemember(o) {
@@ -1498,7 +1497,9 @@ method printNodeTally {
 method initializeCodeGenerator(moduleObject) {
     def isPrelude = moduleObject.theDialect.value == "none"
     if (util.extensions.containsKey "ExtendedLineups") then {
-        bracketConstructor := "PrimitiveGraceList"
+        errormessages.syntaxError ("The ExtendedLineups pragma is no longer supported. " ++
+              "Brackets `[ ... ]` construct sequences; if you want a list, use `list [ ... ]`")
+              atLine 1
     }
     if (util.extensions.containsKey "noChecks") then {
         emitTypeChecks := false
