@@ -1,5 +1,4 @@
 #pragma noTypeChecks
-#pragma ExtendedLineups
 dialect "none"
 import "dialect" as dia
 import "ast" as ast
@@ -129,10 +128,10 @@ def aMethodType = object {
     // If it is a def or var, create method to return value
     method fromNode (node) -> MethodType {
         match (node) case { meth: Method | Class | MethodSignature ->
-            def signature = []
+            def signature = list []
 
             meth.signature.do { part ->
-                def params = []
+                def params = list []
 
                 part.params.do { param ->
                     params.push (aParam.withName (param.value)
@@ -186,7 +185,7 @@ def objectType = object {
     // return object type built from methods'
     class fromMethods (methods': List⟦MethodType⟧) -> ObjectType {
         def methods: List⟦MethodType⟧ is public = if (base == unknown)
-            then { [] } else { base.methods } ++ methods'
+            then { list [] } else { base.methods } ++ methods'
 
         method getMethod (name: String) -> MethodType | noSuchMethod {
             methods.do { meth ->
@@ -201,7 +200,7 @@ def objectType = object {
         def isUnknown: Boolean is public = false
 
         // Necessary to prevent infinite loops of subtype testing.
-        def currentlyTesting = []
+        def currentlyTesting = list []
 
         method isSubtypeOf (other: ObjectType) -> Boolean {
             if (self.isMe(other)) then {
@@ -238,7 +237,7 @@ def objectType = object {
             if (self.isMe(other)) then { return self }
             if (other.isUnknown) then { return unknown }
 
-            def combine = []
+            def combine = list []
 
             for (methods) doWithContinue { meth, continue ->
                 other.methods.do { meth'->
@@ -271,8 +270,8 @@ def objectType = object {
             if (self.isMe(other)) then { return self }
             if (other.isUnknown) then { return unknown }
 
-            def combine = []
-            def twice = []
+            def combine = list []
+            def twice = list []
 
             for (methods) doWithContinue { meth, continue ->
                 other.methods.do { meth' ->
@@ -382,7 +381,7 @@ def objectType = object {
                 }
             }
 
-            def meths = []
+            def meths = list []
 
             lit.methods.do { mType ->
                 meths.push (aMethodType.fromNode (mType))
@@ -432,7 +431,7 @@ def objectType = object {
 
     def unknown:ObjectType is public = object {
         use identityEquality
-        def methods is public = []
+        def methods is public = list []
         method getMethod (_: String) -> noSuchMethod { noSuchMethod }
         def isUnknown: Boolean is public = true
         method isSubtypeOf (_: ObjectType) -> Boolean { true }
@@ -455,14 +454,14 @@ def objectType = object {
 
     method addTo (oType: ObjectType) name (name': String)
             returns (rType: ObjectType) -> Done is confidential {
-        def signature = [mixPartNamed (name') parameters [ ] ]
+        def signature = [mixPartNamed (name') parameters (list [ ]) ]
         oType.methods.push (aMethodType.signature (signature) returnType (rType))
     }
 
     method addTo (oType: ObjectType) name (name': String)
             params (ptypes: prelude.Iterable⟦ObjectType⟧) returns (rType: ObjectType)
             -> Done is confidential {
-        def parameters = []
+        def parameters = list []
         ptypes.do { ptype ->
             parameters.push (aParam.ofType (ptype))
         }
@@ -480,8 +479,8 @@ def objectType = object {
     }
 
     var base: ObjectType is readable := unknown     // to avoid a circularity
-    def done: ObjectType is public = fromMethods [ ] withName "Done"
-    base := fromMethods [ ] withName "Object"
+    def done: ObjectType is public = fromMethods (list [ ]) withName "Done"
+    base := fromMethods (list [ ]) withName "Object"
 
     def pattern: ObjectType is public = fromMethods [ ] withName "Pattern"
     def iterator: ObjectType is public = fromMethods [ ] withName "Iterator"
@@ -1040,7 +1039,7 @@ rule { block: BlockLiteral ->
         }
     }
 
-    def parameters = []
+    def parameters = list []
     block.params.do { param ->
         parameters.push (aParam.withName (param.value)
             ofType (objectType.fromDType (param.dtype)))
@@ -1102,7 +1101,7 @@ method processBody (body: List) -> ObjectType is confidential {
         inheriting.accept (object {
             inherit ast.baseVisitor
 
-            def illegal = ["self", "super"]
+            def illegal = ["self"]
 
             method visitIdentifier (ident) {
                 if (illegal.contains (ident.value)) then {
@@ -1127,8 +1126,8 @@ method processBody (body: List) -> ObjectType is confidential {
         superType
     } else {
         // Collect the method types to add the two self types.
-        def publicMethods = []
-        def allMethods = []
+        def publicMethods = list []
+        def allMethods = list []
 
         body.do { stmt ->
             match (stmt) case { meth: Method ->
@@ -1177,9 +1176,9 @@ def TypeDeclarationError = TypeError.refine "TypeDeclarationError"
 // The first pass over a body, collecting all type declarations so that they can
 // reference one another declaratively.
 method collectTypes (nodes: List) -> Done is confidential {
-    def names = []
-    def types = []
-    def placeholders = []
+    def names = list []
+    def types = list []
+    def placeholders = list []
 
     nodes.do { node ->
         match (node) case { td: TypeDeclaration ->
