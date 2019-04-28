@@ -1,7 +1,5 @@
-def words = ["one", "two", "three", "four"] >> sequence
 
-
-def enumerate = object {
+def enumerate is public = object {
     method <<⟦T⟧ (source:Collection⟦T⟧) {
         // returns a sequence of bindings, in which the keys are
         // numbers indicating the order in which source is delivered.
@@ -13,7 +11,7 @@ def enumerate = object {
     }
 }
 
-def sort = object {
+def sort is public = object {
     method <<⟦T⟧ (source:Collection⟦T⟧) {
         // returns a sorted version of source
         list.withAll(source).sort
@@ -57,13 +55,3 @@ class select⟦T⟧(condition:Predicate1⟦T⟧) {
         }
     }
 }
-
-
-print(words.asDictionary)
-print(words >> sort)
-print(words >> enumerate >> dictionary)
-print((1..10) >> enumerate >> list)
-print(words >> tagWith⟦Number⟧ (range.from 4 downTo 1))
-print(words >> reject {w → w.contains "o"})
-print(words >> select {w → w.contains "o"})
-print((1..10) >> sortBy⟦Number⟧ { a, b → b - a })
