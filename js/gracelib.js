@@ -1264,324 +1264,14 @@ function GraceList(jsList) {
     return newList;
 }
 
-function PrimitiveGraceList(jsList) {
-    this._value = jsList;
-}
-function prim_list_index(argcv, where) {
-    var idx = where._value;
-    var result = this._value[idx-1];
-    if (result !== undefined) return result;     // fast path
-    // Now investigate the cause of the problem:
-    if (where.className != "number") {
-        throw new GraceExceptionPacket(TypeErrorObject,
-            new GraceString("argument " + safeJsString(where) +
-                            " to 'at(_)' is not a Number"));
-    }
-    if (!(idx <= 0 && idx < this._value.length)) {
-        // why the negation?  So that NaN triggers BoundsError
-        throw new GraceExceptionPacket(BoundsErrorObject,
-            new GraceString('index ' + idx + ' but list has size ' + this._value.length));
-    }
-    throw new GraceExceptionPacket(TypeErrorObject,
-        new GraceString("argument to 'at(_)' is not an Integer"));
-}
-function prim_list_update(argcv, where, val) {
-    var idx = where._value;
-    if (idx === undefined)
-        throw new GraceExceptionPacket(TypeErrorObject,
-            new GraceString("argument 1 to 'at(_)put(_)' is not a Number"));
-    if (! (idx > 0 && idx <= (this._value.length + 1)))
-        throw new GraceExceptionPacket(BoundsErrorObject,
-            new GraceString('index ' + idx + ' but list has size ' + this._value.length));
-    this._value[idx-1] = val;
-    return this;
-}
-function list_indices(argcv) {
-    var size = this._value.length;
-    return callmethod(GraceRangeClass(), "uncheckedFrom(1)to(1)", [1, 1],
-                  new GraceNum(1), new GraceNum(size));
-}
-PrimitiveGraceList.prototype = {
-    methods: {
-        "isMe(1)":          object_isMe,
-        "myIdentityHash":   object_identityHash,
-        "≠(1)":             object_notEquals,
-        "basicAsString":    object_basicAsString,
-        "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator,
-        "::(1)":            object_colonColon,
-        "makeEmpty": function(argcv) {
-            this._value = [ ];
-            return this;
-        },
-        "clear": function(argcv) {
-            this._value = [ ];
-            return this;
-        },
-        "push(1)": function(argcv, val) {
-            this._value.push(val);
-            return this;
-        },
-        "addFirst(1)": function(argcv, val) {
-            this._value.unshift(val);
-            return this;
-        },
-        "addAll(1)": function(argcv, other) {
-            var iter = callmethod(other, "iterator", [0]);
-            while (Grace_isTrue(callmethod(iter, "hasNext", [0]))) {
-                var val = callmethod(iter, "next", [0]);
-                this._value.push(val);
-            }
-            return this;
-        },
-        "addLast(1)": function(argcv, val) {
-            this._value.push(val);
-            return this;
-        },
-        "add(1)": function(argcv, val) {
-            this._value.push(val);
-            return this;
-        },
-        "unshift(1)": function (argcv, val) {
-            this._value.unshift(val);
-            return this;
-        },
-        "remove(1)": function (argcv, val) {
-            var list = this._value;
-            var index = -1;
-            for (var i = 0; i < list.length && index === -1; i++) {
-                if (Grace_isTrue(callmethod(val, "==(1)", [1], list[i])))
-                    index = i;
-            }
-            if (index > -1)
-                list.splice(index, 1);
-            return this;
-        },
-        "removeFirst": function (argcv) {
-            var list = this._value;
-            if (list.length === 0)
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString("'removeFirst' requested on empty list"));
-            return list.shift();
-        },
-        "reverse": function (argcv) {
-            this._value.reverse();
-            return this;
-        },
-        "reversed": function prim_list_reversed (argcv) {
-            return new PrimitiveGraceList(this._value.slice().reverse());
-        },
-        "copy": function list_copy(argcv) {
-            return new PrimitiveGraceList(this._value.slice());
-        },
-        "isEmpty": function list_isEmpty (argcv) {
-            return (this._value.length === 0) ? GraceTrue : GraceFalse;
-        },
-        "size": function list_size (argcv) {
-            //dbg("called size: " + this._value.length);
-            return new GraceNum(this._value.length);
-        },
-        "sizeIfUnknown(1)": function list_size (argcv, val) {
-            return new GraceNum(this._value.length);
-        },
-        "pop": function(argcv) {
-            var result = this._value.pop();
-            if (result === undefined)
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString("'pop' requested on list with size " +
-                                                        this._value.length));
-            return result;
-        },
-        "removeLast": function(argcv) {
-            var result = this._value.pop();
-            if (result === undefined)
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString("'removeLast' requested on list with size " +
-                                                        this._value.length));
-            return result;
-        },
-        "at(1)": prim_list_index,
-        "first": function list_first(argcv) {
-            if (this._value.length < 1)
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString('[] has no first element'));
-            return this._value[0];
-        },
-        "second": function list_first(argcv) {
-            if (this._value.length < 2)
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString('list of length ' + this._value.length +
-                                        ' has no second element'));
-            return this._value[1];
-        },
-        "third": function list_first(argcv) {
-            if (this._value.length < 3)
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString('list of length ' + this._value.length +
-                                        ' has no third element'));
-            return this._value[2];
-        },
-        "fourth": function list_first(argcv) {
-            if (this._value.length < 4)
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString('list of length ' + this._value.length +
-                                        ' has no fourth element'));
-            return this._value[3];
-        },
-        "fifth": function list_first(argcv) {
-            if (this._value.length < 5)
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString('list of length ' + this._value.length +
-                                        ' has no fifth element'));
-            return this._value[4];
-        },
-        "last": function(argcv) {
-            var self = this._value;
-            if (self.length < 1)
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString('[] has no last element'));
-            return self[self.length-1];
-        },
-        "at(1)put(1)": prim_list_update,
-        "at(1)add(1)": function(argcv, idx, val) {
-            this._value.splice(idx._value - 1, 0, val);
-            return this;
-        },
-        "asString": function prim_list_asString(argcv) {
-            var s = "list [";
-            var isFirst = true;
-            for (var i=0; i<this._value.length; i++) {
-                var obj = this._value[i];
-                if (isFirst) {
-                    isFirst = false;
-                } else {
-                    s += ", ";
-                }
-                try {
-                    var m = findMethod(obj, "asString");
-                    s += m.call(obj, [0])._value;
-                } catch (ex) {
-                    s += "‹" + dbgp(obj, 2) + "›";
-                }
-            }
-            s += "]";
-            return new GraceString(s);
-        },
-        "asDebugString": function(argcv) {
-            var s = "primitiveGraceList [";
-            var isFirst = true;
-            for (var i=0; i<this._value.length; i++) {
-                var obj = this._value[i];
-                if (isFirst) {
-                    isFirst = false;
-                } else {
-                    s += ", ";
-                }
-                try {
-                    var m = findMethod(obj, "asDebugString");
-                    s += m.call(obj, [0])._value;
-                } catch (ex) {
-                    s += "‹" + dbgp(obj, 2) + "›";
-                }
-            }
-            s += "]";
-            return new GraceString(s);
-        },
-        "debugValue": function(argcv) {
-            return new GraceString("primitiveGraceList");
-        },
-        "debugIterator": function(argcv) {
-            return new GraceListIterator(this._value);
-        },
-        "contains(1)": function(argcv, other) {
-            for (var i=0; i<this._value.length; i++) {
-                var v = this._value[i];
-                if (Grace_isTrue(callmethod(v, "==(1)", [1], other)))
-                    return GraceTrue;
-            }
-            return GraceFalse;
-        },
-        "==(1)": function(argcv, other) {
-            var collections = callmethod(var___95__prelude, "collections", [0]);
-            return selfRequest(collections,
-                        "isEqual(1)toCollection(1)", [1, 1], this, other);
-        },
-        "iterator": function(argcv) {
-            return new GraceListIterator(this._value);
-        },
-        "do(1)": function list_do(argcv, action1) {
-            var self = this._value;
-            var size = self.length;
-            for (var ix = 0; ix < size; ix ++) {
-                callmethod(action1, "apply(1)", [1], self[ix]);
-            }
-            return GraceDone;
-        },
-        "keysAndValuesDo(1)": function list_do(argcv, action2) {
-            var self = this._value;
-            var size = self.length;
-            for (var ix = 0; ix < size; ix ++) {
-                callmethod(action2, "apply(2)", [2], new GraceNum(ix+1), self[ix]);
-            }
-            return GraceDone;
-        },
-        "do(1)separatedBy(1)": function list_do_sepBy(argcv, action1, separatorAction) {
-            var self = this._value;
-            var size = self.length;
-            var firstTime = true;
-            for (var ix = 0; ix < size; ix ++) {
-                if (! firstTime)
-                    callmethod(separatorAction, "apply", [0]);
-                else
-                    firstTime = false;
-                callmethod(action1, "apply(1)", [1], self[ix]);
-            }
-            return GraceDone;
-        },
-        "indices": list_indices,
-        "keys": list_indices,
-        "map(1)": function list_map(argcv, function1) {
-            var collections = callmethod(var___95__prelude, "collections", [0]);
-            return selfRequest(collections,
-                        "lazySequenceOver(1)mappedBy(1)", [1, 1], this, function1);
-        },
-        "filter(1)": function list_filter(argcv, predicate1) {
-            var collections = callmethod(var___95__prelude, "collections", [0]);
-            return selfRequest(collections,
-                        "lazySequenceOver(1)filteredBy(1)", [1, 1], this, predicate1);
-        },
-        "fold(1)startingWith(1)": function(argcv, block, initial) {
-            var self = this._value;
-            var res = initial;
-            for (var i=0; i<self.length; i++) {
-                var v = self[i];
-                res = callmethod(block, "apply(2)", [2], res, v);
-            }
-            return res;
-        },
-        "++(1)": function(argcv, other) {
-            var otherIter = callmethod(other, "iterator", [0]);
-            var l = this._value.slice();    // copy of the embedded js list
-            while (Grace_isTrue(callmethod(otherIter, "hasNext", [0]))) {
-                l.push(callmethod(otherIter, "next", [0]));
-            }
-            return new PrimitiveGraceList(l);
-        },
-        ">>(1)": function(argcv, target) {
-            return callmethod(target, "<<(1)", [1], this);
-        },
-        "<<(1)": function(argcv, source) {
-            return callmethod(this, "++(1)", [1], source);
-        }
-    },
-    className: "extendedLineup",
-    definitionModule: "basic library",
-    definitionLine: 0,
-    classUid: "extendedLineup-intrinsic"
-};
-
 function GraceSequence(jsList) {
     this._value = jsList;
+}
+
+function sequence_indices(argcv) {
+    var size = this._value.length;
+    return callmethod(GraceRangeClass(), "uncheckedFrom(1)to(1)", [1, 1],
+                    new GraceNum(1), new GraceNum(size));
 }
 
 GraceSequence.prototype = {
@@ -1603,7 +1293,24 @@ GraceSequence.prototype = {
         "reversed": function sequence_reversed (argcv) {
             return new GraceSequence(this._value.slice().reverse());
         },
-        "at(1)": prim_list_index,
+        "at(1)": function sequence_at(argcv, where) {
+            var idx = where._value;
+            var result = this._value[idx-1];
+            if (result !== undefined) return result;     // fast path
+            // Now investigate the cause of the problem:
+            if (where.className != "number") {
+                throw new GraceExceptionPacket(TypeErrorObject,
+                    new GraceString("argument " + safeJsString(where) +
+                                    " to 'at(_)' is not a Number"));
+            }
+            if (!(idx <= 0 && idx < this._value.length)) {
+                // why the negation?  So that NaN triggers BoundsError
+                throw new GraceExceptionPacket(BoundsErrorObject,
+                    new GraceString('index ' + idx + ' but sequence has size ' + this._value.length));
+            }
+            throw new GraceExceptionPacket(TypeErrorObject,
+                new GraceString("argument to 'at(_)' is not an Integer"));
+        },
         "first": function sequence_first(argcv) {
             if (this._value.length < 1)
                 throw new GraceExceptionPacket(BoundsErrorObject,
@@ -1714,7 +1421,7 @@ GraceSequence.prototype = {
             return new GraceString("sequence");
         },
         "debugIterator": function(argcv) {
-            return new GraceListIterator(this._value);
+            return new GraceSequenceIterator(this._value);
         },
         "==(1)": function(argcv, other) {
             var collections = callmethod(var___95__prelude, "collections", [0]);
@@ -1730,7 +1437,7 @@ GraceSequence.prototype = {
         },
         "::(1)": object_colonColon,
         "iterator": function(argcv) {
-            return new GraceListIterator(this._value);
+            return new GraceSequenceIterator(this._value);
         },
         "do(1)": function sequence_do(argcv, action1) {
             var self = this._value;
@@ -1761,8 +1468,8 @@ GraceSequence.prototype = {
             }
             return GraceDone;
         },
-        "indices": list_indices,
-        "keys": list_indices,
+        "indices": sequence_indices,
+        "keys": sequence_indices,
         "values": function sequence_values(argcv) { return this; },
         "map(1)": function sequence_map(argcv, function1) {
             var collections = callmethod(var___95__prelude, "collections", [0]);
@@ -2378,16 +2085,16 @@ GraceHashMap.prototype.methods['containsKey(1)'] = hashMap_containsKey;
 GraceHashMap.prototype.methods['asString'] = hashMap_asString;
 GraceHashMap.prototype.methods['asDebugString'] = hashMap_asString;
 
-function GraceListIterator(l) {
+function GraceSequenceIterator(l) {
     this._value = l;
     this._index = 0;
     this._max = l.length;
 }
-GraceListIterator.prototype = Grace_allocObject(GraceObject, "listIterator");
-GraceListIterator.prototype.methods.hasNext = function() {
+GraceSequenceIterator.prototype = Grace_allocObject(GraceObject, "listIterator");
+GraceSequenceIterator.prototype.methods.hasNext = function() {
     return ((this._index < this._max) ? GraceTrue : GraceFalse);
 };
-GraceListIterator.prototype.methods.next = function() {
+GraceSequenceIterator.prototype.methods.next = function() {
     if (this._index < this._max) {
         var rv = this._value[this._index];
         this._index++;
@@ -3132,10 +2839,10 @@ if (typeof gctCache !== "undefined")
 
 
 function GraceUnicodePattern(pos, neg) {
-    // this.pos and this.neg are Iterables of positive and negative items
+    // this.pos and this.neg are Collections of positive and negative items
     this.pos = pos._value;
         // APB: 2016 06 11     This is a horrible hack.
-        // pos._value          => pos is a PrimitiveGraceList or GraceSequence
+        // pos._value          pos._value is defined => pos is a GraceSequence
     if (! this.pos) {
         this.pos = [];
         var iter = callmethod(pos, "iterator", [0]);
@@ -3489,8 +3196,8 @@ function gracecode_util() {
     };
     this._linenum = new GraceNum(1);
     this._linepos = new GraceNum(1);
-    this._lines = new PrimitiveGraceList([]);
-    this._cLines = new PrimitiveGraceList([]);
+    this._lines = new GraceList([]);
+    this._cLines = new GraceList([]);
     this._suggestion = Grace_allocObject(GraceObject, "class suggestion");
 
     this._suggestion.methods['new(2)'] = function(argcv, line, code) {
@@ -3770,7 +3477,7 @@ function handleRequestException(ex, obj, methname, method, methodArgs) {
         newEx.lineNumber = lineNumber;
         throw newEx;
     } else if (typeof(obj.methods[methname]) !== "function") {
-        var argsGL = new PrimitiveGraceList( methodArgs.slice(1) );
+        var argsGL = new GraceList( methodArgs.slice(1) );
         return dealWithNoMethod(methname, obj, argsGL);
     } else if (ex == "ErrorExit") {
         throw ex;
@@ -4704,12 +4411,12 @@ if (typeof global !== "undefined") {
     global.Grace_isTrue = Grace_isTrue;
     global.GraceIterator = GraceIterator;
     global.GraceList = GraceList;
-    global.GraceListIterator = GraceListIterator;
     global.GraceMirrorMethod = GraceMirrorMethod;
     global.GraceNum = GraceNum;
     global.GraceObject = GraceObject;
     global.GracePrimitiveArray = GracePrimitiveArray;
     global.GraceSequence = GraceSequence;
+    global.GraceSequenceIterator = GraceSequenceIterator;
     global.GraceString = GraceString;
     global.GraceStringIterator = GraceStringIterator;
     global.GraceTrait = GraceTrait;
@@ -4728,7 +4435,6 @@ if (typeof global !== "undefined") {
     global.nullDefinition = nullDefinition;
     global.nullFunction = nullFunction;
     global.object_identityHash = object_identityHash;
-    global.PrimitiveGraceList = PrimitiveGraceList;
     global.ProgrammingErrorObject = ProgrammingErrorObject;
     global.publicVersion = publicVersion;
     global.raiseTypeError = raiseTypeError;
