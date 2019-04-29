@@ -1011,7 +1011,7 @@ method prefixop {
             next
         } else {
             if (unsuccessfulParse {term}) then {
-                def suggestions = [ ]
+                def suggestions = list [ ]
                 var suggestion := errormessages.suggestion.new
                 def nextTok = findNextValidToken ["rparen"]
                 if (nextTok == sym) then {
@@ -1053,7 +1053,7 @@ method generic {
                 next
                 def receiver = values.pop
                 if (sym.kind != "identifier") then {
-                    def suggestions = [ ]
+                    def suggestions = list [ ]
                     var suggestion := errormessages.suggestion.new
                     suggestion.insert("«type name»")afterToken(lastToken)
                     suggestions.push(suggestion)
@@ -1076,9 +1076,9 @@ method generic {
             } else {
                 if (sym.kind != "rgeneric") then {
                     def suggestion = errormessages.suggestion.new
-                    suggestion.insert(">")afterToken(lastToken)
+                    suggestion.insert "⟧" afterToken(lastToken)
                     def suggestion2 = errormessages.suggestion.new
-                    suggestion2.insert(" ")beforeToken(startToken)
+                    suggestion2.insert " " beforeToken(startToken)
                     def suggestions = [suggestion, suggestion2]
                     errormessages.syntaxError("a type containing a '⟦' must end with a '⟧'.")
                           atPosition(lastToken.line, lastToken.linePos + lastToken.size)
@@ -1088,9 +1088,9 @@ method generic {
         }
         if (sym.kind != "rgeneric") then {
             def suggestion = errormessages.suggestion.new
-            suggestion.insert(">")afterToken(lastToken)
+            suggestion.insert "⟧" afterToken(lastToken)
             def suggestion2 = errormessages.suggestion.new
-            suggestion2.insert(" ")beforeToken(startToken)
+            suggestion2.insert " " beforeToken(startToken)
             def suggestions = [suggestion, suggestion2]
             errormessages.syntaxError("a type containing a '⟦' must end with a '⟧'.")
                   atPosition(lastToken.line, lastToken.linePos + lastToken.size)
@@ -1188,7 +1188,7 @@ method trycatch {
             }
             next
         } else {
-            def suggestions = [ ]
+            def suggestions = list [ ]
             def nextTok = findNextTokenIndentedAt(lastToken)
             var suggestion := errormessages.suggestion.new
             if (false == nextTok) then {
@@ -1249,7 +1249,7 @@ method trycatch {
             }
             next
         } else {
-            def suggestions = [ ]
+            def suggestions = list [ ]
             def nextTok = findNextTokenIndentedAt(lastToken)
             var suggestion := errormessages.suggestion.new
             if (false == nextTok) then {
@@ -1351,7 +1351,7 @@ method matchcase {
             }
             next
         } else {
-            def suggestions = [ ]
+            def suggestions = list [ ]
             def nextTok = findNextTokenIndentedAt(lastToken)
             var suggestion := errormessages.suggestion.new
             if (false == nextTok) then {
@@ -1572,7 +1572,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
             // If: this is not the first operator, it is not the same
             // as the last operator, and the expression has not been
             // entirely arithmetic, raise a syntax error.
-            def suggestions = [ ]
+            def suggestions = list [ ]
             var suggestion := errormessages.suggestion.new
             suggestion.insert(")")afterToken(sym)
             suggestion.insert("(")beforeToken(lastToken.prev)
@@ -1630,7 +1630,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
             next
         } else {
             if (sym.isSeparator) then {
-                def suggestions = [ ]
+                def suggestions = list [ ]
                 var suggestion := errormessages.suggestion.new
                 suggestion.deleteToken(lastToken)leading(true)trailing(false)
                 suggestions.push(suggestion)
@@ -1645,7 +1645,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
                     lastToken.line, lastToken.linePos + lastToken.size)withSuggestions(suggestions)
             }
             if (unsuccessfulParse {term}) then {
-                def suggestions = [ ]
+                def suggestions = list [ ]
                 var suggestion := errormessages.suggestion.new
                 def nextTok = findNextValidToken ["comma", "rparen", "rsquare", "rbrace"]
                 if (nextTok == sym) then {
@@ -1713,7 +1713,7 @@ method dotrest(acceptBlocks) {
                 callrest(acceptBlocks)
             }
         } else {
-            def suggestions = [ ]
+            def suggestions = list [ ]
             var suggestion := errormessages.suggestion.new
             suggestion.deleteToken(lastToken)
             suggestions.push(suggestion)
@@ -1840,7 +1840,7 @@ method parenthesizedArgs(part) startingWith (tok) {
             part.args.push(values.pop)
             next
             if (unsuccessfulParse {expression(blocksOK)}) then {
-                def suggestions = [ ]
+                def suggestions = list [ ]
                 var suggestion := errormessages.suggestion.new
                 def nextTok = findNextValidToken ["rparen"]
                 if (nextTok == sym) then {
@@ -1948,7 +1948,7 @@ method errorDefNoExpression {
 }
 
 method errorDefUsesAssign(defTok) {
-    def suggestions = [ ]
+    def suggestions = list [ ]
     var suggestion := errormessages.suggestion.new
     suggestion.replaceToken(sym)with("=")
     suggestions.push(suggestion)
@@ -1961,7 +1961,7 @@ method errorDefUsesAssign(defTok) {
 }
 
 method errorDefMissingRhs(defTok) {
-    def suggestions = [ ]
+    def suggestions = list [ ]
     var suggestion := errormessages.suggestion.new
     suggestion.insert(" = «expression»")afterToken(lastToken)
     suggestions.push(suggestion)
@@ -2039,7 +2039,7 @@ method vardec {
         if (sym.isBind) then {
             next
             if (unsuccessfulParse {expression(blocksOK)}) then {
-                def suggestions = [ ]
+                def suggestions = list [ ]
                 var suggestion := errormessages.suggestion.new
                 def nextTok = findNextValidToken [ ]
                 if (nextTok == sym) then {
@@ -2059,7 +2059,7 @@ method vardec {
             val := values.pop
         } else {
             if ((sym.isOp) && (sym.value == "=")) then {
-                def suggestions = [ ]
+                def suggestions = list [ ]
                 var suggestion := errormessages.suggestion.new
                 suggestion.replaceToken(sym)with(":=")
                 suggestions.push(suggestion)
@@ -2093,7 +2093,7 @@ method sequenceConstructor {
                 params.push(tmp)
                 next
                 if (unsuccessfulParse {expression(blocksOK)}) then {
-                    def suggestions = [ ]
+                    def suggestions = list [ ]
                     var suggestion := errormessages.suggestion.new
                     def nextTok = findNextValidToken ["rsquare"]
                     if (nextTok == sym) then {
