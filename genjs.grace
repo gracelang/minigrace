@@ -607,24 +607,24 @@ method compileParameterDebugFrame(o, name) {
 }
 
 method compileDefaultsForTypeParameters(o) extraParams (extra) {
-    if (false == o.typeParams) then { return }
-    out "// Start type parameters"
-    o.typeParams.do { g->
-        def gName = varf(g.value)
-        out "if (! {gName}) {gName} = var_Unknown;"
+    def tps = o.typeParams
+    if (false ≠ tps) then {
+        o.typeParams.do { g->
+            def gName = varf(g.value)
+            out "if (! {gName}) {gName} = var_Unknown;"
+        }
     }
     if (emitArgChecks) then {
-        def correction = if (extra == 0) then { "" } else { " - {extra}" }
-        out "var numArgs = arguments.length - 1{correction};"  // subtract 1 for argcv
+        def correction = if (extra == 0) then { "1" } else { "{extra + 1}" }
+                // 1 for argcv, and extra for the arguments to $build methods
+        out "const numArgs = arguments.length - {correction};"
         def np = o.numParams
         def ntp = o.numTypeParams
         def s = if (ntp == 1) then { "" } else { "s" }
         out "if ((numArgs > {np}) && (numArgs !== {np + ntp})) \{"
-        out "    throw new GraceExceptionPacket(RequestErrorObject, "
-        out "        new GraceString(\"{o.canonicalName} requires {ntp} type argument{s}, but was given \" + (numArgs - {np})));"
+        out "    raiseTypeArgError(\"{o.canonicalName}\", {ntp}, numArgs - {np});"
         out "\}"
     }
-    out "// End type parameters"
 }
 
 method compileArgumentTypeChecks(o) {
@@ -766,8 +766,13 @@ method compileSimpleAccessor(o) {
     def name = escapestring(o.nameString)
     def ident = o.body.first
     def p = paramlist(o) ++ typeParamlist(o)
-    out "var {funcName} = function(argcv{p}) \{     // accessor method {name}"
+    out "var {funcName} = function(argcv{p}) \{     // accessor method {canonicalMethName}"
     increaseindent
+    if (emitArgChecks) then {
+        out "const numArgs = arguments.length - 1;"
+        def np = o.numParams
+        out "if (numArgs > {np}) raiseTypeArgError(\"{canonicalMethName}\", 0, numArgs - {np});"
+    }
     out "return {compilenode(ident)};"
     compileMethodPostamble(o, funcName, canonicalMethName)
     out "this.methods[\"{name}\"] = {funcName};"

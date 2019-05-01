@@ -1962,6 +1962,13 @@ function raiseTypeError(msg, type, value) {
     throw ex;
 }
 
+function raiseTypeArgError(methodName, required, given) {
+    const s = (required == 1) ? ""  : "s";
+    throw new GraceExceptionPacket(RequestErrorObject,
+                new GraceString(methodName + " requires " + required +
+                        " type argument" + s + ", but was given " + given));
+}
+
 function classType(o) {
     var t = new GraceType(capitalize(o.className));
     for (let m in o.methods) {
@@ -4437,6 +4444,7 @@ if (typeof global !== "undefined") {
     global.object_identityHash = object_identityHash;
     global.ProgrammingErrorObject = ProgrammingErrorObject;
     global.publicVersion = publicVersion;
+    global.raiseTypeArgError = raiseTypeArgError;
     global.raiseTypeError = raiseTypeError;
     global.raiseUninitializedVariable = raiseUninitializedVariable;
     global.request = request;
