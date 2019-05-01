@@ -1,3 +1,3 @@
 def X = 1
 
-method test<X> {}
+method test[[X]] {}

@@ -412,20 +412,20 @@ class typeTest.forMethod(m) {
     inherit gU.testCaseNamed(m)
     
     method testListTypeCollection {
-        def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
-        assert (witness) hasType (Collection<Number>)
+        def witness = list⟦Number⟧.with(1, 2, 3, 4, 5, 6)
+        assert (witness) hasType (Collection⟦Number⟧)
     }
     method testListTypeList {
-        def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
-        assert (witness) hasType (List<Number>)
+        def witness = list⟦Number⟧.with(1, 2, 3, 4, 5, 6)
+        assert (witness) hasType (List⟦Number⟧)
     }
     method testListTypeReifiedCollection {
-        def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
-        assert (witness) hasType (ReifiedCollection<Number>)
+        def witness = list⟦Number⟧.with(1, 2, 3, 4, 5, 6)
+        assert (witness) hasType (ReifiedCollection⟦Number⟧)
     }
     method testListTypeNotTypeWithWombat {
-        def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
-        deny (witness) hasType (List<Number> & interface { wombat })
+        def witness = list⟦Number⟧.with(1, 2, 3, 4, 5, 6)
+        deny (witness) hasType (List⟦Number⟧ & interface { wombat })
     }
 }
 
