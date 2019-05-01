@@ -5,6 +5,8 @@ type SimpleType = Object & interface {
     typeMeth -> Type
 }
 
+def field = 33
+method fieldAccessor { field }
 method noType(a1) { a1 + 1 }
 method numType(n1:Number) { n1 + 2 }
 method paramType⟦T⟧(x:T) { x.asString }
@@ -70,6 +72,16 @@ def typeTest = object {
             assert {paramType⟦String⟧ 5}
                 shouldRaise (TypeError)
                 mentioning "does not have type T (= String)"
+        }
+        method testMoreThanZeroTypeArguments {
+            assert {noType⟦Number⟧ 3}
+                shouldRaise (RequestError)
+                mentioning "requires 0 type arguments, but was given 1"
+        }
+        method testAccessorWithTypeArgument {
+            assert {fieldAccessor⟦Number⟧}
+                shouldRaise (RequestError)
+                mentioning "requires 0 type arguments, but was given 1"
         }
         method testTooManyTypeArguments {
             assert {paramType⟦String,Number⟧ "foo"}
