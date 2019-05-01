@@ -2309,6 +2309,7 @@ def opNode is public = object {
     def value is public = op     // a String
     var left is public := l
     var right is public := r
+    var generics is public := false
     var isTailCall is public := false      // is possibly the result of a method
     var isSelfRequest is public := false
 
@@ -2322,7 +2323,7 @@ def opNode is public = object {
         // the position of the start of the ‹op› in this ‹left› ‹op› ‹right›
         positionOfNext (value) after (left.end)
     }
-    method isSimple { false }    // needs parens when used ac receiver
+    method isSimple { false }    // needs parens when used as receiver
     method nameString { value ++ "(1)" }
     method canonicalName { value ++ "(_)" }
     method receiver { left }

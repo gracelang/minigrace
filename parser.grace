@@ -1564,6 +1564,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
         opcount := opcount + 1
         o := sym.value
         next
+        def oTypeArgs = typeArgs        // parsed, but ignored at present
         prec := oprec(o)
         if ((o != "*") && (o != "/") && (o != "+") && (o != "-")) then {
             allarith := false
@@ -1878,8 +1879,8 @@ method parenthesizedArgs(part) startingWith (tok) {
 method typeArgs {
     // Parses one or more type arguments, if present, and returns them as a list.
 
+    if (sym.isLGeneric.not) then { return [] }
     def args = list [ ]
-    if (sym.isLGeneric.not) then { return args }
     def startToken = sym
     next
     while {successfulParse{typeArg}} do {
