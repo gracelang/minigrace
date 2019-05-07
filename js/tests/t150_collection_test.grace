@@ -1344,10 +1344,11 @@ def dictionaryTest = object {
         var empty
 
         method setup {
-            oneToFive := dictionary.withAll ["one"::1, "two"::2, "three"::3,
-                "four"::4, "five"::5]
-            evens := dictionary.withAll ["two"::2, "four"::4, "six"::6, "eight"::8]
-            empty := dictionary.empty
+            oneToFive := dictionary⟦String, Number⟧.withAll
+                    ["one"::1, "two"::2, "three"::3, "four"::4, "five"::5]
+            evens := dictionary⟦String, Number⟧.withAll
+                    ["two"::2, "four"::4, "six"::6, "eight"::8]
+            empty := dictionary⟦String, Number⟧.empty
         }
         method testDictionaryTypeCollection {
             assert (oneToFive) hasType (Collection⟦Binding⟦String,Number⟧⟧)
@@ -1384,7 +1385,7 @@ def dictionaryTest = object {
         }
 
         method testAsString {
-            def dict2 = dictionary ["one"::1, "two"::2]
+            def dict2 = dictionary⟦String, Number⟧ ["one"::1, "two"::2]
             def dStr = dict2.asString
             assert((dStr == "dictionary [one::1, two::2]") || {dStr == "dictionary [two::2, one::1]"})
                 description "\"{dStr}\" should be \"dictionary [one::1, two::2]\""
@@ -1400,16 +1401,16 @@ def dictionaryTest = object {
         }
 
         method testDictionaryEqualityEmpty {
-            assert(empty == dictionary.empty)
-            deny(empty != dictionary.empty)
+            assert(empty == dictionary.empty) description "two empty dictionaries are not =="
+            deny(empty ≠ dictionary.empty) description "two empty dictionaries are ≠"
         }
         method testDictionaryInequalityEmpty {
             deny(empty == dictionary ["one"::1])
                 description "empty dictionary equals dictionary with \"one\"::1"
             assert(empty != dictionary ["two"::2])
                 description "empty dictionary equals dictionary with \"two\"::2"
-            deny(empty == 3)
-            deny(empty == evens)
+            deny(empty == 3) description "the empty dictionary is equal to 3"
+            assert (empty) shouldntBe (evens)
         }
         method testDictionaryInequalityFive {
             evens.at "ten" put 10
@@ -1418,7 +1419,7 @@ def dictionaryTest = object {
             assert(oneToFive != evens)
         }
         method testDictionaryEqualityFive {
-            assert(oneToFive == dictionary ["one"::1, "two"::2, "three"::3,
+            assert(oneToFive == dictionary⟦String, Number⟧ ["one"::1, "two"::2, "three"::3,
                 "four"::4, "five"::5])
         }
         method testDictionaryKeysAndValuesDo {
@@ -1439,14 +1440,14 @@ def dictionaryTest = object {
             def ei = evens.bindings.iterator
             assert (evens.size == 4) description "evens doesn't contain 4 elements!"
             assert (ei.hasNext) description "the evens iterator has no elements"
-            def copyDict = dictionary [ei.next, ei.next, ei.next, ei.next]
+            def copyDict = dictionary⟦String, Number⟧ [ei.next, ei.next, ei.next, ei.next]
             deny (ei.hasNext) description "the evens iterator has more than 4 elements"
             assert (copyDict) shouldBe (evens)
         }
         method testDictionaryAdd {
-            assert (empty.at "nine" put(9))
+            assert (empty.at "nine" put 9)
                 shouldBe (dictionary ["nine"::9])
-            assert (evens.at "ten" put(10).values >> set)
+            assert (evens.at "ten" put 10.values >> set)
                 shouldBe (set [2, 4, 6, 8, 10])
         }
         method testDictionaryRemoveKeyTwo {
