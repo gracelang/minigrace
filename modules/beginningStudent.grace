@@ -106,20 +106,20 @@ method set⟦T⟧(a, b, c, d) {
     prelude.collections.set⟦T⟧.withAll [a, b, c, d]
 }
 
-method dictionary⟦T⟧ {
-    prelude.collections.dictionary⟦T⟧.empty
+method dictionary⟦K,T⟧ {
+    prelude.collections.dictionary⟦K,T⟧.empty
 }
-method dictionary⟦T⟧(a) {
-    prelude.collections.dictionary⟦T⟧.withAll [a]
+method dictionary⟦K,T⟧(a) {
+    prelude.collections.dictionary⟦K,T⟧.withAll [a]
 }
-method dictionary⟦T⟧(a, b) {
-    prelude.collections.dictionary⟦T⟧.withAll [a, b]
+method dictionary⟦K,T⟧(a, b) {
+    prelude.collections.dictionary⟦K,T⟧.withAll [a, b]
 }
-method dictionary⟦T⟧(a, b, c) {
-    prelude.collections.dictionary⟦T⟧.withAll [a, b, c]
+method dictionary⟦K,T⟧(a, b, c) {
+    prelude.collections.dictionary⟦K,T⟧.withAll [a, b, c]
 }
-method dictionary⟦T⟧(a, b, c, d) {
-    prelude.collections.dictionary⟦T⟧.withAll [a, b, c, d]
+method dictionary⟦K,T⟧(a, b, c, d) {
+    prelude.collections.dictionary⟦K,T⟧.withAll [a, b, c, d]
 }
 
 def selfImage = mirror.reflect(self)
