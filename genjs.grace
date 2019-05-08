@@ -173,12 +173,6 @@ method compileobjouter(o, outerRef) is confidential {
     out "this.closureKeys.push(\"{outerPropName}\");"
     out "this.{outerPropName} = {outerRef};"
 }
-method compileobjtypedec(o, selfr) {
-    def tName = escapeident(o.nameString)
-    if (o.value.kind == "typeliteral") then {o.value.name := tName }
-    def val = compilenode(o.value)
-    out "{selfr}.data.{tName} = {val};"
-}
 method compileCheckThat(val) called (description)
                         hasType (expectedType) onLine(lineNumber) {
     // Compiles a type check.
@@ -234,10 +228,10 @@ method create (kind) field (o) in (objr) {
     def nmi = escapeident(o.name.value)
     def rFun = uidWithPrefix "reader" ++ "_" ++ nmi
     def fieldName = if (o.parentKind == "module") then {
-        "var_" ++ nmi     // this var_{nmi} variable must be declared by caller
+        "var_{nmi}"     // this var_{nmi} variable must be declared by caller
     } else {
         out "{objr}.data.{nmi} = undefined;"
-        "{objr}.data." ++ nmi
+        "{objr}.data.{nmi}"
     }
     out "var {rFun} = function() \{  // reader method {nm}"
     if (emitUndefinedChecks) then {
@@ -271,7 +265,7 @@ method installLocalAttributesOf(o) into (objr) {
     var mutable := false
 
     for (o.body) do { e ->
-        if (e.kind == "method") then {
+        if (e.isMethod) then {
             compilemethodnode(e) in (objr)
         } elseif { e.kind == "vardec" } then {
             create "var" field (e) in (objr)
@@ -280,8 +274,8 @@ method installLocalAttributesOf(o) into (objr) {
             if (e.value.isNull.not) then {
                 create "def" field (e) in (objr)
             }
-        } elseif { e.kind == "typedec" } then {
-            create "type" field (e) in (objr)
+        } elseif { e.isTypeDec } then {
+            compiletypedec(e) in (objr)
         }
     }
     if (mutable) then {
@@ -291,16 +285,15 @@ method installLocalAttributesOf(o) into (objr) {
 
 method compileOwnInitialization(o, selfr) {
     o.body.do { e ->
-        if (e.kind == "method") then {
-        } elseif { e.kind == "vardec" } then {
-            compileobjvardec(e, selfr)
-        } elseif { e.kind == "defdec" } then {
-            compileobjdefdec(e, selfr)
-        } elseif { e.kind == "typedec" } then {
-            compileobjtypedec(e, selfr)
-        } elseif { e.kind == "object" } then {
+        if (e.isFieldDec) then {
+            if (e.kind == "vardec") then {
+                compileobjvardec(e, selfr)
+            } elseif { e.kind == "defdec" } then {
+                compileobjdefdec(e, selfr)
+            }
+        } elseif { e.isObject } then {
             compileobject(e, selfr)
-        } else {
+        } elseif { e.isExecutable } then {
             compilenode(e)
         }
     }
