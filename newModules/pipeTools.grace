@@ -1,18 +1,19 @@
 
-def enumerate is public = object {
-    method <<⟦T⟧ (source:Collection⟦T⟧) {
-        // returns a sequence of bindings, in which the keys are
-        // numbers indicating the order in which source is delivered.
+class enumerate⟦T⟧ {
+    method << (source:Collection⟦T⟧) {
+        // returns a sequence of bindings, in which the values are drawn from
+        // source, and the keys are numbers indicating the order in which 
+        // source is delivered.
         var counter := 0
-        collections.lazySequenceOver(source) mappedBy { each →
+        collections.lazySequenceOver(source) mappedBy { each:T →
             counter := counter + 1
             counter::each
         }
     }
 }
 
-def sort is public = object {
-    method <<⟦T⟧ (source:Collection⟦T⟧) {
+class sort⟦T⟧ {
+    method << (source:Collection⟦T⟧) {
         // returns a sorted version of source
         list.withAll(source).sort
     }
@@ -25,14 +26,15 @@ class sortBy⟦T⟧(ordering:Function2⟦T, T, Number⟧) {
     }
 }
 
-class tagWith⟦K⟧(tags:Enumerable⟦K⟧) {
-    method <<⟦T⟧(source:Collection⟦T⟧) {
+class tagWith⟦K,T⟧(tags:Enumerable⟦K⟧) {
+    method << (source:Collection⟦T⟧) {
         // returns a sequence of bindings, in which the keys are
         // taken from tags, and the values from source
         var tagStream := tags.iterator
-        collections.lazySequenceOver(source) mappedBy { each →
+        collections.lazySequenceOver(source) mappedBy { each:T →
             if (tagStream.hasNext) then {
-                tagStream.next::each
+                def tag:K = tagStream.next
+                tag::each
             } else {
                 RequestError.raise "not enough tags"
             }
@@ -42,7 +44,7 @@ class tagWith⟦K⟧(tags:Enumerable⟦K⟧) {
 
 class reject⟦T⟧(condition:Predicate1⟦T⟧) {
     method << (source:Collection⟦T⟧) {
-        collections.lazySequenceOver(source) filteredBy { each → 
+        collections.lazySequenceOver(source) filteredBy { each:T → 
             condition.apply(each).not 
         }
     }
@@ -50,7 +52,7 @@ class reject⟦T⟧(condition:Predicate1⟦T⟧) {
 
 class select⟦T⟧(condition:Predicate1⟦T⟧) {
     method << (source:Collection⟦T⟧) {
-        collections.lazySequenceOver(source) filteredBy { each → 
+        collections.lazySequenceOver(source) filteredBy { each:T → 
             condition.apply(each)
         }
     }
