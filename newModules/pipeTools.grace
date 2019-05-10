@@ -57,3 +57,23 @@ class select⟦T⟧(condition:Predicate1⟦T⟧) {
         }
     }
 }
+
+class sum {
+    method << (source:Collection⟦Number⟧) {
+        var total := 0
+        source.do { each:Number → total := total + each }
+        total
+    }
+}
+
+class average {
+    method << (source:Collection⟦Number⟧) {
+        var total := 0
+        var count := 0
+        source.do { each:Number → 
+            total := total + each
+            count := count + 1
+        }
+        total / count
+    }
+}
