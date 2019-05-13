@@ -281,10 +281,6 @@ def dictionaryTest = object {
             assert (evensCopy) shouldBe
                 (dictionary ["two"::2, "four"::4, "six"::6, "eight"::8])
         }
-
-        method testDictionaryAsDictionary {
-            assert(evens.asDictionary) shouldBe (evens)
-        }
         method dict(a)equals(b) {
             // a helper method that shows where two dictionaries differ
             assert (a.keys == b.keys) description "keys {a.keys} ≠ {b.keys}"

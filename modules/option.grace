@@ -102,7 +102,6 @@ class full⟦T⟧(contents:T) → Option {
     method filter(condition:Function1⟦T,Boolean⟧) -> Collection⟦T⟧ {
         if (condition.apply(value)) then { self } else { empty⟦T⟧ }
     }
-    method asDictionary { dictionary [1::value] }
 }
 class empty⟦T⟧ → Option {
     use optionAsCollection⟦T⟧
@@ -152,5 +151,4 @@ class empty⟦T⟧ → Option {
     }
     method map⟦U⟧ (function:Function1⟦T, U⟧) -> Option⟦U⟧ { empty⟦U⟧ }
     method filter (condition:Function1⟦T,Boolean⟧) -> Collection⟦T⟧ { self }
-    method asDictionary { emptyDictionary }
 }

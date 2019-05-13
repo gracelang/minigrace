@@ -265,10 +265,6 @@ testSuiteNamed "sequence tests" with {
         while {iter.hasNext} do { accum.add(iter.next) }
         assert (accum) shouldBe (list [2])
     }
-    test "test Option asDictionary" by {
-        assert(evens.asDictionary) shouldBe
-            (dictionary [1::2])
-    }
     test "test Option LazyConcat" by {
         def s0 = evens.filter{x → (x % 2) == 1}
         def s2 = evens.filter{x → true}

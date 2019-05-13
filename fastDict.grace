@@ -423,9 +423,6 @@ class dictionary⟦K,T⟧ {
             newCopy
         }
 
-        method asDictionary {
-            self
-        }
 
         method ++ (other:Collection⟦T⟧) {
             // answers a new dictionary containing all my keys and the keys of other;

@@ -402,10 +402,6 @@ class listTest.forMethod(m) {
         assert (input.copySortedBy{a, b -> b-a}) shouldBe (output)
         assert (input) shouldBe (list [6, 7, 4, 1])
     }
-    method testListAsDictionary {
-        assert(evens.asDictionary) shouldBe
-            (dictionary.with(1::2, 2::4, 3::6, 4::8))
-    }
 }
 
 class typeTest.forMethod(m) {

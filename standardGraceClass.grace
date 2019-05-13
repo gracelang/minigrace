@@ -87,13 +87,6 @@ def traits = object {
             // override if size is known
             standardGrace.SizeUnknown.raise "size requested on {asDebugString}"
         }
-        method asDictionary {
-            def result = standardGrace.dictionary.empty
-            keysAndValuesDo { k, v ->
-                result.at(k) put(v)
-            }
-            return result
-        }
         method ==(other) {
             standardGrace.isEqual (self) toIterable (other)
         }
@@ -168,13 +161,6 @@ def traits = object {
                 if (v == sought) then { return ix }
             }
             action.apply
-        }
-        method asDictionary {
-            def result = standardGrace.dictionary.empty
-            keysAndValuesDo { k, v ->
-                result.at(k) put(v)
-            }
-            return result
         }
     }
 }
@@ -652,7 +638,6 @@ class standardGrace {
 
     type Enumerable⟦T⟧ = Collection⟦T⟧ & interface {
         values -> Collection⟦T⟧
-        asDictionary -> Dictionary⟦Number,T⟧
         keysAndValuesDo(action:Block2⟦Number,T,Object⟧) -> Done
         into(existing: Expandable⟦Unknown⟧) -> Collection⟦Unknown⟧
         sortedBy(comparison:Block2⟦T,T,Number⟧) -> SelfType
@@ -744,7 +729,6 @@ class standardGrace {
         copy -> Dictionary⟦K,T⟧
         ++ (other:Dictionary⟦K, T⟧) -> Dictionary⟦K, T⟧
         -- (other:Dictionary⟦K, T⟧) -> Dictionary⟦K, T⟧
-        asDictionary -> Dictionary⟦K, T⟧
     }
 
     type Iterator⟦T⟧ = interface {
@@ -1985,10 +1969,6 @@ class standardGrace {
                     newCopy.at(k)put(v)
                 }
                 newCopy
-            }
-
-            method asDictionary {
-                self
             }
 
             method ++(other) {
