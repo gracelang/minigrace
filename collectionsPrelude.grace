@@ -620,6 +620,12 @@ class list⟦T⟧ {
             }
             self
         }
+        method insert(elt:T) at(n) {
+            mods := mods + 1
+            native "js" code ‹checkBounds(this, var_n, this._value.length + 1);
+                this._value.splice(var_n._value - 1, 0, var_elt);›
+            self
+        }
         method pop { removeLast }
         method reversed {
             def result = list.empty

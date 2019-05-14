@@ -777,6 +777,17 @@ def listTest = object {
             }) shouldBe (list [1, 2, 3, 4, 5])
             assert (absent) description "9 was found in list 1..5"
         }
+        method testListInsertAt {
+            assert (empty.insert "hi" at 1) shouldBe ["hi"]
+            assert (evens.insert 12 at 2) shouldBe [2, 12, 4, 6, 8]
+            assert (evens.insert 14 at 1) shouldBe [14, 2, 12, 4, 6, 8]
+            assert (evens.insert 10 at 7) shouldBe [14, 2, 12, 4, 6, 8, 10]
+        }
+        method testListInsertAtWithBoundsError {
+            assert {evens.insert 12 at 0} shouldRaise (BoundsError)
+            assert {evens.insert 12 at 6} shouldRaise (BoundsError)
+            assert {evens.insert 10 at 3.5} shouldRaise (BoundsError)
+        }
         method testListIndexOfPresent {
             assert (evens.indexOf 6) shouldBe 3
             assert (evens.indexOf 4 ifAbsent {"missing"}) shouldBe 2
