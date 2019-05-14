@@ -494,36 +494,34 @@ class list⟦T⟧ {
         use indexable⟦T⟧
 
         var mods is readable := 0
-        native "js" code ‹this._value = [];›
+        native "js" code ‹this._value = [];
+            this.className = 'list';›
         a.do { each ->
             native "js" code ‹this._value.push(var_each);›
         }
         method size {
             native "js" code ‹return new GraceNum(this._value.length);›
         }
-        method boundsCheck(n) is confidential {
-            if ( !(n >= 1) || !(n <= size)) then {
-                BoundsError.raise "index {n} out of bounds 1..{size}"
-            }
-        }
         method at(n) {
-            native "js" code ‹var ix = var_n._value;
-                if ( !(ix >= 1) || !(ix <= this._value.length)) {
-                    var msg = "index " + ix + " out of bounds 1.." + this._value.length;
-                    var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                    callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
-                }
-                return this._value[ix - 1];›
+            native "js" code ‹var idx = var_n._value;
+                var result = this._value[idx-1];
+                if (result !== undefined) return result;     // fast path
+                // Now investigate the cause of the problem:
+                checkBounds(this, var_n);›
+        }
+
+        method at(n) ifAbsent(action) {
+            native "js" code ‹var idx = var_n._value;
+                var result = this._value[idx-1];
+                if (result !== undefined) return result;     // fast path
+                return request(var_action, "apply", [0]);›
         }
 
         method at(n)put(x) {
             mods := mods + 1
             native "js" code ‹var  ix = var_n._value;
-                if (!(ix >= 1) || !(ix <= this._value.length + 1)) {
-                    var msg = "index " + ix + " out of bounds 1.." + this._value.length;
-                    var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                    callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
-                }
+                checkBounds(this, var_n, this._value.length + 1);
+                    // we allow n to be one greater than the current size
                 this._value[ix-1] = var_x;
                 return this;›
         }

@@ -1274,6 +1274,28 @@ function sequence_indices(argcv) {
                     new GraceNum(1), new GraceNum(size));
 }
 
+function checkBounds(obj, n, max) {
+    // checks that the Grace number n is a legal bound in the list or sequence obj
+    // max is an optional parameter; if provided, it's the maximum for n
+    max = max || obj._value.length;
+    if (n.className != "number") {
+        raiseException(TypeErrorObject,
+            "argument " + safeJsString(n) + " to 'at(_)' is not a Number");
+    }
+    const idx = n._value;   // the js number
+    if (!(idx > 0 && idx <= max)) {
+        // why the negation?  So that NaN triggers this BoundsError
+        raiseBoundsError(
+            'index ' + safeJsString(n) + ' but ' + obj.className + ' has size ' +
+            obj._value.length);
+    }
+    if (! Number.isInteger(idx)) {
+        raiseBoundsError(
+            "argument " + safeJsString(n) + " to 'at(_)' is not an integer");
+    }
+    return      // everything looks ok!
+}
+
 GraceSequence.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
@@ -1297,52 +1319,45 @@ GraceSequence.prototype = {
             var idx = where._value;
             var result = this._value[idx-1];
             if (result !== undefined) return result;     // fast path
-            // Now investigate the cause of the problem:
-            if (where.className != "number") {
-                throw new GraceExceptionPacket(TypeErrorObject,
-                    new GraceString("argument " + safeJsString(where) +
-                                    " to 'at(_)' is not a Number"));
-            }
-            if (!(idx <= 0 && idx < this._value.length)) {
-                // why the negation?  So that NaN triggers BoundsError
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString('index ' + idx + ' but sequence has size ' + this._value.length));
-            }
-            throw new GraceExceptionPacket(TypeErrorObject,
-                new GraceString("argument to 'at(_)' is not an Integer"));
+            // Now report the cause of the problem:
+            checkBounds(this, where);
+            raiseException(ProgrammingErrorObject,
+                    "impossible happened in sequence.at(_)", where);
+        },
+        "at(1)ifAbsent(1)": function sequence_at_ifAbsent(argcv, where, action) {
+            var idx = where._value;
+            var result = this._value[idx-1];
+            if (result !== undefined) return result;     // fast path
+            return request(action, "apply", [0]);
         },
         "first": function sequence_first(argcv) {
             if (this._value.length < 1)
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString('[] has no first element'));
+                raiseBoundsError('[] has no first element');
             return this._value[0];
         },
         "second": function sequence_second(argcv) {
             if (this._value.length < 2)
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString('sequence of length ' + this._value.length +
-                                        ' has no second element'));
+                raiseBoundsError(
+                        'sequence of length ' + this._value.length +
+                        ' has no second element');
             return this._value[1];
         },
         "third": function sequence_third(argcv) {
             if (this._value.length < 3)
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString('sequence of length ' + this._value.length +
-                                        ' has no third element'));
+                raiseBoundsError('sequence of length ' +
+                        this._value.length + ' has no third element');
             return this._value[2];
         },
         "fourth": function sequence_fourth(argcv) {
             if (this._value.length < 4)
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString('sequence of length ' + this._value.length +
-                                        ' has no fourth element'));
+                raiseBoundsError('sequence of length ' +
+                        this._value.length + ' has no fourth element');
             return this._value[3];
         },
         "fifth": function sequence_fifth(argcv) {
             if (this._value.length < 5)
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString('sequence of length ' + this._value.length +
-                                        ' has no fifth element'));
+                raiseBoundsError('sequence of length ' +
+                        this._value.length + ' has no fifth element');
             return this._value[4];
         },
         "last": function sequence_last(argcv) {
@@ -3418,7 +3433,7 @@ if (typeof gctCache !== "undefined")
     gctCache['mirrors'] = "classes:\nconfidential:\ndialect:\n standardGrace\nfresh-methods:\n reflect(1)\nfresh:reflect(1):\n getMethod(1)\n methodNames\n methods\n onMethod(1)\nmethodtypes-of:ArgList:\nmethodtypes-of:MethodMirror:\n & 3\n & Object\n 3 isConfidential \u2192 Boolean\n 3 isPublic \u2192 Boolean\n 3 name \u2192 String\n 3 numberOfParams \u2192 Number\n 3 paramCounts \u2192 List\u27e6Number\u27e7\n 3 paramNames \u2192 List\u27e6String\u27e7\n 3 partCount \u2192 Number\n 3 requestWithArgs(args:List\u27e6Object\u27e7) \u2192 Unknown\nmethodtypes-of:Mirror:\n & 2\n & Object\n 2 methodNames \u2192 Set\u27e6String\u27e7\n 2 methods \u2192 List\u27e6MethodMirror\u27e7\n 2 onMethod(nm:String) \u2192 MethodMirror\nmodules:\n collectionsPrelude\n standardGrace\npath:\n /Users/black/Development/mg/gracelang/minigrace/stubs/mirrors.grace\npublic:\n ArgList\n MethodMirror\n Mirror\n loadDynamicModule(1)\n reflect(1)\npublicMethodTypes:\n loadDynamicModule(name:String) \u2192 Done\n reflect(obj:Unknown) \u2192 Mirror\ntypes:\n ArgList\n MethodMirror\n Mirror\n";
 
 function safeJsString (obj) {
-    // Don't use callmethod!  This function is called from within callmethod.
+    // Don't use request!  This function is called from within request.
     var objString;
     try {
         var m = findMethod(obj, "asString");
@@ -4094,7 +4109,11 @@ function raiseException(ex, msg, data) {
 }
 
 function raiseClassError(msg) {
-    raiseException(TypeErrorObject, msg)
+    raiseException(TypeErrorObject, msg);
+}
+
+function raiseBoundsError(msg, data) {
+    raiseException(BoundsErrorObject, msg, data);
 }
 
 //
@@ -4381,6 +4400,7 @@ if (typeof global !== "undefined") {
     global.assertTypeOrMsg = assertTypeOrMsg;
     global.badBlockArgs = badBlockArgs;
     global.callmethod = callmethod;
+    global.checkBounds = checkBounds;
     global.classType = classType;
     global.confidentialVersion = confidentialVersion;
     global.dbg = dbg;
@@ -4444,6 +4464,8 @@ if (typeof global !== "undefined") {
     global.object_identityHash = object_identityHash;
     global.ProgrammingErrorObject = ProgrammingErrorObject;
     global.publicVersion = publicVersion;
+    global.raiseBoundsError = raiseBoundsError;
+    global.raiseException = raiseException;
     global.raiseTypeArgError = raiseTypeArgError;
     global.raiseTypeError = raiseTypeError;
     global.raiseUninitializedVariable = raiseUninitializedVariable;

@@ -382,14 +382,33 @@ def sequenceTest = object {
         }
 
         method testSequenceAt {
-            def naN = "fff".asNumber
             assert {empty.at(1)} shouldRaise (BoundsError)
             assert (oneToFive.at(1)) shouldBe (1)
             assert (oneToFive.at(1)) shouldBe (1)
             assert (oneToFive.at(5)) shouldBe (5)
             assert (evens.at(4)) shouldBe (8)
-            assert {evens.at(5)} shouldRaise (BoundsError)
-            assert {evens.at(naN)} shouldRaise (BoundsError)
+        }
+
+        method testSequenceAtIfAbsent {
+            def naN = "fff".asNumber
+            var n := empty.at 1 ifAbsent { 7 }
+            assert (n) shouldBe 7
+            n := oneToFive.at 1.5 ifAbsent { 10 }
+            assert (n) shouldBe 10
+            n := oneToFive.at 6 ifAbsent { 12 }
+            assert (n) shouldBe 12
+            oneToFive.at 6 ifAbsent { n := 16 }
+            assert (n) shouldBe 16
+            oneToFive.at (naN) ifAbsent { n := 20 }
+            assert (n) shouldBe 20
+        }
+
+        method testSequenceBoundsError {
+            def naN = "fff".asNumber
+            assert {evens.at(5)} shouldRaise (BoundsError) mentioning "5"
+            assert {evens.at(naN)} shouldRaise (BoundsError) mentioning "NaN"
+            assert {evens.at(infinity)} shouldRaise (BoundsError) mentioning "infinity"
+            assert {evens.at (1/3)} shouldRaise (BoundsError) mentioning "not an integer"
         }
 
         method testSequenceOrdinals {
@@ -665,14 +684,33 @@ def listTest = object {
         }
 
         method testListAt {
-            def naN = "foo".asNumber
             assert {empty.at(1)} shouldRaise (BoundsError)
             assert (oneToFive.at(1)) shouldBe (1)
             assert (oneToFive.at(1)) shouldBe (1)
             assert (oneToFive.at(5)) shouldBe (5)
-            assert (evens.at(4)) shouldBe (8)
-            assert {evens.at(5)} shouldRaise (BoundsError)
-            assert {evens.at(naN)} shouldRaise (BoundsError)
+            assert (evens.at 4) shouldBe (8)
+        }
+
+        method testListAtIfAbsent {
+            def naN = "fff".asNumber
+            var n := empty.at 1 ifAbsent { 7 }
+            assert (n) shouldBe 7
+            n := oneToFive.at 1.5 ifAbsent { 10 }
+            assert (n) shouldBe 10
+            n := oneToFive.at 6 ifAbsent { 12 }
+            assert (n) shouldBe 12
+            oneToFive.at 6 ifAbsent { n := 16 }
+            assert (n) shouldBe 16
+            oneToFive.at (naN) ifAbsent { n := 20 }
+            assert (n) shouldBe 20
+        }
+
+        method testListBoundsError {
+            def naN = "fff".asNumber
+            assert {evens.at(5)} shouldRaise (BoundsError) mentioning "5"
+            assert {evens.at(naN)} shouldRaise (BoundsError) mentioning "NaN"
+            assert {evens.at(infinity)} shouldRaise (BoundsError) mentioning "infinity"
+            assert {evens.at (1/3)} shouldRaise (BoundsError) mentioning "not an integer"
         }
 
         method testListOrdinals {
@@ -686,11 +724,12 @@ def listTest = object {
 
         method testListAtPut {
             def naN = "foo".asNumber
-            oneToFive.at(1) put (11)
-            assert (oneToFive.at(1)) shouldBe (11)
-            oneToFive.at(2) put (12)
-            assert (oneToFive.at(2)) shouldBe (12)
-            assert (oneToFive.at(3)) shouldBe (3)
+            oneToFive.at 1 put 11
+            assert (oneToFive.at 1) shouldBe 11
+            oneToFive.at 2 put 12
+            assert (oneToFive.at 2) shouldBe 12
+            assert (oneToFive.at 3) shouldBe 3
+            assert (oneToFive.size) shouldBe 5
             assert {evens.at 6 put 10} shouldRaise (BoundsError)
             assert {evens.at 0 put 0} shouldRaise (BoundsError)
             assert {evens.at(naN) put 0} shouldRaise (BoundsError)
@@ -698,10 +737,10 @@ def listTest = object {
 
         method testListAtPutExtend {
             assert (empty.at 1 put 99) shouldBe (list [99])
-            oneToFive.at(6) put 6
+            oneToFive.at 6 put 6
             assert (oneToFive.at 6) shouldBe 6
-            oneToFive.at(7) put 7
-            assert (oneToFive.at(7)) shouldBe 7
+            oneToFive.at 7 put 7
+            assert (oneToFive.at 7) shouldBe 7
             assert (oneToFive) shouldBe (1..7)
         }
 
