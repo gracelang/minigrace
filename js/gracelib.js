@@ -921,19 +921,31 @@ GraceNum.prototype = {
         },
         "..(1)": function(argcv, other) {
             if (! Number.isInteger(this._value)) {
-                throw new GraceExceptionPacket(RequestErrorObject,
-                    new GraceString("lower bound of range (" + this._value +
-                                    ") not an integer."));
+                raiseException(RequestErrorObject,
+                    "lower bound of range (" + this._value +
+                               ") not an integer.");
             } else if (other.className !== "number") {
-                throw new GraceExceptionPacket(TypeErrorObject,
-                    new GraceString("upper bound of range not a Number."));
+                raiseException(TypeErrorObject, "upper bound of range not a Number");
             } else if (! Number.isInteger(other._value)) {
-                throw new GraceExceptionPacket(RequestErrorObject,
-                    new GraceString("upper bound of range (" + other._value +
-                                    ") not an integer."));
+                raiseException(RequestErrorObject, "upper bound of range (" +
+                    other._value + ") not an integer");
             }
             return callmethod(GraceRangeClass(),
                     "uncheckedFrom(1)to(1)", [1, 1], this, other);
+        },
+        "downTo(1)": function(argcv, other) {
+            if (! Number.isInteger(this._value)) {
+                raiseException(RequestErrorObject,
+                    "first bound of downward range (" + this._value +
+                               ") not an integer.");
+            } else if (other.className !== "number") {
+                raiseException(TypeErrorObject, "second bound of downward range not a Number");
+            } else if (! Number.isInteger(other._value)) {
+                raiseException(RequestErrorObject, "second bound of downward range (" +
+                    other._value + ") not an integer");
+            }
+            return callmethod(GraceRangeClass(),
+                    "from(1)downTo(1)", [1, 1], this, other);
         },
         "compare(1)": function(argcv, that) {
             var self = this._value;
