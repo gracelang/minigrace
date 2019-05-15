@@ -70,6 +70,13 @@ class full⟦T⟧(contents:T) → Option {
             BoundsError.raise "attemp to use index {ix} on {self}."
         }
     }
+    method at(ix) ifAbsent(action) {
+        if (ix == 1) then {
+            value
+        } else {
+            action.apply
+        }
+    }
     method isFull → Boolean { true }
     method ifFull⟦U⟧ (fAction:Function1⟦T, U⟧) ifEmpty (eAction:Function0⟦U⟧) → U {
         fAction.apply(value)
@@ -130,7 +137,10 @@ class empty⟦T⟧ → Option {
     method sizeIfUnknown(action) { 0 }
     method at(ix) { 
         BoundsError.raise "attemp to use index {ix} on {self}."
-    } 
+    }
+    method at(ix) ifAbsent(action) {
+        action.apply
+    }
     method isFull → Boolean { false }
     method ifFull⟦U⟧ (fAction:Function1⟦T, U⟧) ifEmpty (eAction:Function0⟦U⟧) → U {
         eAction.apply

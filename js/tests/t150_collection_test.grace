@@ -250,6 +250,18 @@ def rangeTest = object {
             assert{rangeUp.at(0)} shouldRaise (BoundsError)
             assert{rangeUp.at(naN)} shouldRaise (BoundsError)
         }
+        method testRangeUpAtIfAbsent {
+            def naN = "foo".asNumber
+            assert(rangeUp.at 5 ifAbsent { 22 }) shouldBe 22
+            assert(rangeUp.at 0 ifAbsent { 23 }) shouldBe 23
+            assert(rangeUp.at(naN) ifAbsent { 24 }) shouldBe 24
+        }
+        method testRangeDownAtIfAbsent {
+            def naN = "foo".asNumber
+            assert(rangeDown.at 5 ifAbsent { 22 }) shouldBe 22
+            assert(rangeDown.at 0 ifAbsent { 23 }) shouldBe 23
+            assert(rangeDown.at(naN) ifAbsent { 24 }) shouldBe 24
+        }
         method testHashRangeUp {
             assert (rangeUp.hash) shouldBe (sequence(rangeUp).hash)
         }

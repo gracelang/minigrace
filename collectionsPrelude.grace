@@ -110,6 +110,7 @@ type Enumerable⟦T⟧ = Collection⟦T⟧ & interface {
 type Sequenceable⟦T⟧ = Enumerable⟦T⟧ & interface {
     size -> Number
     at(n:Number) -> T
+    at⟦W⟧(n:Number) ifAbsent(action:Function0⟦W⟧) -> T | W
     indices -> Sequence⟦Number⟧
     keys -> Sequence⟦Number⟧
     second -> T
@@ -117,7 +118,7 @@ type Sequenceable⟦T⟧ = Enumerable⟦T⟧ & interface {
     fourth -> T
     fifth -> T
     last -> T
-    indexOf⟦W⟧(elem:T)ifAbsent(action:Function0⟦W⟧) -> Number | W
+    indexOf⟦W⟧(elem:T) ifAbsent(action:Function0⟦W⟧) -> Number | W
     indexOf(elem:T) -> Number
     contains(elem:T) -> Boolean
     reversed -> Sequence⟦T⟧
@@ -139,7 +140,8 @@ type List⟦T⟧ = Sequenceable⟦T⟧ & interface {
     remove(v:T)
     remove(v:T) ifAbsent(action:Procedure0)
     removeAll(vs: Collection⟦T⟧)
-    removeAll(vs: Collection⟦T⟧) ifAbsent(action:Function0⟦Unknown⟧)
+    removeAll(vs: Collection⟦T⟧) ifAbsent(action:Procedure0)
+    insert(elt:T)at(n:Number) -> List⟦T⟧
     pop -> T
     ++(o: List⟦T⟧) -> List⟦T⟧
     addAll(l: Collection⟦T⟧) -> List⟦T⟧
@@ -1566,6 +1568,13 @@ def range is public = object {
                 }
                 return start + (ix - 1)
             }
+            method at(ix:Number)ifAbsent(action) {
+                if ((ix >= 1) && (ix <= self.size)) then {
+                    start + (ix - 1)
+                } else {
+                    action.apply
+                }
+            }
             method contains(elem) -> Boolean {
                 try {
                     def intElem = elem.truncated
@@ -1669,6 +1678,13 @@ def range is public = object {
                     BoundsError.raise "requested range.at({ix}) but lower bound is 1"
                 }
                 return start - (ix - 1)
+            }
+            method at(ix:Number)ifAbsent(action) {
+                if ((ix >= 1) && (ix <= self.size)) then {
+                    start - (ix - 1)
+                } else {
+                    action.apply
+                }
             }
             method contains(elem) -> Boolean {
                 try {

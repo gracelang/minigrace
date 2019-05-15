@@ -45,6 +45,7 @@ class sequence⟦T⟧ {
     method sizeIfUnknown(action) { 0 }
     method isEmpty { true }
     method at(n) { BoundsError.raise "index {n} of empty sequence" }
+    method at(n) ifAbsent(action) { action.apply }
     method keys { self }
     method values { self }
     method keysAndValuesDo(block2) { done }

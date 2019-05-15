@@ -13,6 +13,7 @@ The following list methods are not in sequence:
     at(_)put(_)
     clear
     copy
+    insert(_)at(_)
     pop
     remove(_)
     remove(_)ifAbsent(_)
