@@ -350,7 +350,7 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
     out "    const newNm = a.newName;"
     out "    const oldNm = a.oldName;"
     out "    overridenByAliases[newNm] = this.methods[newNm];"
-    out "    const m = confidentialVersion(inheritedExclusions[oldNm] || overridenByAliases[oldNm] || this.methods[oldNm], newNm);"
+    out "    const m = confidentialVersion(overridenByAliases[oldNm] || this.methods[oldNm], newNm);"
     out "    m.definitionLine = {o.line};"
     out "    m.definitionModule = {modNameAsString};"
     out "    this.methods[newNm] = m;"
