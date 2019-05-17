@@ -26,6 +26,8 @@ def undefined is public = kindConstant "undefined"
 def defdec is public = kindConstant "defdec"
 def methdec is public = kindConstant "method"
 def typedec is public = kindConstant "typedec"
+def aliasdec is public = kindConstant "alias"
+
 def selfDef is public = object {
     inherit kindConstant "selfDef"
     method isImplicit { true }

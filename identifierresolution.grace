@@ -283,6 +283,10 @@ class newScopeIn(parent') kind(variety') {
         if (variety == "built-in") then { return true }
         false
     }
+    method allowsShadowing {
+        if (variety == "type") then { return true }
+        isObjectScope
+    }
     method isMethodScope {
         variety == "method"
     }
@@ -429,7 +433,7 @@ class newScopeIn(parent') kind(variety') {
             "an enclosing {priorScope.variety}"
         }
         def priorKind = priorScope.kind(name)
-        if (priorScope.isObjectScope && {self.isObjectScope}) then {
+        if (priorScope.allowsShadowing && {self.allowsShadowing}) then {
             return
         }
         // new object attributes can shadow old, but other shadowing is illegal
@@ -457,7 +461,7 @@ class newScopeIn(parent') kind(variety') {
                 withSuggestions(suggs)
         } else {
             errormessages.syntaxError("'{ident.canonicalName}' cannot be "
-                ++ "redeclared because it is already declared in "
+                ++ "redeclared in this {variety} scope because it is already declared in "
                 ++ "{description} scope{more}. Use a different name.")
                 atRange(ident.range)
         }
@@ -916,11 +920,13 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         }
         method visitCall (o) up (anc) {
             def enclosingNode = anc.parent
-            o.scope := enclosingNode.scope
+            def scope = enclosingNode.scope
+            o.scope := scope
             def callee = o.receiver
-            if (callee.kind == "identifier") then {
+            if (callee.isIdentifier) then {
                 callee.inRequest := true
             }
+            o.parts.do { each -> each.scope := o }
             if (enclosingNode.isMethod) then {
                 if (enclosingNode.body.last == o) then {
                     o.isTailCall := true
@@ -972,6 +978,11 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                     atRange(o.range)
             }
             true
+        }
+        method visitAlias (o) up (ac) {
+            o.scope := ac.parent.scope
+            o.newName.accept(self) from (ac.extend(o))
+            false   // no need to visit the aliasNode's other components
         }
         method visitImport (o) up (anc) {
             o.scope := anc.parent.scope
@@ -1034,6 +1045,11 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             true
         }
         method visitMethodType (o) up (anc) {
+            def surroundingScope = anc.parent.scope
+            def ident = o.asIdentifier
+            checkForReservedName(ident)
+            surroundingScope.addNode (ident) asA (k.methdec)
+            ident.isDeclaredByParent := true
             o.scope := newScopeIn(anc.parent.scope) kind "methodtype"
             // the scope for the parameters (including the type parameters,
             // if any) of this method.

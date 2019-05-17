@@ -8,16 +8,16 @@
         Types:
         Methods:
           2:3-15 methodtype
-            Name: identifierBinding‹age›
+            Name: age
             Returns:
               2:10-15 identifier‹Number›
-            Signature:
+            Signature Parts:
               2:3-5 signaturepart: age
           3:3-16 methodtype
-            Name: identifierBinding‹name›
+            Name: name
             Returns:
               3:11-16 identifier‹String›
-            Signature:
+            Signature Parts:
               3:3-6 signaturepart: name
 
 

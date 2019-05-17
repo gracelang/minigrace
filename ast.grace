@@ -295,7 +295,14 @@ class baseNode {
     method accept(visitor) {
         self.accept(visitor) from (ancestorChain.empty)
     }
-    method scope { symbolTable }
+    method hasScope { fakeSymbolTable ≠ symbolTable }
+    method scope {
+        if (hasScope) then {
+            symbolTable
+        } else {
+            ProgrammingError.raise "accessing unset symbol table"
+        }
+    }
 
     method scope:=(st) {
         // override this method in subobjects that open a new scope. In such
@@ -727,21 +734,71 @@ def matchCaseNode is public = object {
     }
   }
 }
-def methodTypeNode is public = object {
-  class new(signature', rtype') {
-    // Represents the signature of a method in a type literal.
-    // signature' is a collection of signaturePart objects, which
+
+class methodSignatureNode(parts', rtype') {
+    // Represents a method signature in a type literal, or in an inheritance modifier.
+    // parts' is a collection of signaturePart objects, which
     // contain the parts of this method's name and the parameter lists;
     // rtype' is the return type of this method, or false if not specified.
 
     inherit baseNode
     def kind is public = "methodtype"
-    var signature is public := signature'
+    var signature is public := parts'
     var rtype is public := rtype'
     var cachedIdentifier := uninitialized
+    var isBindingOccurrence := true
+
+    method appliedOccurrence {
+        isBindingOccurrence := false
+        if (uninitialized ≠ cachedIdentifier) then {
+            cachedIdentifier.isBindingOccurrence := false
+        }
+        self
+    }
+
+    method hasParams { signature.first.params.isEmpty.not }
+    method numParams {
+        signature.fold { acc, p -> acc + p.numParams } startingWith 0
+    }
+    method parametersDo(b) {
+        signature.do { part ->
+            part.params.do { each -> b.apply(each) }
+        }
+    }
+    method parameterCounts {
+        def result = list [ ]
+        signature.do { part ->
+            result.push(part.params.size)
+        }
+        result
+    }
+    method parameterNames {
+        def result = list [ ]
+        signature.do { part ->
+            part.params.do { param ->
+                result.push(param.nameString)
+            }
+        }
+        result
+    }
+    method typeParameterNames {
+        if (hasTypeParams.not) then { return list [ ] }
+        def result = list [ ]
+        signature.first.typeParams.do { each ->
+            result.push(each.nameString)
+        }
+        result
+    }
+    method numTypeParams { signature.first.numTypeParams }
+    method hasTypeParams { false ≠ signature.first.typeParams }
+    method typeParams { signature.first.typeParams }
+    method withTypeParams(tp) {
+        signature.first.typeParams := tp
+        self
+    }
 
     method end -> Position {
-        if (false ≠ rtype) then { return rtype.end }
+        if ((false ≠ rtype) && {rtype.line ≠ 0}) then { return rtype.end }
         signature.last.end
     }
 
@@ -757,29 +814,28 @@ def methodTypeNode is public = object {
             startingWith ""
     }
 
-    method value {
+    method asIdentifier {
         if (uninitialized == cachedIdentifier) then {
             cachedIdentifier := identifierNode.new(nameString, false)
             cachedIdentifier.line := signature.first.line
             cachedIdentifier.linePos := signature.first.linePos
             cachedIdentifier.end := signature.last.end
-            cachedIdentifier.isBindingOccurrence := true
+            cachedIdentifier.canonicalName := canonicalName
+            cachedIdentifier.isBindingOccurrence := isBindingOccurrence
         }
         cachedIdentifier
     }
     method isExecutable { false }
-    method parametersDo(b) {
-        signature.do { part ->
-            part.params.do { each -> b.apply(each) }
-        }
-    }
+
     method scope:=(st) {
         // sets up the 2-way conection between this node
         // and the symbol table that defines the scope that I open.
         symbolTable := st
         st.node := self
     }
-    method declarationKindWithAncestors(ac) { k.typedec }
+    method declarationKindWithAncestors(ac) {
+        ac.parent.declarationKindWithAncestors(ac)
+    }
     method accept(visitor : AstVisitor) from(ac) {
         if (visitor.visitMethodType(self) up(ac)) then {
             def newChain = ac.extend(self)
@@ -801,11 +857,11 @@ def methodTypeNode is public = object {
     method pretty(depth) {
         def spc = "  " * (depth+1)
         var s := basePretty(depth) ++ "\n"
-        s := "{s}{spc}Name: {value}\n"
+        s := "{s}{spc}Name: {nameString}\n"
         if (false != rtype) then {
             s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth + 2)}"
         }
-        s := "{s}\n{spc}Signature:"
+        s := "{s}\n{spc}Signature Parts:"
         for (signature) do { part ->
             s := "{s}\n  {spc}{part.pretty(depth + 2)}"
         }
@@ -820,9 +876,8 @@ def methodTypeNode is public = object {
         s
     }
     method shallowCopy {
-        methodTypeNode.new(signature, rtype).shallowCopyFieldsFrom(self)
+        methodSignatureNode(signature, rtype).shallowCopyFieldsFrom(self)
     }
-  }
 }
 def typeLiteralNode is public = object {
   class new(methods', types') {
@@ -2090,7 +2145,11 @@ def identifierNode is public = object {
         var inRequest is public := false
         var generics is public := false
         var isDeclaredByParent is public := false
-        var end:Position is public := line (line) column (linePos + value.size - 1)
+        var end:Position is public := if (line ≠ 0) then {
+            line (line) column (linePos + value.size - 1)
+        } else {
+            line (line) column (linePos-1)
+        }
 
         method bindingOccurrence { isBindingOccurrence := true }
         method appliedOccurrence { isBindingOccurrence := false }
@@ -2868,10 +2927,7 @@ def inheritNode is public = object {
             if (visitor.visitInherits(self) up(ac)) then {
                 def newChain = ac.extend(self)
                 value.accept(visitor) from(newChain)
-                aliases.do { a ->
-                    a.newSignature.accept(visitor) from(newChain)
-                    a.oldSignature.accept(visitor) from(newChain)
-                }
+                aliases.do { a -> a.accept(visitor) from(newChain) }
                 exclusions.do { e -> e.accept(visitor) from(newChain) }
             }
         }
@@ -2893,11 +2949,11 @@ def inheritNode is public = object {
             if (isUse) then { s := "{s} (use)" }
             s := s ++ "\n" ++ spc ++ self.value.pretty(depth + 1)
             aliases.do { a ->
-                s := "{s}\n{a.pretty(depth)}"
+                s := "{s}\n{a.pretty(depth + 1)}"
             }
             if (exclusions.isEmpty.not) then { s := "{s}\n{spc}" }
             exclusions.do { e ->
-                s := "{s} exclude {e} "
+                s := "{s}  exclude {e}"
             }
             if (providedNames.isEmpty.not) then {
                 s := s ++ "\n{spc}Provided names: {list.withAll(providedNames).sort}"
@@ -2924,7 +2980,7 @@ def inheritNode is public = object {
         }
         method nameString { value.toGrace(0) }
         method addAlias (newSig) for (oldSig) {
-            aliases.push(aliasNew(newSig) old(oldSig.appliedOccurrence))
+            aliases.push(aliasNew(newSig) old(oldSig))
         }
         method addExclusion(meth) {
             exclusions.push(meth)
@@ -2952,15 +3008,28 @@ type AliasPair = {
 }
 
 class aliasNew(n) old(o) {
+    inherit baseNode
     use equality
-    method newName {newSignature.asIdentifier}
-    method oldName {oldSignature.asIdentifier}
+
     def newSignature is public = n
     def oldSignature is public = o
+    def kind is public = "alias"
+    method newName {newSignature.asIdentifier}
+    method oldName {oldSignature.asIdentifier}
     method asString { "alias {newSignature.nameString} = {oldSignature.nameString}" }
     method pretty(depth) {
         def spc = "  " * (depth+1)
-        "{spc}  alias {newSignature.pretty(depth)} = {oldSignature.pretty(depth)}"
+        "{spc}alias\n{spc}  {newSignature.pretty(depth+2)}\n{spc}  =\n{spc}  {oldSignature.pretty(depth+2)}"
+    }
+    method accept(visitor) from (ac) {
+        if (visitor.visitAlias(self) up (ac)) then {
+            def newChain = ac.extend(self)
+            newSignature.accept(visitor) from (newChain)
+            oldSignature.accept(visitor) from (newChain)
+        }
+    }
+    method declarationKindWithAncestors(ac) {
+        k.aliasdec
     }
     method hash { (newSignature.hash * 1171) + oldSignature.hash }
     method isExecutable { false }
@@ -3323,6 +3392,7 @@ class baseVisitor -> AstVisitor {
     method visitComment(o) up(ac) { visitComment(o) }
     method visitImplicit(o) up(ac) { visitImplicit(o) }
     method visitOuter(o) up(ac) -> Boolean { visitOuter(o) }
+    method visitAlias(o) up(ac) -> Boolean { visitAlias(o) }
 
     method visitIf(o) -> Boolean { true }
     method visitBlock(o) -> Boolean { true }
@@ -3354,6 +3424,7 @@ class baseVisitor -> AstVisitor {
     method visitComment(o) -> Boolean { true }
     method visitImplicit(o) -> Boolean { true }
     method visitOuter(o) -> Boolean { true }
+    method visitAlias(o) -> Boolean { true }
 
     method asString { "an AST visitor" }
 }
@@ -3394,6 +3465,7 @@ class pluggableVisitor(visitation:Predicate2⟦AstNode, Object⟧) -> AstVisitor
     method visitComment(o) up(ac) { visitation.apply (o, ac) }
     method visitImplicit(o) up(ac) { visitation.apply (o, ac) }
     method visitOuter(o) up(ac) { visitation.apply (o, ac) }
+    method visitAlias(o) up(ac) { visitation.apply (o, ac) }
 
     method asString { "a pluggable AST visitor" }
 }

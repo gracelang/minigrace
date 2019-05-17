@@ -2203,6 +2203,7 @@ method inheritOrUse {
 
 method inheritModifier(node) {
     // parse an alias or exclude modifier on an `inherit` clause
+    // node is the inheritNode
 
     if (sym.isKeyword.not) then { return false }
     def symValue = sym.value
@@ -2216,11 +2217,12 @@ method inheritModifier(node) {
 }
 
 method parseAlias(node) {
+    // parse an alias modifier on an `inherit` clause; node is the inheritNode
     next    // skip the alias keyword
-    def newMeth = methodsignature
+    def newMeth = methodSignature
     if (sym.isOp && (sym.value == "=")) then {
         next
-        def oldMeth = methodsignature.appliedOccurrence
+        def oldMeth = methodSignature.appliedOccurrence
         if (newMeth.numParams ≠ oldMeth.numParams) then {
             errormessages.syntaxError "a method and its alias must have the same number of parameters"
                 atRange (newMeth.line, newMeth.linePos, oldMeth.endPos)
@@ -2228,14 +2230,15 @@ method parseAlias(node) {
         node.addAlias (newMeth) for (oldMeth)
     } else {
         errormessages.syntaxError ("an alias modifier must take the form " ++
-            "'‹newMethodSignature› = ‹oldMethodSignature›'")
+            "'‹newMethodHeader› = ‹oldMethodHeader›'")
             atPosition (lastToken.line, lastToken.linePos + lastToken.size)
     }
     return true
 }
 method parseExclude(node) {
+    // parse an exclude modifier on an `inherit` clause; node is the inheritNode
     next    // skip the exclude keyword
-    def excludedMeth = methodsignature.appliedOccurrence
+    def excludedMeth = methodHeader.appliedOccurrence
     node.addExclusion (excludedMeth)
     return true
 }
@@ -2381,7 +2384,7 @@ method classOrTrait(btok) {
                 "Consider using a class, or a class inside an object constructor.")
                 atPosition(tokens.first.line, tokens.first.linePos)
     }
-    def methNode = methodsignature.setPositionFrom(btok)
+    def methNode = methodHeader.setPositionFrom(btok)
     parseObjectConstructorBody "a {myKind}" startingWith (btok) after "the {myKind} header"
     def objNode = values.pop
     methNode.body := [objNode]
@@ -2426,7 +2429,7 @@ method methodClassOrTrait {
 
 method methodDeclaration(btok) {
     next    // skip the "method" keyword
-    def methNode = methodsignature.setPositionFrom(btok)
+    def methNode = methodHeader.setPositionFrom(btok)
     def anns = doannotation
     def originalValues = values
     values := list []
@@ -2579,8 +2582,9 @@ method optionalTypeAnnotation {
     }
 }
 
-method methodsignature {
-    // Accept a method signature
+method methodHeader {
+    // Accept a method header, including the -> and result type, and
+    // return an ast.methodNode with an empty list for the method body
     if ((! acceptKeyword "prefix") && (sym.isIdentifier.not) && (sym.isOp.not)) then {
         def suggestion = errormessages.suggestion.new
         suggestion.insert(" «method name»")afterToken(lastToken)
@@ -2832,17 +2836,19 @@ method doreturn {
 }
 
 method methodInInterface {
-    // parses a method signature in an interface literal
-    def methodTypeTok = sym
-    var methNode := methodsignature
-    var dtype := methNode.dtype
-    if (false == methNode.dtype) then {
-        dtype := ast.identifierNode.new("Done", false)
-    }
-    def o = ast.methodTypeNode.new(methNode.signature, dtype)
-                                            .setPositionFrom(methodTypeTok)
-    values.push(o)
+    // parses a method signature in an interface literal, and pushes the
+    // resulting node, along with any comments, onto values
+    values.push(methodSignature)
     reconcileComments
+}
+
+method methodSignature {
+    // parses a method signature, and returns a methodSignatureNode
+    def firstTok = sym
+    def m = methodHeader
+    var rt := m.dtype
+    if (false == rt) then { rt := ast.unknownType }
+    ast.methodSignatureNode(m.signature, rt).setPositionFrom(firstTok)
 }
 
 method checkForSeparatorInInterface {
