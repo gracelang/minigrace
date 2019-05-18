@@ -144,7 +144,6 @@ type List⟦T⟧ = Sequenceable⟦T⟧ & interface {
     insert(elt:T)at(n:Number) -> List⟦T⟧
     pop -> T
     ++(o: List⟦T⟧) -> List⟦T⟧
-    addAll(l: Collection⟦T⟧) -> List⟦T⟧
     copy -> List⟦T⟧
     sort -> List⟦T⟧
     sortBy(sortBlock:Function2⟦T,T,Number⟧) -> List⟦T⟧
