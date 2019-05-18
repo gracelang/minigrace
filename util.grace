@@ -245,6 +245,13 @@ method startupFailure (message) {
     sys.exit 1
 }
 
+def lineNumberWidth = 4
+def leader = "-" * (lineNumberWidth+2)  // +2 for the ": " between number and line
+
+method padl(num) {
+    def str = num.asString
+    (" " * (lineNumberWidth - str.size)) ++ str
+}
 
 method generalError(message, errlinenum, position, arr, suggestions) {
     if (false ≠ vtagv) then {
@@ -252,11 +259,11 @@ method generalError(message, errlinenum, position, arr, suggestions) {
     }
     io.error.write("{modnamev}.grace[{errlinenum}{position}]: {message}\n")
     if ((errlinenum > 1) && (lines.size >= (errlinenum - 1))) then {
-        io.error.write("  {errlinenum - 1}: {lines.at(errlinenum - 1)}\n")
+        io.error.write("{padl(errlinenum - 1)}: {lines.at(errlinenum - 1)}\n")
     }
     if ((errlinenum > 0) && (lines.size >= errlinenum)) then {
-        io.error.write "  {errlinenum}: {lines.at(errlinenum)}\n"
-        io.error.write "{arr}\n"
+        io.error.write "{padl(errlinenum)}: {lines.at(errlinenum)}\n"
+        io.error.write "{leader}{arr}\n"
     }
     if (suggestions.size > 0) then {
         for(suggestions) do { s ->
@@ -296,18 +303,16 @@ method semantic_error(s) {
     io.error.write ": {s}\n"
     if (linenumv > 1) then {
         if (lines.size > 0) then {
-            io.error.write("  {linenumv - 1}: {lines.at(linenumv - 1)}\n")
+            io.error.write("{padl(linenumv - 1)}: {lines.at(linenumv - 1)}\n")
         }
     }
-    var arr := "----"
-    for (2..(lineposv + linenumv.asString.size)) do { _ ->
-        arr := arr ++ "-"
-    }
+    def arr = "-" * (lineNumberWidth + lineposv)
+
     if (lines.size >= linenumv) then {
-        io.error.write("  {linenumv}: {lines.at(linenumv)}\n{arr}^\n")
+        io.error.write("{padl(linenumv)}: {lines.at(linenumv)}\n{leader}{arr}^\n")
     }
     if (linenumv < lines.size) then {
-        io.error.write("  {linenumv + 1}: {lines.at(linenumv + 1)}\n")
+        io.error.write("{padl(linenumv + 1)}: {lines.at(linenumv + 1)}\n")
     }
     sys.exit(2)
 }
