@@ -1046,6 +1046,10 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         }
         method visitMethodType (o) up (anc) {
             def surroundingScope = anc.parent.scope
+            if (o.isAppliedOccurrence) then {
+                o.scope := surroundingScope
+                return true
+            }
             def ident = o.asIdentifier
             checkForReservedName(ident)
             surroundingScope.addNode (ident) asA (k.methdec)
