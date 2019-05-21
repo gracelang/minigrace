@@ -241,7 +241,8 @@ class baseNode {
     method range { start (start) end (end) }
     method kind { abstract }
     method isNull { false }
-    method isAppliedOccurrence { false }
+    method isAppliedOccurrence { isBindingOccurrence.not }
+    method isBindingOccurrence { true }
     method isMatchingBlock { false }
     method isFieldDec { false }
     method isInherits { false }
@@ -746,7 +747,13 @@ class methodSignatureNode(parts', rtype') {
     var signature is public := parts'
     var rtype is public := rtype'
     var cachedIdentifier := uninitialized
-    var isBindingOccurrence := true
+    var isBindingOccurrence is readable := true
+            // the only exceptions are the oldMethodName in an alias clause,
+            // and an excluded name
+
+    method postCopy(other) {
+        isBindingOccurrence := other.isBindingOccurrence
+    }
 
     method appliedOccurrence {
         isBindingOccurrence := false
@@ -857,7 +864,7 @@ class methodSignatureNode(parts', rtype') {
     method pretty(depth) {
         def spc = "  " * (depth+1)
         var s := basePretty(depth) ++ "\n"
-        s := "{s}{spc}Name: {nameString}\n"
+        s := "{s}{spc}Name: {asIdentifier}\n"
         if (false != rtype) then {
             s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth + 2)}"
         }
@@ -1078,9 +1085,6 @@ def methodNode is public = object {
         method usesTraitSyntax { "trait" == description }
         var cachedIdentifier := uninitialized
         var isBindingOccurrence is readable := true
-            // the only exceptions are the oldMethodName in an alias clause,
-            // and an excluded name
-        method isAppliedOccurrence { isBindingOccurrence.not }
 
         method end -> Position {
             if (body.isEmpty.not) then {
@@ -2951,9 +2955,11 @@ def inheritNode is public = object {
             aliases.do { a ->
                 s := "{s}\n{a.pretty(depth + 1)}"
             }
-            if (exclusions.isEmpty.not) then { s := "{s}\n{spc}" }
+            if (exclusions.isEmpty.not) then {
+                s := "{s}\n{spc}  exclusions:"
+            }
             exclusions.do { e ->
-                s := "{s}  exclude {e}"
+                s := "{s}\n{spc}    {e.pretty(depth + 2)}"
             }
             if (providedNames.isEmpty.not) then {
                 s := s ++ "\n{spc}Provided names: {list.withAll(providedNames).sort}"
