@@ -926,7 +926,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             if (callee.isIdentifier) then {
                 callee.inRequest := true
             }
-            o.parts.do { each -> each.scope := o }
+            o.parts.do { each -> each.scope := scope }
             if (enclosingNode.isMethod) then {
                 if (enclosingNode.body.last == o) then {
                     o.isTailCall := true
