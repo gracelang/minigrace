@@ -2238,7 +2238,7 @@ method parseAlias(node) {
 method parseExclude(node) {
     // parse an exclude modifier on an `inherit` clause; node is the inheritNode
     next    // skip the exclude keyword
-    def excludedMeth = methodHeader.appliedOccurrence
+    def excludedMeth = methodSignature.appliedOccurrence
     node.addExclusion (excludedMeth)
     return true
 }
