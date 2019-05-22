@@ -1073,11 +1073,7 @@ method compilebind(o) {
 }
 method compiledefdec(o) {
     def currentScope = o.scope
-    def nm = if (o.name.kind == "generic") then {
-        o.name.value.value
-    } else {
-        o.name.value
-    }
+    def nm = o.nameString
     def var_nm = varf(nm)
     declaredvars.push(nm)
     if (debugMode) then {
@@ -1098,11 +1094,7 @@ method compiledefdec(o) {
 method compilevardec(o) {
     def currentScope = o.scope
     def parentNodeKind = o.parentKind
-    def nm = if (o.name.kind == "generic") then {
-        o.name.value.value
-    } else {
-        o.name.value
-    }
+    def nm = o.nameString
     def var_nm = varf(nm)
     declaredvars.push(nm)
     def rhs = o.value
@@ -1300,18 +1292,17 @@ method compiledialect(o) {
 method compileimport(o) {
     out "// Import of \"{o.path}\" as {o.nameString}"
     def currentScope = o.scope
-    def nm = escapeident(o.nameString)
+    def nm = o.nameString
     def var_nm = varf(nm)
     def fn = escapestring(o.path)
-    declaredvars.push(escapeident(o.nameString))
+    declaredvars.push(nm)
     out("if (typeof {formatModname(o.path)} == \"undefined\")")
     out "  throw new GraceExceptionPacket(EnvironmentExceptionObject, "
     out "    new GraceString(\"could not find module {o.path}\"));"
     out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", {formatModname(o.path)});")
     initializedVars.add(nm)
-    def methodIdent = o.value
     def accessor = (ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(currentScope)],
-        [methodIdent], o.dtype) scope(currentScope))
+        [o.value], o.dtype) scope(currentScope))
     accessor.line := o.line
     accessor.linePos := o.linePos
     accessor.annotations.addAll(o.annotations)
