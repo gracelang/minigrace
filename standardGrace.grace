@@ -396,13 +396,9 @@ method hashCombine(a, b) {
         var bHash = (b * 1664525 - 0xA21FE89) * 3;
         result = new GraceNum((aHash * 2) ^ bHash);›
 }
-import "collectionsPrelude" as coll
+import "collectionsPrelude" as collections is public
 // collectionsPrelude defines types using &, so it can't be imported until
 // the above definition of TypeIntersection has been executed.
-
-// We should just be able to put "is public" on the above import, but this is
-// not fully implemented.  So instead we create an alias:
-def collections is public = coll
 
 trait equality {
     method == (other) is required

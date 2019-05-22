@@ -553,6 +553,8 @@ method buildGctFor(module) {
         meths.addAll(p.providedNames)       // add inherited and used methods
     }
     for (module.value) do { v->
+        // TODO: replace this scan of the whole module by traversal of the
+        // module symbol table
         if (v.kind == "vardec") then {
             def gctType = if (false != v.dtype) then {v.dtype.toGrace(0)} else {"Unknown"}
             def varRead: String = "{v.name.value} → {gctType}"
@@ -625,6 +627,14 @@ method buildGctFor(module) {
                         put(obConstructors)
                     classes.push(v.name.value)
                 }
+            }
+        } elseif {v.kind == "import"} then {
+            if (v.isPublic) then {
+                meths.add(v.nameString)
+                def gctType = if (false != v.dtype) then {v.dtype.toGrace(0)} else {"Unknown"}
+                publicMethodTypes.push("{v.name.value} → {gctType}")
+            } else {
+                confidentials.push(v.nameString)
             }
         }
     }
