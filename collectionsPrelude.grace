@@ -201,52 +201,38 @@ type Iterator⟦T⟧ = interface {
     next -> T
 }
 
+trait iteratorOver⟦T,R⟧ (sourceIterator: Iterator⟦T⟧)
+        mappedBy (function:Function1⟦T, R⟧) -> Iterator⟦R⟧ {
+    method asString { "a mapped iterator over {sourceIterator}" }
+    method hasNext { sourceIterator.hasNext }
+    method next { function.apply(sourceIterator.next) }
+}
+
 class lazySequenceOver⟦T,R⟧ (source: Collection⟦T⟧)
         mappedBy (function:Function1⟦T, R⟧) -> Enumerable⟦R⟧ {
     use enumerable⟦T⟧
     class iterator {
-        def sourceIterator = source.iterator
-        method asString { "an iterator over a lazy map sequence" }
-        method hasNext { sourceIterator.hasNext }
-        method next { function.apply(sourceIterator.next) }
+        use iteratorOver⟦T,R⟧ (source.iterator) mappedBy (function)
     }
     method size { source.size }
     method isEmpty { source.isEmpty }
     method asDebugString { "a lazy sequence mapping over {source}" }
 }
 
-class lazySequenceOver⟦T⟧ (source: Collection⟦T⟧)
-        filteredBy(predicate:Predicate1⟦T⟧) -> Enumerable⟦T⟧ {
-    use enumerable⟦T⟧
-    class iterator {
-        var cache
-        var cacheLoaded := false
-        def sourceIterator = source.iterator
-        method asString { "an iterator over filtered {source}" }
+method iteratorOver⟦T⟧ (sourceIterator: Iterator⟦T⟧)
+        filteredBy(predicate:Predicate1⟦T⟧) -> Iterator⟦T⟧ {
+    // returns a trait that supplies the iteration protocol
+
+    var cache
+    var cacheLoaded := false
+    object {
+        method asString { "a filtered iterator over {sourceIterator}" }
         method hasNext {
-        // To determine if this iterator has a next element, we have to find
-        // an acceptable element; this is then cached, for the use of next
-            if (cacheLoaded) then { true } else { hasNextAcceptableElement }
-        }
-        method next {
-            if (cacheLoaded.not) then { cache := nextAcceptableElement }
-            cacheLoaded := false
-            return cache
-        }
-        method nextAcceptableElement is confidential {
-        // return the next element of the underlying iterator satisfying
-        // predicate; if there is none, raises IteratorExhausted.
-            while { true } do {
-                def outerNext = sourceIterator.next
-                def isAcceptable = predicate.apply(outerNext)
-                if (isAcceptable) then { return outerNext }
-            }
-        }
-        method hasNextAcceptableElement is confidential {
-        // returns true is there is another element in the underlying iterator
-        // satisfying predicate, otherwise false
-            while { true } do {
-                if (sourceIterator.hasNext.not) then { return false }
+            // To determine if this iterator has a next element, we have to find
+            // an acceptable element; this is then cached, for the use of next
+            // If I return true, the cache is loaded.
+            if (cacheLoaded) then { return true }
+            while { sourceIterator.hasNext } do {
                 def outerNext = sourceIterator.next
                 def isAcceptable = predicate.apply(outerNext)
                 if (isAcceptable) then {
@@ -255,7 +241,24 @@ class lazySequenceOver⟦T⟧ (source: Collection⟦T⟧)
                     return true
                 }
             }
+            return false
         }
+        method next {
+            if (hasNext) then {
+                cacheLoaded := false
+                return cache
+            } else {
+                IteratorExhausted.raise "no more elements in {self}"
+            }
+        }
+    }
+}
+
+class lazySequenceOver⟦T⟧ (source: Collection⟦T⟧)
+        filteredBy(predicate:Predicate1⟦T⟧) -> Enumerable⟦T⟧ {
+    use enumerable⟦T⟧
+    class iterator {
+        use iteratorOver⟦T⟧ (source.iterator) filteredBy (predicate)
     }
     method asDebugString { "a lazy sequence filtering {source}" }
 }
@@ -296,23 +299,25 @@ trait collection⟦T⟧ {
             SizeUnknown.raise "collection {asDebugString} does not know its size"
         }
     }
-    method do(action) is required
+    method do(action) {   // can be overridden for efficiency
+        def iter = self.iterator
+        while {iter.hasNext} do { action.apply(iter.next) }
+    }
     method iterator is required
     method isEmpty {
         // override if size is known
         iterator.hasNext.not
     }
     method first {
-        def it = iterator
-        if (it.hasNext) then { 
-            it.next
+        def iter = iterator
+        if (iter.hasNext) then {
+            iter.next
         } else {
             BoundsError.raise "no first element in {self}"
         }
     }
     method do(block1) separatedBy(block0) {
         var firstTime := true
-        var i := 0
         do { each ->
             if (firstTime) then {
                 firstTime := false
@@ -329,8 +334,8 @@ trait collection⟦T⟧ {
     }
     method fold(blk)startingWith(initial) {
         var result := initial
-        do {it ->
-            result := blk.apply(result, it)
+        do {each ->
+            result := blk.apply(result, each)
         }
         return result
     }
