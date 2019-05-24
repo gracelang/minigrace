@@ -6,6 +6,8 @@ import "util" as util
 
 inherit dia.methods
 
+def TypeError = dia.DialectError.refine "TypeError"
+
 type MethodType = {
     // Method signature information consisting of the name, list of MixParts,
     // return type and info on what types it specializes.
@@ -398,7 +400,7 @@ def objectType = object {
 //            TODO: figure out what to do here!
             objectType.fromIdentifier (generic.value)
         } else {
-            ProgrammingError.raise "No case for node of kind {dtype.kind}" with (dtype)
+            ProgrammingError.raise "No case for node {dtype.toGrace 0} of kind {dtype.kind}" with (dtype)
         }
     }
 
@@ -646,7 +648,7 @@ rule { req: Request ->
     match (req.receiver)
       case { innerReq: Request ->
         def rec = innerReq.receiver
-        def rType = if (Identifier.match (rec) && (rec.value == "self")) then {
+        def rType = if (Identifier.matches (rec) && (rec.value == "self")) then {
             scope.types.find "Self" butIfMissing {
                 prelude.Exception.raise "type of self missing" with (rec)
             }
@@ -671,7 +673,7 @@ rule { req: Request ->
         find (req) atScope (scope.methods.stack.size)
     } case { outerObj: Outer ->
         objectType.unknown      // we should be able to do better than that!
-    } case { other: Object ->
+    } else {
         print "receiver {req} is not a Request, an Identifier or an Outer node"
         objectType.unknown
     }
@@ -883,10 +885,10 @@ rule { meth: Method ->
             }
         } else {
             def lastNode = meth.body.last
-            if (Return.match (lastNode).not) then {
+            if (Return.matches (lastNode).not) then {
                 def lastType = typeOf (lastNode)
                 if (lastType.isSubtypeOf (returnType).not) then {
-                    MethodError.raise ("method `{name}` declares a " ++
+                    TypeError.raise ("method `{name}` declares a " ++
                         "result of type `{returnType}`, but returns an " ++
                         "expression of type `{lastType}`") with (lastNode)
                 }
@@ -1095,7 +1097,7 @@ method processBody (body: List) -> ObjectType is confidential {
     collectTypes (body)
 
     // Inheritance typing.
-    def hasInherits = (body.size > 0) && { Inherit.match (body.first) }
+    def hasInherits = (body.size > 0) && { Inherit.matches (body.first) }
     def superType = if (hasInherits) then {
         def inheriting = body.first.value
         inheriting.accept (object {
