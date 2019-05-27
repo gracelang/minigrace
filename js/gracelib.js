@@ -1980,7 +1980,7 @@ function raiseTypeArgError(methodName, required, given) {
 function classType(o) {
     var t = new GraceType(capitalize(o.className));
     for (let m in o.methods) {
-        if (! o.methods[m].confidential) {
+        if (! (m.includes("$") || o.methods[m].confidential)) {
             t.typeMethods.push(m);
         }
     };
