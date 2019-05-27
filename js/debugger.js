@@ -130,12 +130,23 @@ var GraceDebugger = {
             document.getElementById("debugger_vars_display").innerHTML = "Variables:<br /><span style=\"color: #aaa;\">(No variables set)</span>";
         }
     },
-    
-    
-    // adds a variable to the list
-    VariableListItem : function (obj, name, ul) {
+
+    VariableListItem: function (obj, name, ul) {
+        // adds a variable name to the list ul
+
         var li = document.createElement("li");
         li.variable = obj;
+
+        function show(obj) {
+            if (obj.methods.asDebugString) {
+                return callmethod(obj, "asDebugString", [0])._value;
+            }
+            if (obj.methods.asString) {
+                return callmethod(obj, "asString", [0])._value;
+            }
+            return "object defined at " + obj.definitionModule +
+                ":" + obj.definitionLine;
+        }
 
         if (obj && obj.methods) {
             // if a debug$Iterator exists and if either there's no debug$IteratorEnabled set or it is set to true
@@ -152,12 +163,7 @@ var GraceDebugger = {
                 li.style.backgroundImage='url("closed.png")';
                 var top_span = document.createElement("span");
                 var sub_ul = document.createElement("ul");
-
-                if (obj.methods.debugValue) {
-                    top_span.innerHTML = name + " : " + callmethod(obj, "debugValue", [0])._value;
-                } else {
-                    top_span.innerHTML = name + " : ";
-                }
+                top_span.innerHTML = name + ": " + show(obj);
                     
                 sub_ul.style.display = "none";
                     
@@ -172,16 +178,10 @@ var GraceDebugger = {
                     e.stopPropagation();
                 }
             } else {
-                if (obj.methods.debugValue) {
-                    li.innerHTML = name + " : " + callmethod(obj, "debugValue", [0])._value;
-                } else if (obj.methods.asDebugString) {
-                    li.innerHTML = name + " : " + callmethod(obj, "asDebugString", [0])._value;
-                } else {
-                    li.innerHTML = name + " : ";
-                }
+                li.innerHTML = name + ": " + show(obj);
             }
         } else {
-            li.innerHTML = name + " : undefined";
+            li.innerHTML = name + ": undefined";
         }
         ul.appendChild(li);
     },
