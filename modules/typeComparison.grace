@@ -4,8 +4,7 @@ import "mirrors" as mirror
 method methodsIn(DesiredType) missingFrom (value) -> String {
     def vMethods = mirror.reflect(value).methodNames
     def tMethods = DesiredType.methodNames
-    def missing = list.withAll((tMethods -- vMethods).filter{m ->
-        (! m.contains "$")}).sort
+    def missing = list.withAll(tMethods -- vMethods).sort
     def n = missing.size
     if (n == 0) then {
         ProgrammingError.raise "{value.asDebugString} seems to have all the methods of {DesiredType}"
@@ -28,8 +27,7 @@ method methodsIn(DesiredType) missingFrom (value) -> String {
 method protocolOf(value) notCoveredBy (Q:Type) -> String  {
     def vMethods = set.withAll(mirror.reflect(value).methodNames)
     def qMethods = set.withAll(Q.methodNames)
-    def missing = list.withAll((vMethods -- qMethods).filter{m ->
-        (! m.contains "$")}).sort
+    def missing = list.withAll(vMethods -- qMethods).sort
     def n = missing.size
     if (n == 0) then { return "" }
     var s := ""

@@ -138,9 +138,9 @@ var GraceDebugger = {
         li.variable = obj;
 
         if (obj && obj.methods) {
-            // if a debugIterator exists and if either there's no debugIteratorEnabled set or it is set to true
+            // if a debug$Iterator exists and if either there's no debug$IteratorEnabled set or it is set to true
             var doIterator = false;
-            if  (obj.methods.debugIterator &&
+            if  (obj.methods.debug$Iterator &&
                 (typeof obj.data == "undefined"
                 || typeof obj.data.debugIteratorEnabled == "undefined"
                 || obj.data.debugIteratorEnabled._value)
@@ -200,7 +200,7 @@ var GraceDebugger = {
             sub_ul.innerHTML = "";
             sub_ul.style.display = "block";
             
-            var iter = callmethod(li.variable, "debugIterator", [0]);
+            var iter = callmethod(li.variable, "debug$Iterator", [0]);
             while (Grace_isTrue(callmethod(iter, "havemore", [0]))) {
                 var name = iter._index;
                 var val = callmethod(iter, "next", [0]);

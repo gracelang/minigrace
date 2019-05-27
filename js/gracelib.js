@@ -191,7 +191,7 @@ GraceObject.prototype = {
         "asString":         object_asString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator
+        "debug$Iterator":   object_debugIterator
     },
     classUid: "graceObject-intrinsic"
 //    data: {}  The prototype should NOT have a data object — data should go in the
@@ -256,7 +256,7 @@ GraceTrait.prototype = {
         "asString":         trait_asString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator
+        "debug$Iterator":   object_debugIterator
     },
     classUid: "graceTrait-intrinsic"
 };
@@ -305,7 +305,7 @@ function emptyGraceObject(givenName, modname, line) {
             "asString":         object_asString,
             "asDebugString":    object_asDebugString,
             "debugValue":       object_debugValue,
-            "debugIterator":    object_debugIterator
+            "debug$Iterator":   object_debugIterator
         },
         data: {},
         className: givenName,
@@ -416,7 +416,7 @@ GraceString.prototype = {
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator,
+        "debug$Iterator":   object_debugIterator,
         "::(1)":            object_colonColon,
         "++(1)": function(argcv, other) {
             var o = callmethod(other, "asString", [0]);
@@ -860,7 +860,7 @@ GraceNum.prototype = {
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator,
+        "debug$Iterator":   object_debugIterator,
         "::(1)":            object_colonColon,
         "+(1)": function(argcv, other) {
             if (other.className === "number") {
@@ -1163,7 +1163,7 @@ GracePredicatePattern.prototype = {
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator,
+        "debug$Iterator":   object_debugIterator,
         "::(1)":            object_colonColon,
         "asString": function(argcv) {
             return new GraceString("a predicate pattern");
@@ -1206,7 +1206,7 @@ GraceBoolean.prototype = {
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator,
+        "debug$Iterator":   object_debugIterator,
         "::(1)":            object_colonColon,
         "not": function(argcv) {
             return ((this._value) ? GraceFalse : GraceTrue);
@@ -1447,7 +1447,7 @@ GraceSequence.prototype = {
         "debugValue": function(argcv) {
             return new GraceString("sequence");
         },
-        "debugIterator": function(argcv) {
+        "debug$Iterator": function(argcv) {
             return new GraceSequenceIterator(this._value);
         },
         "==(1)": function(argcv, other) {
@@ -1641,7 +1641,7 @@ GracePrimitiveArray.prototype = {
         "debugValue": function(argcv) {
             return new GraceString("primArray");
         },
-        "debugIterator": function(argcv) {
+        "debug$Iterator": function(argcv) {
             return new GraceIterator(this._value);
         },
         "contains(1)": function(argcv, other) {
@@ -1777,7 +1777,7 @@ GraceType.prototype = {
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator,
+        "debug$Iterator":   object_debugIterator,
         "::(1)":            object_colonColon,
         "matches(1)": function type_match (argcv, other) {
             let cUid = other.classUid;
@@ -1862,7 +1862,7 @@ function GraceBlock(recvr, lineNum, numParams) {
         "basicAsString":    object_basicAsString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator,
+        "debug$Iterator":   object_debugIterator,
         "asString":         function GraceBlock_asString (argcv) {
             return new GraceString("block" + this.numParams + "<" +
                     this.definitionModule + ":" + this.definitionLine + ">");
@@ -1880,7 +1880,7 @@ GraceBlock.prototype.noSuchMethodHandler = {
         "basicAsString":    object_basicAsString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator,
+        "debug$Iterator":   object_debugIterator,
         "asString":         function GraceBlock_asString (argcv) {
             return new GraceString("intrinsic noSuchMethodHandler for blocks");
         },
@@ -2152,7 +2152,7 @@ GraceStringIterator.prototype = {
         "basicAsString":    object_basicAsString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator,
+        "debug$Iterator":   object_debugIterator,
         hasNext: function() {
             return ((this._index < this._max) ? GraceTrue : GraceFalse);
         },
@@ -2906,7 +2906,7 @@ GraceUnicodePattern.prototype = {
         "asString":         object_asString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator,
+        "debug$Iterator":   object_debugIterator,
         'matches(1)': function(argcv, o) {
             var success = false;
             var cc = o._value;
@@ -3379,7 +3379,7 @@ GraceMirror.prototype = {
         "asString":         object_asString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator,
+        "debug$Iterator":   object_debugIterator,
         methods: function mirror_methods(argcv) {
             var meths = [];
             var current = this.subject;
@@ -3395,7 +3395,31 @@ GraceMirror.prototype = {
             var meths = callmethod(Grace_prelude, "emptySet", [0]);
             var current = this.subject;
             for (var k in current.methods) {
+                if (! k.includes("$") && current.methods.hasOwnProperty(k) &&
+                      ! current.methods[k].confidential) {
+                    callmethod(meths, "add(1)", [1],
+                          new GraceString(canonicalMethodName(k)));
+                }
+            }
+            return meths;
+        },
+        allMethodNames: function mirror_methodName(argcv) {
+            var meths = callmethod(Grace_prelude, "emptySet", [0]);
+            var current = this.subject;
+            for (var k in current.methods) {
                 if (! k.includes("$") && current.methods.hasOwnProperty(k)) {
+                    callmethod(meths, "add(1)", [1],
+                          new GraceString(canonicalMethodName(k)));
+                }
+            }
+            return meths;
+        },
+        confidentialMethodNames: function mirror_methodName(argcv) {
+            var meths = callmethod(Grace_prelude, "emptySet", [0]);
+            var current = this.subject;
+            for (var k in current.methods) {
+                if (! k.includes("$") && current.methods.hasOwnProperty(k) &&
+                      current.methods[k].confidential) {
                     callmethod(meths, "add(1)", [1],
                           new GraceString(canonicalMethodName(k)));
                 }
@@ -3442,7 +3466,7 @@ function gracecode_mirrors() {
 }
 
 if (typeof gctCache !== "undefined")
-    gctCache['mirrors'] = "classes:\nconfidential:\ndialect:\n standardGrace\nfresh-methods:\n reflect(1)\nfresh:reflect(1):\n getMethod(1)\n methodNames\n methods\n onMethod(1)\nmethodtypes-of:ArgList:\nmethodtypes-of:MethodMirror:\n & 3\n & Object\n 3 isConfidential \u2192 Boolean\n 3 isPublic \u2192 Boolean\n 3 name \u2192 String\n 3 numberOfParams \u2192 Number\n 3 paramCounts \u2192 List\u27e6Number\u27e7\n 3 paramNames \u2192 List\u27e6String\u27e7\n 3 partCount \u2192 Number\n 3 requestWithArgs(args:List\u27e6Object\u27e7) \u2192 Unknown\nmethodtypes-of:Mirror:\n & 2\n & Object\n 2 methodNames \u2192 Set\u27e6String\u27e7\n 2 methods \u2192 List\u27e6MethodMirror\u27e7\n 2 onMethod(nm:String) \u2192 MethodMirror\nmodules:\n collectionsPrelude\n standardGrace\npath:\n /Users/black/Development/mg/gracelang/minigrace/stubs/mirrors.grace\npublic:\n ArgList\n MethodMirror\n Mirror\n loadDynamicModule(1)\n reflect(1)\npublicMethodTypes:\n loadDynamicModule(name:String) \u2192 Done\n reflect(obj:Unknown) \u2192 Mirror\ntypes:\n ArgList\n MethodMirror\n Mirror\n";
+    gctCache["mirrors"] = "classes:\nconfidential:\ndialect:\n standardGrace\nfresh-methods:\n reflect(1)\nfresh:reflect(1):\n getMethod(1)\n methodNames\n methods\n onMethod(1)\nmethodtypes-of:ArgList:\nmethodtypes-of:MethodMirror:\n & 3\n & Object\n 3 isConfidential \u2192 Boolean\n 3 isPublic \u2192 Boolean\n 3 name \u2192 String\n 3 numberOfParams \u2192 Number\n 3 paramCounts \u2192 List\u27e6Number\u27e7\n 3 paramNames \u2192 List\u27e6String\u27e7\n 3 partCount \u2192 Number\n 3 requestWithArgs(args:List\u27e6Object\u27e7) \u2192 Unknown\nmethodtypes-of:Mirror:\n & 2\n & Object\n 2 allMethodNames \u2192 Set\u27e6String\u27e7\n 2 confidentialMethodNames \u2192 Set\u27e6String\u27e7\n 2 methodNames \u2192 Set\u27e6String\u27e7\n 2 methods \u2192 List\u27e6MethodMirror\u27e7\n 2 onMethod(nm:String) \u2192 MethodMirror\nmodules:\n collectionsPrelude\n standardGrace\npath:\n /Users/black/Development/mg/gracelang/minigrace/stubs/mirrors.grace\npublic:\n ArgList\n MethodMirror\n Mirror\n loadDynamicModule(1)\n reflect(1)\npublicMethodTypes:\n loadDynamicModule(name:String) \u2192 Done\n reflect(obj:Unknown) \u2192 Mirror\ntypes:\n ArgList\n MethodMirror\n Mirror\n";
 
 function safeJsString (obj) {
     // Don't use request!  This function is called from within request.
@@ -3842,7 +3866,7 @@ GraceExceptionPacket.prototype = {
         "basicAsString":    object_basicAsString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator,
+        "debug$Iterator":   object_debugIterator,
         "data": function(argcv) {
             return this.data;
         },
@@ -3941,7 +3965,7 @@ GraceException.prototype = {
         "basicAsString":    object_basicAsString,
         "asDebugString":    object_asDebugString,
         "debugValue":       object_debugValue,
-        "debugIterator":    object_debugIterator,
+        "debug$Iterator":   object_debugIterator,
         "::(1)":            object_colonColon,
         "refine(1)": function(argcv, nm) {
             return new GraceException(nm._value, this);
