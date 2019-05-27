@@ -1978,7 +1978,7 @@ function raiseTypeError(msg, type, value) {
              var tc = callmethod(mm, "loadDynamicModule(1)", [1], new GraceString("typeComparison"));
              var missing = callmethod(tc, "methodsIn(1)missingFrom(1)", [1, 1], type, value)._value;
              var s = (missing.includes(" ")) ? "s " : " ";
-             diff = ".\nIt is missing method" + s + missing + ".";
+             diff = ".\nIt is " + describe(value) +  ", which is missing method" + s + missing + ".";
         } catch (ex) {
              // if something goes wrong while generating the message, just give up
         }
@@ -3719,6 +3719,7 @@ function describe(obj) {
     var objString = "";
     var classString = "object";
     var shortClassString = "object";
+    var source = "defined in module " + obj.definitionModule + ", line " + obj.definitionLine
     try {
         var origLineNumber = lineNumber;    // because the asString method will change it
         var m = findMethod(obj, "asString");
@@ -3734,12 +3735,12 @@ function describe(obj) {
     } catch (ex) {
     }
     if (objString === "") {
-        return classString + " (without working asString method)";
+        return classString + " (without working asString method, " + source + ")";
     }
     if ((classString == "object") || (objString.includes(shortClassString))) {
-        return objString;
+        return objString + " (" + source + ")";
     }
-    return classString + " " + objString;
+    return classString + " " + objString + " (" + source + ")";
 }
 
 function tryCatch(obj, cases, finallyblock) {
