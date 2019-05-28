@@ -513,7 +513,7 @@ class list⟦T⟧ {
     class withAll(a: Collection⟦T⟧) -> List⟦T⟧ {
         use indexable⟦T⟧
 
-        var mods is readable := 0
+        var mods := 0
         native "js" code ‹this._value = [];
             this.className = 'list';›
         a.do { each ->
@@ -797,7 +797,7 @@ class set⟦T⟧ {
 
     class ofCapacity(cap) -> Set⟦T⟧ is confidential {
         use collection⟦T⟧
-        var mods is readable := 0
+        var mods := 0
         var inner := prelude.primitiveArray.new(cap)
         var size is readable := 0
         (0..(cap - 1)).do { i ->
@@ -1132,7 +1132,7 @@ class dictionary⟦K,T⟧ {
         // requires building a dictionary for the memo table in the Dictionary type
 
         use collection⟦T⟧
-        var mods is readable := 0
+        var mods := 0
         var numBindings := 0
         var inner := prelude.primitiveArray.new(8)
         for (0..(inner.size-1)) do { i ->
