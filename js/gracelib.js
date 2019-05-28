@@ -157,6 +157,9 @@ function object_basicAsString (argcv) {
     }
     return new GraceString(s + "}");
 }
+
+object_basicAsString.confidential = true;
+
 function articleFor(str) {
     var noun = str.toLowerCase();
     if (noun.startsWith("one")) return "a";
