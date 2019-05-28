@@ -342,10 +342,6 @@ trait collection⟦T⟧ {
         }
         return self
     }
-    method reduce(initial, blk) {
-    // deprecated; for compatibility with builtInList
-        fold(blk)startingWith(initial)
-    }
     method fold(blk)startingWith(initial) {
         var result := initial
         do {each ->
