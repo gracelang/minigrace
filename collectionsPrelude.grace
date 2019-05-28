@@ -196,6 +196,20 @@ type Dictionary⟦K,T⟧ = Collection⟦T⟧ & interface {
     -- (other:Dictionary⟦K, T⟧) -> Dictionary⟦K, T⟧
 }
 
+type DictionaryFactory⟦K,T⟧ = interface {
+    empty -> Dictionary⟦K,T⟧
+    // an empty dictionary
+
+    with(b:Binding⟦K,T⟧) -> Dictionary⟦K,T⟧
+    // a dictionary containing single mapping from b.key to b.value
+
+    withAll(bs:Binding⟦K,T⟧) -> Dictionary⟦K,T⟧
+    // a dictionary containing a mapping for each binding in bs
+
+    <<(bs:Binding⟦K,T⟧) -> Dictionary⟦K,T⟧
+    // identical to withAll(_)
+}
+
 type Iterator⟦T⟧ = interface {
     hasNext -> Boolean
     next -> T
