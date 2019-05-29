@@ -1,4 +1,3 @@
-#pragma noTypeChecks
 dialect "none"
 
 def BoundsError is public = ProgrammingError.refine "BoundsError"

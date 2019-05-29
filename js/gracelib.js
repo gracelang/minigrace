@@ -280,16 +280,18 @@ function Grace_allocObject(superConstructor, givenName) {
                 newMethods[nm] = supMethods[nm];
         }
     }
+    givenName = givenName || "object";
+    givenName = givenName.toString();
     var resultObj = {
         closureKeys: [],
         methods: newMethods,
         data: {},
-        className: givenName || "object",
+        className: givenName,
         mutable: false,
         closureKeys: [],
         definitionModule: "basic library",
         definitionLine: 0,
-        classUid: "givenName-intrinsic"
+        classUid: givenName + "-intrinsic"
     };
     return resultObj;
 }
@@ -2108,7 +2110,7 @@ function GraceSequenceIterator(l) {
     this._index = 0;
     this._max = l.length;
 }
-GraceSequenceIterator.prototype = Grace_allocObject(GraceObject, "listIterator");
+GraceSequenceIterator.prototype = Grace_allocObject(GraceObject, "sequenceIterator");
 GraceSequenceIterator.prototype.methods.hasNext = function() {
     return ((this._index < this._max) ? GraceTrue : GraceFalse);
 };
@@ -2122,6 +2124,7 @@ GraceSequenceIterator.prototype.methods.next = function() {
         throw new GraceExceptionPacket(ie,
             new GraceString("on built-in list " + this._value));
 };
+GraceSequenceIterator.prototype.classUid = "sequenceIterator-intrinsic";
 
 function GraceStringIterator(s) {
     this._value = s._value;
@@ -2154,6 +2157,8 @@ GraceStringIterator.prototype = {
         }
     }
 };
+
+GraceStringIterator.prototype.classUid = "stringIterator-intrinsic";
 
 function GraceIterator(obj) {
     this._value = obj;
