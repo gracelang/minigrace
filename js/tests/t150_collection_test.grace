@@ -1535,7 +1535,7 @@ def dictionaryTest = object {
             assert (evens) shouldBe (dictionary.empty.at "two" put 2)
         }
         method testDictionaryRemove5 {
-            assert {evens.removeKey 5} shouldRaise (NoSuchObject)
+            assert {evens.removeKey 5} shouldRaise (NoSuchObject | TypeError)
         }
         method testDictionaryRemoveKeyFive {
             assert {evens.removeKey "Five"} shouldRaise (NoSuchObject)
