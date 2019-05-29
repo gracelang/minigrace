@@ -1,5 +1,5 @@
 function gracecode_timer() {
-    var o = Grace_allocObject();
+    var o = Grace_allocObject(null, "timer");
     o.methods.intervalList = [];
     o.methods.timeoutList = [];
 
