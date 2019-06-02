@@ -56,7 +56,7 @@ the j2 compiler will be used to run minigrace's test suite.
 
 Finally, if you run
 
-    make sellf.test
+    make self.test
 
 the j2/minigrace compiler is used to compile the compiler once
 again. The resulting compiler is then used to run the test suite again.
