@@ -8,7 +8,7 @@ lastCommit=$(cd grace-web-editor; git rev-parse --short HEAD)
 ideVersion=${ideVersion//[[:blank:]]/}
 
 
-sed -i "" -e "s/IDE--VERSION/${ideVersion}/g" grace-web-editor/index.html
-sed -i "" -e "s/LAST--GIT--COMMIT/${lastCommit}/g" grace-web-editor/index.html
-sed -i "" -e "s/LASTBUILD-DATE/${buildDate}/g" grace-web-editor/index.html
+sed -i -e "s/IDE--VERSION/${ideVersion}/g" grace-web-editor/index.html
+sed -i -e "s/LAST--GIT--COMMIT/${lastCommit}/g" grace-web-editor/index.html
+sed -i -e "s/LASTBUILD-DATE/${buildDate}/g" grace-web-editor/index.html
 
