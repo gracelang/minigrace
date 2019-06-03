@@ -340,6 +340,7 @@ $(JS-KG):
 	npm install
 	mkdir -p $(JS-KG)
 	cp -R node_modules/minigrace/* $(JS-KG)
+	patch $(JS-KG)/minigrace-js minigrace-js.patch
 
 $(JS-KG)/compiler-inspect: $(JS-KG)/compiler-js
 	sed -e "s|#!/usr/bin/env node|#!/usr/bin/env node --inspect|" $< > $@
@@ -370,7 +371,7 @@ pull-web-editor:
        else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi
 
 pull-objectdraw:
-	#@if [ -e objectdraw ] ; \
+	@if [ -e objectdraw ] ; \
        then printf "objectdraw: " ; cd objectdraw; git pull ; \
        else git clone https://github.com/gracelang/objectdraw/ ; fi
 

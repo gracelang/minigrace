@@ -5,7 +5,7 @@ absolutePath(){
     ( cd "$(dirname "$1")" || exit 1; echo "$(pwd -P)/$(basename "$1")"; )
 }
 
-HERE=`absolutePath $0`
-HERE=`dirname ${HERE}`
+HERE=`absolutePath "$0"`
+HERE=`dirname "${HERE}"`
 NODE=`which node`
-${NODE} --max-old-space-size=2048 ${HERE}/compiler-js $*
+${NODE} --max-old-space-size=2048 "${HERE}"/compiler-js $*
