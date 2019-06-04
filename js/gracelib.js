@@ -1938,13 +1938,13 @@ function assertTypeOrMsg(obj, type, objDesc, typeDesc) {
             if ((type.name) && (type.name !== typeDesc)) {
                 typeDesc += " (= " + type.name + ")";
             }
-            let message = objDesc + " does not have type " + typeDesc;
+            let message = objDesc + " (" + describe(obj) + ")" + " does not have type " + typeDesc;
             raiseTypeError(message, type, obj);
         }
     } else if (type.methods["match(1)"]) {
         if (!Grace_isTrue(request(type, "match(1)", [1], obj))) {
             if (type.name !== typeDesc) typeDesc += " (= " + type.name + ")";
-            let message = objDesc + " does not have type " + typeDesc;
+            let message = objDesc + " (" + describe(obj) + ")" + " does not have type " + typeDesc;
             raiseTypeError(message, type, obj);
         }
     } else {
