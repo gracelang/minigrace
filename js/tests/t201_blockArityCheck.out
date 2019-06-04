@@ -1,9 +1,9 @@
 GOT 1: 345
 GOT 3: 123456789
-NoSuchMethod: block2<t201_blockArityCheck_test:4> requires 2 arguments but given 3
-NoSuchMethod: block1<t201_blockArityCheck_test:9> requires 1 argument but given 3
-NoSuchMethod: block4<t201_blockArityCheck_test:14> requires 4 arguments but given 3
+NoSuchMethod: block2<t201_blockArityCheck_test:4> (defined in module t201_blockArityCheck_test, line 4) requires 2 arguments but given 3
+NoSuchMethod: block1<t201_blockArityCheck_test:9> (defined in module t201_blockArityCheck_test, line 9) requires 1 argument but given 3
+NoSuchMethod: block4<t201_blockArityCheck_test:14> (defined in module t201_blockArityCheck_test, line 14) requires 4 arguments but given 3
 GOT 3: 123 hi  lo.
 TypeError: argument 3 to block.apply(_,_,_) does not have type String.
-It is missing methods ++(_), <<(_), >>(_), asLower, asNumber, asUpper, at(_), capitalized, contains(_), do(_), do(_)separatedBy(_), endsWith(_), fifth, filter(_), first, fold(_)startingWith(_), fourth, indexOf(_), indexOf(_)ifAbsent(_), indexOf(_)startingAt(_), indexOf(_)startingAt(_)ifAbsent(_), indices, isEmpty, iterator, keys, keysAndValuesDo(_), last, lastIndexOf(_), lastIndexOf(_)ifAbsent(_), lastIndexOf(_)startingAt(_), lastIndexOf(_)startingAt(_)ifAbsent(_), map(_), ord, quoted, replace(_)with(_), reverseTimesNumber(_), second, size, sizeIfUnknown(_), split(_), startsWith(_), startsWithDigit, startsWithLetter, startsWithPeriod, startsWithSpace, substringFrom(_), substringFrom(_)size(_), substringFrom(_)to(_), third, and trim.
+It is number 789 (defined in module basic library, line 0), which is missing methods ++(_), <<(_), >>(_), asLower, asNumber, asUpper, at(_), capitalized, contains(_), do(_), do(_)separatedBy(_), endsWith(_), fifth, filter(_), first, fold(_)startingWith(_), fourth, indexOf(_), indexOf(_)ifAbsent(_), indexOf(_)startingAt(_), indexOf(_)startingAt(_)ifAbsent(_), indices, isEmpty, iterator, keys, keysAndValuesDo(_), last, lastIndexOf(_), lastIndexOf(_)ifAbsent(_), lastIndexOf(_)startingAt(_), lastIndexOf(_)startingAt(_)ifAbsent(_), map(_), ord, quoted, replace(_)with(_), reverseTimesNumber(_), second, size, sizeIfUnknown(_), split(_), startsWith(_), startsWithDigit, startsWithLetter, startsWithPeriod, startsWithSpace, substringFrom(_), substringFrom(_)size(_), substringFrom(_)to(_), third, and trim.
 done
