@@ -1088,6 +1088,7 @@ class binding⟦K, T⟧ {
         def key is public = k
         def value is public = v
         method asString { "{key}::{value}" }
+        method asDebugString { "{key.asDebugString}::{value.asDebugString}" }
         method hash { (key.hash * 1021) + value.hash }
         method == (other) {
             match (other)
