@@ -20,7 +20,7 @@ testSuite {
     test "generic type annotation on a method" by {
         assert {ana.m "greeting"}
             shouldRaise (TypeError)
-            mentioning "argument to request of `m(_)` does not have type"
+            mentioning "argument to request of `m(_)` (string greeting (defined in module basic library, line 0)) does not have type"
                 // the argument to m is declared as a T = A⟦Number⟧
     }
 }

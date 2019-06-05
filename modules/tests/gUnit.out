@@ -8,4 +8,4 @@ Failed:
     testFailingMethod: deliberate failure
     testNoAssertion: no assertions were checked in this test
 Errored:
-    testBrokenMethod: NoSuchMethod: no method thisMethodDoesNotExist on the "gUnit" module.
+    testBrokenMethod: NoSuchMethod: no method thisMethodDoesNotExist on the "gUnit" module (defined in module gUnit, line 1).
