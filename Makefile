@@ -370,7 +370,7 @@ pull-web-editor:
        else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi
 
 pull-objectdraw:
-	#@if [ -e objectdraw ] ; \
+	@if [ -e objectdraw ] ; \
        then printf "objectdraw: " ; cd objectdraw; git pull ; \
        else git clone https://github.com/gracelang/objectdraw/ ; fi
 
