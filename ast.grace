@@ -910,7 +910,7 @@ def typeLiteralNode is public = object {
     method end -> Position {
         def tEnd = if (types.isEmpty) then {noPosition} else {types.last.end}
         def mEnd = if (methods.isEmpty) then {noPosition} else {methods.last.end}
-        positionOfNext "}" after (max(tEnd, mEnd))
+        positionOfNext "}" after (max(max(tEnd, mEnd), start))
     }
 
     method accept(visitor : AstVisitor) from(ac) {
