@@ -1342,58 +1342,46 @@ class dictionary⟦K,T⟧ {
             }
             s ++ "⟭"
         }
-        method keys -> Enumerable⟦K⟧ {
-            def sourceDictionary = self
-            object {
-                use enumerable⟦K⟧
-                class iterator {
-                    def sourceIterator = sourceDictionary.bindingsIterator
-                    method hasNext { sourceIterator.hasNext }
-                    method next { sourceIterator.next.key }
-                    method asString {
-                        "an iterator over keys of {sourceDictionary}"
-                    }
-                }
-                def size is public = sourceDictionary.size
-                method asDebugString {
-                    "a lazy sequence over keys of {sourceDictionary}"
+        class keys -> Enumerable⟦K⟧ {
+            use enumerable⟦K⟧
+            class iterator {
+                def sourceIterator = outer.outer.bindingsIterator
+                method hasNext { sourceIterator.hasNext }
+                method next { sourceIterator.next.key }
+                method asString {
+                    "an iterator over keys of {outer.outer}"
                 }
             }
-        }
-        method values -> Enumerable⟦T⟧ {
-            def sourceDictionary = self
-            object {
-                use enumerable⟦T⟧
-                class iterator {
-                    def sourceIterator = sourceDictionary.bindingsIterator
-                    // should be request on outer
-                    method hasNext { sourceIterator.hasNext }
-                    method next { sourceIterator.next.value }
-                    method asString {
-                        "an iterator over values of {sourceDictionary}"
-                    }
-                }
-                def size is public = sourceDictionary.size
-                method asDebugString {
-                    "a lazy sequence over values of {sourceDictionary}"
-                }
+            def size is public = outer.size
+            method asDebugString {
+                "a lazy sequence over keys of {outer}"
             }
         }
-        method bindings -> Enumerable⟦T⟧ {
-            def sourceDictionary = self
-            object {
-                use enumerable⟦T⟧
-                method iterator { sourceDictionary.bindingsIterator }
-                // should be request on outer
-                def size is public = sourceDictionary.size
-                method asDebugString {
-                    "a lazy sequence over bindings of {sourceDictionary}"
+        class values -> Enumerable⟦T⟧ {
+            use enumerable⟦T⟧
+            class iterator {
+                def sourceIterator = outer.outer.bindingsIterator
+                method hasNext { sourceIterator.hasNext }
+                method next { sourceIterator.next.value }
+                method asString {
+                    "an iterator over values of {outer.outer}"
                 }
+            }
+            def size is public = outer.size
+            method asDebugString {
+                "a lazy sequence over values of {outer}"
+            }
+        }
+        class bindings -> Enumerable⟦T⟧ {
+            use enumerable⟦T⟧
+            method iterator { outer.bindingsIterator }
+            def size is public = outer.size
+            method asDebugString {
+                "a lazy sequence over bindings of {outer}"
             }
         }
         method iterator -> Iterator⟦T⟧ { values.iterator }
-        class bindingsIterator -> Iterator⟦Binding⟦K, T⟧⟧ {
-            // this should be confidential, but can't be until `outer` is fixed.
+        class bindingsIterator -> Iterator⟦Binding⟦K, T⟧⟧ is confidential {
             def iMods = mods
             var count := 1
             var idx := 0

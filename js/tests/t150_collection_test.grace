@@ -1501,9 +1501,9 @@ def dictionaryTest = object {
         method testDictionaryEvensBindingsIterator {
             def ei = evens.bindings.iterator
             assert (evens.size == 4) description "evens doesn't contain 4 elements!"
-            assert (ei.hasNext) description "the evens iterator has no elements"
+            assert (ei.hasNext) description "evens.bindings.iterator has no elements"
             def copyDict = dictionary⟦String, Number⟧ [ei.next, ei.next, ei.next, ei.next]
-            deny (ei.hasNext) description "the evens iterator has more than 4 elements"
+            deny (ei.hasNext) description "evens.bindings.iterator has more than 4 elements"
             assert (copyDict) shouldBe (evens)
         }
         method testDictionaryAdd {
