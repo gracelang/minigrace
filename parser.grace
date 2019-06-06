@@ -1903,16 +1903,12 @@ method typeArgs {
 
 method typeArg {
     // Parses a single type argument, and leaves it on the values stack.
-    // TODO: 'identifier' could be a dotted identifier, 
-    //        or perhaps a type expression?
 
-    if (sym.isIdentifier) then {
-        identifier
-        if (sym.isLGeneric) then {
-            values.push(ast.genericNode.new(values.pop, typeArgs))
-        }
-    } else {
+    // Special case for interface Literals without leading 'interface' keyword.
+    if (sym.isLBrace) then {
         interfaceLiteral
+    } else {
+        expression(noBlocks)
     }
 }
 
