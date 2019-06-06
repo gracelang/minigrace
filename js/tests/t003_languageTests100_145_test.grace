@@ -257,7 +257,7 @@ def aGraceLangTest = object {
             assert(z.quux) shouldBe "X hello Nyssa"
         }
 
-        method test_104_objstatement {
+        method test_104_objstatement_with_outers {
             def a = object {
                 var x := 1
                 x := x + 2
@@ -267,11 +267,12 @@ def aGraceLangTest = object {
                 }
                 def b = object {
                     outer.foo
+                    def c = object {
+                        outer.outer.foo
+                    }
                 }
             }
-            
-            
-            assert(str)shouldBe("3\n3\n")
+            assert(str)shouldBe("3\n3\n3\n")
         }
         
 

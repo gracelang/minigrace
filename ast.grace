@@ -1862,7 +1862,7 @@ class outerNode(nodes) {
     // The object that we refer to is the one OUTSIDE nodes.last
     inherit baseNode
     def kind is public = "outer"
-    def theObjects is public = nodes
+    def theObjects is public = list.withAll(nodes)
     method numberOfLevels { theObjects.size }
     method asString { "‹object outside that at line {theObjects.last.line}›" }
     method pretty(depth) { basePretty(depth) ++ asString }
