@@ -514,6 +514,8 @@ def blockNode is public = object {
         // precondition: returnsObject
         body.last.returnedObjectScope
     }
+    method hasParams { params.isEmpty.not }
+    method numParams { params.size }
     method parametersDo(b) {
         params.do(b)
     }

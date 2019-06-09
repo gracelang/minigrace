@@ -1374,9 +1374,14 @@ method matchcase {
         }
         def case = values.pop
         if (case.isBlock) then {
-            def guard = case.params.first.decType
-            if (ast.unknownType == guard) then {
-                util.log 20 verbose "case pattern on line {case.params.first.line} is type Unknown; this is not useful, because it will always be true.  Perhaps you want an 'else' branch, which is true only when all other cases are false?"
+            if (case.hasParams) then {
+                def guard = case.params.first.decType
+                if (ast.unknownType == guard) then {
+                    util.log 20 verbose "case pattern on line {case.params.first.line} is type Unknown; this is not useful, because it will always be true.  Perhaps you want an 'else' branch, which is true only when all other cases are false?"
+                }
+            } else {
+                errormessages.syntaxError "the case block in a match(_)case(_)... expression must have one parameter"
+                    atPosition(case.line, case.linePos)
             }
         }
         cases.push(case)
