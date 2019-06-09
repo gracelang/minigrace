@@ -290,8 +290,8 @@ class baseNode {
         }
         return self.dtype
     }
-    method isSimple { true }  // needs no parens when used ac receiver
-    method isDelimited { false }  // needs no parens when used ac argument
+    method isSimple { true }  // needs no parens when used as receiver
+    method isDelimited { false }  // needs no parens when used as argument
     method description { kind }
     method accept(visitor) {
         self.accept(visitor) from (ancestorChain.empty)
@@ -419,7 +419,7 @@ def ifNode is public = object {
     var thenblock is public := thenblock'
     var elseblock is public := elseblock'
     var handledIdentifiers is public := false
-    method isSimple { false }  // needs parens when used ac receiver
+    method isSimple { false }  // needs parens when used as receiver
     method accept(visitor : AstVisitor) from(ac) {
         if (visitor.visitIf(self) up(ac)) then {
             def newChain = ac.extend(self)
@@ -619,7 +619,7 @@ def tryCatchNode is public = object {
     var value is public := block
     var cases is public := cases'
     var finally is public := finally'
-    method isSimple { false }  // needs parens when used ac receiver
+    method isSimple { false }  // needs parens when used as receiver
     method end -> Position {
         if (false ≠ finally) then { return finally.end }
         if (cases.isEmpty.not) then { return cases.last.end }
