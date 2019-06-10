@@ -2571,7 +2571,7 @@ method optionalTypeAnnotation {
         if (successfulParse { typeexpression }) then {
             values.pop
         } else {
-            checkBadTypeLiteral
+            checkBadInterfaceLiteral
             def suggestions = list [ ]
             var suggestion := errormessages.suggestion.new
             suggestion.insert(" «type name»")afterToken(lastToken)
@@ -2939,7 +2939,7 @@ method typedec {
             } else {
                 suggestion.replaceTokenRange(sym, nextTok.prev)with("=")
             }
-            errormessages.syntaxError "a type declaration must have an '=' after the type name."
+            errormessages.syntaxError "a type declaration must have an '=' after the type name"
                   atPosition(lastToken.line, lastToken.linePos + lastToken.size + 1)
                   withSuggestion(suggestion)
         }
@@ -2948,7 +2948,7 @@ method typedec {
         if (sym.isLBrace) then {
             interfaceLiteral
         } elseif {acceptKeyword "type"} then {
-            errormessages.syntaxError "an interface literal must start with 'interface', not 'type'."
+            errormessages.syntaxError "an interface literal must start with 'interface', not 'type'"
                   atRange(sym.line, sym.linePos, sym.endPos)
         } else {
             expression(noBlocks)
@@ -3113,11 +3113,11 @@ method checkBadOperators {
     }
 }
 
-method checkBadTypeLiteral {
+method checkBadInterfaceLiteral {
     if (sym.isLBrace) then {
         def sugg = errormessages.suggestion.new
-        sugg.insert("type ") beforeToken(sym)
-        errormessages.syntaxError("type literals must start with the keyword 'type'.")
+        sugg.insert "interface " beforeToken(sym)
+        errormessages.syntaxError "interface literals must start with the keyword 'interface'"
             atRange(sym.line, sym.linePos, sym.linePos)
             withSuggestion(sugg)
     }
