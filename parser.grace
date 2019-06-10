@@ -1846,7 +1846,7 @@ method typeArgs {
     if (args.isEmpty) then {
         def suggestion = errormessages.suggestion.new
         suggestion.insert("«type expression»")afterToken(lastToken)
-        errormessages.syntaxError "a type argument list cannot be empty. "
+        errormessages.syntaxError "a type argument list starting with a '⟦' must end with a matching '⟧'. "
             atPosition(lastToken.line, lastToken.linePos + lastToken.size) withSuggestion(suggestion)
     }
     next
