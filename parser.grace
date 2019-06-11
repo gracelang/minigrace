@@ -1043,61 +1043,7 @@ method prefixop {
 
 method generic {
     if (sym.isLGeneric) then {
-        def id = values.pop
-        def gens = list [ ]
-        def startToken = sym
-        next
-        while {sym.isIdentifier} do {
-            identifier
-            while {sym.isDot} do {
-                next
-                def receiver = values.pop
-                if (sym.kind != "identifier") then {
-                    def suggestions = list [ ]
-                    var suggestion := errormessages.suggestion.new
-                    suggestion.insert("«type name»")afterToken(lastToken)
-                    suggestions.push(suggestion)
-                    suggestion := errormessages.suggestion.new
-                    suggestion.deleteToken(lastToken)
-                    suggestions.push(suggestion)
-                    errormessages.syntaxError("a type name must follow the '.'.")atPosition(
-                        lastToken.line, lastToken.linePos + 1)withSuggestions(suggestions)
-                }
-                identifier
-                def attributeName = values.pop
-                def memberNd = ast.memberNode.new(attributeName.value, receiver).
-                      setPositionFrom(receiver)
-                values.push(memberNd)
-            }
-            generic
-            gens.push(values.pop)
-            if (sym.isComma) then {
-                next
-            } else {
-                if (sym.kind != "rgeneric") then {
-                    def suggestion = errormessages.suggestion.new
-                    suggestion.insert "⟧" afterToken(lastToken)
-                    def suggestion2 = errormessages.suggestion.new
-                    suggestion2.insert " " beforeToken(startToken)
-                    def suggestions = [suggestion, suggestion2]
-                    errormessages.syntaxError("a type containing a '⟦' must end with a '⟧'.")
-                          atPosition(lastToken.line, lastToken.linePos + lastToken.size)
-                          withSuggestions(suggestions)
-                }
-            }
-        }
-        if (sym.kind != "rgeneric") then {
-            def suggestion = errormessages.suggestion.new
-            suggestion.insert "⟧" afterToken(lastToken)
-            def suggestion2 = errormessages.suggestion.new
-            suggestion2.insert " " beforeToken(startToken)
-            def suggestions = [suggestion, suggestion2]
-            errormessages.syntaxError("a type containing a '⟦' must end with a '⟧'.")
-                  atPosition(lastToken.line, lastToken.linePos + lastToken.size)
-                  withSuggestions(suggestions)
-        }
-        next
-        values.push(ast.genericNode.new(id, gens))
+        values.push(ast.genericNode.new(values.pop, typeArgs))
     }
 }
 method trycatch {
@@ -1888,7 +1834,7 @@ method typeArgs {
     def args = list [ ]
     def startToken = sym
     next
-    while {successfulParse{typeArg}} do {
+    while {successfulParse{typeexpression}} do {
         args.add(values.pop)
         if (sym.isComma) then { next }
     }
@@ -1898,27 +1844,18 @@ method typeArgs {
         def suggestion2 = errormessages.suggestion.new
         suggestion2.insert " " beforeToken(startToken)
         def suggestions = [suggestion, suggestion2]
-        errormessages.syntaxError "a method request containing a '⟦' must have a matching '⟧'. "
+        errormessages.syntaxError "a type argument list containing a '⟦' must have a matching '⟧'. "
               atPosition(lastToken.line, lastToken.linePos + lastToken.size)
               withSuggestions(suggestions)
     }
+    if (args.isEmpty) then {
+        def suggestion = errormessages.suggestion.new
+        suggestion.insert("«type expression»")afterToken(lastToken)
+        errormessages.syntaxError "a type argument list starting with a '⟦' must end with a matching '⟧'. "
+            atPosition(lastToken.line, lastToken.linePos + lastToken.size) withSuggestion(suggestion)
+    }
     next
     return args
-}
-
-method typeArg {
-    // Parses a single type argument, and leaves it on the values stack.
-    // TODO: 'identifier' could be a dotted identifier, 
-    //        or perhaps a type expression?
-
-    if (sym.isIdentifier) then {
-        identifier
-        if (sym.isLGeneric) then {
-            values.push(ast.genericNode.new(values.pop, typeArgs))
-        }
-    } else {
-        interfaceLiteral
-    }
 }
 
 method errorDefNoName {
