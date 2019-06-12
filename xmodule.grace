@@ -448,14 +448,7 @@ def typeVisitor = object {
     method visitMember(member) {
         var receiver : String := member.receiver.nameString
 
-        opTree.push("{receiver}.{member.value}")
-        return false
-    }
-
-    method visitMember(member) {
-        var receiver : String := member.receiver.nameString
-
-        opTree.push("{receiver}.{member.value}")
+//        opTree.push("{receiver}.{member.value}")
         return false
     }
 
@@ -586,12 +579,12 @@ method buildGctFor(module) {
 
     //Set of prelude types; used when writing the type definition of imported
     //types
-    def preludeTypes: Set⟦String⟧ = emptySet
+    // def preludeTypes: Set⟦String⟧ = emptySet
 
 
-    preludeTypes.addAll( ["Pattern", "Iterator", "Boolean", "Number", "String",
-                          "List", "Set", "Sequence", "Dictionary", "Point",
-                          "Binding", "Collection", "Enumerable", "Range"])
+    //preludeTypes.addAll( ["Pattern", "Iterator", "Boolean", "Number", "String",
+    //                      "List", "Set", "Sequence", "Dictionary", "Point",
+    //                      "Binding", "Collection", "Enumerable", "Range"])
 
     for (module.value) do { v->
         // TODO: replace this scan of the whole module by traversal of the
