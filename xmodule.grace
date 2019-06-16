@@ -172,22 +172,22 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
     }
     util.log 50 verbose "checking module \"{nm}\""
     def gmp = sys.environ.at "GRACE_MODULE_PATH"
-    def pn = filePath.fromString(pathname).setExtension "js"
-    def moduleFileJs = util.file(pn) on (util.outDir)
-                                orPath (gmp) otherwise { l ->
-        def graceFileName = pn.copy.setExtension "grace"
-        def moduleFileGrace = util.file(graceFileName) on(util.outDir)
+    def pnJs = filePath.fromString(pathname).setExtension "js"
+    def pnGrace = pnJs.copy.setExtension "grace"
+
+    var moduleFileJs := util.files([pnJs, pnGrace]) on (util.outDir)
                                 orPath (gmp) otherwise { m ->
-            def rm = errormessages.readableStringFrom(m)
-            errormessages.error("I can't find {pn.shortName} " ++
-                "or {graceFileName.shortName}; looked in {rm}.") atRange (sourceRange)
-        }
+        def rm = errormessages.readableStringFrom(m)
+        errormessages.error("I can't find {pnJs.shortName} " ++
+            "or {pnGrace.shortName}; looked in {rm}.") atRange (sourceRange)
+    }
+    if (moduleFileJs.extension == ".grace") then {
         util.log 50 verbose "about to compile module \"{nm}\""
-        compileModule (nm) inFile (moduleFileGrace.asString)
+        compileModule (nm) inFile (moduleFileJs.asString)
                 forDialect (isDialect) atRange (sourceRange)
-        util.file(pn) on(util.outDir) orPath (gmp) otherwise { m ->
+        moduleFileJs := util.file(pnJs) on(util.outDir) orPath (gmp) otherwise { m ->
             def rm = errormessages.readableStringFrom(m)
-            errormessages.error("I just compiled {moduleFileGrace} " ++
+            errormessages.error("I just compiled {moduleFileJs} " ++
                 "but can't find the .js file; looked in {rm}.") atRange (sourceRange)
         }
     }

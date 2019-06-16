@@ -396,7 +396,7 @@ method execDir {
     execDirCache
 }
 
-method file(name) on(origin) orPath(pathString) otherwise(action) {
+method files(names) on(origin) orPath(pathString) otherwise(action) {
     def locations = filePath.split(pathString)
     locations.addFirst(origin)
     if (locations.contains(outDir).not) then { locations.addFirst(outDir) }
@@ -404,22 +404,29 @@ method file(name) on(origin) orPath(pathString) otherwise(action) {
         // might compile an imported file, but then be unable to find the
         // code that it just generated.
     if (locations.contains(execDir).not) then { locations.addLast(execDir) }
-    def candidate = name.copy
-    def originalDir = name.directory
-    if ((originalDir.size > 0) && {originalDir.first == "/"}) then {
-        if (candidate.exists) then {
-            return candidate
-        } else {
-            return action.apply ""
+    def candidates = sequence << names.map{n -> n.copy}
+    def originalDirs = sequence << names.map{n -> n.directory}
+    // This assumes that either everything in "names" is an absolute path, or nothing is
+    if ((names.size > 0) && {originalDirs.at(1).size > 0} && {originalDirs.at(1).first == "/"}) then {
+        names.indices.do { i ->
+            if (candidates.at(i).exists) then {
+               return candidates.at(i)
+            }
         }
+        return action.apply ""
     }
     locations.do { each ->
-        candidate.setDirectory(each ++ originalDir)
-        if ( candidate.exists ) then {
-            return candidate
+        names.indices.do { i ->
+            def candidate = candidates.at(i).copy.setDirectory(each ++ originalDirs.at(i))
+            if ( candidate.exists ) then {
+               return candidate
+            }
         }
     }
     action.apply(locations)
+}
+method file(name) on(origin) orPath(pathString) otherwise(action) {
+    files[name] on(origin) orPath(pathString) otherwise(action)
 }
 method file(name) onPath(pathString) otherwise(action) {
     file(name) on(outDir) orPath(pathString) otherwise(action)
