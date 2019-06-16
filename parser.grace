@@ -2887,8 +2887,11 @@ method typedec {
         } elseif {acceptKeyword "type"} then {
             errormessages.syntaxError "an interface literal must start with 'interface', not 'type'"
                   atRange(sym.line, sym.linePos, sym.endPos)
-        } else {
-            expression(noBlocks)
+        } elseif {unsuccessfulParse {typeexpression}} then {
+            def suggestion = errormessages.suggestion.new
+            errormessages.syntaxError "a type declaration must have a type expression after the '='"
+                  atPosition(lastToken.line, lastToken.linePos + lastToken.size + 1)
+                  withSuggestion(suggestion)
         }
         nt.value := values.pop
         if (false != anns) then {
