@@ -175,23 +175,23 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
     def pnJs = filePath.fromString(pathname).setExtension "js"
     def pnGrace = pnJs.copy.setExtension "grace"
 
-    var moduleFileJs := util.files([pnJs, pnGrace]) on (util.outDir)
+    var moduleFile := util.firstFile[pnJs, pnGrace] on (util.outDir)
                                 orPath (gmp) otherwise { m ->
         def rm = errormessages.readableStringFrom(m)
         errormessages.error("I can't find {pnJs.shortName} " ++
             "or {pnGrace.shortName}; looked in {rm}.") atRange (sourceRange)
     }
-    if (moduleFileJs.extension == ".grace") then {
+    if (moduleFile.extension == ".grace") then {
         util.log 50 verbose "about to compile module \"{nm}\""
-        compileModule (nm) inFile (moduleFileJs.asString)
+        compileModule (nm) inFile (moduleFile.asString)
                 forDialect (isDialect) atRange (sourceRange)
-        moduleFileJs := util.file(pnJs) on(util.outDir) orPath (gmp) otherwise { m ->
+        moduleFile := util.file(pnJs) on(util.outDir) orPath (gmp) otherwise { m ->
             def rm = errormessages.readableStringFrom(m)
-            errormessages.error("I just compiled {moduleFileJs} " ++
+            errormessages.error("I just compiled {moduleFile} " ++
                 "but can't find the .js file; looked in {rm}.") atRange (sourceRange)
         }
     }
-    util.log 50 verbose "found module \"{nm}\" in {moduleFileJs}"
+    util.log 50 verbose "found module \"{nm}\" in {moduleFile}"
 
     def gctDict = parseGCT(nm)
     def sourceFile = filePath.fromString(gctDict.at "path" .first)
@@ -201,12 +201,12 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
         sourceFile.exists
     }
     if ( util.target == "js" ) then {
-        if (moduleFileJs.exists && {
-            sourceExists.not || { moduleFileJs.newer(sourceFile) }
+        if (moduleFile.exists && {
+            sourceExists.not || { moduleFile.newer(sourceFile) }
         }) then {
         } else {
-            if (moduleFileJs.newer(sourceFile).not) then {
-                util.log 60 verbose "{moduleFileJs} not newer than {sourceFile}"
+            if (moduleFile.newer(sourceFile).not) then {
+                util.log 60 verbose "{moduleFile} not newer than {sourceFile}"
             }
             if (sourceFile.exists) then {
                 compileModule (nm) inFile (sourceFile.asString)
@@ -219,7 +219,7 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
         }
         imports.other.add(nm)
     }
-    addTransitiveImports(moduleFileJs.directory, isDialect, nm, sourceRange)
+    addTransitiveImports(moduleFile.directory, isDialect, nm, sourceRange)
 }
 
 method addTransitiveImports(directory, isDialect, moduleName, sourceRange) is confidential {

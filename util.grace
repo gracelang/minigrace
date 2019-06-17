@@ -396,7 +396,10 @@ method execDir {
     execDirCache
 }
 
-method files(names) on(origin) orPath(pathString) otherwise(action) {
+method firstFile(names) on(origin) orPath(pathString) otherwise(action) {
+    // Returns the path of the first file in "names" that exists in origin, or a path in pathString
+    // If multiple path contain a file in "names", the one in the first path is returned.
+    // otherwise, executes action with the list of folders that were searched
     def locations = filePath.split(pathString)
     locations.addFirst(origin)
     if (locations.contains(outDir).not) then { locations.addFirst(outDir) }
@@ -404,20 +407,18 @@ method files(names) on(origin) orPath(pathString) otherwise(action) {
         // might compile an imported file, but then be unable to find the
         // code that it just generated.
     if (locations.contains(execDir).not) then { locations.addLast(execDir) }
-    def candidates = sequence << names.map{n -> n.copy}
-    def originalDirs = sequence << names.map{n -> n.directory}
-    // This assumes that either everything in "names" is an absolute path, or nothing is
-    if ((names.size > 0) && {originalDirs.at(1).size > 0} && {originalDirs.at(1).first == "/"}) then {
-        names.indices.do { i ->
-            if (candidates.at(i).exists) then {
-               return candidates.at(i)
+
+    for (names) do { candidate ->
+        if (!candidate.directory.isEmpty && {candidate.directory.first == "/"}) then {
+            if (candidate.exists) then {
+               return candidate
             }
         }
-        return action.apply ""
     }
+
     locations.do { each ->
-        names.indices.do { i ->
-            def candidate = candidates.at(i).copy.setDirectory(each ++ originalDirs.at(i))
+        for (names) do { name ->
+            def candidate = name.copy.setDirectory(each ++ name.directory)
             if ( candidate.exists ) then {
                return candidate
             }
@@ -426,7 +427,7 @@ method files(names) on(origin) orPath(pathString) otherwise(action) {
     action.apply(locations)
 }
 method file(name) on(origin) orPath(pathString) otherwise(action) {
-    files[name] on(origin) orPath(pathString) otherwise(action)
+    firstFile[name] on(origin) orPath(pathString) otherwise(action)
 }
 method file(name) onPath(pathString) otherwise(action) {
     file(name) on(outDir) orPath(pathString) otherwise(action)
