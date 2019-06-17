@@ -25,6 +25,13 @@ testSuite {
         assert (p.base) shouldBe "grace"
         assert (p.extension) shouldBe ""
     }
+    test "directory never empty" by {
+        def p = fp.fromString "foo.grace"
+        print (p.asDebugString)
+        assert (p.directory) shouldBe "./"
+        assert (p.base) shouldBe "foo"
+        assert (p.extension) shouldBe ".grace"
+    }
     test "from String with extension" by {
         def p = fp.fromString "/usr/local/lib/grace/compiler.grace"
         assert (p.directory) shouldBe "/usr/local/lib/grace/"
