@@ -482,25 +482,25 @@ def typeVisitor = object {
         if ((op.value=="&") || (op.value=="|")) then {
             def leftkind = op.left.kind
             def rightkind = op.right.kind
-            if ((leftkind=="identifier") || (leftkind=="member")) then {
-                var typeIdent := op.left.toGrace(0)
-                methodtypes.push("{op.value} {typeIdent}")
-            } elseif { leftkind=="typeliteral" } then {
+            if { leftkind=="typeliteral" } then {
                 literalCount := literalCount + 1
                 methodtypes.push("{op.value} {literalCount}")
                 visitTypeLiteral(op.left)
             } elseif { leftkind=="op" } then {
                 visitOp(op.left)
-            }
-            if ((rightkind=="identifier") || (rightkind=="member")) then {
-                var typeIdent := op.right.toGrace(0)
+            } else {
+                var typeIdent := op.left.toGrace(0)
                 methodtypes.push("{op.value} {typeIdent}")
-            } elseif { rightkind=="typeliteral" } then {
+            }
+            if { rightkind=="typeliteral" } then {
                 literalCount := literalCount + 1
                 methodtypes.push("{op.value} {literalCount}")
                 visitTypeLiteral(op.right)
             } elseif { rightkind=="op" } then {
                 visitOp(op.right)
+            } else {
+                var typeIdent := op.right.toGrace(0)
+                methodtypes.push("{op.value} {typeIdent}")
             }
         }
         return false
