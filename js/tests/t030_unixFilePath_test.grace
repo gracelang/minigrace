@@ -27,7 +27,6 @@ testSuite {
     }
     test "directory never empty" by {
         def p = fp.fromString "foo.grace"
-        print (p.asDebugString)
         assert (p.directory) shouldBe "./"
         assert (p.base) shouldBe "foo"
         assert (p.extension) shouldBe ".grace"
