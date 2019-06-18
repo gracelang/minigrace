@@ -19,6 +19,7 @@ compiler-inspect
 grace
 js/mgc
 minigrace
+minigrace-js
 misc
 npm-build
 package.json
