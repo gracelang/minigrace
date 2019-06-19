@@ -37,7 +37,7 @@ TEST_DEPENDENCIES = ast lexer fastDict collectionsPrelude parser xmodule errorme
 #   these are modules used in running the full test suite
 NPM_VERSION_PREFIX=1.0
 VERSION := $(NPM_VERSION_PREFIX).$(shell ./tools/git-calculate-generation)
-NPM_STABLE_VERSION=1.0.4435
+NPM_STABLE_VERSION=1.0.4535
 
 VERBOSITY =
 WEBFILES_STATIC = $(filter-out sample,$(sort index.html global.css minigrace.js tabs.js  gtk.js debugger.js ace  debugger.html  importStandardGrace.js $(ICONS)))
@@ -272,7 +272,7 @@ js/grace: js/grace.in
 	chmod a+x js/grace
 
 js/grace-debug: js/grace
-	sed -e "s|#!/usr/bin/env node|#!/usr/bin/env node --inspect-brk|" $< > js/grace-debug
+	sed -e "s|#!/usr/bin/env node|#!`which node`  --inspect-brk|" $< > $@
 	chmod a+x js/grace-debug
 
 js/mgc: minigrace.env $(STUBS:%.grace=j2/%.gct)
@@ -340,7 +340,6 @@ $(JS-KG):
 	npm install
 	mkdir -p $(JS-KG)
 	cp -R node_modules/minigrace/* $(JS-KG)
-	patch $(JS-KG)/minigrace-js minigrace-js.patch
 
 $(JS-KG)/compiler-inspect: $(JS-KG)/compiler-js
 	sed -e "s|#!/usr/bin/env node|#!/usr/bin/env node --inspect|" $< > $@
