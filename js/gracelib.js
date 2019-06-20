@@ -2728,7 +2728,11 @@ function gracecode_sys() {
                 new GraceString("--target"),
                 new GraceString("js")
             ]);
-    }
+        }
+    };
+    this.methods.cwd = function() {
+        if (inBrowser) return new GraceString("");
+        return new GraceString(process.cwd() + require('path').sep);
     };
     this.methods.elapsed = function() {
         return new GraceNum(((new Date).getTime()/1000)-startTime);
@@ -2789,7 +2793,7 @@ function gracecode_sys() {
 }
 
 if (typeof gctCache !== "undefined")
-    gctCache['sys'] = "fresh:environ:\n self\n ≠\n basicAsString\n asDebugString\n ::\n at\n ==(1)\n at(1)put(1)\n !=\n contains(1)\n asString\nmodules:\nfresh-methods:\n environ\npath:\n sys\nclasses:\npublic:\n Environment\n argv\n elapsed\n elaspedTime\n exit(1)\n execPath\n environ\nconfidential:\n";
+    gctCache['sys'] = "fresh:environ:\n self\n ≠\n basicAsString\n asDebugString\n ::\n at\n ==(1)\n at(1)put(1)\n !=\n contains(1)\n asString\nmodules:\nfresh-methods:\n environ\npath:\n sys\nclasses:\npublic:\n Environment\n argv\n cwd\n elapsed\n elaspedTime\n exit(1)\n execPath\n environ\nconfidential:\n";
 
 function gracecode_unicode() {
     this.methods['isLetter(1)'] = function unicode_isLetter(argcv, s) {
