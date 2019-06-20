@@ -197,12 +197,18 @@ method parseargs(buildinfo) {
     if ((infilev == io.input) && {infilev.isatty}) then {
         print("minigrace {buildinfo.gitgeneration} / "
             ++ buildinfo.gitrevision)
-        print "Copyright © 2011-2017 rests with the authors."
-        print("This is free software with absolutely no warranty. "
-            ++ "Say minigrace.w for details.")
+        print "Copyright © 2011-2019 rests with the authors."
+        print "This is free software with absolutely no warranty. "
         print ""
-        print "Enter a program and press Ctrl-D to execute it."
+        print "Provide a program on standard input, or put the name of a file containing"
+        print "the program on the command line.  This will compile & execute it"
         print ""
+        var executable := sys.argv.at 1
+        def cwd = sys.cwd
+        if (executable.startsWith(cwd)) then {
+            executable := executable.substringFrom(cwd.size + 1)
+        }
+        print "For help, execute {executable} --help"
     }
 }
 
