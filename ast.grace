@@ -878,9 +878,9 @@ class methodSignatureNode(parts', rtype') {
     }
     method toGrace(depth : Number) -> String {
         var s := ""
-        signature.do { part -> s:= s ++ part.toGrace(depth + 2) }
+        signature.do { part -> s:= s ++ part.toGrace(depth + 1) }
         if (false != rtype) then {
-            s := "{s} → {rtype.toGrace(depth + 2)}"
+            s := "{s} → {rtype.toGrace(depth + 1)}"
         }
         s
     }
@@ -1029,13 +1029,13 @@ def typeDecNode is public = object {
         var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ self.name.pretty(depth + 1) ++ "\n"
         if (false != typeParams) then {
-            s := "{s}{spc}Type parameters:\n{typeParams.pretty(depth + 2)}\n"
+            s := "{s}{spc}Type parameters:\n{typeParams.pretty(depth + 1)}\n"
         }
         s := s ++ spc ++ "Value:"
-        s := s ++ value.pretty(depth+2)
+        s := s ++ value.pretty(depth + 1)
         s := s ++ "\n"
         if (false != comments) then {
-            s := s ++ comments.pretty(depth+2)
+            s := s ++ comments.pretty(depth + 1)
         }
         s
     }

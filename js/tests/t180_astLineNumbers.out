@@ -5,20 +5,20 @@
   1:1-4:1 typedec
     1:6-11 identifierBinding‹Person›
     Value:1:15-4:1 typeliteral
-        Types:
-        Methods:
-          2:3-15 methodtype
-            Name: identifierBinding‹age›
-            Returns:
-              2:10-15 identifier‹Number›
-            Signature Parts:
-              2:3-5 signaturepart: age
-          3:3-16 methodtype
-            Name: identifierBinding‹name›
-            Returns:
-              3:11-16 identifier‹String›
-            Signature Parts:
-              3:3-6 signaturepart: name
+      Types:
+      Methods:
+        2:3-15 methodtype
+          Name: identifierBinding‹age›
+          Returns:
+            2:10-15 identifier‹Number›
+          Signature Parts:
+            2:3-5 signaturepart: age
+        3:3-16 methodtype
+          Name: identifierBinding‹name›
+          Returns:
+            3:11-16 identifier‹String›
+          Signature Parts:
+            3:3-6 signaturepart: name
 
 
   6:1-12:1 class
