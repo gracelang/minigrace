@@ -437,6 +437,16 @@ var methodtypes := list [ ]
 def typeVisitor = object {
     inherit ast.baseVisitor
     var literalCount := 1
+
+    method visitIdentifier(ident) {
+        methodtypes.push("& {ident.value}")
+        return false
+    }
+
+    method visitMember(member) {
+        return false
+    }
+
     method visitTypeLiteral(lit) {
         for (lit.methods) do { meth ->
             var mtstr := "{literalCount} "
@@ -561,13 +571,17 @@ method buildGctFor(module) {
             if (v.isReadable) then {
                 meths.add(v.name.value)
                 publicMethodTypes.push(varRead)
+                gct.at("publicMethod:{v.name.value}") put(list[varRead])
             } else {
                 confidentials.push(v.name.value)
             }
-            def varWrite: String = "{v.name.value}:=({v.name.value}': {gctType}) → Done"   
+
+            def varWrite: String = "{v.name.value}:=({v.name.value}': " ++
+                                                            "{gctType}) → Done"
             if (v.isWritable) then {
                 meths.add(v.name.value ++ ":=(1)")
                 publicMethodTypes.push(varWrite)
+                gct.at("publicMethod:{v.name.value}:=(1)") put(list[varWrite])
             } else {
                 confidentials.push(varWrite)
             }
@@ -581,14 +595,10 @@ method buildGctFor(module) {
         } elseif {v.kind == "typedec"} then {
             if (v.isPublic) then {
                 meths.add(v.nameString)
-                types.push(v.name.value)
+                types.push(v.nameWithParams)
                 methodtypes := list [ ]
-                v.accept(typeVisitor)
-                var typename := v.name.toGrace(0)
-                if (v.typeParams != false) then {
-                    typename := typename ++ v.typeParams
-                }
-                gct.at "methodtypes-of:{typename}" put(methodtypes)
+                v.value.accept(typeVisitor)
+                gct.at "methodtypes-of:{v.nameWithParams}" put(methodtypes)
             } else {
                 confidentials.push(v.nameString)
             }
@@ -597,6 +607,7 @@ method buildGctFor(module) {
                 meths.add(v.nameString)
                 def gctType = if (false != v.dtype) then {v.dtype.toGrace(0)} else {"Unknown"}
                 publicMethodTypes.push("{v.name.value} → {gctType}")
+                gct.at("publicMethod:{v.name.value}") put (list["{v.name.value} → {gctType}"])
             } else {
                 confidentials.push(v.nameString)
             }

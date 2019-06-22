@@ -34,6 +34,10 @@ public:
  m(1)
  x:=(1)
  xx
+publicMethod:x:=(1):
+ x:=(x': Number) → Done
+publicMethod:xx:
+ xx → Number
 publicMethodTypes:
  m(y:Number) → Done
  x:=(x': Number) → Done
@@ -41,6 +45,6 @@ publicMethodTypes:
 types:
  A
  D
- H
+ H⟦T⟧
  Z
 
