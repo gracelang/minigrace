@@ -2848,6 +2848,20 @@ method interfaceLiteral {
     }
 }
 
+method typedec(toks) {
+    // Parses the type declaration described by toks; returns the approriate parse tree
+
+    // This method is used by xmodule to parse type declarations in the gct string
+    if (toks.isEmpty) then {
+        RequestError.raise "Empty tokenList in typedec(tokenList)"
+        //treat this edge case later
+    }
+    tokens := toks
+    next
+    typedec
+    values.pop
+}
+
 method typedec {
     // Accept a declaration: 'type = <type expression>'
     if (acceptKeyword "type") then {
