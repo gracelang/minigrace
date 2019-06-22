@@ -3126,6 +3126,7 @@ method parse(toks) {
     // corresponding to it.
 
     util.log_verbose "parsing."
+    values.clear        //  <thismodule>.parse(_) can be requested multiple times
     moduleObject := ast.moduleNode.body(values) named (util.modname)
 
     if (toks.size == 0) then {
