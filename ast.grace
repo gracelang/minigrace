@@ -981,6 +981,10 @@ def typeDecNode is public = object {
     var typeParams is public := false
 
     method nameString → String { name.value }
+    method nameWithParams → String {
+        if (false == typeParams) then { return nameString }
+        nameString ++ typeParams.toGrace 0
+    }
     method end -> Position { value.end }
     method isLegalInTrait { true }
     method isTypeDec { true }
@@ -1036,13 +1040,7 @@ def typeDecNode is public = object {
         s
     }
     method toGrace(depth : Number) -> String {
-        def spc = "    " * depth
-        var s := ""
-        s := "type {self.name}"
-        if (false != typeParams) then {
-            typeParams.toGrace(0)
-        }
-        s ++ " = " ++ value.toGrace(depth + 2)
+        "type {nameWithParams} = {value.toGrace(depth + 1)}"
     }
     method shallowCopy {
         typeDecNode.new(name, nullNode).shallowCopyFieldsFrom(self)
