@@ -33,7 +33,7 @@ module.name := "test_179_output"
 util.extensions.at "gctfile" put true
 util.outDir := "./"
 xmodule.writeGctForModule(module)
-def gct = xmodule.parseGCT("test_179_output")
+def gct = xmodule.gctDictionaryFor "test_179_output"
 def gctText = xmodule.gctAsString(gct)
 
 print (gctText)

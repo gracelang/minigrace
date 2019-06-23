@@ -1619,7 +1619,7 @@ method outputModuleMetadata(moduleObject) {
 }
 
 method outputGct {
-    def gct = xmodule.parseGCT(modname)
+    def gct = xmodule.gctDictionaryFor(modname)
     def gctText = xmodule.gctAsString(gct)
     util.outprint "if (typeof gctCache !== \"undefined\")"
     util.outprint "  gctCache[{modNameAsString}] = \"{escapestring(gctText)}\";"

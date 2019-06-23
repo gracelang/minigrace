@@ -54,7 +54,7 @@ method checkDialect(moduleObject) {
     if (dmn == "none") then { return }
     util.log 50 verbose "checking dialect {dmn} used by module {moduleObject.name}"
     checkExternalModule(dialectNode)
-    def dialectGct = parseGCT(dialectNode.value)
+    def dialectGct = gctDictionaryFor(dialectNode.path)
     if ((dialectGct.at "public" ifAbsent {emptySequence}).contains "thisDialect") then {
         util.log 50 verbose "loading dialect \"{dmn}\" for checkers."
         try {
@@ -193,7 +193,7 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
     }
     util.log 50 verbose "found module \"{nm}\" in {moduleFileJs}"
 
-    def gctDict = parseGCT(nm)
+    def gctDict = gctDictionaryFor(nm)
     def sourceFile = filePath.fromString(gctDict.at "path" .first)
     def sourceExists = if (sourceFile.directory.contains "stub") then {
         false        // for binary-only modules like unicode
@@ -223,17 +223,17 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
 }
 
 method addTransitiveImports(directory, isDialect, moduleName, sourceRange) is confidential {
-    def gctData = gctCache.at(moduleName) ifAbsent {
+    def gctDict = gctCache.at(moduleName) ifAbsent {
         parseGCT(moduleName) sourceDir(directory)
     }
-    if (gctData.containsKey "dialect") then {
-        def dialects = gctData.at "dialect"
+    if (gctDict.containsKey "dialect") then {
+        def dialects = gctDict.at "dialect"
         if (dialects.isEmpty.not) then {
-            def dName = gctData.at "dialect" .first
+            def dName = gctDict.at "dialect" .first
             checkimport(dName, dName, true, sourceRange)
         }
     }
-    def importedModules = gctData.at "modules" ifAbsent { emptySequence }
+    def importedModules = gctDict.at "modules" ifAbsent { emptySequence }
     def m = util.modname
     if (importedModules.contains(m)) then {
         errormessages.error("Cyclic import detected: '{m}' is imported "
@@ -283,14 +283,22 @@ method compileModule (nm) inFile (sourceFile)
     }
 }
 
-method parseGCT(moduleName) {
+method gctDictionaryFor(moduleName) {
+    // Returns the GCT dictioanry for moduleName
+
     gctCache.at(moduleName) ifAbsent {
         parseGCT(moduleName) sourceDir(util.outDir)
     }
 }
 
 method parseGCT(moduleName) sourceDir(dir) is confidential {
-    def gctData = emptyDictionary
+    // Returns the GCT dictionary for moduleName
+
+    // We extract the GCT string from an external resource, parse it,
+    // and build and return a new dictioanry containing the "GCT information",
+    // which describes the objects exported from moduleName
+
+    def gctDict = emptyDictionary
     def sz = moduleName.size
     def gctList = extractGctFor(moduleName) sourceDir(dir)
     var key := ""
@@ -298,18 +306,19 @@ method parseGCT(moduleName) sourceDir(dir) is confidential {
         if (line.size > 0) then {
             if (line.first ≠ " ") then {
                 key := line.substringFrom 1 to (line.size-1)  // dropping the ":"
-                gctData.at(key) put(list [ ])
+                gctDict.at(key) put(list [ ])
             } else {
-                gctData.at(key).addLast(line.substringFrom 2 to (line.size))
+                gctDict.at(key).addLast(line.substringFrom 2 to (line.size))
             }
         }
     }
-    gctCache.at(moduleName) put(gctData)
-    return gctData
+    gctCache.at(moduleName) put(gctDict)
+    return gctDict
 }
 
-method extractGctFor(moduleName) sourceDir(dir) {
+method extractGctFor(moduleName) sourceDir(dir) is confidential {
     // Extracts the gct information for moduleName from an external resource
+    // Returns the gct information as a collection of Strings.
 
     if (inBrowser) then { return extractGctFromCache(moduleName) }
     try {
@@ -327,10 +336,10 @@ method extractGctFor(moduleName) sourceDir(dir) {
     }
 }
 
-method extractGctFromJsFile(moduleName) sourceDir(dir) {
+method extractGctFromJsFile(moduleName) sourceDir(dir) is confidential {
     // Looks for a .js file containing the compiled code for moduleName.
     // The file that referenced moduleName is in directory dir.
-    // returns the gct information as a collection of Strings.
+    // Returns the gct information as a collection of Strings.
 
     def sought = filePath.fromString(moduleName).setExtension ".js"
     def gmp = sys.environ.at "GRACE_MODULE_PATH"
@@ -352,7 +361,7 @@ method extractGctFromJsFile(moduleName) sourceDir(dir) {
     EnvironmentException.raise "Can't find gct string in JS file {filename}"
 }
 
-method extractGctFromGctFile(moduleName) sourceDir(dir) {
+method extractGctFromGctFile(moduleName) sourceDir(dir) is confidential {
     // Looks for a .gct file continaing the compiled code for moduleName.
     // The file that referenced moduleName is in directory dir.
     // Returns the gct information as a collection of Strings.
@@ -371,7 +380,7 @@ method extractGctFromGctFile(moduleName) sourceDir(dir) {
     result
 }
 
-method splitJsString(jsLine:String) {
+method splitJsString(jsLine:String) is confidential {
     // jsLine is a line of javascript like
     //   gctCache["xmodule"] = "classes:\nconfidential:\n CheckerFailure\n ..."
     // Evaluates the string on the rhs of the = sign, splits into lines,

@@ -876,7 +876,7 @@ method setupContext(moduleObject) {
     def dialectName:String = dialectNode.value
     if (dialectName ≠ "none") then {
         xmodule.checkExternalModule(dialectNode)
-        def gctDict = xmodule.parseGCT(dialectName)
+        def gctDict = xmodule.gctDictionaryFor(dialectName)
         def typeDecls = set.withAll(gctDict.at "types" ifAbsent {sequence.empty})
         gctDict.at "public" ifAbsent {emptySequence}.do { mn ->
             preludeScope.addName(mn) asA (if (typeDecls.contains(mn))
@@ -987,7 +987,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitImport (o) up (anc) {
             o.scope := anc.parent.scope
             xmodule.checkExternalModule(o)
-            def gct = xmodule.parseGCT(o.path)
+            def gct = xmodule.gctDictionaryFor(o.path)
             def otherModule = newScopeIn(anc.parent.scope) kind "module"
             otherModule.node := o
             processGCT(gct, otherModule)
