@@ -2796,6 +2796,10 @@ def importNode is public = object {
     method shallowCopy {
         importNode.new(path, nullNode, false).shallowCopyFieldsFrom(self)
     }
+    method postCopy(other) {
+        annotations := other.annotations
+        self
+    }
   }
 }
 def dialectNode is public = object {
