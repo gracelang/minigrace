@@ -1,0 +1,34 @@
+{
+  "author": {
+    "name": "The Grace Development Team"
+  },
+  "description": "A package to _install_ a known-good version of minigrace _locally_ (for the purpose of bootstrapping the minigrace complier for the Grace language)",
+  "devDependencies": {},
+  "directories": {
+    "doc": "doc",
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gracelang/minigrace.git"
+  },
+  "keywords": [
+    "grace",
+    "compiler",
+    "minigrace"
+  ],
+  "license": "GPL-3.0-or-later",
+  "main": "index.js",
+  "maintainers": [
+    {
+      "name": "Andrew P. Black",
+      "email": "apblack@pdx.edu"
+    }
+  ],
+  "name": "minigrace-known-good",
+  "readme": "This package avoids warnings when installing minigrace locally with npm",
+  "scripts": {
+    "test": "./minigrace-js quick_test.grace"
+  },
+  "version": "1.0.0"
+}

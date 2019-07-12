@@ -1,8 +1,9 @@
-include Makefile.conf
+-include Makefile.conf
 
 MAKEFLAGS += -r
 
 ARCH := $(shell uname -s)-$(shell uname -m)
+ALPHA-BETA = ""
 STUBS := $(filter-out $(PRELUDESOURCEFILES), $(STUBS))
 ALL_LIBRARY_MODULES = $(sort $(filter-out $(COMPILER_MODULES), $(LIBRARY_MODULES) $(OBJECTDRAW)))
 INTERNAL_STUBS := io.grace mirrors.grace sys.grace unicode.grace
@@ -22,8 +23,8 @@ MGFLAGS = -XnoChecks
 J1-MINIGRACE = $(JS-KG) j1/compiler.js $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/gracelib.js
 J2-MINIGRACE = $(J1-MINIGRACE) j2/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) j2/gracelib.js genjs.grace
 JSJSFILES = gracelib.js unicodedata.js
-JSRUNNERS_WITHOUT_COMPILER = grace grace-debug minigrace-js
-JSRUNNERS = $(JSRUNNERS_WITHOUT_COMPILER) compiler-js compiler-inspect
+JSRUNNERS_WITHOUT_COMPILER = grace grace-debug minigrace-js minigrace-inspect
+JSRUNNERS = $(JSRUNNERS_WITHOUT_COMPILER) compiler-js
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
@@ -36,8 +37,8 @@ TYPE_DIALECTS = staticTypes requireTypes
 TEST_DEPENDENCIES = ast lexer fastDict collectionsPrelude parser xmodule errormessages standardGrace identifierKinds standardGrace
 #   these are modules used in running the full test suite
 NPM_VERSION_PREFIX=1.0
-VERSION := $(NPM_VERSION_PREFIX).$(shell ./tools/git-calculate-generation)
-NPM_STABLE_VERSION=1.0.4535
+VERSION := $(NPM_VERSION_PREFIX).$(shell ./tools/git-calculate-generation)$(ALPHA-BETA)
+NPM_STABLE_VERSION=1.0.4435
 
 VERBOSITY =
 WEBFILES_STATIC = $(filter-out sample,$(sort index.html global.css minigrace.js tabs.js  gtk.js debugger.js ace  debugger.html  importStandardGrace.js $(ICONS)))
@@ -158,7 +159,8 @@ $(EXTERNAL_STUBS:%.grace=j2/%.js): j2/%.js: js/%.js
 	cp -p $< $@
 
 fullclean: clean
-	rm -rf $$(ls -d js-kg/*/* | grep -v $(NPM_STABLE_VERSION))
+	rm -rf $$(ls -d js-kg/* | grep -v $(NPM_STABLE_VERSION))
+	rm -rf npm-build-dir
 
 fulltest: gencheck clean self.test test module-test
 
@@ -215,14 +217,6 @@ j1-minigrace: $(J1-MINIGRACE)
 
 j2/animation.js: j2/timer.gct j2/timer.js
 
-j2/compiler-inspect: js/compiler-js.in
-	sed -e "s|#!NODE|#!`which node` --inspect|" $< > $@
-	chmod a+x $@
-
-j2/compiler-js: js/compiler-js.in
-	sed -e "s|#!NODE|#!`which node`|" $< > $@
-	chmod a+x $@
-
 j2/rtobjectdraw.js: j2/requireTypes.js
 
 j2/stobjectdraw.js: j2/staticTypes.js
@@ -233,14 +227,6 @@ j2/buildinfo.grace: buildinfo.grace
 j2-minigrace: $(J2-MINIGRACE)
 
 $(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
-	cp -p $< $@
-
-$(JS-KG)/compiler-js: js/compiler-js.in
-	if [ ! -e $(JS-KG) ] ; then mkdir -p $(JS-KG) ; fi
-	sed -e "s|#!NODE|#!`which node`|" $< > $@
-	chmod a+x $@
-
-$(JS-KG)/minigrace-js: js/minigrace-js
 	cp -p $< $@
 
 $(JSONLY:%.grace=js/%.js): js/%.js: modules/%.grace js/dom.gct minigrace js/timer.gct
@@ -254,14 +240,14 @@ $(JSRUNNERS:%=j1/%): j1/%: $(JS-KG)/%
 # to be run with the kg runners and libraries.
 	cp -p $< $@
 
-$(JSRUNNERS_WITHOUT_COMPILER:%=j2/%): j2/%: js/%
+$(JSRUNNERS:%=j2/%): j2/%: js/%
 	cp -p $< $@
-
-$(JSRUNNERS): %: js/%
-	cp -p $< $@
+	chmod a+x $@
 
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
+
+js/animation%js: js/timer.gct objectdraw/animation.grace
 
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
@@ -279,10 +265,10 @@ js/mgc: minigrace.env $(STUBS:%.grace=j2/%.gct)
 	rm -rf mgcTemp js/mgc
 	mkdir mgcTemp
 	cd mgcTemp && ln -sf $(STUBS:%.grace=../j2/%.gct) .
-	echo '#!'"`which node` --max-old-space-size=2048" > mgcTemp/compiler-js-head
-	awk 'NR>1;/^\/\/ end of preamble/{exit}' js/compiler-js >> mgcTemp/compiler-js-head
-	awk 'f;/^\/\/ end of preamble/{f=1}' js/compiler-js  > mgcTemp/compiler-js-tail
-	cat mgcTemp/compiler-js-head j2/gracelib.js $(MGSOURCEFILES:%.grace=j2/%.js) mgcTemp/compiler-js-tail > mgcTemp/mgc
+	echo '#!'"`which node` --max-old-space-size=2048" > mgcTemp/minigrace-js-head
+	awk 'NR>1;/^\/\/ end of preamble/{exit}' js/compiler-js >> mgcTemp/minigrace-js-head
+	awk 'f;/^\/\/ end of preamble/{f=1}' js/compiler-js  > mgcTemp/minigrace-js-tail
+	cat mgcTemp/minigrace-js-head j2/gracelib.js $(MGSOURCEFILES:%.grace=j2/%.js) mgcTemp/minigrace-js-tail > mgcTemp/mgc
 	chmod a+x mgcTemp/mgc
 	ln -i mgcTemp/mgc js
 	rm -rf mgcTemp
@@ -293,14 +279,8 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
-js/animation%js: js/timer.gct objectdraw/animation.grace
-
-js/compiler-inspect: js/compiler-js
-	sed -e "s|#!/usr/bin/env node|#!/usr/bin/env node --inspect|" $< > $@
-	chmod a+x $@
-
-js/compiler-js: js/compiler-js.in
-	sed -e "s|#!NODE|#!`which node`|" $< > $@
+js/minigrace-inspect: js/minigrace-js
+	sed -e "s|node|node --inspect|" $< > $@
 	chmod a+x $@
 
 js/tests/gracelib.js: js/gracelib.js
@@ -317,7 +297,7 @@ $(MGSOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace $(J1-MINIGRACE)
 
 minigrace: $(J2-MINIGRACE)
 
-minigrace.env: minigrace $(EXTERNAL_STUBS:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct) $(JSRUNNERS)
+minigrace.env: minigrace $(EXTERNAL_STUBS:%.grace=j2/%.js) $(STUBS:%.grace=j2/%.gct) $(JSRUNNERS:%=j2/%) $(OBJECTDRAW:%.grace=modules/%.grace)
 
 module.test: minigrace.env $(TYPE_DIALECTS:%=j2/%.js)
 	modules/tests/harness-js-js j2/minigrace-js
@@ -335,26 +315,30 @@ modules/typeComparison.js: modules/typeComparison.grace
 npm-get-kg: $(JS-KG)
 
 $(JS-KG):
-	@echo "Downloading known-good js compiler from NPM... VERSION=$(NPM_STABLE_VERSION)"
-	sed -e 's/VERSION/$(NPM_STABLE_VERSION)/g' package.in.json > package.json
-	npm install
+	@echo "Installing known-good compiler minigrace@$(NPM_STABLE_VERSION) from NPM..."
+	cp js/npm-install-js-kg.json package.json
+	npm install minigrace@$(NPM_STABLE_VERSION)
+	rm package.json
 	mkdir -p $(JS-KG)
 	cp -R node_modules/minigrace/* $(JS-KG)
 
-$(JS-KG)/compiler-inspect: $(JS-KG)/compiler-js
-	sed -e "s|#!/usr/bin/env node|#!/usr/bin/env node --inspect|" $< > $@
-	chmod a+x $@
+$(JS-KG)/minigrace-inspect: $(JS-KG)/minigrace-js
+	sed "s|node|node --inspect|" $< > $@
 
-npm-build-kg: minigrace.env
-	mkdir -p npm-build
-	rm -rf npm-build/*
-	cp npm-js-kg.json npm-build/package.json
-	-@cp j2/*.js j2/*.gct js/grace js/grace-debug npm-build/
-	-@cp js/minigrace-js js/compiler-js npm-build/
-# "-" prefix means ignore exit status!
+npm-build: minigrace.env Makefile
+	mkdir -p npm-build-dir
+	rm -rf npm-build-dir/*
+	cp js/npm-package.json npm-build-dir/package.json
+	cp j2/*.js j2/*.gct $(MGSOURCEFILES) $(ALL_LIBRARY_MODULES:%=modules/%) npm-build-dir/
+	cp js/minigrace-js js/minigrace-inspect js/grace js/grace-debug npm-build-dir/
+	cp js/tests/t001*_test.grace npm-build-dir/quick_test.grace
+	cd npm-build-dir && npm version $(VERSION)
 
-npm-publish: npm-build-kg
-	cd npm-build && npm version $(VERSION) && npm publish
+npm-build-beta: minigrace.env
+	$(MAKE) ALPHA-BETA=-beta.1 npm-build
+
+npm-publish: npm-build
+	cd npm-build-dir && npm publish $(shell ./tools/npm-tag npm-build-dir/package.json)
 	@echo Published minigrace version $(VERSION) to npmjs.com
 
 $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
@@ -399,7 +383,7 @@ self.test: minigrace.env $(STUBS:%.grace=j2/%.gct)
 	chmod a+x selftest/mgc
 	rm -f $(MGSOURCEFILES:%.grace=./%.js)
 	@GRACE_MODULE_PATH=.:modules:js $(PREAMBLE)selftest/mgc $(VERB) --make --dir selftest compiler.grace && \
-	cp js/compiler-js js/minigrace-js js/gracelib.js js/tests/harness-js j2/standardGrace.js j2/collectionsPrelude.js selftest
+	cp js/compiler-js js/minigrace-js js/minigrace-inspect js/gracelib.js js/tests/harness-js j2/standardGrace.js j2/collectionsPrelude.js selftest
 	$(PREAMBLE)selftest/harness-js selftest/minigrace-js js/tests ""
 
 $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js

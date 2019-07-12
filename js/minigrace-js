@@ -1,10 +1,10 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 absolutePath(){
-    [[ -d $1 ]] && { cd "$1"; echo "$(pwd -P)"; } ||
-    ( cd "$(dirname "$1")" || exit 1; echo "$(pwd -P)/$(basename "$1")"; )
+[[ -d $1 ]] && { cd "$1"; echo "$(pwd -P)"; } ||
+( cd "$(dirname "$1")" || exit 1; echo "$(pwd -P)/$(basename "$1")"; )
 }
 
 HERE="`absolutePath $0`"
 HERE="`dirname ${HERE}`"
-/usr/bin/env NODE_OPTIONS="--max-old-space-size=2048" node ${HERE}/compiler-js $*
+NODE_OPTIONS="--max-old-space-size=2048" node ${HERE}/compiler-js $*

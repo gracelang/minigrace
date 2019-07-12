@@ -1,12 +1,17 @@
-#!NODE --max-old-space-size=2048
+// One might expect this script to start with
+// #!/usr/bin/env NODE_OPTIONS=--max-old-space-size=2048 node
+// so that it can be executed directly.  But Linux does not separate the
+// arguments to a #! line, resulting in it failing to find a program called
+// 'NODE_OPTIONS=--max-old-space-size=2048 node' (Darwin gets this right).
+// Instead, this script must be invoked by the short script minigrace-js
 
 // Runs the minigrace compiler using the components in the same directory
-// as this script.  Expects to be invoked by minigrace-js.
+// as this script.
 
 // This script is similar to js/grace, the script that runs a Grace program
 // that has been compiled into JavaScript.  The difference is that it is
 // specialised to run the minigrace compiler.  It's necessary because the
-// compiler needs to load the modules that are components of the
+// compiler may need to load the modules that are components of the
 // compiler from a place different from where it searches for modules that
 // that are components of the program being compiled.  In particular,
 // this will be so when the compiler is being bootstrapped.
@@ -50,7 +55,7 @@ function MiniGrace() {
     };
     
     this.stderr_write = function(value) {
-        // This function is used only in the oldWeb interface.  The exp interface
+        // This function is used only in the oldWeb interface.  grace-web-editor
         // replaces it with a different method in editor.js around line 138.
         // There, each error write is turned into an html div, and is thus a line
         // of its own.  For compatibility, we make each stderr_write a separate line.
@@ -291,7 +296,7 @@ function abspath(file) {
     return path.join(process.cwd(), file);
 }
 
-var execDir = path.parse(process.argv[1]).dir + path.sep;
+var execDir = __dirname + path.sep;   // the directory that contains this executable
 
 try {
     if (typeof GraceObject === "undefined") {
@@ -302,15 +307,13 @@ try {
     }
     minigrace = new MiniGrace();
     minigrace.loadModule("standardGrace", execDir, []);
-    var executable = "compiler.js";
-    var exFile = execDir + executable;
-    minigrace.execFile = abspath(exFile);
+    minigrace.execFile = execDir + "compiler.js";
 
     minigrace.trapErrors(function() {
-        // as as special case, do_import("standardGrace", …) adds to Grace_prelude,
+        // as as special case, do_import("standardGrace", …) _adds_ to Grace_prelude,
         // rather than creating a new module object.
         do_import('standardGrace', gracecode_standardGrace);
-        minigrace.run(exFile);
+        minigrace.run(minigrace.execFile);
     });
 } catch (e) {
     if (typeof e.message === "string")
