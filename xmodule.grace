@@ -598,6 +598,7 @@ method buildGctFor(module) {
             if (v.isPublic) then {
                 meths.add(v.nameString)
                 publicMethodTypes.push(generateMethodHeader(v))
+                gct.at("publicMethod:{v.nameString}") put([generateMethodHeader(v)])
             } else {
                 confidentials.push(v.nameString)
             }
@@ -608,9 +609,11 @@ method buildGctFor(module) {
                 methodtypes := list [ ]
                 v.value.accept(typeVisitor)
                 gct.at "methodtypes-of:{v.nameWithParams}" put(methodtypes)
+                gct.at "typedec-of:{v.nameWithParams}" put([v.toGrace(0)])
             } else {
                 confidentials.push(v.nameString)
             }
+
         } elseif {v.kind == "defdec"} then {
             if (v.isPublic) then {
                 meths.add(v.nameString)
