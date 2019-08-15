@@ -454,7 +454,7 @@ method max(a,b) is confidential {       // copied from standard prelude
 
 // we used to define
 // once method emptySequence⟦T⟧ is confidential { ... }
-// and use this to defin esequence.empty, but it turns out that getting the
+// and use this to define sequence.empty, but it turns out that getting the
 // correct emptySequence from the cache is slower than just creating a [ ]
 
 class sequence⟦T⟧ {
