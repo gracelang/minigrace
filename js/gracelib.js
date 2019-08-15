@@ -1266,7 +1266,7 @@ var GraceFalse = new GraceBoolean(false);
 function GraceList(jsList) {
     var newList = callmethod(Grace_prelude, "emptyList", [0]);
     for (var ix = 0; ix < jsList.length; ix++) {
-        callmethod(newList, "push(1)", [1], jsList[ix]);
+        callmethod(newList, "add(1)", [1], jsList[ix]);
     }
     return newList;
 }
@@ -3878,7 +3878,7 @@ GraceExceptionPacket.prototype = {
         "backtrace": function(argcv) {
             var es = new GraceList([]);
             for (var i=0; i<this.exitStack.length; i++)
-                callmethod(es, "push(1)", [1], new GraceString(this.exitStack[i].toString()));
+                callmethod(es, "add(1)", [1], new GraceString(this.exitStack[i].toString()));
             return es;
         },
         "printBacktrace": function(argcv) {
