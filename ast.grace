@@ -358,6 +358,8 @@ class baseNode {
         cmtNodeList.do { each -> addComment(each) }
     }
     method statementName { kind }
+    method toGrace(depth) is abstract
+    method toGrace { toGrace 0 }
 }
 
 def implicit is public = object {
@@ -983,7 +985,7 @@ def typeDecNode is public = object {
     method nameString → String { name.value }
     method nameWithParams → String {
         if (false == typeParams) then { return nameString }
-        nameString ++ typeParams.toGrace 0
+        nameString ++ typeParams.toGrace
     }
     method end -> Position { value.end }
     method isLegalInTrait { true }
@@ -1487,7 +1489,7 @@ def callNode is public = object {
         method toGrace(depth : Number) -> String {
             if (isRequestOfPrefixOperator) then {
                 def opSymbol = parts.first.name.substringFrom 7
-                return "{opSymbol} {self.receiver.toGrace 0}"
+                return "{opSymbol} {self.receiver.toGrace}"
             }
             var s := ""
             if ((receiver.isImplicit || receiver.isSelfOrOuter).not) then {
@@ -1518,7 +1520,7 @@ def callNode is public = object {
             }
             cachedIdentifier
         }
-        method asString { "call {toGrace 0}" }
+        method asString { "call {toGrace}" }
         method shallowCopy {
             callNode.new(receiver, parts).shallowCopyFieldsFrom(self)
         }
@@ -1989,11 +1991,11 @@ def memberNode is public = object {
             }
             s
         }
-        method asString { toGrace 0 }
+        method asString { toGrace }
         method asIdentifier {
             // make and return an identifiderNode for my request
             if (scope.variety == "fake") then {
-                ProgrammingError.raise "asIdentifier requested on {pretty 0} when scope was fake"
+                ProgrammingError.raise "asIdentifier requested on {toGrace} when scope was fake"
             }
             def resultNode = identifierNode.new (nameString, false) scope (scope)
             resultNode.inRequest := true
@@ -2024,7 +2026,7 @@ def genericNode is public = object {
     var args is public := arguments
     method end -> Position { positionOfNext "⟧" after (args.last.end) }
     method nameString { value.nameString }
-    method asString { toGrace 0 }
+    method asString { toGrace }
     method accept(visitor : AstVisitor) from(ac) {
         if (visitor.visitGeneric(self) up(ac)) then {
             def newChain = ac.extend(self)
@@ -2064,7 +2066,7 @@ class typeParametersNode(params') whereClauses (conditions) {
     def kind is public = "typeparams"
     var params is public := params'
     var whereClauses is public := conditions
-    method asString { toGrace 0 }
+    method asString { toGrace }
     method declarationKindWithAncestors(ac) { k.typeparam }
     once method end -> Position {
         if (whereClauses.isEmpty) then {
@@ -2324,7 +2326,7 @@ def stringNode is public = object {
             def q = "\""
             q ++ value.quoted ++ q
         }
-        method asString { "string {toGrace 0}" }
+        method asString { "string {toGrace}" }
         method shallowCopy {
             stringNode.new(value).shallowCopyFieldsFrom(self)
         }
@@ -2889,7 +2891,7 @@ def returnNode is public = object {
         def spc = "  " * (depth+1)
         var s := basePretty(depth) ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth + 1)
-        if (false ≠ dtype) then { s := "{s} (type {dtype.toGrace 0})" }
+        if (false ≠ dtype) then { s := "{s} (type {dtype.toGrace})" }
         s
     }
     method toGrace(depth : Number) -> String {
@@ -2986,7 +2988,7 @@ def inheritNode is public = object {
             s
         }
         method asString {
-            if (isUse) then { "use " } else { "inherit " } ++ value.toGrace 0
+            if (isUse) then { "use " } else { "inherit " } ++ value.toGrace
         }
         method nameString { value.toGrace(0) }
         method addAlias (newSig) for (oldSig) {
