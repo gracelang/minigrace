@@ -1581,12 +1581,11 @@ def moduleNode is public = object {
             if (visitor.visitModule(self) up(ac)) then {
                 def newChain = ac.extend(self)
                 theDialect.accept(visitor) from (newChain)
-                if (false != self.superclass) then {
-                    self.superclass.accept(visitor) from(newChain)
+                if (false != superclass) then {
+                    superclass.accept(visitor) from(newChain)
                 }
-                for (self.value) do { x ->
-                    x.accept(visitor) from(newChain)
-                }
+                usedTraits.do { t -> t.accept(visitor) from(newChain) }
+                value.do { x -> x.accept(visitor) from(newChain) }
             }
         }
         method map(blk) ancestors(ac) {
