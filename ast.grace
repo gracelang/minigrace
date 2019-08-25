@@ -239,7 +239,14 @@ class baseNode {
     method start { line (line) column (linePos) }
     method end -> Position { line (line) column (linePos + self.value.size - 1) }
     method range { start (start) end (end) }
-    method kind { abstract }
+    method kind is abstract
+    method annotations { [] }   // overriden by those nodes that can be annotated
+    method hasAnnotation(annName) {
+        annotations.do { ann ->
+            if (ann.nameString == annName) then { return true }
+        }
+        false
+    }
     method isNull { false }
     method isAppliedOccurrence { isBindingOccurrence.not }
     method isBindingOccurrence { true }
@@ -997,7 +1004,7 @@ def typeDecNode is public = object {
 
     method isExecutable { false }
     method declarationKindWithAncestors(ac) { k.typeparam }
-    method isConfidential { findAnnotation(self, "confidential") }
+    method isConfidential { hasAnnotation  "confidential" }
     method isPublic { isConfidential.not }
     method isWritable { false }
     method isReadable { isPublic }
@@ -1210,13 +1217,13 @@ def methodNode is public = object {
             st.node := self
         }
         method declarationKindWithAncestors(ac) { k.parameter }
-        method isConfidential { findAnnotation(self, "confidential") }
+        method isConfidential { hasAnnotation  "confidential" }
         method isPublic { isConfidential.not }
         method isWritable { false }
         method isReadable { isPublic }
-        method isAbstract { findAnnotation(self, "abstract") }
-        method isRequired { findAnnotation(self, "required") }
-        method isAnnotationDecl { findAnnotation(self, "annotation") }
+        method isAbstract { hasAnnotation "abstract" }
+        method isRequired { hasAnnotation "required" }
+        method isAnnotationDecl { hasAnnotation "annotation" }
         method usesAsType(aNode) {
             aNode == dtype
         }
@@ -2528,13 +2535,13 @@ def defDecNode is public = object {
         method end -> Position { value.end }
         method isPublic {
             // defs are confidential by default
-            if (findAnnotation(self, "public")) then { return true }
-            findAnnotation(self, "readable")
+            if (hasAnnotation "public") then { return true }
+            hasAnnotation "readable"
         }
         method isFieldDec { true }
         method isWritable { false }
         method isReadable { isPublic }
-        method isAnnotationDecl { findAnnotation(self, "annotation") }
+        method isAnnotationDecl { hasAnnotation "annotation" }
         method usesAsType(aNode) {
             aNode == dtype
         }
@@ -2630,16 +2637,16 @@ def varDecNode is public = object {
     }
     method isPublic {
         // vars are confidential by default
-        findAnnotation(self, "public")
+        hasAnnotation "public"
     }
     method isWritable {
-        if (findAnnotation(self, "public")) then { return true }
-        if (findAnnotation(self, "writable")) then { return true }
+        if (hasAnnotation "public") then { return true }
+        if (hasAnnotation "writable") then { return true }
         false
     }
     method isReadable {
-        if (findAnnotation(self, "public")) then { return true }
-        if (findAnnotation(self, "readable")) then { return true }
+        if (hasAnnotation "public") then { return true }
+        if (hasAnnotation "readable") then { return true }
         false
     }
     method isFieldDec { true }
@@ -2737,8 +2744,8 @@ def importNode is public = object {
     method nameString { value.nameString }
     method isPublic {
         // imports, like defs, are confidential by default
-        if (findAnnotation(self, "public")) then { return true }
-        findAnnotation(self, "readable")
+        if (hasAnnotation "public") then { return true }
+        hasAnnotation "readable"
     }
     method moduleName {
         var bnm := ""
@@ -3477,14 +3484,3 @@ class pluggableVisitor(visitation:Predicate2⟦AstNode, Object⟧) -> AstVisitor
     method asString { "a pluggable AST visitor" }
 }
 
-method findAnnotation(node, annName) {
-    node.annotations.do { ann ->
-        if (ann.nameString == annName) then {
-            return object {
-                inherit true
-                def value is public = ann
-            }
-        }
-    }
-    false
-}
