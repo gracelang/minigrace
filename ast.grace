@@ -494,9 +494,7 @@ def blockNode is public = object {
     def selfclosure is public = true
     var matchingPattern is public := false
     var extraRuntimeData is public := false
-    for (params') do {p->
-        p.accept(patternMarkVisitor) from(ancestorChain.with(self))
-    }
+
     method isBlock { true }
     method isDelimited { true }
     method isEmpty { body.size == 0 }
@@ -1362,7 +1360,6 @@ def callNode is public = object {
         def kind is public = "call"
         var parts is public := parts'            // [ requestPart ]
         var generics is public := false
-        var isPattern is public := false
         var receiver is public := receiver'    // formerly `value`
         var isSelfRequest is public := false
         var isTailCall is public := false      // is possibly the result of a method
@@ -1525,7 +1522,6 @@ def callNode is public = object {
             callNode.new(receiver, parts).shallowCopyFieldsFrom(self)
         }
         method postCopy(other) {
-            isPattern := other.isPattern
             isSelfRequest := other.isSelfRequest
             isTailCall := other.isTailCall
             isFresh := other.isFresh
@@ -3479,15 +3475,6 @@ class pluggableVisitor(visitation:Predicate2⟦AstNode, Object⟧) -> AstVisitor
     method visitAlias(o) up(ac) { visitation.apply (o, ac) }
 
     method asString { "a pluggable AST visitor" }
-}
-
-
-def patternMarkVisitor = object {
-    inherit baseVisitor
-    method visitCall(c) up(ac) {
-        c.isPattern := true
-        true
-    }
 }
 
 method findAnnotation(node, annName) {
