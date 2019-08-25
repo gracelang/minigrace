@@ -620,11 +620,6 @@ method buildGctFor(module) {
             } else {
                 confidentials.push(v.nameString)
             }
-            if (ast.findAnnotation(v, "parent")) then {
-                v.scope.elements.keysDo { m ->
-                    meths.add(m)
-                }
-            }
             if (v.returnsObject) then {
                 def ob = v.returnedObjectScope.node
                 def obConstructors = list [ ]
