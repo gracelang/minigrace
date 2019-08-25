@@ -50,6 +50,15 @@ testSuiteNamed "matrix" with {
         assert(zeros.size) shouldBe 12
         assert(ascending.size) shouldBe 9
     }
+
+    test "SizeIfUnknown" by {
+        assert (zeros.sizeIfUnknown {
+            failBecause "size of zeros is unknown"
+        }) shouldBe 12
+        assert (ascending.sizeIfUnknown {
+            failBecause "size of ascending is unknown"
+        }) shouldBe 9
+    }
     
     test "NumRows" by {
         assert (zeros.numRows) shouldBe 4

@@ -207,7 +207,7 @@ class matrix⟦T⟧(rs, cs) → MatrixFactory⟦T⟧ {
         
         method size { impl.size }
         
-        method sizeIfUnknown { size }
+        method sizeIfUnknown(_) { size }
         
         method atRow(r) column(c) put (v:T) {
             impl.at( indexFromRow(r) column(c) ) put (v)
