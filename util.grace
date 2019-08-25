@@ -402,7 +402,10 @@ method execDir {
     execDirCache
 }
 
-method file(name) on(origin) orPath(pathString) otherwise(action) {
+method firstFile(names) on(origin) orPath(pathString) otherwise(action) {
+    // Returns the path of the first file in "names" that exists in origin, or a path in pathString
+    // If multiple path contain a file in "names", the one in the first path is returned.
+    // otherwise, executes action with the list of folders that were searched
     def locations = filePath.split(pathString)
     locations.addFirst(origin)
     if (locations.contains(outDir).not) then { locations.addFirst(outDir) }
@@ -410,22 +413,27 @@ method file(name) on(origin) orPath(pathString) otherwise(action) {
         // might compile an imported file, but then be unable to find the
         // code that it just generated.
     if (locations.contains(execDir).not) then { locations.addLast(execDir) }
-    def candidate = name.copy
-    def originalDir = name.directory
-    if ((originalDir.size > 0) && {originalDir.first == "/"}) then {
-        if (candidate.exists) then {
-            return candidate
-        } else {
-            return action.apply ""
+
+    for (names) do { candidate ->
+        if (!candidate.directory.isEmpty && {candidate.directory.first == "/"}) then {
+            if (candidate.exists) then {
+               return candidate
+            }
         }
     }
+
     locations.do { each ->
-        candidate.setDirectory(each ++ originalDir)
-        if ( candidate.exists ) then {
-            return candidate
+        for (names) do { name ->
+            def candidate = name.copy.setDirectory(each ++ name.directory)
+            if ( candidate.exists ) then {
+               return candidate
+            }
         }
     }
     action.apply(locations)
+}
+method file(name) on(origin) orPath(pathString) otherwise(action) {
+    firstFile[name] on(origin) orPath(pathString) otherwise(action)
 }
 method file(name) onPath(pathString) otherwise(action) {
     file(name) on(outDir) orPath(pathString) otherwise(action)
