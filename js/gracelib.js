@@ -4270,35 +4270,50 @@ function prelude_clone (argcv, obj) {
 Grace_prelude.methods['clone(1)$build(3)'] = prelude_clone_build;
 
 function prelude_clone_build (ignore, obj, ouc, aliases, exclusions) {
-    // shallow copy fields
-    ouc.className = obj.className;
-    ouc.methods = Object.create(Object.getPrototypeOf(obj.methods));
-    for (var attr in obj.methods) {
-        if (obj.methods.hasOwnProperty(attr))
-            ouc.methods[attr] = obj.methods[attr];
+    // shallow copy fields of obj into ouc
+    function mergeObjects(a, b, exclusions) {
+        // returns a new object containing the attributes of a overridden
+        // by those of b, excluding the exclusions.
+        // Object.assign looks like the right tool, but it doen't work on
+        // non-enumerable properties, such as the ones in Object.prototype
+        if (! a) return b;  // if either argument is null, return the other
+        if (! b) return a;
+        if (a === b) return a;     // most likely, because a === Object.prototype
+        const aProps = Object.getOwnPropertyNames(a);
+        const bProps = Object.getOwnPropertyNames(b);
+        const newProto = mergeObjects(Object.getPrototypeOf(a), Object.getPrototypeOf(b), exclusions);
+        const result = Object.create(newProto);
+        for (let pix = 0, pLen = aProps.length; pix < pLen; pix++) {
+            // copy a's properties to result
+            const propName = aProps[pix];
+            result[propName] = a[propName];
+        }
+        for (let pix = 0, pLen = bProps.length; pix < pLen; pix++) {
+            // copy b's properties to result, unless excluded
+            const propName = bProps[pix];
+            if (!exclusions.includes(propName)) {
+                result[propName] = b[propName];
+            }
+        }
+        return result;
     }
+    ouc.className = obj.className;
+    ouc.methods = mergeObjects(ouc.methods, obj.methods, exclusions);
     ouc.mutable = obj.mutable;
     if (obj.noSuchMethodHandler) {
         ouc.noSuchMethodHandler = obj.noSuchMethodHandler;
     }
-    ouc.data = {};
-    for (attr in obj.data) {
-        if (obj.data.hasOwnProperty(attr))
-            ouc.data[attr] = obj.data[attr];
-    }
-    var props = obj.closureKeys || [];
-    ouc.closureKeys = props.slice();     // makes a shallow copy
-    for (var oix = 0, cLen = ouc.closureKeys.length; oix < cLen; oix++) {
-        var k = obj.closureKeys[oix];
-        ouc[k] = obj[k];
+    ouc.data = mergeObjects(ouc.data, obj.data, []);
+    var objCK = obj.closureKeys || [];
+    ouc.closureKeys = ouc.closureKeys || [];
+    for (var oix = 0, cLen = objCK.length; oix < cLen; oix++) {
+        const key = objCK[oix];
+        ouc.closureKeys.push(key);
+        ouc[key] = obj[key];
     }
     for (var aix = 0, aLen = aliases.length; aix < aLen; aix++) {
-        var oneAlias = aliases[aix];
+        const oneAlias = aliases[aix];
         ouc.methods[oneAlias.newName] = obj.methods[oneAlias.oldName];
-    }
-    for (var eix = 0, eLen = exclusions.length; eix < eLen; eix++) {
-        var exMeth = exclusions[eix];
-        delete ouc.methods[exMeth];
     }
     return nullFunction;                // the init function for this clone
 }
