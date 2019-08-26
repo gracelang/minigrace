@@ -1934,7 +1934,6 @@ method defdec {
         def anns = doannotation
         def o = ast.defDecNode.new(name, ast.nullNode, dtype).setPositionFrom(defTok)
         if (false != anns) then { o.annotations.addAll(anns) }
-        o.startToken := defTok
         if (sym.isOp && (sym.value == "=")) then {
             next
             if (unsuccessfulParse {expression(blocksOK)}) then {

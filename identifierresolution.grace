@@ -34,7 +34,6 @@ class newScopeIn(parent') kind(variety') {
     def elements is public = map.dictionary.empty
     def elementScopes is public = map.dictionary.empty
     def elementLines is public = map.dictionary.empty
-    def elementTokens is public = map.dictionary.empty
     def parent is public = parent'
     var hasParent is public := true
     def variety is public = variety'
@@ -681,57 +680,38 @@ method reportAssignmentTo(node) declaredInScope(scp) {
 
     def name = node.nameString
     def kind = scp.kind(name)
-    var more := ""
-    def suggestions = list []
+    var lineInfo := ""
     if (scp.elementLines.containsKey(name)) then {
-        more := " on line {scp.elementLines.at(name)}"
+        lineInfo := " on line {scp.elementLines.at(name)}"
     }
     if (kind == k.selfDef) then {
         errormessages.syntaxError("'{name}' cannot be re-bound; " ++
-              "it always refers to the current object.")
-              atRange(node.range)
+            "it always refers to the current object.")
+            atRange(node.range)
     } elseif { reserved.contains(name) } then {
         errormessages.syntaxError("'{name}' is a reserved name and " ++
-              "cannot be re-bound.")
-              atRange(node.range)
-    } elseif { kind == k.defdec } then {
-        if (scp.elementTokens.containsKey(name)) then {
-            def tok = scp.elementTokens.at(name)
-            def sugg = errormessages.suggestion.new
-            if (tok.value == "def") then {
-                var eq := tok
-                while {(eq.kind != "op") || (eq.value != "=")} do {
-                    eq := eq.next
-                }
-                sugg.replaceToken(eq)with(":=")
-                sugg.replaceToken(tok)with("var")
-                suggestions.push(sugg)
-            } else {
-                errormessages.syntaxError("'{name}' cannot be changed " ++
-                    "because it was declared as a '{tok.value}'{more}.")
-                    atRange(node.range)
-            }
-        }
-        errormessages.syntaxError("'{name}' cannot be changed "
-            ++ "because it was declared with 'def'{more}. "
-            ++ "To make it a variable, use 'var' in the declaration")
+            "cannot be re-bound.")
             atRange(node.range)
-            withSuggestions(suggestions)
+    } elseif { kind == k.defdec } then {
+        errormessages.syntaxError("'{name}' cannot be changed " ++
+            "because it was declared with 'def'{lineInfo}. To make it " ++
+            "a variable, use 'var {name}' and ':=' in the declaration")
+            atRange(node.range)
     } elseif { kind == k.importdec } then {
-        errormessages.syntaxError("'{name}' cannot be changed "
-            ++ "because it was declared with 'import'{more}.")
+        errormessages.syntaxError("'{name}' cannot be changed " ++
+            "because it was declared with 'import'{lineInfo}.")
             atRange(node.range)
     } elseif { kind == k.typedec } then {
-        errormessages.syntaxError("'{name}' cannot be re-bound "
-            ++ "because it is declared as a type{more}.")
+        errormessages.syntaxError("'{name}' cannot be re-bound " ++
+            "because it is declared as a type{lineInfo}.")
             atRange(node.range)
     } elseif { kind.isParameter } then {
-        errormessages.syntaxError("'{name}' cannot be re-bound "
-            ++ "because it is declared as a parameter{more}.")
+        errormessages.syntaxError("'{name}' cannot be re-bound " ++
+            "because it is declared as a parameter{lineInfo}.")
             atRange(node.range)
     } elseif { kind == k.methdec } then {
-        errormessages.syntaxError("'{name}' cannot be re-bound "
-            ++ "because it is declared as a method{more}.")
+        errormessages.syntaxError("'{name}' cannot be re-bound " ++
+            "because it is declared as a method{lineInfo}.")
             atRange(node.range)
     }
 }
@@ -950,9 +930,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.scope := myParent.scope
             o.parentKind := myParent.kind
             def declaredName = o.nameString
-            if (false != o.startToken) then {
-                myParent.scope.elementTokens.at(declaredName)put(o.startToken)
-            }
             if (o.value.isObject) then { o.value.name := declaredName }
             true
         }

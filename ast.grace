@@ -2536,11 +2536,15 @@ class declarationNode(identifier, val, declaredType) {
     var annotations is public := list [ ]
     var variable is public := "not yet bound"
 
+    method isFieldDec { true }
     method end -> Position {
         if (false ≠ value) then { return value.end }
         if (annotations.isEmpty.not) then { return annotations.last.end }
         if (false ≠ dtype) then { return dtype.end }
         return name.end
+    }
+    method usesAsType(aNode) {
+        aNode == dtype
     }
 }
 
@@ -2555,21 +2559,16 @@ def defDecNode is public = object {
         inherit declarationNode(name', val, dtype')
 
         def kind is public = "defdec"
-        var startToken is public := false
 
         method isPublic {
             // defs are confidential by default
             if (hasAnnotation "public") then { return true }
             hasAnnotation "readable"
         }
-        method isFieldDec { true }
         method isWritable { false }
         method isReadable { isPublic }
         method isAnnotationDecl { hasAnnotation "annotation" }
         method isMarkerDeclaration { isAnnotationDecl }
-        method usesAsType(aNode) {
-            aNode == dtype
-        }
         method declarationKindWithAncestors(ac) { k.defdec }
 
         method accept(visitor : AstVisitor) from(ac) {
@@ -2636,7 +2635,6 @@ def defDecNode is public = object {
             defDecNode.new(name, value, dtype).shallowCopyFieldsFrom(self)
         }
         method postCopy(other) {
-            startToken := other.startToken
             parentKind := other.parentKind
             self
         }
@@ -2649,12 +2647,10 @@ def varDecNode is public = object {
 
         def kind is public = "vardec"
 
-
         method isPublic {
             // vars are confidential by default
             hasAnnotation "public"
         }
-        method isFieldDec { true }
         method isWritable {
             if (hasAnnotation "public") then { return true }
             if (hasAnnotation "writable") then { return true }
@@ -2664,9 +2660,6 @@ def varDecNode is public = object {
             if (hasAnnotation "public") then { return true }
             if (hasAnnotation "readable") then { return true }
             false
-        }
-        method usesAsType(aNode) {
-            aNode == dtype
         }
         method declarationKindWithAncestors(ac) { k.vardec }
 
