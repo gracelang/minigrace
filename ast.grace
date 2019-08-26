@@ -396,6 +396,9 @@ def nullNode is public = object {
     method range { emptyRange }
     method asString { "the nullNode" }
     method isNull { true }
+    method accept(visitor) from (ac) { }
+    method map(blk) ancestors(ac) { self }
+    method shallowCopy { self }
 }
 
 class fakeSymbolTable is public {
@@ -2520,6 +2523,27 @@ def bindNode is public = object {
     method statementName { "assignment or assigment request" }
   }
 }
+class declarationNode(identifier, val, declaredType) {
+    // an abstract superclass for declarations
+
+    inherit baseNode
+
+    var name is public := identifier
+    var value is public := val
+    var dtype is public := declaredType
+    var parentKind is public := "unset"
+    def nameString is public = identifier.nameString
+    var annotations is public := list [ ]
+    var variable is public := "not yet bound"
+
+    method end -> Position {
+        if (false ≠ value) then { return value.end }
+        if (annotations.isEmpty.not) then { return annotations.last.end }
+        if (false ≠ dtype) then { return dtype.end }
+        return name.end
+    }
+}
+
 def defDecNode is public = object {
     method new(name', val, dtype') scope(s) {
         def result = new(name', val, dtype')
@@ -2528,17 +2552,11 @@ def defDecNode is public = object {
     }
 
     class new(name', val, dtype') {
-        inherit baseNode
+        inherit declarationNode(name', val, dtype')
+
         def kind is public = "defdec"
-        var name is public := name'
-        var value is public := val
-        var dtype is public := dtype'
-        var parentKind is public := "unset"
-        def nameString is public = name.nameString
-        var annotations is public := list [ ]
         var startToken is public := false
 
-        method end -> Position { value.end }
         method isPublic {
             // defs are confidential by default
             if (hasAnnotation "public") then { return true }
@@ -2626,114 +2644,101 @@ def defDecNode is public = object {
     }
 }
 def varDecNode is public = object {
-  class new(name', val', dtype') {
-    inherit baseNode
-    def kind is public = "vardec"
-    var name is public := name'
-    var value is public := val'
-    var dtype is public := dtype'
-    var parentKind is public := "unset"
-    def nameString is public = name.value
-    var annotations is public := list [ ]
+    class new(name', val, dtype') {
+        inherit declarationNode(name', val, dtype')
 
-    method end -> Position {
-        if (false ≠ value) then { return value.end }
-        if (annotations.isEmpty.not) then { return annotations.last.end }
-        if (false ≠ dtype) then { return dtype.end }
-        return name.end
-    }
-    method isPublic {
-        // vars are confidential by default
-        hasAnnotation "public"
-    }
-    method isWritable {
-        if (hasAnnotation "public") then { return true }
-        if (hasAnnotation "writable") then { return true }
-        false
-    }
-    method isReadable {
-        if (hasAnnotation "public") then { return true }
-        if (hasAnnotation "readable") then { return true }
-        false
-    }
-    method isFieldDec { true }
+        def kind is public = "vardec"
 
-    method usesAsType(aNode) {
-        aNode == dtype
-    }
 
-    method declarationKindWithAncestors(ac) { k.vardec }
+        method isPublic {
+            // vars are confidential by default
+            hasAnnotation "public"
+        }
+        method isFieldDec { true }
+        method isWritable {
+            if (hasAnnotation "public") then { return true }
+            if (hasAnnotation "writable") then { return true }
+            false
+        }
+        method isReadable {
+            if (hasAnnotation "public") then { return true }
+            if (hasAnnotation "readable") then { return true }
+            false
+        }
+        method usesAsType(aNode) {
+            aNode == dtype
+        }
+        method declarationKindWithAncestors(ac) { k.vardec }
 
-    method accept(visitor : AstVisitor) from(ac) {
-        if (visitor.visitVarDec(self) up(ac)) then {
-            def newChain = ac.extend(self)
-            self.name.accept(visitor) from(newChain)
-            if (false != self.dtype) then {
-                self.dtype.accept(visitor) from(newChain)
+        method accept(visitor : AstVisitor) from(ac) {
+            if (visitor.visitVarDec(self) up(ac)) then {
+                def newChain = ac.extend(self)
+                self.name.accept(visitor) from(newChain)
+                if (false != self.dtype) then {
+                    self.dtype.accept(visitor) from(newChain)
+                }
+                for (self.annotations) do { ann ->
+                    ann.accept(visitor) from(newChain)
+                }
+                if (false != self.value) then {
+                    self.value.accept(visitor) from(newChain)
+                }
             }
-            for (self.annotations) do { ann ->
-                ann.accept(visitor) from(newChain)
+        }
+        method map(blk) ancestors(ac) {
+            var n := shallowCopy
+            def newChain = ac.extend(n)
+            n.name := name.map(blk) ancestors(newChain)
+            n.value := maybeMap(value, blk) ancestors(newChain)
+            n.dtype := maybeMap(dtype, blk) ancestors(newChain)
+            n.annotations := listMap(annotations, blk) ancestors(newChain)
+            blk.apply(n, ac)
+        }
+        method pretty(depth) {
+            def spc = "  " * (depth+1)
+            var s := basePretty(depth) ++ "\n"
+            s := s ++ spc ++ self.name.pretty(depth + 1)
+            if (false != self.dtype) then {
+                s := s ++ "\n" ++ spc ++ "Type: "
+                s := s ++ self.dtype.pretty(depth + 2)
             }
             if (false != self.value) then {
-                self.value.accept(visitor) from(newChain)
+                s := s ++ "\n" ++ spc ++ "Value: "
+                s := s ++ self.value.pretty(depth + 2)
             }
+            if (false != comments) then {
+                s := s ++ comments.pretty(depth+2)
+            }
+            s
         }
+        method toGrace(depth : Number) -> String {
+            def spc = "    " * depth
+            var s := "var {self.name.toGrace(0)}"
+            if ((false != self.dtype) && {
+                    self.dtype.value != "Unknown"
+            }) then {
+                s := s ++ " : " ++ self.dtype.toGrace(0)
+            }
+            if (self.annotations.size > 0) then {
+                s := s ++ " is "
+                s := s ++ self.annotations.fold { a,b ->
+                    if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0)
+                } startingWith ""
+            }
+            if (false != self.value) then {
+                s := s ++ " := " ++ self.value.toGrace(depth)
+            }
+            s
+        }
+        method shallowCopy {
+            varDecNode.new(name, value, dtype).shallowCopyFieldsFrom(self)
+        }
+        method postCopy(other) {
+            parentKind := other.parentKind
+            self
+        }
+        method statementName { "variable declaration" }
     }
-    method map(blk) ancestors(ac) {
-        var n := shallowCopy
-        def newChain = ac.extend(n)
-        n.name := name.map(blk) ancestors(newChain)
-        n.value := maybeMap(value, blk) ancestors(newChain)
-        n.dtype := maybeMap(dtype, blk) ancestors(newChain)
-        n.annotations := listMap(annotations, blk) ancestors(newChain)
-        blk.apply(n, ac)
-    }
-    method pretty(depth) {
-        def spc = "  " * (depth+1)
-        var s := basePretty(depth) ++ "\n"
-        s := s ++ spc ++ self.name.pretty(depth + 1)
-        if (false != self.dtype) then {
-            s := s ++ "\n" ++ spc ++ "Type: "
-            s := s ++ self.dtype.pretty(depth + 2)
-        }
-        if (false != self.value) then {
-            s := s ++ "\n" ++ spc ++ "Value: "
-            s := s ++ self.value.pretty(depth + 2)
-        }
-        if (false != comments) then {
-            s := s ++ comments.pretty(depth+2)
-        }
-        s
-    }
-    method toGrace(depth : Number) -> String {
-        def spc = "    " * depth
-        var s := "var {self.name.toGrace(0)}"
-        if ((false != self.dtype) && {
-                self.dtype.value != "Unknown"
-        }) then {
-            s := s ++ " : " ++ self.dtype.toGrace(0)
-        }
-        if (self.annotations.size > 0) then {
-            s := s ++ " is "
-            s := s ++ self.annotations.fold { a,b ->
-                if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0)
-            } startingWith ""
-        }
-        if (false != self.value) then {
-            s := s ++ " := " ++ self.value.toGrace(depth)
-        }
-        s
-    }
-    method shallowCopy {
-        varDecNode.new(name, value, dtype).shallowCopyFieldsFrom(self)
-    }
-    method postCopy(other) {
-        parentKind := other.parentKind
-        self
-    }
-    method statementName { "variable declaration" }
-
-  }
 }
 def importNode is public = object {
   class new(path', name', dtype') {
