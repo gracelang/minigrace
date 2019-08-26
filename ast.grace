@@ -2162,6 +2162,7 @@ def identifierNode is public = object {
         var inRequest is public := false
         var generics is public := false
         var isDeclaredByParent is public := false
+        var variable is public := "not yet bound"   // the variable for this id
         var end:Position is public := if (line ≠ 0) then {
             line (line) column (linePos + value.size - 1)
         } else {
