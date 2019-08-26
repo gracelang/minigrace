@@ -250,6 +250,7 @@ class baseNode {
     method isNull { false }
     method isAppliedOccurrence { isBindingOccurrence.not }
     method isBindingOccurrence { true }
+    method isMarkerDeclaration { false }
     method isMatchingBlock { false }
     method isFieldDec { false }
     method isInherits { false }
@@ -1224,6 +1225,11 @@ def methodNode is public = object {
         method isAbstract { hasAnnotation "abstract" }
         method isRequired { hasAnnotation "required" }
         method isAnnotationDecl { hasAnnotation "annotation" }
+        method isMarkerDeclaration {
+            if (isAbstract) then { return true }
+            if (isRequired) then { return true }
+            isAnnotationDecl
+        }
         method usesAsType(aNode) {
             aNode == dtype
         }
@@ -2542,6 +2548,7 @@ def defDecNode is public = object {
         method isWritable { false }
         method isReadable { isPublic }
         method isAnnotationDecl { hasAnnotation "annotation" }
+        method isMarkerDeclaration { isAnnotationDecl }
         method usesAsType(aNode) {
             aNode == dtype
         }
