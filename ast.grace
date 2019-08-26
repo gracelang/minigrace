@@ -2772,7 +2772,7 @@ def importNode is public = object {
     }
     method isWritable { false }
     method isReadable { isPublic }
-    method declarationKindWithAncestors(ac) { k.defdec }
+    method declarationKindWithAncestors(ac) { k.importdec }
     method usesAsType(aNode) {
         aNode == dtype
     }

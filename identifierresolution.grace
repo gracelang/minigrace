@@ -561,6 +561,7 @@ method transformIdentifier(node) ancestors(anc) {
     if (definingScope == moduleScope) then {
         if (nodeKind == k.defdec) then { return node }
         if (nodeKind == k.vardec) then { return node }
+        if (nodeKind == k.importdec) then { return node }
     }
     if (definingScope == nodeScope.enclosingObjectScope) then {
         return ast.memberNode.new(nm,
@@ -716,6 +717,10 @@ method reportAssignmentTo(node) declaredInScope(scp) {
             ++ "To make it a variable, use 'var' in the declaration")
             atRange(node.range)
             withSuggestions(suggestions)
+    } elseif { kind == k.importdec } then {
+        errormessages.syntaxError("'{name}' cannot be changed "
+            ++ "because it was declared with 'import'{more}.")
+            atRange(node.range)
     } elseif { kind == k.typedec } then {
         errormessages.syntaxError("'{name}' cannot be re-bound "
             ++ "because it is declared as a type{more}.")
