@@ -1663,7 +1663,9 @@ def dictionaryTest = object {
         }
         method dict(a)equals(b) {
             // a helper method that shows where two dictionaries differ
-            assert (a.keys == b.keys) description "keys {a.keys} ≠ {b.keys}"
+            def ak = a.keys.sorted
+            def bk = b.keys.sorted
+            assert (ak == bk) description "keys {ak} ≠ {bk}"
             a.keysAndValuesDo{k, v ->
                 assert (b.at(k) == v) description "a.at({k}) = {v} but b.at({k}) = {b.at(k)}"
             }

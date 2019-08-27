@@ -232,7 +232,7 @@ class dictionary⟦K,T⟧ {
             // do()separatedBy won't work, because it iterates over values,
             // and we need an iterator over bindings.
             native "js" code ‹
-            var s = "fastDict⟬";
+            var s = "dictionary [";
             var first = true;
             let t = this.data.table;
             for (var h in t) {
@@ -249,7 +249,7 @@ class dictionary⟦K,T⟧ {
                     }
                 }
             }
-            s += "⟭";
+            s += "]";
             return new GraceString(s);
         ›
         }

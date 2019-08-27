@@ -54,12 +54,12 @@ def dictionaryTest = object {
         method testAsString {
             def dict2 =fd.dictionary.withAll ["one"::1, "two"::2]
             def dStr = dict2.asString
-            assert((dStr == "fastDict⟬one::1, two::2⟭") || {dStr == "fastDict⟬two::2, one::1⟭"})
-                description "\"{dStr}\" should be \"fastDict⟬one::1, two::2⟭\""
+            assert((dStr == "dictionary [one::1, two::2]") || {dStr == "dictionary [two::2, one::1]"})
+                description "\"{dStr}\" should be \"dictionary [one::1, two::2]\""
         }
 
         method testAsStringEmpty {
-            assert(empty.asString) shouldBe "fastDict⟬⟭"
+            assert(empty.asString) shouldBe "dictionary []"
         }
 
         method testDictionaryEmptyDo {
@@ -221,13 +221,13 @@ def dictionaryTest = object {
         method testDictionaryAsStringNonEmpty {
             evens.removeValue(6)
             evens.removeValue(8)
-            assert ((evens.asString == "fastDict⟬two::2, four::4⟭") ||
-                        (evens.asString == "fastDict⟬four::4, two::2⟭"))
+            assert ((evens.asString == "dictionary [two::2, four::4]") ||
+                        (evens.asString == "dictionary [four::4, two::2]"))
                         description "evens.asString = {evens.asString}"
         }
 
         method testDictionaryAsStringEmpty {
-            assert (empty.asString) shouldBe ("fastDict⟬⟭")
+            assert (empty.asString) shouldBe ("dictionary []")
         }
 
         method testDictionaryMapEmpty {
@@ -283,7 +283,9 @@ def dictionaryTest = object {
         }
         method dict(a)equals(b) {
             // a helper method that shows where two dictionaries differ
-            assert (a.keys == b.keys) description "keys {a.keys} ≠ {b.keys}"
+            def ak = a.keys.sorted
+            def bk = b.keys.sorted
+            assert (ak == bk) description "keys {ak} ≠ {bk}"
             a.keysAndValuesDo{k, v ->
                 assert (b.at(k) == v) description "a.at({k}) = {v} but b.at({k}) = {b.at(k)}"
             }
