@@ -3,5 +3,5 @@ sequenceTest: 54 run, 0 failed, 0 errors
 listTest: 89 run, 0 failed, 0 errors
 setTest: 49 run, 0 failed, 0 errors
 rangeTest: 48 run, 0 failed, 0 errors
-dictionaryTest: 65 run, 0 failed, 0 errors
+dictionaryTest: 68 run, 0 failed, 0 errors
 lazyEnumTest: 5 run, 0 failed, 0 errors
