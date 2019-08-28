@@ -1,6 +1,6 @@
 import "gUnit" as gU
 
-class dictionaryTest {
+trait dictionaryTest {
     class forMethod(m) {
         inherit gU.testCaseNamed(m)
 
@@ -8,12 +8,17 @@ class dictionaryTest {
         var evens
         var empty
 
+        method dictionaryUnderTestWith (bindings) {
+            collections.dictionary⟦String, Number⟧.withAll (bindings)
+        }
+        method dictionaryUnderTestEmpty { collections.dictionary.empty }
+        method dictionaryUnderTestFactory { collections.dictionary }
         method setup {
-            oneToFive := dictionary⟦String, Number⟧.withAll
+            oneToFive := dictionaryUnderTestWith
                     ["one"::1, "two"::2, "three"::3, "four"::4, "five"::5]
-            evens := dictionary⟦String, Number⟧.withAll
+            evens := dictionaryUnderTestWith
                     ["two"::2, "four"::4, "six"::6, "eight"::8]
-            empty := dictionary⟦String, Number⟧.empty
+            empty := dictionaryUnderTestEmpty
         }
         method testDictionaryTypeCollection {
             assert (oneToFive) hasType (Collection⟦Binding⟦String,Number⟧⟧)
@@ -50,7 +55,7 @@ class dictionaryTest {
         }
 
         method testAsString {
-            def dict2 = dictionary⟦String, Number⟧ ["one"::1, "two"::2]
+            def dict2 = dictionary⟦String, Number⟧.withAll ["one"::1, "two"::2]
             def dStr = dict2.asString
             assert((dStr == "dictionary [one::1, two::2]") || {dStr == "dictionary [two::2, one::1]"})
                 description "\"{dStr}\" should be \"dictionary [one::1, two::2]\""
@@ -66,13 +71,13 @@ class dictionaryTest {
         }
 
         method testDictionaryEqualityEmpty {
-            assert(empty == dictionary.empty) description "two empty dictionaries are not =="
-            deny(empty ≠ dictionary.empty) description "two empty dictionaries are ≠"
+            assert(empty == dictionaryUnderTestEmpty) description "two empty dictionaries are not =="
+            deny(empty ≠ dictionaryUnderTestEmpty) description "two empty dictionaries are ≠"
         }
         method testDictionaryInequalityEmpty {
-            deny(empty == dictionary ["one"::1])
+            deny(empty == dictionaryUnderTestWith ["one"::1])
                 description "empty dictionary equals dictionary with \"one\"::1"
-            assert(empty != dictionary ["two"::2])
+            assert(empty != dictionaryUnderTestWith ["two"::2])
                 description "empty dictionary equals dictionary with \"two\"::2"
             deny(empty == 3) description "the empty dictionary is equal to 3"
             assert (empty) shouldntBe (evens)
@@ -84,11 +89,11 @@ class dictionaryTest {
             assert(oneToFive != evens)
         }
         method testDictionaryEqualityFive {
-            assert(oneToFive == dictionary⟦String, Number⟧ ["one"::1, "two"::2, "three"::3,
+            assert(oneToFive == dictionaryUnderTestWith ["one"::1, "two"::2, "three"::3,
                 "four"::4, "five"::5])
         }
         method testDictionaryKeysAndValuesDo {
-            def accum = dictionary.empty
+            def accum = dictionaryUnderTestEmpty
             var n := 1
             oneToFive.keysAndValuesDo { k, v ->
                 accum.at(k)put(v)
@@ -105,13 +110,13 @@ class dictionaryTest {
             def ei = evens.bindings.iterator
             assert (evens.size == 4) description "evens doesn't contain 4 elements!"
             assert (ei.hasNext) description "evens.bindings.iterator has no elements"
-            def copyDict = dictionary⟦String, Number⟧ [ei.next, ei.next, ei.next, ei.next]
+            def copyDict = dictionaryUnderTestWith [ei.next, ei.next, ei.next, ei.next]
             deny (ei.hasNext) description "evens.bindings.iterator has more than 4 elements"
             assert (copyDict) shouldBe (evens)
         }
-        method testDictionaryAdd {
+        method testDictionaryAtPutReturnsTheDictionary {
             assert (empty.at "nine" put 9)
-                shouldBe (dictionary ["nine"::9])
+                shouldBe (dictionaryUnderTestWith ["nine"::9])
             assert (evens.at "ten" put 10.values >> set)
                 shouldBe (set [2, 4, 6, 8, 10])
         }
@@ -122,12 +127,12 @@ class dictionaryTest {
         method testDictionaryRemoveAllValues {
             evens.removeAllValues [2, 6, 8]
             assert (evens.size) shouldBe 1
-            assert (dict(evens) equals (dictionary.with ("four"::4)))
+            assert (dict(evens) equals (dictionaryUnderTestWith ["four"::4]))
         }
         method testDictionaryRemoveAllKeys {
             evens.removeAllKeys ["two", "six", "eight"]
             assert (evens.size) shouldBe 1
-            assert (dict(evens) equals (dictionary.with ("four"::4)))
+            assert (evens.at "four") shouldBe 4
         }
         method testDictionaryRemoveValue4 {
             assert (evens.size == 4) description "evens doesn't contain 4 elements"
@@ -199,20 +204,20 @@ class dictionaryTest {
         }
 
         method testDictionaryConcat {
-            def d1 = dictionary.with ("one"::1)
-            def d2 = dictionary.with ("three"::3)
-            assert (d1 ++ d2) shouldBe (dictionary.withAll ["one"::1, "three"::3])
+            def d1 = dictionaryUnderTestWith ["one"::1]
+            def d2 = dictionaryUnderTestWith ["three"::3]
+            assert (d1 ++ d2) shouldBe (dictionaryUnderTestWith ["one"::1, "three"::3])
         }
 
         method testDictionaryConcatAndOverride {
-            def d1 = dictionary.with ("one"::1)
-            def d2 = dictionary.withAll ["three"::3, "one"::"unit"]
-            assert (d1 ++ d2) shouldBe (dictionary.withAll ["one"::"unit", "three"::3])
+            def d1 = dictionaryUnderTestWith ["one"::0]
+            def d2 = dictionaryUnderTestWith ["three"::3, "one"::1]
+            assert (d1 ++ d2) shouldBe (dictionaryUnderTestWith ["one"::1, "three"::3])
         }
 
         method testDictionaryDoSeparatedBySingleton {
             var s := "nothing"
-            dictionary.withAll ["key"::1].do { each -> assert(each)shouldBe(1) }
+            dictionaryUnderTestWith ["key"::1].do { each -> assert(each)shouldBe(1) }
                 separatedBy { s := "kilroy" }
             assert (s) shouldBe ("nothing")
         }
@@ -220,9 +225,10 @@ class dictionaryTest {
         method testDictionaryAsStringNonEmpty {
             evens.removeValue(6)
             evens.removeValue(8)
-            assert ((evens.asString == "dictionary [two::2, four::4]") ||
-                        (evens.asString == "dictionary [four::4, two::2]"))
-                        description "evens.asString = {evens.asString}"
+            def evensString = evens.asString
+            assert ((evensString == "dictionary [two::2, four::4]") ||
+                        (evensString == "dictionary [four::4, two::2]"))
+                        description "evens.asString = {evensString}"
         }
 
         method testDictionaryAsStringEmpty {
@@ -293,19 +299,19 @@ class dictionaryTest {
         method testPipeIntoExistingDictionary {
             def witness = evens.bindings >> oneToFive
             assert (dict(witness) equals (
-                dictionary.withAll ["one"::1, "two"::2, "three"::3,
+                dictionaryUnderTestWith ["one"::1, "two"::2, "three"::3,
                       "four"::4, "five"::5, "six"::6, "eight"::8]))
             assert (oneToFive) shouldBe (
-                dictionary.withAll ["one"::1, "two"::2, "three"::3,
+                dictionaryUnderTestWith ["one"::1, "two"::2, "three"::3,
                       "four"::4, "five"::5, "six"::6, "eight"::8])
         }
         method testPipeBindingSequenceIntoExistingDictionary {
             def witness = ["two"::2, "four"::4, "six"::6, "eight"::8] >> oneToFive
             assert (dict(witness) equals (
-                dictionary.withAll ["one"::1, "two"::2, "three"::3,
+                dictionaryUnderTestWith ["one"::1, "two"::2, "three"::3,
                       "four"::4, "five"::5, "six"::6, "eight"::8]))
             assert (oneToFive) shouldBe (
-                dictionary.withAll ["one"::1, "two"::2, "three"::3,
+                dictionaryUnderTestWith ["one"::1, "two"::2, "three"::3,
                       "four"::4, "five"::5, "six"::6, "eight"::8])
         }
         method testPipeIntoEmptyInstance {
@@ -315,8 +321,8 @@ class dictionaryTest {
             assert (dict(dictionary.empty << evens.bindings) equals (evens))
         }
         method testPipeIntoFactory {
-            assert (["two"::2, "four"::4, "six"::6, "eight"::8] >> dictionary)
-                shouldBe (dictionary.withAll ["two"::2, "four"::4, "six"::6, "eight"::8])
+            assert (["two"::2, "four"::4, "six"::6, "eight"::8] >> dictionaryUnderTestFactory)
+                shouldBe (evens)
         }
         method testDictionaryValuesEmpty {
             def vs = empty.values
@@ -435,8 +441,7 @@ class dictionaryTest {
             assert {iter4.next} shouldRaise (ConcurrentModification)
         }
         method testDictionaryClear {
-            var toClear := dictionary [1::2, 2::4, 3::6]
-            assert (toClear.clear) shouldBe (dictionary.empty)
+            assert (evens.clear) shouldBe (dictionary.empty)
         }
     }
 }
