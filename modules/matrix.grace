@@ -3,82 +3,108 @@
 import "collectionsPrelude" as cp
 
 type Matrix⟦T⟧ = Collection⟦T⟧ & interface {
-    size -> Number 
-    // returns the number of values in the matrix
+    size -> Number
+    // returns the number of values in self
+
     numRows → Number
-    // returns the number of rows in the matrix
-    numColumns → Number 
-    // returns the number of columns in the matrix
-    atRow(r:Number) column(c:Number) put (v:T) → Matrix 
+    // returns the number of rows in self
+
+    numColumns → Number
+    // returns the number of columns in self
+
+    atRow(r:Number) column(c:Number) put (v:T) → Matrix
     // adds the value 'v' at row r, column c
     // raises BoundsError if index at r,c does not exist
-    atRow(r:Number) column(c:Number) → T 
+
+    atRow(r:Number) column(c:Number) → T
     // returns the value at row r, column c
     // raises BoundsError if index at r,c does not exist
-    atRow(r:Number) column(c:Number) ifAbsent(action:Procedure0) → T 
+
+    atRow(r:Number) column(c:Number) ifAbsent(action:Procedure0) → T
     // returns the value at row r, column c
     // executes 'action' if index at r,c does not exist
-    row(r:Number) → Collection⟦T⟧ 
-    // returns the row at the specified index as a collection
-    // raises BoundsError if index r does not exist
+
+    row(r:Number) → Collection⟦T⟧
+    // returns row r as a collection
+    // raises BoundsError if row index r does not exist
+
     column(c:Number) → Collection⟦T⟧
-    // returns the column at the specified index as a collection
-    // raises BoundsError if index c does not exist
-    rows → Enumerable⟦Enumerable⟦T⟧⟧ 
+    // returns column c as a collection
+    // raises BoundsError if column index c does not exist
+
+    rows → Enumerable⟦Enumerable⟦T⟧⟧
     // returns an enumerable collection over the rows of the matrix
-    columns → Enumerable⟦Enumerable⟦T⟧⟧ 
+
+    columns → Enumerable⟦Enumerable⟦T⟧⟧
     // returns an enumerable collection over the columns of the matrix
+
     values → Enumerable⟦T⟧
     // returns an enumerable collection over the values of the matrix
-    +(other:Matrix⟦T⟧) → Matrix⟦T⟧ 
-    // returns the value-wise sum of two matrices
-    // raises MatrixDimensionError if the dimensions of 'other' don't match the dimesions of 'self'
-    -(other:Matrix⟦T⟧) → Matrix⟦T⟧ 
+
+    +(other:Matrix⟦T⟧) → Matrix⟦T⟧
+    // returns the value-wise sum of self and other;
+    // raises MatrixDimensionsError if the dimensions of other don't match those of 'self'
+
+    -(other:Matrix⟦T⟧) → Matrix⟦T⟧
     // returns the value-wise difference of two matrices
-    // raises MatrixDimensionError if the dimensions of 'other' don't match the dimesions of 'self'
+    // raises MatrixDimensionsError if the dimensions of other don't match those of 'self'
+
     *(other) → Matrix⟦T⟧
-    // returns the value-wise product if the argument is a matrix
-    // returns the product of the value mapped to all values in the matrix if the argument is a scalar
-    // raises MatrixDimensionError if the dimensions of 'other' don't match the dimesions of 'self'
+    // returns the value-wise product of self and other if the argument other is a matrix;
+    // returns the product of other mapped over all the elements of self if other is a scalar.
+    // Raises MatrixDimensionsError if the dimensions of other don't match the dimesions of self
+
     /(other) → Matrix⟦T⟧
-    // returns the value-wise quotient if the argument is a matrix
-    // returns the quotient of the value mapped to all values in the matrix if the argument is a scalar
-    // raises MatrixDimensionError if the dimensions of 'other' don't match the dimesions of 'self'
+    // returns the value-wise quotient of self and other if the argument other is a matrix;
+    // returns the quotient of other mapped over all the elements of self if other is a scalar.
+    // Raises MatrixDimensionsError if the dimensions of other don't match the dimesions of 'self'
+
     transpose → Matrix⟦T⟧
-    // return the transpose of the matrix
+    // returns the transpose of self
+
     times(other:Matrix⟦T⟧) → Matrix⟦T⟧
-    // returns the matrix product of the two matrices
-    // raises MatrixDimensionError if the dimensions of 'other' are not compatible with the dimensions of 'self'
+    // returns the matrix product of self and other
+    // raises MatrixDimensionsError if the dimensions of other are not compatible with the dimensions of self
+
     reshapeWithNumRows(rs:Number) numColumns(cs:Number) → Matrix⟦T⟧
-    // redefines the number of rows and columns in the matrix, if compatible with the number of values
-    // raises MatrixDimensionError if the product of the new dimensions is not equal to the size of the values list
-    reshapeWithNumRows(rs:Number) numColumns(cs:Number) 
+    // redefines the number of rows and columns in self, if compatible with the number of values
+    // raises MatrixDimensionsError if the product of the new dimensions is not
+    // the same as the product of the current dimensions.
+
+    reshapeWithNumRows(rs:Number) numColumns(cs:Number)
         additionalValues(vs:Collection⟦T⟧) → Matrix⟦T⟧
-    // redefines the number of rows and columns in the matrix, 
-    // raises MatrixDimensionError if the product of the new dimensions 
-    //   is not equal to the size of the values list plus the size of the additional values
+    // redefines the number of rows and columns in self,
+    // raises MatrixDimensionsError if the product of the new dimensions
+    //   is not equal to the product of the current dimensions plus the size of the additional values
+
     addRow(row:Collection⟦T⟧) at(index:Number) → Matrix⟦T⟧
     // adds a row to the matrix at the specified index
-    // raises MatrixDimensionError if the length of the row is not equal to the number of rows in the matrix
+    // raises MatrixDimensionsError if the length of the row is not equal to the number of columns in self
+
     deleteRow(r:Number) → Matrix⟦T⟧
     // removes the row at the specified index from the matrix
-    // raises BoundsError if the index r is not within the number of rows in the matrix
+    // raises BoundsError if the index r is not within the number of rows in self
+
     addColumn(column:Collection⟦T⟧) at(index:Number) → Matrix⟦T⟧
     // adds a column to the matrix at the specified index
-    // raises MatrixDimensionError if the length of the column is not equal to the number of columns in the matrix
+    // raises MatrixDimensionsError if the length of the column is not equal to the number of rows in self
+
     deleteColumn(c:Number) → Matrix⟦T⟧
-    // removes the column at the specified index from the matrix
-    // raises BoundsError if the index c is not within the number of columns in the matrix
-    replaceRowAt(index:Number) with(row:Collection⟦T⟧) → Matrix⟦T⟧
-    // replaces the row at the specified index with the given collection
-    // raises MatrixDimensionError if the length of the row is not equal to the number of rows in the matrix
-    // raises BoundsError if the index r is not within the number of rows in the matrix
-    replaceColumnAt(index:Number) with(column:Collection⟦T⟧) → Matrix⟦T⟧
-    // replaces the column at the specified index with the given collection
-    // raises MatrixDimensionError if the length of the column is not equal to the number of columnss in the matrix
-    // raises BoundsError if the index c is not within the number of columns in the matrix
+    // removes the column at the specified index from self
+    // raises BoundsError if the index c is not within the number of columns of self
+
+    replaceRowAt(r:Number) with(row:Collection⟦T⟧) → Matrix⟦T⟧
+    // replaces the row at index r with row.
+    // Raises MatrixDimensionsError if the row.size is not equal to the number of columns in self;
+    // raises BoundsError if the index r is not within the number of rows of self
+
+    replaceColumnAt(c:Number) with(column:Collection⟦T⟧) → Matrix⟦T⟧
+    // replaces the column at index c with the given collection.
+    // Raises MatrixDimensionsError if column.size is not equal to the number of rows in self;
+    // raises BoundsError if the index c is not within the number of columns of self
+
     copy → Matrix⟦T⟧
-    // returns a new matrix instance with the same values and dimensions as self
+    // returns a new matrix with the same values and dimensions as self
 }
 
 type MatrixFactory⟦T⟧ = interface {
@@ -125,9 +151,9 @@ method dot(v1: Collection, v2: Collection) {
     dotProduct
 }
 
-method collectionOfSize(size) withValue(v) is confidential {
-    var l := []
-    repeat (size) times { l := l ++ [v] }
+method listOfSize(size) withValue(v) is confidential {
+    def l = list.empty
+    repeat (size) times { l.add(v) }
     l
 }
 
@@ -154,7 +180,7 @@ class lazyZipperSequence⟦T⟧ (source1: Collection⟦Collection⟦T⟧⟧, sou
 
 method mapColumnsToRows(columns: Collection⟦Collection⟧) {
     if (columns.size == 0) then { return [] }
-    columns.fold{ rs, c → lazyZipperSequence(rs, c) } startingWith( collectionOfSize(columns.first.size) withValue([]) )
+    columns.fold{ rs, c → lazyZipperSequence(rs, c) } startingWith( listOfSize(columns.first.size) withValue([]) )
 }
 
 method empty is public { matrix(0, 0).values([]) }
@@ -181,7 +207,7 @@ class matrix⟦T⟧(rs, cs) → MatrixFactory⟦T⟧ {
     }
     
     method value(v:T) → Matrix⟦T⟧ {
-        values (collectionOfSize(rs*cs) withValue(v))
+        values (listOfSize(rs*cs) withValue(v))
     }
     
     class values(vs: Collection⟦T⟧) → Matrix⟦T⟧ {
