@@ -2776,6 +2776,14 @@ method doreturn {
     }
 }
 
+method methodInInterface(toks) {
+    tokens := toks
+    next
+    methodInInterface
+
+    values.pop
+}
+
 method methodInInterface {
     // parses a method signature in an interface literal, and pushes the
     // resulting node, along with any comments, onto values
