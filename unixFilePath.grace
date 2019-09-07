@@ -88,6 +88,12 @@ class filePath {
         return true
     }
 
+    method absolute {
+        // make me an absolute, rather than relative, path
+        dir := io.realpath(dir)
+        self
+    }
+
     method hash {
         hashCombine(hashCombine(directory.hash, base.hash), extension.hash)
     }

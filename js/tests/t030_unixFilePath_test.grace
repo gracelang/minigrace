@@ -1,6 +1,7 @@
 dialect "minitest"
 
 import "unixFilePath" as fp
+import "sys" as sys
 
 testSuite {
     test "split two colon" by {
@@ -102,5 +103,21 @@ testSuite {
         assert (p) shouldntBe (q)
         assert (q) shouldntBe (p)
         assert (p.hash) shouldntBe (q.hash)
+    }
+    test "absolute file name" by {
+        def p = fp.filePath
+                .setBase "t030_unixFilePath_test"
+                .setExtension "grace"
+        def cwd = sys.cwd
+        if (cwd.endsWith "minigrace/") then {
+            // make test work when run from minigrace/ as well as from tests/
+            p.directory := "js/tests/"
+        }
+        assert (p.exists) description "{p} does not exist"
+        def q = p.absolute
+        assert (q.exists) description "{q} does not exist"
+        assert (q.asString.startsWith(cwd))
+            description "q.asString is {q}; it does not start with {cwd}"
+        assert (q.directory.endsWith "/") description "{q} does not end with a \"/\""
     }
 }
