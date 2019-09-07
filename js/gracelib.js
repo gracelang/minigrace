@@ -2671,12 +2671,20 @@ function gracecode_io() {
     }
     this.methods['realpath(1)'] = function io_browser_realpath (argcv, x) {
         if (!inBrowser) {
-            var arg = safeJsString(x);
+            const arg = safeJsString(x);
+            debugger;
             try {
-                return new GraceString(fs.realpathSync(arg));
+                let realpath = fs.realpathSync(arg);
+                if (fs.lstatSync(realpath).isDirectory()) {
+                    realpath = realpath + "/";
+                }
+                return new GraceString(realpath);
             } catch (ex) {
+                const pat = ex.code + ": ([^,]+)";  // build a regex
+                const msg = ex.message.match(pat)[1];  // extract error message
                 throw new GraceExceptionPacket(RequestErrorObject,
-                        new GraceString("can't get real path for \"" + arg + "\""));
+                      new GraceString("can't get real path for \"" + arg +
+                            "\" — " + msg));
             }
         }
         return x;
