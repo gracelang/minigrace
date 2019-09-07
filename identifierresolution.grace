@@ -969,7 +969,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitImport (o) up (anc) {
             o.scope := anc.parent.scope
             xmodule.checkExternalModule(o)
-            def gct = xmodule.gctDictionaryFor(o.path)
+            def gct = xmodule.gctDictionaryFor(o.moduleName)
             def otherModule = newScopeIn(anc.parent.scope) kind "module"
             otherModule.node := o
             processGCT(gct, otherModule)

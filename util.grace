@@ -376,7 +376,7 @@ method str(s) lastIndexOf(ch) {
     return 0
 }
 
-method sourceDir { filename.directory }
+method sourceDir { filename.absolute.directory }
 
 var outDirCache := ""
 var dirFlag is readable := false

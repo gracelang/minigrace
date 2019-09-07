@@ -15,11 +15,14 @@ def gctCache = emptyDictionary
 def keyCompare = { a, b -> a.key.compare(b.key) }
 
 def builtInModules =
-        list [  "imports",
-                "io",
+             [  "io",
                 "mirrors",
                 "sys",
                 "unicode" ]
+
+method isBuiltInModule(name) {
+    builtInModules.contains(name)
+}
 
 def currentDialect is public = object {
     var name is public := "standardGrace"
@@ -155,10 +158,6 @@ method checkExternalModule(node) {
 }
 
 method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
-    if (builtInModules.contains(nm)) then {
-        imports.other.add(nm)
-        return
-    }
     if (imports.isAlready(nm)) then {
         return
     }
@@ -174,8 +173,11 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
     def gmp = sys.environ.at "GRACE_MODULE_PATH"
     def pnJs = filePath.fromString(pathname).setExtension "js"
     def pnGrace = pnJs.copy.setExtension "grace"
-
-    var moduleFile := util.firstFile[pnJs, pnGrace] on (util.outDir)
+    def files = list [pnJs, pnGrace]
+    if (isBuiltInModule(nm)) then {
+        files.addLast (pnJs.copy.setExtension "gct")
+    }
+    var moduleFile := util.firstFile(files) on (util.sourceDir)
                                 orPath (gmp) otherwise { m ->
         def rm = errormessages.readableStringFrom(m)
         errormessages.error("I can't find {pnJs.shortName} " ++
@@ -183,17 +185,17 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
     }
     if (moduleFile.extension == ".grace") then {
         util.log 50 verbose "about to compile module \"{nm}\""
-        compileModule (nm) inFile (moduleFile.asString)
+        def objectFile = compileModule (nm) inFile (moduleFile)
                 forDialect (isDialect) atRange (sourceRange)
-        moduleFile := util.file(pnJs) on(util.outDir) orPath (gmp) otherwise { m ->
-            def rm = errormessages.readableStringFrom(m)
-            errormessages.error("I just compiled {moduleFile} " ++
-                "but can't find the .js file; looked in {rm}.") atRange (sourceRange)
+        if (objectFile.exists.not) then {
+            errormessages.error("I just compiled {moduleFile}, " ++
+                "but {objectFile} does not exist") atRange (sourceRange)
         }
+        moduleFile := objectFile
     }
     util.log 50 verbose "found module \"{nm}\" in {moduleFile}"
 
-    def gctDict = gctDictionaryFor(nm)
+    def gctDict = gctDictionaryFor(nm) from (moduleFile)
     def sourceFile = filePath.fromString(gctDict.at "path" .first)
     def sourceExists = if (sourceFile.directory.contains "stub") then {
         false        // for binary-only modules like unicode
@@ -247,6 +249,9 @@ method addTransitiveImports(directory, isDialect, moduleName, sourceRange) is co
 
 method compileModule (nm) inFile (sourceFile)
         forDialect (isDialect) atRange (sourceRange) is confidential {
+    // Compiles module with name nm located in sourceFile.
+    // Returns the filePath containing the compiled code.
+
     if (util.recurse.not) then {
         errormessages.error "Please compile module {nm} before using it."
             atRange (sourceRange)
@@ -266,8 +271,12 @@ method compileModule (nm) inFile (sourceFile)
     if (util.verbosity != util.defaultVerbosity) then {
         cmd := cmd ++ " --verbose {util.verbosity}"
     }
+    var outputDirectory
     if (util.dirFlag) then {
         cmd := cmd ++ " --dir " ++ util.outDir
+        outputDirectory := util.outDir
+    } else {
+        outputDirectory := sourceFile.directory
     }
     if (false != util.vtag) then {
         cmd := cmd ++ " --vtag " ++ util.vtag
@@ -281,13 +290,21 @@ method compileModule (nm) inFile (sourceFile)
         errormessages.error "Failed to compile imported module {nm} ({exitCode})."
             atRange (sourceRange)
     }
+    filePath.withDirectory(outputDirectory) base(sourceFile.base) extension ".js"
+}
+
+method gctDictionaryFor(moduleName) from (moduleFile) is confidential {
+    // Returns the GCT dictionary for moduleName, extracting it from
+    // moduleFile if necesssary
+
+    gctCache.at(moduleName) ifAbsent {
+        parseGCT(moduleName) sourceDir(moduleFile.directory)
+    }
 }
 
 method gctDictionaryFor(moduleName) {
-    // Returns the GCT dictioanry for moduleName
-
     gctCache.at(moduleName) ifAbsent {
-        parseGCT(moduleName) sourceDir(util.outDir)
+        ProgrammingError.raise "gct dictionary for {moduleName} not in cache"
     }
 }
 
@@ -326,12 +343,12 @@ method extractGctFor(moduleName) sourceDir(dir) is confidential {
             return extractGctFromJsFile(moduleName) sourceDir(dir)
         } catch { ep:EnvironmentException ->
             done
-        } // other exceptions are not caught
+        } // other exceptions are deliberately not caught
 
         return extractGctFromGctFile(moduleName) sourceDir(dir)
     } catch {ex:EnvironmentException ->
         util.log 0 verbose("Failed to find gct for {moduleName}; " ++
-            "looked for a .js file containing a gct string, and a .gct file.")
+            "looked in {dir} for a .js file containing a gct string, and a .gct file.")
         sys.exit(2)
     }
 }
