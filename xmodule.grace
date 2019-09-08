@@ -193,7 +193,7 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
     }
     util.log 50 verbose "found module \"{nm}\" in {moduleFile}"
 
-    def gctDict = gctDictionaryFor(nm)
+    def gctDict = gctDictionaryFor(pathname)
     def sourceFile = filePath.fromString(gctDict.at "path" .first)
     def sourceExists = if (sourceFile.directory.contains "stub") then {
         false        // for binary-only modules like unicode
@@ -217,7 +217,7 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
                     atRange(sourceRange)
             }
         }
-        imports.other.add(nm)
+        imports.other.add(pathname)
     }
     addTransitiveImports(moduleFile.directory, isDialect, nm, sourceRange)
 }
@@ -226,6 +226,9 @@ method addTransitiveImports(directory, isDialect, moduleName, sourceRange) is co
     def gctDict = gctCache.at(moduleName) ifAbsent {
         parseGCT(moduleName) sourceDir(directory)
     }
+
+    def oldOutDir = util.outDir
+    util.outDir := directory
     if (gctDict.containsKey "dialect") then {
         def dialects = gctDict.at "dialect"
         if (dialects.isEmpty.not) then {
@@ -243,6 +246,7 @@ method addTransitiveImports(directory, isDialect, moduleName, sourceRange) is co
     importedModules.do { each ->
         checkimport(each, each, isDialect, sourceRange)
     }
+    util.outDir := oldOutDir
 }
 
 method compileModule (nm) inFile (sourceFile)
