@@ -105,7 +105,7 @@ clean:
 #       remove the grace-web-editor directory only if it exists and is clean
 	rm -fr selftest
 	rm -fr tests/test-*.log tests/*{.c,.gct,.gso,.gcn,.js}
-	rm -fr js/tests/test-*.log js/tests/*{.c,.gct,.gso,.gcn,.js}
+	rm -fr js/tests/test-*.{log,err,out} js/tests/*{.c,.gct,.gso,.gcn,.js} js/tests/subtest/*{.gct,.js}
 	rm -f tests/retired/*{.c,.gct,.gso,.gcn,.js} js/tests/retired/*{.c,.gct,.gso,.gcn,.js}
 	cd stubs && rm -f *.gct *.gcn *.gso *.js *.c *Prelude.grace standardGrace.grace
 	rm Makefile.conf
