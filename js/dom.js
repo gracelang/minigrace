@@ -1,4 +1,5 @@
-"use strict";
+if (typeof gctCache !== "undefined")
+  gctCache["dom"] = "classes:\nconfidential:\ndialect:\n standardGrace\nfresh-methods:\nmodules:\n collectionsPrelude\n standardGrace\npath:\n /Users/black/Development/mg/gracelang/minigrace/stubs/dom.grace\npublic:\n document\n doesObject(1)haveProperty(1)\n draw(4)\n filledOval(2)\n filledRect(2)\n for(1)waiting(1)do(1)\n framedOval(2)\n framedRect(2)\n image(2)\n noObject\n while(1)waiting(1)do(1)\n window\npublicMethod:document:\n document → Object\npublicMethod:doesObject(1)haveProperty(1):\n doesObject(domObj)haveProperty(name) → Boolean\npublicMethod:draw(4):\n draw(ctx, graphics, width, height) → Done\npublicMethod:filledOval(2):\n filledOval(ctx, g) → Done\npublicMethod:filledRect(2):\n filledRect(ctx, g) → Done\npublicMethod:for(1)waiting(1)do(1):\n for(iter)waiting(delay)do(block) → Object\npublicMethod:framedOval(2):\n framedOval(ctx, g) → Done\npublicMethod:framedRect(2):\n framedRect(ctx, g) → Done\npublicMethod:image(2):\n image(ctx, g) → Done\npublicMethod:noObject:\n noObject → EqualityObject\npublicMethod:while(1)waiting(1)do(1):\n while(cond)waiting(delay)do(block) → Object\npublicMethod:window:\n window → Object\npublicMethodTypes:\n document → Object\n doesObject(domObj)haveProperty(name) → Boolean\n draw(ctx, graphics, width, height) → Done\n filledOval(ctx, g) → Done\n filledRect(ctx, g) → Done\n for(iter)waiting(delay)do(block) → Object\n framedOval(ctx, g) → Done\n framedRect(ctx, g) → Done\n image(ctx, g) → Done\n noObject → EqualityObject\n while(cond)waiting(delay)do(block) → Object\n window → Object\ntypes:\n";
 
 var domNoObject;
 
@@ -328,5 +329,3 @@ if (typeof global !== "undefined") {
 }
 
 gracecode_dom.imports = [];
-if (typeof gctCache !== "undefined")
-gctCache['dom'] = "classes:\nconfidential:\nfresh-methods:\nmodules:\npath:\n dom\npublic:\n document\n doesObject(1)haveProperty(1)\n draw(4)\n filledOval(2)\n filledRect(2)\n for(1)waiting(1)do(1)\n framedOval(2)\n framedRect(2)\n image\n noObject\n while(1)waiting(1)do(1)\n window\ntypes:\n";

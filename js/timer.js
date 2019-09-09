@@ -1,3 +1,6 @@
+if (typeof gctCache !== "undefined")
+  gctCache["timer"] = "classes:\nconfidential:\ndialect:\n standardGrace\nfresh-methods:\nmethodtypes-of:Timer:\nmodules:\n collectionsPrelude\n standardGrace\npath:\n /Users/black/Development/mg/gracelang/minigrace/stubs/timer.grace\npublic:\n Timer\n after(1)do(1)\n every(1)do(1)\n stop(1)\n stopAll\npublicMethod:after(1)do(1):\n after(millisec)do(code) → Timer\npublicMethod:every(1)do(1):\n every(millisec)do(code) → Timer\npublicMethod:stop(1):\n stop(id:Timer)\npublicMethod:stopAll:\n stopAll\npublicMethodTypes:\n after(millisec)do(code) → Timer\n every(millisec)do(code) → Timer\n stop(id:Timer)\n stopAll\ntypedec-of:Timer:\n type Timer = interface {}\ntypes:\n Timer\n";
+
 function gracecode_timer() {
     var o = Grace_allocObject(null, "timer");
     o.methods.intervalList = [];
@@ -61,6 +64,3 @@ function gracecode_timer() {
 }
 
 gracecode_timer.imports = [];
-
-if (typeof gctCache !== "undefined")
-    gctCache['timer'] = "modules:\nfresh-methods:\npath:\n timer\nclasses:\npublic:\n intervalList\n timeoutList\n every(1)do(1)\n after(1)do(1)\n stop(1)\n stopAll\nconfidential:\n";
