@@ -211,7 +211,7 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
                 util.log 60 verbose "{moduleFile} not newer than {sourceFile}"
             }
             if (sourceFile.exists) then {
-                compileModule (nm) inFile (sourceFile.asString)
+                compileModule (nm) inFile (sourceFile)
                     forDialect (isDialect) atRange (sourceRange)
             } else {
                 def thing = if (isDialect) then {"dialect"} else {"module"}
