@@ -1,5 +1,24 @@
 import "io" as io
 
+type FilePath = EqualityObject & interface {
+    directory -> String // the directory part; "./" if in current directory
+    base -> String      // the base part of the file name (without an extension)
+    extension -> String // the extension (like `.grace`) , including the `.`
+    shortName -> String // the file name without the directory part
+
+    directory:=(d)      // sets the directory part to d; answers done
+    setDirectory(d)     // sets the directory part to d; answers self (for chaining)
+    base:=(b)           // sets the base part of the file name to b; answers done
+    setBase(b)          // sets the base part of the file name to b; answers self
+    extension:=(e)      // sets the extension to e; answers done
+    setExtension(e)     // sets the extension to e; answers self
+    exists -> Boolean   // true if there is a file on this path
+    newer(o) -> Boolean // true if this file is newer than o
+    copy -> FilePath    // answers a new FilePath equal to self
+    absolute -> FilePath  // answers a FilePath that reference the same file as self,
+                          // but as a path from the file system root
+}
+
 class filePath {
     // creates a unixFilePath with empty components.
     // Why is this not called null?  Because that name emits confusing error

@@ -26,6 +26,15 @@ testSuite {
         assert (p.base) shouldBe "grace"
         assert (p.extension) shouldBe ""
     }
+
+    test "type lower bound" by {
+        def p = fp.fromString "/usr/local/lib/grace"
+        assert (p) hasType (fp.FilePath)
+    }
+    test "type upper bound" by {
+        def p = fp.fromString "/usr/local/lib/grace"
+        assertType (fp.FilePath) describes (p)
+    }
     test "directory never empty" by {
         def p = fp.fromString "foo.grace"
         assert (p.directory) shouldBe "./"
