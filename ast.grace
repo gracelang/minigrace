@@ -1413,6 +1413,11 @@ def methodNode is public = object {
         method isReadable { isPublic }
         method isAbstract { hasAnnotation "abstract" }
         method isRequired { hasAnnotation "required" }
+        method isConcrete {
+            if (isAbstract) then { return false }
+            if (isRequired) then { return false }
+            true
+        }
         method isAnnotationDecl { hasAnnotation "annotation" }
         method isMarkerDeclaration {
             if (isAbstract) then { return true }
@@ -2908,6 +2913,7 @@ class declarationNode(identifier, val, declaredType) {
     method usesAsType(aNode) {
         aNode == dtype
     }
+    method isConcrete { true }
 }
 
 def defDecNode is public = object {

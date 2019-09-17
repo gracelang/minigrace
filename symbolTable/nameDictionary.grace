@@ -1,4 +1,4 @@
-// defines a dictionary with special logic for finding the names of Grace's 
+// defines a dictionary with special logic for finding the names of Grace's
 // "special" control structures, such as if .. then .. elseif .. then .. else
 // These names are found in any dictionary that contains the magicKey.
 
@@ -9,9 +9,9 @@ import "variables" as variables
 type Variable = variables.Variable 
 
 def ctrlStructureRegEx is public = regEx.fromString ( 
-    ‹^((if\(_\)then\(_\)(elseif\(_\)then\(_\))*(else\(_\))?)$|› ++
-    ‹(match\(_\)(case\(_\))+(else\(_\))?)|› ++
-    ‹(try\(_\)(catch\(_\))*(finally\(_\))?))$› )
+    ‹^((if\(1\)then\(1\)(elseif\(1\)then\(1\))*(else\(1\))?)$|› ++
+    ‹(match\(1\)(case\(1\))+(else\(1\))?)|› ++
+    ‹(try\(1\)(catch\(1\))*(finally\(1\))?))$› )
     
 def magicKey is public = "standardGraceExtendedControlStructures"
     
@@ -30,7 +30,6 @@ class empty {
         // Answer the value associated with key or, if key isn't found, answer
         // the result of evaluating aBlock.  Make sure that the names of the special control
         // structures are found if the key "standardGraceExtendedControlStructures" is present.
-        if (key == "try(_)catch(_)finally(_)") then { native "js" code "debugger;" }
         superAt (key) ifAbsent {
             if (self.containsKey (magicKey) && {
                 isNameOfSpecialControlStructure (key)
