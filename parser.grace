@@ -2228,13 +2228,18 @@ method parseObjectConstructorBody (constructName) startingWith (btok) after (pre
             if (inPreamble) then {
                 if (parentNode.isUse) then {
                     usedTraits.add(parentNode)
+                } elseif { false != superObject } then {
+                    errormessages.syntaxError("at most one 'inherit' statement " ++
+                        "is permitted in {constructName}")
+                        atRange(parentNode.line, parentNode.linePos,
+                        parentNode.linePos + 6)
                 } elseif { usedTraits.isEmpty } then {
                     superObject := parentNode
                 } else {
                     errormessages.syntaxError("'inherit' must come " ++
                         "before 'use' in {constructName}")
                         atRange(parentNode.line, parentNode.linePos,
-                        parentNode.linePos + 7)
+                        parentNode.linePos + 6)
                 }
             } else {
                 errormessages.syntaxError("'{parentNode.statementName}' must " ++
@@ -3171,6 +3176,11 @@ method parse(toks) {
             def parentNode = values.pop
             if (parentNode.isUse) then {
                 moduleObject.usedTraits.add(parentNode)
+            } elseif { false != moduleObject.superclass } then {
+                errormessages.syntaxError("at most one 'inherit' statement " ++
+                    "is permitted in a module")
+                    atRange(parentNode.line, parentNode.linePos,
+                    parentNode.linePos + 6)
             } elseif { moduleObject.usedTraits.isEmpty } then {
                 moduleObject.superclass := parentNode
             } else {
