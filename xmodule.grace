@@ -304,7 +304,11 @@ method gctDictionaryFor(moduleName) from (moduleFile) is confidential {
 
 method gctDictionaryFor(moduleName) {
     gctCache.at(moduleName) ifAbsent {
-        ProgrammingError.raise "gct dictionary for {moduleName} not in cache"
+        if (inBrowser) then {
+            gctDictionaryFrom(extractGctFromCache(moduleName)) for(moduleName)
+        } else {
+            ProgrammingError.raise "gct dictionary for {moduleName} not in cache"
+        }
     }
 }
 
@@ -315,9 +319,11 @@ method parseGCT(moduleName) sourceDir(dir) is confidential {
     // and build and return a new dictioanry containing the "GCT information",
     // which describes the objects exported from moduleName
 
-    def gctDict = emptyDictionary
-    def sz = moduleName.size
-    def gctList = extractGctFor(moduleName) sourceDir(dir)
+    gctDictionaryFrom(extractGctFor(moduleName) sourceDir(dir)) for(moduleName)
+}
+
+method gctDictionaryFrom(gctList) for(moduleName) is confidential {
+    def gctDict = dictionary.empty
     var key := ""
     for (gctList) do { line ->
         if (line.size > 0) then {
@@ -330,8 +336,9 @@ method parseGCT(moduleName) sourceDir(dir) is confidential {
         }
     }
     gctCache.at(moduleName) put(gctDict)
-    return gctDict
+    gctDict
 }
+
 
 method extractGctFor(moduleName) sourceDir(dir) is confidential {
     // Extracts the gct information for moduleName from an external resource
