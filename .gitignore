@@ -10,6 +10,7 @@
 *.gct
 *.c
 *.grace.bak
+*.js
 l1
 l2
 j1
