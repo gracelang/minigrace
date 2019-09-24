@@ -1,0 +1,5 @@
+#!/bin/bash
+if (grep -q '"version":.*alpha' $1) ; then echo "--tag alpha " ;
+elif (grep -q '"version":.*beta' $1) ; then echo "--tag beta " ;
+else echo "" ;
+fi
