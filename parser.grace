@@ -2047,7 +2047,7 @@ method sequenceConstructor {
                     suggestion := errormessages.suggestion.new
                     suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
                     suggestions.push(suggestion)
-                    errormessages.syntaxError("a collection must contain zero or more expressions separated by commas.")
+                    errormessages.syntaxError("a sequence must contain zero or more expressions separated by commas.")
                         atPosition(sym.line, sym.linePos) withSuggestions(suggestions)
                 }
             }
@@ -2057,7 +2057,7 @@ method sequenceConstructor {
         if (sym.isRSquare.not) then {
             def suggestion = errormessages.suggestion.new
             suggestion.insert("]")afterToken(lastToken)
-            errormessages.syntaxError("a collection beginning with a '[' must end with a ']'.")atPosition(
+            errormessages.syntaxError("a sequence beginning with a '[' must end with a ']'.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
         }
         def o = ast.arrayNode.new(params).setPositionFrom(lSq)
