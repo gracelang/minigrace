@@ -412,7 +412,10 @@ def implicit is public = object {
 
     method childrenDo(anAction:Procedure1) { done }
     method childrenMap(f:Function1) { [] }
-    method newAccept(aVisitor) { aVisitor.visitImplicit(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitImplicit(self))
+    }
 
     method range { emptyRange }
     method isImplicit { true }
@@ -431,7 +434,10 @@ def nullNode is public = object {
 
     method childrenDo(anAction:Procedure1) { done }
     method childrenMap(f:Function1) { [] }
-    method newAccept(aVisitor) { aVisitor.visitNull(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitNull(self))
+    }
 
     method toGrace(depth) {
         "// null"
@@ -488,7 +494,10 @@ def ifNode is public = object {
         [ value.map(f), thenblock.map(f), elseblock.map(f) ]
     }
 
-    method newAccept(aVisitor) { aVisitor.visitIf(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitIf(self))
+    }
 
     method isSimple { false }  // needs parens when used as receiver
     method accept(visitor : AstVisitor) from(ac) {
@@ -574,7 +583,10 @@ def blockNode is public = object {
         body.map(f) >> result
     }
 
-    method newAccept(aVisitor) { aVisitor.visitBlock(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitBlock(self))
+    }
 
     method isBlock { true }
     method isDelimited { true }
@@ -715,7 +727,10 @@ def tryCatchNode is public = object {
         value.map(f) >> result
         cases.map(f) >> result
     }
-    method newAccept(aVisitor) { aVisitor.visitTryCatch(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitTryCatch(self))
+    }
 
     method isSimple { false }  // needs parens when used as receiver
     method end -> Position {
@@ -790,7 +805,10 @@ def matchCaseNode is public = object {
         cases.map(f) >> result
         elsecase.map(f) >> result
     }
-    method newAccept(aVisitor) { aVisitor.visitMatchCase(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitMatchCase(self))
+    }
 
     method isSimple { false }  // needs parens when used as receiver
     method end -> Position {
@@ -872,7 +890,10 @@ class methodSignatureNode(parts', rtype') {
         signatureParts.map(f) >> result
         rtype.map(f) >> result
     }
-    method newAccept(aVisitor) { aVisitor.visitMethodSignature(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitMethodSignature(self))
+    }
 
     method postCopy(other) {
         isBindingOccurrence := other.isBindingOccurrence
@@ -1034,7 +1055,10 @@ def typeLiteralNode is public = object {
         methods.map(f) >> result
         types.map(f) >> result
     }
-    method newAccept(aVisitor) { aVisitor.visitTypeLiteral(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitTypeLiteral(self))
+    }
 
     method name { value }
     method name:=(n) {
@@ -1131,7 +1155,10 @@ def typeDecNode is public = object {
         typeParams.map(f) >> result
         annotations.map(f) >> result
     }
-    method newAccept(aVisitor) { aVisitor.visitTypeDec(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitTypeDec(self))
+    }
 
     method nameString → String { name.value }
     method nameWithParams → String {
@@ -1246,7 +1273,10 @@ def methodNode is public = object {
             decType.map(f) >> result
             body.map(f) >> result
         }
-        method newAccept(aVisitor) { aVisitor.visitMethod(self) }
+        method newAccept(aVisitor) { 
+            aVisitor.preVisit(self)
+            aVisitor.postVisit(self) result(aVisitor.newVisitMethod(self))
+        }
 
         method usesClassSyntax { "class" == description }
         method usesTraitSyntax { "trait" == description }
@@ -1558,7 +1588,10 @@ def callNode is public = object {
             parts.map(f) >> result
             typeArgs.map(f) >> result
         }
-        method newAccept(aVisitor) { aVisitor.visitCall(self) }
+        method newAccept(aVisitor) { 
+            aVisitor.preVisit(self)
+            aVisitor.postVisit(self) result(aVisitor.newVisitCall(self))
+        }
 
         method end -> Position {
             if (endPos == noPosition) then {
@@ -1741,7 +1774,10 @@ def moduleNode is public = object {
             theDialect.map(f) >> result
             objChildrenMap(f) >> result
         }
-        method newAccept(aVisitor) { aVisitor.visitModule(self) }
+        method newAccept(aVisitor) { 
+            aVisitor.preVisit(self)
+            aVisitor.postVisit(self) result(aVisitor.newVisitModule(self))
+        }
 
         method end -> Position {
             line (util.lines.size) column (util.lines.last.size)
@@ -1828,7 +1864,10 @@ def objectNode is public = object {
             annotations.map(f) >> result
             value.map(f) >> result
         }
-        method newAccept(aVisitor) { aVisitor.visitObject(self) }
+        method newAccept(aVisitor) { 
+            aVisitor.preVisit(self)
+            aVisitor.postVisit(self) result(aVisitor.newVisitObject(self))
+        }
 
         method end -> Position {
             if (value.isEmpty.not) then {
@@ -2011,7 +2050,10 @@ def arrayNode is public = object {
     method childrenMap(f:Function1) {
         value.map(f) >> sequence
     }
-    method newAccept(aVisitor) { aVisitor.visitArray(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitArray(self))
+    }
 
     method isSequenceConstructor { true }
     method end -> Position {
@@ -2073,7 +2115,10 @@ class outerNode(nodes) {
     method childrenMap(f:Function1) {
         theObjects.map(f) >> sequence
     }
-    method newAccept(aVisitor) { aVisitor.visitOuter(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitOuter(self))
+    }
 
     method numberOfLevels { theObjects.size }
     method asString { "‹object outside that at line {theObjects.last.line}›" }
@@ -2129,7 +2174,10 @@ def memberNode is public = object {
             receiver.map(f) >> result
             typeArgs.map(f) >> result
         }
-        method newAccept(aVisitor) { aVisitor.visitMember(self) }
+        method newAccept(aVisitor) { 
+            aVisitor.preVisit(self)
+            aVisitor.postVisit(self) result(aVisitor.newVisitMember(self))
+        }
 
         method end -> Position {
             if (receiver.isImplicit) then {
@@ -2258,7 +2306,10 @@ def genericNode is public = object {
         value.map(f) >> result
         arguments.map(f) >> result
     }
-    method newAccept(aVisitor) { aVisitor.visitGeneric(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitGeneric(self))
+    }
 
     method end -> Position { positionOfNext "⟧" after (args.last.end) }
     method nameString { value.nameString }
@@ -2314,7 +2365,10 @@ class typeParametersNode(params') whereClauses (conditions) {
         params.map(f) >> result
         whereClauses.map(f) >> result
     }
-    method newAccept(aVisitor) { aVisitor.visitTypeParameters(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitTypeParameters(self))
+    }
 
     once method end -> Position {
         if (whereClauses.isEmpty) then {
@@ -2416,7 +2470,10 @@ def identifierNode is public = object {
             typeArgs.map(f) >> result
             decType.map(f) >> result
         }
-        method newAccept(aVisitor) { aVisitor.visitIdentifier(self) }
+        method newAccept(aVisitor) { 
+            aVisitor.preVisit(self)
+            aVisitor.postVisit(self) result(aVisitor.newVisitIdentifier(self))
+        }
 
         method bindingOccurrence { isBindingOccurrence := true }
         method appliedOccurrence { isBindingOccurrence := false }
@@ -2567,7 +2624,10 @@ def stringNode is public = object {
 
         method childrenDo(anAction:Procedure1) { done }
         method childrenMap(f:Function1) { [] }
-        method newAccept(aVisitor) { aVisitor.visitString(self) }
+        method newAccept(aVisitor) { 
+            aVisitor.preVisit(self)
+            aVisitor.postVisit(self) result(aVisitor.newVisitString(self))
+        }
 
         method accept(visitor : AstVisitor) from(ac) {
             visitor.visitString(self) up(ac)
@@ -2605,7 +2665,10 @@ def numNode is public = object {
 
         method childrenDo(anAction:Procedure1) { done }
         method childrenMap(f:Function1) { [] }
-        method newAccept(aVisitor) { aVisitor.visitNum(self) }
+        method newAccept(aVisitor) { 
+            aVisitor.preVisit(self)
+            aVisitor.postVisit(self) result(aVisitor.newVisitNum(self))
+        }
 
         method accept(visitor : AstVisitor) from(ac) {
             visitor.visitNum(self) up(ac)
@@ -2654,7 +2717,10 @@ def opNode is public = object {
         left.map(f) >> result
         right.map(f) >> result
     }
-    method newAccept(aVisitor) { aVisitor.visitOp(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitOp(self))
+    }
 
     method start -> Position { left.start }
     method end -> Position { right.end }
@@ -2757,7 +2823,10 @@ def bindNode is public = object {
         dest.map(f) >> result
         value.map(f) >> result
     }
-    method newAccept(aVisitor) { aVisitor.visitBind(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitBind(self))
+    }
 
     method end -> Position { value.end }
     method nameString { dest.nameString ++ ":=(1)" }
@@ -2853,7 +2922,10 @@ def defDecNode is public = object {
 
         def kind is public = "defdec"
 
-        method newAccept(aVisitor) { aVisitor.visitDefDec(self) }
+        method newAccept(aVisitor) { 
+            aVisitor.preVisit(self)
+            aVisitor.postVisit(self) result(aVisitor.newVisitDefDec(self))
+        }
 
         method isPublic {
             // defs are confidential by default
@@ -2948,7 +3020,10 @@ def varDecNode is public = object {
 
         def kind is public = "vardec"
 
-        method newAccept(aVisitor) { aVisitor.visitVarDec(self) }
+        method newAccept(aVisitor) { 
+            aVisitor.preVisit(self)
+            aVisitor.postVisit(self) result(aVisitor.newVisitVarDec(self))
+        }
 
         method isPublic {
             // vars are confidential by default
@@ -3056,7 +3131,10 @@ def importNode is public = object {
         value.map(f) >> result
         decType.map(f) >> result
     }
-    method newAccept(aVisitor) { aVisitor.visitImport(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitImport(self))
+    }
 
     method end -> Position { value.end }
     method isImport { true }
@@ -3132,7 +3210,10 @@ def dialectNode is public = object {
 
     method childrenDo(anAction:Procedure1) { done }
     method childrenMap(f:Function1) { [] }
-    method newAccept(aVisitor) { aVisitor.visitDialect(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitDialect(self))
+    }
 
     method isDialect { true }
     method isExternal { true }
@@ -3193,7 +3274,10 @@ def returnNode is public = object {
         value.map(f) >> result
         decType.map(f) >> result
     }
-    method newAccept(aVisitor) { aVisitor.visitReturn(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitReturn(self))
+    }
 
     method end -> Position {
         if (noPosition ≠ value.end) then {
@@ -3271,7 +3355,10 @@ def inheritNode is public = object {
             aliases.map(f) >> result
             exclusions.map(f) >> result
         }
-        method newAccept(aVisitor) { aVisitor.visitInherit(self) }
+        method newAccept(aVisitor) { 
+            aVisitor.preVisit(self)
+            aVisitor.postVisit(self) result(aVisitor.newVisitInherit(self))
+        }
 
         method end -> Position { value.end }
         method isLegalInTrait { isUse }
@@ -3382,7 +3469,10 @@ class aliasNew(n) old(o) {
         newSignature.map(f) >> result
         oldSignature.map(f) >> result
     }
-    method newAccept(aVisitor) { aVisitor.visitAlias(self) }
+    method newAccept(aVisitor) { 
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitAlias(self))
+    }
 
     method newName {newSignature.asIdentifier}
     method oldName {oldSignature.asIdentifier}
@@ -3445,7 +3535,10 @@ def signaturePart is public = object {
             if (false ≠ typeParams) then { typeParams.map(f) >> result }
             params.map(f) >> result
         }
-        method newAccept(aVisitor) { aVisitor.visitSignaturePart(self) }
+        method newAccept(aVisitor) { 
+            aVisitor.preVisit(self)
+            aVisitor.postVisit(self) result(aVisitor.newVisitSignaturePart(self))
+        }
 
         method end -> Position {
             if (params.isEmpty.not) then {
@@ -3562,7 +3655,10 @@ def requestPart is public = object {
             typeArgs.map(f) >> result
             args.map(f) >> result
         }
-        method newAccept(aVisitor) { aVisitor.visitRequestPart(self) }
+        method newAccept(aVisitor) { 
+            aVisitor.preVisit(self)
+            aVisitor.postVisit(self) result(aVisitor.newVisitRequestPart(self))
+        }
 
         method end -> Position {
             if (args.isEmpty.not) then {
@@ -3652,7 +3748,10 @@ def commentNode is public = object {
 
         method childrenDo(anAction:Procedure1) { done }
         method childrenMap(f:Function1) { [] }
-        method newAccept(aVisitor) { aVisitor.visitComment(self) }
+        method newAccept(aVisitor) { 
+            aVisitor.preVisit(self)
+            aVisitor.postVisit(self) result(aVisitor.newVisitComment(self))
+        }
 
         method end -> Position { line (endLine) column (util.lines.at(endLine).size) }
         method isComment { true }
