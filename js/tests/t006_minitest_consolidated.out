@@ -1,0 +1,8 @@
+double inheritance: 2 run, 0 failed, 0 errors
+once class: 2 run, 0 failed, 0 errors
+point tests: 19 run, 0 failed, 0 errors
+stack overflow: 1 run, 0 failed, 0 errors
+equality and identity: 21 run, 0 failed, 0 errors
+unary comparison patterns: 8 run, 0 failed, 0 errors
+multi-parameter blocks: 7 run, 0 failed, 0 errors
+once methods with type params: 6 run, 0 failed, 0 errors

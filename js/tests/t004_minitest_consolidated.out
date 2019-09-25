@@ -1,0 +1,12 @@
+parameterized traits: 3 run, 0 failed, 0 errors
+indentation: 8 run, 0 failed, 0 errors
+string lexing: 3 run, 0 failed, 0 errors
+lexLines: 2 run, 0 failed, 0 errors
+lexString: 2 run, 0 failed, 0 errors
+continuation lines: 6 run, 0 failed, 0 errors
+once methods: 9 run, 0 failed, 0 errors
+types in interfaces: 4 run, 0 failed, 0 errors
+numeric ordering: 18 run, 0 failed, 0 errors
+file paths: 17 run, 0 failed, 0 errors
+initialization: 2 run, 0 failed, 0 errors
+many arguments are passed: 4 run, 0 failed, 0 errors

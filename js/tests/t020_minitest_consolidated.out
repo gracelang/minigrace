@@ -1,0 +1,7 @@
+once methods: 5 run, 0 failed, 0 errors
+required methods: 4 run, 0 failed, 0 errors
+nested parameterized types: 2 run, 0 failed, 0 errors
+reuse from dialect: 13 run, 0 failed, 0 errors
+singleton: 7 run, 0 failed, 0 errors
+uninitialized: 1 run, 0 failed, 0 errors
+interit from external module: 5 run, 0 failed, 0 errors
