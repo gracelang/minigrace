@@ -182,3 +182,11 @@ testSuiteNamed "toGrace methods" with {
                     foo → Done})thirdPart(param4:NewType⟦T⟧)›
     }
 }
+
+testSuiteNamed "RHS of typedec #289" with {
+    test "RHS must be type expression" by {
+        assert { astNode "typeDec" from ‹type X = object{}› }
+              shouldRaise (em.SyntaxError)
+              mentioning "a type declaration must have a type expression"
+    }
+}
