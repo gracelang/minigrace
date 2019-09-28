@@ -412,7 +412,7 @@ def implicit is public = object {
 
     method childrenDo(anAction:Procedure1) { done }
     method childrenMap(f:Function1) { [] }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitImplicit(self))
     }
@@ -434,7 +434,7 @@ def nullNode is public = object {
 
     method childrenDo(anAction:Procedure1) { done }
     method childrenMap(f:Function1) { [] }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitNull(self))
     }
@@ -494,7 +494,7 @@ def ifNode is public = object {
         [ value.map(f), thenblock.map(f), elseblock.map(f) ]
     }
 
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitIf(self))
     }
@@ -583,7 +583,7 @@ def blockNode is public = object {
         body.map(f) >> result
     }
 
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitBlock(self))
     }
@@ -727,7 +727,7 @@ def tryCatchNode is public = object {
         value.map(f) >> result
         cases.map(f) >> result
     }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitTryCatch(self))
     }
@@ -805,7 +805,7 @@ def matchCaseNode is public = object {
         cases.map(f) >> result
         elsecase.map(f) >> result
     }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitMatchCase(self))
     }
@@ -890,7 +890,7 @@ class methodSignatureNode(parts', rtype') {
         signatureParts.map(f) >> result
         rtype.map(f) >> result
     }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitMethodSignature(self))
     }
@@ -1055,7 +1055,7 @@ def typeLiteralNode is public = object {
         methods.map(f) >> result
         types.map(f) >> result
     }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitTypeLiteral(self))
     }
@@ -1155,7 +1155,7 @@ def typeDecNode is public = object {
         typeParams.map(f) >> result
         annotations.map(f) >> result
     }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitTypeDec(self))
     }
@@ -1273,7 +1273,7 @@ def methodNode is public = object {
             decType.map(f) >> result
             body.map(f) >> result
         }
-        method newAccept(aVisitor) { 
+        method newAccept(aVisitor) {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitMethod(self))
         }
@@ -1593,7 +1593,7 @@ def callNode is public = object {
             parts.map(f) >> result
             typeArgs.map(f) >> result
         }
-        method newAccept(aVisitor) { 
+        method newAccept(aVisitor) {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitCall(self))
         }
@@ -1779,7 +1779,7 @@ def moduleNode is public = object {
             theDialect.map(f) >> result
             objChildrenMap(f) >> result
         }
-        method newAccept(aVisitor) { 
+        method newAccept(aVisitor) {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitModule(self))
         }
@@ -1869,7 +1869,7 @@ def objectNode is public = object {
             annotations.map(f) >> result
             value.map(f) >> result
         }
-        method newAccept(aVisitor) { 
+        method newAccept(aVisitor) {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitObject(self))
         }
@@ -2055,7 +2055,7 @@ def arrayNode is public = object {
     method childrenMap(f:Function1) {
         value.map(f) >> sequence
     }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitArray(self))
     }
@@ -2120,7 +2120,7 @@ class outerNode(nodes) {
     method childrenMap(f:Function1) {
         theObjects.map(f) >> sequence
     }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitOuter(self))
     }
@@ -2179,7 +2179,7 @@ def memberNode is public = object {
             receiver.map(f) >> result
             typeArgs.map(f) >> result
         }
-        method newAccept(aVisitor) { 
+        method newAccept(aVisitor) {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitMember(self))
         }
@@ -2311,7 +2311,7 @@ def genericNode is public = object {
         value.map(f) >> result
         arguments.map(f) >> result
     }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitGeneric(self))
     }
@@ -2370,7 +2370,7 @@ class typeParametersNode(params') whereClauses (conditions) {
         params.map(f) >> result
         whereClauses.map(f) >> result
     }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitTypeParameters(self))
     }
@@ -2475,7 +2475,7 @@ def identifierNode is public = object {
             typeArgs.map(f) >> result
             decType.map(f) >> result
         }
-        method newAccept(aVisitor) { 
+        method newAccept(aVisitor) {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitIdentifier(self))
         }
@@ -2629,7 +2629,7 @@ def stringNode is public = object {
 
         method childrenDo(anAction:Procedure1) { done }
         method childrenMap(f:Function1) { [] }
-        method newAccept(aVisitor) { 
+        method newAccept(aVisitor) {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitString(self))
         }
@@ -2670,7 +2670,7 @@ def numNode is public = object {
 
         method childrenDo(anAction:Procedure1) { done }
         method childrenMap(f:Function1) { [] }
-        method newAccept(aVisitor) { 
+        method newAccept(aVisitor) {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitNum(self))
         }
@@ -2722,7 +2722,7 @@ def opNode is public = object {
         left.map(f) >> result
         right.map(f) >> result
     }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitOp(self))
     }
@@ -2828,7 +2828,7 @@ def bindNode is public = object {
         dest.map(f) >> result
         value.map(f) >> result
     }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitBind(self))
     }
@@ -2928,7 +2928,7 @@ def defDecNode is public = object {
 
         def kind is public = "defdec"
 
-        method newAccept(aVisitor) { 
+        method newAccept(aVisitor) {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitDefDec(self))
         }
@@ -3026,7 +3026,7 @@ def varDecNode is public = object {
 
         def kind is public = "vardec"
 
-        method newAccept(aVisitor) { 
+        method newAccept(aVisitor) {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitVarDec(self))
         }
@@ -3137,7 +3137,7 @@ def importNode is public = object {
         value.map(f) >> result
         decType.map(f) >> result
     }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitImport(self))
     }
@@ -3216,7 +3216,7 @@ def dialectNode is public = object {
 
     method childrenDo(anAction:Procedure1) { done }
     method childrenMap(f:Function1) { [] }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitDialect(self))
     }
@@ -3280,7 +3280,7 @@ def returnNode is public = object {
         value.map(f) >> result
         decType.map(f) >> result
     }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitReturn(self))
     }
@@ -3361,7 +3361,7 @@ def inheritNode is public = object {
             aliases.map(f) >> result
             exclusions.map(f) >> result
         }
-        method newAccept(aVisitor) { 
+        method newAccept(aVisitor) {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitInherit(self))
         }
@@ -3475,7 +3475,7 @@ class aliasNew(n) old(o) {
         newSignature.map(f) >> result
         oldSignature.map(f) >> result
     }
-    method newAccept(aVisitor) { 
+    method newAccept(aVisitor) {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitAlias(self))
     }
@@ -3541,7 +3541,7 @@ def signaturePart is public = object {
             if (false ≠ typeParams) then { typeParams.map(f) >> result }
             params.map(f) >> result
         }
-        method newAccept(aVisitor) { 
+        method newAccept(aVisitor) {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitSignaturePart(self))
         }
@@ -3661,7 +3661,7 @@ def requestPart is public = object {
             typeArgs.map(f) >> result
             args.map(f) >> result
         }
-        method newAccept(aVisitor) { 
+        method newAccept(aVisitor) {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitRequestPart(self))
         }
@@ -3754,7 +3754,7 @@ def commentNode is public = object {
 
         method childrenDo(anAction:Procedure1) { done }
         method childrenMap(f:Function1) { [] }
-        method newAccept(aVisitor) { 
+        method newAccept(aVisitor) {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitComment(self))
         }
@@ -3983,3 +3983,247 @@ class pluggableVisitor(visitation:Predicate2⟦AstNode, Object⟧) -> AstVisitor
     method asString { "a pluggable AST visitor" }
 }
 
+type Visitor = interface {  // the new ast visitor
+    newVisitImplicit(aNode) -> Object
+    newVisitNull(aNode) -> Object
+    newVisitIf(aNode) -> Object
+    newVisitBlock(aNode) -> Object
+    newVisitTryCatch(aNode) -> Object
+    newVisitMatchCase(aNode) -> Object
+    newVisitMethodSignature(aNode) -> Object
+    newVisitTypeLiteral(aNode) -> Object
+    newVisitTypeDec(aNode) -> Object
+    newVisitMethod(aNode) -> Object
+    newVisitCall(aNode) -> Object
+    newVisitModule(aNode) -> Object
+    newVisitObject(aNode) -> Object
+    newVisitArray(aNode) -> Object
+    newVisitOuter(aNode) -> Object
+    newVisitMember(aNode) -> Object
+    newVisitGeneric(aNode) -> Object
+    newVisitTypeParameters(aNode) -> Object
+    newVisitIdentifier(aNode) -> Object
+    newVisitString(aNode) -> Object
+    newVisitNum(aNode) -> Object
+    newVisitOp(aNode) -> Object
+    newVisitBind(aNode) -> Object
+    newVisitDefDec(aNode) -> Object
+    newVisitVarDec(aNode) -> Object
+    newVisitImport(aNode) -> Object
+    newVisitDialect(aNode) -> Object
+    newVisitReturn(aNode) -> Object
+    newVisitInherit(aNode) -> Object
+    newVisitAlias(aNode) -> Object
+    newVisitSignaturePart(aNode) -> Object
+    newVisitRequestPart(aNode) -> Object
+    newVisitComment(aNode) -> Object
+}
+
+class rootVisitor {
+    // the superobject for visitors that have seffects, but return no result
+
+    method newVisitImplicit(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitNull(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitIf(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitBlock(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitTryCatch(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitMatchCase(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitMethodSignature(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitTypeLiteral(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitTypeDec(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitMethod(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitCall(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitModule(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitDone(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitArray(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitOuter(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitMember(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitGeneric(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitTypeParameters(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitIdentifier(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitString(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitNum(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitOp(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitBind(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitDefDec(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitVarDec(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitImport(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitDialect(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitReturn(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitInherit(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitAlias(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitSignaturePart(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitRequestPart(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitComment(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+}
+
+class rootMappingVisitor {
+    // the superobjecty for visitors that hav a result.  I'm not yet sure how
+    // they should work!  So, for now, this is the same as rootVisitor.
+
+    method newVisitImplicit(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitNull(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitIf(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitBlock(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitTryCatch(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitMatchCase(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitMethodSignature(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitTypeLiteral(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitTypeDec(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitMethod(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitCall(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitModule(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitObject(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitArray(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitOuter(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitMember(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitGeneric(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitTypeParameters(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitIdentifier(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitString(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitNum(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitOp(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitBind(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitDefDec(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitVarDec(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitImport(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitDialect(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitReturn(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitInherit(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitAlias(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitSignaturePart(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitRequestPart(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitComment(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+}
