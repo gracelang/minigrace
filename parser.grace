@@ -324,18 +324,18 @@ method doannotation {
         return false
     }
     next
-    def anns = list [ ]
+    def anns = ast.annotationsNode
     if (unsuccessfulParse {expression(noBlocks)}) then {
         errorMissingAnnotation
     }
     while {sym.isComma} do {
-        anns.push(checkAnnotation(values.pop))
+        anns.add(checkAnnotation(values.pop))
         next
         if (unsuccessfulParse {expression(noBlocks)}) then {
             errorMissingAnnotation
         }
     }
-    anns.push(checkAnnotation(values.pop))
+    anns.add(checkAnnotation(values.pop))
     anns
 }
 

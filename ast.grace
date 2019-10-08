@@ -281,6 +281,7 @@ class baseNode {
     method hasTypeParams { false }
     method isNull { false }
     method isAppliedOccurrence { isBindingOccurrence.not }
+    method isAnnotations { false }
     method isBindingOccurrence { true }
     method isMarkerDeclaration { false }
     method isMatchingBlock { false }
@@ -562,6 +563,49 @@ def ifNode is public = object {
     }
   }
 }
+
+method annotationsNode {
+    annotationsNode (list.empty)
+}
+
+class annotationsNode(someAnnotations) {
+    inherit baseNode
+    def kind is public = "annonations"
+    def anns is public = someAnnotations
+
+    method childrenDo(anAction:Procedure1) {
+        anns.do(anAction)
+    }
+    method childrenMap(f:Function1) {
+        def result = list.empty
+        anns.map(f) >> result
+    }
+    method add(anAnnotation) {
+        anns.add(anAnnotation)
+        self
+    }
+    method newAccept(aVisitor) {
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitAnnotations(self))
+    }
+    method do(anAction) { anns.do(anAction) }
+    method isEmpty { anns.isEmpty }
+    method size { anns.size }
+
+    method pretty(depth) {
+        var s := "{basePretty(depth)}\n"
+        do { a ->
+            s := s ++ "\n{a.pretty(depth+2)}"
+        }
+        s
+    }
+    method asString { pretty 0 }
+    method shallowCopy {
+        annotationsNode(anns).shallowCopyFieldsFrom(self)
+            // this shares ans, rather than copying.
+    }
+}
+
 def blockNode is public = object {
   class new(params', body') {
     inherit baseNode
@@ -4003,6 +4047,7 @@ type Visitor = interface {  // the new ast visitor
     newVisitGeneric(aNode) -> Object
     newVisitTypeParameters(aNode) -> Object
     newVisitIdentifier(aNode) -> Object
+    newVisitAnnotations(aNode) -> Object
     newVisitString(aNode) -> Object
     newVisitNum(aNode) -> Object
     newVisitOp(aNode) -> Object
@@ -4020,7 +4065,7 @@ type Visitor = interface {  // the new ast visitor
 }
 
 class rootVisitor {
-    // the superobject for visitors that have seffects, but return no result
+    // the superobject for visitors that have effects, but return no result
 
     method newVisitImplicit(aNode) -> Done {
         aNode.childrenDo{ each -> each.newAccept(self) }
@@ -4079,6 +4124,9 @@ class rootVisitor {
     method newVisitIdentifier(aNode) -> Done {
         aNode.childrenDo{ each -> each.newAccept(self) }
     }
+    method newVisitAnnotations(aNode) -> Done {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
     method newVisitString(aNode) -> Done {
         aNode.childrenDo{ each -> each.newAccept(self) }
     }
@@ -4124,7 +4172,7 @@ class rootVisitor {
 }
 
 class rootMappingVisitor {
-    // the superobjecty for visitors that hav a result.  I'm not yet sure how
+    // the superobjecty for visitors that have a result.  I'm not yet sure how
     // they should work!  So, for now, this is the same as rootVisitor.
 
     method newVisitImplicit(aNode) -> Object {
@@ -4182,6 +4230,9 @@ class rootMappingVisitor {
         aNode.childrenDo{ each -> each.newAccept(self) }
     }
     method newVisitIdentifier(aNode) -> Object {
+        aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitAnnotations(aNode) -> Object {
         aNode.childrenDo{ each -> each.newAccept(self) }
     }
     method newVisitString(aNode) -> Object {
