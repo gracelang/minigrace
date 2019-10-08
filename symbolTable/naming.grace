@@ -197,7 +197,7 @@ class definitionGatherer {
     }
     method defaultInheritedScope {
         // Note that we inherit from intrinsic.graceObject, not the graceObject
-        // in the current scope.	This is so that all objects have the same
+        // in the current scope.    This is so that all objects have the same
         // ultimate ancestor, and because of the rule that `use` excludes
         // methods from graceObject.
         //
@@ -333,121 +333,87 @@ class definitionGatherer {
 
 def namingError = object {
 
-    method underscore (aMessage) node (aGraceParseNode) {
-        return GraceNamingError.raise (aMessage) with (aGraceParseNode)
+    method underscore (aParseNode) {
+        NamingError.raise "`_` cannot be used in an expression" with (aParseNode)
+    }
+
+    method undeclaredIdentifier (anIdentifierNode) {
+        def message = "The name {anIdentifierNode.stringName} has not been declared. " ++
+              "This may be a spelling mistake, or an attempt to access a name " ++
+              "declared in another scope"
+        // TODO: provide better diagnostics, e.g., by searching other scopes or
+        // by trying an approximate string match
+        NamingError.raise (message) with (anIdentifierNode)
+    }
+
+    method definition (aGraceMethod) usedAsAnnotation (anAnnotationNode) {
+        def declaringModule = aGraceMethod.definingParseNode.moduleName
+        var location := aGraceMethod.definingParseNode.range.lineRangePrintString
+        if (declaringModule ≠ anAnnotationNode.moduleName) then {
+            location := "{location} of module {declaringModule}"
+        }
+        def message = "{anAnnotationNode.requestedName}, which is declared on " ++
+                  "{location}, is not an annotation"
+        NamingError.raise(message) with(anAnnotationNode)
     }
 }
 
-def multiplicativeAndAdditive = ["+", "*", "/", "-"]
-
 class disambiguationVisitor {
-    inherit nameResolutionVisitor
-    // I replace implicit requests by explicit requests.  I also make some other checks on the parse tree: those that cannot be performed until all of the scopes have been constructed.  For example, I check that all names used as annotations have been declared as annotations.
-    // Specifically, each ImplicitRequest node is replaced by an OuterRequest node or a SelfRequest node.  I also signal an exception if the reciever of the implicit request can't be determined, either because the request is not defined in scope, or because it is defined in multiple places.
+    inherit ast.rootVisitor
+        alias superVisitAnnotations(_) = newVisitAnnotations(_)
+        alias superVisitIdentifier(_) = newVisitIdentifier(_)
+        alias superVisitImplicitRequest(_) = newVisitImplicitRequest(_)
+        alias superVisitAssignment(_) = newVisitAssignment(_)
+
+    // I replace implicit requests by explicit requests.  I also make some other
+    // checks on the parse tree: those that cannot be performed until all of the
+    // scopes have been constructed.  For example, I check that all names used
+    // as annotations have been declared as annotations.
+    // Specifically, each ImplicitRequest node is replaced by an OuterRequest
+    // node or a SelfRequest node.  I also signal an exception if the reciever
+    // of the implicit request can't be determined, either because the request
+    // is not defined in scope, or because it is defined in multiple places.
     // I update the parse-tree that I am visiting in place.
 
 
-    method visitAnnotations (anAnnotation) {
+    method newVisitAnnotations (anAnnotation) {
         // check that all of the annotations are declared as annotations
         anAnnotation.anns.do { anAnnLabel →
             def defn = anAnnotation.scope.lookup (anAnnLabel.requestedName) ifAbsent {
-                return GraceNamingError.undeclaredIdentifier (anAnnLabel)
+                return namingError.undeclaredIdentifier (anAnnLabel)
             }
             if (defn.isAnnotation.not) then {
-                return GraceNamingError.definition (defn) usedAsAnnotation (anAnnLabel)
+                return namingError.definition (defn) usedAsAnnotation (anAnnLabel)
             }
         }
-        return super.visitAnnotations (anAnnotation)
+        return superVisitAnnotations (anAnnotation)
     }
-    method operatorsToBePoppedFrom (operatorTokens) {
-        var result
-        result := 1
-        operatorTokens.reversed.overlappingPairsDo { a, b →
-            if (operator (b) isOfGreaterOrEqualPrecedence (a).not) then {
-                return result
-            }
-            result := (result + 1)
-        }
-        return result
-    }
-    method visitBinaryRequest (aBinaryRequest) {
-        def operators = aBinaryRequest.ops.collect "name".asSet
-        if ((operators.size == 1)) then {
-            return super.visitBinaryRequest (aBinaryRequest)
-        }
-        if (multiplicativeAndAdditive.includesAll (operators)) then {
-            return super.visitBinaryRequest (implementPrecedenceForPlusAndTimes (aBinaryRequest))
-        }
-        return precedenceError "Sorry, I don't know how to parenthesize this sequence of binary operators" node (aBinaryRequest)
-    }
-    method implementPrecedenceForPlusAndTimes (binaryRequest) {
-        var ix
-        var newNode
-        def operands = list.with (binaryRequest.receiver)
-        def operators = list.empty
-        ix := 1
-        while {
-            while {
-                operators.addLast (binaryRequest.ops.at (ix))
-                operands.addLast (binaryRequest.args.at (ix))
-                ix := (ix + 1)
-                ((ix ≤ binaryRequest.ops.size) && {
-                    operator (binaryRequest.ops.at (ix)) isOfGreaterOrEqualPrecedence (operators.last)
-                })
-            } do {
-
-            }
-            def numberOfOperatorsToPop = operatorsToBePoppedFrom (operators)
-            def newOperands = operands.removeLast ((numberOfOperatorsToPop + 1))
-            def newOperators = operators.removeLast (numberOfOperatorsToPop)
-            newNode := GraceBinaryRequestNode.withOperands (newOperands) operators (newOperators)
-            operands.addLast (newNode)
-            (ix ≤ binaryRequest.ops.size)
-        } do {
-
-        }
-        assert ((operands.size == ((operators.size + 1))))
-        if ((operands.size > 1)) then {
-            newNode := GraceBinaryRequestNode.withOperands (operands) operators (operators)
-        }
-        binaryRequest.replaceWith (newNode.fixParentPointers)
-        return newNode
-    }
-    method visitIdentifier (anIdentifier) {
+    method newVisitIdentifier (anIdentifier) {
         // We may re-write this identifier into a OneselfRequest.  In this case, the
         // super-visitation will be on a different class of node.
         def possiblyRewrittenNode = nodeRewriter.rewriteIdentifier (anIdentifier)
         return if (possiblyRewrittenNode.isIdentifier) then {
-            super.visitIdentifier (possiblyRewrittenNode)
+            superVisitIdentifier (possiblyRewrittenNode)
         } else {
             acceptNode (possiblyRewrittenNode)
         }
     }
-    method operator (aNewGraceToken) isOfGreaterOrEqualPrecedence (aPriorGraceToken) {
-        // The tokens must be members of the set {*, +, /, -}, since Grace has no other precedence rules
-        return ("*/".includesSubstring (aNewGraceToken.value) || {
-             "+-".includesSubstring (aPriorGraceToken.value)
-        })
-    }
     method assignmentError (aMessage) node (aParseNode) {
-        assignmentError.raise (aMessage) with (aParseNode)
+        AssignmentError.raise (aMessage) with (aParseNode)
     }
-    method precedenceError (aMessage) node (aGraceParseNode) {
-        AmbiguityError.raise (aMessage) with (aGraceParseNode)
-    }
-    method visitImplicitRequest (anImplicitNode) {
+    method newVisitImplicitRequest (anImplicitNode) {
         def rewrittenNode = nodeRewriter.rewriteImplicitRequest (anImplicitNode)
         return if ((rewrittenNode == anImplicitNode )) then {
-            super.visitImplicitRequest (anImplicitNode)
+            superVisitImplicitRequest (anImplicitNode)
         } else {
             rewrittenNode.acceptVisitor (self)
         }
     }
-    method visitAssignment (anAssignment) {
+    method newVisitAssignment (anAssignment) {
         // if this is an assignment request, replace this assignment node with a request node
         def rewrittenNode = nodeRewriter.rewriteAssignment (anAssignment)
         return if ((rewrittenNode == anAssignment )) then {
-            super.visitAssignment (anAssignment)
+            superVisitAssignment (anAssignment)
         } else {
             rewrittenNode.acceptVisitor (self)
         }
@@ -462,7 +428,7 @@ def nodeRewriter = object {
         def theRequest = anImplicitRequest.request
         def defs = GraceResolvedVariable.definitionsOf (theRequest.requestedName) visibleIn (anImplicitRequest.scope)
         if (defs.isEmpty) then {
-            return GraceNamingError.undeclaredIdentifier (theRequest)
+            return namingError.undeclaredIdentifier (theRequest)
         }
         if ((defs.size == 1)) then {
             return updateImplicitRequest (anImplicitRequest) using (defs.first)
@@ -514,7 +480,7 @@ def nodeRewriter = object {
         }
         def defs = GraceResolvedVariable.definitionsOf (anIdentifier.name) visibleIn (anIdentifier.scope)
         if (defs.isEmpty) then {
-            return GraceNamingError.undeclaredIdentifier (anIdentifier)
+            return namingError.undeclaredIdentifier (anIdentifier)
         }
         if ((defs.size == 1)) then {
             return updateIdentifier (anIdentifier) using (defs.first)
@@ -528,15 +494,15 @@ def nodeRewriter = object {
         def defs = GraceResolvedVariable.definitionsOf (anAssignment.assignmentRequestName) visibleIn (anAssignment.scope)
         defs.ifEmpty {
             def badBinding = anAssignment.scope.lookup (lhs.name) ifAbsent {
-                AssignmentError.raise "`{lhs.name}` is not declared" with (lhs)
+                assignmentError "`{lhs.name}` is not declared" node (lhs)
             }
-            AssignmentError.raise ("You can't assign to `{lhs.name}` because " ++
-                  "it is not declared as a variable") with (lhs)
+            assignmentError ("You can't assign to `{lhs.name}` because " ++
+                  "it is not declared as a variable") node (lhs)
         }
         if (defs.size > 1) then {
-            return ambiguityError (defs) node (lhs)
+            ambiguityError (defs) node (lhs)
         }
-        return updateAssignment (anAssignment) using (defs.first)
+        updateAssignment (anAssignment) using (defs.first)
     }
     method generateOneselfRequestOf (request) from (aSourceNode) objectsOut (objectsUp) {
         var newNode
@@ -563,11 +529,17 @@ def nodeRewriter = object {
         } separatedBy {
             (msg << ", or the ")
         }
-        AmbiguityError.rasie (msg.contents) with (aNode)
+        AmbiguityError.raise (msg.contents) with (aNode)
     }
 }
 class reuseVisitor {
     inherit ancestorsVisitor
+        alias superVisitClassDeclaration(_) = newVisitClassDeclaration(_)
+        alias superVisitMethodDeclaration(_) = newVisitMethodDeclaration(_)
+        alias superVisitObjectConstructor(_) = newVisitObjectConstructor(_)
+        alias superVisitTypeDeclaration(_) = newVisitTypeDeclaration(_)
+        alias superVisitBlock(_) = newVisitBlock(_)
+        alias superVisitTraitDeclaration(_) = newVisitTraitDeclaration(_)
     // I add reused names to object scopes.
     // Reused names are those that are made available through trait use or
     // inherit statements.  I visit the parse tree, and expect the scopes to
@@ -579,40 +551,39 @@ class reuseVisitor {
     // requires that resused names already be in the scopes?   Scopes are
     // built on demand to avoid this problem.
 
-    method visitClassDeclaration (aClass) {
+    method newVisitClassDeclaration (aClass) {
         definitionGatherer.for (aClass).collectReusedNames
-        return super.visitClassDeclaration (aClass)
+        return superVisitClassDeclaration (aClass)
     }
-    method visitMethodDeclaration (aMethod) {
+    method newVisitMethodDeclaration (aMethod) {
         // Check for shadowing
         aMethod.scope.reportShadowingErrors
-        return super.visitMethodDeclaration (aMethod)
+        return superVisitMethodDeclaration (aMethod)
     }
-    method visitObjectConstructor (anObjectConstructor) {
+    method newVisitObjectConstructor (anObjectConstructor) {
         // this method is also used to visit Module nodes — a subclass of ObjectConstructor nodes
         definitionGatherer.for (anObjectConstructor).collectReusedNames
-        return super.visitObjectConstructor (anObjectConstructor)
+        return superVisitObjectConstructor (anObjectConstructor)
     }
-    method visitTypeDeclaration (aTypeDecl) {
+    method newVisitTypeDeclaration (aTypeDecl) {
         // Check for shadowing of the type parameters
         aTypeDecl.typeParameterList.ifNotNil { tp →
             tp.scope.reportShadowingErrors
         }
-        return super.visitTypeDeclaration (aTypeDecl)
+        return superVisitTypeDeclaration (aTypeDecl)
     }
-    method visitBlock (aBlock) {
+    method newVisitBlock (aBlock) {
         // Check for shadowing
         aBlock.scope.reportShadowingErrors
-        return super.visitBlock (aBlock)
+        return superVisitBlock (aBlock)
     }
-    method visitTraitDeclaration (aClass) {
+    method newVisitTraitDeclaration (aClass) {
         definitionGatherer.for (aClass).collectReusedNames
-        return super.visitTraitDeclaration (aClass)
+        return superVisitTraitDeclaration (aClass)
     }
 }
 
 class buildScopesVisitor {
-    inherit ancestorsVisitor
     // I build the "scopes" for the nodes in the parse tree.  Scopes are also
     // known as symbol tables.  I know about parse tree nodes that create scopes,
     // and about the declarations that can appear in thise scopes.  I add entries
@@ -620,22 +591,41 @@ class buildScopesVisitor {
     // trait use and inheritance; that is the responsibility of the reuseVisitor.
     // I am a visitor, and thus inherit (indirectly) from ast.rootVisitor
 
-    method visitDefDeclaration (aDefDecl) {
+    inherit ancestorsVisitor
+        alias superVisitDefDeclaration(_) = newVisitDefDeclaration(_)
+        alias superVisitMethodParameter(_) = newVisitMethodParameter(_)
+        alias superVisitDialect(_) = newVisitDialect(_)
+        alias superVisitInterfaceLiteral(_) = newVisitInterfaceLiteral(_)
+        alias superVisitSignature(_) = newVisitSignature(_)
+        alias superVisitGenerativeDeclaration(_) = newVisitGenerativeDeclaration(_)
+        alias superVisitReturn(_) = newVisitReturn(_)
+        alias superVisitAssignmentMethodHeader(_) = newVisitAssignmentMethodHeader(_)
+        alias superVisitImport(_) = newVisitImport(_)
+        alias superVisitTypeParameter(_) = newVisitTypeParameter(_)
+        alias superVisitModule(_) = newVisitModule(_)
+        alias superVisitBlockParameter(_) = newVisitBlockParameter(_)
+        alias superVisitObjectConstructor(_) = newVisitObjectConstructor(_)
+        alias superVisitTypeDeclaration(_) = newVisitTypeDeclaration(_)
+        alias superVisitBlock(_) = newVisitBlock(_)
+        alias superVisitTraitDeclaration(_) = newVisitTraitDeclaration(_)
+        alias superVisitVarDeclaration(_) = newVisitVarDeclaration(_)
+
+    method newVisitDefDeclaration (aDefDecl) {
         aDefDecl.id.markAsDefinition
         checkDefAnnotations (aDefDecl)
         if (aDefDecl.id.isAnonymous.not) then {
             aDefDecl.scope.add (GraceDef.fromParseTreeNode (aDefDecl))
         }
-        return super.visitDefDeclaration (aDefDecl)
+        return superVisitDefDeclaration (aDefDecl)
     }
-    method visitMethodParameter (aMethodParameter) {
+    method newVisitMethodParameter (aMethodParameter) {
         aMethodParameter.id.markAsDefinition
         if (aMethodParameter.id.isAnonymous.not) then {
             aMethodParameter.scope.add (GraceParameter.fromParseTreeNode (aMethodParameter))
         }
-        return super.visitMethodParameter (aMethodParameter)
+        return superVisitMethodParameter (aMethodParameter)
     }
-    method visitDialect (aDialectNode) {
+    method newVisitDialect (aDialectNode) {
         assert {
             aDialectNode.parent.isModule
         }
@@ -643,16 +633,16 @@ class buildScopesVisitor {
         if ((dialectName == "none").not) then {
             installScopeForDialect (dialectName) outside (aDialectNode.scope)
         }
-        return super.visitDialect (aDialectNode)
+        return superVisitDialect (aDialectNode)
     }
     method installScopeForDialect (dialectName) outside (currentScope) {
         def dialectScope = moduleRegistry.attributeScopeOf (dialectName)
         currentScope.outerScope (dialectScope)
         addOuterBindingFor (dialectScope) in (currentScope)
     }
-    method visitInterfaceLiteral (anInterfaceLiteral) {
+    method newVisitInterfaceLiteral (anInterfaceLiteral) {
         createScope (GraceInterfaceScope) in (anInterfaceLiteral)
-        return super.visitInterfaceLiteral (anInterfaceLiteral)
+        return superVisitInterfaceLiteral (anInterfaceLiteral)
     }
     method createScope (ScopeClass) in (aNode) {
         def newScope = ScopeClass.new
@@ -667,12 +657,12 @@ class buildScopesVisitor {
         }
         return newScope
     }
-    method visitSignature (aSignature) {
+    method newVisitSignature (aSignature) {
         aSignature.scope.add (GraceMethod.fromParseTreeNode (aSignature))
         createScope (aSignature.scopeKind) in (aSignature)
-        return super.visitSignature (aSignature)
+        return superVisitSignature (aSignature)
     }
-    method visitGenerativeDeclaration (aGenDeclaration) {
+    method newVisitGenerativeDeclaration (aGenDeclaration) {
         if ((aGenDeclaration.isMarkerDeclaration.not && {
             aGenDeclaration.hasBody.not
         })) then {
@@ -693,13 +683,11 @@ class buildScopesVisitor {
         }
         aGenDeclaration.scope.add (GraceMethod.fromParseTreeNode (aGenDeclaration))
         createScope (aGenDeclaration.scopeKind) in (aGenDeclaration)
-        return super.visitGenerativeDeclaration (aGenDeclaration)
+        return superVisitGenerativeDeclaration (aGenDeclaration)
     }
-    method visitIdentifier (anIdentifier) {
-        if ((anIdentifier.isApplication && {
-            anIdentifier.isAnonymous
-        })) then {
-            error.underscore "`_` cannot be used in an expression" node (anIdentifier)
+    method newVisitIdentifier (anIdentifier) {
+        if (anIdentifier.isApplication && { anIdentifier.isAnonymous }) then {
+            namingError.underscore (anIdentifier)
         }
     }
     method addOuterBindingFor (enclosingObjectScope) in (newScope) {
@@ -708,7 +696,7 @@ class buildScopesVisitor {
     method dialectScopeFor (aDialectNode) {
         moduleRegistry.lookup (aDialectNode.name).scope
     }
-    method visitReturn (aReturn) {
+    method newVisitReturn (aReturn) {
         def theMethod = aReturn.enclosingMethod
         if (theMethod == GraceNoParentNode.instance) then {
             errormessages.SyntaxError.raise
@@ -716,7 +704,7 @@ class buildScopesVisitor {
                   with (aReturn)
         }
         aReturn.declaredType (theMethod.decType)
-        super.visitReturn (aReturn)
+        superVisitReturn (aReturn)
     }
     method checkDefAnnotations (aDefDecl) {
         if (aDefDecl.isMarkerDeclaration.not && {
@@ -742,105 +730,108 @@ class buildScopesVisitor {
             }
         }
     }
-    method visitAssignmentMethodHeader (anAssignmentMethodHeader) {
+    method newVisitAssignmentMethodHeader (anAssignmentMethodHeader) {
         anAssignmentMethodHeader.id.markAsDefinition
-        return super.visitAssignmentMethodHeader (anAssignmentMethodHeader)
+        return superVisitAssignmentMethodHeader (anAssignmentMethodHeader)
     }
-    method visitImport (anImport) {
+    method newVisitImport (anImport) {
         anImport.id.markAsDefinition
         anImport.scope.add (GraceImport.fromParseTreeNode (anImport))
-        return super.visitImport (anImport)
+        return superVisitImport (anImport)
     }
-    method visitTypeParameter (typeParam) {
+    method newVisitTypeParameter (typeParam) {
         typeParam.id.markAsDefinition
         if (typeParam.id.isAnonymous.not) then {
             typeParam.scope.add (GraceTypeParameter.fromParseTreeNode (typeParam))
         }
-        return super.visitTypeParameter (typeParam)
+        return superVisitTypeParameter (typeParam)
     }
     method createWildcardIdFor (aGraceBlockParameterNode) {
         shouldBeImplemented
     }
-    method visitModule (aModule) {
+    method newVisitModule (aModule) {
         createScope (GraceModuleScope) in (aModule)
         aModule.theDialect.ifNil {
             installScopeForDialect "standardGrace" outside (aModule.scope)
         }
-        return super.visitModule (aModule)
+        return superVisitModule (aModule)
     }
-    method visitBlockParameter (blockParam) {
+    method newVisitBlockParameter (blockParam) {
         blockParam.id.ifNotNil { id →
             id.markAsDefinition
             if (id.isAnonymous.not) then {
                 blockParam.scope.add (GraceParameter.fromParseTreeNode (blockParam))
             }
         }
-        return super.visitBlockParameter (blockParam)
+        return superVisitBlockParameter (blockParam)
     }
-    method visitObjectConstructor (anObjCons) {
+    method newVisitObjectConstructor (anObjCons) {
         if (anObjCons.scopeNotYetSet) then {
             createScope (GraceObjectScope) in (anObjCons)
         }
-        return super.visitObjectConstructor (anObjCons)
+        return superVisitObjectConstructor (anObjCons)
     }
-    method visitTypeDeclaration (aTypeDecl) {
+    method newVisitTypeDeclaration (aTypeDecl) {
         aTypeDecl.id.markAsDefinition
         aTypeDecl.scope.add (GraceType.fromParseTreeNode (aTypeDecl))
         createScope (GraceTypeScope) in (aTypeDecl)
-        return super.visitTypeDeclaration (aTypeDecl)
+        return superVisitTypeDeclaration (aTypeDecl)
     }
-    method visitBlock (aBlock) {
+    method newVisitBlock (aBlock) {
         createScope (GraceBlockScope) in (aBlock)
-        return super.visitBlock (aBlock)
+        return superVisitBlock (aBlock)
     }
-    method visitTraitDeclaration (aTraitDeclaration) {
+    method newVisitTraitDeclaration (aTraitDeclaration) {
         aTraitDeclaration.items.do { each →
             if (each.isLegalInTrait.not) then {
                 error.malformedTraitContaining (each)
             }
         }
-        return super.visitTraitDeclaration (aTraitDeclaration)
+        return superVisitTraitDeclaration (aTraitDeclaration)
     }
-    method visitVarDeclaration (aVarDecl) {
+    method newVisitVarDeclaration (aVarDecl) {
         def theScope = aVarDecl.scope
         aVarDecl.id.markAsDefinition
         if (aVarDecl.id.isAnonymous.not) then {
             theScope.add (GraceVar.fromParseTreeNode (aVarDecl))
             theScope.add (GraceImplicitMethod.fromParseTreeNode (aVarDecl)) withName ((aVarDecl.declaredName ++ ":=(_)"))
         }
-        return super.visitVarDeclaration (aVarDecl)
+        return superVisitVarDeclaration (aVarDecl)
     }
 }
-def AssignmentError = errormessages.CompilationError.refine "AssignmentError"
-    // I represent an error in the use of assignment.
 
 class ancestorsVisitor {
-    inherit nameResolutionVisitor
+    inherit ast.rootVisitor
     // This (abstract) visitor records the route back to the root node of the
     // parse tree, on the stack `ancestors`.  It's useful if there are no up-links
     // in the tree.  When used as a superclass for other visitors, these
     // vistors have access to the ancestors stack.
 
-    var ancestors
-    method initialize {
-        super.initialize
-        ancestors := OrderedCollection.with (GraceNoParentNode.instance)
-    }
-    method visitRoot (aRoot) {
+    def ancestors = list.with (GraceNoParentNode.instance)
+
+    method newVisitRoot (aRoot) {
         ancestors.addFirst (aRoot)
         return {
-            visitSmaCCParseNode (aRoot)
+            newVisitSmaCCParseNode (aRoot)
         }.ensure {
             ancestors.removeFirst
         }
     }
 }
-def AmbiguityError = CompilationError.refine "AmbiguityError"
+
+def NamingError = errormessages.SyntaxError.refine "NamingError"
+    // Raised on a context-sensitive syntax error caused by a mis-use of a name
+    // such as an undeclared identifier or multiply-declared identifier.
+
+def AmbiguityError = NamingError.refine "AmbiguityError"
     // This error is generated when the compiler cannot resolve an implicit
     // request, either because there is no method with the requested name, or
     // when there are two, one reused and the other in the lexical scope.
 
-class nameResolutionVisitor {
+def AssignmentError = errormessages.NamingError.refine "AssignmentError"
+    // I represent an error in the use of assignment.
+
+class nameResolutionVisitor {   // no longer used; kept for the comment
     inherit ast.rootVisitor
     // An abstract superclass for the various visitors used to do name resolution.
     // Its primary purpose is to make a place to put the error methods that are
