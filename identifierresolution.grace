@@ -1193,8 +1193,8 @@ method gatherInheritedNames(node) is confidential {
             if (superScope.contains(old)) then {
                 inhNode.providedNames.add(a.newName.nameString)
             } else {
-                errormessages.syntaxError("can't define an alias for {old} " ++
-                    "because it is not present in the inherited object")
+                errormessages.syntaxError("can't define an alias for " ++ a.oldName.canonicalName ++
+                    " because it is not present in the inherited object")
                     atRange(a.oldName.range)
             }
         }
@@ -1244,8 +1244,8 @@ method gatherUsedNames(objNode) is confidential {
             if (traitScope.contains(old)) then {
                 t.providedNames.add(a.newName.nameString)
             } else {
-                errormessages.syntaxError("can't define an alias for " ++
-                    "{old} because it is not present in the trait")
+                errormessages.syntaxError("can't define an alias for " ++ a.oldName.canonicalName ++
+                    " because it is not present in the trait")
                     atRange(a.oldName.range)
             }
         }
