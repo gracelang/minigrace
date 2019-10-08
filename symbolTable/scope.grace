@@ -379,7 +379,7 @@ class graceScope {
 
     def names = nameDictionary.empty
     var outerScope is public := graceEmptyScope
-    var node is readable
+    var node is public
 
     method node(nu) {
         // sets the node for this scope, and returns self
