@@ -816,12 +816,13 @@ class methodSignatureNode(parts', rtype') {
         signature.first.typeParams := tp
         self
     }
-
     method end -> Position {
         if ((false ≠ rtype) && {rtype.line ≠ 0}) then { return rtype.end }
         signature.last.end
     }
-
+    method endPos {
+        end.column
+    }
     method nameString {
         // the name of the method being defined, in numeric form
         signature.fold { acc, each -> acc ++ each.nameString }
