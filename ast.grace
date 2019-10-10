@@ -1101,7 +1101,7 @@ def typeLiteralNode is public = object {
     }
     method newAccept(aVisitor) {
         aVisitor.preVisit(self)
-        aVisitor.postVisit(self) result(aVisitor.newVisitTypeLiteral(self))
+        aVisitor.postVisit(self) result(aVisitor.newVisitInterfaceLiteral(self))
     }
 
     method name { value }
@@ -4048,7 +4048,7 @@ type Visitor = interface {  // the new ast visitor
     newVisitTryCatch(aNode) -> Object
     newVisitMatchCase(aNode) -> Object
     newVisitMethodSignature(aNode) -> Object
-    newVisitTypeLiteral(aNode) -> Object
+    newVisitInterfaceLiteral(aNode) -> Object
     newVisitTypeDec(aNode) -> Object
     newVisitMethod(aNode) -> Object
     newVisitCall(aNode) -> Object
@@ -4080,214 +4080,126 @@ type Visitor = interface {  // the new ast visitor
 class rootVisitor {
     // the superobject for visitors that have effects, but return no result
 
-    method newVisitImplicit(aNode) -> Done {
+    method newVisitRoot(aNode) -> Done {
         aNode.childrenDo{ each -> each.newAccept(self) }
+    }
+    method newVisitImplicit(aNode) -> Done {
+        newVisitRoot(aNode)
     }
     method newVisitNull(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitIf(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitBlock(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitTryCatch(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitMatchCase(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitMethodSignature(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
-    method newVisitTypeLiteral(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+    method newVisitInterfaceLiteral(aNode) -> Done {
+        newVisitRoot(aNode)
     }
     method newVisitTypeDec(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitMethod(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitCall(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitModule(aNode) -> Done {
         newVisitObject(aNode)
     }
     method newVisitObject(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitArray(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitOuter(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitMember(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitGeneric(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitTypeParameters(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitIdentifier(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitAnnotations(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitString(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitNum(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitOp(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitBind(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitDeclaration(aNode)
     }
     method newVisitDefDec(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitDeclaration(aNode)
     }
     method newVisitVarDec(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
+    }
+    method newVisitDeclaration(aNode) -> Done {
+         newVisitRoot(aNode)
     }
     method newVisitImport(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitDialect(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitReturn(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitInherit(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitAlias(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitSignaturePart(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitRequestPart(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
     method newVisitComment(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitRoot(aNode)
     }
+    method preVisit -> Done {
+        // hook method
+    }
+    method postVisit(result) {
+        // hook method
+        result
+    } 
 }
 
 class rootMappingVisitor {
-    // the superobjecty for visitors that have a result.  I'm not yet sure how
+    // the superobject for visitors that have a result.  I'm not yet sure how
     // they should work!  So, for now, this is the same as rootVisitor.
 
-    method newVisitImplicit(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitNull(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitIf(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitBlock(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitTryCatch(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitMatchCase(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitMethodSignature(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitTypeLiteral(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitTypeDec(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitMethod(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitCall(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitModule(aNode) -> Object {
-        newVisitObject(aNode)
-    }
-    method newVisitObject(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitArray(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitOuter(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitMember(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitGeneric(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitTypeParameters(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitIdentifier(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitAnnotations(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitString(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitNum(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitOp(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitBind(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitDefDec(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitVarDec(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitImport(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitDialect(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitReturn(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitInherit(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitAlias(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitSignaturePart(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitRequestPart(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
-    method newVisitComment(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
-    }
+    inherit rootVisitor
 }
