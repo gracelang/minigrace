@@ -2499,6 +2499,8 @@ def identifierNode is public = object {
         var wildcard is public := false
         var dtype is public := dtype'
         var isBindingOccurrence is public := false
+        var isParameter is public := false
+        var isTypeParameter is public := false
         var isAssigned is public := false
         var inRequest is public := false
         var generics is public := false
@@ -2523,10 +2525,19 @@ def identifierNode is public = object {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitIdentifier(self))
         }
-
-        method bindingOccurrence { isBindingOccurrence := true }
-        method appliedOccurrence { isBindingOccurrence := false }
-
+        method bindingOccurrence { 
+            isBindingOccurrence := true
+            self
+        }
+        method appliedOccurrence {
+            isBindingOccurrence := false
+            self
+        }
+        method typeParameter {
+            isBindingOccurrence := true
+            isTypeParameter := true
+            self
+        }
         method name { value }
         method name:=(nu) {
             value := nu
@@ -2641,6 +2652,8 @@ def identifierNode is public = object {
         method postCopy(other) {
             wildcard := other.wildcard
             isBindingOccurrence := other.isBindingOccurrence
+            isParameter := other.isParameter
+            isTypeParameter := other.isTypeParameter
             isDeclaredByParent := other.isDeclaredByParent
             isAssigned := other.isAssigned
             inRequest := other.inRequest
@@ -4101,9 +4114,9 @@ class rootVisitor {
         aNode.childrenDo{ each -> each.newAccept(self) }
     }
     method newVisitModule(aNode) -> Done {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitObject(aNode)
     }
-    method newVisitDone(aNode) -> Done {
+    method newVisitObject(aNode) -> Done {
         aNode.childrenDo{ each -> each.newAccept(self) }
     }
     method newVisitArray(aNode) -> Done {
@@ -4209,7 +4222,7 @@ class rootMappingVisitor {
         aNode.childrenDo{ each -> each.newAccept(self) }
     }
     method newVisitModule(aNode) -> Object {
-        aNode.childrenDo{ each -> each.newAccept(self) }
+        newVisitObject(aNode)
     }
     method newVisitObject(aNode) -> Object {
         aNode.childrenDo{ each -> each.newAccept(self) }

@@ -527,6 +527,7 @@ method blockParameter(params) -> Boolean {
                     // put the pattern in the type field
             }
             thisParam.isBindingOccurrence := true
+            thisParam.isParameter := true
             if (paramIsPattern && sym.isColon) then {
                 reportSyntaxError("a block parameter that's an expression is assumed to mean " ++
                       "_:‹expression›, and so cannot be followed by a colon")
@@ -2588,6 +2589,7 @@ method methodHeader {
             pushIdentifier
             id := values.pop
             id.isBindingOccurrence := true
+            id.isParameter := true
             id.dtype := optionalTypeAnnotation
             part.params.push(id)
             if (sym.isComma) then {
@@ -2645,8 +2647,8 @@ method typeparameters {
     if {sym.isIdentifier.not} then {
         errormessages.syntaxError "a '⟦' must be followed by one or more identifiers naming the type parameters" atRange(sym.line, sym.linePos, sym.endPos)
     }
-    pushIdentifier.bindingOccurrence         // does next
-    typeIds.add(values.pop)
+    pushIdentifier              // does next
+    typeIds.add(values.pop.typeParameter)
     while {sym.isComma} do {
         next
         if { sym.isIdentifier.not } then {
@@ -2654,8 +2656,8 @@ method typeparameters {
                   "be followed by the name of another type parameter")
                   atRange (sym.line, sym.linePos, sym.endPos)
         }
-        pushIdentifier.bindingOccurrence         // does next
-        typeIds.push(values.pop)
+        pushIdentifier         // does next
+        typeIds.push(values.pop.typeParameter)
     }
     if (acceptKeyword "where") then {
         next
@@ -2688,7 +2690,7 @@ def typeRelations = ["<:", "<*", ":>", "*>"]
 
 method checkWhereCondition {
     // an expression is on the values stack.  Check that it is a valid where
-    // condition, and if so, remove it from calues and return it.
+    // condition, and if so, remove it from values and return it.
     def cond = values.pop
     if ((cond.kind ≠ "op") || { typeRelations.contains(cond.value).not }) then {
         errormessages.syntaxError("a where condition must be a relation using " ++
