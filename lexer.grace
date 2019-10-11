@@ -2,6 +2,7 @@ import "util" as util
 import "unicode" as unicode
 import "errormessages" as errormessages
 import "fastDict" as map
+import "modules/regularExpression" as re
 
 def keywords = map.dictionary.empty
 keywords.at "alias" put true
@@ -24,6 +25,17 @@ keywords.at "type" put true
 keywords.at "use" put true
 keywords.at "var" put true
 keywords.at "where" put true
+
+def keywordsStartingStatement = re.fromString ‹^(class|def|inherit|method|once|trait|type|use|var)\b›
+method lineSeemsToStartStatement -> Boolean {
+    // answers true if the currrent line seems to be a statement.
+    // This check can produce a better error message if the opening brace
+    // of a blcok is omitted, and the indentation of the first statement in
+    // the block is therefore taken to be a continuation of the prior line
+
+    def currentLine = inputLines.at (lineNumber).substringFrom(linePosition)
+    keywordsStartingStatement.matches(currentLine)
+}
 
 def operatorChars = "-&|:$#\\%^@?*/+!~"
 method isOperatorChar(c, ordval) {
@@ -1096,12 +1108,15 @@ method checkIndentationReset {
     }
 }
 method isContinuationLine {
-    if (noSuchLine ≠ indentOfLineBeingContinued) then {
-        // we are already in a continuation
-        return  true
-    }
+    if (noSuchLine ≠ indentOfLineBeingContinued) then { return  true }
+        // we are already in a continuation    }
     if (unmatchedLeftBraces > 0) then { return false }
-    currentLineIndent > priorLineIndent
+    if (currentLineIndent ≤ priorLineIndent) then { return false }
+    if (lineSeemsToStartStatement) then {
+        lexicalError("this looks like an independent statement, but the " ++
+              "indentation says that it is a continuation of the previous line")
+    }
+    true
 }
 method recordContinuationStatus {
     if (noSuchLine == indentOfLineBeingContinued) then {
