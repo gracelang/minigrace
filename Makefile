@@ -20,7 +20,7 @@ GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 
 JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
 MGFLAGS = -XnoChecks
-J1-MINIGRACE = $(JS-KG) j1/compiler.js $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/gracelib.js
+J1-MINIGRACE = $(JS-KG) npm-sha j1/compiler.js $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/gracelib.js
 J2-MINIGRACE = $(J1-MINIGRACE) j2/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) j2/gracelib.js genjs.grace
 JSJSFILES = gracelib.js unicodedata.js
 JSRUNNERS_WITHOUT_COMPILER = grace grace-debug minigrace-js minigrace-inspect
@@ -58,7 +58,7 @@ all: minigrace.env ideBuild
 
 alltest: test module.test self.test
 
-.PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects dev-ide dev-ideDeploy echo ide ideBuild ideDeploy fullclean install j1-minigrace j2-minigrace just-minigrace minigrace.env pull-web-editor pull-objectdraw self.test samples sample-% test test.compile uninstall
+.PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects dev-ide dev-ideDeploy echo ide ideBuild ideDeploy fullclean install j1-minigrace j2-minigrace just-minigrace minigrace.env npm-sha pull-web-editor pull-objectdraw self.test samples sample-% test test.compile uninstall
 
 # clear out the default rules: produces far less --debug output
 .SUFFIXES:
@@ -351,6 +351,9 @@ npm-build-beta: minigrace.env
 npm-publish: npm-build
 	cd npm-build-dir && npm publish $(shell ./tools/npm-tag npm-build-dir/package.json)
 	@echo Published minigrace version $(VERSION) to npmjs.com
+
+npm-sha:
+	 npm ls sha > /dev/null || npm install sha
 
 $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .

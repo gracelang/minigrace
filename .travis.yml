@@ -4,6 +4,7 @@ compiler:
   - clang
 install:
   - nvm install 10.6.0
+  - npm install sha
 before_script:
   - git fetch --unshallow
 script:

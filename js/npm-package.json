@@ -1,0 +1,61 @@
+{
+  "name": "minigrace",
+  "version": "1.0.0",
+  "description": "A compiler for the Grace programming language",
+  "main": "compiler-js",
+  "scripts": {
+    "test": "/minigrace-js quick_test.grace"
+  },
+  "bin" : {
+      "mgc": "./minigrace-js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gracelang/minigrace.git"
+  },
+  "keywords": [
+    "complier",
+    "object-oriented",
+    "learning",
+    "programming",
+    "PSU",
+    "Grace",
+    "novice"
+  ],
+  "author": "Andrew P. Black",
+  "contributors": [
+        "Andrew P. Black"
+      , "Michael Homer"
+      , "Daniel Gibbs"
+      , "Timothy Jones"
+      , "Jameson McCowan"
+      , "Paul Schot"
+      , "Jan Larres"
+      , "Peter Cowal"
+      , "Scott Weston"
+      , "Ryan Niebur"
+      , "Kim Bruce"
+      , "Reid Mitchell"
+      , "Kris Frye"
+      , "Laurence Tratt"
+      , "Joe Brennan"
+      , "Cameron Brandon White"
+      , "Uro Boros"
+      , "Thuan Nguyen"
+      , "Jordan Cantrell"
+      , "Isaac Oscar Gariano"
+      , "Dmitri Murphy"
+      , "Alex Sandilands"
+  ],
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/gracelang/minigrace/issues"
+  },
+  "homepage": "https://github.com/gracelang/minigrace#readme",
+  "dependencies": {
+    "child_process": "^1.0.2",
+    "fs": "0.0.1-security",
+    "path": "^0.12.7",
+    "sha": "^3.0.0"
+  }
+}
