@@ -88,7 +88,7 @@ method failBecause(reason) {
     mtAssertion.assert(false) description(reason)
 }
 
-method testSuiteNamed (name:String) with (block:Block) {
+method testSuite (name:String) with (block:Block) {
     if (nullSuite ≠ currentTestSuiteForDialect) then {
         MinitestError.raise "a testSuite cannot be created inside a testSuite"
     }
@@ -103,12 +103,19 @@ method testSuiteNamed (name:String) with (block:Block) {
     currentTestBlockForTesting := 0
 }
 
+method testSuiteNamed(name) with (block) {
+    // for backward compatibility
+    testSuite (name) with (block)
+}
+
 method doNotRerunErrors { errorsToBeRerun := false }
 method doRerunErrors { errorsToBeRerun := true }
 
 method testSuite (block:Block) {
-    testSuiteNamed "" with (block)
+    testSuite "" with (block)
 }
+
+method exit { gu.exit }
 
 method test(name:String) by(block:Block) {
     if (nullSuite == currentTestSuiteForDialect) then {
@@ -124,28 +131,26 @@ method test(name:String) by(block:Block) {
     }
 }
 
-method testCaseNamed(name') setupIn(setupBlock) asTestNumber(number) -> gu.TestCase {
-    object {
-        inherit gu.testCaseNamed(name') alias guSetup = setup
+class testCaseNamed(name') setupIn(setupBlock) asTestNumber(number) -> gu.TestCase {
+    inherit gu.testCaseNamed(name') alias guSetup = setup
 
-        method setup { 
-            guSetup
-            currentTestBlockForTesting := number
-            currentTestInThisEvaluation := 0
-            setupBlock.apply
-        }
+    method setup {
+        guSetup
+        currentTestBlockForTesting := number
+        currentTestInThisEvaluation := 0
+        setupBlock.apply
+    }
 
-        method teardown {
-            currentTestBlockForTesting := 0
-        }
-        
-        method currentResult:= (r) is override {
-            mtAssertion.currentResult := r
-        }
-        
-        method runTest is override {
-            // for minitest, the test is run in setup
-        }
+    method teardown {
+        currentTestBlockForTesting := 0
+    }
+
+    method currentResult:= (r) is override {
+        mtAssertion.currentResult := r
+    }
+
+    method runTest is override {
+        // for minitest, the test is run in setup
     }
 }
 

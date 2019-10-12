@@ -5,6 +5,7 @@
 
 
 import "mirrors" as mirror
+import "sys" as sys
 
 type Assertion = { 
     assert(bb:Boolean) description(str:String) -> Done
@@ -57,15 +58,18 @@ type TestSuite = TestCase & interface {
 }
 
 var numberOfErrorsToRerun is public := 10
+var someTestDidNotPass := false
 
-class assertion {
-    def AssertionFailure is readable = Exception.refine "AssertionFailure"
+trait assertion {
+    once method AssertionFailure {
+        Exception.refine "AssertionFailure"
+    }
     method countOneAssertion { abstract }
     
     method failBecause(str) {
         assert (false) description (str)
     }
-    method assert(bb: Boolean)description(str) {
+    method assert(bb: Boolean) description(str) {
         countOneAssertion
         if (! bb) then { AssertionFailure.raise(str) }
     }
@@ -181,7 +185,7 @@ class assertion {
 }
 
 class testCaseNamed(name') -> TestCase {
-    inherit assertion
+    use assertion
 
     def size is public = 1
     var currentResult
@@ -301,10 +305,12 @@ class testResult {
     
     method testFailed(name)withMessage(msg) {
         failSet.add(testRecordFor(name)message(msg))
+        someTestDidNotPass := true
     }
     
     method testErrored(name)withMessage(msg) {
         errorSet.add(testRecordFor(name)message(msg))
+        someTestDidNotPass := true
         currentCountOfAssertions := 1   // to prevent the "no assertions" failure
     }
     
@@ -361,8 +367,8 @@ class testResult {
 
 class testRecordFor(testName)message(testMsg) {
     use equality
-    method name {testName}
-    method message {testMsg}
+    def name is public = testName
+    def message is public = testMsg
     method asString {"{name}: {testMsg}"}
     method hash {name.hash}
     method compare(other) { name.compare(other.name) }
@@ -498,4 +504,11 @@ method className(testClass) {
     } else {
         "un-named"
     }
+}
+
+method exit {
+    // exit the program with a a return code
+    // Exit code zero means that all tests passed;
+    // exit code 1 means that at least one test did not pass.
+    sys.exit(if (someTestDidNotPass) then {1} else {0})
 }
