@@ -8,6 +8,7 @@ import "mirrors" as mirrors
 import "errormessages" as errormessages
 import "identifierKinds" as k
 import "fastDict" as map
+import "shasum" as shasum
 
 def nodeTally = map.dictionary.empty
 
@@ -1474,7 +1475,7 @@ method tallyNode(kind) {
 def valueCompare = { a, b -> b.value.compare(a.value) }
 
 method printNodeTally {
-    if (util.verbosity > 50) then {
+    if (util.verbosity > 60) then {
         def bindingList = nodeTally.bindings
         print "AST nodes compiled:"
         bindingList.sortedBy(valueCompare).do { b ->
@@ -1525,6 +1526,9 @@ method initializeCodeGenerator(moduleObject) {
     if (util.extensions.containsKey "strict") then {
         util.outprint ";\"use strict\";"
     }
+    def formattedModuleName = formatModname(modname);
+    util.outprint "let {formattedModuleName}_sourceFile = \"{util.filename.quoted}\";"
+    util.outprint "let {formattedModuleName}_sha256 = \"{shasum.sha256OfFile(util.filename)}\";"
     if (isPrelude.not) then {
         util.outprint "{standardPrelude} = do_import(\"standardGrace\", gracecode_standardGrace);"
     }
@@ -1613,9 +1617,12 @@ method outputModuleMetadata(moduleObject) {
         importList := importList ++ ", "
     }
     importList := importList ++ "]"
-    out "{formatModname(modname)}.imports = {importList};"
-    out "{formatModname(modname)}.definitionModule = \"{basename(modname).quoted}\";"
-    out "{formatModname(modname)}.definitionLine = 1;"
+    def formattedModuleName = formatModname(modname);
+    out "{formattedModuleName}.definitionModule = \"{basename(modname).quoted}\";"
+    out "{formattedModuleName}.sourceFile = {formattedModuleName}_sourceFile;"
+    out "{formattedModuleName}.sha256 = {formattedModuleName}_sha256;"
+    out "{formattedModuleName}.imports = {importList};"
+    out "{formattedModuleName}.definitionLine = 1;"
 }
 
 method outputGct {
