@@ -5,6 +5,9 @@ type FilePath = EqualityObject & interface {
     base -> String      // the base part of the file name (without an extension)
     extension -> String // the extension (like `.grace`) , including the `.`
     shortName -> String // the file name without the directory part
+    quoted -> String    // the file name with internal special characters escaped
+    inQuotes -> String  // the file name enclosed in quotes, and with internal
+                        // special characters escaped
 
     directory:=(d)      // sets the directory part to d; answers done
     setDirectory(d)     // sets the directory part to d; answers self (for chaining)
@@ -37,6 +40,9 @@ class filePath {
 
     method asString { dir ++ base ++ extension }
     // the whole file name as a string
+
+    method quoted { asString.quoted }
+    method inQuotes { "\"{quoted}\"" }
 
     method shortName { base ++ extension }
     // the file name without the directory part
