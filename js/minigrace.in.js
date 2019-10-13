@@ -130,8 +130,8 @@ MiniGrace.prototype.trapErrors = function(func) {
             e = new GraceExceptionPacket(new GraceException("TooMuchRecursion", ProgrammingErrorObject),
                    new GraceString("does one of your methods request execution of itself without limit?"));
         }
+        const stderr_write = this.stderr_write;
         if (e.exctype === "graceexception") {
-            var stderr_write = this.stderr_write;
             this.exception = e;
             if (e.exception.name === "AssertionFailure") {
                 stderr_write("Assertion Failed: " + e.message._value);
@@ -142,10 +142,10 @@ MiniGrace.prototype.trapErrors = function(func) {
                             new GraceString("beginningStudent")
                 ]);
                 callmethod(e, "printBacktraceSkippingModules", [1], skipable);
-                stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".");
+                // stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".");
             } else {
                 callmethod(e, "printBacktrace", [0]);
-                stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".\n");
+                // stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".\n");
                 if (originalSourceLines[e.moduleName]) {
                     var lines = originalSourceLines[e.moduleName];
                     for (var i = e.lineNumber - 1; i <= e.lineNumber + 1; i++) {
@@ -157,7 +157,7 @@ MiniGrace.prototype.trapErrors = function(func) {
                 }
             }
             if (e.stackFrames.length > 0 && this.printStackFrames) {
-                stderr_write("Stack frames:\n");
+                stderr_write("\nStack frames:\n");
                 for (i=0; i<e.stackFrames.length; i++) {
                     stderr_write("  " + e.stackFrames[i].methodName);
                     e.stackFrames[i].forEach(function(name, value) {

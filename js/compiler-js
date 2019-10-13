@@ -90,8 +90,9 @@ MiniGrace.prototype.trapErrors = function(func) {
             (eStr === "InternalError: too much recursion") ) {              // Firefox
             e = new GraceExceptionPacket(new GraceException("TooMuchRecursion", ProgrammingErrorObject),
                    new GraceString("does one of your methods request execution of itself without limit?"));
-        } else if (e.exctype === "graceexception") {
-            var stderr_write = this.stderr_write;
+        }
+        const stderr_write = this.stderr_write;
+        if (e.exctype === "graceexception") {
             this.exception = e;
             if (e.exception.name === "AssertionFailure") {
                 stderr_write("Assertion Failed: " + e.message._value);
@@ -102,10 +103,10 @@ MiniGrace.prototype.trapErrors = function(func) {
                             new GraceString("beginningStudent")
                 ]);
                 callmethod(e, "printBacktraceSkippingModules", [1], skipable);
-                stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".");
+                // stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".");
             } else {
                 callmethod(e, "printBacktrace", [0]);
-                stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".");
+                // stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".");
                 if (originalSourceLines[e.moduleName]) {
                     var lines = originalSourceLines[e.moduleName];
                 for (let i = e.lineNumber - 1; i <= e.lineNumber + 1; i++) {
@@ -117,7 +118,7 @@ MiniGrace.prototype.trapErrors = function(func) {
                 }
             }
             if (e.stackFrames.length > 0 && this.printStackFrames) {
-                stderr_write("Stack frames:\n");
+                stderr_write("\nStack frames:\n");
                 for (i=0; i<e.stackFrames.length; i++) {
                     stderr_write("  " + e.stackFrames[i].methodName);
                     e.stackFrames[i].forEach(function(name, value) {
@@ -130,7 +131,6 @@ MiniGrace.prototype.trapErrors = function(func) {
                                     "asDebugString", [0])._value;
                             }
                         } catch(e) {
-                            debugger;
                             debugString = "[Error calling asDebugString:" +
                                 e.message._value + "]";
                         }
