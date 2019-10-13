@@ -1,8 +1,6 @@
 var inBrowser = (typeof global === "undefined");
 
 if (!inBrowser) {  // if we are in Node.js
-    var fs = require("fs");
-    var child_process = require('child_process');
     global.lineNumber = 0;
 } else {
     var lineNumber = 0;
@@ -21,72 +19,6 @@ function getModuleName() {
 }
 function jsTrue() {
     return true;
-}
-
-function identifierAvailable(category, identifier) {
-    if (inBrowser) {
-        return !(localStorage.hasOwnProperty(category + ":" + identifier));
-    } else {
-        return ! fs.existsSync(identifier);
-    }
-}
-
-function getFile(name){
-    if (inBrowser) {
-        return localStorage[name];
-    } else {
-        if (fs.existsSync(name)) {
-            return fs.readFileSync(name).toString();
-        } else {
-            return "";
-        }
-    }
-}
-
-var writeFileToDisk = inBrowser ? browserWrite : commandLineWrite;
-
-function browserWrite(name, data) {
-    // name is a pathname, data the string to be written
-    localStorage.setItem(name,data);
-}
-
-function commandLineWrite (name, data){
-    // name is a pathname, data the string to be written
-    try {
-        var nodeFileObject = fs.openSync(name, "w");
-        fs.writeSync(nodeFileObject, data);
-        fs.closeSync(nodeFileObject);
-    } catch(ex) {
-        throw new GraceExceptionPacket(EnvironmentExceptionObject,
-            new GraceString("can't write to file '" + path + "'."));
-    }
-}
-
-//Takes a full localStorage directory identifier, ex. (thisDir/thatDir)
-//and returns just the actual name ex. (thatDir)
-function getDirectoryName(toParse) {
-    var directoryName = toParse;
-    var lastSlash = directoryName.lastIndexOf("/");
-
-    //Check for a slash in the name (-1 means not found)
-    if (lastSlash !== -1) {
-        directoryName = directoryName.substring(0,lastSlash);
-    }
-
-    return directoryName;
-}
-
-//Functions to add/remove files from the web editor file tree
-function addFileToTree(name) {
-    var element = document.getElementById("add-file-io-api");
-    element.innerHTML = name;
-    element.click(); //Trigger event in files.js (grace-web-editor)
-}
-
-function removeFileFromTree(name) {
-    var element = document.getElementById("remove-file-io-api");
-    element.innerHTML = name;
-    element.click(); //Trigger event in files.js (grace-web-editor)
 }
 
 Array.prototype.sum = function () {
@@ -2181,133 +2113,6 @@ GraceIterator.prototype.methods.next = function() {
         new GraceString("on primitiveArray " + this._value));
 };
 
-var stdout = Grace_allocObject(GraceObject, "stdout");
-stdout.buffer = "";
-stdout.methods["write(1)"] = function(argcv, s) {
-    var str = s._value;
-    if (inBrowser) {
-        var lastNewline = str.lastIndexOf("\n");
-        if (lastNewline != -1) {
-            minigrace.stdout_write(stdout.buffer + str.substring(0, lastNewline + 1));
-            stdout.buffer = str.substring(lastNewline + 1);
-        } else {
-            stdout.buffer = stdout.buffer + str;
-        }
-    } else {
-        minigrace.stdout_write(str);
-    }
-    return GraceDone;
-};
-stdout.methods.pathname = function() { return new GraceString("/dev/stdout"); };
-stdout.methods.isatty = function() {
-    if (! inBrowser) {
-        return Boolean(process.stdout.isTTY) ? GraceTrue : GraceFalse;
-    } else {
-        return GraceFalse;
-    }
-};
-stdout.methods.close = function() {
-    if (stdout.buffer.length > 0) {
-        minigrace.stdout_write(stdout.buffer);
-        stdout.buffer = "";
-    }
-    if (! inBrowser) { replaceMethodsOnClose(stdout); }
-    return GraceDone;
-};
-stdout.methods.clear = function() {throw new GraceExceptionPacket(IoExceptionObject,
-    new GraceString("method \"clear\" not implemented on stdout"));};
-stdout.methods["seek(1)"] = function() { throw new GraceExceptionPacket(IoExceptionObject,
-    new GraceString("method \"seek(_)\" not implemented on stdout"));};
-stdout.methods["seekForward(1)"] = function() { throw new GraceExceptionPacket(IoExceptionObject,
-    new GraceString("method \"seekForward(_)\" not implemented on stdout"));};
-stdout.methods["seekBackward(1)"] = function() { throw new GraceExceptionPacket(IoExceptionObject,
-    new GraceString("method \"seekBackward(_)\" not implemented on stdout"));};
-stdout.methods.hasNext = function() {return GraceFalse;};
-stdout.methods.next = function() { throw new GraceExceptionPacket(IoExceptionObject,
-    new GraceString("method \"next\" not implemented on stdout"));};
-stdout.methods.size = function() { throw new GraceExceptionPacket(IoExceptionObject,
-    new GraceString("method \"size\" not implemented on stdout"));};
-stdout.methods.eof = function() {return GraceTrue;};
-stdout.methods['==(1)'] = function (argcv, other) {
-    return (this===other) ? GraceTrue : GraceFalse;
-};
-function streamIsClosedException(argcv) {
-    throw new GraceExceptionPacket(IoExceptionObject,
-        new GraceString("operation attempted on closed FileStream"));
-};
-function replaceMethodsOnClose(o) {
-    o.methods.size = streamIsClosedException;
-    o.methods.close = streamIsClosedException;
-    o.methods.isatty = streamIsClosedException;
-    o.methods["write(1)"] = streamIsClosedException;
-    o.methods.read = streamIsClosedException;
-    o.methods.clear = streamIsClosedException;
-    o.methods["seek(1)"] = streamIsClosedException;
-    o.methods["seekForward(1)"] = streamIsClosedException;
-    o.methods["seekBackward(1)"] = streamIsClosedException;
-    o.methods.hasNext = streamIsClosedException;
-    o.methods.next = streamIsClosedException;
-    o.methods.nextLine = streamIsClosedException;
-};
-
-var stdin = Grace_allocObject(GraceObject, "stdin");
-stdin.lineBuffer = "";
-stdin.lineCursor = 0;
-stdin.methods.getline = function() {
-    return new GraceString(minigrace.stdin_read());
-};
-stdin.methods.nextLine = function() {
-    return new GraceString(minigrace.stdin_read());
-};
-stdin.methods.read = function() {
-    return new GraceString(minigrace.stdin_read());
-};
-stdin.next = function () {
-    if (stdin.lineCursor >= stdin.lineBuffer.length) {
-        stdin.lineCursor = 0;
-        stdin.lineBuffer = minigrace.stdin_read() + "\n";
-    }
-    stdin.lineCursor++;
-    return stdin.lineBuffer.charAt(stdin.lineCursor - 1);
-}
-stdin.methods.iterator = function() {
-    return callmethod(new GraceString(minigrace.stdin_read()), "iterator", [0]);
-};
-stdin.methods.isatty = function() {
-    if (inBrowser) { return GraceFalse; }
-    return Boolean(process.stderr.isTTY) ? GraceTrue : GraceFalse;
-};
-stdin.methods.pathname = function() { return new GraceString("/dev/stdin"); };
-stdin.methods.size = function() { throw new GraceExceptionPacket(IoExceptionObject,
-    new GraceString("method \"size\" not implemented on stdin"));};
-stdin.methods.close = function() {
-    replaceMethodsOnClose(stdin);
-};
-stdin.methods['==(1)'] = function (argcv, other) {
-    return (this===other) ? GraceTrue : GraceFalse;
-};
-
-
-var stderr = Grace_allocObject(GraceObject, "stderr");
-stderr.methods['write(1)'] = function(junk, s) {
-    minigrace.stderr_write(s._value);
-    return GraceDone;
-};
-stderr.methods.isatty = function() {
-    if (inBrowser) { return GraceFalse; }
-    return Boolean(process.stderr.isTTY) ? GraceTrue : GraceFalse;
-};
-stderr.methods.pathname = function() {
-    return new GraceString("/dev/stderr");
-};
-stderr.methods.close = function() {
-    if (! inBrowser) { replaceMethodsOnClose(stdout); }
-};
-stderr.methods['==(1)'] = function (argcv, other) {
-    return (this===other) ? GraceTrue : GraceFalse;
-};
-
-
 function StackFrame(methodName) {
     this.methodName = methodName;
     this.variables = {};
@@ -2360,365 +2165,6 @@ function fileExists(path) {
     }
     return false;
 }
-
-function gracecode_io() {
-    var FileStream = classType(stdout);
-    FileStream.name = "FileStream";
-    this.methods.output = function() {
-        return this._output;
-    };
-    this._output = stdout;
-    this.methods.input = function() {
-        return this._input;
-    };
-    this._input = stdin;
-    this.methods.error = function() {
-        return this._error;
-    };
-    this._error = stderr;
-    this.methods['FileStream'] = function () {
-        return FileStream;
-    };
-
-    this.methods['IoException'] = function(argcv) {
-        return IoExceptionObject;
-    };
-    this.methods['FileException'] = function(argcv) {
-        return FileExceptionObject;
-    };
-    this.methods['exists(1)'] = function(argcv, path) {
-        if (!inBrowser) {
-            return (fs.existsSync(safeJsString(path)) ? GraceTrue : GraceFalse);
-        }
-        if (!identifierAvailable("file",path._value)) return GraceTrue;
-        return GraceFalse;
-    };
-    this.methods['unlink(1)'] = function (argcv, data) {
-        if (inBrowser) {
-            var fileKey = "file:" + data._value;
-            if (! localStorage.hasOwnProperty(fileKey)) {
-                throw new GraceExceptionPacket(EnvironmentExceptionObject,
-                    new GraceString("can't unlink file \"" + data._value +"\" because it does not exist."));
-            } else {
-                removeFileFromTree(data._value);
-                localStorage.removeItem(fileKey);
-            }
-        } else {
-            try {
-                fs.unlinkSync(data._value);
-            } catch (ex) {
-                throw new GraceExceptionPacket(EnvironmentExceptionObject,
-                    new GraceString("can't unlink file '" + data._value));
-            }
-        }
-        return GraceDone;
-    };
-    this.methods['system(1)'] = function(argcv, systemString) {
-        if (!inBrowser) {
-            try {
-                var result = child_process.execSync(safeJsString(systemString),
-                    {stdio: [process.stdin, process.stdout, process.stderr]});
-                return GraceTrue;
-            } catch(ex) {
-                return GraceFalse;
-            }
-        }
-        return GraceFalse;
-    };
-    this.methods['spawn(2)'] = function(argcv, gCmd, gArgList) {
-        if (!inBrowser) {
-            var cmd = safeJsString(gCmd);
-            var args = [];
-            var iter = callmethod(gArgList, "iterator", [0]);
-            while (Grace_isTrue(callmethod(iter, "hasNext", [0]))) {
-                var arg = callmethod(iter, "next", [0]);
-                args.push(safeJsString(arg));
-            }
-            var result = child_process.spawnSync(cmd, args,
-                    {stdio: [process.stdin, process.stdout, process.stderr]});
-            var o = Grace_allocObject(GraceObject, "process");
-            o.methods['terminated'] = function () { return GraceTrue; };
-            o.methods['wait'] = function () { return new GraceNum(result.status); };
-            o.methods['status'] = function () { return new GraceNum(result.status); };
-            o.methods['success'] = function () { return result.status === 0 ? GraceTrue : GraceFalse; };
-            o.methods['==(1)'] = function (argcv, other) {
-                return (this===other) ? GraceTrue : GraceFalse; };
-            return o;
-        }
-        return GraceFalse;
-    };
-    this.methods['open(2)'] = function browserOpen(argcv, path, mode) {
-            path = inBrowser ? path._value : callmethod(path, "asString", [0])._value;
-            var o = Grace_allocObject(GraceObject, "fileStream");
-            var fileMode = mode._value;
-            var fileName = inBrowser ? "file:"+path : path;
-            var lastPeriod = fileName.lastIndexOf(".");
-            var fileExtension = fileName.substring(lastPeriod);
-            var textExtensions = [".grace", ".txt", ".json", ".xml", ".js", ".html", ".xhtml"];
-            var contents, write_allowed, read_only, append_mode,
-                rw_pointer, isFile_creation_needed, content_length, nodeFileObject;
-
-            //Determine File Mode
-            fileMode = fileMode.toLowerCase();
-            append_mode = (fileMode === "a");
-            write_allowed = fileMode.includes("w") || append_mode;
-            read_only = (fileMode === "r");
-
-            if (inBrowser) {
-                //Enforce specified file types for IDE
-                if (!textExtensions.includes(fileExtension)) {
-                    throw new GraceExceptionPacket(IoExceptionObject,
-                        new GraceString("can't open file \"" + path + "\" due to unsupported file type: " + fileExtension));
-                }
-
-                isFile_creation_needed = identifierAvailable("file", path);
-
-                //Check to see if reading a non-existing file
-                if (read_only && isFile_creation_needed) {
-                    throw new GraceExceptionPacket(EnvironmentExceptionObject,
-                        new GraceString("can't open file " + path + " in mode " + fileMode + " because it does not exist"));
-                }
-
-                //Add the file to the UI, if needed
-                if (write_allowed && isFile_creation_needed) {
-                    var directory = getDirectoryName(path);
-
-                    //Check to see if the file's directory exists
-                    if ((directory !== path) && identifierAvailable("directory", directory)) {
-                        throw new GraceExceptionPacket(EnvironmentExceptionObject,
-                            new GraceString("can't create file \"" + path + "\" because directory \"" + directory + "\" does not exist."));
-                    }
-                }
-            } else {
-                if (!fs.existsSync(path) && read_only) {
-                    throw new GraceExceptionPacket(EnvironmentExceptionObject,
-                        new GraceString("can't open file '" + path + "' for '" + fileMode + "'."));
-                }
-            }
-
-            //Get and parse file
-            contents = getFile(fileName);
-            if (contents === undefined || fileMode==="w") {
-                contents = "";
-                content_length = 0;
-            } else {
-                content_length = contents.length;
-            }
-            if (append_mode && contents !== undefined) {
-                rw_pointer = contents.length;
-            } else {
-                rw_pointer = 0;
-            }
-
-            //------ IO Methods --------
-            o.methods['write(1)'] = function (argcv, data) {
-                var new_contents;
-                if (write_allowed) {
-                    if (contents && inBrowser) {
-                        new_contents = contents.slice(0,rw_pointer) + data._value + contents.slice((rw_pointer)+(data._value.length));
-                    } else {
-                        new_contents = safeJsString(data);
-                    }
-
-                    //Update buffer values only
-                    if (fileMode === "w" && !inBrowser) {
-                        contents = contents + new_contents;
-                        rw_pointer += new_contents.length;
-                    } else if (inBrowser) {
-                        contents = new_contents;
-                        rw_pointer += data._value.length;
-                    }
-
-                    content_length = contents.length;
-                    return GraceDone;
-                } else {
-                    throw new GraceExceptionPacket(ProgrammingErrorObject,
-                        new GraceString("can't write to file \""+path+"\" in read-only mode."));
-                }
-            };
-            o.methods['clear'] = function () {
-                if (write_allowed) {
-                    contents = "";
-                    rw_pointer = 0;
-                    content_length = 0;
-                    return GraceDone;
-                } else {
-                    throw new GraceExceptionPacket(ProgrammingErrorObject,
-                        new GraceString("can't clear file \"" + path + "\" in read-only mode."));
-                }
-            };
-            o.methods['getline'] = function () {
-                var resultLine;
-                var newline_index = contents.indexOf("\n", rw_pointer);
-
-                //Check for last-line or EOF case and narrow-down to next line from rw_pointer
-                if (newline_index !== -1) {
-                    resultLine = contents.slice(rw_pointer, newline_index);
-                } else {
-                    resultLine = contents.slice(rw_pointer);
-                }
-
-                //Update rw_pointer to take into account returned value
-                rw_pointer += (resultLine.length + 1);
-
-                return new GraceString(resultLine);
-            };
-            o.methods['nextLine'] = function () {
-                if (rw_pointer >= contents.length) {
-                    var ie = callmethod(var___95__prelude, "IteratorExhausted", [0]);
-                    throw new GraceExceptionPacket(ie, new GraceString("End of file reached; there is no next line"));
-                }
-                var resultLine;
-                var newline_index = contents.indexOf("\n", rw_pointer);
-
-                //Check for last-line or EOF case and narrow-down to next line from rw_pointer
-                if (newline_index !== -1) {
-                    resultLine = contents.slice(rw_pointer, newline_index);
-                } else {
-                    resultLine = contents.slice(rw_pointer);
-                }
-
-                //Update rw_pointer to take into account returned value
-                rw_pointer += (resultLine.length + 1);
-
-                return new GraceString(resultLine);
-            };
-            //Seek Methods
-            o.methods['seek(1)'] = function (argcv, data) {
-                var pointer = parseFloat(data._value);
-                //Check for NaN and for non-integer input
-                checkSeekInput(data.className, pointer, "seek(_)");
-
-                if (pointer<0){pointer=0}
-                else if (pointer>content_length){pointer=content_length}
-
-                rw_pointer=pointer;
-                return this;
-            };
-            o.methods['seekForward(1)'] = function (argcv, data) {
-                var pointer = parseFloat(data._value);
-                //Check for NaN and for non-integer input
-                checkSeekInput(data.className, pointer, "seekForward(_)");
-
-                pointer = rw_pointer+pointer;
-
-                if (pointer<0){pointer=0}
-                else if (pointer>content_length){pointer=content_length}
-
-                rw_pointer=pointer;
-                return this;
-            };
-            o.methods['seekBackward(1)'] = function (argcv, data) {
-                var pointer = parseFloat(data._value);
-                //Check for NaN and for non-integer input
-                checkSeekInput(data.className, pointer, "seekBackward(_)");
-
-                pointer = rw_pointer-pointer;
-
-                if (pointer<0){pointer=0}
-                else if (pointer>content_length){pointer=content_length}
-
-                rw_pointer=pointer;
-                return this;
-            };
-            o.methods['hasNext'] = function () {
-                return (rw_pointer < content_length) ? GraceTrue : GraceFalse;
-            };
-            o.methods['next'] = function () {
-                if (rw_pointer < content_length){
-                    var char = new GraceString(contents.charAt(rw_pointer));
-                    rw_pointer++;
-                    return char;
-                } else {
-                    var ie = callmethod(var___95__prelude, "IteratorExhausted", [0]);
-                    throw new GraceExceptionPacket(ie, new GraceString(
-                        "End of file reached; there is no next character"));
-                }
-            };
-            o.methods['close'] = function () {
-                //Update system storage with buffered contents
-                if (inBrowser && fileMode === "w") {
-                    if (identifierAvailable("file",path)) { addFileToTree(path); }
-                    writeFileToDisk(fileName, contents);
-                } else if (!inBrowser && fileMode === "w") {
-                    writeFileToDisk(fileName, contents);
-                }
-                replaceMethodsOnClose(o);
-                return GraceDone;
-            };
-            o.methods['pathname'] = function () { return new GraceString(path); };
-            o.methods['eof'] =  function () { return (rw_pointer < content_length) ? GraceFalse : GraceTrue; };
-            o.methods['read'] = function () { return new GraceString(contents.toString()); };
-            o.methods['size'] = function () { return new GraceNum(content_length); };
-            o.methods['iterator'] = function () { return this; };
-            o.methods['isatty'] = function () { return GraceFalse;}; //tty not currently possible
-            o.methods['==(1)'] = function (argcv, other) { return (this===other) ? GraceTrue : GraceFalse; };
-            o.methods['≠(1)'] = function (argcv, other) { return (this!==other) ? GraceTrue : GraceFalse; };
-            o.methods['hash'] = publicVersion(object_identityHash, 'hash');
-            o.methods['isMe(1)'] = object_isMe;
-            o.methods['myIdentityHash'] = object_identityHash;
-        return o;
-    };
-    function checkSeekInput(className, value, method) {
-        if (className !== "number"){
-            throw new GraceExceptionPacket(TypeErrorObject,
-                new GraceString("in request of `"+method+"`, the argument is not of type Number"));
-        }
-        else if (!Number.isInteger(value)) {
-            throw new GraceExceptionPacket(RequestErrorObject,
-                new GraceString("in request of `"+method+"`, the argument is not an integer"));
-        }
-    }
-    this.methods['realpath(1)'] = function io_browser_realpath (argcv, x) {
-        if (!inBrowser) {
-            const arg = safeJsString(x);
-            debugger;
-            try {
-                let realpath = fs.realpathSync(arg);
-                if (fs.lstatSync(realpath).isDirectory()) {
-                    realpath = realpath + "/";
-                }
-                return new GraceString(realpath);
-            } catch (ex) {
-                const pat = ex.code + ": ([^,]+)";  // build a regex
-                const msg = ex.message.match(pat)[1];  // extract error message
-                throw new GraceExceptionPacket(RequestErrorObject,
-                      new GraceString("can't get real path for \"" + arg +
-                            "\" — " + msg));
-            }
-        }
-        return x;
-    };
-    this.methods['listdir(1)'] = function (argcv, x) {
-        if (!inBrowser) {
-            var list = [];
-            list.push(new GraceString("."));
-            list.push(new GraceString(".."));
-            fs.readdirSync(safeJsString(x)).forEach(function(val, index, array) {
-                list.push(new GraceString(val));
-            });
-            return new GraceList(list);
-        }
-        return new GraceList([]);
-    };
-    function io_browser_newer(argcv, jsFile, sourceFile) { return GraceTrue; };
-    function node_newer(argcv, jsFile, sourceFile) {
-        let jsStats = fs.statSync(jsFile._value);
-        let sourceStats = fs.statSync(sourceFile._value);
-        let jsMtime = jsStats.mtimeMs;
-        let sourceMtime = sourceStats.mtimeMs;
-        return (jsMtime > sourceMtime ? GraceTrue : GraceFalse);
-    }
-    this.methods['newer(2)'] = (typeof global == "undefined") ? io_browser_newer : node_newer;
-
-    this.methods['ask(1)'] = function io_ask(argcv, question) {
-        return new GraceString(minigrace.ask(question._value));
-    };
-    return this;
-}
-
-if (typeof gctCache !== "undefined")
-  gctCache["io"] = "classes:\nconfidential:\ndialect:\n standardGrace\nfresh-methods:\n error\n input\n open(2)\n output\nfresh:error:\n close\n eof\n getline\n hasNext\n isatty\n iterator\n next\n nextLine\n pathname\n read\n readBinary(1)\n seek(1)\n seekBackward(1)\n seekForward(1)\n write(1)\n writeBinary(1)\nfresh:input:\n close\n eof\n getline\n hasNext\n isatty\n iterator\n next\n nextLine\n pathname\n read\n readBinary(1)\n seek(1)\n seekBackward(1)\n seekForward(1)\n write(1)\n writeBinary(1)\nfresh:open(2):\n close\n eof\n getline\n hasNext\n isatty\n iterator\n next\n nextLine\n pathname\n read\n readBinary(1)\n seek(1)\n seekBackward(1)\n seekForward(1)\n write(1)\n writeBinary(1)\nfresh:output:\n close\n eof\n getline\n hasNext\n isatty\n iterator\n next\n nextLine\n pathname\n read\n readBinary(1)\n seek(1)\n seekBackward(1)\n seekForward(1)\n write(1)\n writeBinary(1)\nmethodtypes-of:FileStream:\n & 2\n & Object\n 2 ==(other:Unknown) → Boolean\n 2 clear → FileStream\n 2 close → Done\n 2 hasNext → Boolean\n 2 isatty → Boolean\n 2 iterator → FileStream\n 2 next → String\n 2 nextLine → String\n 2 pathname → String\n 2 read → String\n 2 seek(n:Number) → FileStream\n 2 seekBackward(n:Number) → FileStream\n 2 seekForward(n:Number) → FileStream\n 2 size → Number\n 2 write(s:String) → Done\nmethodtypes-of:IO:\n & 3\n & Object\n 3 IoException → prelude.ExceptionKind\n 3 ask(question:String) → String\n 3 changeDirectory(dirPath:String) → Done\n 3 env → Dictionary⟦String, String⟧\n 3 error → FileStream\n 3 exists(path:String) → Boolean\n 3 input → FileStream\n 3 listdir(dirPath:String) → Sequence⟦String⟧\n 3 newer(path1:String, path2:String) → Boolean\n 3 open(path:String, mode:String) → FileStream\n 3 output → FileStream\n 3 realpath(path:String) → String\n 3 spawn(executable:String, args:Collection⟦String⟧) → Process\n 3 system(command:String) → Boolean\n 3 unlink(path:String) → Done\nmethodtypes-of:Process:\n & 4\n & Object\n 4 status → Number\n 4 success → Boolean\n 4 terminated → Boolean\n 4 wait → Number\nmodules:\n collectionsPrelude\n standardGrace\npath:\n /Users/black/Development/mg/gracelang/minigrace/stubs/io.grace\npublic:\n FileStream\n IO\n Process\n ask(1)\n error\n exists(1)\n input\n listdir(1)\n newer(2)\n open(2)\n output\n realpath(1)\n spawn(2)\n system(1)\ntypes:\n FileStream\n IO\n Process\n";
 
 function gracecode_sys() {
     var startTime = (new Date).getTime()/1000;
@@ -2961,6 +2407,8 @@ function gracecode_util() {
     if (util_module !== false)
         return util_module;
 
+    this.io = do_import("io", gracecode_io);
+
     this.methods.asString = function(argcv) {
         return new GraceString('the "util" module');
     };
@@ -2968,10 +2416,10 @@ function gracecode_util() {
         return new GraceBoolean(false);
     };
     this.methods.outfile = function util_outfile(argcv) {
-        return stdout;
+        return request(this.io, 'output');
     };
     this.methods.infile = function util_infile(argcv) {
-        return stdin;
+        return request(this.io, 'input');
     };
     this.methods['parseargs(1)'] = function util_parseargs(argcv) {
         return GraceDone;
@@ -3468,14 +2916,15 @@ if (typeof gctCache !== "undefined")
 
 function safeJsString (obj) {
     // Don't use request!  This function is called from within request.
-    var objString;
+    var result;
+    if (obj.className == "string") { return obj._value }
     try {
         var m = findMethod(obj, "asString");
-        objString = m.call(obj, [0])._value;
+        result = m.call(obj, [0])._value;
     } catch (ex) {
-        objString = "(without working asString method)";
+        result = "(without working asString method)";
     }
-    return objString;
+    return result;
 }
 
 function findMethod (obj, methname) {
@@ -4469,7 +3918,6 @@ if (typeof global !== "undefined") {
     global.Grace_print = Grace_print;
     global.GraceBindingClass = GraceBindingClass;
     global.GraceBoolean = GraceBoolean;
-    global.gracecode_io = gracecode_io;
     global.gracecode_mirrors = gracecode_mirrors;
     global.gracecode_sys = gracecode_sys;
     global.gracecode_unicode = gracecode_unicode;
@@ -4500,6 +3948,7 @@ if (typeof global !== "undefined") {
     global.GraceUnicodePattern = GraceUnicodePattern;
     global.importedModules = importedModules;
     global.ImportErrorObject = ImportErrorObject;
+    global.inBrowser = inBrowser;
     global.jsTrue = jsTrue;
     global.Lineup = GraceSequence;
     global.loadDate = loadDate;
@@ -4509,6 +3958,7 @@ if (typeof global !== "undefined") {
     global.NoSuchMethodErrorObject = NoSuchMethodErrorObject;
     global.nullDefinition = nullDefinition;
     global.nullFunction = nullFunction;
+    global.object_isMe = object_isMe;
     global.object_identityHash = object_identityHash;
     global.ProgrammingErrorObject = ProgrammingErrorObject;
     global.publicVersion = publicVersion;
@@ -4522,6 +3972,7 @@ if (typeof global !== "undefined") {
     global.ReturnException = ReturnException;
     global.RequestErrorObject = RequestErrorObject;
     global.RuntimeErrorObject = RuntimeErrorObject;
+    global.safeJsString = safeJsString;
     global.selfRequest = selfRequest;
     global.setLineNumber = setLineNumber;
     global.setModuleName = setModuleName;

@@ -15,8 +15,7 @@ def gctCache = emptyDictionary
 def keyCompare = { a, b -> a.key.compare(b.key) }
 
 def builtInModules =
-             [  "io",
-                "mirrors",
+             [  "mirrors",
                 "sys",
                 "unicode" ]
 
