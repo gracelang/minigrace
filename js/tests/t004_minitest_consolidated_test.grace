@@ -620,6 +620,53 @@ testSuiteNamed "file paths" with {
         assert (q.directory.endsWith "/") description "{q} does not end with a \"/\""
     }
 }
+testSuite "sys" with {
+    test "sys.argv" by {
+        def cmdArgs:Sequence⟦String⟧ = sys.argv
+        assert ((cmdArgs.at 2).contains "/t004_minitest_consolidated_test")
+              description "command line arguments = {cmdArgs}"
+    }
+    test "working directory" by {
+        def workingDirectory = sys.cwd
+        assert (workingDirectory.endsWith "minigrace/" ||
+            workingDirectory.endsWith "tests/")
+    }
+    test "elapsedTime" by {
+        def t0:Number = sys.elapsedTime
+        def t1:Number = sys.elapsedTime
+        assert (t0 < 2) description "elapsedTime = {t0}"
+        assert ((t1 - t0) < 1) description "duration = {t1 - t0}"
+    }
+    test "execPath" by {
+        def p = sys.execPath
+        assert (p.endsWith "minigrace/js/tests/")
+            description "sys.execPath = {p}"
+    }
+    test "requestCount" by {
+        def c0 = sys.requestCount
+        def c1 = sys.requestCount
+        assert (c1) shouldBe (c0 + 1)
+    }
+    test "environ" by {
+        def env:sys.Environment = sys.environ
+        def os = env.at "OS"
+        assert (env.contains "OS")
+            description "Environment does not define OS"
+        assert ((os == "Darwin") || (os == "Linux"))
+            description "$(OS) = {os}"
+    }
+    test "environ put" by {
+        def env:sys.Environment = sys.environ
+        deny (env.contains "Wombat_76")
+            description "environment contains \"Wombat_76\""
+        env.at "Wombat_76" put "koala"
+        assert (env.contains "Wombat_76")
+            description "Environment does not define Wombat_76 after it was put there"
+        assert (env.at "Wombat_76") shouldBe "koala"
+        env.remove "Wombat_76"
+        deny (env.contains "Wombat_76")
+    }
+}
 
 var s
 
@@ -678,7 +725,7 @@ testSuiteNamed "many arguments are passed" with {
     test "11 arg self request" by {
         assert (obj.returnSum(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)) shouldBe 66
     }
-    test "inherits from 11 arg request" by {
+    test "inherits from 8 arg request" by {
         def sub = object {
             inherit obj.new(1, 2, 3, 4, 5, 6, 7, 8)
         }
@@ -686,3 +733,4 @@ testSuiteNamed "many arguments are passed" with {
     }
 }
 
+exit

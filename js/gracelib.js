@@ -2166,89 +2166,6 @@ function fileExists(path) {
     return false;
 }
 
-function gracecode_sys() {
-    var startTime = (new Date).getTime()/1000;
-    this.methods.argv = function() {
-        if (!inBrowser) {
-            var list = [];
-            process.argv.forEach(function(val, index, array) {
-                if (index > 0)   // element 0 is /usr/local/bin/node, or similar
-                    list.push(new GraceString(val));
-            });
-            return new GraceList(list);
-        } else {
-            return new GraceList([
-                new GraceString("minigrace"),
-                new GraceString("--target"),
-                new GraceString("js")
-            ]);
-        }
-    };
-    this.methods.cwd = function() {
-        if (inBrowser) return new GraceString("");
-        return new GraceString(process.cwd() + require('path').sep);
-    };
-    this.methods.elapsed = function() {
-        return new GraceNum(((new Date).getTime()/1000)-startTime);
-    };
-    this.methods.elapsedTime = function() {
-        return new GraceNum(((new Date).getTime()/1000)-startTime);
-    };
-    this.methods['exit(1)'] = function(argcv, code) {
-        if (typeof process === "undefined") {
-            throw "SystemExit";
-        } else {
-            process.exit(code._value);
-        }
-    };
-    this.methods.execPath = function() {
-        if (typeof minigrace.execFile === "undefined") {
-            return new GraceString(".");
-        }
-        var execFile = minigrace.execFile;
-        var slashIx = execFile.lastIndexOf("/");
-        var execDir = execFile.substring(0, slashIx + 1);  //includes the trailing /
-        return new GraceString(execDir);
-    };
-    this.methods.environ = function() {
-        var o = Grace_allocObject(GraceObject, "environmentObject");
-        o.methods['at(1)'] = function environ_at(argcv, key) {
-            if (!inBrowser) {
-                var str = safeJsString(key);
-                if (str in process.env)
-                    return new GraceString(process.env[str]);
-            }
-            return GraceEmptyString;
-        };
-        o.methods['at(1)put(1)'] = function environ_at_put(argcv, key, value) {
-            if (!inBrowser) {
-                var kstr = safeJsString(key);
-                var vstr = safeJsString(value);
-                process.env[kstr] = vstr;
-            }
-            return GraceTrue;
-        };
-        o.methods['contains(1)'] = function environ_contains(argcv, searchkey) {
-            if (!inBrowser) {
-                return (safeJsString(searchkey) in process.env) ? GraceTrue : GraceFalse;
-            } else {
-            return GraceFalse;
-            }
-        };
-        return o;
-    };
-    this.methods.asString = function(argcv) {
-        return new GraceString('the "sys" module');
-    };
-    this.methods.requestCount = function(argcv) {
-        return new GraceNum(invocationCount);
-    };
-    return this;
-}
-
-if (typeof gctCache !== "undefined")
-    gctCache['sys'] = "fresh:environ:\n self\n ≠\n basicAsString\n asDebugString\n ::\n at\n ==(1)\n at(1)put(1)\n !=\n contains(1)\n asString\nmodules:\nfresh-methods:\n environ\npath:\n sys\nclasses:\npublic:\n Environment\n argv\n cwd\n elapsed\n elaspedTime\n exit(1)\n execPath\n environ\nconfidential:\n";
-
 function gracecode_unicode() {
     this.methods['isLetter(1)'] = function unicode_isLetter(argcv, s) {
         if (typeof s._value === "number")
@@ -3919,7 +3836,6 @@ if (typeof global !== "undefined") {
     global.GraceBindingClass = GraceBindingClass;
     global.GraceBoolean = GraceBoolean;
     global.gracecode_mirrors = gracecode_mirrors;
-    global.gracecode_sys = gracecode_sys;
     global.gracecode_unicode = gracecode_unicode;
     // NOTE: intentionally exclude gracecode_util
     // We use the stub JS version only on the web!

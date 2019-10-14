@@ -16,7 +16,6 @@ def keyCompare = { a, b -> a.key.compare(b.key) }
 
 def builtInModules =
              [  "mirrors",
-                "sys",
                 "unicode" ]
 
 method isBuiltInModule(name) {
