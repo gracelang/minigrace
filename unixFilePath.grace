@@ -115,7 +115,7 @@ class filePath {
 
     method absolute {
         // make me an absolute, rather than relative, path
-        dir := io.realpath(dir)
+        directory := io.realpath(dir)
         self
     }
 
@@ -124,7 +124,10 @@ class filePath {
     }
 }
 
-method null { filePath }
+def null is public = object {
+    inherit filePath
+    method asString { "the null file" }
+}
 
 method withDirectory(d) {
     filePath.setDirectory(d)
