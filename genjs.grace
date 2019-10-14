@@ -1776,8 +1776,8 @@ method runJsCode(of, glPath) {
         }
     }
     def runExitCode = io.spawn(executor, [of.pathname]).wait
-    if (runExitCode < 0) then {
-        io.error.write "minigrace: program {modname} exited with error {-runExitCode}.\n"
-        sys.exit(4)
+    if (runExitCode ≠ 0) then {
+        io.error.write "minigrace: program {modname} exited with code {runExitCode}.\n"
+        sys.exit(runExitCode)
     }
 }
