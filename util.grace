@@ -230,7 +230,7 @@ method log(level) verbose(s) {
         if (false != vtagv) then {
             vtagw := "[" ++ vtagv ++ "]"
         }
-        def elapsed = (sys.elapsed * 100).rounded / 100
+        def elapsed = (sys.elapsedTime * 100).rounded / 100
         io.error.write("minigrace{vtagw}: {modnamev}: "
             ++ "{elapsed} (+{elapsed - previousElapsed}): {s}\n")
         previousElapsed := elapsed
