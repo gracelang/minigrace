@@ -510,5 +510,6 @@ method exit {
     // exit the program with a a return code
     // Exit code zero means that all tests passed;
     // exit code 1 means that at least one test did not pass.
-    sys.exit(if (someTestDidNotPass) then {1} else {0})
+    if (someTestDidNotPass.not) then { print "all tests passed" }
+    sys.exit(if (someTestDidNotPass) then {1} else {10})
 }

@@ -109,7 +109,7 @@ do
 #   if the test name does NOT end with fail_test
     then
         rm -f ${tcase%%.*}.{js,gct} ../${tcase%%.*}.{js,gct}
-        COMMAND="GRACE_MODULE_PATH=../../j2:../..:../../modules $COMPILER --verbose 60 --target js --dir . $tcase"
+        COMMAND="GRACE_MODULE_PATH=../../j2:../..:../../modules $COMPILER --verbose 60 --target js --dir . --make $tcase"
         echo compilation cmd = $COMMAND >> test-$$.log
         if eval "$COMMAND" > test-$$.log 2>&1
         then
@@ -118,13 +118,15 @@ do
             COMMAND="GRACE_MODULE_PATH=../../j2:../../modules:. $EXECUTOR\"./$execname\""
             echo execution cmd = $COMMAND >> test-$$.log
             eval $COMMAND > test-$$.out 2> test-$$.err
-            if [ ! -s test-$$.err ]
+            exitCode=$?
+            if [ -s test-$$.err ]   # if file exists and has size > 0
             then
-                /bin/rm -f test-$$.err
-            else
                 cat test-$$.err
+            else
+                /bin/rm -f test-$$.err
             fi
-            if diff test-$$.out ${tcase%_test.grace}.out
+            if ((if [ $exitCode -eq 10 ]; then true; else false; fi) || \
+                diff test-$$.out ${tcase%_test.grace}.out)
             then
                 NUM_PASS=$((NUM_PASS + 1))
 #                echo "${NUM_TESTS} PASS: $tcase"
