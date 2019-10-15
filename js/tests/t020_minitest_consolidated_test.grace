@@ -38,7 +38,7 @@ testSuiteNamed "once methods" with {
         deny (t2.executed) description "t2.sum executed again"
     }
     
-    test "execeptions are not memoized" by {
+    test "exceptions are not memoized" by {
         def o = object {
             def nums = 1..10
             var exceptional is public := true
@@ -183,7 +183,8 @@ testSuiteNamed "nested parameterized types" with {
     test "generic type annotation on a method" by {
         assert {ana.m "greeting"}
             shouldRaise (TypeError)
-            mentioning "argument to request of `m(_)` (string greeting (defined in module basic library, line 0)) does not have type"
+            mentioning "argument to request of `m(_)` (string greeting"
+            and "does not have type T"
                 // the argument to m is declared as a T = A⟦Number⟧
     }
 }
@@ -389,3 +390,5 @@ testSuiteNamed "interit from external module" with {
         assert (f.direct) shouldBe "root/a/"
     }
 }
+
+exit

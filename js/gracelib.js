@@ -2957,7 +2957,10 @@ function describe(obj) {
     var objString = "";
     var classString = "object";
     var shortClassString = "object";
-    var source = "defined in module " + obj.definitionModule + ", line " + obj.definitionLine
+    var source = "defined in module " + obj.definitionModule;
+    if (0 !== obj.definitionLine) {
+        source = source + ", line " + obj.definitionLine;
+    }
     try {
         var origLineNumber = lineNumber;    // because the asString method will change it
         var m = findMethod(obj, "asString");

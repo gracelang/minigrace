@@ -20,12 +20,36 @@ def gUnitTest = object {
             def testException = Exception.refine "testException"
             self.assert {testException.raise "message"} shouldRaise (testException)
         }
-        
+
+        method testShouldRaiseButDoesn't {
+            // this test should fail, because testException is not raised
+            def testException = Exception.refine "testException"
+            self.assert {
+                return done
+                testException.raise "message"
+            } shouldRaise (testException)
+        }
+
         method testShouldntRaise {
             def testException = Exception.refine "testException"
             self.assert {var x:= 3} shouldntRaise (testException)
             self.assert {Exception.raise "deliberately raised exception"}
                 shouldntRaise (testException)
+        }
+
+        method testShouldntRaiseWithReturn {
+            def testException = Exception.refine "testException"
+            self.assert {
+                return done
+                testException.raise "deliberately raised exception"
+            } shouldntRaise (testException)
+        }
+
+        method testShouldntRaiseWithWrongException {
+            def testException = Exception.refine "testException"
+            self.assert {
+                Exception.raise "deliberately raised wrong exception"
+            } shouldntRaise (testException)
         }
         
         method testBrokenMethod {

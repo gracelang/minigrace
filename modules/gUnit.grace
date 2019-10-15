@@ -99,26 +99,40 @@ trait assertion {
             description "‹{n1.asDebugString}› should be approximately ‹{n2.asDebugString}›"
     }
     method assert(block0) shouldRaise (desiredException) {
-        assert(block0) shouldRaise (desiredException) mentioning ""
+        assert(block0) shouldRaise (desiredException) mentioning "" and ""
     }
-    method assert(block0) shouldRaise (desiredException) mentioning (error) {
-        var completedNormally
+    method assert(block0) shouldRaise (desiredException)
+              mentioning (error) {
+        assert(block0) shouldRaise (desiredException)
+              mentioning (error) and ""
+    }
+    method assert(block0) shouldRaise (desiredException)
+              mentioning (error1) and (error2) {
+        var completedNormally := true
         countOneAssertion
         try {
             block0.apply
-            completedNormally := true
         } catch { raisedException:desiredException ->
             completedNormally := false
-            if (raisedException.message.contains(error).not) then {
+            if (raisedException.message.contains(error1).not) then {
                 failBecause("code raised exception {raisedException.exception},"
                     ++ " but the message was \"{raisedException.message}\","
-                    ++ " which does not mention \"{error}\"")
+                    ++ " which does not mention \"{error1}\"")
+            }
+            if (raisedException.message.contains(error2).not) then {
+                failBecause("code raised exception {raisedException.exception},"
+                    ++ " but the message was \"{raisedException.message}\","
+                    ++ " which does not mention \"{error2}\"")
             }
         } catch { raisedException ->
+            completedNormally := false
             failBecause("code raised exception {raisedException.exception}" ++
                 ": \"{raisedException.message}\" instead of {desiredException}")
+        } finally {
+            if (completedNormally) then {
+                failBecause "code did not raise an exception"
+            }
         }
-        if (completedNormally) then {failBecause "code did not raise an exception"}
     }
     method assert(block0) shouldntRaise (undesiredException) {
         countOneAssertion

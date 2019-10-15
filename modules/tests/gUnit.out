@@ -1,11 +1,12 @@
-size of test suite is 6
-theResult.summary = 6 run, 2 failed, 1 error
+size of test suite is 9
+theResult.summary = 9 run, 3 failed, 1 error
 oneTest.log = setup testMethod teardown 
-theResult.summary = 7 run, 2 failed, 1 error
-theResult.failedTestNames = list [testFailingMethod, testNoAssertion]
+theResult.summary = 10 run, 3 failed, 1 error
+theResult.failedTestNames = list [testFailingMethod, testNoAssertion, testShouldRaiseButDoesn't]
 theResult.erroredTestNames = list [testBrokenMethod]
 Failed:
     testFailingMethod: deliberate failure
     testNoAssertion: no assertions were checked in this test
+    testShouldRaiseButDoesn't: code did not raise an exception
 Errored:
     testBrokenMethod: NoSuchMethod: no method thisMethodDoesNotExist on the "gUnit" module (defined in module gUnit, line 1).
