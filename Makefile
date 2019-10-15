@@ -58,7 +58,7 @@ all: minigrace.env ideBuild
 
 alltest: test module.test self.test
 
-.PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects dev-ide dev-ideDeploy echo ide ideBuild ideDeploy fullclean install j1-minigrace j2-minigrace just-minigrace minigrace.env npm-sha pull-web-editor pull-objectdraw self.test samples sample-% test test.compile uninstall
+.PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects dev-ide dev-ideDeploy echo ide ideBuild ideDeploy fullclean install j1-minigrace j2-minigrace just-minigrace minigrace.env pull-web-editor pull-objectdraw self.test samples sample-% test test.compile uninstall
 
 # clear out the default rules: produces far less --debug output
 .SUFFIXES:
@@ -354,7 +354,8 @@ npm-publish: npm-build
 	@echo Published minigrace version $(VERSION) to npmjs.com
 
 npm-sha:
-	 npm ls sha > /dev/null || npm install sha
+	npm ls sha > /dev/null || npm install sha
+	touch npm-sha
 
 $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
