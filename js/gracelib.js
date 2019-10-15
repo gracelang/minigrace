@@ -2166,156 +2166,6 @@ function fileExists(path) {
     return false;
 }
 
-function gracecode_unicode() {
-    this.methods['isLetter(1)'] = function unicode_isLetter(argcv, s) {
-        if (typeof s._value === "number")
-            s = String.fromCharCode(s._value);
-        else s = s._value;
-        return ( ( unicode.inCategory(s, "Ll") ||
-                   unicode.inCategory(s, "Lu") ||
-                   unicode.inCategory(s, "Lo") ||
-                   unicode.inCategory(s, "Lm") ) ? GraceTrue : GraceFalse);
-    };
-    this.methods['isNumber(1)'] = function unicode_isNumber(argcv, s) {
-        if (typeof s._value === "number")
-            s = String.fromCharCode(s._value);
-        else s = s._value;
-        return ( ( unicode.inCategory(s, "Nd") ||
-                   unicode.inCategory(s, "No") ||
-                   unicode.inCategory(s, "Nl") ) ? GraceTrue : GraceFalse);
-    };
-    this.methods['isSymbolMathematical(1)'] = function unicode_isSymbolMathematical(argcv, s) {
-        if (typeof s._value === "number")
-            s = String.fromCharCode(s._value);
-        else s = s._value;
-        return ((unicode.inCategory(s, "Sm")) ? GraceTrue : GraceFalse);
-    };
-    this.methods['isSeparator(1)'] = function unicode_isSeparator(argcv, s) {
-        if (typeof s._value === "number")
-            s = String.fromCharCode(s._value);
-        else s = s._value;
-        return ( ( unicode.inCategory(s, "Zs") ||
-                   unicode.inCategory(s, "Zp") ||
-                   unicode.inCategory(s, "Zl") ) ? GraceTrue : GraceFalse);
-    };
-    this.methods['isControl(1)'] = function unicode_isControl(argcv, s) {
-        if (typeof s._value === "number")
-            s = String.fromCharCode(s._value);
-        else s = s._value;
-        return ( ( unicode.inCategory(s, "Cf") ||
-                   unicode.inCategory(s, "Cc") ||
-                   unicode.inCategory(s, "Co") ||
-                   unicode.inCategory(s, "Cs") ) ? GraceTrue : GraceFalse);
-    };
-    this.methods['inCategory(2)'] = function unicode_inCategory(argcv, s, c) {
-        if (typeof s._value === "number")
-            s = String.fromCharCode(s._value);
-        else s = s._value;
-        return ((unicode.inCategory(s, c._value)) ? GraceTrue : GraceFalse);
-    };
-    this.methods['category(1)'] = function unicode_category(argcv, s) {
-        return new GraceString(unicode.category(s._value));
-    };
-    this.methods['name(1)'] = function unicode_name(argcv, s) {
-        return new GraceString(unicode.name(s._value));
-    };
-    this.methods['create(1)'] = function unicode_create(argcv, n) {
-        return new GraceString(String.fromCharCode(n._value));
-    };
-    this.methods['pattern(1)'] = function unicode_pattern(argcv, patterns) {
-        return new GraceUnicodePattern(patterns);
-    };
-    this.methods['pattern(1)not(1)'] = function unicode_pattern_not(argcv, patterns, excludes) {
-        return new GraceUnicodePattern(patterns, excludes);
-    };
-    return this;
-}
-
-if (typeof gctCache !== "undefined")
-    gctCache['unicode'] = "path:\n unicode\nclasses:\npublic:\n category(1)\n inCategory(2)\n isSeparator(1)\n isControl(1)\n isLetter(1)\n isNumber(1)\n isSymbolMathematical(1)\n create(1)\nconfidential:\nfresh-methods:\nmodules:\n";
-
-
-function GraceUnicodePattern(pos, neg) {
-    // this.pos and this.neg are Collections of positive and negative items
-    this.pos = pos._value;
-        // APB: 2016 06 11     This is a horrible hack.
-        // pos._value          pos._value is defined => pos is a GraceSequence
-    if (! this.pos) {
-        this.pos = [];
-        var iter = callmethod(pos, "iterator", [0]);
-        while (Grace_isTrue(callmethod(iter, "hasNext", [0]))) {
-            var p = callmethod(iter, "next", [0]);
-            this.pos.push(p);
-        }
-    }
-    if (neg) {
-        this.neg = neg._value;
-        if (! this.neg) {
-            this.neg = [];
-            var niter = callmethod(pos, "iterator", [0]);
-            while (Grace_isTrue(callmethod(niter, "hasNext", [0]))) {
-                var n = callmethod(niter, "next", [0]);
-                this.neg.push(n);
-            }
-        }
-    }
-}
-
-GraceUnicodePattern.prototype = {
-    methods: {
-        "isMe(1)":          object_isMe,
-        "myIdentityHash":   object_identityHash,
-        "basicAsString":    object_basicAsString,
-        "asString":         object_asString,
-        "asDebugString":    object_asDebugString,
-        "debug$Iterator":   object_debugIterator,
-        'matches(1)': function(argcv, o) {
-            var success = false;
-            var cc = o._value;
-            if (cc.charCodeAt)
-                cc = cc.charCodeAt(0);
-            for (var i=0; i<this.pos.length; i++) {
-                var t = this.pos[i];
-                if (typeof t._value === "number") {
-                    if (cc === t._value) {
-                        success = true;
-                        break;
-                    }
-                } else {
-                    if (unicode.inCategory(cc, t._value)) {
-                        success = true;
-                        break;
-                    }
-                }
-            }
-            if (this.neg) {
-                if (this.pos.length === 0)
-                    success = true;
-                for (var j=0; j<this.neg.length; j++) {
-                    var u = this.neg[j];
-                    if (typeof u._value === "number") {
-                        if (cc === u._value) {
-                            success = false;
-                            break;
-                        }
-                    } else {
-                        if (unicode.inCategory(cc, u._value)) {
-                            success = false;
-                            break;
-                        }
-                    }
-                }
-            }
-            return success ? GraceTrue : GraceFalse;
-        }
-    },
-    typeMethods: [],
-    className: "unicodePattern",
-    definitionModule: "unicode",
-    definitionLine: 0,
-    classUid: "unicodePattern-intrinsic"
-};
-
 var util_module = false;
 var loadDate = Date.now();
 var previousElapsed = Math.round(loadDate/10)/100;
@@ -3836,7 +3686,6 @@ if (typeof global !== "undefined") {
     global.GraceBindingClass = GraceBindingClass;
     global.GraceBoolean = GraceBoolean;
     global.gracecode_mirrors = gracecode_mirrors;
-    global.gracecode_unicode = gracecode_unicode;
     // NOTE: intentionally exclude gracecode_util
     // We use the stub JS version only on the web!
     // For the node version, we do want util.grace
@@ -3861,7 +3710,6 @@ if (typeof global !== "undefined") {
     global.GraceTrait = GraceTrait;
     global.GraceTrue = GraceTrue;
     global.GraceType = GraceType;
-    global.GraceUnicodePattern = GraceUnicodePattern;
     global.importedModules = importedModules;
     global.ImportErrorObject = ImportErrorObject;
     global.inBrowser = inBrowser;

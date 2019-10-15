@@ -29,7 +29,7 @@ JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
 PRELUDESOURCEFILES = collectionsPrelude.grace standardGrace.grace
-REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace unixFilePath.grace xmodule.grace identifierresolution.grace fastDict.grace regularExpression.grace shasum.grace io.grace sys.grace)
+REALSOURCEFILES = ast.grace compiler.grace errormessages.grace fastDict.grace genjs.grace identifierKinds.grace identifierresolution.grace io.grace lexer.grace parser.grace regularExpression.grace shasum.grace sys.grace unicode.grace unixFilePath.grace util.grace xmodule.grace
 
 SOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES)
 MGSOURCEFILES = buildinfo.grace $(SOURCEFILES)
@@ -154,6 +154,7 @@ echo:
 	@echo MODULE_PATH = $(MODULE_PATH)
 	@echo INCLUDE_PATH = $(INCLUDE_PATH)
 	@echo NPM_STABLE_VERSION = $(NPM_STABLE_VERSION)
+	@echo REALSOURCEFILES = $(REALSOURCEFILES)
 
 $(EXTERNAL_STUBS:%.grace=j2/%.js): j2/%.js: js/%.js
 	cp -p $< $@
