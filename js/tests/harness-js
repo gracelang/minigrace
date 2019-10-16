@@ -110,14 +110,14 @@ do
     then
         rm -f ${tcase%%.*}.{js,gct} ../${tcase%%.*}.{js,gct}
         COMMAND="GRACE_MODULE_PATH=../../j2:../..:../../modules $COMPILER --verbose 60 --target js --dir . --make $tcase"
-        echo compilation cmd = $COMMAND >> test-$$.log
-        if eval "$COMMAND" > test-$$.log 2>&1
+        echo compilation cmd = $COMMAND > test-$$.log
+        if eval "$COMMAND" >> test-$$.log 2>&1
         then
             execname="${tcase%%.*}"
 #   The %%.* _deletes_ the longest . extension.
             COMMAND="GRACE_MODULE_PATH=../../j2:../../modules:. $EXECUTOR\"./$execname\""
-            echo execution cmd = $COMMAND >> test-$$.log
-            eval $COMMAND > test-$$.out 2> test-$$.err
+            echo execution cmd = $COMMAND > test-$$.log
+            eval $COMMAND >> test-$$.out 2> test-$$.err
             exitCode=$?
             if [ -s test-$$.err ]   # if file exists and has size > 0
             then
