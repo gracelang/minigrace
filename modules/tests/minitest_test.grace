@@ -1,6 +1,8 @@
 dialect "minitest"
 
-testSuite {
+def TestError = Exception.refine "TestError"
+
+testSuite "minitest" with {
     def l = list [1, 3, 5, 2, 4]
 
     test "list is mutated by add" by {
@@ -17,5 +19,10 @@ testSuite {
 
     test "asserts a falsehood" by {
         assert 3 shouldBe 0
-    } 
+    }
+
+    test "raises an exception" by {
+        assert { TestError.raise "message containing wombat and kanga" }
+              shouldRaise (TestError) mentioning "wombat" and "kanga"
+    }
 }

@@ -1,6 +1,17 @@
 import "gUnit" as gu
 
 inherit prelude.methods
+use gu.assertion        // makes available all the assert ... methods
+
+method countOneAssertion {
+    currentResult.countOneAssertion
+}
+
+var currentResult := object {
+    method countOneAssertion {
+        print "countOneAssertion requested on dummy result"
+    }
+}
 
 def MinitestError = prelude.ProgrammingError.refine "MinitestError"
 type Block = prelude.Procedure0
@@ -19,74 +30,6 @@ method numberOfErrorsToRerun:=(n:Number) {
     gu.numberOfErrorsToRerun := n
 }
 
-def mtAssertion = object {
-    inherit gu.assertion
-    var currentResult is writable := object {
-        method countOneAssertion {
-            print "countOneAssertion requested on dummy result"
-        }
-    }
-
-    method countOneAssertion {
-        currentResult.countOneAssertion
-    }
-}
-
-method assert(bb:Boolean) description(str:String) {
-    mtAssertion.assert(bb) description(str)
-}
-
-method deny(bb:Boolean) description(str:String) {
-    mtAssertion.deny(bb) description(str)
-}
-
-method assert(bb:Boolean) {
-    mtAssertion.assert(bb)
-}
-
-method deny(bb:Boolean) {
-    mtAssertion.deny(bb)
-}
-
-method assert(s1:Object) shouldBe (s2:Object) {
-    mtAssertion.assert(s1) shouldBe (s2)
-}
-
-method assert(s1:Object) shouldntBe (s2:Object) {
-    mtAssertion.assert(s1) shouldntBe (s2)
-}
-
-method assert(n1:Number) shouldEqual (n2:Number) within (epsilon:Number) {
-    mtAssertion.assert(n1) shouldEqual (n2) within (epsilon)
-}
-
-method assert(b:Block) shouldRaise (desired:prelude.ExceptionKind) {
-    mtAssertion.assert(b) shouldRaise (desired)
-}
-
-method assert(b:Block) shouldRaise (desired:prelude.ExceptionKind) mentioning(error:String){
-    mtAssertion.assert(b) shouldRaise (desired) mentioning(error)
-}
-
-method assert(b:Block) shouldntRaise (undesired:prelude.ExceptionKind) {
-    mtAssertion.assert(b) shouldntRaise (undesired)
-}
-
-method assert(s:Unknown) hasType (desired:Type) {
-    mtAssertion.assert(s) hasType (desired)
-}
-
-method deny(s:Unknown) hasType (undesired:Type) {
-    mtAssertion.deny(s) hasType (undesired)
-}
-
-method assertType(T:Type) describes (value) {
-    mtAssertion.assertType(T) describes (value)
-}
-
-method failBecause(reason) {
-    mtAssertion.assert(false) description(reason)
-}
 
 method testSuite (name:String) with (block:Block) {
     if (nullSuite ≠ currentTestSuiteForDialect) then {
@@ -146,8 +89,10 @@ class testCaseNamed(name') setupIn(setupBlock) asTestNumber(number) -> gu.TestCa
     }
 
     method currentResult:= (r) is override {
-        mtAssertion.currentResult := r
+        outer.currentResult := r
     }
+
+    method currentResult is override { outer.currentResult }
 
     method runTest is override {
         // for minitest, the test is run in setup
