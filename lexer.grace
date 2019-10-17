@@ -2,7 +2,7 @@ import "util" as util
 import "unicode" as unicode
 import "errormessages" as errormessages
 import "fastDict" as map
-import "modules/regularExpression" as re
+import "regularExpression" as re
 
 def keywords = map.dictionary.empty
 keywords.at "alias" put true
