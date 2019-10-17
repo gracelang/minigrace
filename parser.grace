@@ -116,30 +116,30 @@ method findNextToken(tokenMatcher) {
     if (tokenMatcher.apply(sym)) then {
         return sym
     }
-    var nextTok := false
     var n := sym
-    while {(false != n) && { false == nextTok } && { n.indent >= lastToken.indent }} do {
+    while {n.isEof.not && { n.indent >= lastToken.indent }} do {
         if (tokenMatcher.apply(n)) then {
-            nextTok := n
+            return n
         }
         n := n.next
     }
-    nextTok
+    n
 }
 
 method findNextTokenIndentedAt(tok) {
+    // Search for the next token for whose indent does not exceed that of tok.
+    // Used for generating suggestions.
     if (((sym.line > tok.line) && (sym.indent <= tok.indent)) || (sym.isEof)) then {
         return sym
     }
-    var nextTok := false
     var n := sym
-    while {(false != n) && { false == nextTok }} do {
-        if (((n.line > tok.line) && (n.indent <= tok.indent)) || (sym.isEof)) then {
-            nextTok := n
+    while {n.isEof.not} do {
+        if ((n.line > tok.line) && (n.indent <= tok.indent)) then {
+            return n
         }
         n := n.next
     }
-    nextTok
+    n
 }
 
 method findNextValidToken(validFollowTokens) {
