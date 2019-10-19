@@ -2848,7 +2848,7 @@ function matchCase(obj, cases, elseCase) {
                        "in match(_)case(_)…, no case matches",
                        obj);
     }
-    const matching = trueCases.map(i => "case " + i + " on line " + cases[i].definitionLine);
+    const matching = trueCases.map(i => "case " + (i+1) + " on line " + cases[i].definitionLine);
     const matchingDesc = "(" + listWithAnd(matching) + ")";
     raiseException(MatchErrorObject,
                    "in match(_)case(_)…, " + trueCount + " cases match " + matchingDesc,
@@ -2918,7 +2918,7 @@ GraceExceptionPacket.prototype = {
             errMsg = callmethod(errMsg, "++(1)", [1], callmethod(this, "message", [0]));
             Grace_errorPrint(errMsg);
             var bt = callmethod(this, "backtrace", [0]);
-            var prefix = new GraceString("  raised at ");
+            var prefix = new GraceString("  raised from ");
             var rf = new GraceString("  requested from ");
             while (callmethod(bt, "size", [0])._value > 0) {
                 Grace_errorPrint(callmethod(prefix, "++(1)", [1],
@@ -3159,7 +3159,10 @@ function raiseException(ex, msg, data) {
     }
     if (caller.isGraceRequest) {
         Object.defineProperty(newEx, 'moduleName', {value: callee.definitionModule});
-        Object.defineProperty(newEx, 'methodName', {value: canonicalMethodName(caller.arguments[1])} );
+        let methName = caller.arguments[1];
+        if (methName) {     // will be undefined in module initialization code
+            Object.defineProperty(newEx, 'methodName', {value: canonicalMethodName(methName)});
+        }
     }
     throw newEx;
 }
