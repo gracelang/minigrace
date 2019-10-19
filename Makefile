@@ -16,7 +16,6 @@ DIALECT_DEPENDENCIES = mirrors.gct mirrors.js errormessages.js ast.js util.js mo
 DIALECTS_NEED = modules/dialect util ast modules/gUnit
 WEB_DIRECTORY ?= public_html/ide/
 DEV_WEB_DIRECTORY = public_html/dev/ide/
-GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 
 JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
 MGFLAGS = -XnoChecks
@@ -147,7 +146,6 @@ echo:
 	@echo INTERNAL_STUBS = $(INTERNAL_STUBS)
 	@echo EXTERNAL_STUBS = $(EXTERNAL_STUBS)
 	@echo OTHER_MODULES = $(OTHER_MODULES)
-	@echo GRAPHIX:%.grace=js/%.js = $(GRAPHIX:%.grace=js/%.js)
 	@echo WEBFILES_SIMPLE = $(WEBFILES_SIMPLE)
 	@echo WEB_DIRECTORY = $(WEB_DIRECTORY)
 	@echo WEB_GRAPHICS_MODULES = $(WEB_GRAPHICS_MODULES)
@@ -191,7 +189,6 @@ ideBuild: j2-minigrace minigrace.env pull-brace grace-web-editor/scripts/setup.j
 	@if ( ! cmp --quiet j2/dom.js js/dom.js ) ; then echo "j2/dom.js and js/dom.js are different in ideBuild" ; cp js/dom.js j2/dom.js ; fi
 	ln -f $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES_STATIC:%=js/%))) grace-web-editor/js
 	ln -f $(WEBFILES_DYNAMIC:%=j2/%) grace-web-editor/js
-	ln -f $(GRAPHIX:%.grace=j2/%.js) grace-web-editor/js
 
 ideDeploy: ideBuild
 	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
@@ -254,7 +251,7 @@ js/animation%js: js/timer.gct objectdraw/animation.grace
 
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
-	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@
+	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' $< > $@
 
 js/grace: js/grace.in
 	sed -e "s|@MODULE_PATH@|$(MODULE_PATH)/|" $< > js/grace
