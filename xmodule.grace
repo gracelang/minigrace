@@ -14,12 +14,6 @@ def DialectError is public = Exception.refine "DialectError"
 def gctCache = emptyDictionary
 def keyCompare = { a, b -> a.key.compare(b.key) }
 
-def builtInModules = [ ]
-
-method isBuiltInModule(name) {
-    builtInModules.contains(name)
-}
-
 def currentDialect is public = object {
     var name is public := "standardGrace"
     var moduleObject is public := prelude
@@ -169,9 +163,6 @@ method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
     def pnJs = filePath.fromString(pathname).setExtension "js"
     def pnGrace = pnJs.copy.setExtension "grace"
     def files = list [pnJs, pnGrace]
-    if (isBuiltInModule(nm)) then {
-        files.addLast (pnJs.copy.setExtension "gct")
-    }
     var moduleFile := util.firstFile(files) on (util.sourceDir)
                                 orPath (gmp) otherwise { m ->
         def rm = errormessages.readableStringFrom(m)
