@@ -1,4 +1,4 @@
-import "mirrors" as m
+import "mirror" as m
 
 type A = {a(n:Number) -> Number}
 type B = interface {b(s:String) -> String}

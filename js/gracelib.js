@@ -1803,18 +1803,20 @@ GraceBlock.prototype.noSuchMethodHandler = {
             return new GraceString("intrinsic noSuchMethodHandler for blocks");
         },
         "apply(3)":         function GraceBlock_noMethod(argcv, name, arglist, recvr) {
-            let jsName = name._value;
-            let matches = jsName.match( /^apply\((\d+)\)$/ );
-            if (matches) {
-              blockWrongArityException(matches[1], recvr);
+            const canonicalName = name._value;
+            if (canonicalName.match( /^apply\(_(,_)*\)$/ )) {
+                const numArgs = request(arglist, 'size', [0]);
+                blockWrongArityException(numArgs._value, recvr);
             } else {
-                const closeMatches = closeMatchesForMethodNamed(name, recvr);
+                const numericName = numericMethodName(canonicalName);
+                const closeMatches = closeMatchesForMethodNamed(numericName, recvr);
                 let suggestions = "";
                 if (closeMatches.length !== 0) {
-                    suggestions = "  Did you mean " + readableOptions(closeMatches) + "?";
+                    let options = readableOptions(closeMatches.sort().map(n => canonicalName(n)));
+                    suggestions = "  Did you mean " + options + "?";
                 }
                 throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                    new GraceString("no method " + canonicalMethodName(jsName) + " on " +
+                    new GraceString("no method " + canonicalName + " on " +
                         describe(recvr) + "." + suggestions));
             }
         }
@@ -1870,13 +1872,7 @@ function assertTypeOrMsg(obj, type, objDesc, typeDesc) {
             if ((type.name) && (type.name !== typeDesc)) {
                 typeDesc += " (= " + type.name + ")";
             }
-            let message = objDesc + " (" + describe(obj) + ")" + " does not have type " + typeDesc;
-            raiseTypeError(message, type, obj);
-        }
-    } else if (type.methods["match(1)"]) {
-        if (!Grace_isTrue(request(type, "match(1)", [1], obj))) {
-            if (type.name !== typeDesc) typeDesc += " (= " + type.name + ")";
-            let message = objDesc + " (" + describe(obj) + ")" + " does not have type " + typeDesc;
+            let message = objDesc + " does not have type " + typeDesc;
             raiseTypeError(message, type, obj);
         }
     } else {
@@ -1891,9 +1887,8 @@ function raiseTypeError(msg, type, value) {
     if (GraceDone === value) {
         diff = " — it is `done`.";
     } else {
-        var mm = do_import("mirrors", gracecode_mirrors);
         try {
-             var tc = callmethod(mm, "loadDynamicModule(1)", [1], new GraceString("typeComparison"));
+             var tc = loadDynamicModule("typeComparison");
              var missing = callmethod(tc, "methodsIn(1)missingFrom(1)", [1, 1], type, value)._value;
              var s = (missing.includes(" ")) ? "s " : " ";
              diff = ".\nIt is " + describe(value) +  ", which is missing method" + s + missing + ".";
@@ -2465,221 +2460,32 @@ function gracecode_util() {
 if (typeof(process) === "undefined" && typeof gctCache !== "undefined")
     gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=(1)\n dynamicModule\n dynamicModule:=(1)\n importDynamic\n importDynamic:=(1)\n jobs\n jobs:=(1)\n cLines\n cLines:=(1)\n lines\n lines:=(1)\n filename\n filename:=(1)\n errno\n errno:=(1)\n parseargs\n previousElapsed\n previousElapsed:=(1)\n log_verbose\n outprint\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath(1)\n file(1)on(1)orPath(1)otherwise(1)\n file(1)onPath(1)otherwise(1)\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n stringMap\n buildinfo\n sys\n io\n";
 
-function GraceMirrorMethod(o, k) {
-    this.name = k;
-    this.canonicalName = canonicalMethodName(k);
-    this.obj = o;
-}
-GraceMirrorMethod.prototype = Grace_allocObject(GraceObject, "methodMirror");
-GraceMirrorMethod.prototype.methods['asString'] = function mMirror_asString (argcv) {
-    return new GraceString("mirror on method '" + this.canonicalName + "'");
-};
-GraceMirrorMethod.prototype.methods['name'] = function mMirror_name (argcv) {
-    return new GraceString(this.canonicalName);
-};
-GraceMirrorMethod.prototype.methods['partCount'] = function mMirror_partCount (argcv) {
-    var count = this.name.split("(").length;
-    if (count === 1) return new GraceNum(1);
-    return new GraceNum(count - 1);
-};
-GraceMirrorMethod.prototype.methods['partcount'] =
-    GraceMirrorMethod.prototype.methods['partCount'] =
-GraceMirrorMethod.prototype.methods['paramCounts'] =
-      function mMirror_paramcounts (argcv) {
-    var theFunction = this.obj.methods[this.name];
-    var l = theFunction.paramCounts ? theFunction.paramCounts.length : 0;
-    var countArray = new Array(l);
-    for (var i = 0; i < l; i++) {
-        countArray[i] = new GraceNum(theFunction.paramCounts[i]);
+function loadDynamicModule (moduleName, directory) {
+    if (importedModules[modname]) {
+        return importedModules[modname];
     }
-    return new GraceList(countArray);
-};
-GraceMirrorMethod.prototype.methods['paramcounts'] =
-    GraceMirrorMethod.prototype.methods['paramCounts'];
-GraceMirrorMethod.prototype.methods['paramNames'] =
-      function mMirror_paramNames (argcv) {
-    var theFunction = this.obj.methods[this.name];
-    var names = theFunction.paramNames || []
-    var nameArray = new Array(l);
-    for (let i = 0, len = names.length; i < len; i++) {
-        nameArray[i] = new GraceString(names[i]);
-    }
-    return new GraceList(nameArray);
-};
-GraceMirrorMethod.prototype.methods['isConfidential'] =
-      function mMirror_isConfidential (argcv) {
-        const theFunction = this.obj.methods[this.name];
-        if (theFunction.confidential) return GraceTrue;
-        return GraceFalse;
-};
-
-GraceMirrorMethod.prototype.methods['isPublic'] =
-      function mMirror_isPublic (argcv) {
-        const theFunction = this.obj.methods[this.name];
-        if (theFunction.confidential) return GraceFalse;
-        return GraceTrue;
-};
-
-GraceMirrorMethod.prototype.methods['numberOfParams'] =
-      function mMirror_numberOfParams (argcv) {
-        const theFunction = this.obj.methods[this.name];
-        return new GraceNum(theFunction.paramNames.length);
-};
-
-GraceMirrorMethod.prototype.methods['requestWithArgs(1)'] =
-      function mMirror_requestWithArgs (argcv, argList) {
-    if (! argList) {
-        throw new GraceExceptionPacket(ProgrammingErrorObject,
-                new GraceString("'requestWithArgs(_)' requires one argument (a list of arguments)"));
-    }
-    var theFunction = this.obj.methods[this.name];
-    if (typeof theFunction !== "function") {
-        return dealWithNoMethod(this.name, this.subject, argList);
-    }
-    var paramcv = theFunction.paramCounts;
-    var np = theFunction.paramNames.length;
-    var ntp = (theFunction.typeParamNames) ? theFunction.typeParamNames.length : 0;
-    var providedLen = callmethod(argList, "size", [0])._value;
-    if ((providedLen !== np) && (providedLen != (np + ntp))) {
-        throw new GraceExceptionPacket(ProgrammingErrorObject,
-                new GraceString("method '" + this.name + "' requires " +
-                np + " arguments, but was given " + providedLen + "."));
-    }
-    var allArgs = [this.obj, this.name, paramcv];
-    var argsIter = callmethod(argList, "iterator", [0]);
-    while (Grace_isTrue(callmethod(argsIter, "hasNext", [0]))) {
-        var arg = callmethod(argsIter, "next", [0]);
-        allArgs.push(arg);
-    }
-    return selfRequest.apply(null, allArgs);
-};
-
-GraceMirrorMethod.prototype.methods['hash'] = function mMirror_hash (argcv) {
-    return callmethod(new GraceString(this.name), "hash", [0]);
-};
-
-function mirror_getMethod (argcv, methName) {
-    var name = numericMethodName(methName._value);
-    var current = this.subject;
-    if (current.methods[name]) {
-        return (new GraceMirrorMethod(this.subject, name));
-    }
-    var exceptionMsg = new GraceString("no method " +
-          canonicalMethodName(name) + " in mirror for ");
-    var objDescription = callmethod(this.subject, "asString", [0]);
-    exceptionMsg = callmethod(exceptionMsg, "++(1)", [1], objDescription);
-    throw new GraceExceptionPacket(NoSuchMethodErrorObject, exceptionMsg);
-}
-
-function mirror_NoSuchMethodHandler (argcv, handlerBlock) {
-    // sets up handlerBlock (a Block with 2 arguments) to be applied
-    // when a requested method is not found.
-    const Function3 = request(var___95__prelude, "Function3", [0]);
-    assertTypeOrMsg(handlerBlock, Function3, "argument to request of `whenNoMethodDo(_)`", "Function3");
-    this.subject.noSuchMethodHandler = handlerBlock;
-    return GraceDone;
-}
-
-function GraceMirror(subj) {       // constructor function
-    this.subject = subj;
-    this.mutable = false;
-}
-
-GraceMirror.prototype = {
-    methods: {
-        "isMe(1)":          object_isMe,
-        "myIdentityHash":   object_identityHash,
-        "basicAsString":    object_basicAsString,
-        "asString":         object_asString,
-        "asDebugString":    object_asDebugString,
-        "debug$Iterator":   object_debugIterator,
-        methods: function mirror_methods(argcv) {
-            var meths = [];
-            var current = this.subject;
-            for (var k in current.methods) {
-                if (! k.includes("$") && current.methods.hasOwnProperty(k)) {
-                    meths.push(new GraceMirrorMethod(current, k));
-                }
-            }
-            var l = new GraceList(meths);
-            return l;
-        },
-        methodNames: function mirror_methodName(argcv) {
-            var meths = callmethod(Grace_prelude, "emptySet", [0]);
-            var current = this.subject;
-            for (var k in current.methods) {
-                if (! k.includes("$") && current.methods.hasOwnProperty(k) &&
-                      ! current.methods[k].confidential) {
-                    callmethod(meths, "add(1)", [1],
-                          new GraceString(canonicalMethodName(k)));
-                }
-            }
-            return meths;
-        },
-        allMethodNames: function mirror_methodName(argcv) {
-            var meths = callmethod(Grace_prelude, "emptySet", [0]);
-            var current = this.subject;
-            for (var k in current.methods) {
-                if (! k.includes("$") && current.methods.hasOwnProperty(k)) {
-                    callmethod(meths, "add(1)", [1],
-                          new GraceString(canonicalMethodName(k)));
-                }
-            }
-            return meths;
-        },
-        confidentialMethodNames: function mirror_methodName(argcv) {
-            var meths = callmethod(Grace_prelude, "emptySet", [0]);
-            var current = this.subject;
-            for (var k in current.methods) {
-                if (! k.includes("$") && current.methods.hasOwnProperty(k) &&
-                      current.methods[k].confidential) {
-                    callmethod(meths, "add(1)", [1],
-                          new GraceString(canonicalMethodName(k)));
-                }
-            }
-            return meths;
-        },
-        'getMethod(1)': mirror_getMethod,
-        'onMethod(1)': mirror_getMethod,
-        'whenNoMethodDo(1)': mirror_NoSuchMethodHandler,
-        subject: this.subject
-    },
-    className: 'objectMirror',
-    definitionModule: "mirrors",
-    definitionLine: 0,
-    classUid: "mirror-intrinsic"
-};
-
-function gracecode_mirrors() {
-    this.methods['loadDynamicModule(1)'] = function(argcv, v) {
-        var name = v._value;
-        var moduleFunc;
-        if (typeof process === "undefined") {
-            try {
-                moduleFunc = eval(graceModuleName(name));
-            } catch (ex) {
-                throw new GraceExceptionPacket(ImportErrorObject,
-                           new GraceString("can't find module " + v._value));
-            }
-        } else {
-            minigrace.loadModule(name, "./");
-            try {
-                moduleFunc = eval(graceModuleName(name));
-            } catch (ex) {
-                throw new GraceExceptionPacket(ImportErrorObject,
-                    new GraceString("error initializing module " + v._value));
-            }
+    var moduleFunc;
+    if (inBrowser) {
+        try {
+            moduleFunc = window[graceModuleName(moduleName)];
+        } catch (ex) {
+            throw new GraceExceptionPacket(ImportErrorObject,
+                new GraceString("can't find module " + moduleName));
         }
-        return do_import(name, moduleFunc);
-    };
-    this.methods['reflect(1)'] = function(argcv, o) {
-        return new GraceMirror(o);
-    };
-    return this;
+    } else {
+        if (! directory) {
+            directory = path.dirname(findOnPath(moduleName + ".js"));
+        }
+        minigrace.loadModule(moduleName, directory);
+        try {
+            moduleFunc = global[graceModuleName(moduleName)];
+        } catch (ex) {
+            throw new GraceExceptionPacket(ImportErrorObject,
+                new GraceString("error initializing module " + moduleName));
+        }
+    }
+    return do_import(moduleName, moduleFunc);
 }
-
-if (typeof gctCache !== "undefined")
-    gctCache["mirrors"] = "classes:\nconfidential:\ndialect:\n standardGrace\nfresh-methods:\n reflect(1)\nfresh:reflect(1):\n getMethod(1)\n methodNames\n methods\n onMethod(1)\nmethodtypes-of:ArgList:\nmethodtypes-of:MethodMirror:\n & 3\n & Object\n 3 isConfidential \u2192 Boolean\n 3 isPublic \u2192 Boolean\n 3 name \u2192 String\n 3 numberOfParams \u2192 Number\n 3 paramCounts \u2192 List\u27e6Number\u27e7\n 3 paramNames \u2192 List\u27e6String\u27e7\n 3 partCount \u2192 Number\n 3 requestWithArgs(args:List\u27e6Object\u27e7) \u2192 Unknown\nmethodtypes-of:Mirror:\n & 2\n & Object\n 2 allMethodNames \u2192 Set\u27e6String\u27e7\n 2 confidentialMethodNames \u2192 Set\u27e6String\u27e7\n 2 methodNames \u2192 Set\u27e6String\u27e7\n 2 methods \u2192 List\u27e6MethodMirror\u27e7\n 2 onMethod(nm:String) \u2192 MethodMirror\nmodules:\n collectionsPrelude\n standardGrace\npath:\n /Users/black/Development/mg/gracelang/minigrace/stubs/mirrors.grace\npublic:\n ArgList\n MethodMirror\n Mirror\n loadDynamicModule(1)\n reflect(1)\npublicMethodTypes:\n loadDynamicModule(name:String) \u2192 Done\n reflect(obj:Unknown) \u2192 Mirror\ntypes:\n ArgList\n MethodMirror\n Mirror\n";
 
 function safeJsString (obj) {
     // Don't use request!  This function is called from within request.
@@ -2737,7 +2543,7 @@ function handleRequestException(ex, obj, methname, method, methodArgs) {
             toString: GraceCallStackToString
         });
         throw ex;
-    } else if (!obj) {
+    } else if (obj == undefined) {
         throw new GraceExceptionPacket(UninitializedVariableObject,
             new GraceString("requested method '" + methname + "' on uninitialised variable."));
     } else if (methname === 'module initialization') {
@@ -2858,7 +2664,7 @@ function dealWithNoMethod(name, target, argList) {
     if (dollarIx == -1) {
         if (target.noSuchMethodHandler) {
             return callmethod(target.noSuchMethodHandler, "apply(3)", [3],
-                new GraceString(name), argList, target);
+                new GraceString(canonicalMethodName(name)), argList, target);
         } else {
             var closeMatches = closeMatchesForMethodNamed(name, target);
             var suggestions = "";
@@ -2890,16 +2696,15 @@ function dealWithNoMethod(name, target, argList) {
 }
 
 function closeMatchesForMethodNamed(mName, obj) {
-    // the method with name mName is not in the methods of obj.
-    // Returns a list of up to 4 close matches to mName.
+    // the method with canonicalName mName is not in the methods of obj.
+    // Returns a list of up to 4 JS strings that are close matches to mName.
     var matchesFound = 0;
     var matches = [];
     try {
         // wrap everything in a try-catch, so that if there is a further
         // error, we don't recurse infinitely
-        var mm = do_import("mirrors", gracecode_mirrors);
-        var em = request(mm, "loadDynamicModule(1)", [1], new GraceString("errormessages"));
-        var gName = new GraceString(mName);
+        var em = loadDynamicModule("errormessages");
+        var gName = new GraceString(numericMethodName(mName));
         for (var candidate in obj.methods) {
             if (obj.methods.hasOwnProperty(candidate)) {
                 var gCand = new GraceString(candidate);
@@ -2911,8 +2716,7 @@ function closeMatchesForMethodNamed(mName, obj) {
                 }
             }
         }
-    } catch (ex) {
-    }
+    } catch (ex) { }
     return matches;
 }
 
@@ -3594,19 +3398,18 @@ function GraceEmptySequence() {
     return _emptySequence;
 }
 
-if (typeof(path) === "undefined") {
-    var path = { basename: function(n, ex) {
-                              var slash = n.lastIndexOf("/");
-                              if (slash >= 0) n = n.substring(slash+1);
-                              if (n.endsWith(ex)) n = n.substring(0, n.length-ex.length);
-                              return n;
-                          }
-               };
+function basename(n) {
+    var slash = n.lastIndexOf("/");
+    if (slash >= 0) n = n.substring(slash+1);
+    [".grace", ".js"].forEach( ex => {
+        if (n.endsWith(ex)) n = n.substring(0, n.length-ex.length); }
+    )
+    return n;
 }
 
 function graceModuleName(fileName) {
     var prefix = "gracecode_";
-    var base = path.basename(fileName, ".js");
+    var base = basename(fileName, ".js");
     return prefix + escapeident(base);
 }
 
@@ -3667,9 +3470,11 @@ if (typeof global !== "undefined") {
     global.assertTypeOrMsg = assertTypeOrMsg;
     global.badBlockArgs = badBlockArgs;
     global.callmethod = callmethod;
+    global.canonicalMethodName = canonicalMethodName;
     global.checkBounds = checkBounds;
     global.classType = classType;
     global.confidentialVersion = confidentialVersion;
+    global.dealWithNoMethod = dealWithNoMethod;
     global.dbg = dbg;
     global.dbgp = dbgp;
     global.do_import = do_import;
@@ -3687,13 +3492,14 @@ if (typeof global !== "undefined") {
     global.Grace_prelude = Grace_prelude;
     global.Grace_print = Grace_print;
     global.GraceBindingClass = GraceBindingClass;
-    global.GraceBoolean = GraceBoolean;
-    global.gracecode_mirrors = gracecode_mirrors;
-    // NOTE: intentionally exclude gracecode_util
-    // We use the stub JS version only on the web!
-    // For the node version, we do want util.grace
-    // global.gracecode_util = gracecode_util;
     global.GraceBlock = GraceBlock;
+    global.GraceBoolean = GraceBoolean;
+    // NOTE: intentionally exclude gracecode_util
+    // We use the JS version defined here only on the web!
+    // These global definitions are for the node version of minigrace,
+    // wehere we must _not_ pre-define util.grace, so that the grace
+    // version of the util module will be loaded.
+    // global.gracecode_util = gracecode_util;
     global.GraceDone = GraceDone;
     global.GraceException = GraceException;
     global.GraceExceptionPacket = GraceExceptionPacket;
@@ -3702,7 +3508,6 @@ if (typeof global !== "undefined") {
     global.Grace_isTrue = Grace_isTrue;
     global.GraceIterator = GraceIterator;
     global.GraceList = GraceList;
-    global.GraceMirrorMethod = GraceMirrorMethod;
     global.GraceNum = GraceNum;
     global.GraceObject = GraceObject;
     global.GracePrimitiveArray = GracePrimitiveArray;
@@ -3719,10 +3524,12 @@ if (typeof global !== "undefined") {
     global.jsTrue = jsTrue;
     global.Lineup = GraceSequence;
     global.loadDate = loadDate;
+    global.loadDynamicModule = loadDynamicModule;
     global.matchCase = matchCase;
     global.MatchErrorObject = MatchErrorObject;
     global.MinigraceErrorObject = MinigraceErrorObject;
     global.NoSuchMethodErrorObject = NoSuchMethodErrorObject;
+    global.numericMethodName = numericMethodName;
     global.nullDefinition = nullDefinition;
     global.nullFunction = nullFunction;
     global.object_isMe = object_isMe;

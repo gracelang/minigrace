@@ -2,7 +2,7 @@ import "io" as io
 import "sys" as sys
 import "util" as util
 import "ast" as ast
-import "mirrors" as mirrors
+import "mirror" as mirror
 import "errormessages" as errormessages
 import "unixFilePath" as filePath
 
@@ -14,9 +14,7 @@ def DialectError is public = Exception.refine "DialectError"
 def gctCache = emptyDictionary
 def keyCompare = { a, b -> a.key.compare(b.key) }
 
-def builtInModules =
-             [  "mirrors",
-                "unicode" ]
+def builtInModules = [ ]
 
 method isBuiltInModule(name) {
     builtInModules.contains(name)
@@ -45,7 +43,6 @@ type RangeSuggestions = {
     suggestions
 }
 
-def dynamicCModules is public = set ["mirrors", "curl", "unicode"]
 def imports = util.requiredModules
 
 method checkDialect(moduleObject) {
@@ -59,10 +56,10 @@ method checkDialect(moduleObject) {
     if ((dialectGct.at "public" ifAbsent {emptySequence}).contains "thisDialect") then {
         util.log 50 verbose "loading dialect \"{dmn}\" for checkers."
         try {
-            def dobj = mirrors.loadDynamicModule(dialectNode.path)
+            def dobj = mirror.loadModule(dialectNode.path)
             currentDialect.moduleObject := dobj
-            if (mirrors.reflect(dobj).methodNames.contains "thisDialect") then {
-                def mths = mirrors.reflect(dobj.thisDialect).methods
+            if (mirror.reflect(dobj).methodNames.contains "thisDialect") then {
+                def mths = mirror.reflect(dobj.thisDialect).methods
                 for (mths) do { m ->
                     if (m.name == "parseChecker(_)") then {
                         currentDialect.hasParseChecker := true

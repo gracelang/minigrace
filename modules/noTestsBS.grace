@@ -1,5 +1,5 @@
 import "ast" as ast
-import "mirrors" as mirror
+import "mirror" as mirror
 import "unicode" as unicode
 import "typeComparison" as tc
     // TODO: make the gracelib version of canonicalName
@@ -101,8 +101,9 @@ selfImage.whenNoMethodDo { name, args, receiver ->
     }
 }
 
-method isName (numericName) requesting (soughtName) is confidential {
-    if (numericName.startsWith(soughtName).not) then { return false }
+method isName (canonicalName) requesting (soughtName) is confidential {
+    if (canonicalName.startsWith(soughtName).not) then { return false }
+    def numericName = mirror.numericName(canonicalName);
     var ix := soughtName.size + 1
     if ( numericName.at(ix) ≠ "(" ) then { return false }
     while {

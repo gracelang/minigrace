@@ -1,5 +1,5 @@
 dialect "dialect"
-import "mirrors" as m
+import "mirror" as m
 
 inherit prelude.methods
 

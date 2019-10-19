@@ -5,7 +5,6 @@ import "identifierresolution" as identifierresolution
 import "errormessages" as errormessages
 import "io" as io
 import "lexer" as lexer
-import "mirrors" as mirrors
 import "parser" as parser
 import "sys" as sys
 import "unicode" as unicode
@@ -60,9 +59,6 @@ try {
     xmodule.checkDialect(moduleObject)
     xmodule.doParseCheck(moduleObject)
 
-    if (util.extensions.containsKey "Plugin") then {
-        mirrors.loadDynamicModule(util.extensions.at "Plugin").processAST(values)
-    }
     if (util.target == "imports") then {
         def imps = emptySet
         def vis = object {

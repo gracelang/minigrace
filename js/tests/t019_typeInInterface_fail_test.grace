@@ -1,5 +1,4 @@
 dialect "minitest"
-import "mirrors" as mirror
 
 type T = interface {
     x -> Number

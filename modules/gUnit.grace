@@ -4,7 +4,7 @@
 // Created by Andrew Black on 6/26/12.
 
 
-import "mirrors" as mirror
+import "mirror" as mirror
 import "sys" as sys
 
 type Assertion = { 
@@ -19,6 +19,7 @@ type Assertion = {
     assert(b:Procedure0) shouldntRaise(undesired:ExceptionKind) -> Done
     assert(s:Object) hasType(t:Type) -> Done
     deny(s:Object) hasType(t:Type) -> Done
+    assertType(T:Type) describes (value) -> Done
     failBecause(Message:String) -> Done
 }
    

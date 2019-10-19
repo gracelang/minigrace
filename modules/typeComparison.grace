@@ -1,5 +1,5 @@
 #pragma noTypeChecks
-import "mirrors" as mirror
+import "mirror" as mirror
 
 method methodsIn(DesiredType) missingFrom (value) -> String {
     def vMethods = mirror.reflect(value).methodNames

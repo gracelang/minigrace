@@ -1,4 +1,4 @@
-import "mirrors" as mirror
+import "mirror" as mirror
 
 def bicycle = object {
     class parts(components:Collection) {

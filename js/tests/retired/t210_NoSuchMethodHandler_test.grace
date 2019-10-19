@@ -1,5 +1,5 @@
 dialect "minitest"
-import "mirrors" as mirror
+import "mirror" as mirror
 
 def testObj = object { }
 def tom = mirror.reflect(testObj)

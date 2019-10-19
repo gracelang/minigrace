@@ -5,7 +5,7 @@ import "parser" as parser
 import "errormessages" as errormessages
 import "util" as util
 import "ast" as ast
-import "mirrors" as mirror
+import "mirror" as mirror
 import "unixFilePath" as fp
 import "sys" as sys
 

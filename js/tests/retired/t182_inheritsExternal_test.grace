@@ -1,5 +1,5 @@
 dialect "minitest"
-import "mirrors" as mirror
+import "mirror" as mirror
 import "unixFilePath" as filePath
 
 method hook { abstract }

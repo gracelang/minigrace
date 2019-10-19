@@ -1,5 +1,5 @@
 dialect "minitest"
-import "mirrors" as mirror
+import "mirror" as mirror
 import "unixFilePath" as filePath
 
 class produceT {
@@ -183,7 +183,7 @@ testSuiteNamed "nested parameterized types" with {
     test "generic type annotation on a method" by {
         assert {ana.m "greeting"}
             shouldRaise (TypeError)
-            mentioning "argument to request of `m(_)` (string greeting"
+            mentioning "argument to request of `m(_)`"
             and "does not have type T"
                 // the argument to m is declared as a T = A⟦Number⟧
     }

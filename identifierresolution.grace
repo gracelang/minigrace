@@ -4,7 +4,6 @@ import "ast" as ast
 import "util" as util
 import "xmodule" as xmodule
 import "fastDict" as map
-import "mirrors" as mirrors
 import "errormessages" as errormessages
 import "identifierKinds" as k
 

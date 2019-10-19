@@ -4,7 +4,6 @@ import "ast" as ast
 import "util" as util
 import "unixFilePath" as filePath
 import "xmodule" as xmodule
-import "mirrors" as mirrors
 import "errormessages" as errormessages
 import "identifierKinds" as k
 import "fastDict" as map
@@ -1765,7 +1764,7 @@ method runJsCode(of, glPath) {
             sys.environ.at "GRACE_MODULE_PATH" put "{libPath}:{gmp}"
         }
     }
-    def p = sys.environ.at "PATH"
+    def p = sys.execPath ++ ":" ++ sys.environ.at "PATH"
     def grace = filePath.withBase "grace"
     def executor = filePath.file (grace) onPath (p)
           otherwise { firstTries ->

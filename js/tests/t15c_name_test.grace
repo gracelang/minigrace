@@ -1,5 +1,6 @@
-import "mirrors" as m
+import "mirror" as m
 import "unicode" as u
+
 print "Hello, world!"
 print "Built-in: EnvironmentException = {EnvironmentException}"
 print "StdPrel: BasicPattern = {BasicPattern}"

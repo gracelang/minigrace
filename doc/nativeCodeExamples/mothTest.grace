@@ -1,8 +1,8 @@
 import "moth" as math
-import "mirrors" as mi
+import "mirror" as mi
 def mm = mi.reflect(math)
 print "module's methods are: "
-list.withAll(mm.methodNames).sort.do { each ->
+mm.methodNames.do { each ->
     print "    {each}"
 }
 

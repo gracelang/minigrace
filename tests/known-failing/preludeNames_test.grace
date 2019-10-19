@@ -1,5 +1,5 @@
 dialect "minitest"
-import "mirrors" as m
+import "mirror" as m
 print "prelude is '{prelude}', should be 'minitest module'"
 print "_prelude is '{_prelude}', , should be 'standardGrace module'"
 print "m is {m}"

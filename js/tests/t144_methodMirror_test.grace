@@ -1,4 +1,5 @@
-import "mirrors" as mirror
+import "mirror" as mirror
+
 def foo = object {
     method example (a)  { print "a = {a}" }
     method example (a1,a2) and (b1) {print "a1 = {a1}, a2 = {a2}, b1 = {b1}"}
