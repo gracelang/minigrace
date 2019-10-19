@@ -10,6 +10,9 @@ import "fastDict" as map
 import "shasum" as shasum
 
 def nodeTally = map.dictionary.empty
+def inBrowser = native "js" code ‹
+    result = (typeof global === "undefined" ? GraceTrue : GraceFalse);
+›
 
 var indent := ""
 var verbosity := 30
@@ -1526,8 +1529,10 @@ method initializeCodeGenerator(moduleObject) {
         util.outprint ";\"use strict\";"
     }
     def formattedModuleName = formatModname(modname);
-    util.outprint "let {formattedModuleName}_sourceFile = \"{util.filename.quoted}\";"
-    util.outprint "let {formattedModuleName}_sha256 = \"{shasum.sha256OfFile(util.filename)}\";"
+    if (! inBrowser) then {
+        util.outprint "let {formattedModuleName}_sourceFile = \"{util.filename.quoted}\";"
+        util.outprint "let {formattedModuleName}_sha256 = \"{shasum.sha256OfFile(util.filename)}\";"
+    }
     if (isPrelude.not) then {
         util.outprint "{standardPrelude} = do_import(\"standardGrace\", gracecode_standardGrace);"
     }
@@ -1618,8 +1623,10 @@ method outputModuleMetadata(moduleObject) {
     importList := importList ++ "]"
     def formattedModuleName = formatModname(modname);
     out "{formattedModuleName}.definitionModule = \"{basename(modname).quoted}\";"
-    out "{formattedModuleName}.sourceFile = {formattedModuleName}_sourceFile;"
-    out "{formattedModuleName}.sha256 = {formattedModuleName}_sha256;"
+    if (! inBrowser) then {
+        out "{formattedModuleName}.sourceFile = {formattedModuleName}_sourceFile;"
+        out "{formattedModuleName}.sha256 = {formattedModuleName}_sha256;"
+    }
     out "{formattedModuleName}.imports = {importList};"
     out "{formattedModuleName}.definitionLine = 1;"
 }
@@ -1664,7 +1671,7 @@ method compile(moduleObject, of, bt, glPath) {
         // transitive closure of moduleObject.directImports.
     xmodule.writeGctForModule(moduleObject)
     outputGct
-    outputSource
+    if (! inBrowser) then { outputSource }
 
     emitBufferedOutput
     printNodeTally
