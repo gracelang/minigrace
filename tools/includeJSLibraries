@@ -8,7 +8,7 @@ for i in $*; do
     fi
 done
 echo -e "${BACKGROUND}" > tools/jsltemp-file
-sed -e '\#// JAVASCRIPT_SRC_FILES#r tools/jsltemp-file' grace-web-editor/scripts/background.in.js > grace-web-editor/scripts/background.js
+sed '\#// JAVASCRIPT_SRC_FILES#r tools/jsltemp-file' grace-web-editor/scripts/background.in.js > grace-web-editor/scripts/background.js
 echo -e "${INDEX}" > tools/jsltemp-file
-sed -e '/JAVASCRIPT_SRC_FILES/r tools/jsltemp-file' grace-web-editor/index.in.html > grace-web-editor/index.html
+sed '/JAVASCRIPT_SRC_FILES/r tools/jsltemp-file' grace-web-editor/index.in.html > grace-web-editor/index.html
 rm -f tools/jsltemp-file
