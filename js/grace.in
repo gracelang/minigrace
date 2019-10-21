@@ -135,6 +135,7 @@ MiniGrace.prototype.trapErrors = function(func) {
 };
 // end of common code
 
+global.path = path;
 global.minigrace = {};
 global.sourceObject = null;
 global.invocationCount = 0;
@@ -143,6 +144,7 @@ global.onSelf = false;
 global.gctCache = {};
 global.originalSourceLines = {};
 global.stackFrames = [];
+global.findOnPath = findOnPath;
 
 
 MiniGrace.prototype.run = function(fileName) {
@@ -168,6 +170,7 @@ MiniGrace.prototype.run = function(fileName) {
 };
 
 function findOnPath(fn, pathArray) {
+    pathArray = pathArray || pathDirArray;
     if (fn[0] === "/") {
         if (fs.existsSync(fn)) { return fn; }
         throw new Error('file "' + fn + '" does not exist.');
@@ -193,8 +196,8 @@ function findOnPath(fn, pathArray) {
     for (ix = 0; ix < candidates.length ; ix++) {
         console.error(candidates[ix]);
     }
-    process.exit(2);
-    return "undefined";
+    throw new GraceExceptionPacket(EnvironmentExceptionObject,
+        new GraceString('module "' + fn + '" not found'));
 }
 
 function addToPathIfNecessary(dir) {
