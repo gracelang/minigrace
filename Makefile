@@ -1,6 +1,6 @@
 -include Makefile.conf
 
-MAKEFLAGS += -r -j
+MAKEFLAGS += -r
 
 ARCH := $(shell uname -s)-$(shell uname -m)
 ALPHA-BETA = ""
