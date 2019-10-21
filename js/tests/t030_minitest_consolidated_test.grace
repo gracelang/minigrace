@@ -148,10 +148,12 @@ testSuiteNamed "inheritance modifiers" with {
         assert (o.foo) shouldBe "override"
     }
     test "exclusion o" by {
-        assert {o.bar} shouldRaise (NoSuchMethod)
+        assert {o.bar} shouldRaise (NoSuchMethod) mentioning "no method bar"
     }
     test "used exclusion o" by {
-        assert {o.bad} shouldRaise (NoSuchMethod) mentioning "bad"
+        assert {o.bad} shouldRaise (NoSuchMethod) 
+            mentioning "no method bar"
+            and "Did you mean"
     }
     
     def p = subp
@@ -168,7 +170,9 @@ testSuiteNamed "inheritance modifiers" with {
         assert {p.bar} shouldRaise (NoSuchMethod)
     }
     test "used exclusion p" by {
-        assert {p.bad} shouldRaise (NoSuchMethod) mentioning "bad"
+        assert {p.bad} shouldRaise (NoSuchMethod) 
+            mentioning "no method bar"
+            and "Did you mean"
     }
 }
 
