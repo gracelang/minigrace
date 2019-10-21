@@ -3161,12 +3161,6 @@ method parse(toks) {
     tokens := toks
     while { next ; sym.isSeparator } do { }
 
-    if (sym.indent ≠ 0) then {
-        def msg = "the first line must not be indented"
-        errormessages.syntaxError (msg)
-              atRange (sym.line, 1, sym.indent)
-    }
-
     while {sym.isEof.not} do {
         def oldlength = tokens.size
         pushComments

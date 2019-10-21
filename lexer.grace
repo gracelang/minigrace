@@ -1112,6 +1112,12 @@ method isContinuationLine {
         // we are already in a continuation    }
     if (unmatchedLeftBraces > 0) then { return false }
     if (currentLineIndent ≤ priorLineIndent) then { return false }
+    if (tokens.isEmpty) then {
+        // we are at the start of the program (ignoring pragmas), and
+        // currentLineIndent > 0
+        def msg = "the first line must not be indented"
+        errormessages.syntaxError (msg) atRange (lineNumber, 1, currentLineIndent)
+    }
     if (lineSeemsToStartStatement) then {
         lexicalError("this looks like an independent statement, but the " ++
               "indentation says that it is a continuation of the previous line")
