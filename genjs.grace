@@ -8,6 +8,7 @@ import "errormessages" as errormessages
 import "identifierKinds" as k
 import "fastDict" as map
 import "shasum" as shasum
+import "buildinfo" as buildinfo
 
 def nodeTally = map.dictionary.empty
 def inBrowser = native "js" code ‹
@@ -1528,10 +1529,12 @@ method initializeCodeGenerator(moduleObject) {
     if (util.extensions.containsKey "strict") then {
         util.outprint ";\"use strict\";"
     }
-    def formattedModuleName = formatModname(modname);
+    def fmtdModName = formatModname(modname);
     if (! inBrowser) then {
-        util.outprint "let {formattedModuleName}_sourceFile = \"{util.filename.quoted}\";"
-        util.outprint "let {formattedModuleName}_sha256 = \"{shasum.sha256OfFile(util.filename)}\";"
+        util.outprint "let {fmtdModName}_sourceFile = \"{util.filename.quoted}\";"
+        util.outprint "let {fmtdModName}_sha256 = \"{shasum.sha256OfFile(util.filename)}\";"
+        util.outprint "let {fmtdModName}_minigraceRevision = \"{buildinfo.gitrevision}\";"
+        util.outprint "let {fmtdModName}_minigraceGeneration = \"{buildinfo.gitgeneration}\";"
     }
     if (isPrelude.not) then {
         util.outprint "{standardPrelude} = do_import(\"standardGrace\", gracecode_standardGrace);"
@@ -1621,14 +1624,16 @@ method outputModuleMetadata(moduleObject) {
         importList := importList ++ ", "
     }
     importList := importList ++ "]"
-    def formattedModuleName = formatModname(modname);
-    out "{formattedModuleName}.definitionModule = \"{basename(modname).quoted}\";"
+    def fmtdModName = formatModname(modname);
+    out "{fmtdModName}.definitionModule = \"{basename(modname).quoted}\";"
     if (! inBrowser) then {
-        out "{formattedModuleName}.sourceFile = {formattedModuleName}_sourceFile;"
-        out "{formattedModuleName}.sha256 = {formattedModuleName}_sha256;"
+        out "{fmtdModName}.sourceFile = {fmtdModName}_sourceFile;"
+        out "{fmtdModName}.sha256 = {fmtdModName}_sha256;"
+        out "{fmtdModName}.minigraceRevision = {fmtdModName}_minigraceRevision;"
+        out "{fmtdModName}.minigraceGeneration = {fmtdModName}_minigraceGeneration;"
     }
-    out "{formattedModuleName}.imports = {importList};"
-    out "{formattedModuleName}.definitionLine = 1;"
+    out "{fmtdModName}.imports = {importList};"
+    out "{fmtdModName}.definitionLine = 1;"
 }
 
 method outputGct {
