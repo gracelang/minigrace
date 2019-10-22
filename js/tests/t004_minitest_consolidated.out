@@ -8,6 +8,6 @@ once methods: 9 run, 0 failed, 0 errors
 types in interfaces: 4 run, 0 failed, 0 errors
 numeric ordering: 18 run, 0 failed, 0 errors
 file paths: 17 run, 0 failed, 0 errors
-sys: 7 run, 0 failed, 0 errors
+sys: 9 run, 0 failed, 0 errors
 initialization: 2 run, 0 failed, 0 errors
 many arguments are passed: 4 run, 0 failed, 0 errors

@@ -650,10 +650,15 @@ testSuite "sys" with {
     test "environ" by {
         def env:sys.Environment = sys.environ
         def os = env.at "OS"
-        assert (env.contains "OS")
-            description "Environment does not define OS"
-        assert ((os == "Darwin") || (os == "Linux"))
-            description "$(OS) = {os}"
+        if (env.contains "OS") then {       // Travis-CI does not define OS
+            assert ((os == "Darwin") || (os == "Linux"))
+                description "Environment defines an unexpected OS"
+        }
+        def ci = env.at "CONTINUOUS_INTEGRATION"
+        if (env.contains "CONTINUOUS_INTEGRATION") then {
+            assert (ci == "true")
+                description "CONTINUOUS_INTEGRATION is defined but is not true"
+        }
     }
     test "environ put" by {
         def env:sys.Environment = sys.environ
@@ -665,6 +670,19 @@ testSuite "sys" with {
         assert (env.at "Wombat_76") shouldBe "koala"
         env.remove "Wombat_76"
         deny (env.contains "Wombat_76")
+    }
+    test "type Environment describes environ" by {
+        assertType(sys.Environment) describes (sys.environ)
+    }
+    test "environ at(_)put(_) changes environment" by {
+        deny (sys.environ.contains "Wombat_76")
+            description "environment contains \"Wombat_76\""
+        sys.environ.at "Wombat_76" put "koala"
+        assert (sys.environ.contains "Wombat_76")
+            description "sys.environ does not define Wombat_76 after it was put there"
+        assert (sys.environ.at "Wombat_76") shouldBe "koala"
+        sys.environ.remove "Wombat_76"
+        deny (sys.environ.contains "Wombat_76")
     }
 }
 

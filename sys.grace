@@ -1,7 +1,8 @@
-type Environment = interface {
+type Environment = Object & interface {
     at(key:String) -> String
     at(key:String) put(value:String) -> Boolean
     contains(key:String) -> Boolean
+    remove(key:String) -> Done
 }
 
 native "js" code ‹var startTime = (new Date).getTime()/1000;›
