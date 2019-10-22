@@ -1,5 +1,5 @@
 parameterized traits: 3 run, 0 failed, 0 errors
-indentation: 8 run, 0 failed, 0 errors
+indentation: 9 run, 0 failed, 0 errors
 string lexing: 3 run, 0 failed, 0 errors
 lexLines: 2 run, 0 failed, 0 errors
 lexString: 2 run, 0 failed, 0 errors

@@ -176,6 +176,21 @@ def good = "this line is not indented"
             shouldRaise (errormessages.SyntaxError)
             mentioning "indentation must be at least 10"
     }
+
+    test "missing brace causes indentation error" by {
+        def s = ‹class annotationsNode(annotations)
+            inherit baseNode
+            def kind is public = "annonations"
+            var anns is public = annotations
+
+            method childrenDo(anAction:Procedure1) {
+                anns.do(anAction)
+            }
+        }›
+        assert { lexer.lexString(s) } shouldRaise (errormessages.SyntaxError)
+              mentioning "this looks like an independent statement"
+              and "a continuation of the previous line"
+    }
 }
 
 
