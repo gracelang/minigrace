@@ -3504,6 +3504,7 @@ if (typeof global !== "undefined") {
     // version of the util module will be loaded.
     // global.gracecode_util = gracecode_util;
     global.GraceDone = GraceDone;
+    global.GraceEmptyString = GraceEmptyString;
     global.GraceException = GraceException;
     global.GraceExceptionPacket = GraceExceptionPacket;
     global.GraceFalse = GraceFalse;
