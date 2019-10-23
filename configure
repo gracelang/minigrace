@@ -4,9 +4,6 @@ export unset CDPATH
 DISTRIB=tree
 PLATFORM=$(uname)
 PREFIX="/usr"
-LDFLAGS=
-UNICODE_LDFLAGS=
-OTHER_MODULES=
 INCLUDE_PATH='$(PREFIX)/include'
 MODULE_PATH='$(PREFIX)/lib/grace/modules'
 OBJECT_PATH='$(PREFIX)/lib/grace'
@@ -56,9 +53,6 @@ do
     then
         PREFIX=`readlink -f $2`
         shift
-    elif [ "$1" = "--static" ]
-    then
-        STATIC=y
     elif [ "$1" = "--includedir" ]
     then
         INCLUDE_PATH=`readlink -f $2` #convert the potentially relative path to absolute before storing it
@@ -76,7 +70,6 @@ do
     then
         echo "Available flags:"
         echo " --prefix <path>"
-        echo " --static {tarball only}"
         echo " --includedir <path>"
         echo " --libdir <path>"
         echo " --objectpath <path>"
@@ -136,11 +129,6 @@ ICONS=$(cd js; ls *.png | tr \\n ' ')
 
 cat <<EOT > Makefile.conf
 PREFIX ?= $PREFIX
-LDFLAGS = $LDFLAGS -lm
-UNICODE_LDFLAGS = $UNICODE_LDFLAGS
-UNICODE_MODULE = $UNICODE_MODULE
-STATIC_MODULES = $STATIC_MODULES
-OTHER_MODULES = ${OTHER_MODULES[@]}
 LIBRARY_MODULES = $LIBRARY_MODULES
 ICONS = $ICONS
 INCLUDE_PATH = $INCLUDE_PATH

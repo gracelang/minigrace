@@ -15,7 +15,6 @@ WEB_DIRECTORY ?= public_html/ide/
 DEV_WEB_DIRECTORY = public_html/dev/ide/
 
 JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
-MGFLAGS = -XnoChecks
 J1-MINIGRACE = $(JS-KG) npm-sha j1/compiler.js $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/gracelib.js
 J2-MINIGRACE = $(J1-MINIGRACE) j2/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) j2/gracelib.js genjs.grace
 JSJSFILES = gracelib.js unicodedata.js
@@ -68,9 +67,6 @@ $(ALL_LIBRARY_MODULES:%.grace=j2/%.js): j2/%.js: modules/%.grace $(J1-MINIGRACE)
 	GRACE_MODULE_PATH=modules:j1:. j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
 #	if ( ! cmp --quiet j2/dom.js js/dom.js ) ; then echo "j2/dom.js and js/dom.js are different after compiling $<!" ; cp js/dom.js j2/dom.js ; fi
 
-$(ALL_LIBRARY_MODULES:%.grace=j1/%.js): j1/%.js: modules/%.grace $(JS-KG)/minigrace-js
-	GRACE_MODULE_PATH=modules:. $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
-
 ace-code: js/ace/ace.js
 
 clean:
@@ -103,7 +99,7 @@ clean:
 	rm -fr tests/test-*.log tests/*{.c,.gct,.gso,.gcn,.js}
 	rm -fr js/tests/test-*.{log,err,out} js/tests/*{.c,.gct,.gso,.gcn,.js} js/tests/subtest/*{.gct,.js}
 	rm -f tests/retired/*{.c,.gct,.gso,.gcn,.js} js/tests/retired/*{.c,.gct,.gso,.gcn,.js}
-	cd stubs && rm -f *.gct *.gcn *.gso *.js *.c *Prelude.grace standardGrace.grace
+	rm -rf stubs
 	rm Makefile.conf
 	cd sample/dialects && $(MAKE)  clean
 	cd js/sample/graphics && $(MAKE) clean
@@ -265,14 +261,20 @@ js/minigrace-inspect: js/minigrace-js
 js/tests/gracelib.js: js/gracelib.js
 	cp -p $< $@
 
-Makefile.conf: configure stubs modules
+$(LIBRARY_MODULES:%.grace=modules/%.js): modules/%.js: j2/%.js
+	cp -p $< $@
+
+$(LIBRARY_MODULES:%.grace=j1/%.js): j1/%.js: modules/%.grace $(JS-KG)/minigrace-js
+	GRACE_MODULE_PATH=modules:. $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
+
+Makefile.conf: configure modules
 	./configure
 
 $(MGSOURCEFILES:%.grace=j1/%.js): j1/%.js: %.grace $(JS-KG)/minigrace-js
-	GRACE_MODULE_PATH=j1 $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
+	GRACE_MODULE_PATH=modules:. $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
 
 $(MGSOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace $(J1-MINIGRACE)
-	GRACE_MODULE_PATH=modules:j1 j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
+	GRACE_MODULE_PATH=modules:j1:. j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
 
 $(MGSOURCEFILES:%.grace=$(JS-KG)/%.js): $(JS-KG)
 
@@ -288,10 +290,6 @@ modules/rtobjectdraw.grace: modules/objectdraw.grace tools/make-rt-version
 
 modules/stobjectdraw.grace: modules/objectdraw.grace tools/make-st-version
 	./tools/make-st-version $< > $@
-
-# needed to produce run-time error messages from the compiler
-modules/typeComparison.js: modules/typeComparison.grace $(JS-KG)/minigrace-js
-	$(JS-KG)/minigrace-js $(VERBOSITY) --make $<
 
 npm-get-kg: $(JS-KG)
 
