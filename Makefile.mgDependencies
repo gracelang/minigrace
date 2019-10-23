@@ -38,10 +38,10 @@ j2/xmodule.js: j2/io.js j2/sys.js j2/util.js j2/ast.js j2/mirror.js j2/errormess
 j2/logo.js: j2/turtle.js j2/standardGrace.js
 j2/requireTypes.js: j2/dialect.js j2/standardGrace.js
 j2/staticTypes.js: j2/dialect.js j2/standardGrace.js
-j2/turtle.js: j2/dom.gct j2/dom.js j2/standardGrace.js
+j2/turtle.js: j2/dom.js j2/standardGrace.js
 j2/beginningStudent.js: j2/standardGrace.js
 
-j2/objectdraw.js: j2/dom.gct
-j2/rtobjectdraw.js: j2/dom.gct
-j2/stobjectdraw.js: j2/dom.gct
-j2/turtle.js: j2/dom.gct
+j2/objectdraw.js: j2/dom.js
+j2/rtobjectdraw.js: j2/dom.js
+j2/stobjectdraw.js: j2/dom.js
+j2/turtle.js: j2/dom.js
