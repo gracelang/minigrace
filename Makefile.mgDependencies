@@ -42,6 +42,7 @@ j2/turtle.js: j2/dom.js j2/standardGrace.js
 j2/beginningStudent.js: j2/standardGrace.js
 
 j2/objectdraw.js: j2/dom.js
-j2/rtobjectdraw.js: j2/dom.js
-j2/stobjectdraw.js: j2/dom.js
+j2/rtobjectdraw.js: j2/dom.js j2/requireTypes.js
+j2/stobjectdraw.js: j2/dom.js j2/staticTypes.js
 j2/turtle.js: j2/dom.js
+j2/animation.js: j2/timer.js
