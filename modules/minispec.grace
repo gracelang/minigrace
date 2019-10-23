@@ -1,6 +1,17 @@
 import "gUnit" as gu
 
 inherit prelude.methods exclude methods
+use gu.assertion        // makes available all the assert ... methods
+
+method countOneAssertion {
+    currentResult.countOneAssertion
+}
+
+var currentResult := object {
+    method countOneAssertion {
+        print "countOneAssertion requested on dummy result"
+    }
+}
 
 def MinispecError = prelude.ProgrammingError.refine "MinispecError"
 type Block = prelude.Procedure0
@@ -19,67 +30,58 @@ method numberOfErrorsToRerun:=(n:Number) {
     gu.numberOfErrorsToRerun := n
 }
 
-def mtAssertion = object {
-    inherit gu.assertion
-    var currentResult is writable := object {
-        method countOneAssertion {
-            print "countOneAssertion requested on dummy result"
-        }
-    }
-
-    method countOneAssertion {
-        currentResult.countOneAssertion
-    }
-}
-
 method expect (cond:Boolean) orSay (complaint:String) {
-    mtAssertion.assert(cond) description (complaint)
+    assert(cond) description (complaint)
 }
 
 method expect(s1:Object) toBe (s2:Object) {
-    mtAssertion.assert(s1) shouldBe (s2)
+    assert(s1) shouldBe (s2)
 }
 
 method expect(s1:Object) toBe (s2:Object) orSay (complaint) {
-    mtAssertion.assert(s1 == s2)
+    assert(s1 == s2)
         description (complaint)
 }
 
 method expect(s1:Object) notToBe (s2:Object) {
-    mtAssertion.assert(s1) shouldntBe (s2)
+    assert(s1) shouldntBe (s2)
 }
 
 method expect(s1:Object) notToBe (s2:Object) orSay (complaint) {
-    mtAssertion.assert(s1 ≠ s2)
+    assert(s1 ≠ s2)
         description (complaint)
 }
 
 method expect(n1:Number) toBe (n2:Number) within (epsilon:Number) {
-    mtAssertion.assert(n1) shouldEqual (n2) within (epsilon)
+    assert(n1) shouldEqual (n2) within (epsilon)
 }
 
 method expect(b:Block) toRaise (desired:prelude.ExceptionKind) {
-    mtAssertion.assert(b) shouldRaise (desired)
+    assert(b) shouldRaise (desired)
 }
 
-method expect(b:Block) toRaise (desired:prelude.ExceptionKind) mentioning (error:String) {
-    mtAssertion.assert(b) shouldRaise (desired) mentioning (error)
+method expect(b:Block) toRaise (desired:prelude.ExceptionKind) mentioning (error) {
+    assert(b) shouldRaise (desired) mentioning (error)
+}
+
+method expect(b:Block) toRaise (desired:prelude.ExceptionKind) mentioning (err1) and (err2) {
+    assert(b) shouldRaise (desired) mentioning (err1) and (err2)
 }
 
 method expect(b:Block) notToRaise (undesired:prelude.ExceptionKind) {
-    mtAssertion.assert(b) shouldntRaise (undesired)
+    assert(b) shouldntRaise (undesired)
 }
 
 method expect(s:Unknown) toHaveType (desired:Type) {
-    mtAssertion.assert(s) hasType (desired)
+    assert(s) hasType (desired)
 }
 
 method expect(s:Unknown) notToHaveType (undesired:Type) {
-    mtAssertion.deny(s) hasType (undesired)
+    deny(s) hasType (undesired)
 }
 
 method failAndSay(reason) {
-    mtAssertion.assert(false) description(reason)
+    assert(false) description(reason)
 }
 
 method describe (name:String) with (block:Block) {
@@ -100,6 +102,7 @@ method describe (name:String) with (block:Block) {
 method doNotRerunErrors { errorsToBeRerun := false }
 method doRerunErrors { errorsToBeRerun := true }
 
+method exit { gu.exit }
 
 method specify (name:String) by (block:Block) {
     if (nullSuite == currentTestSuite) then {
@@ -115,29 +118,27 @@ method specify (name:String) by (block:Block) {
     }
 }
 
-method testCaseNamed(name') setupIn(setupBlock) asTestNumber(number) -> gu.TestCase
+class testCaseNamed(name') setupIn(setupBlock) asTestNumber(number) -> gu.TestCase
         is confidential {
-    object {
-        inherit gu.testCaseNamed(name') alias guSetup = setup
+    inherit gu.testCaseNamed(name') alias guSetup = setup
 
-        method setup { 
-            guSetup
-            currentTestBlock := number
-            testNumberToRun := 0
-            setupBlock.apply
-        }
+    method setup {
+        guSetup
+        currentTestBlock := number
+        testNumberToRun := 0
+        setupBlock.apply
+    }
 
-        method teardown {
-            currentTestBlock := 0
-        }
-        
-        method currentResult:= (r) is override {
-            mtAssertion.currentResult := r
-        }
-        
-        method runTest is override {
-            // for minispec, the test is run in setup
-        }
+    method teardown {
+        currentTestBlock := 0
+    }
+
+    method currentResult:= (r) is override {
+        outer.currentResult := r
+    }
+
+    method runTest is override {
+        // for minispec, the test is run in setup
     }
 }
 
