@@ -10,11 +10,6 @@ TESTDIR=`dirname $TESTDIR`
 # echo TESTDIR = $TESTDIR
 # echo num args = $#
 
-if [ "$2" ]
-then
-    TESTDIR="$2"
-fi
-
 # somewhat hacky way to make the tograce target work without too many changes
 
 TYPE="normal"
@@ -37,8 +32,13 @@ then
     echo "  - compiler to test" >&2
     echo "  - directory containing tests (defaults to $TESTDIR)" >&2
     echo "  - command to execute compiled code (defaults to $EXECUTOR)" >&2
-    echo '  - <test file name prefix>*  ; if omitted, all tests in directory'
+    echo '  - <test file name prefix>*  ; if omitted, all tests in directory'  >&2
     exit 1
+fi
+
+if [ "$2" ]
+then
+    TESTDIR="$2"
 fi
 
 COMPILER=`absolutePath $1`
@@ -46,13 +46,24 @@ COMPILER=`absolutePath $1`
 shift
 shift
 shift
+
 cd "$TESTDIR"
-# echo "now in `pwd`"
+
+rm -f test-*.{err,out,log}
+# clear out old logs
+
+echo "Beginning test run at $(date)" > test.log
+echo "    in `pwd`" >> test.log
 
 
 if [ $# -gt 0 ]
 then
-    tests=( "$@" )
+    tests=""
+    while [ $# -gt 0 ]
+    do
+        tests=( $tests "$1"*_test.grace )
+        shift
+    done
 else
     tests=( *_test.grace )
 fi
@@ -73,7 +84,6 @@ NUM_PASS=0
 NUM_UNEXPECTED_SUCCESS=0
 NUM_WRONG_OUTPUT=0
 NUM_COMPILE_ERROR=0
-echo "Beginning test run at $(date)" > test.log
 for tcase in "${tests[@]}"
 do
     if ! [ -e "$tcase" ]
@@ -83,7 +93,7 @@ do
     if [ "$TYPE" = "tograce" ]
     then
         # hack to allow tests that test for compilation failure
-        if ! $COMPILER --target grace --dir ../../js $tcase > tg_$tcase 2>/dev/null
+        if ! $COMPILER --target grace --dir .. $tcase > tg_$tcase 2>/dev/null
         then
             if echo $tcase | grep -q _fail
             then
@@ -99,27 +109,37 @@ do
         fi
         tcase=tg_$tcase
     fi
-    echo ================================================== >> test-$$.log
-    echo Beginning case "$tcase"... >>test-$$.log
+    echo Beginning compiling case "$tcase"... > test-$$.log
     NUM_TESTS=$((NUM_TESTS + 1))
     FAILED="true"
     if [ "${tcase%fail_test.grace}" = "$tcase" ]
 #   the %fail_test.grace DELETES a trailing fail_test.grace, so we get here
 #   if the test name does NOT end with fail_test
     then
-        COMMAND="GRACE_MODULE_PATH=../../j2:.. $COMPILER --verbose 60 --target js --dir ../../j2 $tcase"
-#        echo COMMAND = $COMMAND
-        if eval "$COMMAND" > test-$$.log 2>&1
+        rm -f ${tcase%%.*}.{js,gct} ../${tcase%%.*}.{js,gct}
+        COMMAND="GRACE_MODULE_PATH=../../j2:../..:../../modules $COMPILER --verbose 60 --target js --dir . --make $tcase"
+        echo compilation cmd = $COMMAND > test-$$.log
+        if eval "$COMMAND" >> test-$$.log 2>&1
         then
             execname="${tcase%%.*}"
-            GRACE_MODULE_PATH=../../j2:.. $EXECUTOR "./$execname" > test-$$.out 2> test-$$.err
-            if [ ! -s test-$$.err ]
+#   The %%.* _deletes_ the longest . extension.
+            COMMAND="GRACE_MODULE_PATH=../../j2:..:. $EXECUTOR\"./$execname\""
+            echo execution cmd for case "$tcase" = $COMMAND > test-$$.log
+            eval $COMMAND >> test-$$.out 2> test-$$.err
+            exitCode=$?
+            if [ -s test-$$.err ]   # if file exists and has size > 0
             then
-                /bin/rm -f test-$$.err
-            else
                 cat test-$$.err
+            else
+                /bin/rm -f test-$$.err
             fi
-            if diff test-$$.out ${tcase%_test.grace}.out
+            if (if [ $exitCode -eq 10 ]; then true;
+                else
+                    if [ $exitCode -ne 0 ];
+                    then false;
+                    else diff test-$$.out ${tcase%_test.grace}.out
+                    fi
+                fi)
             then
                 NUM_PASS=$((NUM_PASS + 1))
 #                echo "${NUM_TESTS} PASS: $tcase"
@@ -129,8 +149,14 @@ do
             else
                 NUM_WRONG_OUTPUT=$((NUM_WRONG_OUTPUT + 1))
                 echo ""
-                echo "${NUM_TESTS} ERROR: $tcase produced wrong output"
-                fail "${tcase}: wrong output"
+                if [ $exitCode -ne 0 ]
+                then
+                    echo "${NUM_TESTS} ERROR: $tcase exited with code $exitCode"
+                    fail "${tcase}: exit $exitCode"
+                else
+                    echo "${NUM_TESTS} ERROR: $tcase produced wrong output"
+                    fail "${tcase}: wrong output"
+                fi
             fi
         else
             NUM_COMPILE_ERROR=$((NUM_COMPILE_ERROR + 1))
@@ -140,8 +166,9 @@ do
         fi
     else
 #   this is a _fail_test
-        COMMAND="GRACE_MODULE_PATH=..:../../j2 $COMPILER --make --native $tcase"
-        if eval "$COMMAND" > test-$$.log 2>&1
+        COMMAND="GRACE_MODULE_PATH=..:../../j2 $COMPILER --make --dir . $tcase"
+        echo compiling failing test $tcase ... > test-$$.log
+        if eval "$COMMAND" >> test-$$.log 2>&1
         then
             echo "${NUM_TESTS} ERROR: $tcase should have failed to compile"
             NUM_UNEXPECTED_SUCCESS=$((NUM_UNEXPECTED_SUCCESS + 1))
@@ -165,18 +192,22 @@ do
         then
             echo "Got output:" >> test.log
             cat test-$$.out >> test.log
-            echo "Expected output:" >> test.log
-            cat ${tcase%_test.grace}.out >> test.log
+            if [ -e ${tcase%_test.grace}.out ]
+            then
+                echo "Expected output:" >> test.log
+                cat ${tcase%_test.grace}.out >> test.log
+            fi
         fi
     fi
-    rm -f test-$$.log test-$$.out test-$$.err ${tcase%%.*} *.bc *.ll *.gco *.s *.gcn *.c *.java *.class *_test.gct
+    rm -f test-$$.out test-$$.err
     if [ "$TYPE" = "tograce" ]
     then
         rm -f tg_t*
     fi
 done
 
-echo
+echo | tee -a test.log
+echo "===================== Test Summary =====================" | tee -a test.log
 echo $NUM_PASS/$NUM_TESTS passed. | tee -a test.log
 if [ $NUM_UNEXPECTED_SUCCESS -ne "0" ]
 then

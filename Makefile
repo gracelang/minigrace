@@ -96,8 +96,8 @@ clean:
 	if [ -e grace-web-editor ] ; then if ( cd grace-web-editor; git diff-index --quiet HEAD ) ; then rm -fr grace-web-editor ; fi ; fi
 #       remove the grace-web-editor directory only if it exists and is clean
 	rm -fr selftest
-	rm -fr tests/test-*.log tests/*{.c,.gct,.gso,.gcn,.js}
-	rm -fr js/tests/test-*.{log,err,out} js/tests/*{.c,.gct,.gso,.gcn,.js} js/tests/subtest/*{.gct,.js}
+	rm -fr tests/test*.log tests/*{.c,.gct,.gso,.gcn,.js}
+	rm -fr js/tests/test*.{log,err,out} js/tests/*{.c,.gct,.gso,.gcn,.js} js/tests/subtest/*{.gct,.js}
 	rm -f tests/retired/*{.c,.gct,.gso,.gcn,.js} js/tests/retired/*{.c,.gct,.gso,.gcn,.js}
 	rm -rf stubs
 	rm Makefile.conf
@@ -283,7 +283,7 @@ minigrace: $(J2-MINIGRACE)
 minigrace.env: minigrace $(JSRUNNERS:%=j2/%) $(OBJECTDRAW:%.grace=modules/%.grace)
 
 module.test: minigrace.env $(TYPE_DIALECTS:%=j2/%.js)
-	modules/tests/harness-js-js j2/minigrace-js
+	modules/tests/harness-js j2/minigrace-js modules/tests "" $(TESTS)
 
 modules/rtobjectdraw.grace: modules/objectdraw.grace tools/make-rt-version
 	./tools/make-rt-version $< > $@

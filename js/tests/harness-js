@@ -48,8 +48,12 @@ shift
 shift
 
 cd "$TESTDIR"
-echo "Beginning test run at $(date)" > test.js.log
-echo "    in `pwd`" >> test.js.log
+
+rm -f test-*.{err,out,log}
+# clear out old logs
+
+echo "Beginning test run at $(date)" > test.log
+echo "    in `pwd`" >> test.log
 
 
 if [ $# -gt 0 ]
@@ -100,8 +104,7 @@ do
         fi
         tcase=tg_$tcase
     fi
-    echo ================================================== >> test-$$.log
-    echo Beginning case "$tcase"... >>test-$$.log
+    echo Beginning compiling case "$tcase"... > test-$$.log
     NUM_TESTS=$((NUM_TESTS + 1))
     FAILED="true"
     if [ "${tcase%fail_test.grace}" = "$tcase" ]
@@ -116,7 +119,7 @@ do
             execname="${tcase%%.*}"
 #   The %%.* _deletes_ the longest . extension.
             COMMAND="GRACE_MODULE_PATH=../../j2:../../modules:. $EXECUTOR\"./$execname\""
-            echo execution cmd = $COMMAND > test-$$.log
+            echo execution cmd for case "$tcase" = $COMMAND > test-$$.log
             eval $COMMAND >> test-$$.out 2> test-$$.err
             exitCode=$?
             if [ -s test-$$.err ]   # if file exists and has size > 0
@@ -125,8 +128,13 @@ do
             else
                 /bin/rm -f test-$$.err
             fi
-            if ((if [ $exitCode -eq 10 ]; then true; else false; fi) || \
-                diff test-$$.out ${tcase%_test.grace}.out)
+            if (if [ $exitCode -eq 10 ]; then true;
+                else
+                    if [ $exitCode -ne 0 ];
+                    then false;
+                    else diff test-$$.out ${tcase%_test.grace}.out
+                    fi
+                fi)
             then
                 NUM_PASS=$((NUM_PASS + 1))
 #                echo "${NUM_TESTS} PASS: $tcase"
@@ -136,8 +144,14 @@ do
             else
                 NUM_WRONG_OUTPUT=$((NUM_WRONG_OUTPUT + 1))
                 echo ""
-                echo "${NUM_TESTS} ERROR: $tcase produced wrong output"
-                fail "${tcase}: wrong output"
+                if [ $exitCode -ne 0 ]
+                then
+                    echo "${NUM_TESTS} ERROR: $tcase exited with code $exitCode"
+                    fail "${tcase}: exit $exitCode"
+                else
+                    echo "${NUM_TESTS} ERROR: $tcase produced wrong output"
+                    fail "${tcase}: wrong output"
+                fi
             fi
         else
             NUM_COMPILE_ERROR=$((NUM_COMPILE_ERROR + 1))
@@ -147,8 +161,9 @@ do
         fi
     else
 #   this is a _fail_test
-        COMMAND="GRACE_MODULE_PATH=../../j2:../../modules $COMPILER --make --target js --dir . --noexec $tcase"
-        if eval "$COMMAND" > test-$$.log 2>&1
+        COMMAND="GRACE_MODULE_PATH=../../j2:../../modules $COMPILER --make --dir . $tcase"
+        echo compiling failing test $tcase ... > test-$$.log
+        if eval "$COMMAND" >> test-$$.log 2>&1
         then
             echo "${NUM_TESTS} ERROR: $tcase should have failed to compile"
             NUM_UNEXPECTED_SUCCESS=$((NUM_UNEXPECTED_SUCCESS + 1))
@@ -162,40 +177,44 @@ do
     fi
     if [ "$FAILED" = "true" ]
     then
-        cat test-$$.log >> test.js.log
+        cat test-$$.log >> test.log
         if [ -e test-$$.err ]
         then
-            echo "Errors:" >> test.js.log
-            cat test-$$.err >> test.js.log
+            echo "Errors:" >> test.log
+            cat test-$$.err >> test.log
         fi
         if [ -e test-$$.out ]
         then
-            echo "Got output:" >> test.js.log
-            cat test-$$.out >> test.js.log
-            echo "Expected output:" >> test.js.log
-            cat ${tcase%_test.grace}.out >> test.js.log
+            echo "Got output:" >> test.log
+            cat test-$$.out >> test.log
+            if [ -e ${tcase%_test.grace}.out ]
+            then
+                echo "Expected output:" >> test.log
+                cat ${tcase%_test.grace}.out >> test.log
+            fi
         fi
     fi
-    rm -f test-$$.log test-$$.out test-$$.err
+    rm -f test-$$.out test-$$.err
     if [ "$TYPE" = "tograce" ]
     then
         rm -f tg_t*
     fi
 done
 
-echo
-echo $NUM_PASS/$NUM_TESTS passed. | tee -a test.js.log
+echo | tee -a test.log
+echo "===================== Test Summary =====================" | tee -a test.log
+echo $NUM_PASS/$NUM_TESTS passed. | tee -a test.log
 if [ $NUM_UNEXPECTED_SUCCESS -ne "0" ]
 then
-    echo "$NUM_UNEXPECTED_SUCCESS tests compiled that shouldn't have." | tee -a test.js.log
+    echo "$NUM_UNEXPECTED_SUCCESS tests compiled that shouldn't have." | tee -a test.log
 fi
 if [ $NUM_WRONG_OUTPUT -ne "0" ]
 then
-    echo "$NUM_WRONG_OUTPUT tests compiled but produced the wrong output." | tee -a test.js.log
+    echo "$NUM_WRONG_OUTPUT tests compiled but produced the wrong output." | tee -a test.log
 fi
 if [ $NUM_COMPILE_ERROR -ne "0" ]
 then
-    echo "$NUM_COMPILE_ERROR tests did not compile but should have." | tee -a test.js.log
+    echo "$NUM_COMPILE_ERROR tests did not compile but should have." | tee -a test.log
 fi
 NUM_FAIL=$((NUM_TESTS - NUM_PASS))
 if [ $NUM_FAIL -gt 0 ]
