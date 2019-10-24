@@ -190,3 +190,19 @@ testSuiteNamed "RHS of typedec #289" with {
               mentioning "a type declaration must have a type expression"
     }
 }
+
+testSuite "module name ending with .grace #248" with {
+    test "import wih .grace" by {
+        assert { astNode "import" from ‹import "mirror.grace" as m› }
+              shouldRaise (em.SyntaxError)
+              mentioning "import" and "must not end with \".grace\""
+    }
+    test "dialect wih .grace" by {
+        assert { astNode "dialect" from ‹dialect "objectdraw.grace"› }
+              shouldRaise (em.SyntaxError)
+              mentioning "dialect" and "must not end with \".grace\""
+    }
+}
+
+exit
+

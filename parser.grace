@@ -2086,8 +2086,13 @@ method dodialect {
                 "of the dialect in quotes after the word 'dialect'.")
                 atPosition(lastToken.line, errorPos)withSuggestion(suggestion)
         }
-        def dn = ast.dialectNode.fromToken(sym).setPositionFrom(dialectToken)
-        next
+        pushString
+        def p = values.pop
+        def dn = ast.dialectNode.fromStringNode(p).setPositionFrom(dialectToken)
+        if (dn.value.endsWith ".grace") then {
+            errormessages.syntaxError "the name of the dialect must not end with \".grace\""
+                  atRange(p)
+        }
         if (values.isEmpty) then {
             if (moduleObject.theDialect.line == 0) then {
                 moduleObject.theDialect := dn
@@ -2703,6 +2708,10 @@ method doimport {
         }
         pushString
         def p = values.pop
+        if (p.value.endsWith ".grace") then {
+            errormessages.syntaxError("the name of the imported module must not end with \".grace\"")
+                atRange(p)
+        }
         if (! acceptKeyword "as") then {
             var suggestion := errormessages.suggestion.new
             if ((sym.isIdentifier) && (sym.line == lastToken.line)) then {
