@@ -130,7 +130,6 @@
     Target:
     <select id="mode" onchange="modeswitch()">
         <option value="js">JavaScript</option>
-        <option value="c">C</option>
         <option value="lex">Tokens</option>
         <option value="parse">AST</option>
         <option value="grace">Grace</option>
@@ -138,11 +137,6 @@
     </select>
     Module name: <input type="text" value="main" id="modname" size="16"
     onchange='this.selected.changeName(this.value);'/>
-    Visibility:
-    <select id="defaultVisibility" onchange="selectvisibility();">
-        <option value="public">All accessible</option>
-        <option value="standard">Standard</option>
-    </select>
     <span style="font-size: smaller;">
     minigrace-js
     <!--[!SH[echo "v$(tools/calculate-version HEAD)"]!]-->
