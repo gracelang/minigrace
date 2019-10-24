@@ -145,6 +145,19 @@ method maybeListMap(n, b) ancestors(ac) is confidential {
         n
     }
 }
+method withoutLeadingComponents(path) {
+    // strips any leading components from path, up to the final /.
+    // If there is no /, returns path
+    var bnm := ""
+    for (path) do { c->
+        if (c == "/") then {
+            bnm := ""
+        } else {
+            bnm := bnm ++ c
+        }
+    }
+    bnm
+}
 
 def ancestorChain is public = object {
     class empty {
@@ -2754,17 +2767,7 @@ def importNode is public = object {
         if (hasAnnotation "public") then { return true }
         hasAnnotation "readable"
     }
-    method moduleName {
-        var bnm := ""
-        for (path) do {c->
-            if (c == "/") then {
-                bnm := ""
-            } else {
-                bnm := bnm ++ c
-            }
-        }
-        bnm
-    }
+    once method moduleName { withoutLeadingComponents(path) }
     method isWritable { false }
     method isReadable { isPublic }
     method declarationKindWithAncestors(ac) { k.importdec }
