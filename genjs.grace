@@ -740,8 +740,7 @@ method compilemethodnode(o) in (objref) {
     def oldInitializedVars = saveInitializedVars
     clearLineNumber(o.line)
     o.register := uidWithPrefix "func"
-    if ((o.body.size == 1) &&
-            {o.body.first.isIdentifier} && {o.hasTypeParams.not}) then {
+    if (isSimpleAccessor(o)) then {
         compileSimpleAccessor(o)
     } elseif { o.isAbstract } then {
         compileDummyMethod(o, objref, "abstract")
@@ -753,6 +752,16 @@ method compilemethodnode(o) in (objref) {
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
     restoreInitializedVars(oldInitializedVars)
+}
+
+method isSimpleAccessor(o) {
+    if (o.body.size ≠ 1) then { return false }
+    if (o.isOnceMethod) then { return false }
+    if (o.hasTypeParams) then { return false }
+    if (o.hasParams) then { return false }
+    if (ast.unknownType ≠ o.decType) then { return false }
+        // to ensure that we compile a type check for the method's return type
+    o.body.first.isIdentifier
 }
 
 method compileSimpleAccessor(o) {

@@ -2,27 +2,43 @@ dialect "minitest"
 import "mirror" as mirror
 import "unixFilePath" as filePath
 
+
+var simpleVar := "initial value"
+            // if these declarations are in an inner object, readVar
+            // will not be compiled as a simple accessor
+
+once method readVar {
+    simpleVar   // in an inner obejct, simpleVar will be a reader method,
+                // so that it can be overridden
+}
+method setSimpleVar(nu) {
+    simpleVar := nu
+}
+
 class produceT {
     def nums = 1..10
     var executed is public := false
+    var threeVar := 3
 
     once method sum {
         executed := true
         nums.fold{a, b -> a + b} startingWith 0
     }
-
     once method tabulate(a, b, c) {
         executed := true
         return a * b * c
     }
-
     once method concatenate(a, b, c) {
         executed := true
         return "" ++ a ++ b ++ c
     }
+    method three -> String {
+        threeVar
+    }
+    method numberId (n:Number) { n }
 }
 
-testSuiteNamed "once methods" with {
+testSuiteNamed "once methods and accessor methods" with {
     def t1 = produceT
     test "sum of 1..10 is 55" by {
         assert (t1.sum) shouldBe 55
@@ -37,7 +53,7 @@ testSuiteNamed "once methods" with {
         assert (t2.sum) shouldBe 55
         deny (t2.executed) description "t2.sum executed again"
     }
-    
+
     test "exceptions are not memoized" by {
         def o = object {
             def nums = 1..10
@@ -71,7 +87,7 @@ testSuiteNamed "once methods" with {
         deny (t1.executed) description "t1 executed for tabulate(3, 3, 2)"
     }
 
-    test "3 parameter nono-commutative method" by {
+    test "3 parameter non-commutative method" by {
         assert (t1.concatenate(1, 2, 3)) shouldBe "123"
         assert (t1.executed) description "t1.concatenate(3, 2, 1) didn't execute"
         t1.executed := false
@@ -80,6 +96,21 @@ testSuiteNamed "once methods" with {
         t1.executed := false
         assert (t1.concatenate(3, 2, 1)) shouldBe "321"
         deny (t1.executed) description "t1.concatenate(3, 2, 1) wasn't cached"
+    }
+
+    test "accessors check types when provided" by {
+        assert {t1.three} shouldRaise (TypeError)
+    }
+
+    test "once methods memoize accessors" by {
+        assert (readVar) shouldBe "initial value"
+        setSimpleVar ("new value")
+        assert (readVar) shouldBe "initial value"    //  readVar memoized the old answer
+    }
+
+    test "argument type check is performed" by {
+        assert {t1.numberId "wrong"} shouldRaise (TypeError)
+              mentioning "argument to request of `numberId(_)`"
     }
 }
 
