@@ -19,7 +19,7 @@ testSuiteNamed "option tests" with {
         assert (e.valueIfEmpty { 42 }) shouldBe 42
     }
     test "empty.do does nothing" by {
-        e.do { failBecause "empty.do executes its block " }
+        e.do { _ → failBecause "empty.do executes its block " }
         assert true
     }
     test "empty ifFull … ifEmpty" by {
@@ -179,7 +179,7 @@ testSuiteNamed "sequence tests" with {
     
     test "test Option doSeparatedBy empty" by {
         var f := "nothing"
-        empty.do { failBecause "do did when Option is empty" }
+        empty.do { _ → failBecause "do did when Option is empty" }
             separatedBy { f := "kilroy" }
         assert (f) shouldBe ("nothing")
     }
