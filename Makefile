@@ -280,7 +280,7 @@ $(MGSOURCEFILES:%.grace=$(JS-KG)/%.js): $(JS-KG)
 
 minigrace: $(J2-MINIGRACE)
 
-minigrace.env: minigrace $(JSRUNNERS:%=j2/%) $(OBJECTDRAW:%.grace=modules/%.grace)
+minigrace.env: minigrace $(JSRUNNERS:%=j2/%) $(OBJECTDRAW:%.grace=modules/%.grace) $(ALL_LIBRARY_MODULES:%.grace=j2/%.js)
 
 module.test: minigrace.env $(TYPE_DIALECTS:%=j2/%.js)
 	modules/tests/harness-js j2/minigrace-js modules/tests "" $(TESTS)
