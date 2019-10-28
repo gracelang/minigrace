@@ -1,29 +1,36 @@
-type Mirror = Object & interface {
-    methods → Sequence⟦MethodMirror⟧    // mirrors on all of subject's methods
-    methodNames → Sequence⟦String⟧      // the names of the subject's non-confidential methods
-    confidentialMethodNames → Sequence⟦String⟧  // the names of the subject's confidential methods
-    allMethodNames → Sequence⟦String⟧   // the names of all of the subject's methods
-    onMethod(nm:String) → MethodMirror // a mirror on the method with name nm
-    ilk → String        // a uid for the subject's object constructor
-    definitionModule → String   // the name of the module containing the subject's constructor
-    definitionLine → String     // the line number of the start of the subject's constructor
-    subject → Object            // the object on which I reflect
-    whenNoMethodDo(action:Function3) →  Done
-        // if subject is sent a request named nm, and there is no method nm,
-        // action will be applied to the arguments subject and nm.
-}
+dialect "none"
+import "intrinsic" as intrinsic
 
-type MethodMirror = Object & interface {
-     name → String
-     numberOfParams → Number
-     partCount → Number
-     paramCounts → Sequence⟦Number⟧
-     paramNames → Sequence⟦String⟧
-     requestWithArgs(args:Sequence⟦Object⟧) → Unknown
-     isConfidential → Boolean
-     isPublic → Boolean
-}
+// type Mirror = Object & interface {
+//     methods → Sequence⟦MethodMirror⟧    // mirrors on all of subject's methods
+//     methodNames → Sequence⟦String⟧      // the names of the subject's non-confidential methods
+//     confidentialMethodNames → Sequence⟦String⟧  // the names of the subject's confidential methods
+//     allMethodNames → Sequence⟦String⟧   // the names of all of the subject's methods
+//     onMethod(nm:String) → MethodMirror // a mirror on the method with name nm
+//     ilk → String        // a uid for the subject's object constructor
+//     definitionModule → String   // the name of the module containing the subject's constructor
+//     definitionLine → String     // the line number of the start of the subject's constructor
+//     subject → Object            // the object on which I reflect
+//     whenNoMethodDo(action:Function3) →  Done
+//         // if subject is sent a request named nm, and there is no method nm,
+//         // action will be applied to the arguments subject and nm.
+// }
 
+// type MethodMirror = Object & interface {
+//      name → String
+//      numberOfParams → Number
+//      partCount → Number
+//      paramCounts → Sequence⟦Number⟧
+//      paramNames → Sequence⟦String⟧
+//      requestWithArgs(args:Sequence⟦Object⟧) → Unknown
+//      isConfidential → Boolean
+//      isPublic → Boolean
+// }
+
+type Mirror = Unknown
+type Sequence⟦T⟧ = Unknown
+type MethodMirror = Unknown
+type Function3 = Unknown
 
 def MMhash = "MM".hash
 def OMhash = "OM".hash
@@ -99,19 +106,19 @@ class reflect(subj) → Mirror {
         native "js" code ‹this.data.subject.noSuchMethodHandler = var_handlerBlock;›
     }
     method ilk → String {
-        native "js" code ‹return new GraceString(this.classUid);›
+        native "js" code ‹return new GraceString(this.data.subject.classUid);›
     }
     method definitionModule → String {
-        native "js" code ‹return new GraceString(this.definitionModule);›
+        native "js" code ‹return new GraceString(this.data.subject.definitionModule);›
     }
     method definitionLine → Number {
-        native "js" code ‹return new GraceNum(this.definitionLine);›
+        native "js" code ‹return new GraceNum(this.data.subject.definitionLine);›
     }
     method hash {
         def subjectHash = native "js" code ‹
             result = selfRequest(this.data.subject, "myIdentityHash");
-        ›
-        hashCombine(OMhash, subjectHash);
+        ›   // in native code so that we can make it a _self_ request
+        intrinsic.hashCombine(OMhash, subjectHash);
     }
     method == (other) {
         native "js" code ‹
@@ -229,7 +236,8 @@ class methodMirror(theSubject, aMethodName) {
         def subjectHash = native "js" code ‹
             result = selfRequest(this.data.subject, "myIdentityHash");
         ›
-        hashCombine(MMhash, hashCombine(name.hash, subjectHash));
+        intrinsic.hashCombine(MMhash,
+              intrinsic.hashCombine(name.hash, subjectHash));
     }
 
     method == (other) {

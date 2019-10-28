@@ -1,0 +1,115 @@
+dialect "none"
+import "intrinsic" as intrinsic
+import "basicTypesBundle" as basicTypesBundle
+import "collectionsPrelude" as collections is public
+import "patternsBundle" as patternsBundle
+
+trait open {
+    use basicTypesBundle.open
+    use patternsBundle.open
+
+    method do(action)while(condition) {
+        while {
+            action.apply
+            condition.apply
+        } do { }
+    }
+
+    method repeat(n)times(action) {
+        if (n.isInteger.not) then {
+            ProgrammingError.raise "you can't repeat {n} times, because {n} is not an integer"
+        }
+        var ix := n
+        while {ix > 0} do {
+            ix := ix - 1
+            action.apply
+        }
+    }
+
+    method for (cs) and (ds) do (action) {
+        def dIter = ds.iterator
+        cs.do { c ->
+            if (dIter.hasNext) then {
+                action.apply(c, dIter.next)
+            } else {
+                return
+            }
+        }
+    }
+
+    method min(a, b) {
+        if (a < b) then { a } else { b }
+    }
+
+    method max(a, b) {
+        if (a > b) then { a } else { b }
+    }
+
+    method valueOf (nullaryBlock) {
+        nullaryBlock.apply
+    }
+
+    trait singleton {
+        use BasicPattern
+        use identityEquality
+        method matches(other) { self.isMe(other) }
+    }
+
+    trait singleton (nameString) {
+        use singleton
+        method asString { nameString }
+    }
+
+    once method pi { π }
+
+    method hashCombine(a, b) {
+        native "c" code ‹
+            int a = (int)(args[0]->data);
+            int b = (int)(args[1]->data);
+            int aHash = a * 1664525;
+            int bHash = (b * 1664525 - 0xA21FE89) * 3;
+            return alloc_Float64((aHash * 2) ^ bHash);›
+        native "js" code ‹
+            var a = var_a._value;
+            var b = var_b._value;
+            var aHash = a * 1664525;
+            var bHash = (b * 1664525 - 0xA21FE89) * 3;
+            result = new GraceNum((aHash * 2) ^ bHash);›
+    }
+
+    type List⟦T⟧ = collections.List⟦T⟧
+    type Set⟦T⟧ = collections.Set⟦T⟧
+    type Dictionary⟦K,T⟧ = collections.Dictionary⟦K,T⟧
+
+    once method BoundsError { collections.BoundsError }
+    once method IteratorExhausted { collections.IteratorExhausted }
+    once method NoSuchObject { collections.NoSuchObject }
+    once method RequestError { collections.RequestError }
+    once method SubobjectResponsibility { collections.SubobjectResponsibility }
+    once method ConcurrentModification { collections.ConcurrentModification }
+    once method UninitializedVariable { ProgrammingError.refine "UninitializedVariable" }
+
+    method collection⟦T⟧ { collections.collection⟦T⟧ }
+    method enumerable⟦T⟧ { collections.enumerable⟦T⟧ }
+    method indexable⟦T⟧ { collections.indexable⟦T⟧ }
+
+    method sequence⟦T⟧ { collections.sequence⟦T⟧ }
+    method sequence⟦T⟧(arg) { collections.sequence⟦T⟧.withAll(arg) }
+    once method emptySequence { collections.sequence.empty }    // deprecated
+
+    method list⟦T⟧ { collections.list⟦T⟧ }
+    method list⟦T⟧(arg) { collections.list⟦T⟧.withAll(arg) }
+    method emptyList⟦T⟧ { collections.list⟦T⟧.empty }            // deprecated
+
+    method set⟦T⟧ { collections.set⟦T⟧ }
+    method set⟦T⟧(arg) { collections.set⟦T⟧.withAll(arg) }
+    method emptySet⟦T⟧ { collections.set⟦T⟧.empty }              // deprecated
+
+    method dictionary⟦K, T⟧  { collections.dictionary⟦K, T⟧ }
+    method dictionary⟦K, T⟧(arg) { collections.dictionary⟦K, T⟧.withAll(arg) }
+    method emptyDictionary⟦K, T⟧ { collections.dictionary⟦K, T⟧.empty }
+
+    once method binding { collections.binding }
+    once method range { collections.range }
+
+}
