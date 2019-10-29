@@ -23,6 +23,7 @@ minigrace
 minigrace-js
 misc
 npm-build-dir
+npm-sha
 package.json
 selftest
 buildinfo.grace
@@ -76,11 +77,11 @@ js/turtle.js
 js/unixFilePath.js
 js/util.js
 js/xmodule.js
-js/tests/test.js.log
+js/tests/test*.log
 js/tests/*.txt
 js/tests/*.js
 js-kg/
-objectdraw/
+modules/tests/test*.log
 stubs/collectionsPrelude.grace
 stubs/standardGrace.grace
 .git-generation-cache
@@ -90,7 +91,9 @@ node_modules
 Makefile.conf
 .directory-environ
 stdin_minigrace
+objectdraw/
 grace-web-editor/
+utilities/
 *.xcodeproj
 *.xcodeproj/*
 *.xcworkspace
