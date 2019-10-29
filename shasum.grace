@@ -23,7 +23,7 @@ method sha256OfFile(f) -> String {
         try {
             var h = sha().getSync(var_fileName._value, sha_options);
         } catch (ex) {
-            if (ex.message.startsWith("ENOENT:")) {
+            if ((typeof ex.message.startsWith === "function") && (ex.message.startsWith("ENOENT:"))) {
                 setLineNumber(14);
                 throw new GraceExceptionPacket(EnvironmentExceptionObject,
                     new GraceString("File '" + var_fileName._value + "' does not exist"));
