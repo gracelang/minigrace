@@ -125,7 +125,7 @@ method positionOfNext (needle1:String) or (needle2:String)
 }
 
 def lineLength is public = 80
-def uninitialized = Singleton.named "uninitialized"
+def uninitialized = singleton "uninitialized"
 method listMap(l, b) ancestors(ac) is confidential {
     def newList = list [ ]
     l.do { nd -> newList.addLast(nd.map(b) ancestors(ac)) }

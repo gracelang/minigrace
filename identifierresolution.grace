@@ -16,9 +16,9 @@ import "fastDict" as map
 import "errormessages" as errormessages
 import "identifierKinds" as k
 
-def completed = Singleton.named "completed"
-def inProgress = Singleton.named "inProgress"
-def undiscovered = Singleton.named "undiscovered"
+def completed = singleton "completed"
+def inProgress = singleton "inProgress"
+def undiscovered = singleton "undiscovered"
 // constants used in detecting cyclic inheritance
 
 var stSerial := 100

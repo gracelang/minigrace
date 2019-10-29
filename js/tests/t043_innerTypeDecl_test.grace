@@ -1,5 +1,5 @@
 class testClass {
-    def s is public = Singleton.named "hi there"
+    def s is public = singleton "hi there"
     type t = interface { a(_) -> Done }
     print "during initialization, s = \"{s}\" and t = {t}"
 }

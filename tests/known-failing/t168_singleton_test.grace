@@ -1,11 +1,11 @@
 dialect "minitest"
 
 def empty = object {
-    inherit Singleton.new
+    inherit singleton
     method asString -> String {"empty"}
 }
 
-def full = Singleton.named "full"
+def full = singleton "full"
 
 type OptionNumber =  Number | empty | full
 

@@ -8,8 +8,8 @@ testSuite {
         assert {hook} shouldRaise (SubobjectResponsibility)
     }
     
-    def v1 = Singleton.new
-    def v2 = Singleton.new
+    def v1 = singleton
+    def v2 = singleton
     
     test "singleton equals itself" by {
         assert (v1 == v1) description "singleton ≠ itself!"
@@ -27,8 +27,8 @@ testSuite {
         deny (v1.matches(v2)) description "singleton matches other!"
     }
 
-    def n1 = Singleton.named "n1"
-    def n2 = Singleton.named "n2"
+    def n1 = singleton "n1"
+    def n2 = singleton "n2"
     
     test "named singleton equals itself" by {
         assert (n1 == n1) description "singleton ≠ itself!"

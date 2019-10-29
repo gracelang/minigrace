@@ -8,7 +8,7 @@
 // keysDo and valuesDo are provided.
 
 def unused = object {
-    inherit Singleton.named "unused"
+    inherit singleton "unused"
     def key is public = self
 }
 

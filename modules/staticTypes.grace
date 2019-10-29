@@ -165,7 +165,7 @@ def aMethodType = object {
 
 // Object type information.
 
-def noSuchMethod = prelude.Singleton.named "noSuchMethod"
+def noSuchMethod = prelude.singleton "noSuchMethod"
 
 type ObjectType = {
     // return list of methods

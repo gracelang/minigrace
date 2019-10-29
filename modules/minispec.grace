@@ -16,8 +16,8 @@ var currentResult := object {
 def MinispecError = prelude.ProgrammingError.refine "MinispecError"
 type Block = prelude.Procedure0
 
-def nullSuite = prelude.Singleton.named "nullSuite"
-def nullBlock = prelude.Singleton.named "nullBlock"
+def nullSuite = prelude.singleton "nullSuite"
+def nullBlock = prelude.singleton "nullBlock"
 
 var currentTestSuite := nullSuite
 var currentSetupBlock := nullBlock
