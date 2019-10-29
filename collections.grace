@@ -1,6 +1,10 @@
 dialect "none"
+import "intrinsic" as intrinsic
 
-def BoundsError is public = ProgrammingError.refine "BoundsError"
+use intrinsic.controlStructures
+
+def intrinsicConstants = intrinsic.constants
+def BoundsError is public = intrinsicConstants.BoundsError
 def IteratorExhausted is public = ProgrammingError.refine "IteratorExhausted"
 def SubobjectResponsibility is public = ProgrammingError.refine "SubobjectResponsibility"
 def NoSuchObject is public = ProgrammingError.refine "NoSuchObject"

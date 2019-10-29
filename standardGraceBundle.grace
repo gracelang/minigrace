@@ -7,9 +7,11 @@ import "patternsBundle" as patternsBundle
 trait open {
     use basicTypesBundle.open
     use patternsBundle.open
+    use intrinsic.controlStructures
+    use intrinsic.constants
 
     method do(action)while(condition) {
-        while {
+        self.while {
             action.apply
             condition.apply
         } do { }
@@ -17,10 +19,10 @@ trait open {
 
     method repeat(n)times(action) {
         if (n.isInteger.not) then {
-            ProgrammingError.raise "you can't repeat {n} times, because {n} is not an integer"
+            self.ProgrammingError.raise "you can't repeat {n} times, because {n} is not an integer"
         }
         var ix := n
-        while {ix > 0} do {
+        self.while {ix > 0} do {
             ix := ix - 1
             action.apply
         }
@@ -60,8 +62,6 @@ trait open {
         method asString { nameString }
     }
 
-    once method pi { π }
-
     method hashCombine(a, b) {
         native "c" code ‹
             int a = (int)(args[0]->data);
@@ -87,7 +87,7 @@ trait open {
     once method RequestError { collections.RequestError }
     once method SubobjectResponsibility { collections.SubobjectResponsibility }
     once method ConcurrentModification { collections.ConcurrentModification }
-    once method UninitializedVariable { ProgrammingError.refine "UninitializedVariable" }
+    once method UninitializedVariable { self.ProgrammingError.refine "UninitializedVariable" }
 
     method collection⟦T⟧ { collections.collection⟦T⟧ }
     method enumerable⟦T⟧ { collections.enumerable⟦T⟧ }
@@ -95,19 +95,15 @@ trait open {
 
     method sequence⟦T⟧ { collections.sequence⟦T⟧ }
     method sequence⟦T⟧(arg) { collections.sequence⟦T⟧.withAll(arg) }
-    once method emptySequence { collections.sequence.empty }    // deprecated
 
     method list⟦T⟧ { collections.list⟦T⟧ }
     method list⟦T⟧(arg) { collections.list⟦T⟧.withAll(arg) }
-    method emptyList⟦T⟧ { collections.list⟦T⟧.empty }            // deprecated
 
     method set⟦T⟧ { collections.set⟦T⟧ }
     method set⟦T⟧(arg) { collections.set⟦T⟧.withAll(arg) }
-    method emptySet⟦T⟧ { collections.set⟦T⟧.empty }              // deprecated
 
     method dictionary⟦K, T⟧  { collections.dictionary⟦K, T⟧ }
     method dictionary⟦K, T⟧(arg) { collections.dictionary⟦K, T⟧.withAll(arg) }
-    method emptyDictionary⟦K, T⟧ { collections.dictionary⟦K, T⟧.empty }
 
     once method binding { collections.binding }
     once method range { collections.range }

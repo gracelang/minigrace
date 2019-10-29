@@ -738,7 +738,7 @@ GraceString.prototype = {
             return callmethod(this, "*(1)", [1], num);
         },
         "map(1)": function string_map(argcv, function1) {
-            var collections = callmethod(var___95__prelude, "collections", [0]);
+            const collections = loadDynamicModule("collections");
             return selfRequest(collections,
                         "lazySequenceOver(1)mappedBy(1)", [1, 1], this, function1);
         },
@@ -777,6 +777,15 @@ function failNumMethodArgCheck(desc, className, methodName) {
     const sep = methodName.match(idStart) ? "." : " ";
     raiseClassError(desc + 'argument to ' + this._value +
                     sep + methodName + ' is not a ' + className);
+}
+
+function pointObject() {
+    if (! pointObject.cache) {
+        const pointBundle = loadDynamicModule("pointBundle");
+        const openBundle = request(pointBundle.open);
+        pointObject.cache = oprnBundle;
+    }
+    return pointObject.cache
 }
 
 function GraceNum(n) {
@@ -847,7 +856,7 @@ GraceNum.prototype = {
             return callmethod(other, "reverseQuotientNumber(1)", [1], this);
         },
         "@(1)": function(argcv, other) {
-            return callmethod(Grace_prelude, "point2Dx(1)y(1)", [1, 1], this, other);
+            return callmethod(pointObject(), "point2Dx(1)y(1)", [1, 1], this, other);
         },
         "..(1)": function(argcv, other) {
             if (! Number.isInteger(this._value)) {
@@ -1208,8 +1217,16 @@ GraceBoolean.prototype = {
 var GraceTrue = new GraceBoolean(true);
 var GraceFalse = new GraceBoolean(false);
 
+function listObject() {
+    if (! listObject.cache) {
+        const coll = loadDynamicModule("collections");
+        listObject.cache = callMethod(coll, "list", [0]);
+    }
+    return listObject.cache
+}
+
 function GraceList(jsList) {
-    var newList = callmethod(Grace_prelude, "emptyList", [0]);
+    var newList = callmethod(listObject(), "empty", [0]);
     for (var ix = 0; ix < jsList.length; ix++) {
         callmethod(newList, "add(1)", [1], jsList[ix]);
     }
@@ -1389,7 +1406,7 @@ GraceSequence.prototype = {
             return new GraceSequenceIterator(this);
         },
         "==(1)": function(argcv, other) {
-            var collections = callmethod(var___95__prelude, "collections", [0]);
+            const collections = loadDynamicModule("collections");
             return selfRequest(collections,
                         "isEqual(1)toCollection(1)", [1, 1], this, other);
         },
@@ -1437,12 +1454,12 @@ GraceSequence.prototype = {
         "keys": sequence_indices,
         "values": function sequence_values(argcv) { return this; },
         "map(1)": function sequence_map(argcv, function1) {
-            var collections = callmethod(var___95__prelude, "collections", [0]);
+            var collections = loadDynamicModule("collections");
             return selfRequest(collections,
                         "lazySequenceOver(1)mappedBy(1)", [1, 1], this, function1);
         },
         "filter(1)": function sequence_filter(argcv, predicate1) {
-            var collections = callmethod(var___95__prelude, "collections", [0]);
+            var collections = loadDynamicModule("collections");
             return selfRequest(collections,
                         "lazySequenceOver(1)filteredBy(1)", [1, 1], this, predicate1);
         },
@@ -1505,7 +1522,7 @@ GraceSequence.prototype = {
 
 function GracePrimitiveArray(len) {
     this._value = new Array(len);
-    //  elements are all undefined by default
+//    elements are all undefined by default
 }
 
 GracePrimitiveArray.prototype = {
@@ -1643,15 +1660,15 @@ GracePrimitiveArray.prototype = {
 };
 
 function GraceOrPattern(l, r) {
-    return callmethod(Grace_prelude, "OrPattern", [2], l, r);
+    return request(patternAndType(), "OrPattern", [2], l, r);
 }
 
 function GraceAndPattern(l, r) {
-    return callmethod(Grace_prelude, "AndPattern", [2], l, r);
+    return request(patternAndType(), "AndPattern", [2], l, r);
 }
 
 function GraceNotPattern(o) {
-    return request(Grace_prelude, "NotPattern(1)", [1], o);
+    return request(patternAndType(), "NotPattern(1)", [1], o);
 }
 
 function Grace_isTrue(o) {
@@ -1687,20 +1704,29 @@ function Grace_length(obj) {
     return new GraceNum(obj._value.length);
 }
 
+function patternAndType() {
+    // an instance of the _opened_ bundle pattern+type
+    if (! patternAndType.cache) {
+        const bundle = loadDynamicModule("pattern+typeBundle");
+        const openBundle = request(bundle, "open", [0]);
+        patternAndType.cache = openBundle;
+    }
+    return patternAndType.cache;
+}
 function GraceTypeIntersection(l, r) {
-    var opClass = callmethod(Grace_prelude, "TypeIntersection", [0]);
+    var opClass = callmethod(patternAndType(), "TypeIntersection", [0]);
     return callmethod(opClass, "new(2)", [2], l, r);
 }
 function GraceTypeUnion(l, r) {
-    var opClass = callmethod(Grace_prelude, "TypeUnion", [0]);
+    var opClass = callmethod(patternAndType(), "TypeUnion", [0]);
     return callmethod(opClass, "new(2)", [2], l, r);
 }
 function GraceTypeVariant(l, r) {
-    var opClass = callmethod(Grace_prelude, "TypeVariant", [0]);
+    var opClass = callmethod(patternAndType(), "TypeVariant", [0]);
     return callmethod(opClass, "new(2)", [2], l, r);
 }
 function GraceTypeSubtraction(l, r) {
-    var opClass = callmethod(Grace_prelude, "TypeSubtraction", [0]);
+    var opClass = callmethod(patternAndType(), "TypeSubtraction", [0]);
     return callmethod(opClass, "new(2)", [2], l, r);
 }
 
@@ -1729,11 +1755,11 @@ GraceType.prototype = {
             for (var i=0; i<this.typeMethods.length; i++) {
                 var m = this.typeMethods[i];
                 if (!other.methods[m]) {
-                    this.matchCache[cUid] = GraceFalse;
+                    if (cUid) this.matchCache[cUid] = GraceFalse;
                     return GraceFalse;
                 }
             }
-            this.matchCache[cUid] = GraceTrue;
+            if (cUid) this.matchCache[cUid] = GraceTrue;
             return GraceTrue;
         },
         "|(1)": function type_or(argcv, other) {
@@ -1758,12 +1784,13 @@ GraceType.prototype = {
             return new GraceString("built-in type " + this.name);
         },
         "methodNames": function type_methodNames (argcv) {
-            var result = callmethod(Grace_prelude, "emptySet", [0]);
+            var result = [];
             for (var i=0; i<this.typeMethods.length; i++) {
-                var methName = canonicalMethodName(this.typeMethods[i]);
-                callmethod(result, "add(1)", [1], new GraceString(methName));
+                const methName = canonicalMethodName(this.typeMethods[i]);
+                result.push(methName);
             }
-            return result;
+            return new GraceSequence(methNames.sort().map(
+                    nm => new GraceString(nm)));;
         },
         "==(1)": function type_identity (argcv, other) {
             return selfRequest(this, "isMe(1)", argcv, other)
@@ -2288,19 +2315,21 @@ function gracecode_util() {
         meth_isAlready.variableArities = [false];
         obj_requiredModules.methods['isAlready(1)'] = meth_isAlready;
         meth_isAlready.definitionModule = "util";
-        obj_requiredModules.data['static'] = callmethod(Grace_prelude, "emptySet", [0]);
+
+        const setObject = request(loadDynamicModule("collections"), "set", [0]);
+        obj_requiredModules.data['static'] = request(setObject, "empty", [0]);
         var reader_util_static1257 = function() {
             return this.data['static'];
         };
         reader_util_static1257.def = true;
         obj_requiredModules.methods['static'] = reader_util_static1257;
-        obj_requiredModules.data['linkfiles'] = callmethod(Grace_prelude, "emptyList", [0]);
+        obj_requiredModules.data['linkfiles'] = callmethod(listObject(), "empty", [0]);
         var reader_util_linkfiles1260 = function() {
             return this.data['linkfiles'];
         };
         reader_util_linkfiles1260.def = true;
         obj_requiredModules.methods['linkfiles'] = reader_util_linkfiles1260;
-        obj_requiredModules.data['other'] = callmethod(Grace_prelude, "emptySet", [0]);
+        obj_requiredModules.data['other'] = callmethod(setObject, "empty", [0]);
         var reader_util_other1263 = function() {
             return this.data['other'];
         };
@@ -2323,7 +2352,7 @@ function gracecode_util() {
     };
     this.methods['splitPath(1)'] = function util_splitPath(argcv, pathString) {
         var locations = pathString._value.split(':');
-        var result = callmethod(Grace_prelude, "emptyList", [0]);
+        var result = callmethod(listObject, "empty", [0]);
         var len = locations.length;
         for (var i = 0; i < len; i++)
             callmethod(result, "addLast", [1], new GraceString(locations[i]));
@@ -2486,6 +2515,8 @@ if (typeof(process) === "undefined" && typeof gctCache !== "undefined")
     gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=(1)\n dynamicModule\n dynamicModule:=(1)\n importDynamic\n importDynamic:=(1)\n jobs\n jobs:=(1)\n cLines\n cLines:=(1)\n lines\n lines:=(1)\n filename\n filename:=(1)\n errno\n errno:=(1)\n parseargs\n previousElapsed\n previousElapsed:=(1)\n log_verbose\n outprint\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath(1)\n file(1)on(1)orPath(1)otherwise(1)\n file(1)onPath(1)otherwise(1)\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n stringMap\n buildinfo\n sys\n io\n";
 
 function loadDynamicModule (moduleName, directory) {
+    // `directory` is optional; if omitted, we search GRACE_MODULE_PATH
+
     if (importedModules[moduleName]) {      // if module has already been imported,
         return importedModules[moduleName]; // we should not import it again
     }
@@ -2684,12 +2715,12 @@ function numericMethodName(name) {
     }
     return output;
 }
-function dealWithNoMethod(name, target, argList) {
+function dealWithNoMethod(name, target, args) {
     var dollarIx = name.indexOf("$");
     if (dollarIx == -1) {
         if (target.noSuchMethodHandler) {
             return callmethod(target.noSuchMethodHandler, "apply(3)", [3],
-                new GraceString(canonicalMethodName(name)), argList, target);
+                new GraceString(canonicalMethodName(name)), args, target);
         } else {
             var closeMatches = closeMatchesForMethodNamed(name, target);
             var suggestions = "";
@@ -2968,7 +2999,6 @@ GraceExceptionPacket.prototype = {
                 errMsg = callmethod(errMsg, "++(1)", [1], callmethod(this, "message", [0]));
                 Grace_errorPrint(errMsg);
             }
-            var bt = callmethod(this, "backtrace", [0]);
             var prefix = new GraceString("  in method ");
             var rf = new GraceString("  requested from ");
             for (var i = this.exitStack.length - 1; i >= 0; i--) {
@@ -3090,8 +3120,7 @@ function do_import(modname, moduleCodeFunc) {
     if (typeof moduleCodeFunc !== "function")
         throw new GraceExceptionPacket(ImportErrorObject,
             new GraceString("could not find code for module '" + modname + "'"));
-    var newModule = (modname === "standardGrace") ? Grace_prelude : new GraceModule(modname);
-    // importing "standardGrace" adds to the built-in prelude.
+    const newModule = new GraceModule(modname);
     try {
         var f = requestModuleInitialization(newModule, modname, moduleCodeFunc);
         importedModules[modname] = f;
@@ -3105,8 +3134,7 @@ function do_import(modname, moduleCodeFunc) {
 function requestModuleInitialization(moduleObject, modname, moduleInitializationFunction) {
     // execute moduleInitializationFunction with moduleObject as `this`
     lineNumber = 0;
-    return moduleInitializationFunction.call(moduleObject);
-    // no need for Function.prototype.call.call( ... )
+    return moduleInitializationFunction.call(moduleObject);  // makes moduleObject `this`
 }
 requestModuleInitialization.isGraceRequest = true;
 
@@ -3216,12 +3244,6 @@ function raiseBoundsError(msg, data) {
     raiseException(BoundsErrorObject, msg, data);
 }
 
-//
-// Define "Grace_prelude" as a Grace object to which some methods are added here,
-// and to which more methods will be added by the compiled standardGrace module
-// when it is loaded.
-//
-
 function nullFunction() {}
 
 function traitObjectFromInto(obj, that, aliases, exclusions) {
@@ -3242,204 +3264,27 @@ function traitObjectFromInto(obj, that, aliases, exclusions) {
     return nullFunction;
 }
 
-var Grace_prelude = new GraceModule("standardGrace");
-
-Grace_prelude.methods['true$build(3)'] =
-    function prelude_true$build (argcv, inheritingObject, aliases, exclusions) {
-        return traitObjectFromInto(GraceTrue, inheritingObject, aliases, exclusions);
-    };
-Grace_prelude.methods['false$build(3)'] =
-    function prelude_false$build (argcv, inheritingObject, aliases, exclusions) {
-        return traitObjectFromInto(GraceFalse, inheritingObject, aliases, exclusions);
-    };
-Grace_prelude.methods['Exception'] = function(argcv) {
-    return ExceptionObject;
-};
-Grace_prelude.methods['ProgrammingError'] = function(argcv) {
-    return ProgrammingErrorObject;
-};
-Grace_prelude.methods['EnvironmentException'] = function(argcv) {
-    return EnvironmentExceptionObject;
-};
-Grace_prelude.methods['ResourceException'] = function(argcv) {
-    return ResourceExceptionObject;
-};
-Grace_prelude.methods['RuntimeError'] = function(argcv) {
-    return RuntimeErrorObject;
-};
-Grace_prelude.methods['TypeError'] = function(argcv) {
-    return TypeErrorObject;
-};
-Grace_prelude.methods['NoSuchMethod'] = function prelude_NoSuchMethod (argcv) {
-    return NoSuchMethodErrorObject;
-};
-Grace_prelude.methods['BoundsError'] = function prelude_BoundsError (argcv) {
-    return BoundsErrorObject;
-};
-Grace_prelude.methods['infinity'] = function prelude_infinity (argcv) {
-    return new GraceNum(Infinity);
-};
-Grace_prelude.methods['π'] = function prelude_pi (argcv) {
-    return new GraceNum(3.141592653589793);
-};
-Grace_prelude.methods['while(1)do(1)'] = function(argcv, c, b) {
-    if (c.className === "boolean" || c.className === "number")
-        throw new GraceExceptionPacket(TypeErrorObject,
-            new GraceString("expected Block for first argument of " +
-                                "while(_)do(_), got " + c.className + "."));
-    if (Grace_prelude.methods['while(1)do(1)'] &&
-            Grace_prelude.methods['while(1)do(1)'].safe) {
-        var count = 0;
-        var runningTime = 0;
-        var runningCount = 0;
-        var startTime = new Date();
-        var diff;
-        while (Grace_isTrue(callmethod(c, "apply", [0]))) {
-            count++;
-            if (count % 100000 === 0 && ((diff=new Date()-startTime) > 5000)) {
-                var totTime = runningTime + diff;
-                var totIterations = runningCount + count;
-                if (! confirm("A while loop is taking a long time to run. " +
-                              "Do you want to continue? " +
-                              totIterations + " iterations of the loop have taken " +
-                              totTime + "ms so far." +
-                              "\n\nChoose Cancel to stop the program, or OK to " +
-                              "let it continue."))
-                    throw new GraceExceptionPacket(ResourceExceptionObject,
-                        new GraceString("user abort of long-running loop."));
-                else {
-                    runningCount += count;
-                    runningTime += diff;
-                    count = 0;
-                    startTime = new Date();
-                }
-            }
-            callmethod(b, "apply", [0]);
-        }
-        return GraceDone;
-    }
-    while (Grace_isTrue(callmethod(c, "apply", [0]))) {
-        callmethod(b, "apply", [0]);
-    }
-    return GraceDone;
-};
-Grace_prelude.methods['for(1)do(1)'] = function(argcv, c, b) {
-    callmethod(c, "do(1)", [1], b);
-    return GraceDone;
-};
-Grace_prelude.methods['_methods'] = function() {
-    var meths = [];
-    for (var m1 in this.methods)
-        meths.push(new GraceString(m1));
-    var l = new GraceList(meths);
-    return l;
-};
-
-Grace_prelude.methods['clone(1)'] = prelude_clone;
-
-function prelude_clone (argcv, obj) {
-    var ouc = new obj.constructor();
-    prelude_clone_build(null, obj, ouc, [], []);
-    return ouc;
-}
-Grace_prelude.methods['clone(1)$build(3)'] = prelude_clone_build;
-
-function prelude_clone_build (ignore, obj, ouc, aliases, exclusions) {
-    // shallow copy fields of obj into ouc
-    function mergeObjects(a, b, exclusions) {
-        // returns a new object containing the attributes of a overridden
-        // by those of b, excluding the exclusions.
-        // Object.assign looks like the right tool, but it doen't work on
-        // non-enumerable properties, such as the ones in Object.prototype
-        if (! a) return b;  // if either argument is null, return the other
-        if (! b) return a;
-        if (a === b) return a;     // most likely, because a === Object.prototype
-        const aProps = Object.getOwnPropertyNames(a);
-        const bProps = Object.getOwnPropertyNames(b);
-        const newProto = mergeObjects(Object.getPrototypeOf(a), Object.getPrototypeOf(b), exclusions);
-        const result = Object.create(newProto);
-        for (let pix = 0, pLen = aProps.length; pix < pLen; pix++) {
-            // copy a's properties to result
-            const propName = aProps[pix];
-            result[propName] = a[propName];
-        }
-        for (let pix = 0, pLen = bProps.length; pix < pLen; pix++) {
-            // copy b's properties to result, unless excluded
-            const propName = bProps[pix];
-            if (!exclusions.includes(propName)) {
-                result[propName] = b[propName];
-            }
-        }
-        return result;
-    }
-    ouc.className = obj.className;
-    ouc.methods = mergeObjects(ouc.methods, obj.methods, exclusions);
-    ouc.mutable = obj.mutable;
-    if (obj.noSuchMethodHandler) {
-        ouc.noSuchMethodHandler = obj.noSuchMethodHandler;
-    }
-    ouc.data = mergeObjects(ouc.data, obj.data, []);
-    var objCK = obj.closureKeys || [];
-    ouc.closureKeys = ouc.closureKeys || [];
-    for (var oix = 0, cLen = objCK.length; oix < cLen; oix++) {
-        const key = objCK[oix];
-        ouc.closureKeys.push(key);
-        ouc[key] = obj[key];
-    }
-    for (var aix = 0, aLen = aliases.length; aix < aLen; aix++) {
-        const oneAlias = aliases[aix];
-        ouc.methods[oneAlias.newName] = obj.methods[oneAlias.oldName];
-    }
-    return nullFunction;                // the init function for this clone
-}
-Grace_prelude.methods['become(2)'] = function(argcv, a, b) {
-    for(var k in a) {
-        var t = a[k];
-        a[k] = b[k];
-        b[k] = t;
-    }
-    return GraceDone;
-};
-
-Grace_prelude.methods['inBrowser'] = function(argcv) {
-    return (typeof global === "undefined") ? GraceTrue : GraceFalse;
-};
-
-var PrimitiveArrayClass = Grace_allocObject(GraceObject, "class primitiveArray");
-PrimitiveArrayClass.methods['new(1)'] = function(argcv, n) {
-    return new GracePrimitiveArray(n._value);
-};
-
-Grace_prelude.methods['primitiveArray'] = function() { return PrimitiveArrayClass; };
-
-Grace_prelude.methods['engine'] = function prelude_engine(argcv) {
-    return new GraceString("js");
-};
 
 //
-//  Access methods declared in Grace's standard prelude
+//  Access methods declared in Grace's collections
 //
 
 var _bindingClass;
 function GraceBindingClass() {
-    if (!_bindingClass)
-        _bindingClass = callmethod(Grace_prelude, "binding", [0]);
+    if (!_bindingClass) {
+        const collections = loadDynamicModule("collections");
+        _bindingClass = callmethod(collections, "binding", [0]);
+    }
     return _bindingClass;
 }
 
 var _rangeClass;
 function GraceRangeClass() {
-    if (!_rangeClass)
-        _rangeClass = callmethod(Grace_prelude, "range", [0]);
+    if (!_rangeClass) {
+        const collections = loadDynamicModule("collections");
+        _rangeClass = callmethod(collections, "range", [0]);
+    }
     return _rangeClass;
-}
-
-var _emptySequence;
-function GraceEmptySequence() {
-    if (!_emptySequence)
-        _emptySequence =
-            callmethod(callmethod(Grace_prelude, "sequence", [0]), "empty", [0]);
-    return _emptySequence;
 }
 
 function basename(n) {
@@ -3503,7 +3348,7 @@ function escapestring(str) {
 
 // these names are used in the generated code.
 // __95__ is the escape for _
-var var___95__prelude = Grace_prelude;
+var var___95__prelude = loadDynamicModule("standardGrace");
 var var_done = GraceDone;
 
 
@@ -3534,7 +3379,7 @@ if (typeof global !== "undefined") {
     global.graceModuleName = graceModuleName;
     global.Grace_allocObject = Grace_allocObject;
     global.Grace_errorPrint = Grace_errorPrint;
-    global.Grace_prelude = Grace_prelude;
+    global.Grace_prelude = var___95__prelude;
     global.Grace_print = Grace_print;
     global.GraceBindingClass = GraceBindingClass;
     global.GraceBlock = GraceBlock;
@@ -3608,7 +3453,7 @@ if (typeof global !== "undefined") {
     global.type_Type = type_Type;
     global.type_Unknown = type_Unknown;
     global.TypeErrorObject = TypeErrorObject;
-    global.var___95__prelude = Grace_prelude;
+    global.var___95__prelude = var___95__prelude;
     global.var_Done = var_Done;
     global.var_done = var_done;
     global.var_Boolean = var_Boolean;
