@@ -115,13 +115,13 @@ method lookup(uName:String) -> String {
     // NB -- currently missing from the Javascript implementation
     native "js" code ‹›
 }
-method pattern(cs:Iterable) -> Pattern {
+method pattern(cs:Collection) -> Pattern {
     // Returns a pattern that matches any of the Unicode characters in cs.
     // Each c in cs can be a number, meaning the Unicode character with codepoint c,
     // or a one or two letter string indicating a Unicode category.
     native "js" code ‹return new GraceUnicodePattern(var_cs);›
 }
-method pattern(cs:Iterable)not(ncs:Iterable) -> Pattern {
+method pattern(cs:Collection)not(ncs:Collection) -> Pattern {
     // Returns a pattern that matches any of the Unicode characters in cs and 
     // not in ncs.  Each c in cs and ncs can be a number, meaning the
     // Unicode character with codepoint c,  or a one or two letter string 
@@ -138,6 +138,7 @@ native "js" code ‹
         this.pos = pos._value;
             // APB: 2016 06 11     This is a horrible hack.
             // pos._value          pos._value is defined => pos is a GraceSequence
+            // TODO: check that class is sequence.
         if (! this.pos) {
             this.pos = [];
             var iter = callmethod(pos, "iterator", [0]);

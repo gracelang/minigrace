@@ -368,7 +368,7 @@ method unlink(path) {
         return GraceDone;›
 }
 
-method spawn (executable, args:Iterable⟦String⟧) -> Process {
+method spawn (executable, args:Collection⟦String⟧) -> Process {
     // forks and execv's executable, with args
     // executable can be a string, or any object with an `asString` method
     native "js" code ‹

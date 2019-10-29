@@ -101,8 +101,6 @@ type Expandable⟦T⟧ = Collection⟦T⟧ & interface {
     addAll(xs: Collection⟦T⟧) -> SelfType
 }
 
-type Iterable⟦T⟧ = Collection⟦T⟧    // for backward compatibility
-
 type Enumerable⟦T⟧ = Collection⟦T⟧ & interface {
     values -> Collection⟦T⟧
     keysAndValuesDo(action:Function2⟦Number,T,Object⟧) -> Done
