@@ -419,7 +419,9 @@ method syntaxError(message, errLinenum, errPosition, arr, suggestions) {
 }
 
 method syntaxError (message) atRange (r) {
-    def more = if (r.start.line < r.end.line) then {
+    def more = if ((r.start.line < r.end.line) && {
+        util.lines.at(r.start.line).endsWith "\{" .not
+    }) then {
         "  This statement spans multiple lines; is that what you intended?"
     } else {
         ""
