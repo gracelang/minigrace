@@ -9,7 +9,7 @@ ALL_LIBRARY_MODULES = $(sort $(filter-out $(COMPILER_MODULES), $(LIBRARY_MODULES
 # COMPILER_MODULES are the parts of the compiler that should go into the modules
 # directory on an install (in addition to ALL_LIBRARY_MODULES)
 COMPILER_MODULES = $(REALSOURCEFILES)
-DIALECT_DEPENDENCIES = mirrors.gct mirrors.js errormessages.js ast.js util.js modules/gUnit.js
+DIALECT_DEPENDENCIES = mirror.js errormessages.js ast.js util.js modules/gUnit.js
 DIALECTS_NEED = modules/dialect util ast modules/gUnit
 WEB_DIRECTORY ?= public_html/ide/
 DEV_WEB_DIRECTORY = public_html/dev/ide/
@@ -189,7 +189,6 @@ install: minigrace $(COMPILER_MODULES:%.grace=j2/%.js) js/grace js/grace-debug $
 	test -d $(INCLUDE_PATH) || install -d $(INCLUDE_PATH)
 	install -p -m 755 js/mgc js/grace js/grace-debug js/unicodedata.js $(PREFIX)/bin/
 	install -p -m 755 js/gracelib.js js/unicodedata.js $(MODULE_PATH)
-	install -p -m 644 j2/mirrors.gct $(MODULE_PATH)
 	install -p -m 644 $(COMPILER_MODULES) $(COMPILER_MODULES:%.grace=j2/%.js) $(MODULE_PATH)
 	install -p -m 644 $(PRELUDESOURCEFILES) $(PRELUDESOURCEFILES:%.grace=j2/%.js) $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=j2/%.js) $(MODULE_PATH)
 	@./tools/warnAbout PATH $(PREFIX)/bin
@@ -377,7 +376,6 @@ self.test: minigrace.env
 
 $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
 	cd js/tests; ln -sf ../$(<F) .
-	cd js/tests; ln -sf ../$(<F:%.js=%.gct) .
 
 tarWeb: js
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
