@@ -315,7 +315,7 @@ npm-build: minigrace.env Makefile
 	mkdir -p npm-build-dir
 	rm -rf npm-build-dir/*
 	cp js/npm-package.json npm-build-dir/package.json
-	cp j2/*.js j2/*.gct $(MGSOURCEFILES) $(ALL_LIBRARY_MODULES:%=modules/%) npm-build-dir/
+	cp j2/*.js $(MGSOURCEFILES) $(ALL_LIBRARY_MODULES:%=modules/%) npm-build-dir/
 	cp js/minigrace-js js/compiler-js js/minigrace-inspect js/grace js/grace-debug npm-build-dir/
 	cp js/tests/t001*_test.grace npm-build-dir/quick_test.grace
 	cd npm-build-dir && npm version $(VERSION)
