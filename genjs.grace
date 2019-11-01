@@ -9,6 +9,7 @@ import "identifierKinds" as k
 import "fastDict" as map
 import "shasum" as shasum
 import "buildinfo" as buildinfo
+import "regularExpression" as regex
 
 def nodeTally = map.dictionary.empty
 def inBrowser = native "js" code ‹
@@ -137,10 +138,25 @@ method emitBufferedOutput {
     outfile.close
 }
 
+def validIdChars = regex.fromString ‹[a-zA-Z0-9\$]›
+
 method escapeident(vn) {
     // escapes characters not legal in an identifer using __«codepoint»__
-    native "js" code ‹return new GraceString(escapeident(var_vn._value));›
+    // must correspond to escapeident in the version of gracelib that will
+    // be loaded with the code that we are generating — which may be different
+    // from the version of gracelib that is supporting this execution of the
+    // compiler.  (That's why we don't just call the gracelib version here.)
+    var result := ""
+    vn.do { ch ->
+        if (validIdChars.matches(ch)) then {
+            result := result ++ ch
+        } else {
+            result := result ++ "__{ch.ord}__"
+        }
+    }
+    result
 }
+
 method escapestring(s) {
     // escapes embedded double-quotes, backslashes, newlines and non-ascii chars
     native "js" code ‹return new GraceString(escapestring(var_s._value));›
