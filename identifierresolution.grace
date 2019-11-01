@@ -23,7 +23,7 @@ def undiscovered = Singleton.named "undiscovered"
 
 var stSerial := 100
 
-def reserved = ["self", "outer", "true", "false"]
+def reserved = ["self", "outer", "true", "false", "Unknown"]
 // reserved names that cannot be re-assigned or re-declared
 
 method newScopeKind(variety') {
@@ -1102,8 +1102,10 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 errormessages.syntaxError("type declarations are permitted only" ++
                     " inside an object") atRange(o.range)
             }
-            enclosingScope.addNode(o.name) asA(k.typedec)
-            o.name.isDeclaredByParent := true
+            def ident = o.name
+            checkForReservedName(ident)
+            enclosingScope.addNode(ident) asA(k.typedec)
+            ident.isDeclaredByParent := true
             o.scope := newScopeIn(enclosingScope) kind "typedec"
             // this scope will be the home for any type parameters.
             // If there are no parameters, it won't be used.
