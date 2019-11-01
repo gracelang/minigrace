@@ -1,0 +1,7 @@
+#!/usr/bin/awk -f
+# Concatenates the files given as command line arguments,
+# with a separator of ======== and the file name
+BEGIN { last = "-1" }
+FILENAME != last { last = FILENAME; print "=========" ; print FILENAME ; print "========="}
+{ print $0 }
+END { print "=========" }
