@@ -1,5 +1,5 @@
 import "ast" as ast
-inherit prelude.methods
+inherit outer.methods
 
 def CheckerFailure = prelude.Exception.refine "CheckerFailure"
 

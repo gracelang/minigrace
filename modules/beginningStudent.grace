@@ -40,7 +40,7 @@ method list⟦T⟧(a, b, c, d) {
 class sequence⟦T⟧ {
     // returns an object that acts _both_ as an empty sequence, and as a collection
     // factory.  Not sure why this is a good idea ...
-    use prelude.collections.indexable
+    use outer.collections.indexable
     method size { 0 }
     method sizeIfUnknown(action) { 0 }
     method isEmpty { true }

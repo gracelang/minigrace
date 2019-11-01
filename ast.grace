@@ -1595,14 +1595,6 @@ def moduleNode is public = object {
                 if (o.isExternal) then { action.apply(o) }
             }
         }
-        method externalsDo(action) {
-            if (theDialect.value ≠ "none") then {
-                action.apply(theDialect)
-            }
-            value.do { o ->
-                if (o.isExternal) then { action.apply(o) }
-            }
-        }
         method accept(visitor : AstVisitor) from(ac) {
             if (visitor.visitModule(self) up(ac)) then {
                 def newChain = ac.extend(self)
@@ -2165,6 +2157,10 @@ def identifierNode is public = object {
         idNode
     }
 
+    method prelude {
+        new("prelude", false)
+    }
+
     class new(name', dtype') {
         inherit baseNode
         def kind is public = "identifier"
@@ -2198,7 +2194,7 @@ def identifierNode is public = object {
 
         method isSelf { "self" == value }
         method isSuper { "super" == value }
-        method isPrelude { "prelude" == value }
+        method isPrelude { ("prelude" == value) || ("_prelude" == value) }
         method isOuter {
             if ("outer" == value) then { return true }
             if ("prelude" == value) then { return true }

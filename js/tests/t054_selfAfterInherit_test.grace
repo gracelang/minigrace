@@ -4,7 +4,7 @@
 // object.  It also checks that outer from a nested
 // object also refers to the module object.
 
-inherit prelude.methods
+inherit _prelude.methods
     // the implementation of inheit in the C backend
     // replaces the object under construction by the
     // inherited object.  So this inherit statment

@@ -1,6 +1,6 @@
 import "gUnit" as gu
 
-inherit prelude.methods
+inherit outer.methods
 use gu.assertion        // makes available all the assert ... methods
 
 method countOneAssertion {

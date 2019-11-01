@@ -3,7 +3,7 @@
 // depends on minitest can be run by the instuctor under gUnit,
 // without getting confounding results from the minitest tests.
 
-inherit prelude.methods
+inherit outer.methods
 
 type Procedure0 = prelude.Procedure0
 

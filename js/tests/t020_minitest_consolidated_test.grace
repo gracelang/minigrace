@@ -366,7 +366,7 @@ class subFilePath {
 }
 
 class dummyPrelude {
-    inherit prelude.methods
+    inherit _prelude.methods
     
     method compareProtocols {
         def mSelf = mirror.reflect(self).methodNames --

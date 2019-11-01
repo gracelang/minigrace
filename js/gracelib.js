@@ -2555,8 +2555,8 @@ function handleRequestException(ex, obj, methname, method, methodArgs) {
         newEx.lineNumber = lineNumber;
         throw newEx;
     } else if (typeof(obj.methods[methname]) !== "function") {
-        var argsGL = new GraceList( methodArgs.slice(1) );
-        return dealWithNoMethod(methname, obj, argsGL);
+        var argsGSeq = new GraceSequence( methodArgs.slice(1) );
+        return dealWithNoMethod(methname, obj, argsGSeq);
     } else if (ex == "ErrorExit") {
         throw ex;
     } else {
@@ -2907,10 +2907,10 @@ GraceExceptionPacket.prototype = {
             return new GraceString(this.moduleName);
         },
         "backtrace": function(argcv) {
-            var es = new GraceList([]);
+            var es = [];
             for (var i=0; i<this.exitStack.length; i++)
-                callmethod(es, "add(1)", [1], new GraceString(this.exitStack[i].toString()));
-            return es;
+                es.push( new GraceString(this.exitStack[i].toString()) );
+            return new GraceSequence(es);
         },
         "printBacktrace": function(argcv) {
             const exceptionName = callmethod(callmethod(this, "exception", [0]), "asString", [0]);
@@ -2918,11 +2918,11 @@ GraceExceptionPacket.prototype = {
             errMsg = callmethod(errMsg, "++(1)", [1], callmethod(this, "message", [0]));
             Grace_errorPrint(errMsg);
             var bt = callmethod(this, "backtrace", [0]);
-            var prefix = new GraceString("  raised from ");
-            var rf = new GraceString("  requested from ");
-            while (callmethod(bt, "size", [0])._value > 0) {
-                Grace_errorPrint(callmethod(prefix, "++(1)", [1],
-                        callmethod(bt, "pop", [0])));
+            var prefix = "  raised from ";
+            var rf = "  requested from ";
+            for (let i = this.exitStack.length - 1; i >= 0; i--) {
+                Grace_errorPrint(new GraceString(
+                        prefix + this.exitStack[i].toString() ));
                 prefix = rf;
             }
         },
@@ -3421,12 +3421,11 @@ function escapeident(id) {
     // This function must correspond to method escapeident(_) in genjs.grace
     var nm = "";
     for (var ix = 0, len = id.length; ix < len; ix++) {
-        var o = id.charCodeAt(ix);
-        if (((o >= 97) && (o <= 122)) || ((o >= 65) && (o <= 90)) ||
-            ((o >= 48) && (o <= 57))) {
-            nm = nm + id.charAt(ix);
+        var c = id.charAt(ix);
+        if (c.match(/[a-zA-Z0-9\$]/)) {
+            nm = nm + c;
         } else {
-            nm = nm + "__" + o + "__";
+            nm = nm + "__" + c.charCodeAt(0) + "__";
         }
     }
     return nm;
@@ -3489,6 +3488,7 @@ if (typeof global !== "undefined") {
     global.findMethod = findMethod;
     global.getLineNumber = getLineNumber;
     global.getModuleName = getModuleName;
+    global.GraceModule = GraceModule;
     global.graceModuleName = graceModuleName;
     global.Grace_allocObject = Grace_allocObject;
     global.Grace_errorPrint = Grace_errorPrint;

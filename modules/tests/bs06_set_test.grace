@@ -1,6 +1,6 @@
 dialect "beginningStudent"
-print "prelude is {prelude}"
-print "outer is {outer}"
+print "standard prelude is {prelude}"
+print "dialect is {outer}"
 
 var tl:Set[[Number]] := set
 print(tl)

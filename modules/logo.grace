@@ -4,7 +4,7 @@
 // handles the actual drawing and user interface.
 
 import "turtle" as turtle
-inherit prelude.methods exclude Point
+inherit outer.methods exclude Point
     // by excluding Point here, we make the definition from outer unambiguous
 
 type Point = outer.Point

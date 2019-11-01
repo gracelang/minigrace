@@ -1,5 +1,5 @@
-prelude is the "beginningStudent" module
-outer is the "standardGrace" module
+standard prelude is the "standardGrace" module
+dialect is the "beginningStudent" module
 set []
 set [1]
 sets: 9 run, 0 failed, 0 errors

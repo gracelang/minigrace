@@ -8,7 +8,7 @@ tom.whenNoMethodDo { name, args, receiver ->
     "method {name} requested with args {args>>sequence} on {receiver}"
 }
 
-testSuiteNamed "no such method handler" with  {
+testSuite "no such method handler" with  {
     test "small arguments" by {
         assert(testObj.impossible 4 and 5 and 6)
             shouldBe "method impossible(_)and(_)and(_) requested with args [4, 5, 6] on a testObj"
@@ -22,10 +22,10 @@ testSuiteNamed "no such method handler" with  {
             def tom = mirror.reflect(self)
             def asString is public = "object declared on line 21"
             tom.whenNoMethodDo { name, args, receiver ->
-                "{receiver} is pretending to respond to method {name} with arg {args}"
+                "{receiver} is pretending to respond to method {name} with args {args}"
             }
             assert(self.impossible 4 and 5)
-                shouldBe "object declared on line 21 is pretending to respond to method impossible(_)and(_) with arg list [4, 5]"
+                shouldBe "object declared on line 21 is pretending to respond to method impossible(_)and(_) with args [4, 5]"
         }
     }
     test "large arguments on self" by {
@@ -33,17 +33,17 @@ testSuiteNamed "no such method handler" with  {
             def tom = mirror.reflect(self)
             def asString is public = "this object"
             tom.whenNoMethodDo { name, args, receiver ->
-                "{receiver} is pretending to respond to method {name} with arg {args}"
+                "{receiver} is pretending to respond to method {name} with args {args}"
             }
             assert(self.impossible (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12))
-                shouldBe "this object is pretending to respond to method impossible(_,_,_,_,_,_,_,_,_,_,_,_) with arg list [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]"
+                shouldBe "this object is pretending to respond to method impossible(_,_,_,_,_,_,_,_,_,_,_,_) with args [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]"
         }
     }
 }
 
 numberOfErrorsToRerun := 1
 
-testSuiteNamed "EDP algorithm" with {
+testSuite "EDP algorithm" with {
     test "one char match at pos 2" by {
         def rng = em.name "5" matches "45678" within 1
         assert (rng) shouldBe 1
@@ -102,7 +102,7 @@ testSuiteNamed "EDP algorithm" with {
     }
 }
 
-testSuiteNamed "approx string match" with {
+testSuite "approx string match" with {
     test "number of args" by {
         assert (em.name "print(2)" mightBeIntendedToBe "print(1)")
             description "print(2) mightn't be print(1)"
@@ -171,7 +171,7 @@ def a = object {
 
 def x:a.B = 3
 
-testSuiteNamed "type in type" with {
+testSuite "type in type" with {
     test "type methods" by {
         assert (A.methodNames) shouldBe (set.withAll ["m(_)", "B"])
     }
@@ -212,7 +212,7 @@ class shape {
     method size { asize + bsize }
 }
 
-testSuiteNamed "aliases and exclusions" with {
+testSuite "aliases and exclusions" with {
     test "alias is confidential" by {
         assert {shape.bsize} shouldRaise (NoSuchMethod)
     }
@@ -229,3 +229,5 @@ testSuiteNamed "aliases and exclusions" with {
         assert {c1.w "w"} shouldRaise (NoSuchMethod) mentioning "confidential"
     }
 }
+
+exit

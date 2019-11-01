@@ -1216,7 +1216,7 @@ method compileUninitializedCheck(id) {
     }
     def scopeVariety = definingScope.variety
     if (scopeVariety == "built-in") then { return }
-    if ("module | method | dialect".contains(definingScope.variety)) then {
+    if ("module | method | dialect | block".contains(definingScope.variety)) then {
         if (initializedVars.contains(name)) then { return }
     }
     def idKind = definingScope.kind(name)
@@ -1238,31 +1238,27 @@ method partl(o) {
     result
 }
 method compileOuterRequest(o, args) {
-    out "// call case 2: outer request"
+    out "// call case 1: outer request"
     compilenode(o.receiver)
-    def numArgs = o.numArgs + o.numTypeArgs
     out("var {o.register} = selfRequest({o.receiver.register}" ++
           ", \"{escapestring(o.nameString)}\"" ++
           ", [{partl(o)}]{assembleArguments(args)});")
 }
 
 method compileSelfRequest(o, args) {
-    out "// call case 4: self request with {o.numArgs} args and {o.numTypeArgs} typeArgs "
-    def numArgs = o.numArgs + o.numTypeArgs
+    out "// call case 2: self request with {o.numArgs} args and {o.numTypeArgs} typeArgs "
     out("var {o.register} = selfRequest(this" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compilePreludeRequest(o, args) {
-    out "// call case 5: prelude request"
-    def numArgs = o.numArgs + o.numTypeArgs
+    out "// call case 3: prelude request"
     out("var {o.register} = request(var_prelude" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compileOtherRequest(o, args) {
-    out "// call case 6: other requests"
+    out "// call case 4: other requests"
     def target = compilenode(o.receiver)
     def cm = if (o.isSelfRequest) then { "selfRequest" } else { "request" }
-    def numArgs = o.numArgs + o.numTypeArgs
     out("var {o.register} = {cm}({target}" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
@@ -1283,23 +1279,35 @@ method compilecall(o) {
     }
     o.register
 }
+method compileBuiltIn(o) {
+    def calltemp = uidWithPrefix "bi"
+    o.register := calltemp
+    var args := list []
+    compileArguments(o, args)
+    out "// call case 5: built-in request"
+    out("var {o.register} = request({standardPrelude}" ++
+          ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
+}
+
 method compileOuter(o) {
     o.register := o.theObjects.fold { a, obj -> "{a}.{outerProp(obj)}" }
                                     startingWith "this"
 }
 method compiledialect(o) {
     def dialectName = o.value
-    if (dialectName ≠ "none") then {
-        out "// Dialect \"{dialectName}\""
+    out "// Dialect \"{dialectName}\""
+    if (dialectName == "none") then {
+        out "const var_$dialect = new GraceModule(\"{dialectName}\");"
+    } else {
         var fn := escapestring(dialectName)
-        out "var_prelude = do_import(\"{fn}\", {formatModname(dialectName)});"
-        out "this.outer = var_prelude;"
+        out "const var_$dialect = do_import(\"{fn}\", {formatModname(dialectName)});"
         if (xmodule.currentDialect.hasAtStart) then {
-            out "var var_thisDialect = selfRequest(var_prelude, \"thisDialect\", [0]);"
+            out "var var_thisDialect = selfRequest(var_$dialect, \"thisDialect\", [0]);"
             out "selfRequest(var_thisDialect, \"atStart(1)\", [1], "
             out "  new GraceString({modNameAsString}));"
         }
     }
+    out "this.outer = var_$dialect;"
     o.register := "GraceDone"
 }
 method compileimport(o) {
@@ -1419,7 +1427,7 @@ method compilenode(o) {
                 } elseif {o.nameString == "native(1)code(1)"} then {
                     compileNativeCode(o)
                 } else {
-                    compilecall(o)
+                    compileBuiltIn(o)
                 }
             } else {
                 compilecall(o)
@@ -1497,7 +1505,6 @@ method printNodeTally {
 }
 
 method initializeCodeGenerator(moduleObject) {
-    def isPrelude = moduleObject.theDialect.value == "none"
     if (util.extensions.containsKey "ExtendedLineups") then {
         errormessages.syntaxError ("The ExtendedLineups pragma is no longer supported. " ++
               "Brackets `[ ... ]` construct sequences; if you want a list, use `list [ ... ]`")
@@ -1545,7 +1552,7 @@ method initializeCodeGenerator(moduleObject) {
         util.outprint "let {fmtdModName}_minigraceRevision = \"{buildinfo.gitrevision}\";"
         util.outprint "let {fmtdModName}_minigraceGeneration = \"{buildinfo.gitgeneration}\";"
     }
-    if (isPrelude.not) then {
+    if (moduleObject.theDialect.value ≠ "none") then {
         util.outprint "{standardPrelude} = do_import(\"standardGrace\", gracecode_standardGrace);"
     }
     util.setline(1)
@@ -1564,10 +1571,10 @@ method outputModuleDefinition(moduleObject) {
     out "importedModules[{modNameAsString}] = this;"
     def selfr = "module$" ++ emod
     moduleObject.register := selfr
-    out "var {selfr} = this;"
+    out "const {selfr} = this;"
     out "this.definitionModule = {modNameAsString};"
     out "this.definitionLine = 1;"
-    out "var var_prelude = {standardPrelude};"
+    out "const var_prelude = {standardPrelude};"
         // var_prelude must be local to the module function, because its
         // value varies from module to module.
 
@@ -1575,11 +1582,15 @@ method outputModuleDefinition(moduleObject) {
         out "var myframe = new StackFrame(\"{escapestring(modname)} module\");"
         out "stackFrames.push(myframe);"
     }
-    compileobjouter(moduleObject, "var_prelude")
+    def d = moduleObject.theDialect
     if (modname == "standardGrace") then {
         // compile components in non-standard order
+        compilenode(d)
+        if (d.path ≠ "none") then {
+            moduleObject.directImports.push(d.path)
+        }
         moduleObject.methodsDo { o -> compilenode(o) }
-        moduleObject.externalsDo { o -> moduleObject.directImports.push(o.path) }
+        moduleObject.importsDo { o -> moduleObject.directImports.push(o.path) }
         moduleObject.value.do { o ->    // this treats importNodes as executable
             if (o.isMethod.not) then {
                 compilenode(o)
@@ -1587,10 +1598,15 @@ method outputModuleDefinition(moduleObject) {
         }
     } else {
         // compile in normal order
-        moduleObject.externalsDo { o ->
+        compilenode(d)
+        if (d.path ≠ "none") then {
+            moduleObject.directImports.push(d.path)
+        }
+        moduleObject.importsDo { o ->
             compilenode(o)
             moduleObject.directImports.push(o.path)
         }
+        compileobjouter(moduleObject, "var_$dialect")
         def inheritsStmt = moduleObject.superclass
         if (false != inheritsStmt) then {
             compileInherit(inheritsStmt) forClass (modname)
@@ -1609,7 +1625,7 @@ method outputModuleDefinition(moduleObject) {
         }
     }
     if (xmodule.currentDialect.hasAtEnd) then {
-        out "var var_thisDialect = selfRequest(var_prelude, \"thisDialect\", [0]);"
+        out "var var_thisDialect = selfRequest(var_$dialect, \"thisDialect\", [0]);"
         out("selfRequest(var_thisDialect, \"atEnd(1)\", [1], this);")
     }
     if (debugMode) then {

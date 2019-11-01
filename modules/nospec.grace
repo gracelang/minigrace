@@ -3,7 +3,7 @@
 // depends on minispec can be run by the instuctor under gUnit,
 // without getting confounding results from the minispec specifications.
 
-inherit prelude.methods
+inherit outer.methods
 
 type Procedure0 = self.Procedure0
 
