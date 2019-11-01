@@ -1071,7 +1071,8 @@ method recordNewIndentation {
     }
     if (braceChange > 1) then {
         lexicalError("the prior line opened two blocks. There is no way for you "
-            ++ "to close them correctly! Please split the prior line into two.")
+            ++ "to close them correctly! Please split the prior line into two, "
+            ++ "or close the first block before opening the second")
     }
     repeat (braceChange) times {
         indentStack.addLast (currentLineIndent)

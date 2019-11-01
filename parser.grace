@@ -1491,6 +1491,14 @@ method valueexpressionrest {
     }
 }
 
+method isArithmetic(o) {
+    if (o == "*") then { return true }
+    if (o == "/") then { return true }
+    if (o == "+") then { return true }
+    if (o == "-") then { return true }
+    false
+}
+
 method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
     // Process the rest of an operator expression using the shunting-yard
     // algorithm. This method uses the oprec and toprec methods above to
@@ -1517,7 +1525,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
         next
         def oTypeArgs = typeArgs        // parsed, but ignored at present
         prec := oprec(o)
-        if ((o != "*") && (o != "/") && (o != "+") && (o != "-")) then {
+        if (isArithmetic(o).not) then {
             allarith := false
         }
         if ((opdtype != "") && (opdtype != o) && (allarith.not)) then {
@@ -1533,8 +1541,12 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
             suggestion.insert(")")afterToken(lastToken.prev)
             suggestion.insert("(")beforeToken(lastToken.prev.prev.prev)
             suggestions.push(suggestion)
-            errormessages.syntaxError("an expression containing both arithmetic " ++
-                  "and non-arithmetic operators requires parentheses") atRange (
+            def msg = if (isArithmetic(o) ≠ isArithmetic(opdtype)) then {
+                "containing both arithmetic and non-arithmetic operators"
+            } else {
+                "using two different operators"
+            }
+            errormessages.syntaxError("an expression {msg} requires parentheses") atRange (
                   lastToken.prev.prev.prev.line, lastToken.prev.prev.prev.linePos,
                   lastToken.linePos) withSuggestions (suggestions)
         }
