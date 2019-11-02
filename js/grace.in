@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-// this file, `grace.in`, is used to generate `grace`, which executes
-// compiled Grace code at the command line
+// this file, `grace.in`, is used to generate `grace`, and `grace-debug`,
+// which execute compiled Grace code at the command line
 
 var path = require("path");
 var fs = require("fs");
@@ -161,7 +161,7 @@ MiniGrace.prototype.run = function(fileName) {
     };
     var modName = path.basename(fileName, ".js");
     var dirName = path.dirname(fileName);
-    this.loadModule(modName, dirName, pathDirArray);
+    this.loadModule(modName, dirName, modulePathArray);
         // defines a global gracecode_‹modName›
     var theModule = global[graceModuleName(modName)];
     this.trapErrors(function() {
@@ -170,7 +170,7 @@ MiniGrace.prototype.run = function(fileName) {
 };
 
 function findOnPath(fn, pathArray) {
-    pathArray = pathArray || pathDirArray;
+    pathArray = pathArray || modulePathArray;
     if (fn[0] === "/") {
         if (fs.existsSync(fn)) { return fn; }
         throw new Error('file "' + fn + '" does not exist.');
@@ -201,8 +201,8 @@ function findOnPath(fn, pathArray) {
 }
 
 function addToPathIfNecessary(dir) {
-    if ( pathDirArray.indexOf(dir) === -1 ) {
-        pathDirArray.push(dir);
+    if ( modulePathArray.indexOf(dir) === -1 ) {
+        modulePathArray.push(dir);
     }
 }
 
@@ -218,7 +218,7 @@ MiniGrace.prototype.loadModule = function(moduleName, referencingDir, pathdirs) 
     }
     if (! pathdirs) {
         // provide default value for parameter
-        pathdirs = pathDirArray;
+        pathdirs = modulePathArray;
     }
     var found = findOnPath(fileName, [referencingDir].concat(pathdirs));
     var sourceDir = path.dirname(fs.realpathSync(found));
@@ -262,29 +262,43 @@ if (graceModulePath === undefined) {
     }
 }
 
-var pathDirArray = graceModulePath.split(path.delimiter);
+var modulePathArray = graceModulePath.split(path.delimiter);
 
 addToPathIfNecessary("./");
 addToPathIfNecessary("../");
 
 try {
+    let gracelibPath = process.env.GRACE_LIB_PATH;
+    let commandLineArgs = process.argv.slice(2);
+    if (commandLineArgs[0] == "--gracelib") {
+        gracelibPath = commandLineArgs[1];
+        commandLineArgs.splice(0, 2);   // remove the first two elements
+    }
+    if (gracelibPath) {
+        gracelibPath = gracelibPath.split(path.delimiter);
+    } else {
+        gracelibPath = modulePathArray;
+    }
     if (typeof GraceObject === "undefined") {
-        require(findOnPath("gracelib.js", pathDirArray));
+        require(findOnPath("gracelib.js", gracelibPath));
     }
     if (typeof unicodedata === "undefined") {
-        require(findOnPath("unicodedata.js", pathDirArray));
+        require(findOnPath("unicodedata.js", modulePathArray));
     }
     minigrace = new MiniGrace();
-    minigrace.loadModule("standardGrace", "./", pathDirArray);
-    var executable = process.argv[2];
+    minigrace.loadModule("standardGrace", "./", modulePathArray);
+
+    var executable = commandLineArgs[0];
+    if (executable.endsWith(".grace")) {
+        console.error(process.argv[1] + " expects a .js file, not a .grace file");
+        process.exit(2)
+    }
     if (! executable.endsWith(".js")) executable = executable + ".js";
-    var exFile = findOnPath(executable, pathDirArray);
+    var exFile = findOnPath(executable, modulePathArray);
     minigrace.execFile = abspath(exFile);
 
     minigrace.trapErrors(function() {
-        // as as special case, do_import("standardGrace", …) adds to Grace_prelude,
-        // rather than creating a new module object.
-        do_import('standardGrace', gracecode_standardGrace);
+        var___95__prelude = do_import('standardGrace', gracecode_standardGrace);
         minigrace.run(executable);
     });
 } catch (e) {

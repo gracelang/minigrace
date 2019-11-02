@@ -1810,13 +1810,16 @@ method compileUse(useNode) in (objNode) {
 method runJsCode(of, glPath) {
     def gmp = sys.environ.at "GRACE_MODULE_PATH"
     def pathList = filePath.split(gmp)
+    def args = list.empty
     def libPath = if (glPath.endsWith "/")
             then { glPath } else { glPath ++ "/" }
     if (io.exists(libPath ++ "gracelib.js")) then {
-        if (pathList.contains(libPath).not) then {
-            sys.environ.at "GRACE_MODULE_PATH" put "{libPath}:{gmp}"
-        }
+        args.add "--gracelib"
+        args.add (libPath)
+    } else {
+        EnvironmentException.raise "'{libPath}gracelib.js' deos not exist."
     }
+    args.add(of.pathname)
     def p = sys.execPath ++ ":" ++ sys.environ.at "PATH"
     def grace = filePath.withBase "grace"
     def executor = filePath.file (grace) onPath (p)
@@ -1827,7 +1830,8 @@ method runJsCode(of, glPath) {
             sys.exit 3
         }
     }
-    def runExitCode = io.spawn(executor, [of.pathname]).wait
+    util.log 60 verbose "spawning {executor} with arg {args}"
+    def runExitCode = io.spawn(executor, args).wait
     if (runExitCode ≠ 0) then {
         io.error.write "minigrace: program {modname} exited with code {runExitCode}.\n"
         sys.exit(runExitCode)
