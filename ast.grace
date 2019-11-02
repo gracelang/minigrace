@@ -2815,7 +2815,7 @@ def importNode is public = object {
 def dialectNode is public = object {
   method fromStringNode(s) {
     def result = new(s.value)
-    result.end := line (s.line) column (s.end)
+    result.end := s.end
     result
   }
   class new(pathString) {
