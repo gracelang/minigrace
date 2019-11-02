@@ -51,24 +51,11 @@ function MiniGrace() {
     };
     
     this.stderr_write = function(value) {
-        // This function is used at the command line and in the oldWeb interface.
-        // The current ide, grace-web-editor,
-        // replaces it with a different method in editor.js around line 138.
-        // There, each error write is turned into an html div, and is thus a line
-        // of its own.  For compatibility, we make each stderr_write a separate line.
-        if(typeof(process) != "undefined") {
-            process.stderr.write(value + "\n");
-        } else {
-            console.log(value + "\n");
-        }
+        console.log(value + "\n");
     };
     
     this.stdin_read = function() {
-        if(typeof(process) != "undefined") {
-            return process.stdin.read();
-        } else {
-            return "";
-        }
+        return process.stdin.read();
     };
 }
 
@@ -204,27 +191,6 @@ MiniGrace.prototype.run = function(fileName) {
         do_import(fileName, theModule);
     }              );
 };
-
-function graceModuleName(fileName) {
-    var prefix = "gracecode_";
-    var base = path.basename(fileName, ".js");
-    return prefix + escapeident(base);
-}
-
-function escapeident(id) {
-    // must correspond to escapeident(_) in genjs.grace
-    var nm = "";
-    for (var ix = 0; ix < id.length; ix++) {
-        var o = id.charCodeAt(ix);
-        if (((o >= 97) && (o <= 122)) || ((o >= 65) && (o <= 90)) ||
-            ((o >= 48) && (o <= 57))) {
-            nm = nm + id.charAt(ix);
-        } else {
-            nm = nm + "__" + o + "__";
-        }
-    }
-    return nm;
-}
 
 function findOnPath(fn, pathArray) {
     pathArray = pathArray || pathDirArray;
