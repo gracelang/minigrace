@@ -55,6 +55,18 @@ class newScopeIn(parent') kind(variety') {
         addName "self" asA(k.selfDef)
         at "self" putScope(self)
     }
+
+    method clear {
+        elements.clear
+        elementScopes.clear
+        elementLines.clear
+        node := ast.nullNode
+        inheritedNames := undiscovered
+        if (isObjectScope) then {
+            addName "self" asA(k.selfDef)
+            at "self" putScope(self)
+        }
+    }
     method isEmpty { elements.size == 0 }
     method addName(n) {
         elements.at(n)put(k.methdec)
@@ -501,8 +513,6 @@ def thisModule = ast.identifierNode.new("module()object", false)
     // a hack to give us a way of referring to this module,
     // other than by a chain of `outer`s.  The name is one that
     // cannot occur naturally in a program
-moduleScope.addName "module()object" asA (k.defdec)
-moduleScope.at "module()object" putScope(moduleScope)
 
 def universalScope = object {
     // The scope that defines every identifier,
@@ -813,6 +823,17 @@ var isInBeginningStudentDialect := false
 method setupContext(moduleObject) {
     // define the built-in names
     util.setPosition(0, 0)
+
+    builtInsScope.clear         // so that resolve can be serially re-used.
+    preludeScope.clear
+    dialectScope.clear
+    moduleScope.clear
+    graceObjectScope.clear
+    booleanScope.clear
+    varFieldDecls.clear
+
+    moduleScope.addName "module()object" asA (k.defdec)
+    moduleScope.at "module()object" putScope(moduleScope)
 
     builtInsScope.addName "Type" asA(k.typedec)
     builtInsScope.addName "Object" asA(k.typedec)
