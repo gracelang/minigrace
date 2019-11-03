@@ -128,11 +128,11 @@ class c1 {
 util.lines.clear
 util.lines.addAll(input3)
 
-def module = parser.parse ( lexer.lexLines (input3) )
+def module3 = parser.parse ( lexer.lexLines (input3) )
 
 testSuiteNamed "alias and method with same name" with {
     test "alias w and method w clash" by {
-        assert {ir.resolve(module)} shouldRaise (em.SyntaxError)
+        assert {ir.resolve(module3)} shouldRaise (em.SyntaxError)
             mentioning "'w(_)' cannot be redeclared"
     }
 }
@@ -140,13 +140,17 @@ testSuiteNamed "alias and method with same name" with {
 
 method astNode (kind) from (code) {
     def toks = lexer.lexString(code)
-    // print ("-" * 50)
-    // toks.do { t -> print "{t.kind}: {t.value}"}
-    // print ("=" * 50)
-    def module3 = parser.parse(toks)
-    def result = module3.body.first
+    def module = parser.parse(toks)
+    def result = module.body.first
     assert (result.kind) shouldBe (kind)
     result
+}
+
+method resolveIdentifiersIn (code) {
+    def toks = lexer.lexString(code)
+    def module = parser.parse(toks)
+    def resolved = ir.resolve(module)
+    resolved
 }
 
 testSuiteNamed "toGrace methods" with {
@@ -193,7 +197,7 @@ testSuiteNamed "RHS of typedec #289" with {
 
 testSuite "module name ending with .grace #248" with {
     test "import wih .grace" by {
-        assert { astNode "import" from ‹import "mirror.grace" as m› }
+        assert { resolveIdentifiersIn ‹import "mirror.grace" as m› }
               shouldRaise (em.SyntaxError)
               mentioning "import" and "must not end with \".grace\""
     }
@@ -203,6 +207,19 @@ testSuite "module name ending with .grace #248" with {
               mentioning "dialect" and "must not end with \".grace\""
     }
 }
+
+testSuite "Unknown is reserved #290" with {
+    test "Can't redefine type Unknown" by {
+        assert{ resolveIdentifiersIn ‹type Unknown = interface{}› }
+              shouldRaise (em.SyntaxError)
+              mentioning "Unknown is a reserved name"
+    }
+    test "Can't def Unknown" by {
+        assert{ resolveIdentifiersIn ‹def Unknown = object{}› }
+              shouldRaise (em.SyntaxError)
+              mentioning "Unknown is a reserved name"
+    }
+}        
 
 exit
 
