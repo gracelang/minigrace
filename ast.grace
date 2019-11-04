@@ -2199,6 +2199,7 @@ def identifierNode is public = object {
             if ("outer" == value) then { return true }
             if ("prelude" == value) then { return true }
             if ("module()object" == value) then { return true }
+            if ("$dialect" == value) then { return true }
             return false
         }
         method isSelfOrOuter {

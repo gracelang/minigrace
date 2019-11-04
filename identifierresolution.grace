@@ -835,6 +835,9 @@ method setupContext(moduleObject) {
     moduleScope.addName "module()object" asA (k.defdec)
     moduleScope.at "module()object" putScope(moduleScope)
 
+    moduleScope.addName "$dialect" asA (k.defdec)
+    moduleScope.at "$dialect" putScope(dialectScope)
+
     builtInsScope.addName "Type" asA(k.typedec)
     builtInsScope.addName "Object" asA(k.typedec)
     builtInsScope.addName "Unknown" asA(k.typedec)
