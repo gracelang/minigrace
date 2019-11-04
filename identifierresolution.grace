@@ -403,9 +403,6 @@ class newScopeIn(parent') kind(variety') {
                     return s.getScope(sought)
                 }
             }
-            if (nd.nameString == "explOde(1)") then {
-                ProgrammingError.raise "the compiler exploded."
-            }
             errormessages.syntaxError "no method {nd.canonicalName}."
                   atRange (nd.range)
         } elseif {nd.kind == "outer"} then {
