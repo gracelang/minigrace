@@ -148,7 +148,7 @@ fullclean: clean
 	rm -rf $$(ls -d js-kg/* | grep -v $(NPM_STABLE_VERSION))
 	rm -rf npm-build-dir
 
-fulltest: gencheck clean self.test test module-test
+fulltest: gencheck clean minigrace.env self.test test module-test
 
 gencheck:
 	X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache
