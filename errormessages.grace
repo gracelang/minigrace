@@ -486,7 +486,13 @@ method error (message)
               else { "{startpos}-{endpos}" }
     } else { "{startpos}-{endline}:{endpos}" }
     def arr = ("-" * (startpos-1)) ++ ("^" * (endpos - startpos + 1))
-    util.generalError(message, startline, ":{loc}", arr, suggestions)
+    def errorObj = object {
+        def lineNum is public = startline
+        def position is public = loc
+        def arrow is public = arr
+        def sugg is public = suggestions
+    }
+    CompilationError.raise(message) with (errorObj)
 }
 
 method error(message) atRange(errLinenum, startpos, endpos) withSuggestions(suggestions) {
