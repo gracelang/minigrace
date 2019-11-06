@@ -20,7 +20,11 @@ type FilePath = EqualityObject & interface {
     copy -> FilePath    // answers a new FilePath equal to self
     absolute -> FilePath  // answers a FilePath that reference the same file as self,
                           // but as a path from the file system root
+    isAbsolute -> Boolean // answers true if self is an absolute path
 }
+
+def sep is public = "/"         // the file path separator string
+def delimiter is public = ":"   // the delimiter used in PATH variables
 
 class filePath {
     // creates a unixFilePath with empty components.
@@ -119,6 +123,10 @@ class filePath {
         self
     }
 
+    method isAbsolute {
+        directory.startsWith(sep)
+    }
+
     method hash {
         hashCombine(hashCombine(directory.hash, base.hash), extension.hash)
     }
@@ -177,8 +185,8 @@ method fromString(s) {
 }
 
 method split(pathString) {
-    // splits pathString, assumed to be a Unix PATH containing items separated
-    // by colons, into a List of items.  Ensures that each item ends with /
+    // splits pathString, assumed to be a Unix PATH containing items separated by
+    // delimiter (a colon), into a List of items.  Each item will end with sep (/)
     def locations = list.empty
     var ix := 1
     var ox := 1
