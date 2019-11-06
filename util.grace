@@ -263,7 +263,7 @@ method generalError(message, errlinenum, position, arr, suggestions) {
     if (false ≠ vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
-    io.error.write("{modnamev}.grace[{errlinenum}{position}]: {message}\n")
+    io.error.write("{modnamev}.grace[{errlinenum}:{position}]: {message}\n")
     if ((errlinenum > 1) && (lines.size >= (errlinenum - 1))) then {
         io.error.write("{padl(errlinenum - 1)}: {lines.at(errlinenum - 1)}\n")
     }

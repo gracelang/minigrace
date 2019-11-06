@@ -2333,7 +2333,7 @@ function gracecode_util() {
         throw "ErrorExit";
     };
     this.methods['generalError(5)'] = function util_generalError(argcv, message, errlinenum, position, arr, suggestions) {
-        minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value +
+        minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value + ":" +
             position._value + "]: " + message._value);
         if (errlinenum._value > 0) {
             if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [0])._value > 1))
