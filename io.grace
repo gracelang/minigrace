@@ -328,7 +328,7 @@ method system (command:String) -> Boolean {
     native "js" code ‹
         if (inBrowser) { return GraceFalse; }
         try {
-            var result = child_process.execSync(safeJsString(command),
+            var result = child_process.execSync(safeJsString(var_command),
                 {stdio: [process.stdin, process.stdout, process.stderr]});
             return GraceTrue;
         } catch(ex) {
