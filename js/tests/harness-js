@@ -118,7 +118,7 @@ do
         then
             execname="${tcase%%.*}"
 #   The %%.* _deletes_ the longest . extension.
-            COMMAND="GRACE_MODULE_PATH=../../j2:../../modules:. $EXECUTOR\"./$execname\""
+            COMMAND="GRACE_MODULE_PATH=../../:../../j2:../../modules:. $EXECUTOR\"./$execname\""
             echo execution cmd for case "$tcase" = $COMMAND > test-$$.log
             eval $COMMAND >> test-$$.out 2> test-$$.err
             exitCode=$?
@@ -161,7 +161,7 @@ do
         fi
     else
 #   this is a _fail_test
-        COMMAND="GRACE_MODULE_PATH=../../j2:../../modules $COMPILER --make --dir . $tcase"
+        COMMAND="GRACE_MODULE_PATH=../../:../../j2:../../modules $COMPILER --make --dir . $tcase"
         echo compiling failing test $tcase ... > test-$$.log
         if eval "$COMMAND" >> test-$$.log 2>&1
         then
