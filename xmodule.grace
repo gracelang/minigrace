@@ -5,7 +5,10 @@ import "ast" as ast
 import "mirror" as mirror
 import "errormessages" as errormessages
 import "unixFilePath" as filePath
-
+import "shasum" as shasum
+import "regularExpression" as regex
+import "buildinfo" as buildinfo
+import "fastDict" as fd
 
 def CheckerFailure = Exception.refine "CheckerFailure"
 def DialectError is public = Exception.refine "DialectError"
@@ -37,7 +40,16 @@ type RangeSuggestions = {
     suggestions
 }
 
-def imports = util.requiredModules
+def imports = util.requiredModules      // TODO: get rid of this, and replace by
+                                        // externalModules below
+def externalModules = fd.dictionary.empty
+
+class filePath (fp) sha (sum) jsFile (jsf) {
+    // a record describing an external module
+    def path is public = fp     // the path to the source file
+    def sha is public = sum     // the SHA256 checksum of the source
+    def jsFile is public = jsf  // the corresponding JS object file
+}
 
 method checkDialect(moduleObject) {
     def dialectNode = moduleObject.theDialect
@@ -143,94 +155,150 @@ method printBacktrace(exceptionPacket) asFarAs (methodName) {
 }
 
 method checkExternalModule(node) {
+    // Used by identifierresolution to check that node, representing a
+    // dialect or import statement, refers to a module that exisits.
     checkimport(node.moduleName, node.path, node.isDialect, node.range)
 }
 
-method checkimport(nm, pathname, isDialect, sourceRange) is confidential {
-    if (imports.isAlready(nm)) then {
-        return
-    }
+method checkimport(moduleName, modulePath, isDialect, sourceRange) is confidential {
+    // checks that moduleName can be found on modulePath, and that a compiled
+    // version exists; creates the compiled version if necessary
+
+    if (imports.isAlready(moduleName)) then { return }
 
     if (inBrowser) then {
-        util.file(nm ++ ".js") onPath "" otherwise { _ ->
-            errormessages.error "Please \"Run\" module {nm} before importing it."
+        if (compiledModuleExists(moduleName)) then {
+            return
+        } else {
+            errormessages.error "Please \"Run\" module {moduleName} before importing it."
                 atRange(sourceRange)
         }
-        return
     }
-    util.log 50 verbose "checking module \"{nm}\""
-    def gmp = sys.environ.at "GRACE_MODULE_PATH"
-    def pnJs = filePath.fromString(pathname).setExtension "js"
-    def pnGrace = pnJs.copy.setExtension "grace"
-    def files = list [pnJs, pnGrace]
-    var moduleFile := util.firstFile(files) on (util.sourceDir)
-                                orPath (gmp) otherwise { m ->
-        def rm = errormessages.readableStringFrom(m)
-        errormessages.error("I can't find {pnJs.shortName} " ++
-            "or {pnGrace.shortName}; looked in {rm}.") atRange (sourceRange)
-    }
-    if (moduleFile.extension == ".grace") then {
-        util.log 50 verbose "about to compile module \"{nm}\""
-        def objectFile = compileModule (nm) inFile (moduleFile)
-                forDialect (isDialect) atRange (sourceRange)
-        if (objectFile.exists.not) then {
-            errormessages.error("I just compiled {moduleFile}, " ++
-                "but {objectFile} does not exist") atRange (sourceRange)
-        }
-        moduleFile := objectFile
-    }
-    util.log 50 verbose "found module \"{nm}\" in {moduleFile}"
-
-    def gctDict = gctDictionaryFor(nm) from (moduleFile)
-    def sourceFile = filePath.fromString(gctDict.at "path" .first)
-    def sourceExists = if (sourceFile.directory.contains "stub") then {
-        false        // for binary-only modules like unicode
-    } else {
-        sourceFile.exists
-    }
-    if ( util.target == "js" ) then {
-        if (moduleFile.exists && {
-            sourceExists.not || { moduleFile.newer(sourceFile) }
-        }) then {
-        } else {
-            if (moduleFile.newer(sourceFile).not) then {
-                util.log 60 verbose "{moduleFile} not newer than {sourceFile}"
-            }
-            if (sourceFile.exists) then {
-                compileModule (nm) inFile (sourceFile)
-                    forDialect (isDialect) atRange (sourceRange)
-            } else {
-                def thing = if (isDialect) then {"dialect"} else {"module"}
-                errormessages.error "Can't find {thing} {nm}"
-                    atRange(sourceRange)
-            }
-        }
-        imports.other.add(nm)
-    }
-    addTransitiveImports(moduleFile.directory, isDialect, nm, sourceRange)
+    util.log 50 verbose "checking module \"{moduleName}\""
+    def compiledModule = findOrBuildCompiledModule(moduleName, modulePath, isDialect, sourceRange)
+    imports.other.add(moduleName)
 }
 
-method addTransitiveImports(directory, isDialect, moduleName, sourceRange) is confidential {
-    def gctDict = gctCache.at(moduleName) ifAbsent {
-        parseGCT(moduleName) sourceDir(directory)
+method compiledModuleExists(name) {
+    native "js" code ‹
+        if (typeof window[graceModuleName(var_name._value)] === "function") {
+            return GraceTrue;
+        } else {
+            return GraceFalse;
+        }›
+}
+
+method findOrBuildCompiledModule(moduleName, modulePath, isDialect, sourceRange) {
+    // modulePath is the whole string from the dialect or import, potentially
+    // containing "/" characters; moduleName is the name after the final "/"
+
+    def graceFile = findGraceFile(modulePath) otherwise { m ->
+        def rm = errormessages.readableStringFrom(m)
+        errormessages.error "I can't find {modulePath}; tried {rm}."
+              atRange (sourceRange)
     }
-    if (gctDict.containsKey "dialect") then {
-        def dialects = gctDict.at "dialect"
-        if (dialects.isEmpty.not) then {
-            def dName = gctDict.at "dialect" .first
-            checkimport(dName, dName, true, sourceRange)
+    def sourceSHA = shasum.sha256OfFile(graceFile)
+    def thisCompiler = buildinfo.gitgeneration
+    def jsFileName = filePath.withBase(graceFile.base).setExtension ".js"
+    def jsFile = findJsFile(jsFileName) suchThat { f ->
+        file(f) createdBy(thisCompiler) withSHA(sourceSHA)
+    } otherwise { m ->
+        def rm = errormessages.readableStringFrom(m)
+        util.log 50 verbose("I can't find {jsFileName} with SHA {sourceSHA} " ++
+              "compiled by {thisCompiler}; tried {rm}")
+        def objectFile = compileModule (moduleName) inFile (graceFile)
+              forDialect (isDialect) atRange (sourceRange)
+        if (objectFile.exists.not) then {
+            errormessages.error("I just compiled {graceFile}, " ++
+                  "but {objectFile} does not exist") atRange (sourceRange)
         }
+        objectFile
     }
-    def importedModules = gctDict.at "modules" ifAbsent { emptySequence }
-    def m = util.modname
-    if (importedModules.contains(m)) then {
-        errormessages.error("Cyclic import detected: '{m}' is imported "
-            ++ "by '{moduleName}', which is imported by '{m}' (and so on).")
-            atRange(sourceRange)
+    util.log 50 verbose "found compiled module \"{moduleName}\" in {jsFile}"
+    externalModules.at (moduleName) put (filePath (graceFile) sha (sourceSHA) jsFile (jsFile))
+    util.log 50 verbose "externalModules containsKeys {externalModules.keys}"
+    jsFile
+}
+
+method findGraceFile (modulePath) otherwise (action) {
+    var candidate := filePath.fromString(modulePath).setExtension ".grace"
+    def directoryPrefix = candidate.directory
+    if (directoryPrefix.startsWith "/") then {
+        if (candidate.exists) then { return candidate }
+        action.apply([candidate])
     }
-    importedModules.do { each ->
-        checkimport(each, each, isDialect, sourceRange)
+    candidate.setDirectory(util.sourceDir ++ directoryPrefix)
+    if (candidate.exists) then { return candidate }
+    def rejects = list [ candidate ]
+    def locations = filePath.split(sys.environ.at "GRACE_MODULE_PATH")
+    locations.do { each ->
+        candidate := candidate.copy.setDirectory(each ++ directoryPrefix)
+        if (candidate.exists) then { return candidate }
+        rejects.add(candidate)
     }
+    action.apply(rejects)
+}
+
+method findJsFile (jsFileName:filePath.FilePath) suchThat (p:Predicate1) otherwise (action) {
+    // returns a file with the same base as jsFileName, on a directory in
+    // util.sourceDir util.outDir, or GRACE_MODULE_PATH
+
+    if ((jsFileName.exists) && {p.apply(jsFileName)}) then { return jsFileName }
+    var candidate := jsFileName.copy
+    def directoryPrefix = candidate.directory
+
+    candidate.setDirectory(util.outDir)
+    if ((candidate.exists) && {p.apply(candidate)}) then { return candidate }
+    def rejects = list [ candidate ]
+
+    candidate := candidate.copy.setDirectory(util.outDir ++ directoryPrefix)
+    if ((candidate.exists) && {p.apply(candidate)}) then { return candidate }
+    rejects.add(candidate)
+
+    if (util.sourceDir ≠ util.outDir) then {
+        candidate := candidate.copy.setDirectory(util.sourceDir ++ directoryPrefix)
+        if ((candidate.exists) && {p.apply(candidate)}) then { return candidate }
+        rejects.add(candidate)
+    }
+    def locations = filePath.split(sys.environ.at "GRACE_MODULE_PATH")
+    locations.do { each ->
+        if (directoryPrefix ≠ "./") then {
+            candidate := candidate.copy.setDirectory(each ++ directoryPrefix)
+            if ((candidate.exists) && {p.apply(candidate)}) then { return candidate }
+            rejects.add(candidate)
+        }
+        candidate := candidate.copy.setDirectory(each)
+        if ((candidate.exists) && {p.apply(candidate)}) then { return candidate }
+        rejects.add(candidate)
+    }
+    action.apply(rejects)
+}
+
+method file(f) createdBy(thisCompiler) withSHA(sourceSHA) {
+    def jsStream = io.open(f, "r")
+    try {
+        def originalSHA = extract "sha256" from (jsStream)
+        if (originalSHA ≠ sourceSHA) then { return false }
+        def usedCompiler = extract "minigraceGeneration" from (jsStream)
+        if (usedCompiler ≠ thisCompiler) then { return false }
+        return true
+    } finally {
+        jsStream.close
+    }
+}
+
+method extract (item) from (stream) {
+    var maxLines := 10  // look in first 10 lines of js file
+    def sought = regex.fromString "gracecode_.*_{item} = \"(\\w+)\""
+    while { stream.eof.not && (maxLines > 0) } do {
+        def line = stream.getline
+        def matches = sought.allMatches(line)
+        if (matches.isEmpty.not) then {
+            return matches.first.group 1
+        }
+        maxLines := maxLines - 1
+    }
+    EnvironmentException.raise "Can't find {item} in JS file {stream.pathname}"
 }
 
 method compileModule (nm) inFile (sourceFile)
@@ -279,33 +347,12 @@ method compileModule (nm) inFile (sourceFile)
     filePath.withDirectory(outputDirectory) base(sourceFile.base) extension ".js"
 }
 
-method gctDictionaryFor(moduleName) from (moduleFile) is confidential {
-    // Returns the GCT dictionary for moduleName, extracting it from
-    // moduleFile if necesssary
-
-    gctCache.at(moduleName) ifAbsent {
-        parseGCT(moduleName) sourceDir(moduleFile.directory)
-    }
-}
-
 method gctDictionaryFor(moduleName) {
+    // used by identifierresolution to discover the names defined by moduleName
+
     gctCache.at(moduleName) ifAbsent {
-        if (inBrowser) then {
-            gctDictionaryFrom(extractGctFromCache(moduleName)) for(moduleName)
-        } else {
-            ProgrammingError.raise "gct dictionary for {moduleName} not in cache"
-        }
+        gctDictionaryFrom(extractGctFor(moduleName)) for(moduleName)
     }
-}
-
-method parseGCT(moduleName) sourceDir(dir) is confidential {
-    // Returns the GCT dictionary for moduleName
-
-    // We extract the GCT string from an external resource, parse it,
-    // and build and return a new dictioanry containing the "GCT information",
-    // which describes the objects exported from moduleName
-
-    gctDictionaryFrom(extractGctFor(moduleName) sourceDir(dir)) for(moduleName)
 }
 
 method gctDictionaryFrom(gctList) for(moduleName) is confidential {
@@ -325,39 +372,25 @@ method gctDictionaryFrom(gctList) for(moduleName) is confidential {
     gctDict
 }
 
-
-method extractGctFor(moduleName) sourceDir(dir) is confidential {
+method extractGctFor(moduleName) is confidential {
     // Extracts the gct information for moduleName from an external resource
     // Returns the gct information as a collection of Strings.
 
     if (inBrowser) then { return extractGctFromCache(moduleName) }
+    def jsFile = externalModules.at(moduleName).jsFile
     try {
-        try {
-            return extractGctFromJsFile(moduleName) sourceDir(dir)
-        } catch { ep:EnvironmentException ->
-            done
-        } // other exceptions are deliberately not caught
-
-        return extractGctFromGctFile(moduleName) sourceDir(dir)
+        extractGctFor(moduleName) fromJsFile(jsFile)
     } catch {ex:EnvironmentException ->
-        util.log 0 verbose("Failed to find gct for {moduleName}; " ++
-            "looked in {dir} for a .js file containing a gct string, and a .gct file.")
-        sys.exit(2)
+        EnvironmentException.raise ("Failed to find gct for {moduleName}; " ++
+                "looked in {jsFile} for a gct string.")
     }
 }
 
-method extractGctFromJsFile(moduleName) sourceDir(dir) is confidential {
-    // Looks for a .js file containing the compiled code for moduleName.
-    // The file that referenced moduleName is in directory dir.
+method extractGctFor(moduleName) fromJsFile(filepath) is confidential {
+    // Looks in filepath, containing the compiled code for moduleName.
     // Returns the gct information as a collection of Strings.
 
-    def sought = filePath.fromString(moduleName).setExtension ".js"
-    def gmp = sys.environ.at "GRACE_MODULE_PATH"
-    def filename = util.file(sought) on(dir) orPath(gmp) otherwise { l ->
-        def rl = errormessages.readableStringFrom(l)
-        EnvironmentException.raise "Can't find file {sought} for module {moduleName}; looked in {rl}."
-    }
-    def jsStream = io.open(filename, "r")
+    def jsStream = io.open(filepath, "r")
     var maxLines := 10  // look in first 10 lines of js file
     while { jsStream.eof.not && (maxLines > 0) } do {
         def line = jsStream.getline
@@ -368,26 +401,7 @@ method extractGctFromJsFile(moduleName) sourceDir(dir) is confidential {
         maxLines := maxLines - 1
     }
     jsStream.close
-    EnvironmentException.raise "Can't find gct string in JS file {filename}"
-}
-
-method extractGctFromGctFile(moduleName) sourceDir(dir) is confidential {
-    // Looks for a .gct file continaing the compiled code for moduleName.
-    // The file that referenced moduleName is in directory dir.
-    // Returns the gct information as a collection of Strings.
-    def sought = filePath.fromString(moduleName).setExtension ".gct"
-
-    def gmp = sys.environ.at "GRACE_MODULE_PATH"
-    def filename = util.file(sought) on(dir) orPath(gmp) otherwise { l ->
-        def rl = errormessages.readableStringFrom(l)
-        EnvironmentException.raise "Can't find file {sought} for module {moduleName}; looked in {rl}."
-    }
-    def gctStream = io.open(filename, "r")
-    def result = list []
-    while { gctStream.eof.not } do {
-        result.push(gctStream.getline)
-    }
-    result
+    EnvironmentException.raise "Can't find gct string in JS file {filepath}"
 }
 
 method splitJsString(jsLine:String) is confidential {

@@ -402,41 +402,33 @@ method execDir {
     execDirCache
 }
 
-method firstFile(names) on(origin) orPath(pathString) otherwise(action) {
-    // Returns the path of the first file in "names" that exists in origin, or a path in pathString
-    // If multiple path contain a file in "names", the one in the first path is returned.
-    // otherwise, executes action with the list of folders that were searched
+method file(name) onPath(pathString) otherwise(action) {
+    // Returns the path of a file with base name that exists in origin, or on
+    // a path in pathString, or in the output directory, or in the directory
+    // where this executable is located.
+    // If multiple such files exist, the first one found is returned.
+    // If none exists, applies action to the list of directories that were tried
+
     def locations = filePath.split(pathString)
-    locations.addFirst(origin)
     if (locations.contains(outDir).not) then { locations.addFirst(outDir) }
         // it's important that outDir is first; if not, the compiler
         // might compile an imported file, but then be unable to find the
         // code that it just generated.
     if (locations.contains(execDir).not) then { locations.addLast(execDir) }
-
-    for (names) do { candidate ->
-        if (!candidate.directory.isEmpty && {candidate.directory.first == "/"}) then {
-            if (candidate.exists) then {
-               return candidate
-            }
+    def candidate = filePath.fromString(name)
+    def originalDir = name.directory
+    if (originalDir.first == "/") then {
+        if (candidate.exists) then {
+           return candidate
+        } else {
+            return action.apply(list [originalDir])
         }
     }
-
     locations.do { each ->
-        for (names) do { name ->
-            def candidate = name.copy.setDirectory(each ++ name.directory)
-            if ( candidate.exists ) then {
-               return candidate
-            }
-        }
+        candidate.setDirectory(each ++ originalDir)
+        if (candidate.exists) then { return candidate }
     }
     action.apply(locations)
-}
-method file(name) on(origin) orPath(pathString) otherwise(action) {
-    firstFile[name] on(origin) orPath(pathString) otherwise(action)
-}
-method file(name) onPath(pathString) otherwise(action) {
-    file(name) on(outDir) orPath(pathString) otherwise(action)
 }
 
 method processExtension(ext) {
