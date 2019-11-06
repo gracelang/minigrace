@@ -69,6 +69,9 @@ $(ALL_LIBRARY_MODULES:%.grace=j2/%.js): j2/%.js: modules/%.grace $(J1-MINIGRACE)
 
 ace-code: js/ace/ace.js
 
+buildinfo.grace:
+	tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH)
+
 clean:
 	rm -f gracelib.o gracelib-basic.o standardInput{.grace,.gct,.gcn,.gso,.o,}
 	rm -fr unicode.gco unicode.gcn unicode.gso unicode.gso.dSYM
