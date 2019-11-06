@@ -192,6 +192,7 @@ do
                 echo "Expected output:" >> test.log
                 cat ${tcase%_test.grace}.out >> test.log
             fi
+            grep -v "0 failed, 0 errors" test-$$.out
         fi
     fi
     rm -f test-$$.out test-$$.err
