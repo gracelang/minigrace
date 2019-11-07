@@ -63,6 +63,7 @@ var emod        // the name of the module being compiled, escaped
                 // so that it is a legal identifier
 var modNameAsString     // the name of the module surrounded by quotes,
                         // with internal special chars escaped.
+var thisModule          // the register (string) that will refer to this module
 
 /////////////////////////////////////////////////////////////
 //
@@ -321,8 +322,8 @@ method compileOwnInitialization(o, selfr) {
 
 method compileBuildAndInitFunctions(o) inMethod (methNode) {
     // o is an objectNode.  In the compiled code, `this` references the current
-    // object, which will become the outer object of `selfr`, the object here
-    // being constructed.  methNode respresents the method containing o;
+    // object, which will become the outer object of `ouc`, the object here
+    // under construction.  methNode respresents the method containing o;
     // if o is not inside a method, methdNode is false.
 
     // The build function adds the attributes defined by o to `this`,
@@ -332,8 +333,8 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
     var origInBlock := inBlock
     inBlock := false
 
-    def selfr = uidWithPrefix "obj"
-    o.register := selfr
+    def ouc = uidWithPrefix "obj"
+    o.register := ouc
     def inheritsStmt = o.superclass
     var params := ""
     var typeParams := ""
@@ -341,7 +342,7 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
         params := paramlist(methNode)
         typeParams := typeParamlist(methNode)
     }
-    out "var {selfr}_build = function(ignore{params}, outerObj, aliases, exclusions{typeParams}) \{"
+    out "var {ouc}_build = function(ignore{params}, outerObj, aliases, exclusions{typeParams}) \{"
         // At execution time, `this` will be the object under construction.
         // `outerObj` will be the current object, which
         // will become the `outer` of the object under construction.
@@ -384,7 +385,7 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
     out "        }"
     out "    }"
     out "}"
-    out "var {selfr}_init = function() \{    // init of object on line {o.line}"
+    out "var {ouc}_init = function() \{    // init of object on line {o.line}"
         // At execution time, `this` will be the object being initialized.
     increaseindent
     if (false != inheritsStmt) then {
@@ -393,7 +394,7 @@ method compileBuildAndInitFunctions(o) inMethod (methNode) {
     compileOwnInitialization(o, "this")
     decreaseindent
     out "\};"   // end of _init function for object on line {o.line}
-    out "return {selfr}_init;   // from compileBuildAndInitFunctions(_)inMethod(_)"
+    out "return {ouc}_init;   // from compileBuildAndInitFunctions(_)inMethod(_)"
     decreaseindent
     out "\};"   // end of build function
     inBlock := origInBlock
@@ -1071,7 +1072,7 @@ method compileidentifier(o) {
     } elseif { name == "..." } then {
         o.register := "ellipsis"
     } elseif { name == "module()object" } then {
-        o.register := "importedModules[{modNameAsString}]"
+        o.register := thisModule
     } elseif { name == "true" } then {
         o.register := "GraceTrue"
     } elseif { name == "false" } then {
@@ -1546,6 +1547,7 @@ method initializeCodeGenerator(moduleObject) {
     }
     modname := moduleObject.name
     emod := escapeident(modname)
+    thisModule := "module$" ++ emod
     modNameAsString := "\"{escapestring(modname)}\""
     if (util.extensions.containsKey("Debug")) then {
         debugMode := true
@@ -1585,9 +1587,8 @@ method outputModuleDefinition(moduleObject) {
     out "function {generatedModuleName}() \{"
     increaseindent
     out "importedModules[{modNameAsString}] = this;"
-    def selfr = "module$" ++ emod
-    moduleObject.register := selfr
-    out "const {selfr} = this;"
+    moduleObject.register := thisModule
+    out "const {thisModule} = this;"
     out "this.definitionModule = {modNameAsString};"
     out "this.definitionLine = 1;"
     out "const var_prelude = {standardPrelude};"
