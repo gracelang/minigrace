@@ -9,6 +9,8 @@ import "xmodule" as xmodule
 import "identifierresolution" as ir
 import "errormessages" as em
 
+def MatchError = ProgrammingError.refine "MatchError"
+
 def input1 = list [
     "var x: Number is writable := 100",
     "def xx: Number is readable = 3",
@@ -219,7 +221,31 @@ testSuite "Unknown is reserved #290" with {
               shouldRaise (em.SyntaxError)
               mentioning "Unknown is a reserved name"
     }
-}        
+}
+
+testSuite "match case" with {
+    test "case blocks must have a parameter" by {
+        assert {astNode "try-catch" from ‹
+method tryIt(a) {
+    match(a) case { 1 →
+        print "a=1"
+    } case { s:String →
+        print "string {s}"
+    } case { print "no argument here"
+    } else {
+        print "some other value ({a})"
+    }
+}
+›} shouldRaise (em.SyntaxError) mentioning "the case block" and "must have one parameter"
+    }
+    test "exactly one block must match" by {
+        assert {
+            match ( object { method foo -> Number { ... } } )
+                case { _ : interface { foo -> String} -> print "foo returns String" }
+                case { _ : interface { foo -> Number} -> print "foo returns Number" }
+        } shouldRaise (MatchError) mentioning "2 cases match"
+    }
+}
 
 exit
 
