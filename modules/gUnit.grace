@@ -264,8 +264,7 @@ class testCaseNamed(name') -> TestCase {
             print "{ex} on line {lineNr} of {modName}: {msg}"
         }
         def bt = exceptionPacket.backtrace
-        while {bt.size > 0} do {
-            def frameDescription = bt.pop
+        bt.reversed.do { frameDescription ->
             print("  requested from " ++ frameDescription)
             if (frameDescription.contains(testName)) then { return }
             if (frameDescription.contains "test(_)by(_)") then {  
