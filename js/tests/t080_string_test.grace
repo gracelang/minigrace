@@ -8,6 +8,18 @@ def stringOpsTest = object {
             assert ("abc" ++ "def") shouldBe "abcdef"
         }
 
+        method test_concat_onto_empty {
+            assert ("" ++ "abc") shouldBe "abc"
+        }
+
+        method test_concat_with_empty {
+            assert ("abc" ++ "") shouldBe "abc"
+        }
+
+        method test_concat_onto_empty_of_non_string {
+            assert ("" ++ 74) shouldBe "74"
+        }
+
         method test_compare_identity_concat {
             def s = "abcd" ++ "ef"
             assert (s.compare(s) == 0) description "identical strings do not compare 0"

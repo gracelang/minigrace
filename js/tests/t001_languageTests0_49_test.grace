@@ -194,6 +194,29 @@ def aGraceLangTest = object {
             assert(str)shouldBe("OK 1 elseif\nOK 2 elseif2\nOK 3 else\n")
         }
 
+        method test_ifTrue {
+            var succeeded := false
+            true.ifTrue { succeeded := true }
+            false.ifTrue { failBecause "false is true"}
+            assert (succeeded) description "true is not true"
+        }
+        method test_ifFalse {
+            var succeeded := false
+            false.ifFalse { succeeded := true }
+            true.ifFalse { failBecause "true is false"}
+            assert (succeeded) description "false is not false"
+        }
+        method test_ifFalse_ifTrue {
+            var succeeded := false
+            false.ifFalse { succeeded := true } ifTrue { failBecause "false is not false"}
+            assert (succeeded) description "false is not false"
+        }
+        method test_ifTrue_ifFalse {
+            var succeeded := false
+            true.ifTrue { succeeded := true } ifFalse { failBecause "true is not true"}
+            assert (succeeded) description "true is not true"
+        }
+
         method test_010_while {
             var x := 1
             while {x < 5} do {
@@ -634,4 +657,4 @@ def aGraceLangTest = object {
 def graceLangTest = gU.testSuite.fromTestMethodsIn(aGraceLangTest) named "t001"
 graceLangTest.runAndPrintResults
 
-
+gU.exit

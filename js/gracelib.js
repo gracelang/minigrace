@@ -349,7 +349,8 @@ GraceString.prototype = {
         "debug$Iterator":   object_debugIterator,
         "::(1)":            object_colonColon,
         "++(1)": function(argcv, other) {
-            var o = callmethod(other, "asString", [0]);
+            var o = other.className == "string" ? other : request(other, "asString", [0]);
+            if (this._value.length === 0) return o;
             return new GraceString(this._value + o._value);
         },
         ">>(1)": function(argcv, target) {
@@ -1135,6 +1136,18 @@ GraceBoolean.prototype = {
         "basicAsString":    object_basicAsString,
         "debug$Iterator":   object_debugIterator,
         "::(1)":            object_colonColon,
+        "ifTrue(1)": function(argcv, action) {
+            return (this._value) ? request(action, "apply") : GraceDone;
+        },
+        "ifFalse(1)": function(argcv, action) {
+            return (this._value) ? GraceDone : request(action, "apply");
+        },
+        "ifTrue(1)ifFalse(1)": function(argcv, trueAction, falseAction) {
+            return ((this._value) ? request(trueAction, "apply") : request(falseAction, "apply"));
+        },
+        "ifFalse(1)ifTrue(1)": function(argcv, falseAction, trueAction) {
+            return ((this._value) ? request(trueAction, "apply") : request(falseAction, "apply"));
+        },
         "not": function(argcv) {
             return ((this._value) ? GraceFalse : GraceTrue);
         },
