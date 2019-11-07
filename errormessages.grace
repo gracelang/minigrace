@@ -400,12 +400,13 @@ def CompilationError is public = Exception.refine "CompilationError"
 def SyntaxError is public = CompilationError.refine "SyntaxError"
 def ReuseError is public = CompilationError.refine "ReuseError"
 
-method syntaxError(message, errLinenum, errPosition, arr, suggestions) {
+method syntaxError(message:String, errLinenum:Number,
+            errPosition:String, arr:String, suggestions:Collection) {
     // Used by various wrapper methods declared below.
     // The parameters mean:
     //   - message: The text of the error message.
     //   - errLinenum: The line number on which the error occurred.
-    //   - position: A string used to show the position of the error in the error message.
+    //   - errPosition: A string used to show the position of the error in the error message.
     //   - arr: The string used to draw an arrow showing the position of the error.
     //   - suggestions: A (possibly empty) list of suggestions to correct the error.
 
@@ -466,7 +467,7 @@ method syntaxError (message)
               else { "{startpos}-{endpos}" }
     } else { "{startpos}-{endline}:{endpos}" }
     def arr = ("-" * (startpos-1)) ++ ("^" * (endpos - startpos + 1))
-    syntaxError(message, startline, ":{loc}", arr, suggestions)
+    syntaxError(message, startline, "{loc}", arr, suggestions)
 }
 
 method error (message) atRange (r) {
@@ -519,7 +520,7 @@ method syntaxError(message) atPosition(errLinenum, errpos) withSuggestion(sugges
 
 method syntaxError(message)atPosition(errLinenum, errpos)withSuggestions(suggestions) {
     def arr = ("-" * (errpos-1)) ++ "^"
-    syntaxError(message, errLinenum, ":{errpos}", arr, suggestions)
+    syntaxError(message, errLinenum, "{errpos}", arr, suggestions)
 }
 
 method error(message) atPosition(errLinenum, errPosition)
