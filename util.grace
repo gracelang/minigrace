@@ -386,9 +386,13 @@ method outDir {
     }
     outDirCache
 }
-method outDir:=(new) {
-    // this method exists for testing, in particular, t179_gctTypeInformation_test
+method outDir := (new) {
+    // this method exists for testing, in particular, t179
     outDirCache := new
+}
+method gracelibPath := (new) {
+    // this method exists for testing, in particular, t179
+    gracelibPathv := new
 }
 
 var execDirCache := ""

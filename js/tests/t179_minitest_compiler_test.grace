@@ -35,6 +35,7 @@ def input1 = list [
 
 util.lines.clear
 util.lines.addAll(input1)
+util.gracelibPath := "../../j2/"
 def tokens1 = lexer.lexInputLines
 def module1 = parser.parse(tokens1)
 module1.name := "test_179_output"
