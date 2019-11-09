@@ -2771,16 +2771,18 @@ function describe(obj) {
     // information, as in "done done".
     // Because this method is used within callmethod, it's important that the
     // implementation doesn't use callmethod, or infinite recursion may result.
-    var objString = "";
     var classString = "object";
     var shortClassString = "object";
     var source = "defined in module " + obj.definitionModule;
     if (0 !== obj.definitionLine) {
         source = source + ", line " + obj.definitionLine;
     }
+    var objString = classString + " (without working asString method, " + source + ")";
+    const stringQuery = (obj.className === "string") ? "asDebugString" : "asString"
+                       // to get a quoted string
     try {
         var origLineNumber = lineNumber;    // because the asString method will change it
-        var m = findMethod(obj, "asString");
+        var m = findMethod(obj, stringQuery);
         objString = m.call(obj, [0])._value;
     } catch (ex) {
     } finally {
@@ -2791,9 +2793,6 @@ function describe(obj) {
         var dotIx = classString.lastIndexOf(".");
         shortClassString = (dotIx == -1) ? classString : classString.substring(dotIx+1);
     } catch (ex) {
-    }
-    if (objString === "") {
-        return classString + " (without working asString method, " + source + ")";
     }
     if ((classString == "object") || (objString.includes(shortClassString))) {
         return objString + " (" + source + ")";
