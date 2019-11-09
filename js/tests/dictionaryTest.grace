@@ -154,7 +154,7 @@ trait dictionaryTest {
         }
         method testDictionaryRemove5 {
             assert {evens.removeKey 5} shouldRaise (NoSuchObject | TypeError)
-            // TypeError if the type parameters are checked, NoSuchObejctotherwise
+            // TypeError if the type parameters are checked, NoSuchObejct otherwise
         }
         method testDictionaryRemoveTwice {
             evens.removeKey "four"
