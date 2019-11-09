@@ -34,6 +34,7 @@ TEST_DEPENDENCIES = ast lexer fastDict collectionsPrelude parser xmodule errorme
 NPM_VERSION_PREFIX=1.0
 VERSION := $(NPM_VERSION_PREFIX).$(shell ./tools/git-calculate-generation)$(ALPHA-BETA)
 NPM_STABLE_VERSION=1.0.4677
+OFFLINE ?= false
 
 VERBOSITY =
 WEBFILES_STATIC = $(filter-out sample,$(sort index.html global.css minigrace.js tabs.js  gtk.js debugger.js ace  debugger.html  importStandardGrace.js $(ICONS)))
@@ -128,6 +129,7 @@ dialects: gracelib.o js js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
 
 echo:
 	@echo VERSION = $(VERSION)
+	@echo OFFLINE = $(OFFLINE)
 	@echo MAKEFLAGS = $(MAKEFLAGS)
 	@echo JS-KG = $(JS-KG)
 	@echo MGSOURCEFILES = $(MGSOURCEFILES) "\n"
@@ -341,17 +343,17 @@ oldWeb: $(WEBFILES) js/ace/ace.js
 	rsync -a -l -z --delete $(WEBFILES) $(WEB_SERVER):$(WEB_DIRECTORY)
 
 pull-web-editor:
-	@if [ -e grace-web-editor ] ; \
+	@$(OFFLINE) || if [ -e grace-web-editor ] ; \
        then printf "grace-web-editor: " ; cd grace-web-editor; git pull ; \
        else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi
 
 pull-objectdraw:
-	@if [ -e objectdraw ] ; \
+	@$(OFFLINE) || if [ -e objectdraw ] ; \
        then printf "objectdraw: " ; cd objectdraw; git pull ; \
        else git clone https://github.com/gracelang/objectdraw/ ; fi
 
 pull-brace: pull-web-editor
-	@if [ -e grace-web-editor/brace ] ; \
+	@$(OFFLINE) || if [ -e grace-web-editor/brace ] ; \
        then printf "grace-web-editor/brace: " ; cd grace-web-editor/brace; git pull ; \
        else git clone https://github.com/gracelang/brace/ grace-web-editor/brace ; fi
 
