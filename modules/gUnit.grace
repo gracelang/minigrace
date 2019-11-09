@@ -107,8 +107,8 @@ trait assertion {
         assert(block0) shouldRaise (desiredException)
               mentioning (error) and ""
     }
-    method assert(block0) shouldRaise (desiredException)
-              mentioning (error1) and (error2) {
+    method assert(block0:Procedure0) shouldRaise (desiredException:Pattern)
+              mentioning (error1:String) and (error2:String) {
         var completedNormally := true
         countOneAssertion
         try {
