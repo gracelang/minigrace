@@ -653,7 +653,7 @@ testSuite "sys" with {
     }
     test "execPath" by {
         def p = sys.execPath
-        assert (p.endsWith "minigrace/js/tests/")
+        assert (p.endsWith "/js/tests/")
             description "sys.execPath = {p}"
     }
     test "requestCount" by {
@@ -672,6 +672,10 @@ testSuite "sys" with {
         if (env.contains "CONTINUOUS_INTEGRATION") then {
             assert (ci == "true")
                 description "CONTINUOUS_INTEGRATION is defined but is not true"
+        }
+        def pwd = env.at "PWD"
+        if (env.contains "PWD") then {
+            assert (pwd.contains "minigrace") description "PWD is defined but does not contain 'minigrace'"
         }
     }
     test "environ put" by {
