@@ -91,9 +91,10 @@ clean:
 	rm -f $(OBJECTDRAW:%.grace=%.*)
 	rm -f $(OBJECTDRAW:%.grace=modules/%.*)
 	rm -rf known-good
-	( cd js && for sf in $(SOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
-	( cd js && for sf in $(SOURCEFILES) ; do rm -f $$sf ; done )
+	( cd js && for sf in $(MGSOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
+	( cd js && for sf in $(MGSOURCEFILES) ; do rm -f $$sf ; done )
 	cd js && rm -rf $(ALL_LIBRARY_MODULES:%.grace=%.js) standardInput.* *.gct util.*
+	cd js/tests && rm -rf $(ALL_LIBRARY_MODULES:%.grace=%.js) $(MGSOURCEFILES:.grace=.js) standardInput.* *.gct util.*
 	rm -f js/minigrace.js
 	rm -fr c
 	rm -f minigrace *.js
@@ -101,10 +102,10 @@ clean:
 #       remove the grace-web-editor directory only if it exists and is clean
 	rm -fr selftest
 	rm -fr tests/test*.log tests/*{.c,.gct,.gso,.gcn,.js}
-	rm -fr js/tests/test*.{log,err,out} js/tests/*{.c,.gct,.gso,.gcn,.js} js/tests/subtest/*{.gct,.js}
+	(cd js/tests & rm -fr test*.log test*.err test*.out *.c *.gct *.gso *.gcn *.js subtest/*.gct subtest/*.js)
 	rm -f tests/retired/*{.c,.gct,.gso,.gcn,.js} js/tests/retired/*{.c,.gct,.gso,.gcn,.js}
 	rm -rf stubs
-	rm Makefile.conf
+	rm -f Makefile.conf
 	cd sample/dialects && $(MAKE)  clean
 	cd js/sample/graphics && $(MAKE) clean
 	cd js/sample/dialects && $(MAKE) clean
