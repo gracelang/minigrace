@@ -628,6 +628,12 @@ method checkForAmbiguityOf (node) definedIn (definingScope) asA (kind) {
     def conflictingScope = definingScope.parent.thatDefines(name) ifNone {
         return
     }
+    if (conflictingScope.variety == "built-in") then {
+        return  // TODO:  this is a temporary hack to
+                // allow us to get rid of the built-ins.
+                // If we can't redefine them in a Grace file
+                // we can't get rid of them!
+    }
     def conflictingKind = conflictingScope.kind(name)
     if (conflictingKind.fromParent) then {
         return    // request is ambiguous only if name is defined
