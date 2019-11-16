@@ -1,12 +1,8 @@
 dialect "none"
+import "intrinsic" as intrinsic
+import "typesBundle" as typesBundle
 
-method abstract {
-    SubobjectResponsibility.raise "abstract method not overriden by subobject"
-}
-
-method required {
-    SubobjectResponsibility.raise "required method not provided by subobject"
-}
+use typesBundle.open
 
 method do(action)while(condition) {
     while {
@@ -51,10 +47,10 @@ method valueOf (nullaryBlock) {
 
 trait BasicPattern {
     method &(o) {
-        AndPattern.new(self, o)
+        AndPattern(self, o)
     }
     method |(o) {
-        OrPattern.new(self, o)
+        OrPattern(self, o)
     }
     method prefix ¬ {
         NotPattern(self)
@@ -199,7 +195,7 @@ once method TypeIntersection {
 once method TypeVariant {
   object {
     class new(t1, t2) {
-        inherit OrPattern.new(t1, t2)
+        inherit OrPattern(t1, t2)
             alias matchHook(_) = matches(_)
         use BaseType
         var name is readable := "‹anon›"
@@ -269,117 +265,6 @@ once method TypeSubtraction {
 // Now define the types.  Because some of the types are defined using &,
 // TypeIntersection must be defined first.
 
-type Extractable = {
-    extract
-}
-
-type Pattern = {
-    & (other:Pattern) -> Pattern
-    | (other:Pattern) -> Pattern
-    matches(value:Object) -> Boolean
-}
-
-type ExceptionKind = Pattern & interface {
-    refine (parentKind:ExceptionKind) -> ExceptionKind
-    parent -> ExceptionKind
-    raise (message:String) -> Done
-    raise (message:String) with (argument:Object) -> Done
-}
-
-type Point =  {
-
-    x -> Number
-    // the x-coordinates of self
-
-    y -> Number
-    // the y-coordinate of self
-
-    == (other:Object) -> Boolean
-    // true if other is a Point with the same x and y coordinates as self.
-
-    + (other:Point|Number) -> Point
-    // if other is a Point, returns the Point that is the vector sum of self
-    // and other, i.e. (self.x+other.x) @ (self.y+other.y).  If other is a Number,
-    // returns the point (self.x+other) @ (self.y+other)
-
-    - (other:Point|Number) -> Point
-    // if other is a Point, returns the Point that is the vector difference of
-    // self and other, i.e. (self.x-other.x) @ (self.y-other.y). If other is a
-    // Number, returns the point (self.x-other) @ (self.y-other)
-
-
-    prefix- -> Point
-    // the negation of self
-    
-    * (factor:Number) -> Point
-    // this point scaled by factor, i.e. (self.x*factor) @ (self.y*factor)
-    
-    / (factor:Number) -> Point
-    // this point scaled by 1/factor, i.e. (self.x/factor) @ (self.y/factor)
-
-    length -> Number
-    // distance from self to the origin
-
-    distanceTo(other:Point) -> Number
-    // distance from self to other
-
-    dot (other:Point) -> Number
-    ⋅ (other:Point) -> Number
-    // dot product of self and other
-
-    norm -> Point
-    // the unit vector (vecor of length 1) in same direction as self
-
-    hash -> Number
-    // the hash of self
-}
-
-class point2Dx (x') y (y') {
-    use equality
-    def x is readable = x'
-    def y is readable = y'
-    method asString { "({x}@{y})" }
-    method asDebugString { self.asString }
-    method distanceTo(other:Point) {
-        (((x - other.x)^2) + ((y - other.y)^2)).sqrt
-    }
-    method -(other) {
-        match(other)
-            case { o:Point -> point2Dx (x - o.x) y (y - o.y) }
-            case { n:Number -> point2Dx (x - n) y (y - n) }
-            else { other.reverseMinusPoint(self) }
-    }
-    method +(other) {
-        match(other)
-            case { o:Point -> point2Dx (x + o.x) y (y + o.y) }
-            case { n:Number -> point2Dx (x + n) y (y + n) }
-            else { other.reversePlusPoint(self) }
-    }
-    method /(other:Number) { point2Dx (x / other) y (y / other) }
-    method *(other:Number) { point2Dx (x * other) y (y * other) }
-    method length { ((x^2) + (y^2)).sqrt }
-    method ==(other) {
-        match (other)
-            case { o:Point -> (x == o.x) && (y == o.y) }
-            else { false }
-    }
-    method prefix- { point2Dx (-x) y (-y) }
-    method dot (other:Point) -> Number {
-        // dot product
-        (x * other.x) + (y * other.y)
-    }
-    method ⋅ (other:Point) -> Number {
-        // dot product
-        (x * other.x) + (y * other.y)
-    }
-    method reverseTimesNumber(n) { point2Dx (n * x) y (n * y) }
-    method reversePlusNumber(n) { point2Dx (n + x) y (n + y) }
-    method reverseDivideNumber(n) { point2Dx (n / x) y (n / y) }
-    method reverseMinusNumber(n) { point2Dx (n - x) y (n - y) }
-    method norm { self / self.length }
-    method hash { hashCombine(x.hash, y.hash) }
-}
-
 def pi is public = π
 
 method hashCombine(a, b) {
@@ -415,21 +300,21 @@ trait identityEquality {
 
 // New names for Blocks: FunctionN == BlockN
 
-type Function0⟦ResultT⟧  = interface {
+type Function0⟦ResultT⟧  = Object & interface {
     apply -> ResultT     // Function with no arguments and a result of type ResultT
     //  matches -> Boolean   // answers true
 }
-type Function1⟦ArgT1, ResultT⟧ = interface {
+type Function1⟦ArgT1, ResultT⟧ = Object & interface {
     apply(a1:ArgT1) -> ResultT    // Function with argument a1 of type ArgT1, and a result of type ResultT
     matches(a1:Object) -> Boolean   // answers true if a1 <: ArgT1
 }
-type Function2⟦ArgT1, ArgT2, ResultT⟧ = interface {
+type Function2⟦ArgT1, ArgT2, ResultT⟧ = Object & interface {
     apply(a1:ArgT1, a2:ArgT2) -> ResultT
     // Function with arguments of types ArgT1 and ArgT2, and a result of type ResultT
     matches(a1:Object, a2:Object) -> Boolean
         // answers true if a1 <: ArgT1 and a2 <: ArgT2
 }
-type Function3⟦ArgT1, ArgT2, ArgT3, ResultT⟧  = interface {
+type Function3⟦ArgT1, ArgT2, ArgT3, ResultT⟧  = Object & interface {
     apply(a1:ArgT1, a2:ArgT2, a3:ArgT3) -> ResultT
     matches(a1:Object, a2:Object, a3:Object) -> Boolean
         // answers true if a1 <: ArgT1 and a2 <: ArgT2 and a3 :< ArgT3

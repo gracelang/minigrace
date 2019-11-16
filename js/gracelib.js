@@ -1643,13 +1643,11 @@ GracePrimitiveArray.prototype = {
 };
 
 function GraceOrPattern(l, r) {
-    var orClass = callmethod(Grace_prelude, "OrPattern", [0]);
-    return callmethod(orClass, "new(2)", [2], l, r);
+    return callmethod(Grace_prelude, "OrPattern", [2], l, r);
 }
 
 function GraceAndPattern(l, r) {
-    var andClass = callmethod(Grace_prelude, "AndPattern", [0]);
-    return callmethod(andClass, "new(2)", [2], l, r);
+    return callmethod(Grace_prelude, "AndPattern", [2], l, r);
 }
 
 function GraceNotPattern(o) {
@@ -1780,6 +1778,9 @@ GraceType.prototype = {
         },
         "name": function type_name (argcv) {
             return new GraceString(this.name);
+        },
+        "isNone": function type_isNone (argcv) {
+            return GraceFalse;
         }
     },
     className: "Type",
@@ -1789,6 +1790,7 @@ GraceType.prototype = {
 };
 
 GraceType.prototype.methods["setName(1)"].confidential = true;
+
 
 function GraceBlock(recvr, lineNum, numParams) {
     this.definitionModule = recvr.definitionModule;
@@ -2948,7 +2950,7 @@ GraceExceptionPacket.prototype = {
                 prefix = rf;
             }
         },
-        "printBacktraceSkippingModules": function(argcv, skipable) {
+        "printBacktraceSkippingModules(1)": function(argcv, skipable) {
             var exceptionName = callmethod(callmethod(this, "exception", [0]), "asString", [0]);
             var ln = callmethod(this, "lineNumber", [0]);
             var mn = callmethod(this, "moduleName", [0]);
@@ -2992,7 +2994,9 @@ GraceExceptionPacket.prototype = {
         }
     },
     exctype: 'graceexception',
-    get moduleName() { return this.method.definitionModule || "native code"; }
+    get moduleName() { return this.method.definitionModule || "native code"; },
+    definitionLine: 0,
+    classUid: "ExceptionPacket-intrinsic"
 };
 
 function GraceException(name, parent) {
@@ -3039,6 +3043,18 @@ GraceException.prototype = {
             if (o.className !== 'Exception') return GraceFalse;
             if (o.name !== this.name) return GraceFalse;
             return callmethod(this.parent, "==(1)", [1], o.parent);
+        },
+        "hash": function exception_hash(argcv) {
+            if (! this._hash) {
+                var hc = 47;
+                for (let i=0; i<this.name.length; i++) {
+                    hc *= 29;
+                    hc += this.name.charCodeAt(i);
+                    hc = hc & hc;
+                }
+                this._hash = new GraceNum(Math.abs(hc));
+            }
+            return this._hash;
         },
         "&(1)": function(argcv, o) {
             return new GraceAndPattern(this, o);

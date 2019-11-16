@@ -24,7 +24,7 @@ JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
 PRELUDESOURCEFILES = collectionsPrelude.grace standardGrace.grace
-REALSOURCEFILES = ast.grace compiler.grace errormessages.grace fastDict.grace genjs.grace identifierKinds.grace identifierresolution.grace io.grace lexer.grace mirror.grace parser.grace regularExpression.grace shasum.grace sys.grace unicode.grace unixFilePath.grace util.grace xmodule.grace
+REALSOURCEFILES = ast.grace compiler.grace errormessages.grace fastDict.grace genjs.grace identifierKinds.grace identifierresolution.grace intrinsic.grace io.grace lexer.grace mirror.grace parser.grace regularExpression.grace shasum.grace sys.grace unicode.grace unixFilePath.grace util.grace xmodule.grace
 
 SOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES)
 MGSOURCEFILES = buildinfo.grace $(SOURCEFILES)
