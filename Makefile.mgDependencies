@@ -1,6 +1,14 @@
-j1/standardGrace.js: j1/fastDict.js j1/intrinsic.js
+j1/standardGrace.js: j1/standardGraceBundle.js
+j1/standardGraceBundle.js: j1/basicTypesBundle.js j1/collections.js j1/intrinsic.js j1/pattern+typeBundle.js
+j1/basicTypesBundle.js: j1/intrinsic.js
+j1/collections.js: j1/intrinsic.js
+j1/pattern+typeBundle.js: j1/equalityBundle.js j1/mirror.js
+j1/mirror.js: j1/intrinsic.js
+j1/equalityBundle.js: j1/basicTypesBundle.js j1/intrinsic.js
+
 j1/ast.js: j1/util.js j1/util.js j1/identifierKinds.js j1/standardGrace.js
 j1/buildinfo.js: j1/standardGrace.js
+
 j1/compiler.js: j1/util.js j1/genjs.js j1/lexer.js j1/parser.js j1/identifierresolution.js j1/buildinfo.js j1/standardGrace.js j1/typeComparison.js
 j1/errormessages.js: j1/util.js j1/standardGrace.js
 j1/genjs.js: j1/ast.js j1/util.js j1/unixFilePath.js j1/xmodule.js j1/errormessages.js j1/identifierKinds.js j1/xmodule.js j1/standardGrace.js j1/shasum.js j1/buildinfo.js
@@ -9,9 +17,8 @@ j1/identifierresolution.js: j1/ast.js j1/util.js j1/xmodule.js j1/fastDict.js j1
 j1/lexer.js: j1/util.js j1/unicode.js  j1/fastDict.js j1/errormessages.js j1/standardGrace.js j1/regularExpression.js
 j1/parser.js: j1/io.js  j1/util.js j1/ast.js j1/errormessages.js j1/standardGrace.js
 j1/requireTypes.js: j1/dialect.js j1/standardGrace.js
-j1/standardGrace.js: j1/collectionsPrelude.js
 j1/staticTypes.js: j1/dialect.js j1/standardGrace.js
-j1/fastDict.js: j1/collectionsPrelude.js
+j1/fastDict.js: j1/collections.js
 j1/typeComparision.js: j1/mirror.js j1/standardGrace.js
 j1/unixFilePath.js: j1/standardGrace.js
 j1/util.js: j1/io.js j1/sys.js j1/unixFilePath.js j1/standardGrace.js j1/fastDict.js

@@ -35,7 +35,6 @@ def StringType = native "js" code ‹result = type_String›
 def NumberType = native "js" code ‹result = type_Number›
 def BooleanType = native "js" code ‹result = type_Boolean›
 def ObjectType = native "js" code ‹result = type_Object›
-def UnknownType = native "js" code ‹result = type_Unknown›
 def TypeType = native "js" code ‹result = type_Type›
 
 method hashCombine(a, b) {

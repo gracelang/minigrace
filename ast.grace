@@ -193,7 +193,7 @@ def ancestorChain is public = object {
     }
 }
 
-def emptySeq = emptySequence
+def emptySeq = []
 
 type AstNode = interface {
     kind -> String
@@ -1694,7 +1694,7 @@ def objectNode is public = object {
             // answers the names of all of the methods defined directly in
             // this object.  Inherited names are _not_ included.
             if (false == myLocalNames) then {
-                myLocalNames := emptySet
+                myLocalNames := set.empty
                 value.do { node ->
                     if (node.isFieldDec || node.isMethod) then {
                         myLocalNames.add(node.nameString)
@@ -2931,7 +2931,7 @@ def inheritNode is public = object {
         inherit baseNode
         def kind is public = "inherit"
         var value is public := expr
-        var providedNames is public := emptySet
+        var providedNames is public := set.empty
         var aliases is public := list [ ]
         var exclusions is public := list [ ]
         var isUse is public := false  // this is a `use trait` clause, not an inherit

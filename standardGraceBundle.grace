@@ -1,8 +1,8 @@
 dialect "none"
 import "intrinsic" as intrinsic
 import "basicTypesBundle" as basicTypesBundle
-import "collectionsPrelude" as collections is public
-import "patternsBundle" as patternsBundle
+import "collections" as collections is public
+import "pattern+typeBundle" as patternsBundle
 
 trait open {
     use basicTypesBundle.open

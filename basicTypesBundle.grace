@@ -12,7 +12,6 @@ trait open {
     type Number = intrinsic.NumberType
     type Boolean = intrinsic.BooleanType
     type Object = intrinsic.ObjectType
-    type Unknown = intrinsic.UnknownType
     type Type = intrinsic.TypeType
     type None = intrinsic.NoneType
 

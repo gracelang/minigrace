@@ -1,5 +1,5 @@
 dialect "none"
-import "collectionsPrelude" as collections
+import "collections" as collections
 
 def ConcurrentModification is public = ProgrammingError.refine "ConcurrentModification"
 
@@ -122,7 +122,7 @@ class dictionary⟦K,T⟧ {
         }
         method removeAllKeys(keys) {
             mods := mods + 1
-            for (keys) do { k → removeKey(k) }
+            keys.do { k → removeKey(k) }
             self
         }
         method removeKey(k) {
