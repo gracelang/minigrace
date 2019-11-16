@@ -241,6 +241,7 @@ method iteratorOver⟦T⟧ (sourceIterator: Iterator⟦T⟧)
     var cache
     var cacheLoaded := false
     object {
+        use intrinsic.controlStructures
         method asString { "a filtered iterator over {sourceIterator}" }
         method hasNext {
             // To determine if this iterator has a next element, we have to find
@@ -303,7 +304,7 @@ class lazyConcatenation⟦T⟧(left, right) -> Enumerable⟦T⟧{
 }
 
 trait collection⟦T⟧ {
-
+    use intrinsic.controlStructures
     method asString { "a collection trait" }
     method sizeIfUnknown(action) {
         // override if size is known
@@ -481,7 +482,7 @@ method isEqual(left) toCollection(right) {
     if (MinimalyIterable.matches(right)) then {
         def leftIter = left.iterator
         def rightIter = right.iterator
-        while {leftIter.hasNext && rightIter.hasNext} do {
+        self.while {leftIter.hasNext && rightIter.hasNext} do {
             if (leftIter.next != rightIter.next) then {
                 return false
             }
