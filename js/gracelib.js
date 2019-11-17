@@ -109,7 +109,7 @@ function object_asDebugString (argcv) {
     return callmethod(this, "asString", [0]);
 }
 function object_debugIterator (argcv) {
-    return new GraceIterator(this.data);
+    return new GraceIterator(this);
 }
 function object_colonColon (argcv, other) {
     return callmethod(GraceBindingClass(), "key(1)value(1)", [1, 1], this, other);
@@ -1385,7 +1385,7 @@ GraceSequence.prototype = {
             return new GraceString(s);
         },
         "debug$Iterator": function(argcv) {
-            return new GraceSequenceIterator(this._value);
+            return new GraceSequenceIterator(this);
         },
         "==(1)": function(argcv, other) {
             var collections = callmethod(var___95__prelude, "collections", [0]);
@@ -1401,7 +1401,7 @@ GraceSequence.prototype = {
         },
         "::(1)": object_colonColon,
         "iterator": function(argcv) {
-            return new GraceSequenceIterator(this._value);
+            return new GraceSequenceIterator(this);
         },
         "do(1)": function sequence_do(argcv, action1) {
             var self = this._value;
@@ -1504,8 +1504,7 @@ GraceSequence.prototype = {
 
 function GracePrimitiveArray(len) {
     this._value = new Array(len);
-//    this._value.fill(undefined);
-//    elements are all undefined by default
+    //  elements are all undefined by default
 }
 
 GracePrimitiveArray.prototype = {
@@ -1576,7 +1575,14 @@ GracePrimitiveArray.prototype = {
             return new GraceString(s);
         },
         "debug$Iterator": function(argcv) {
-            return new GraceIterator(this._value);
+            return new GraceIterator(this);
+        },
+        "do(1)": function (argcv, block) {
+            for (let i=0; i<this._value.length; i++) {
+                const obj = this._value[i];
+                if (obj) request(block, "apply(1)", [1], obj);
+            }
+            return GraceDone
         },
         "contains(1)": function(argcv, other) {
             for (var i=0; i<this._value.length; i++) {
@@ -1596,7 +1602,7 @@ GracePrimitiveArray.prototype = {
             return callmethod(t, "not", [0]);
         },
         "iterator": function(argcv) {
-            return new GraceIterator(this._value);
+            return new GraceIterator(this);
         },
         "reduce(2)": function(argcv, initial, block) {
             var res = initial;
@@ -2046,9 +2052,10 @@ GraceHashMap.prototype.methods['asString'] = hashMap_asString;
 GraceHashMap.prototype.methods['asDebugString'] = hashMap_asString;
 
 function GraceSequenceIterator(l) {
-    this._value = l;
+    this._value = l._value;
+    this._max = this._value.length;
     this._index = 0;
-    this._max = l.length;
+    this._obj = l;
 }
 GraceSequenceIterator.prototype = Grace_allocObject(GraceObject, "sequenceIterator");
 GraceSequenceIterator.prototype.methods.hasNext = function() {
@@ -2060,9 +2067,8 @@ GraceSequenceIterator.prototype.methods.next = function() {
         this._index++;
         return rv;
     }
-    var ie = callmethod(var___95__prelude, "IteratorExhausted", [0]);
-        throw new GraceExceptionPacket(ie,
-            new GraceString("on built-in list " + this._value));
+    const selfString = request(this._obj, "asString")._value;
+    raiseException(IteratorExhaustedObject, "on sequence " + selfString);
 };
 GraceSequenceIterator.prototype.classUid = "sequenceIterator-intrinsic";
 
@@ -2084,9 +2090,7 @@ GraceStringIterator.prototype = {
         },
         next: function() {
             if (this._index >= this._max) {
-                var ie = callmethod(var___95__prelude, "IteratorExhausted", [0]);
-                throw new GraceExceptionPacket(ie,
-                    new GraceString("on string " + this._value));
+                raiseException(IteratorExhaustedObject, "on string " + this._value);
             }
             var rv = new GraceString(this._value.charAt(this._index));
             this._index++;
@@ -2101,8 +2105,9 @@ GraceStringIterator.prototype = {
 GraceStringIterator.prototype.classUid = "stringIterator-intrinsic";
 
 function GraceIterator(obj) {
-    this._value = obj;
-    this._keys = Object.keys(obj);
+    this._value = obj._value;
+    this._obj = obj;
+    this._keys = Object.keys(this._value);
     this._keyIndex = 0;
     this._max = this._keys.length;
 }
@@ -2112,13 +2117,16 @@ GraceIterator.prototype.methods.hasNext = function() {
 };
 GraceIterator.prototype.methods.next = function() {
     if (this._keyIndex < this._max) {
-        var result = this._value[this._keyIndex];
+        const result = this._value[this._keys[this._keyIndex]];
         this._keyIndex++;
         return result;
     }
-    var ie = callmethod(var___95__prelude, "IteratorExhausted", [0]);
-    throw new GraceExceptionPacket(ie,
-        new GraceString("on primitiveArray " + this._value));
+    const selfString = request(this._obj, "asString")._value;
+    raiseException(IteratorExhaustedObject, "on " + selfString);
+};
+GraceIterator.prototype.methods.asString = function() {
+    const selfString = request(this._obj, "asString")._value;
+    return new GraceString("an iterator over " + selfString);
 };
 
 function StackFrame(methodName) {
@@ -3157,9 +3165,11 @@ var ImportErrorObject = new GraceException("ImportError", EnvironmentExceptionOb
 var TypeErrorObject = new GraceException("TypeError", ProgrammingErrorObject);
 var NoSuchMethodErrorObject = new GraceException("NoSuchMethod", ProgrammingErrorObject);
 var BoundsErrorObject = new GraceException("BoundsError", ProgrammingErrorObject);
+var IteratorExhaustedObject = new GraceException("IteratorExhausted", ProgrammingErrorObject);
 var UninitializedVariableObject = new GraceException("UninitializedVariable", ProgrammingErrorObject);
 
 function raiseException(ex, msg, data) {
+    data = data || new GraceString("no data");
     const newEx = new GraceExceptionPacket(ex, new GraceString(msg), data);
     var callee = arguments.callee;
     var caller = callee.caller;
@@ -3179,8 +3189,8 @@ function raiseException(ex, msg, data) {
     throw newEx;
 }
 
-function raiseClassError(msg) {
-    raiseException(TypeErrorObject, msg);
+function raiseClassError(msg, data) {
+    raiseException(TypeErrorObject, msg, data);
 }
 
 function raiseBoundsError(msg, data) {
@@ -3483,6 +3493,7 @@ if (typeof global !== "undefined") {
     global.Alias = Alias;
     global.assertTypeOrMsg = assertTypeOrMsg;
     global.badBlockArgs = badBlockArgs;
+    global.BoundsErrorObject = BoundsErrorObject;
     global.callmethod = callmethod;
     global.canonicalMethodName = canonicalMethodName;
     global.checkBounds = checkBounds;
@@ -3536,6 +3547,7 @@ if (typeof global !== "undefined") {
     global.GraceType = GraceType;
     global.importedModules = importedModules;
     global.ImportErrorObject = ImportErrorObject;
+    global.IteratorExhaustedObject = IteratorExhaustedObject;
     global.inBrowser = inBrowser;
     global.jsTrue = jsTrue;
     global.Lineup = GraceSequence;

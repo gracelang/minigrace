@@ -272,11 +272,17 @@ def sequenceTest is public = object {
             deny (empty.iterator.hasNext)
                 description "empty iterator has an element"
         }
+        method testSequenceIteratorEmptyRaisesException {
+            assert {empty.iterator.next} shouldRaise (IteratorExhausted)
+                mentioning "[]"
+        }
         method testSequenceIteratorNonEmpty {
             def accum = set.empty
             def iter = oneToFive.iterator
             while {iter.hasNext} do { accum.add(iter.next) }
             assert (accum) shouldBe (set [1, 2, 3, 4, 5])
+            assert {iter.next} shouldRaise (IteratorExhausted)
+                mentioning (oneToFive.asString)
         }
         method testSequenceIteratorToSetDuplicates {
             def accum = set.empty

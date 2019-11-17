@@ -27,3 +27,5 @@ dictTests.runAndPrintResults
 
 def lazyEnumTests = gU.testSuite.fromTestMethodsIn(lazyEnumTest.lazyEnumTest)
 lazyEnumTests.runAndPrintResults
+
+gU.exit
