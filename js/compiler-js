@@ -274,13 +274,13 @@ function abspath(file) {
 var execDir = __dirname + path.sep;   // the directory that contains this executable
 
 try {
+    minigrace = new MiniGrace();
     if (typeof GraceObject === "undefined") {
         require(execDir + "gracelib.js");
     }
     if (typeof unicodedata === "undefined") {
         require(execDir + "unicodedata.js");
     }
-    minigrace = new MiniGrace();
     minigrace.loadModule("standardGrace", execDir, []);
     minigrace.execFile = execDir + "compiler.js";
 
