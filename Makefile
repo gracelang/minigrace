@@ -264,7 +264,7 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
 js/minigrace-inspect: js/minigrace-js
-	sed -e "s|node|node --inspect|" $< > $@
+	sed -e "s|node|node --inspect-brk|" $< > $@
 	chmod a+x $@
 
 js/tests/gracelib.js: js/gracelib.js
@@ -318,7 +318,7 @@ $(JS-KG)/unicodedata.js: $(JS-KG)
 $(JS-KG)/minigrace-js: $(JS-KG)
 
 $(JS-KG)/minigrace-inspect: $(JS-KG)/minigrace-js
-	sed "s|node|node --inspect|" $< > $@
+	sed "s|node|node --inspect-brk|" $< > $@
 
 npm-build: minigrace.env Makefile
 	mkdir -p npm-build-dir
