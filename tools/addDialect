@@ -1,0 +1,9 @@
+#!/bin/bash
+tmpfile=$(mktemp)
+input=$1
+grep -q "^dialect \"" $input && exit
+cp $input "$tmpfile" &&
+awk 'BEGIN { print "dialect \"standard\"" }
+{ print $0 }' "$tmpfile" > $input
+rm "$tmpfile"
+
