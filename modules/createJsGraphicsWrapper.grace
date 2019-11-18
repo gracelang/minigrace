@@ -1,3 +1,4 @@
+dialect "standard"
 class eventListener {
     var clickBlock := { }
     var mouseUpBlock := { }

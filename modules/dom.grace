@@ -1,3 +1,4 @@
+dialect "standard"
 native "js" code ‹
 
     function unwrapDOMObject(obj) {

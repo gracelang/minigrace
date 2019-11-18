@@ -1,3 +1,4 @@
+dialect "standard"
 // this module provides a function to compute the sha256 checksum
 // of a file.  It depends on the sha node package, which must be installed.
 

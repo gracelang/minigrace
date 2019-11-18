@@ -1,3 +1,4 @@
+dialect "standard"
 type Timer = Number
 
 native "js" code ‹

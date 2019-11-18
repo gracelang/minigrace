@@ -1,3 +1,4 @@
+dialect "standard"
 type FileStream = Object & interface {
     // The type FileStream describes the interface of an opened file.  Notice that
     // FileStream conforms to Iterator, so FileStreams can also be treated like Iterators.

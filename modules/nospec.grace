@@ -1,3 +1,4 @@
+dialect "standard"
 // This module is a subsitute for the minispec dialect.
 // It does no testing at all.  It exists so that student code that
 // depends on minispec can be run by the instuctor under gUnit,

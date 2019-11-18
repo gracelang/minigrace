@@ -1,3 +1,4 @@
+dialect "standard"
 import "ast" as ast
 inherit outer.methods
 

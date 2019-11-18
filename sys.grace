@@ -1,3 +1,4 @@
+dialect "standard"
 type Environment = Object & interface {
     at(key:String) -> String
     at(key:String) put(value:String) -> Boolean

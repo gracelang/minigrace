@@ -1,3 +1,4 @@
+dialect "standard"
 type Date = interface {
     year -> Number
         // the year, e.g., 2016

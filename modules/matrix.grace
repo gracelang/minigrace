@@ -1,3 +1,4 @@
+dialect "standard"
 // This module defines a 2-dimensional matrix datatype
 
 import "collectionsPrelude" as cp

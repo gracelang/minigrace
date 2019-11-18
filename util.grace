@@ -1,3 +1,4 @@
+dialect "standard"
 import "io" as io
 import "sys" as sys
 import "unixFilePath" as filePath

@@ -1,3 +1,4 @@
+dialect "standard"
 
 method between0And1 -> Number {
     // A pseudo-random number between in the interval [0..1)

@@ -1,3 +1,4 @@
+dialect "standard"
 type Option⟦T⟧ = Collection⟦T⟧ & interface {
     value → T
     valueIfEmpty⟦U⟧ (eValue:Function0⟦U⟧) → T | U

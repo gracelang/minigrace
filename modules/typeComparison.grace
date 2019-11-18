@@ -1,4 +1,5 @@
 #pragma noTypeChecks
+dialect "standard"
 import "mirror" as mirror
 
 method methodsIn(DesiredType) missingFrom (value) -> String {

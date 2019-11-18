@@ -1,3 +1,4 @@
+dialect "standard"
 
 def thisModule = self
 

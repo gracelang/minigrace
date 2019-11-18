@@ -1,3 +1,4 @@
+dialect "standard"
 import "dom" as dom
 import "sys" as sys
 

@@ -1,3 +1,4 @@
+dialect "standard"
 import "ast" as ast
 import "buildinfo" as buildinfo
 import "genjs" as genjs

@@ -1,3 +1,4 @@
+dialect "standard"
 import "io" as io
 import "ast" as ast
 import "util" as util

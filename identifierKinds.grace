@@ -1,3 +1,4 @@
+dialect "standard"
 // Constants distinguishing between different kinds of identifier.
 // Defines observers for their properties.
 

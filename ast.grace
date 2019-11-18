@@ -1,4 +1,4 @@
-#pragma noTypeChecks
+dialect "standard"
 import "util" as util
 import "identifierKinds" as k
 

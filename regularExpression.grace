@@ -1,3 +1,4 @@
+dialect "standard"
 // A regular exprsssion module for Grace.  Implemented with JS regular expressions
 
 method fromString(regExString) {

@@ -1,3 +1,4 @@
+dialect "standard"
 import "ast" as ast
 import "mirror" as mirror
 import "unicode" as unicode

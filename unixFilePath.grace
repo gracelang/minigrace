@@ -1,3 +1,4 @@
+dialect "standard"
 import "io" as io
 
 type FilePath = EqualityObject & interface {

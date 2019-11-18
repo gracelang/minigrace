@@ -1,3 +1,4 @@
+dialect "standard"
 // This is a transitional version of the compiler. There is now a dialect
 // scope in addition to the built-in preludeScope. The difference is that
 // the dialect is allowed to override what's in the preludeScope.

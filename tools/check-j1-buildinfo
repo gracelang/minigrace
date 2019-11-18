@@ -8,7 +8,8 @@ OBJECT_PATH=$4
 # Regenerate the file buildinfo.grace, but only if necessary.
 # If none of the info has changed, take care not to change the timestamp
 
-echo "method gitrevision { \"j1 compiler\" }" > buildinfo_tmp.grace.$$
+echo "dialect \"standard\"" > buildinfo_tmp.grace.$$
+echo "method gitrevision { \"j1 compiler\" }" >> buildinfo_tmp.grace.$$
 echo "method gitgeneration { \"j1 compiler\" }" >> buildinfo_tmp.grace.$$
 echo "method pathPrefix { \"$PREFIX\" }" >> buildinfo_tmp.grace.$$
 echo "method includepath { \"$INCLUDE_PATH\" }" >> buildinfo_tmp.grace.$$

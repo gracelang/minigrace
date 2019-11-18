@@ -1,3 +1,4 @@
+dialect "standard"
 // GUnit.grace
 // GUnit project
 //

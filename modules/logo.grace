@@ -1,3 +1,4 @@
+dialect "standard"
 // Logo-like dialect
 // This dialect provides turtle graphics, embedded in Grace syntax but
 // using only statements of what should happen. The turtle module
