@@ -1,6 +1,6 @@
 import "gUnit" as gU
 
-def sequenceTest is public = object {
+trait sequenceTest {
     class forMethod(m) {
         inherit gU.testCaseNamed(m)
 
@@ -8,46 +8,54 @@ def sequenceTest is public = object {
         var evens
         var empty
 
+        method sequenceUnderTestWithAll⟦T⟧ (elems) {
+            collections.sequence⟦T⟧.withAll (elems)
+        }
+        method sequenceUnderTestWith⟦T⟧ (elem) {
+            collections.sequence⟦T⟧.with (elem)
+        }
+        method sequenceUnderTestEmpty { collections.sequence.empty }
+
         method setup {
-            oneToFive := sequence [1, 2, 3, 4, 5]
-            evens := sequence [2, 4, 6, 8]
-            empty := emptySequence
+            oneToFive := sequenceUnderTestWithAll⟦Number⟧ [1, 2, 3, 4, 5]
+            evens := sequenceUnderTestWithAll⟦Number⟧ [2, 4, 6, 8]
+            empty := sequenceUnderTestEmpty
         }
 
         method testSequenceTypeCollection {
-            def witness = sequence⟦Number⟧ [1,3]
+            def witness = sequenceUnderTestWithAll⟦Number⟧ [1,3]
             assert (witness) hasType (Collection⟦Number⟧)
         }
         method testSequenceTypeSequence {
-            def witness = sequence⟦Number⟧ [1,3]
+            def witness = sequenceUnderTestWithAll⟦Number⟧ [1,3]
             assert (witness) hasType (Sequence⟦Number⟧)
         }
         method testSequenceTypeEnumerable {
-            def witness = sequence⟦Number⟧ [1,3]
+            def witness = sequenceUnderTestWithAll⟦Number⟧ [1,3]
             assert (witness) hasType (Enumerable⟦Number⟧)
         }
         method testEmptySequenceTypeCollection {
-            def witness = emptySequence
+            def witness = sequenceUnderTestEmpty
             assert (witness) hasType (Collection)
         }
         method testEmptySequenceTypeSequence {
-            def witness = emptySequence
+            def witness = sequenceUnderTestEmpty
             assert (witness) hasType (Sequence)
         }
         method testEmptySequenceTypeEnumerable {
-            def witness = emptySequence
+            def witness = sequenceUnderTestEmpty
             assert (witness) hasType (Enumerable)
         }
         method testSingletonSequenceTypeSequence {
-            def witness = sequence.with "a word"
+            def witness = sequenceUnderTestWith "a word"
             assert (witness) hasType (Sequence)
         }
         method testFilteredSequenceTypeEnumerable {
-            def witness = sequence⟦Number⟧ [1,3].filter{x -> true}
+            def witness = sequenceUnderTestWithAll⟦Number⟧ [1,3].filter{x -> true}
             assert (witness) hasType (Enumerable⟦Number⟧)
         }
         method testSequenceNotTypeWithWombat {
-            def witness = sequence⟦Number⟧ [1,3]
+            def witness = sequenceUnderTestWithAll⟦Number⟧ [1,3]
             deny (witness) hasType (Collection⟦Number⟧ & interface { wombat })
         }
         method testSequenceSize {
@@ -56,35 +64,35 @@ def sequenceTest is public = object {
             assert(evens.size) shouldBe 4
         }
         method testSingletonSequenceSize {
-            def singletonSeq = sequence.with "a word"
+            def singletonSeq = sequenceUnderTestWith "a word"
             assert (singletonSeq.size) shouldBe 1
         }
         method testSequenceEmptyDo {
-            empty.do {each -> failBecause "emptySequence.do did with {each}"}
+            empty.do {each -> failBecause "empty sequence.do did with {each}"}
             assert(true)
         }
 
         method testSequenceEqualityEmpty {
-            assert(empty == emptySequence) description "empty sequence ≠ itself!"
+            assert(empty == sequenceUnderTestEmpty) description "empty sequence ≠ itself!"
             assert(empty == list.empty) description "empty sequence ≠ empty list"
         }
 
         method testSequenceInequalityEmpty {
-            deny(empty == sequence [1])
-            assert(empty != sequence [1])
+            deny(empty == sequenceUnderTestWithAll [1])
+            assert(empty != sequenceUnderTestWithAll [1])
             deny(empty == 3)
             deny(empty == evens)
         }
 
         method testSequenceInequalityFive {
-            deny(oneToFive == sequence [1, 2, 3, 4, 6])
-            assert(oneToFive != sequence [1, 2, 3, 4, 6])
+            deny(oneToFive == sequenceUnderTestWithAll [1, 2, 3, 4, 6])
+            assert(oneToFive != sequenceUnderTestWithAll [1, 2, 3, 4, 6])
         }
 
         method testSequenceEqualityFive {
-            def isEqual = (oneToFive == sequence [1, 2, 3, 4, 5])
+            def isEqual = (oneToFive == sequenceUnderTestWithAll [1, 2, 3, 4, 5])
             assert(isEqual)
-            deny(oneToFive != sequence [1, 2, 3, 4, 5])
+            deny(oneToFive != sequenceUnderTestWithAll [1, 2, 3, 4, 5])
         }
 
         method testSequenceOneToFiveDo {
@@ -164,8 +172,8 @@ def sequenceTest is public = object {
         }
 
         method testSequenceConcatWithNonEmpty {
-            assert(oneToFive ++ evens) shouldBe(sequence [1, 2, 3, 4, 5, 2, 4, 6, 8])
-            assert(evens ++ oneToFive) shouldBe(sequence [2, 4, 6, 8, 1, 2, 3, 4, 5])
+            assert(oneToFive ++ evens) shouldBe(sequenceUnderTestWithAll [1, 2, 3, 4, 5, 2, 4, 6, 8])
+            assert(evens ++ oneToFive) shouldBe(sequenceUnderTestWithAll [2, 4, 6, 8, 1, 2, 3, 4, 5])
         }
 
         method testSequenceIndicesAndKeys {
@@ -196,7 +204,7 @@ def sequenceTest is public = object {
 
         method testSequenceDoSeparatedBySingleton {
             var s := "nothing"
-            sequence [1].do { each -> assert(each)shouldBe(1) }
+            sequenceUnderTestWithAll [1].do { each -> assert(each)shouldBe(1) }
                 separatedBy { s := "kilroy" }
             assert (s) shouldBe ("nothing")
         }
@@ -213,11 +221,11 @@ def sequenceTest is public = object {
         }
 
         method testSequenceReversedOneToFive {
-            assert (oneToFive.reversed) shouldBe (sequence [5, 4, 3, 2, 1])
+            assert (oneToFive.reversed) shouldBe (sequenceUnderTestWithAll [5, 4, 3, 2, 1])
         }
 
         method testSequenceReversedEvens {
-            assert (evens.reversed) shouldBe (sequence [8, 6, 4, 2])
+            assert (evens.reversed) shouldBe (sequenceUnderTestWithAll [8, 6, 4, 2])
             assert (evens.reversed.reversed) shouldBe (evens)
         }
 
@@ -264,7 +272,7 @@ def sequenceTest is public = object {
                 shouldBe (list [11, 13, 15])
         }
         method testSequenceToSetDuplicates {
-            def theSet = set.withAll(sequence [1,1,2,2,4])
+            def theSet = set.withAll(sequenceUnderTestWithAll [1,1,2,2,4])
             assert (theSet) shouldBe (set.withAll [1, 2, 4])
             assert (theSet) hasType (Set)
         }
@@ -286,42 +294,42 @@ def sequenceTest is public = object {
         }
         method testSequenceIteratorToSetDuplicates {
             def accum = set.empty
-            def iter = sequence [1, 1, 2, 2, 4].iterator
+            def iter = sequenceUnderTestWithAll [1, 1, 2, 2, 4].iterator
             while {iter.hasNext} do { accum.add(iter.next) }
             assert (accum) shouldBe (set [1, 2, 4])
         }
         method testSequenceSorted {
-            def input = sequence [5, 3, 11, 7, 2]
+            def input = sequenceUnderTestWithAll [5, 3, 11, 7, 2]
             def output = input.sorted
-            assert (output) shouldBe (sequence [2, 3, 5, 7, 11])
-            assert (output.asString.startsWith (emptySequence.asString.first)) description
+            assert (output) shouldBe (sequenceUnderTestWithAll [2, 3, 5, 7, 11])
+            assert (output.asString.startsWith (sequenceUnderTestEmpty.asString.first)) description
                 ".sorted does not look like a sequence"
             assert (output) hasType (Sequence)
         }
         method testSequenceSortedBy {
-            def input = sequence [5, 3, 11, 7, 2]
+            def input = sequenceUnderTestWithAll [5, 3, 11, 7, 2]
             def output = input.sortedBy {l, r ->
                 if (l == r) then {0}
                     elseif {l < r} then {1}
                     else {-1}
             }
-            assert (input) shouldBe (sequence [5, 3, 11, 7, 2])
-            assert (output) shouldBe (sequence [11, 7, 5, 3, 2])
-            assert (output.asString.startsWith (emptySequence.asString.first)) description
+            assert (input) shouldBe (sequenceUnderTestWithAll [5, 3, 11, 7, 2])
+            assert (output) shouldBe (sequenceUnderTestWithAll [11, 7, 5, 3, 2])
+            assert (output.asString.startsWith (sequenceUnderTestEmpty.asString.first)) description
                 "sorted does not look like a sequence"
             assert (output) hasType (Sequence)
         }
         method testSequenceLazyConcat {
             def s1 = oneToFive.filter{x -> (x % 2) == 1}
             def s2 = evens.filter{x -> true}
-            assert(s1 ++ s2) shouldBe (sequence [1, 3, 5, 2, 4, 6, 8])
+            assert(s1 ++ s2) shouldBe (sequenceUnderTestWithAll [1, 3, 5, 2, 4, 6, 8])
         }
         method testSequenceExplicitLazyConcat {
-            def oneToFour = sequence (collections.lazyConcatenation([1,2], [3,4]))
+            def oneToFour = sequenceUnderTestWithAll (collections.lazyConcatenation([1,2], [3,4]))
             assert (oneToFour) shouldBe (1..4)
         }
         method testSequenceMultipleConcat {
-            def oneToTwelve = sequence ((1..2) ++ (3..4) ++ (5..8) ++ (9..12))
+            def oneToTwelve = sequenceUnderTestWithAll ((1..2) ++ (3..4) ++ (5..8) ++ (9..12))
             assert (oneToTwelve) shouldBe (1..12)
         }
     }

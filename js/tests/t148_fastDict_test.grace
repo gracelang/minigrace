@@ -19,4 +19,4 @@ trait fastDictTest {
 def dictTests = gU.testSuite.fromTestMethodsIn(fastDictTest) named "dictionaryTest"
 dictTests.runAndPrintResults
 
-
+gU.exit
