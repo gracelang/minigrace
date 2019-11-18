@@ -139,12 +139,6 @@ trait controlStructures {
     }
 }
 
-method clone(anObject) {
-    native "js" code ‹prelude_clone([1], anObject);›
-}
-native "js" code ‹this.methods['clone(1)$build(3)'] = prelude_clone_build;›
-    // so that one can `inherit` or `use` a clone
-
 method inBrowser {
     native "js" code ‹return (typeof global === "undefined") ? GraceTrue : GraceFalse;›
 }
