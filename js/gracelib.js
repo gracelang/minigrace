@@ -1341,8 +1341,9 @@ GraceSequence.prototype = {
                 if (Grace_isTrue(callmethod(v, "==(1)", [1], other)))
                     return new GraceNum(i+1);
             }
-            throw new GraceExceptionPacket(NoSuchObjectErrorObject,
-                    new GraceString("collection does not contain " + safeJsString(other) + "."));
+            raiseException(NoSuchObjectErrorObject,
+                           "sequence does not contain " + safeJsString(other),
+                           other);
         },
         "asString": function(argcv) {
             var s = "[";
@@ -1994,8 +1995,9 @@ function hashMap_at (argcv, k) {
             return this.table[hc].value;
         hc++;
     }
-    throw new GraceExceptionPacket(RuntimeErrorObject,
-            new GraceString("key not found in HashMap"));
+    raiseException(NoSuchObjectErrorObject,
+                   "key " + describe(k) + " not found in HashMap",
+                   this);
 };
 
 function hashMap_at_ifAbsent (argcv, k, block) {
@@ -3164,6 +3166,7 @@ var RuntimeErrorObject = new GraceException("RuntimeError", ExceptionObject);
 var ImportErrorObject = new GraceException("ImportError", EnvironmentExceptionObject);
 var TypeErrorObject = new GraceException("TypeError", ProgrammingErrorObject);
 var NoSuchMethodErrorObject = new GraceException("NoSuchMethod", ProgrammingErrorObject);
+var NoSuchObjectErrorObject = new GraceException("NoSuchObject", ProgrammingErrorObject);
 var BoundsErrorObject = new GraceException("BoundsError", ProgrammingErrorObject);
 var IteratorExhaustedObject = new GraceException("IteratorExhausted", ProgrammingErrorObject);
 var UninitializedVariableObject = new GraceException("UninitializedVariable", ProgrammingErrorObject);
@@ -3557,6 +3560,7 @@ if (typeof global !== "undefined") {
     global.MatchErrorObject = MatchErrorObject;
     global.MinigraceErrorObject = MinigraceErrorObject;
     global.NoSuchMethodErrorObject = NoSuchMethodErrorObject;
+    global.NoSuchObjectErrorObject = NoSuchObjectErrorObject;
     global.numericMethodName = numericMethodName;
     global.nullDefinition = nullDefinition;
     global.nullFunction = nullFunction;
