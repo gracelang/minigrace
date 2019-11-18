@@ -15,7 +15,7 @@ WEB_DIRECTORY ?= public_html/ide/
 DEV_WEB_DIRECTORY = public_html/dev/ide/
 
 JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
-J1-MINIGRACE = $(JS-KG) npm-sha j1/compiler.js $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/gracelib.js
+J1-MINIGRACE = $(JS-KG) npm-sha j1/compiler.js j1/compiler-js $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/gracelib.js
 J2-MINIGRACE = $(J1-MINIGRACE) j2/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) j2/gracelib.js genjs.grace
 JSJSFILES = gracelib.js unicodedata.js
 JSRUNNERS_WITHOUT_COMPILER = grace grace-debug minigrace-js minigrace-inspect
@@ -23,8 +23,8 @@ JSRUNNERS = $(JSRUNNERS_WITHOUT_COMPILER) compiler-js
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
-PRELUDESOURCEFILES = collectionsPrelude.grace standardGrace.grace
-REALSOURCEFILES = ast.grace compiler.grace errormessages.grace fastDict.grace genjs.grace identifierKinds.grace identifierresolution.grace intrinsic.grace io.grace lexer.grace mirror.grace parser.grace regularExpression.grace shasum.grace sys.grace unicode.grace unixFilePath.grace util.grace xmodule.grace
+PRELUDESOURCEFILES = collections.grace standardGrace.grace standardGraceBundle.grace intrinsic.grace basicTypesBundle.grace pattern+typeBundle.grace equalityBundle.grace pointBundle.grace
+REALSOURCEFILES = ast.grace compiler.grace errormessages.grace fastDict.grace genjs.grace identifierKinds.grace identifierresolution.grace io.grace lexer.grace mirror.grace parser.grace regularExpression.grace shasum.grace sys.grace unicode.grace unixFilePath.grace util.grace xmodule.grace
 
 SOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES)
 MGSOURCEFILES = buildinfo.grace $(SOURCEFILES)
@@ -110,9 +110,9 @@ clean:
 	cd js/sample/graphics && $(MAKE) clean
 	cd js/sample/dialects && $(MAKE) clean
 
-checkjs: j2/collectionsPrelude.js
+checkjs: j2/ast.js
 	@jsl -nologo -conf tools/jsl.gracelib.conf -process js/gracelib.js | perl -p -e 's/gracelib.js\n/gracelib.js –– /'
-	@jsl -nologo -conf tools/jsl.gracemod.conf -process j2/collectionsPrelude.js | perl -p -e 's/collectionsPrelude.js\n/collectionsPrelude.js -- /'
+	@jsl -nologo -conf tools/jsl.gracemod.conf -process j2/ast.js | perl -p -e 's/ast.js\n/ast.js -- /'
 
 checkgenjs: j1/minigrace
 	if [ ! -e js/ast.js ] ;\
@@ -208,6 +208,9 @@ $(JSJSFILES:%.js=j1/%.js): j1/%.js: $(JS-KG)/%.js
 
 j1-minigrace: $(J1-MINIGRACE)
 
+j1/compiler-js: j2/compiler-js
+	cp -p $< $@
+
 j2/buildinfo.grace: buildinfo.grace
 	cp -p $< $@
 
@@ -219,7 +222,7 @@ $(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
 $(JSONLY:%.grace=js/%.js): js/%.js: modules/%.grace minigrace
 	GRACE_MODULE_PATH=js:modules ./minigrace --dir js --make $(VERBOSITY) $<
 
-$(JSRUNNERS:%=j1/%): j1/%: $(JS-KG)/%
+$(JSRUNNERS_WITHOUT_COMPILER:%=j1/%): j1/%: $(JS-KG)/%
 # The j1/*.js files are created by the kg compiler, and so need
 # to be run with the kg runners and libraries.
 	cp -p $< $@
