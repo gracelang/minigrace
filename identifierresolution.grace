@@ -129,7 +129,7 @@ class newScopeIn(parent') kind(variety') {
         }
     }
     method keysAsList {
-        def result = emptyList
+        def result = list.empty
         elements.keysDo { each -> result.addLast(each) }
         result
     }
@@ -188,7 +188,7 @@ class newScopeIn(parent') kind(variety') {
     method asDebugString { "(ST {serialNumber})" }
 
     method elementScopesAsString {
-        def referencedScopes = emptySet
+        def referencedScopes = set.empty
         var result := "\n    [elementScopes:"
         elementScopes.bindings.sortedBy(keyOrdering).do { each ->
             result := "{result} {each.key}➞{each.value.asDebugString}"
@@ -1324,7 +1324,7 @@ method checkForConflicts(objNode, traitMethods) {
     // traitMethods is a dictionary with methodNames as keys, and
     // a list of sources as values.  Multiple sources indicate a conflict,
     // unless there is a local definition too.
-    def conflicts = emptyList
+    def conflicts = list.empty
 
     traitMethods.keysDo { methName ->
         def sources = traitMethods.at(methName)

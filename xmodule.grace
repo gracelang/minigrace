@@ -14,7 +14,7 @@ def CheckerFailure = Exception.refine "CheckerFailure"
 def DialectError is public = Exception.refine "DialectError"
     //must correspond to what is defined in "dialect"
 
-def gctCache = emptyDictionary
+def gctCache = dictionary.empty
 def keyCompare = { a, b -> a.key.compare(b.key) }
 
 def currentDialect is public = object {
@@ -59,7 +59,7 @@ method checkDialect(moduleObject) {
     util.log 50 verbose "checking dialect {dmn} used by module {moduleObject.name}"
     checkExternalModule(dialectNode)
     def dialectGct = gctDictionaryFor(dialectNode.path)
-    if ((dialectGct.at "public" ifAbsent {emptySequence}).contains "thisDialect") then {
+    if ((dialectGct.at "public" ifAbsent { [] }).contains "thisDialect") then {
         util.log 50 verbose "loading dialect \"{dmn}\" for checkers."
         try {
             def dobj = mirror.loadModule(dialectNode.path)
@@ -584,13 +584,13 @@ method generateMethodHeader(methNode) -> String {
 }
 
 method buildGctFor(module) {
-    def gct = emptyDictionary
-    def classes = emptyList
-    def confidentials = emptyList
+    def gct = dictionary.empty
+    def classes = list.empty
+    def confidentials = list.empty
     def meths = set.empty    // this must be a set, because the same name may be added
         // from a module.parent's providedNames, and a body node that is a method.
-    def types = emptyList
-    def publicMethodTypes = emptyList
+    def types = list.empty
+    def publicMethodTypes = list.empty
     def theDialect = module.theDialect.moduleName
     module.parentsDo { p ->
         meths.addAll(p.providedNames)       // add inherited and used methods
@@ -655,7 +655,7 @@ method buildGctFor(module) {
                     if (nd.isClass) then {
                         def factMethNm = nd.nameString
                         obConstructors.push(factMethNm)
-                        def exportedMethods = emptyList
+                        def exportedMethods = list.empty
                         ob.scope.getScope(factMethNm).keysAndKindsDo { key, knd ->
                             if (knd.forGct) then { exportedMethods.add(key) }
                         }
@@ -721,7 +721,7 @@ method addFreshMethod (node) to (freshlist) for (gct) is confidential {
     freshlist.push(methName)
     def freshMethExpression = node.body.last
     if (freshMethExpression.isObject) then {
-        def exportedMethods = emptyList
+        def exportedMethods = list.empty
         freshMethExpression.scope.keysAndKindsDo { key, knd ->
             if (knd.forGct) then { exportedMethods.add(key) }
         }

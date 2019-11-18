@@ -60,7 +60,7 @@ try {
     xmodule.doParseCheck(moduleObject)
 
     if (util.target == "imports") then {
-        def imps = emptySet
+        def imps = set.empty
         def vis = object {
             inherit ast.baseVisitor
             method visitImport(o) -> Boolean {
