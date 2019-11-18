@@ -190,6 +190,7 @@ ideDeploy: ideBuild
 install: minigrace $(COMPILER_MODULES:%.grace=j2/%.js) js/grace js/grace-debug $(LIBRARY_MODULES:%.grace=j2/%.js) js/mgc
 	@if touch $(PREFIX)/bin/touched ; then rm -f $(PREFIX)/bin/touched ; else echo "Can't write to $(PREFIX)/bin/; set PREFIX to install somewhere else." ; exit 1 ; fi
 	test -d $(PREFIX)/bin || install -d $(PREFIX)/bin
+	cd $(PREFIX)/bin && (npm ls sha > /dev/null || npm install sha)
 	test -d $(MODULE_PATH) || install -d $(MODULE_PATH)
 	test -d $(OBJECT_PATH)  || install -d $(OBJECT_PATH)
 	test -d $(INCLUDE_PATH) || install -d $(INCLUDE_PATH)
