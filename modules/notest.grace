@@ -1,12 +1,12 @@
-dialect "standard"
+dialect "none"
 // This module is a subsitute for the minitest dialect.
 // It does no testing at all.  It exists so that student code that
 // depends on minitest can be run by the instuctor under gUnit,
 // without getting confounding results from the minitest tests.
 
-inherit outer.methods
+import "standardBundle" as standardBundle
 
-type Procedure0 = prelude.Procedure0
+use standardBundle.open
 
 method assert(bb:Boolean) description(str:String) { }
 

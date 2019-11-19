@@ -1,5 +1,7 @@
 dialect "none"
+import "intrinsic" as intrinsic
 
+use intrinsic.controlStructures     // for while(_)do(_)
 method abstract {
     SubobjectResponsibility.raise "abstract method not overriden by subobject"
 }
@@ -228,7 +230,7 @@ once method TypeUnion {
         }
         method matchHook(o) {
             def oMethodNames = mirror.reflect(o).methodNames
-            for (self.methodNames) do { each ->
+            self.methodNames.do { each ->
                 if (! oMethodNames.contains(each)) then {
                     return false
                 }

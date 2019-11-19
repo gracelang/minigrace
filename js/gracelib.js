@@ -3345,12 +3345,8 @@ function escapestring(str) {
     return os;
 }
 
-
 // these names are used in the generated code.
-// __95__ is the escape for _
-var var___95__prelude = loadDynamicModule("standardGrace");
 var var_done = GraceDone;
-
 
 // for node: explicitly make names global
 if (typeof global !== "undefined") {
@@ -3379,7 +3375,6 @@ if (typeof global !== "undefined") {
     global.graceModuleName = graceModuleName;
     global.Grace_allocObject = Grace_allocObject;
     global.Grace_errorPrint = Grace_errorPrint;
-    global.Grace_prelude = var___95__prelude;
     global.Grace_print = Grace_print;
     global.GraceBindingClass = GraceBindingClass;
     global.GraceBlock = GraceBlock;
@@ -3453,7 +3448,6 @@ if (typeof global !== "undefined") {
     global.type_Type = type_Type;
     global.type_Unknown = type_Unknown;
     global.TypeErrorObject = TypeErrorObject;
-    global.var___95__prelude = var___95__prelude;
     global.var_Done = var_Done;
     global.var_done = var_done;
     global.var_Boolean = var_Boolean;

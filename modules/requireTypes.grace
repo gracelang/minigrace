@@ -1,8 +1,10 @@
-dialect "standard"
+dialect "none"
 import "ast" as ast
-inherit outer.methods
+import "standardBundle" as standardBundle
 
-def CheckerFailure = prelude.Exception.refine "CheckerFailure"
+use standardBundle.open
+
+def CheckerFailure = self.Exception.refine "CheckerFailure"
 
 def staticVisitor = object {
     inherit ast.baseVisitor
@@ -25,7 +27,7 @@ def staticVisitor = object {
         true
     }
     method visitMethod(v) -> Boolean is public {
-        for (v.signature) do {p ->
+        v.signature.do { p ->
             if (p.isIdentifier && {p.wildcard.not && (false == p.dtype)}) then {
                 CheckerFailure.raise ("no type given to declaration"
                     ++ " of parameter '{p.value}'") with (p)
@@ -38,7 +40,7 @@ def staticVisitor = object {
         true
     }
     method visitBlock(v) -> Boolean is public {
-        for (v.params) do {p ->
+        v.params.do { p ->
             if (p.isIdentifier && {p.wildcard.not && (false == p.dtype)}) then {
                 CheckerFailure.raise ("no type given to declaration"
                     ++ " of block parameter '{p.value}'") with (p)

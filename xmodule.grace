@@ -10,6 +10,7 @@ import "shasum" as shasum
 import "regularExpression" as regex
 import "buildinfo" as buildinfo
 import "fastDict" as fd
+import "intrinsic" as intrinsic
 
 def CheckerFailure = Exception.refine "CheckerFailure"
 def DialectError is public = Exception.refine "DialectError"
@@ -167,7 +168,7 @@ method checkimport(moduleName, modulePath, isDialect, sourceRange) is confidenti
 
     if (imports.isAlready(moduleName)) then { return }
 
-    if (inBrowser) then {
+    if (intrinsic.inBrowser) then {
         if (compiledModuleExists(moduleName)) then {
             return
         } else {
@@ -311,7 +312,7 @@ method compileModule (nm) inFile (sourceFile)
         errormessages.error "Please compile module {nm} before using it."
             atRange (sourceRange)
     }
-    if (inBrowser) then {
+    if (intrinsic.inBrowser) then {
         errormessages.error "Please \"Run\" module {nm} before using it."
             atRange (sourceRange)
     }
@@ -377,7 +378,7 @@ method extractGctFor(moduleName) is confidential {
     // Extracts the gct information for moduleName from an external resource
     // Returns the gct information as a collection of Strings.
 
-    if (inBrowser) then { return extractGctFromCache(moduleName) }
+    if (intrinsic.inBrowser) then { return extractGctFromCache(moduleName) }
     def jsFile = externalModules.at(moduleName).jsFile
     try {
         extractGctFor(moduleName) fromJsFile(jsFile)

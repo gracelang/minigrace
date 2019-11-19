@@ -1,10 +1,17 @@
-dialect "standard"
+dialect "none"
+
 import "ast" as ast
 import "mirror" as mirror
 import "unicode" as unicode
 import "typeComparison" as tc
 import "minispec" as minispec
-inherit minispec.methods
+import "collections" as collections
+import "standardBundle" as standardBundle
+import "minispecBundle" as minispecBundle
+
+use minispecBundle.open
+
+use standardBundle.open
     exclude list
     exclude list(_)
     exclude dictionary
@@ -14,28 +21,22 @@ inherit minispec.methods
     exclude set
     exclude set(_)
 
-def DialectError = prelude.Exception.refine "DialectError"
-def BoundsError = prelude.BoundsError
-def IteratorExhausted = prelude.IteratorExhausted
-def binding = prelude.binding
-def Function2 = prelude.Function2
-
-type Collection = prelude.Collection
+type Collection = collections.Collection
 
 method list⟦T⟧ {
-    prelude.collections.list⟦T⟧.empty
+    collections.list⟦T⟧.empty
 }
 method list⟦T⟧(a) {
-    prelude.collections.list⟦T⟧.withAll [a]
+    collections.list⟦T⟧.withAll [a]
 }
 method list⟦T⟧(a, b) {
-    prelude.collections.list⟦T⟧.withAll [a, b]
+    collections.list⟦T⟧.withAll [a, b]
 }
 method list⟦T⟧(a, b, c) {
-    prelude.collections.list⟦T⟧.withAll [a, b, c]
+    collections.list⟦T⟧.withAll [a, b, c]
 }
 method list⟦T⟧(a, b, c, d) {
-    prelude.collections.list⟦T⟧.withAll [a, b, c, d]
+    collections.list⟦T⟧.withAll [a, b, c, d]
 }
 
 class sequence⟦T⟧ {
@@ -76,67 +77,67 @@ class sequence⟦T⟧ {
 
     // finally the factory method
     method withAll(elements) {
-        prelude.collections.sequence⟦T⟧.withAll(elements)
+        collections.sequence⟦T⟧.withAll(elements)
     }
 }
 method sequence⟦T⟧(a) {
-    prelude.collections.sequence⟦T⟧.withAll [a]
+    collections.sequence⟦T⟧.withAll [a]
 }
 method sequence⟦T⟧(a, b) {
-    prelude.collections.sequence⟦T⟧.withAll [a, b]
+    collections.sequence⟦T⟧.withAll [a, b]
 }
 method sequence⟦T⟧(a, b, c) {
-    prelude.collections.sequence⟦T⟧.withAll [a, b, c]
+    collections.sequence⟦T⟧.withAll [a, b, c]
 }
 method sequence⟦T⟧(a, b, c, d) {
-    prelude.collections.sequence⟦T⟧.withAll [a, b, c, d]
+    collections.sequence⟦T⟧.withAll [a, b, c, d]
 }
 
 method set⟦T⟧ {
-    prelude.collections.set⟦T⟧.empty
+    collections.set⟦T⟧.empty
 }
 method set⟦T⟧(a) {
-    prelude.collections.set⟦T⟧.withAll [a]
+    collections.set⟦T⟧.withAll [a]
 }
 method set⟦T⟧(a, b) {
-    prelude.collections.set⟦T⟧.withAll [a, b]
+    collections.set⟦T⟧.withAll [a, b]
 }
 method set⟦T⟧(a, b, c) {
-    prelude.collections.set⟦T⟧.withAll [a, b, c]
+    collections.set⟦T⟧.withAll [a, b, c]
 }
 method set⟦T⟧(a, b, c, d) {
-    prelude.collections.set⟦T⟧.withAll [a, b, c, d]
+    collections.set⟦T⟧.withAll [a, b, c, d]
 }
 method dictionary⟦K,T⟧ {
-    prelude.collections.dictionary⟦K,T⟧.empty
+    collections.dictionary⟦K,T⟧.empty
 }
 method dictionary⟦K,T⟧(a) {
-    prelude.collections.dictionary⟦K,T⟧.withAll [a]
+    collections.dictionary⟦K,T⟧.withAll [a]
 }
 method dictionary⟦K,T⟧(a, b) {
-    prelude.collections.dictionary⟦K,T⟧.withAll [a, b]
+    collections.dictionary⟦K,T⟧.withAll [a, b]
 }
 method dictionary⟦K,T⟧(a, b, c) {
-    prelude.collections.dictionary⟦K,T⟧.withAll [a, b, c]
+    collections.dictionary⟦K,T⟧.withAll [a, b, c]
 }
 method dictionary⟦K,T⟧(a, b, c, d) {
-    prelude.collections.dictionary⟦K,T⟧.withAll [a, b, c, d]
+    collections.dictionary⟦K,T⟧.withAll [a, b, c, d]
 }
 
 def selfImage = mirror.reflect(self)
 
 selfImage.whenNoMethodDo { name, args, receiver ->
     if (isName (name) requesting "list") then {
-        prelude.collections.list.withAll (args)
+        collections.list.withAll (args)
     } elseif {isName (name) requesting "sequence"} then {
-        prelude.collections.sequence.withAll (args)
+        collections.sequence.withAll (args)
     } elseif {isName (name) requesting "set"} then {
-        prelude.collections.set.withAll (args)
+        collections.set.withAll (args)
     } elseif {isName (name) requesting "dictionary"} then {
-        prelude.collections.dictionary.withAll (args)
+        collections.dictionary.withAll (args)
     } else {
         def cName = tc.canonical(name)
-        NoSuchMethod.raise "no method {cName} on {receiver}."
+        self.NoSuchMethod.raise "no method {cName} on {receiver}."
     }
 }
 
@@ -234,7 +235,7 @@ def bsVisitor = object {
         true
     }
     method visitBlock(v) -> Boolean {
-        for (v.params) do {p ->
+        v.params.do { p ->
             if (p.isIdentifier && {p.wildcard.not && (false == p.dtype)}) then {
                 DialectError.raise "no type given to block parameter '{p.nameString}'"
                     with (p)

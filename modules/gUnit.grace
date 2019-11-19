@@ -4,7 +4,7 @@ dialect "standard"
 //
 // Created by Andrew Black on 6/26/12.
 
-
+import "collections" as collections
 import "mirror" as mirror
 import "sys" as sys
 
@@ -298,8 +298,8 @@ class testCaseNamed(name') -> TestCase {
 
 
 class testResult {
-    var failSet := emptySet
-    var errorSet := emptySet
+    var failSet := set.empty
+    var errorSet := set.empty
     var runCount := 0
     var currentCountOfAssertions := 0
 
@@ -400,7 +400,7 @@ def testSuite is public = object {
         use collections.enumerable
         var name is public := ""
         def tests = list [ ]
-        def testNames = emptySet
+        def testNames = set.empty
         var errorsToBeRerun := true
 
         method doNotRerunErrors { errorsToBeRerun := false }

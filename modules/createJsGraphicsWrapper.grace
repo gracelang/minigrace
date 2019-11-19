@@ -639,7 +639,7 @@ class line {
 
 class customShape {
     inherit shape
-    var points := emptyList
+    var points := list.empty
     var stroke;
     var current;
     var leftMost;

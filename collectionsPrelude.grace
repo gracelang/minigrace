@@ -565,12 +565,10 @@ class list⟦T⟧ {
         }
         method removeLast {
             mods := mods + 1
-            native "js" code ‹if (this._value.length === 0) {
-                var msg = "you can't remove an element from an empty list";
-                var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
-            } else
-                return this._value.pop();›
+            if (size == 0) then {
+                BoundsError.raise "you can't remove an element from an empty list"
+            }
+            native "js" code ‹return this._value.pop();›
         }
         method addAllFirst(l) {
             mods := mods + 1

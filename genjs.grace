@@ -26,6 +26,7 @@ var output := list []
 var usedvars := list []
 var declaredvars := list []
 var initializedVars := set.empty
+var preludeRequested := false
 
 method saveInitializedVars {
     // returns the current set of initialized vars,
@@ -1270,6 +1271,8 @@ method compileSelfRequest(o, args) {
 }
 method compilePreludeRequest(o, args) {
     out "// call case 3: prelude request"
+    preludeRequested := true
+    util.log (util.defaultVerbosity) verbose "prelude.{o.nameString} on line {o.line}"
     out("var {o.register} = request(var_prelude" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
@@ -1286,12 +1289,12 @@ method compilecall(o) {
     var args := list []
     compileArguments(o, args)
     def receiver = o.receiver
-    if ( receiver.isOuter ) then {
+    if ( receiver.isPrelude ) then {
+        compilePreludeRequest(o, args)
+    } elseif { receiver.isOuter } then {
         compileOuterRequest(o, args)
     } elseif { receiver.isSelf } then {
         compileSelfRequest(o, args)
-    } elseif { receiver.isPrelude } then {
-        compilePreludeRequest(o, args)
     } else {
         compileOtherRequest(o, args)
     }
@@ -1592,9 +1595,6 @@ method outputModuleDefinition(moduleObject) {
     out "const {thisModule} = this;"
     out "this.definitionModule = {modNameAsString};"
     out "this.definitionLine = 1;"
-    out "const var_prelude = {standardPrelude};"
-        // var_prelude must be local to the module function, because its
-        // value varies from module to module.
 
     if (debugMode) then {
         out "var myframe = new StackFrame(\"{escapestring(modname)} module\");"
@@ -1653,6 +1653,10 @@ method outputModuleDefinition(moduleObject) {
     decreaseindent
     out "\}"
 
+    if (preludeRequested) then {
+        out "var var_prelude = do_import(\"standardGrace\", {formatModname "standardGrace"});"
+        moduleObject.directImports.push "standardGrace"
+    }
     out "if (typeof global !== \"undefined\")"
     out "  global.{generatedModuleName} = {generatedModuleName};"
     out "if (typeof window !== \"undefined\")"

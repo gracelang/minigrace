@@ -213,7 +213,7 @@ method createPopupWindow {
     theWindow := dom.window.open("", "", "width={windowWidth}+50, height={windowHeight}+50")
 
     // check to make sure window is open
-    if (prelude.inBrowser && (dom.noObject == theWindow)) then {
+    if (inBrowser && (dom.noObject == theWindow)) then {
         print "Failed to open the graphics window.\nIs your browser blocking pop-ups?"
         sys.exit(1)
     }

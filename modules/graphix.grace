@@ -136,8 +136,8 @@ class shape {
 }
 
 class create(canvasWidth, canvasHeight) {
-    var shapes := emptyList
-    var inputs := emptyList
+    var shapes := list.empty
+    var inputs := list.empty
     var stage := gr.stage(canvasHeight, canvasWidth)
     var timeoutIsSet := false
 

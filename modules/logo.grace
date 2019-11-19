@@ -1,15 +1,12 @@
-dialect "standard"
+dialect "none"
 // Logo-like dialect
 // This dialect provides turtle graphics, embedded in Grace syntax but
 // using only statements of what should happen. The turtle module
 // handles the actual drawing and user interface.
 
 import "turtle" as turtle
-inherit outer.methods exclude Point
-    // by excluding Point here, we make the definition from outer unambiguous
-
-type Point = outer.Point
-    // this makes Point visible to dialectic programs
+import "standardBundle" as standardBundle
+use standardBundle.open
 
 type Color = interface {
     r -> Number

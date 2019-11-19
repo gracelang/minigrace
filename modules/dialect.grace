@@ -1,20 +1,14 @@
 dialect "none"
-import "standardGrace" as sg
+import "standardBundle" as sb
 import "errormessages" as errormessages
 import "ast" as ast
 
-inherit sg.methods
-
-method methods {
-    // This should be unnecessary, because it is inherited.
-    // But the compiler gets confised and does not find it statically.
-    prelude.clone(self)
-}
+use sb.open
 
 // Checker error
 
-def CheckerFailure is public = Exception.refine "CheckerFailure"
-def DialectError is public = Exception.refine "DialectError"
+def CheckerFailure is public = self.Exception.refine "CheckerFailure"
+def DialectError is public = self.Exception.refine "DialectError"
 
 // Helper Map
 
@@ -39,9 +33,9 @@ class aMutableMap {
 
     method at(key) put(value) -> Done {
         if (value.asString == "done") then {
-            ProgrammingError.raise "mutableMap: attempting to put ‹done› at key {key}"
+            outer.ProgrammingError.raise "mutableMap: attempting to put ‹done› at key {key}"
         }
-        for(entries) do { entry ->
+        entries.do { entry ->
             if(entry.key == key) then {
                 entry.value := value
                 return done
@@ -54,7 +48,7 @@ class aMutableMap {
     method keys -> List {
         def keys' = list []
 
-        for(entries) do { entry ->
+        entries.do { entry ->
             keys'.push(entry.key)
         }
 
@@ -64,7 +58,7 @@ class aMutableMap {
     method values -> List {
         def values' = list []
 
-        for(entries) do { entry ->
+        entries.do { entry ->
             values'.push(entry.value)
         }
 
@@ -83,7 +77,7 @@ class aMutableMap {
     }
 
     method atKey(key) do(block) else(block') {
-        for(entries) do { entry ->
+        entries.do { entry ->
             if(entry.key == key) then {
                 return block.apply(entry.value)
             }
@@ -244,11 +238,11 @@ method runRules(node) {
     currentLine := node.line
 
     var result := false
-    for (rules) do { each ->
+    rules.do { each ->
         if (each.matches(node)) then {
             result := each.apply(node)
             if (result.asString == "done") then {
-                ProgrammingError.raise
+                outer.ProgrammingError.raise
                     "rule.apply(node) has result 'done' when rule is {each} and node = {node}"
             }
             cache.at(node) put(result)
@@ -370,11 +364,11 @@ def astVisitor = object {
     method visitBlock(node) -> Boolean {
         runRules(node)
 
-        for(node.params) do { param ->
+        node.params.do { param ->
             runRules(aParameter.fromNode(param))
         }
 
-        for(node.body) do { stmt ->
+        node.body.do { stmt ->
             stmt.accept(self)
         }
 
@@ -392,8 +386,8 @@ def astVisitor = object {
     method visitMethodType(node) -> Boolean {
         runRules(node)
 
-        for(node.signature) do { part ->
-            for(part.params) do { param ->
+        node.signature.do { part ->
+            part.params.do { param ->
                 runRules(aParameter.fromNode(param))
             }
         }
@@ -408,13 +402,13 @@ def astVisitor = object {
     method visitMethod(node) -> Boolean {
         runRules(node)
 
-        for(node.signature) do { part ->
-            for(part.params) do { param ->
+        node.signature.do { part ->
+            part.params.do { param ->
                 runRules(aParameter.fromNode(param))
             }
         }
 
-        for(node.body) do { stmt ->
+        node.body.do { stmt ->
             stmt.accept(self)
         }
 
@@ -429,8 +423,8 @@ def astVisitor = object {
             memb.receiver.accept(self)
         } else { }
 
-        for(node.parts) do { part ->
-            for(part.args) do { arg ->
+        node.parts.do { part ->
+            part.args.do { arg ->
                 arg.accept(self)
             }
         }

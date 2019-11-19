@@ -1,4 +1,6 @@
 dialect "standard"
+import "collections" as collections
+
 type Option⟦T⟧ = Collection⟦T⟧ & interface {
     value → T
     valueIfEmpty⟦U⟧ (eValue:Function0⟦U⟧) → T | U
@@ -121,8 +123,8 @@ class empty⟦T⟧ → Option {
     method do(action:Function1⟦T, Done⟧) → Done { done }
     method keysAndValuesDo(action:Function2⟦Number,T,Object⟧) -> Done { done }
     method contains(_) { false }
-    method indices { emptySequence }
-    method keys { emptySequence }
+    method indices { [] }
+    method keys { [] }
     method ==(other) {
         match (other) 
             case {c:Collection → c.isEmpty}

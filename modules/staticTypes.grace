@@ -1,12 +1,10 @@
 #pragma noTypeChecks
-dialect "none"
-import "dialect" as dia
+dialect "dialect"
 import "ast" as ast
 import "util" as util
+import "pattern+type" as patAndType
 
-inherit dia.methods
-
-def TypeError = dia.DialectError.refine "TypeError"
+def TypeError = DialectError.refine "TypeError"
 
 type MethodType = {
     // Method signature information consisting of the name, list of MixParts,
@@ -355,7 +353,7 @@ def objectType = object {
                 return if (false ≠ lit.value) then {
                     object {
 //                        inherit oType & fromDType (intersection.last)
-                        inherit TypeIntersection.new (oType, fromDType (intersection.last))
+                        inherit patAndType.TypeIntersection(oType, fromDType (intersection.last))
 
                         method asString is override { lit.value }
                     }
@@ -375,7 +373,7 @@ def objectType = object {
                 return if (false ≠ lit.value) then {
                     object {
 //                        inherit oType | fromDType (union.last)
-                        inherit TypeUnion.new (oType, fromDType (union.last))
+                        inherit patAndType.TypeUnion(oType, fromDType (union.last))
                         def asString: String is public, override = lit.value
                     }
                 } else {

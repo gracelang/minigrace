@@ -3,17 +3,12 @@ import "intrinsic" as intrinsic
 
 trait open {
 
+    use intrinsic.types
+
     type Done = interface {
         asString → String
         asDebugString → String
     }
-
-    type String = intrinsic.StringType
-    type Number = intrinsic.NumberType
-    type Boolean = intrinsic.BooleanType
-    type Object = intrinsic.ObjectType
-    type Type = intrinsic.TypeType
-    type None = intrinsic.NoneType
 
     type Pattern = Object & interface {
         & (other:Pattern) → Pattern

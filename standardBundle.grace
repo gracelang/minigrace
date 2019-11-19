@@ -3,12 +3,14 @@ import "intrinsic" as intrinsic
 import "basicTypesBundle" as basicTypesBundle
 import "collections" as collections is public
 import "pattern+typeBundle" as patternsBundle
+import "pointBundle" as pointBundle
 
 trait open {
     use basicTypesBundle.open
     use patternsBundle.open
     use intrinsic.controlStructures
     use intrinsic.constants
+    use pointBundle.open
 
     method do(action)while(condition) {
         self.while {
@@ -26,6 +28,10 @@ trait open {
             ix := ix - 1
             action.apply
         }
+    }
+
+    method for (collection) do (block) {
+        collection.do(block)
     }
 
     method for (cs) and (ds) do (action) {
@@ -88,6 +94,9 @@ trait open {
     once method SubobjectResponsibility { collections.SubobjectResponsibility }
     once method ConcurrentModification { collections.ConcurrentModification }
     once method UninitializedVariable { self.ProgrammingError.refine "UninitializedVariable" }
+
+    once method π { 3.141592653589793 }
+    once method pi { π }
 
     method collection⟦T⟧ { collections.collection⟦T⟧ }
     method enumerable⟦T⟧ { collections.enumerable⟦T⟧ }

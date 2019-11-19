@@ -4,6 +4,7 @@ dialect "none"
 // be defined in Grace itself because they are beyond the descriptive power
 // of the language.
 
+once method Exception { native "js" code ‹return ExceptionObject;› }
 def UnimplementedMethod = Exception.refine "UnimplementedMethod"
 
 def NoneType = object {
@@ -37,25 +38,21 @@ def BooleanType = native "js" code ‹result = type_Boolean›
 def ObjectType = native "js" code ‹result = type_Object›
 def TypeType = native "js" code ‹result = type_Type›
 
-method hashCombine(a, b) {
-    native "c" code ‹
-        int a = (int)(args[0]->data);
-        int b = (int)(args[1]->data);
-        int aHash = a * 1664525;
-        int bHash = (b * 1664525 - 0xA21FE89) * 3;
-        return alloc_Float64((aHash * 2) ^ bHash);›
-    native "js" code ‹
-        var a = var_a._value;
-        var b = var_b._value;
-        var aHash = a * 1664525;
-        var bHash = (b * 1664525 - 0xA21FE89) * 3;
-        result = new GraceNum((aHash * 2) ^ bHash);›
+trait types {
+    // these types are defined in terms of defs because the rhs of a type
+    // declaration cannot be an arbitrary request, such as native(_)code(_)
+
+    type None = NoneType
+    type String = StringType
+    type Number = NumberType
+    type Boolean = BooleanType
+    type Object = ObjectType
+    type Type = TypeType
 }
 
 trait constants {
-    method Exception { native "js" code ‹
-        return ExceptionObject; ›
-    }
+    method Exception { outer.Exception }
+    method UnimplementedMethod { outer.UnimplementedMethod }
     method ProgrammingError { native "js" code ‹
         return ProgrammingErrorObject; ›
     }
@@ -77,11 +74,17 @@ trait constants {
     method BoundsError { native "js" code ‹
         return BoundsErrorObject; ›
     }
-    method infinity { native "js" code ‹
-        return new GraceNum(Infinity); ›
+    method IteratorExhausted { native "js" code ‹
+        return IteratorExhaustedObject; ›
     }
-    method π { native "js" code ‹
-        return new GraceNum(3.141592653589793); ›
+    method NoSuchObject { native "js" code ‹
+        return NoSuchObjectErrorObject; ›
+    }
+    once method DialectError {
+        Exception.refine "DialectError"
+    }
+    once method infinity { native "js" code ‹
+        return new GraceNum(Infinity); ›
     }
     method primitiveArray { native "js" code ‹
         return PrimitiveArrayClass; ›
@@ -133,10 +136,6 @@ trait controlStructures {
         }
         return GraceDone;›
     }
-
-    method for (collection) do (block) {
-        collection.do(block)
-    }
 }
 
 method inBrowser {
@@ -145,5 +144,5 @@ method inBrowser {
 
 method engine {
     native "js" code ‹return new GraceString("js");›    // only when generating JS
-    ProgrammingError.raise "the method `engine` must be augmented to support this execution engine"
+    constants.ProgrammingError.raise "the method `engine` must be augmented to support this execution engine"
 }

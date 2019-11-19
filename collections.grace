@@ -1,10 +1,9 @@
 dialect "none"
 import "intrinsic" as intrinsic
 
-use intrinsic.controlStructures
-
 def intrinsicConstants = intrinsic.constants
 def BoundsError is public = intrinsicConstants.BoundsError
+def ProgrammingError = intrinsicConstants.ProgrammingError
 def IteratorExhausted is public = ProgrammingError.refine "IteratorExhausted"
 def SubobjectResponsibility is public = ProgrammingError.refine "SubobjectResponsibility"
 def NoSuchObject is public = ProgrammingError.refine "NoSuchObject"
@@ -482,7 +481,7 @@ method isEqual(left) toCollection(right) {
     if (MinimalyIterable.matches(right)) then {
         def leftIter = left.iterator
         def rightIter = right.iterator
-        self.while {leftIter.hasNext && rightIter.hasNext} do {
+        while {leftIter.hasNext && rightIter.hasNext} do {
             if (leftIter.next != rightIter.next) then {
                 return false
             }
@@ -568,12 +567,10 @@ class list⟦T⟧ {
         }
         method removeLast {
             mods := mods + 1
-            native "js" code ‹if (this._value.length === 0) {
-                var msg = "you can't remove an element from an empty list";
-                var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                callmethod(BoundsError, "raise(1)", [1], new GraceString(msg));
-            } else
-                return this._value.pop();›
+            if (size == 0) then {
+                BoundsError.raise "you can't remove an element from an empty list"
+            }
+            native "js" code ‹return this._value.pop();›
         }
         method addAllFirst(l) {
             mods := mods + 1
@@ -796,7 +793,7 @@ class set⟦T⟧ {
     class ofCapacity(cap) -> Set⟦T⟧ is confidential {
         use collection⟦T⟧
         var mods := 0
-        var inner := prelude.primitiveArray.new(cap)
+        var inner := primitiveArray.new(cap)
         var size is readable := 0
         (0..(cap - 1)).do { i ->
             inner.at (i) put (unused)
@@ -855,7 +852,7 @@ class set⟦T⟧ {
         }
         method clear {
             mods := mods + 1
-            inner := prelude.primitiveArray.new(cap)
+            inner := primitiveArray.new(cap)
             size := 0
             self
         }
@@ -1008,7 +1005,7 @@ class set⟦T⟧ {
             def n = c * 2
             def oldInner = inner
             size := 0
-            inner := prelude.primitiveArray.new(n)
+            inner := primitiveArray.new(n)
             for (0..(inner.size-1)) do {i->
                 inner.at(i)put(unused)
             }
@@ -1133,7 +1130,7 @@ class dictionary⟦K,T⟧ {
         use collection⟦T⟧
         var mods := 0
         var numBindings := 0
-        var inner := prelude.primitiveArray.new(8)
+        var inner := primitiveArray.new(8)
         for (0..(inner.size-1)) do { i ->
             inner.at(i)put(unused)
         }
@@ -1262,7 +1259,7 @@ class dictionary⟦K,T⟧ {
             self
         }
         method clear {
-            inner := prelude.primitiveArray.new(8)
+            inner := primitiveArray.new(8)
             numBindings := 0
             mods := mods + 1
             for (0..(inner.size-1)) do { i ->
@@ -1410,7 +1407,7 @@ class dictionary⟦K,T⟧ {
             def c = inner.size
             def n = c * 2
             def oldInner = inner
-            inner := prelude.primitiveArray.new(n)
+            inner := primitiveArray.new(n)
             for (0..(n - 1)) do {i->
                 inner.at(i)put(unused)
             }

@@ -1,7 +1,9 @@
 dialect "none"
 import "collections" as collections
+import "intrinsic" as intrinsic
 
-def ConcurrentModification is public = ProgrammingError.refine "ConcurrentModification"
+def ConcurrentModification is public =
+    intrinsic.constants.ProgrammingError.refine "ConcurrentModification"
 
 type Binding⟦K,T⟧ = collections.Binding⟦K,T⟧
 type Collection⟦T⟧ = collections.Collection⟦T⟧
@@ -338,7 +340,7 @@ class dictionary⟦K,T⟧ {
                 }
                 if (size < count) then { IteratorExhausted.raise "over {outer.asString}" }
                 native "js" code ‹
-                let binding = request(var_prelude, 'binding', [0]);
+                let binding = request(var_collections, 'binding', [0]);
                 while (true) {
                     let nextKey = this.data.allTheKeys.shift();
                     let b = this.data.subjectDictionary.data.table[nextKey];
