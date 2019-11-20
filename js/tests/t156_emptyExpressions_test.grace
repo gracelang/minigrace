@@ -1,3 +1,4 @@
+dialect "standard"
 method a {}
 def b = {}
 print(a)

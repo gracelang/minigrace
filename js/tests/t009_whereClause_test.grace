@@ -1,3 +1,4 @@
+dialect "standard"
 type Hashable = interface {
     = (other:Object) → Boolean
     hash → Number

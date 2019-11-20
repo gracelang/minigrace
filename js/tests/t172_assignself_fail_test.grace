@@ -1,3 +1,4 @@
+dialect "standard"
 class node {
     var left is public := self
     var right is public := self

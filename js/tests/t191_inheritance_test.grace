@@ -1,3 +1,4 @@
+dialect "standard"
 class simpleExpressions {
     class con(n) {
         method asString { "con {n}" }

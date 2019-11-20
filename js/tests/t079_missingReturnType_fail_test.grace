@@ -1,3 +1,4 @@
+dialect "standard"
 method test(a : String) -> {
     return a
 }

@@ -1,3 +1,4 @@
+dialect "standard"
 import "minitest" as mt
 import "gUnit" as gu
 

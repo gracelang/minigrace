@@ -1,3 +1,4 @@
+dialect "standard"
 class a is confidential { }
 def b = object  {
     inherit a

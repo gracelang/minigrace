@@ -2,6 +2,7 @@ dialect "minispec"
 import "date" as date
 import "io" as io
 
+print "{io.FileStream} has methods {io.FileStream.methodNames}"
 
 def longFile = io.open("io-specify-data.txt", "w")
 longFile.write "This is test data\n"
@@ -249,8 +250,8 @@ describe "io" with {
     }
 }
 
-io.unlink "io-specify-hi.txt"
-io.unlink "io-specify-data.txt"
-io.unlink(emptyFileName)
+//io.unlink "io-specify-hi.txt"
+//io.unlink "io-specify-data.txt"
+//io.unlink(emptyFileName)
 
-
+exit

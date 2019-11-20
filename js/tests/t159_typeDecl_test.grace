@@ -1,3 +1,4 @@
+dialect "standard"
 import "mirror" as m
 
 type A = {a(n:Number) -> Number}

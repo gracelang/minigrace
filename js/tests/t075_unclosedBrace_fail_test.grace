@@ -1,3 +1,4 @@
+dialect "standard"
 type NumberSet = {
     contains(n:Number) -> Boolean
     add(n:Number) -> Done

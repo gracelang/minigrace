@@ -1,3 +1,4 @@
+dialect "standard"
 import "lexer" as lexer
 import "parser" as parser
 import "ast" as ast

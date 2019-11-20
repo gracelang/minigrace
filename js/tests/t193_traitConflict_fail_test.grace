@@ -1,3 +1,4 @@
+dialect "standard"
 trait catTrait {
     method move { "walk" } 
 }

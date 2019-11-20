@@ -1,3 +1,4 @@
+dialect "standard"
 print "..."
 print ‹Hello, world!›
 print ‹This string has 	a tab and a

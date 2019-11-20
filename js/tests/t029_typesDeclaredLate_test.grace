@@ -1,3 +1,4 @@
+dialect "standard"
 // A test for https://github.com/gracelang/minigrace/issues/273
 // The type MethodType is referenced in the initialization of scope
 // before the declaration of MethodType

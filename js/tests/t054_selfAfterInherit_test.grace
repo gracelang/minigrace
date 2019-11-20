@@ -1,3 +1,4 @@
+dialect "standard"
 // This is a test of a module with a name that's not an id.
 // It also tests that `self` is correctly bound at the
 // top level, and in a top-level method, to the module

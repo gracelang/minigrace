@@ -1,3 +1,4 @@
+dialect "standard"
 print ""
 print "sin(90°) = {(π/2).sin}"
 print "cos(0°) = {0.cos}"

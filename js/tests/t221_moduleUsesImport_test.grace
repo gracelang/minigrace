@@ -1,3 +1,4 @@
+dialect "standard"
 import "t221_bundle" as bundle
 
 use bundle.open

@@ -1,3 +1,4 @@
+dialect "standard"
 import "gUnit" as gU
 
 def stringOpsTest = object {

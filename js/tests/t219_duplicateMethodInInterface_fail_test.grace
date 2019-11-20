@@ -1,3 +1,4 @@
+dialect "standard"
 type W = interface {
     w(foo) → Number
     w(foo)x(bar) → Number

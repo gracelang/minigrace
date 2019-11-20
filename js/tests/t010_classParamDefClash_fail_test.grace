@@ -1,3 +1,4 @@
+dialect "standard"
 logclass test(x:Number) {
       def x: Number = 2
       print(x)

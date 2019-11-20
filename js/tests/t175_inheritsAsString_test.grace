@@ -1,3 +1,4 @@
+dialect "standard"
 class nameTrait(n) {
     method asString { "my name is {n}" }
 }

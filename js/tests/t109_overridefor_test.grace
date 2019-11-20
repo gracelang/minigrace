@@ -1,3 +1,4 @@
+dialect "standard"
 
 method for(anIterable) do(aBlock) {
     aBlock.apply("world")

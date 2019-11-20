@@ -1,3 +1,4 @@
+dialect "standard"
 import "turtle" as turtle
 
 def tnew = prelude.clone(turtle)

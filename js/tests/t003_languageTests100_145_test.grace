@@ -1,3 +1,4 @@
+dialect "standard"
 import "gUnit" as gU
 
 var str := ""

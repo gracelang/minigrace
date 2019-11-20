@@ -1,3 +1,4 @@
+dialect "standard"
 trait a {
     method map { 
         object {

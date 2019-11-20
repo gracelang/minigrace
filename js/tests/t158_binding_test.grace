@@ -1,3 +1,4 @@
+dialect "standard"
 def x1 = "one"::1
 def x2 = "two" :: 2
 def y1 = 1::"one"

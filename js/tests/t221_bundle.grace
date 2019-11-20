@@ -1,3 +1,4 @@
+dialect "standard"
 trait open {
 
    method CheckerFailure { Exception.refine "CheckerFailure" }

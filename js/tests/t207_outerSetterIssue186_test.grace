@@ -1,3 +1,4 @@
+dialect "standard"
 class foo {
     var i := 0
     def counter = object {

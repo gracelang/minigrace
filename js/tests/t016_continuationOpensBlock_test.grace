@@ -1,3 +1,4 @@
+dialect "standard"
 object {
     method fromGctLine (mstr : String) {
         var lst: Number := 1

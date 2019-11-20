@@ -1,3 +1,4 @@
+dialect "standard"
 def a = 7
 type A = { a -> String
     b -> Number }

@@ -1,3 +1,4 @@
+dialect "standard"
 def testObj = object {
     def a is public = "OK"
     def b is public = true

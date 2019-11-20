@@ -1,3 +1,4 @@
+dialect "standard"
 import "gUnit" as gU
 
 type SimpleType = Object & interface {

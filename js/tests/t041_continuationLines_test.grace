@@ -1,3 +1,4 @@
+dialect "standard"
 //  The minigrace parser doesn't understand continuation lines correctly.
 //  It parses line 17 as a continuation of line 10, but lines 18 and 19 are
 //  parsed as separate requests of url() and on().  Line 20 is flagged as being

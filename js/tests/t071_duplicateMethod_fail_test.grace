@@ -1,3 +1,4 @@
+dialect "standard"
 def testObj = object {
     method a { print "OK" }
     method b {}

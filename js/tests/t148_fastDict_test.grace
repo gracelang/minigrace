@@ -1,3 +1,4 @@
+dialect "standard"
 import "gUnit" as gU
 import "fastDict" as fd
 import "dictionaryTest" as dictionaryTest

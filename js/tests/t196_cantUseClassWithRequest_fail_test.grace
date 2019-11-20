@@ -1,3 +1,4 @@
+dialect "standard"
 class cat {
     method move { "walk" }
     print "A cat was created"   // makes this not a trait.

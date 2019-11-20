@@ -1,3 +1,4 @@
+dialect "standard"
 def singluarObject = object {
     def foo is public = "OK"
     method bar { "OK" }

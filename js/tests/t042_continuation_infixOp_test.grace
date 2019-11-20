@@ -1,3 +1,4 @@
+dialect "standard"
 def x = 2 +
     3 + 
     4

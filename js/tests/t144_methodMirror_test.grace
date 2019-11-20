@@ -1,3 +1,4 @@
+dialect "standard"
 import "mirror" as mirror
 
 def foo = object {

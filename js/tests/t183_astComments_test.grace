@@ -69,7 +69,7 @@ testSuiteNamed "comment tests" with {
             description "first.comments doesn't include Post-comment def x"
     }
     test "blanks" by {
-        def blankLineNums = emptyList
+        def blankLineNums = list.empty
         input.keysAndValuesDo { n, s ->
             if (s.isEmpty) then { blankLineNums.add(n) }
         }

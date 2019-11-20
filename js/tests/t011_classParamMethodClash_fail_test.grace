@@ -1,3 +1,4 @@
+dialect "standard"
 class test⟦W⟧(x:W) {
     method x⟦T⟧ {2}
     print(x)
