@@ -865,7 +865,12 @@ class methodSignatureNode(parts', rtype') {
         // sets up the 2-way conection between this node
         // and the symbol table that defines the scope that I open.
         symbolTable := st
-        st.node := self
+        if (isBindingOccurrence) then {
+            st.node := self
+            // it's important that this assignment _not_ happen for excluded
+            // methods, because that will over-write the node field of the
+            // enclosing object's symbol table
+        }
     }
     method declarationKindWithAncestors(ac) {
         ac.parent.declarationKindWithAncestors(ac)
