@@ -107,10 +107,15 @@ type Process = Object & interface {
 
 native "js" code ‹
     // initialization code
+
     const thisModule = this;
+
     if (!inBrowser) {  // if we are in Node.js
         var fs = require("fs");
         var child_process = require('child_process');
+        var path = require('path');
+        var crypto;
+        try { crypto = require('crypto'); } catch { crypto = false; }
     }
     function ioException(msg) {
         let ioe = selfRequest(thisModule, "IoException", 0);
@@ -126,12 +131,10 @@ native "js" code ‹
     function getFile(name){
         if (inBrowser) {
             return localStorage[name];
+        } else if (fs.existsSync(name)) {
+            return fs.readFileSync(name).toString();
         } else {
-            if (fs.existsSync(name)) {
-                return fs.readFileSync(name).toString();
-            } else {
-                return "";
-            }
+            return "";
         }
     }
 
@@ -142,15 +145,28 @@ native "js" code ‹
         localStorage.setItem(name,data);
     }
 
+    function randomFileNameNear(pathName) {
+        var id;
+        if (crypto) {
+            id = crypto.randomBytes(16).toString('hex');
+        } else {
+            id = performance.now().toString(16);
+        }
+        return path.dirname(pathName) + path.sep + id;
+    }
+
     function commandLineWrite (name, data) {
         // name is a pathname, data the string to be written
+        // we write to a temp file first, to make the write atomic
         try {
-            var nodeFileObject = fs.openSync(name, "w");
+            const temp = randomFileNameNear(name);
+            const nodeFileObject = fs.openSync(temp, "w");
             fs.writeSync(nodeFileObject, data);
             fs.closeSync(nodeFileObject);
+            fs.renameSync(temp, name);
         } catch(ex) {
-            throw new GraceExceptionPacket(EnvironmentExceptionObject,
-                new GraceString("can't write to file '" + path + "'."));
+            raiseException(EnvironmentExceptionObject,
+                  "can't write to file '" + name + "'");
         }
     }
 
