@@ -1078,9 +1078,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             true
         }
-        method visitMethodType (o) up (anc) {
+        method visitMethodType (o) up (anc) {       // used to visit a methodSignatureNode
             def surroundingScope = anc.parent.scope
-            if (o.isAppliedOccurrence) then {
+            if (o.isAppliedOccurrence) then {       // on rhs of an alias, or in an exclude
                 o.scope := surroundingScope
                 return true
             }

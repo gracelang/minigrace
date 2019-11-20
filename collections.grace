@@ -1,9 +1,14 @@
 dialect "none"
 import "intrinsic" as intrinsic
 
+use intrinsic.controlStructures
+
 def intrinsicConstants = intrinsic.constants
+def primitiveArray = intrinsicConstants.primitiveArray
+def Exception = intrinsicConstants.Exception
+
 def BoundsError is public = intrinsicConstants.BoundsError
-def ProgrammingError = intrinsicConstants.ProgrammingError
+def ProgrammingError is public = intrinsicConstants.ProgrammingError
 def IteratorExhausted is public = ProgrammingError.refine "IteratorExhausted"
 def SubobjectResponsibility is public = ProgrammingError.refine "SubobjectResponsibility"
 def NoSuchObject is public = ProgrammingError.refine "NoSuchObject"
@@ -14,6 +19,8 @@ def SizeUnknown is public = Exception.refine "SizeUnknown"
 method annotation is annotation
 method required is annotation
 method abstract is annotation
+
+method for (xs) do (action) { xs.do (action) }
 
 type EqualityObject = Object & interface {
     ::(o:Object) -> Binding
@@ -1583,7 +1590,7 @@ def range is public = object {
                     if (intElem != elem) then {return false}
                     if (intElem < start) then {return false}
                     if (intElem > stop) then {return false}
-                } catch { ex:prelude.Exception -> return false }
+                } catch { ex:Exception -> return false }
                 return true
             }
             method do(block1) {
@@ -1694,7 +1701,7 @@ def range is public = object {
                     if (intElem != elem) then {return false}
                     if (intElem > start) then {return false}
                     if (intElem < stop) then {return false}
-                } catch { ex:prelude.Exception -> return false }
+                } catch { ex:Exception -> return false }
                 return true
             }
             method do(block1) {

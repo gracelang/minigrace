@@ -47,7 +47,7 @@ class fromString(regExString:String) modifiers(modifiers:String) {
             patt.lastIndex = 0;     // start at the beginning
             var res;
             while(res = patt.exec(var_text._value)) {
-                callmethod(var_matchList, "add(1)", [1],
+                request(var_matchList, "add(1)", [1],
                     selfRequest(this, "matchResult(1)at(1)", [1, 1], 
                     new GraceList(res.map(elt => 
                         elt ? new GraceString(elt) : new GraceString(""))),

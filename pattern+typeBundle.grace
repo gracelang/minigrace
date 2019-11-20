@@ -6,6 +6,8 @@ trait open {
 
     use equalityBundle.open
 
+    method asString { "pattern+typeBundle.open" }
+
     trait BasicPattern {
         method &(o) {
             AndPattern(self, o)

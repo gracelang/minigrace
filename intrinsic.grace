@@ -86,8 +86,10 @@ trait constants {
     once method infinity { native "js" code ‹
         return new GraceNum(Infinity); ›
     }
-    method primitiveArray { native "js" code ‹
-        return PrimitiveArrayClass; ›
+    once class primitiveArray {
+        method new(size:Number) {
+            native "js" code ‹return new GracePrimitiveArray(var_size._value);›
+        }
     }
 }
 
@@ -145,4 +147,15 @@ method inBrowser {
 method engine {
     native "js" code ‹return new GraceString("js");›    // only when generating JS
     constants.ProgrammingError.raise "the method `engine` must be augmented to support this execution engine"
+}
+
+method become(a, b) {
+    // not clear what this is actualy intended to do ... it's used in statictypes dialect
+    native "js" code ‹
+    for (let k in var_a) {
+        const temp = var_a[k];
+        var_a[k] = var_b[k];
+        var_b[k] = temp;
+    }›
+    done
 }

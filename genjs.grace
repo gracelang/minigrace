@@ -1654,8 +1654,12 @@ method outputModuleDefinition(moduleObject) {
     out "\}"
 
     if (preludeRequested) then {
-        out "var var_prelude = do_import(\"standardGrace\", {formatModname "standardGrace"});"
-        moduleObject.directImports.push "standardGrace"
+        if (modname == "standardGrace") then {
+            out "var var_prelude = importedModules[\"standardGrace\"];"
+        } else {
+            out "var var_prelude = do_import(\"standardGrace\", {formatModname "standardGrace"});"
+            moduleObject.directImports.push "standardGrace"
+        }
     }
     out "if (typeof global !== \"undefined\")"
     out "  global.{generatedModuleName} = {generatedModuleName};"

@@ -28,8 +28,6 @@ def Colour = object {
 }
 def Color = Colour
 
-def Pi = 3.141592653589793
-
 def white = Colour.r 255 g 255 b 255
 def black = Colour.r 0 g 0 b 0
 
@@ -53,7 +51,7 @@ method fillCircle(x,y)radius(radius)with(col) {
     ctx.fillStyle := col.asDomString
     ctx.beginPath
     ctx.moveTo(x,y)
-    ctx.arc(x, y, radius, 0, Pi * 2, true)
+    ctx.arc(x, y, radius, 0, π * 2, true)
     ctx.fill
     ctx.closePath
 }

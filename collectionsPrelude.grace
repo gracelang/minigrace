@@ -1,11 +1,14 @@
 dialect "none"
 
-def BoundsError is public = ProgrammingError.refine "BoundsError"
-def IteratorExhausted is public = ProgrammingError.refine "IteratorExhausted"
-def SubobjectResponsibility is public = ProgrammingError.refine "SubobjectResponsibility"
-def NoSuchObject is public = ProgrammingError.refine "NoSuchObject"
-def RequestError is public = ProgrammingError.refine "RequestError"
-def ConcurrentModification is public = ProgrammingError.refine "ConcurrentModification"
+import "intrinsic" as intrinsic
+def ic = intrinsic.constants
+
+def Exception = ic.Exception
+def BoundsError is public = ic.BoundsError
+def IteratorExhausted is public = ic.IteratorExhausted
+def NoSuchObject is public = ic.NoSuchObject
+def RequestError is public = ic.ProgrammingError.refine "RequestError"
+def ConcurrentModification is public = ic.ProgrammingError.refine "ConcurrentModification"
 def SizeUnknown is public = Exception.refine "SizeUnknown"
 
 method annotation is annotation
@@ -261,7 +264,7 @@ method iteratorOver⟦T⟧ (sourceIterator: Iterator⟦T⟧)
                 cacheLoaded := false
                 return cache
             } else {
-                IteratorExhausted.raise "no more elements in {self}"
+                ic.IteratorExhausted.raise "no more elements in {self}"
             }
         }
     }
@@ -623,7 +626,7 @@ class list⟦T⟧ {
             self
         }
         method removeAll(vs: Collection⟦T⟧) ifAbsent(action:Procedure0)  {
-            for (vs) do { each ->
+            vs.do { each ->
                 def ix = indexOf(each) ifAbsent { 0 }
                 if (ix ≠ 0) then {
                     removeAt(ix)
@@ -700,7 +703,7 @@ class list⟦T⟧ {
                     if (iMods != mods) then {
                         ConcurrentModification.raise (asDebugString)
                     }
-                    if (idx > size) then { IteratorExhausted.raise "on list" }
+                    if (idx > size) then { ic.IteratorExhausted.raise "on list" }
                     def ret = at(idx)
                     idx := idx + 1
                     ret
@@ -791,7 +794,7 @@ class set⟦T⟧ {
     class ofCapacity(cap) -> Set⟦T⟧ is confidential {
         use collection⟦T⟧
         var mods := 0
-        var inner := prelude.primitiveArray.new(cap)
+        var inner := ic.primitiveArray.new(cap)
         var size is readable := 0
         (0..(cap - 1)).do { i ->
             inner.at (i) put (unused)
@@ -801,7 +804,7 @@ class set⟦T⟧ {
 
         method addAll(elements) {
             mods := mods + 1
-            for (elements) do { x ->
+            elements.do { x ->
                 if (! contains(x)) then {
                     def t = findPositionForAdd(x)
                     inner.at(t)put(x)
@@ -828,7 +831,7 @@ class set⟦T⟧ {
         }
 
         method removeAll(elements) {
-            for (elements) do { x ->
+            elements.do { x ->
                 remove (x) ifAbsent {
                     NoSuchObject.raise "set does not contain {x}"
                 }
@@ -837,7 +840,7 @@ class set⟦T⟧ {
         }
         method removeAll(elements)ifAbsent(block:Procedure1⟦T⟧) {
             mods := mods + 1
-            for (elements) do { x ->
+            elements.do { x ->
                 var t := findPosition(x)
                 if (inner.at(t) == x) then {
                     inner.at(t) put (removed)
@@ -850,7 +853,7 @@ class set⟦T⟧ {
         }
         method clear {
             mods := mods + 1
-            inner := prelude.primitiveArray.new(cap)
+            inner := ic.primitiveArray.new(cap)
             size := 0
             self
         }
@@ -951,7 +954,7 @@ class set⟦T⟧ {
             s ++ "\}"
         }
         method extend(l) {
-            for (l) do {i->
+            l.do {i->
                 add(i)
             }
         }
@@ -987,7 +990,7 @@ class set⟦T⟧ {
                             ConcurrentModification.raise (outer.asDebugString)
                         }
                         if (idx >= innerSize) then {
-                            IteratorExhausted.raise "iterator over {outer.asString}"
+                           ic.IteratorExhausted.raise "iterator over {outer.asString}"
                         }
                         candidate := inner.at(idx)
                         (unused == candidate) || (removed == candidate)
@@ -1003,11 +1006,11 @@ class set⟦T⟧ {
             def n = c * 2
             def oldInner = inner
             size := 0
-            inner := prelude.primitiveArray.new(n)
-            for (0..(inner.size-1)) do {i->
+            inner := ic.primitiveArray.new(n)
+            (0..(inner.size-1)).do {i->
                 inner.at(i)put(unused)
             }
-            for (0..(oldInner.size-1)) do {i->
+            (0..(oldInner.size-1)).do {i->
                 if ((unused != oldInner.at(i)) && (removed != oldInner.at(i))) then {
                     add(oldInner.at(i))
                 }
@@ -1042,7 +1045,7 @@ class set⟦T⟧ {
         method -- (other:Collection⟦T⟧) {
         // set difference
             def result = set.empty
-            for (self) do {v->
+            self.do {v->
                 if (!other.contains(v)) then {
                     result.add(v)
                 }
@@ -1128,8 +1131,8 @@ class dictionary⟦K,T⟧ {
         use collection⟦T⟧
         var mods := 0
         var numBindings := 0
-        var inner := prelude.primitiveArray.new(8)
-        for (0..(inner.size-1)) do { i ->
+        var inner := ic.primitiveArray.new(8)
+        (0..(inner.size-1)).do { i ->
             inner.at(i)put(unused)
         }
         method size { numBindings }
@@ -1180,7 +1183,7 @@ class dictionary⟦K,T⟧ {
         }
         method removeAllKeys(keys) {
             mods := mods + 1
-            for (keys) do { k ->
+            keys.do { k ->
                 var t := findPosition(k)
                 if (inner.at(t).key == k) then {
                     inner.at(t)put(removed)
@@ -1215,7 +1218,7 @@ class dictionary⟦K,T⟧ {
         }
         method removeAllValues(removals) {
             mods := mods + 1
-            for (0..(inner.size-1)) do {i->
+            (0..(inner.size-1)).do {i->
                 def a = inner.at(i)
                 if (removals.contains(a.value)) then {
                     inner.at(i)put(removed)
@@ -1228,7 +1231,7 @@ class dictionary⟦K,T⟧ {
             // remove all bindings with value v
             mods := mods + 1
             def initialNumBindings = numBindings
-            for (0..(inner.size-1)) do {i->
+            (0..(inner.size-1)).do {i->
                 def a = inner.at(i)
                 if (v == a.value) then {
                     inner.at (i) put (removed)
@@ -1244,7 +1247,7 @@ class dictionary⟦K,T⟧ {
             // remove all bindings with value v
             mods := mods + 1
             def initialNumBindings = numBindings
-            for (0..(inner.size-1)) do {i->
+            (0..(inner.size-1)).do {i->
                 def a = inner.at(i)
                 if (v == a.value) then {
                     inner.at (i) put (removed)
@@ -1257,10 +1260,10 @@ class dictionary⟦K,T⟧ {
             self
         }
         method clear {
-            inner := prelude.primitiveArray.new(8)
+            inner := ic.primitiveArray.new(8)
             numBindings := 0
             mods := mods + 1
-            for (0..(inner.size-1)) do { i ->
+            (0..(inner.size-1)).do { i ->
                 inner.at(i)put(unused)
             }
             self
@@ -1314,7 +1317,7 @@ class dictionary⟦K,T⟧ {
             // and we need an iterator over bindings.
             var s := "dictionary ["
             var firstElement := true
-            for (0..(inner.size-1)) do {i->
+            (0..(inner.size-1)).do {i->
                 def a = inner.at(i)
                 if ((unused ≠ a) && (removed ≠ a)) then {
                     if (! firstElement) then {
@@ -1329,7 +1332,7 @@ class dictionary⟦K,T⟧ {
         }
         method asDebugString {
             var s := "dict⟬"
-            for (0..(inner.size-1)) do {i->
+            (0..(inner.size-1)).do {i->
                 if (i > 0) then { s := s ++ ", " }
                 def a = inner.at(i)
                 if ((unused ≠ a) && (removed ≠ a)) then {
@@ -1389,7 +1392,7 @@ class dictionary⟦K,T⟧ {
                 if (iMods != mods) then {
                     ConcurrentModification.raise (outer.asString)
                 }
-                if (size < count) then { IteratorExhausted.raise "over {outer.asString}" }
+                if (size < count) then {ic.IteratorExhausted.raise "over {outer.asString}" }
                 while {
                     elt := inner.at(idx)
                     (unused == elt) || (removed == elt)
@@ -1405,12 +1408,12 @@ class dictionary⟦K,T⟧ {
             def c = inner.size
             def n = c * 2
             def oldInner = inner
-            inner := prelude.primitiveArray.new(n)
-            for (0..(n - 1)) do {i->
+            inner := ic.primitiveArray.new(n)
+            (0..(n - 1)).do {i->
                 inner.at(i)put(unused)
             }
             numBindings := 0
-            for (0..(c - 1)) do {i->
+            (0..(c - 1)).do {i->
                 def a = oldInner.at(i)
                 if ((unused ≠ a) && (removed ≠ a)) then {
                     self.at(a.key)put(a.value)
@@ -1418,7 +1421,7 @@ class dictionary⟦K,T⟧ {
             }
         }
         method keysAndValuesDo(block2) {
-            for (0..(inner.size-1)) do {i->
+            (0..(inner.size-1)).do {i->
                 def a = inner.at(i)
                 if ((unused ≠ a) && (removed ≠ a)) then {
                     block2.apply(a.key, a.value)
@@ -1427,7 +1430,7 @@ class dictionary⟦K,T⟧ {
         }
         method keysDo(block1) {
             def iMods = mods
-            for (0..(inner.size-1)) do { i ->
+            (0..(inner.size-1)).do { i ->
                 if (iMods ≠ mods) then {
                     ConcurrentModification.raise (asDebugString)
                 }
@@ -1439,7 +1442,7 @@ class dictionary⟦K,T⟧ {
         }
         method valuesDo(block1) {
             def iMods = mods
-            for (0..(inner.size-1)) do { i ->
+            (0..(inner.size-1)).do { i ->
                 if (iMods ≠ mods) then {
                     ConcurrentModification.raise (asDebugString)
                 }
@@ -1551,7 +1554,7 @@ def range is public = object {
                     method hasNext { val <= stop }
                     method next {
                         if (val > stop) then {
-                            IteratorExhausted.raise "over {outer.asString}"
+                           ic.IteratorExhausted.raise "over {outer.asString}"
                         }
                         val := val + 1
                         return (val - 1)
@@ -1561,10 +1564,10 @@ def range is public = object {
             }
             method at(ix:Number) {
                 if (!(ix <= self.size)) then {
-                    BoundsError.raise "requested range.at({ix}), but upper bound is {size}"
+                   BoundsError.raise "requested range.at({ix}), but upper bound is {size}"
                 }
                 if (!(ix >= 1)) then {
-                    BoundsError.raise "requested range.at({ix}), but lower bound is 1"
+                   BoundsError.raise "requested range.at({ix}), but lower bound is 1"
                 }
                 return start + (ix - 1)
             }
@@ -1581,7 +1584,7 @@ def range is public = object {
                     if (intElem != elem) then {return false}
                     if (intElem < start) then {return false}
                     if (intElem > stop) then {return false}
-                } catch { ex:prelude.Exception -> return false }
+                } catch { ex:Exception -> return false }
                 return true
             }
             method do(block1) {
@@ -1663,7 +1666,7 @@ def range is public = object {
                     var val := start
                     method hasNext { val >= stop }
                     method next {
-                        if (val < stop) then { IteratorExhausted.raise "over {outer.asString}" }
+                        if (val < stop) then {ic.IteratorExhausted.raise "over {outer.asString}" }
                         val := val - 1
                         return (val + 1)
                     }
@@ -1672,10 +1675,10 @@ def range is public = object {
             }
             method at(ix:Number) {
                 if (!(ix <= self.size)) then {
-                    BoundsError.raise "requested range.at({ix}) but upper bound is {size}"
+                   BoundsError.raise "requested range.at({ix}) but upper bound is {size}"
                 }
                 if (!(ix >= 1)) then {
-                    BoundsError.raise "requested range.at({ix}) but lower bound is 1"
+                   BoundsError.raise "requested range.at({ix}) but lower bound is 1"
                 }
                 return start - (ix - 1)
             }
@@ -1692,7 +1695,7 @@ def range is public = object {
                     if (intElem != elem) then {return false}
                     if (intElem > start) then {return false}
                     if (intElem < stop) then {return false}
-                } catch { ex:prelude.Exception -> return false }
+                } catch { ex:Exception -> return false }
                 return true
             }
             method do(block1) {

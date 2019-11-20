@@ -2,6 +2,11 @@ dialect "none"
 import "intrinsic" as intrinsic
 
 use intrinsic.controlStructures     // for while(_)do(_)
+def ic = intrinsic.constants
+def ProgrammingError is public = ic.ProgrammingError
+def π is public = 3.141592653589793
+def pi is public = π
+
 method abstract {
     SubobjectResponsibility.raise "abstract method not overriden by subobject"
 }
@@ -382,8 +387,6 @@ class point2Dx (x') y (y') {
     method hash { hashCombine(x.hash, y.hash) }
 }
 
-def pi is public = π
-
 method hashCombine(a, b) {
     native "c" code ‹
         int a = (int)(args[0]->data);
@@ -480,7 +483,7 @@ def BoundsError is public = collections.BoundsError
 def IteratorExhausted is public = collections.IteratorExhausted
 def NoSuchObject is public = collections.NoSuchObject
 def RequestError is public = collections.RequestError
-def SubobjectResponsibility is public = collections.SubobjectResponsibility
+def SubobjectResponsibility is public = ProgrammingError.refine "SubobjectResponsibility"
 def ConcurrentModification is public = collections.ConcurrentModification
 def UninitializedVariable is public = ProgrammingError.refine "UninitializedVariable"
 

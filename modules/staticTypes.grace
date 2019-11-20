@@ -3,6 +3,7 @@ dialect "dialect"
 import "ast" as ast
 import "util" as util
 import "pattern+type" as patAndType
+import "intrinsic" as intrinsic
 
 def TypeError = DialectError.refine "TypeError"
 
@@ -154,7 +155,7 @@ def aMethodType = object {
             def dtype = objectType.fromDType (defd.dtype)
             return signature (signature) returnType (dtype)
         } else {
-            prelude.Exception.raise "unrecognised method node" with (node)
+            Exception.raise "unrecognised method node" with (node)
         }
     }
 
@@ -163,7 +164,7 @@ def aMethodType = object {
 
 // Object type information.
 
-def noSuchMethod = prelude.singleton "noSuchMethod"
+def noSuchMethod = singleton "noSuchMethod"
 
 type ObjectType = {
     // return list of methods
@@ -459,7 +460,7 @@ def objectType = object {
     }
 
     method addTo (oType: ObjectType) name (name': String)
-            params (ptypes: prelude.Iterable⟦ObjectType⟧) returns (rType: ObjectType)
+            params (ptypes:Collection⟦ObjectType⟧) returns (rType: ObjectType)
             -> Done is confidential {
         def parameters = list []
         ptypes.do { ptype ->
@@ -648,7 +649,7 @@ rule { req: Request ->
         def rec = innerReq.receiver
         def rType = if (Identifier.matches (rec) && (rec.value == "self")) then {
             scope.types.find "Self" butIfMissing {
-                prelude.Exception.raise "type of self missing" with (rec)
+                Exception.raise "type of self missing" with (rec)
             }
         } else {
             typeOf (rec)
@@ -681,7 +682,7 @@ method check (req: Request)
         against (meth: MethodType) -> ObjectType is confidential {
     def name = meth.name
 
-    prelude.for (meth.signature) and (req.parts) do { part, args' ->
+    for (meth.signature) and (req.parts) do { part, args' ->
         def params = part.parameters
         def args   = args'.args
 
@@ -703,7 +704,7 @@ method check (req: Request)
                     with (location)
         }
 
-        prelude.for (params) and (args) do { param, arg ->
+        for (params) and (args) do { param, arg ->
             def pType = param.typeAnnotation
             def aType = typeOf (arg)
 
@@ -1198,9 +1199,9 @@ method collectTypes (nodes: List) -> Done is confidential {
         } else { }
     }
 
-    prelude.for (types) and (placeholders) do { td, ph ->
+    for (types) and (placeholders) do { td, ph ->
         def oType = objectType.fromDType (td)
-        prelude.become (ph, oType)
+        intrinsic.become (ph, oType)
     }
 }
 

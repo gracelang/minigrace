@@ -21,9 +21,6 @@ def keyCompare = { a, b -> a.key.compare(b.key) }
 
 def currentDialect is public = object {
     var name is public := "standardGrace"
-    var moduleObject is public := prelude
-    // TODO: this isn't quite right: should be the prelude
-    // on the GRACE_MODULE_PATH of this compilation
     var hasParseChecker is public := false
     var hasAstChecker is public := false
     var hasAtStart is public := false
@@ -46,11 +43,16 @@ def imports = util.requiredModules      // TODO: get rid of this, and replace by
                                         // externalModules below
 def externalModules = fd.dictionary.empty
 
-class filePath (fp) sha (sum) jsFile (jsf) {
-    // a record describing an external module
+type ModuleRecord = interface {  // a record describing an external module
+    path -> filePath.filePath    // the path to the source file
+    sha -> String                // the SHA256 checksum of the source
+    jsFile -> filePath.FilePath  // the corresponding .js object file
+}
+
+class filePath (fp) sha (sum) jsFile (jsf) -> ModuleRecord {
     def path is public = fp     // the path to the source file
     def sha is public = sum     // the SHA256 checksum of the source
-    def jsFile is public = jsf  // the corresponding JS object file
+    def jsFile is public = jsf  // the corresponding .js object file
 }
 
 method checkDialect(moduleObject) {
@@ -159,29 +161,28 @@ method printBacktrace(exceptionPacket) asFarAs (methodName) {
 method checkExternalModule(node) {
     // Used by identifierresolution to check that node, representing a
     // dialect or import statement, refers to a module that exisits.
-    checkimport(node.moduleName, node.path, node.isDialect, node.range)
-}
 
-method checkimport(moduleName, modulePath, isDialect, sourceRange) is confidential {
-    // checks that moduleName can be found on modulePath, and that a compiled
+    // checks that node.moduleName can be found on node.path, and that a compiled
     // version exists; creates the compiled version if necessary
 
-    if (imports.isAlready(moduleName)) then { return }
-
+    def moduleName = node.moduleName
+    if (externalModules.containsKey(moduleName)) then { return }
+    def modulePath = node.path
     if (intrinsic.inBrowser) then {
-        if (compiledModuleExists(moduleName)) then {
+        if (compiledModuleExistsInBrowser(moduleName)) then {
             return
         } else {
             errormessages.error "Please \"Run\" module {moduleName} before importing it."
-                atRange(sourceRange)
+                atRange(node.range)
         }
     }
     util.log 50 verbose "checking module \"{moduleName}\""
-    def compiledModule = findOrBuildCompiledModule(moduleName, modulePath, isDialect, sourceRange)
+    def moduleRec = findOrBuildCompiledModule(moduleName, modulePath, node)
+    externalModules.at (moduleName) put (moduleRec)
     imports.other.add(moduleName)
 }
 
-method compiledModuleExists(name) {
+method compiledModuleExistsInBrowser(name) {
     native "js" code ‹
         if (typeof window[graceModuleName(var_name._value)] === "function") {
             return GraceTrue;
@@ -190,14 +191,17 @@ method compiledModuleExists(name) {
         }›
 }
 
-method findOrBuildCompiledModule(moduleName, modulePath, isDialect, sourceRange) {
+method findOrBuildCompiledModule(moduleName, modulePath, node) -> ModuleRecord
+      is confidential {
+    // Returns a record desribing the compiled module for moduleName.
+    // Creates the .js file if necessary.
     // modulePath is the whole string from the dialect or import, potentially
     // containing "/" characters; moduleName is the name after the final "/"
 
     def graceFile = findGraceFile(modulePath) otherwise { m ->
         def rm = errormessages.readableStringFrom(m)
         errormessages.error "I can't find {modulePath}; tried {rm}."
-              atRange (sourceRange)
+              atRange (node.range)
     }
     def sourceSHA = shasum.sha256OfFile(graceFile)
     def thisCompiler = buildinfo.gitgeneration
@@ -209,20 +213,19 @@ method findOrBuildCompiledModule(moduleName, modulePath, isDialect, sourceRange)
         util.log 50 verbose("I can't find {jsFileName} with SHA {sourceSHA} " ++
               "compiled by {thisCompiler}; tried {rm}")
         def objectFile = compileModule (moduleName) inFile (graceFile)
-              forDialect (isDialect) atRange (sourceRange)
+               atRange (node.range)
         if (objectFile.exists.not) then {
             errormessages.error("I just compiled {graceFile}, " ++
-                  "but {objectFile} does not exist") atRange (sourceRange)
+                  "but {objectFile} does not exist") atRange (node.range)
         }
         objectFile
     }
     util.log 50 verbose "found compiled module \"{moduleName}\" in {jsFile}"
-    externalModules.at (moduleName) put (filePath (graceFile) sha (sourceSHA) jsFile (jsFile))
-    util.log 50 verbose "externalModules containsKeys {externalModules.keys}"
-    jsFile
+    filePath (graceFile) sha (sourceSHA) jsFile (jsFile)
 }
 
-method findGraceFile (modulePath) otherwise (action) {
+method findGraceFile (modulePath) otherwise (action) -> filePath.FilePath
+      is confidential {
     var candidate := filePath.fromString(modulePath).setExtension ".grace"
     def directoryPrefix = candidate.directory
     if (directoryPrefix.startsWith "/") then {
@@ -303,8 +306,7 @@ method extract (item) from (stream) {
     EnvironmentException.raise "Can't find {item} in JS file {stream.pathname}"
 }
 
-method compileModule (nm) inFile (sourceFile)
-        forDialect (isDialect) atRange (sourceRange) is confidential {
+method compileModule (nm) inFile (sourceFile) atRange (sourceRange) is confidential {
     // Compiles module with name nm located in sourceFile.
     // Returns the filePath containing the compiled code.
 

@@ -1220,7 +1220,7 @@ var GraceFalse = new GraceBoolean(false);
 function listObject() {
     if (! listObject.cache) {
         const coll = loadDynamicModule("collections");
-        listObject.cache = callMethod(coll, "list", [0]);
+        listObject.cache = request(coll, "list", [0]);
     }
     return listObject.cache
 }
@@ -1714,20 +1714,16 @@ function patternAndType() {
     return patternAndType.cache;
 }
 function GraceTypeIntersection(l, r) {
-    var opClass = callmethod(patternAndType(), "TypeIntersection", [0]);
-    return callmethod(opClass, "new(2)", [2], l, r);
+    return callmethod(patternAndType(), "TypeIntersection(2)", [2], l, r);
 }
 function GraceTypeUnion(l, r) {
-    var opClass = callmethod(patternAndType(), "TypeUnion", [0]);
-    return callmethod(opClass, "new(2)", [2], l, r);
+    return callmethod(patternAndType(), "TypeUnion(2)", [2], l, r);
 }
 function GraceTypeVariant(l, r) {
-    var opClass = callmethod(patternAndType(), "TypeVariant", [0]);
-    return callmethod(opClass, "new(2)", [2], l, r);
+    return callmethod(patternAndType(), "TypeVariant(2)", [2], l, r);
 }
 function GraceTypeSubtraction(l, r) {
-    var opClass = callmethod(patternAndType(), "TypeSubtraction", [0]);
-    return callmethod(opClass, "new(2)", [2], l, r);
+    var opClass = callmethod(patternAndType(), "TypeSubtraction(2)", [2], l, r);
 }
 
 function GraceType(name) {
