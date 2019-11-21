@@ -782,8 +782,8 @@ function failNumMethodArgCheck(desc, className, methodName) {
 function pointObject() {
     if (! pointObject.cache) {
         const pointBundle = loadDynamicModule("pointBundle");
-        const openBundle = request(pointBundle.open);
-        pointObject.cache = oprnBundle;
+        const openBundle = request(pointBundle, "open");
+        pointObject.cache = openBundle;
     }
     return pointObject.cache
 }
