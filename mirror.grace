@@ -93,8 +93,7 @@ class reflect(subj) → Mirror {
                     nm => new GraceString(nm)));
         ›
     }
-    // method onMethod(nm:String) → MethodMirror { methodMirror(subject, nm) }
-    method onMethod(nm:String) { methodMirror(subject, nm) }
+    method onMethod(nm:String) → MethodMirror { methodMirror(subject, nm) }
 
     method whenNoMethodDo(handlerBlock:Function3) → Done {
         // sets up handlerBlock (a function with 3 arguments) to be applied when
