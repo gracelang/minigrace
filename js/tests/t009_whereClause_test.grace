@@ -1,4 +1,6 @@
 dialect "standard"
+import "collections" as collections
+
 type Hashable = interface {
     = (other:Object) → Boolean
     hash → Number

@@ -11,7 +11,7 @@ type ABC = A & B & C
 type ABC' = A | B | C
 
 method showType(T) {
-    print "{T} has methods {(T.methodNames >> list).sort >> sequence}"
+    print "{T} has methods {T.methodNames >> sequence}"
 }
 
 showType(A)
@@ -26,9 +26,9 @@ match (seq)
     case { s:Sequence -> print "{s} is a sequence" }
     else { print "we should never get here" }
 
-def sm = m.reflect(seq).methodNames
+def sm = m.reflect(seq).methodNames >> set
 print "The following list methods are not in sequence:"
-def missing = List.methodNames -- sm
-list.withAll(missing).sort.do {
+def missing = (List.methodNames >> set) -- sm
+(missing >> list).sort.do {
     each -> print "    {each}"
 }

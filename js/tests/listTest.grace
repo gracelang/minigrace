@@ -1,3 +1,4 @@
+dialect "standard"
 import "gUnit" as gU
 
 trait listTest {
@@ -48,7 +49,7 @@ trait listTest {
 
         method testListEqualityEmpty {
             assert(empty == list.empty) description "empty list ≠ itself!"
-            assert(empty == emptySequence) description "empty list ≠ empty sequence"
+            assert(empty == []) description "empty list ≠ empty sequence"
         }
 
         method testListInequalityEmpty {
@@ -415,11 +416,11 @@ trait listTest {
         }
 
         method testListToSequence1to5 {
-            assert (sequence(oneToFive)) shouldBe (sequence [1, 2, 3, 4, 5])
+            assert (sequence(oneToFive)) shouldBe [1, 2, 3, 4, 5]
         }
 
         method testListToSequenceEmpty {
-            assert (sequence(empty)) shouldBe (emptySequence)
+            assert (sequence(empty)) shouldBe []
         }
 
         method testListToSet1to5 {

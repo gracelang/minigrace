@@ -1,4 +1,5 @@
 dialect "standard"
+import "collections" as collections
 import "gUnit" as gU
 
 trait dictionaryTest {
@@ -328,10 +329,10 @@ trait dictionaryTest {
         method testDictionaryValuesEmpty {
             def vs = empty.values
             assert(vs.isEmpty)
-            assert(vs) shouldBe (emptySequence)
+            assert(vs) shouldBe []
         }
         method testDictionaryKeysEmpty {
-            assert(empty.keys) shouldBe (emptySequence)
+            assert(empty.keys) shouldBe []
         }
         method testDictionaryValuesSingle {
             assert(dictionary ["one"::1].values) shouldBe

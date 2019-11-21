@@ -1,5 +1,6 @@
 dialect "standard"
 import "gUnit" as gU
+import "collections" as collections
 
 trait sequenceTest {
     class forMethod(m) {

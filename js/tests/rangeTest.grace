@@ -1,5 +1,5 @@
 dialect "standard"
-"import "gUnit" as gU
+import "gUnit" as gU
 
 trait rangeTest {
     class forMethod(m) {

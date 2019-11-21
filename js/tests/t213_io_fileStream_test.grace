@@ -251,8 +251,8 @@ describe "io" with {
     }
 }
 
-//io.unlink "io-specify-hi.txt"
-//io.unlink "io-specify-data.txt"
-//io.unlink(emptyFileName)
+io.unlink "io-specify-hi.txt"
+io.unlink "io-specify-data.txt"
+io.unlink(emptyFileName)
 
 exit

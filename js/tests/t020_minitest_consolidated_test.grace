@@ -221,12 +221,17 @@ testSuiteNamed "nested parameterized types" with {
     }
 }
 
-method hook { abstract }
+method hook1 is abstract
+method hook2 is required
 
 testSuiteNamed "reuse from dialect" with {
 
-    test "request abstract method" by {
-        assert {hook} shouldRaise (SubobjectResponsibility)
+    test "requesting an abstract method raises an exception" by {
+        assert {hook1} shouldRaise (ProgrammingError)
+    }
+
+    test "requesting a required method raises an exception" by {
+        assert {hook2} shouldRaise (ProgrammingError)
     }
     
     def v1 = singleton
@@ -397,9 +402,6 @@ class dummyPrelude {
 }
 
 testSuiteNamed "interit from external module" with {
-    test "abstact" by {
-        assert {dummyPrelude.hook} shouldRaise (SubobjectResponsibility)
-    }
     
     test "dummyPrelude inheritance contains set(_)" by {
         def mDummyPrelude = mirror.reflect(dummyPrelude).methodNames
@@ -416,7 +418,6 @@ testSuiteNamed "interit from external module" with {
         assert (mDummyPrelude.contains "Sequence")
             description "type 'Sequence' missing from dummyPrelude"
     }
-
     test "filePath directory" by {
         def f = subFilePath.setDirectory "root/a" .setBase "file" .setExtension "grace"
         assert (f.asString) shouldBe "root/a/file.grace"
