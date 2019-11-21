@@ -15,6 +15,7 @@ trait open {
         | (other:Pattern) → Pattern
         matches(value:Object) → Boolean
         prefix ¬ → Pattern
+        isType → Boolean
     }
 
     type Binding⟦K,T⟧ = Object & interface {

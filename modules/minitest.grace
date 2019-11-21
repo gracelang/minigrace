@@ -1,7 +1,7 @@
 dialect "none"
 
 import "standardBundle" as standardBundle
-import "minispecBundle" as minispecBundle
+import "minitestBundle" as minitestBundle
 
 use standardBundle.open
-use minispecBundle.open
+use minitestBundle.open

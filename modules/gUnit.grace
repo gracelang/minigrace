@@ -117,14 +117,14 @@ trait assertion {
         } catch { raisedException:desiredException ->
             completedNormally := false
             if (raisedException.message.contains(error1).not) then {
-                failBecause("code raised exception {raisedException.exception},"
-                    ++ " but the message was \"{raisedException.message}\","
-                    ++ " which does not mention \"{error1}\"")
+                failBecause("code raised exception {raisedException.exception} as expected,"
+                    ++ " but the message was\n\"{raisedException.message}\","
+                    ++ " which does not mention\n\"{error1}\"")
             }
             if (raisedException.message.contains(error2).not) then {
-                failBecause("code raised exception {raisedException.exception},"
-                    ++ " but the message was \"{raisedException.message}\","
-                    ++ " which does not mention \"{error2}\"")
+                failBecause("code raised exception {raisedException.exception} as expected,"
+                    ++ " but the message was\n\"{raisedException.message}\","
+                    ++ " which does not mention\n\"{error2}\"")
             }
         } catch { raisedException ->
             completedNormally := false
@@ -165,7 +165,7 @@ trait assertion {
         def allMethods = vMirror.methodNames
         def publicMethods = allMethods.filter{ each ->
             vMirror.onMethod(each).isPublic} >> set
-        def tMethods = DesiredType.methodNames
+        def tMethods = DesiredType.methodNames >> set
         def missing = tMethods -- publicMethods
         if (missing.isEmpty) then {
             ProgrammingError.raise "{value.asDebugString} seems to have all the methods of {DesiredType}"
@@ -182,7 +182,7 @@ trait assertion {
         def allMethods = vMirror.methodNames
         def publicMethods = allMethods.filter{ each ->
             vMirror.onMethod(each).isPublic} >> set
-        def qMethods = set.withAll(Q.methodNames)
+        def qMethods = Q.methodNames >> set
         def missing = publicMethods -- qMethods
         if (missing.isEmpty.not) then {
             s := "{Q} is missing "

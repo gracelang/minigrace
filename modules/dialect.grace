@@ -263,7 +263,7 @@ method check(module) -> Done {
 type AstNode = { kind -> String }
 
 class aPatternMatchingNode(kind:String) -> Pattern {
-    use BasicPattern
+    use BasePattern
 
     method matches(obj:Object) -> Boolean {
         match(obj)
@@ -306,7 +306,7 @@ def Inherit is public = aPatternMatchingNode "inherit"
 
 class RequestOf(methodName:String) -> Pattern {
 
-    use BasicPattern
+    use BasePattern
 
     method matches(obj:Object) -> Boolean {
         match(obj)

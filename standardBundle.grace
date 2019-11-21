@@ -58,7 +58,7 @@ trait open {
     }
 
     trait singleton {
-        use BasicPattern
+        use BasePattern
         use identityEquality
         method matches(other) { self.isMe(other) }
     }

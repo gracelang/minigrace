@@ -1,5 +1,5 @@
-dialect "none"
-import "standardBundle" as standardBundle
+dialect "standard"
+
 import "gUnit" as gu
 
 def nullSuite = prelude.singleton "nullSuite"
@@ -17,7 +17,6 @@ var currentResult := object {
 }
 
 trait open {
-    use standardBundle.open
     use gu.assertion        // makes available all the assert ... methods
 
     method countOneAssertion {
