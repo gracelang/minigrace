@@ -327,8 +327,9 @@ testSuiteNamed "singleton" with {
         assert(block1.apply(full)) shouldBe "Singleton full"
     }
     
-    test "type error" by {
-        assert {block1.apply "hello"} shouldRaise (TypeError)
+    test "argument does not match pattern" by {
+        assert {block1.apply "hello"} shouldRaise (RequestError)
+            mentioning "argument to block.apply(_)" and "not match pattern"
     }
     
     test "3 arguments good" by {
