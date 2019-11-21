@@ -16,8 +16,8 @@ testSuite "type error messages" with {
             def b = { n:Number, m:Number -> n + m }
             b.apply("Hello", 4)
         } shouldRaise (TypeError)
-              mentioning ‹argument 1 to block.apply(_,_) does not have type Number.
-It is string "Hello" (defined in module basic library), which is missing methods %(_), +(_), -(_), ..(_), /(_), @(_), ^(_), abs, acos, asStringDecimals(_), asin, atan, ceiling, cos, downTo(_), exp, floor, inBase(_), isEven, isInteger, isNaN, isOdd, lg, ln, log10, prefix-, prefix<, prefix>, prefix≤, prefix≥, rounded, sgn, sin, sqrt, tan, truncated, and ÷(_).›
+              mentioning "argument 1 to block.apply(_,_) does not have type Number"
+              and "missing methods %(_), +(_), -(_), ..(_), /(_), @(_), ^(_), abs, acos, asStringDecimals(_), asin, atan, ceiling"
     }
 
     test "block argument with custom type" by {
@@ -25,8 +25,8 @@ It is string "Hello" (defined in module basic library), which is missing methods
             def b = { n:Custom, m:Number -> n + m }
             b.apply("Hello", 4)
         } shouldRaise (TypeError)
-              mentioning ‹argument 1 to block.apply(_,_) does not have type Custom.
-It is string "Hello" (defined in module basic library), which is missing methods +(_) and -(_).›
+              mentioning "argument 1 to block.apply(_,_) does not have type Custom"
+              and "missing methods +(_) and -(_)"
     }
 
     test "block with correctly-typed arguments" by {

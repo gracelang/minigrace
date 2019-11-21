@@ -1,6 +1,7 @@
 dialect "minitest"
 import "mirror" as mirror
 import "unixFilePath" as filePath
+import "standardBundle" as standardBundle
 
 
 var simpleVar := "initial value"
@@ -297,7 +298,7 @@ def empty = object {
 
 def full = singleton "full"
 
-type OptionNumber =  Number | empty | full
+def OptionNumber:Pattern =  Number | empty | full
 
 def items = list [6, 7, empty, 9, full]
 
@@ -366,12 +367,12 @@ class subFilePath {
 }
 
 class dummyPrelude {
-    inherit _prelude.methods
+    use standardBundle.open
     
     method compareProtocols {
-        def mSelf = mirror.reflect(self).methodNames --
+        def mSelf = (mirror.reflect(self).methodNames >> self.set) --
                     self.set ["hook", "compareProtocols", "doIt(_)"]
-        def mPrelude = mirror.reflect(_prelude).methodNames
+        def mPrelude = mirror.reflect(_prelude).methodNames >> self.set
         if (mPrelude == mSelf) then {
             true
         } else {
@@ -399,23 +400,23 @@ testSuiteNamed "interit from external module" with {
         assert {dummyPrelude.hook} shouldRaise (SubobjectResponsibility)
     }
     
-    test "prelude inheritance contains set(_)" by {
+    test "dummyPrelude inheritance contains set(_)" by {
         def mDummyPrelude = mirror.reflect(dummyPrelude).methodNames
         assert (mDummyPrelude.contains "set(_)")
             description "method 'set(_)' missing from dummyPrelude"
     }
-    test "prelude inheritance contains compareProtocols" by {
+    test "dummyPrelude inheritance contains compareProtocols" by {
         def mDummyPrelude = mirror.reflect(dummyPrelude).methodNames
         assert (mDummyPrelude.contains "compareProtocols")
             description "method 'compareProtocols' missing from dummyPrelude"
     }
-    test "prelude inheritance contains Sequence" by {
+    test "dummyPrelude inheritance contains Sequence" by {
         def mDummyPrelude = mirror.reflect(dummyPrelude).methodNames
         assert (mDummyPrelude.contains "Sequence")
             description "type 'Sequence' missing from dummyPrelude"
     }
 
-    test "firpath direct" by {
+    test "filePath directory" by {
         def f = subFilePath.setDirectory "root/a" .setBase "file" .setExtension "grace"
         assert (f.asString) shouldBe "root/a/file.grace"
         assert (f.direct) shouldBe "root/a/"

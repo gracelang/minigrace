@@ -363,3 +363,5 @@ testSuiteNamed "once methods with type params" with {
         deny (t.executed) description "once method a second time for Unknown"
     }
 }
+
+exit

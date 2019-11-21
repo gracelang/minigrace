@@ -2,8 +2,6 @@ dialect "minispec"
 import "date" as date
 import "io" as io
 
-print "{io.FileStream} has methods {io.FileStream.methodNames}"
-
 def longFile = io.open("io-specify-data.txt", "w")
 longFile.write "This is test data\n"
 (1..12).do { i →
@@ -19,6 +17,9 @@ es.close
 
 
 describe "io" with {
+    specify "file type" by {
+        expect (io.FileStream) toHaveType (Type)
+    }
     specify "read on file" by {
         def fs = io.open("io-specify-hi.txt","r")
         expect (fs.read) toBe "hi"

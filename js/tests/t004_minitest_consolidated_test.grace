@@ -445,7 +445,7 @@ method betterFoo -> T {
 
 testSuiteNamed "types in interfaces" with {
     test "type T has U method" by {
-        assert (T.methodNames) shouldBe (set.withAll ["x", "y", "U"])
+        assert (T.methodNames) shouldBe ["U", "x", "y"]
     }
     
     test "foo doesn't return a T" by {
@@ -463,7 +463,7 @@ testSuiteNamed "types in interfaces" with {
                 x -> Number
             }
         }
-        assert (local.L.methodNames) shouldBe (set.withAll ["x", "W"])
+        assert (local.L.methodNames) shouldBe ["W", "x"]
     }
 }
 

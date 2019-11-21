@@ -13,8 +13,8 @@ method numType(n1:Number) { n1 + 2 }
 method paramType⟦T⟧(x:T) { x.asString }
 method typeIdentity⟦A⟧ { A }
 method typeComparison⟦A,B⟧ {
-    def Amethods = A.methodNames
-    def Bmethods = B.methodNames
+    def Amethods = A.methodNames >> set
+    def Bmethods = B.methodNames >> set
     def ActB = Amethods.isSuperset(Bmethods)
     def BctA = Bmethods.isSuperset(Amethods)
     if (ActB && BctA) then { "{A} and {B} are equal" }
