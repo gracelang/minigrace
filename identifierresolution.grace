@@ -300,7 +300,7 @@ class newScopeIn(parent') kind(variety') {
         if (variety == "module") then { return true }
         if (variety == "dialect") then { return true }
         if (variety == "class") then { return true }
-        if (variety == "built-in") then { return true }
+        if (variety == "builtIn") then { return true }
         false
     }
     method allowsShadowing {
@@ -335,7 +335,7 @@ class newScopeIn(parent') kind(variety') {
                 } elseif { s.variety == "module" } then {
                     return ast.memberNode.new(name, thisModule) scope(self).
                           onSelf.withGenericArgs(aNode.generics)
-                } elseif { s.variety == "built-in" } then {
+                } elseif { s.variety == "builtIn" } then {
                     return ast.memberNode.new(name,
                           ast.identifierNode.new("_prelude", false)
                                 scope(self)) scope(self).
@@ -497,7 +497,7 @@ class newScopeIn(parent') kind(variety') {
 
 def emptyScope = newScopeKind("empty")
 ast.nullNode.scope := emptyScope      // TODO: eliminate!
-def builtInsScope = newScopeIn(emptyScope) kind "built-in"
+def builtInsScope = newScopeIn(emptyScope) kind "builtIn"
 def preludeScope = newScopeIn(builtInsScope) kind "prelude"
 def dialectScope = newScopeIn(preludeScope) kind "dialect"
 def moduleScope = newScopeIn(dialectScope) kind "module"
@@ -576,7 +576,7 @@ method transformIdentifier(node) ancestors(anc) {
     }
     checkForAmbiguityOf (node) definedIn (definingScope) asA (nodeKind)
     def v = definingScope.variety
-    if (v == "built-in") then { return node }
+    if (v == "builtIn") then { return node }
     if (v == "prelude") then {
         def p = ast.identifierNode.new("prelude", false) scope(nodeScope)
         return ast.memberNode.new(nm, p)
@@ -629,7 +629,7 @@ method checkForAmbiguityOf (node) definedIn (definingScope) asA (kind) {
     def conflictingScope = definingScope.parent.thatDefines(name) ifNone {
         return
     }
-    if (conflictingScope.variety == "built-in") then {
+    if (conflictingScope.variety == "builtIn") then {
         return  // TODO:  this is a temporary hack to
                 // allow us to get rid of the built-ins.
                 // If we can't redefine them in a Grace file
@@ -1423,13 +1423,12 @@ method transformInherits(inhNode) ancestors(anc) {
                   atRange(superExpr.range)
         }
         def sv = definingScope.variety
-        if ((sv == "built-in") || (sv == "dialect")) then {
+        if ((sv == "builtIn") || (sv == "dialect")) then {
             // this deals with "inherit true" etc; identifiers from the built-in
             // scope have not been transformed to member nodes
-            def preludeName = if (sv == "built-in") then { "_prelude" }
-                                                    else { "prelude" }
-            def preludeNode = ast.identifierNode.new(preludeName, false) scope(currentScope)
-            def newCall = ast.callNode.new(preludeNode, [
+
+            def receiverNode = ast.identifierNode.new("$" ++ sv, false) scope(currentScope)
+            def newCall = ast.callNode.new(receiverNode, [
                 ast.requestPart.request (nm) withArgs [] scope(currentScope),
                 ast.requestPart.request "$object" withArgs [
                     ast.identifierNode.new("self", false) scope(currentScope)] scope(currentScope) ])

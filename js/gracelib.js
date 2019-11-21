@@ -46,7 +46,7 @@ function GraceObject() {       // constructor function
     this.data = {};
     this.className = "graceObject";
     this.mutable = false;
-    this.definitionModule = "basic library";
+    this.definitionModule = "built-in library";
     this.definitionLine = 0;
     this.closureKeys = [];
 }
@@ -124,7 +124,7 @@ GraceObject.prototype = {
         "asDebugString":    object_asDebugString,
         "debug$Iterator":   object_debugIterator
     },
-    classUid: "graceObject-intrinsic"
+    classUid: "graceObject-built-in"
 //    data: {}  The prototype should NOT have a data object — data should go in the
 //    child (non-shared) object.
 };
@@ -135,7 +135,7 @@ function GraceTrait() {       // constructor function
     this.data = {};
     this.className = "graceTrait";
     this.mutable = false;
-    this.definitionModule = "basic library";
+    this.definitionModule = "built-in library";
     this.definitionLine = 0;
 }
 
@@ -188,7 +188,7 @@ GraceTrait.prototype = {
         "asDebugString":    object_asDebugString,
         "debug$Iterator":   object_debugIterator
     },
-    classUid: "graceTrait-intrinsic"
+    classUid: "graceTrait-built-in"
 };
 
 function isEmptyObject(obj) {
@@ -221,9 +221,9 @@ function Grace_allocObject(superConstructor, givenName) {
         className: givenName,
         mutable: false,
         closureKeys: [],
-        definitionModule: "basic library",
+        definitionModule: "built-in library",
         definitionLine: 0,
-        classUid: givenName + "-intrinsic"
+        classUid: givenName + "-built-in"
     };
     return resultObj;
 }
@@ -691,13 +691,13 @@ GraceString.prototype = {
             return callmethod(this, "==(1)", [1], o);
         },
         "|(1)": function string_orPattern(argcv, o) {
-            return new GraceOrPattern(this, o);
+            return graceOrPattern(this, o);
         },
         "&(1)": function string_andPattern (argcv, o) {
-            return new GraceAndPattern(this, o);
+            return graceAndPattern(this, o);
         },
         "prefix¬": function(argcv) {
-            return new GraceNotPattern(this);
+            return graceNotPattern(this);
         },
         "startsWithSpace": function string_startsWithSpace (argcv) {
             var s = this._value.charCodeAt(0);
@@ -765,9 +765,9 @@ GraceString.prototype = {
         }
     },
     className: "string",
-    definitionModule: "basic library",
+    definitionModule: "built-in library",
     definitionLine: 0,
-    classUid: "string-intrinsic"
+    classUid: "string-built-in"
 };
 
 var GraceEmptyString = new GraceString("");
@@ -1076,19 +1076,19 @@ GraceNum.prototype = {
             return callmethod(this, "==(1)", [1], o);
         },
         "|(1)": function(argcv, o) {
-            return new GraceOrPattern(this, o);
+            return graceOrPattern(this, o);
         },
         "&(1)": function(argcv, o) {
-            return new GraceAndPattern(this, o);
+            return graceAndPattern(this, o);
         },
         "prefix¬": function(argcv) {
-            return new GraceNotPattern(this);
+            return graceNotPattern(this);
         }
     },
     className: "number",
-    definitionModule: "basic library",
+    definitionModule: "built-in library",
     definitionLine: 0,
-    classUid: "number-intrinsic"
+    classUid: "number-built-in"
 };
 
 function GracePredicatePattern(pred) {
@@ -1119,19 +1119,22 @@ GracePredicatePattern.prototype = {
             return GraceFalse;
         },
         "|(1)": function predicate_orPattern(argcv, o) {
-            return new GraceOrPattern(this, o);
+            return graceOrPattern(this, o);
         },
         "&(1)": function predicate_andPattern (argcv, o) {
-            return new GraceAndPattern(this, o);
+            return graceAndPattern(this, o);
         },
         "prefix¬": function predicate_notPattern (argcv) {
-            return new GraceNotPattern(this);
+            return graceNotPattern(this);
+        },
+        "isType": function type_isType (argcv) {
+            return GraceFalse;
         }
     },
     className: "predicatePattern",
-    definitionModule: "basic library",
+    definitionModule: "built-in library",
     definitionLine: 0,
-    classUid: "predicatePattern-intrinsic"
+    classUid: "predicatePattern-built-in"
 }
 
 function GraceBoolean(b) {
@@ -1164,13 +1167,13 @@ GraceBoolean.prototype = {
             return ((this._value) ? GraceFalse : GraceTrue);
         },
         "&(1)": function(argcv, other) {
-            return new GraceAndPattern(this, other);
+            return graceAndPattern(this, other);
         },
         "|(1)": function(argcv, other) {
-            return new GraceOrPattern(this, other);
+            return graceOrPattern(this, other);
         },
         "prefix¬": function(argcv) {
-            return new GraceNotPattern(this);
+            return graceNotPattern(this);
         },
         "&&(1)": function(argcv, other) {
             if (!this._value)
@@ -1209,9 +1212,9 @@ GraceBoolean.prototype = {
         }
     },
     className: "boolean",
-    definitionModule: "basic library",
+    definitionModule: "built-in library",
     definitionLine: 0,
-    classUid: "boolean-intrinsic"
+    classUid: "boolean-built-in"
 };
 
 var GraceTrue = new GraceBoolean(true);
@@ -1220,7 +1223,7 @@ var GraceFalse = new GraceBoolean(false);
 function listObject() {
     if (! listObject.cache) {
         const coll = loadDynamicModule("collections");
-        listObject.cache = request(coll, "list", [0]);
+        listObject.cache = callmethod(coll, "list", [0]);
     }
     return listObject.cache
 }
@@ -1515,9 +1518,9 @@ GraceSequence.prototype = {
         }
     },
     className: "sequence",
-    definitionModule: "basic library",
+    definitionModule: "built-in library",
     definitionLine: 0,
-    classUid: "lineup-intrinsic"
+    classUid: "sequence-built-in"
 };
 
 function GracePrimitiveArray(len) {
@@ -1654,20 +1657,20 @@ GracePrimitiveArray.prototype = {
         }
     },
     className: "primitiveArray",
-    definitionModule: "basic library",
+    definitionModule: "built-in library",
     definitionLine: 0,
-    classUid: "primitiveArray-intrinsic"
+    classUid: "primitiveArray-built-in"
 };
 
-function GraceOrPattern(l, r) {
-    return request(patternAndType(), "OrPattern", [2], l, r);
+function graceOrPattern(l, r) {
+    return request(patternAndType(), "OrPattern(2)", [2], l, r);
 }
 
-function GraceAndPattern(l, r) {
-    return request(patternAndType(), "AndPattern", [2], l, r);
+function graceAndPattern(l, r) {
+    return request(patternAndType(), "AndPattern(2)", [2], l, r);
 }
 
-function GraceNotPattern(o) {
+function graceNotPattern(o) {
     return request(patternAndType(), "NotPattern(1)", [1], o);
 }
 
@@ -1714,16 +1717,16 @@ function patternAndType() {
     return patternAndType.cache;
 }
 function GraceTypeIntersection(l, r) {
-    return callmethod(patternAndType(), "TypeIntersection(2)", [2], l, r);
+    return request(patternAndType(), "TypeIntersection(2)", [2], l, r);
 }
 function GraceTypeUnion(l, r) {
-    return callmethod(patternAndType(), "TypeUnion(2)", [2], l, r);
+    return request(patternAndType(), "TypeUnion(2)", [2], l, r);
 }
 function GraceTypeVariant(l, r) {
-    return callmethod(patternAndType(), "TypeVariant(2)", [2], l, r);
+    return request(patternAndType(), "TypeVariant(2)", [2], l, r);
 }
 function GraceTypeSubtraction(l, r) {
-    var opClass = callmethod(patternAndType(), "TypeSubtraction(2)", [2], l, r);
+    return request(patternAndType(), "TypeSubtraction(2)", [2], l, r);
 }
 
 function GraceType(name) {
@@ -1765,7 +1768,7 @@ GraceType.prototype = {
             return new GraceTypeIntersection(this, other);
         },
         "prefix¬": function(argcv) {
-            return new GraceNotPattern(this);
+            return graceNotPattern(this);
         },
         "+(1)": function type_and(argcv, other) {
             return new GraceTypeUnion(this, other);
@@ -1785,7 +1788,7 @@ GraceType.prototype = {
                 const methName = canonicalMethodName(this.typeMethods[i]);
                 result.push(methName);
             }
-            return new GraceSequence(methNames.sort().map(
+            return new GraceSequence(result.sort().map(
                     nm => new GraceString(nm)));;
         },
         "==(1)": function type_identity (argcv, other) {
@@ -1804,12 +1807,15 @@ GraceType.prototype = {
         },
         "isNone": function type_isNone (argcv) {
             return GraceFalse;
+        },
+        "isType": function type_isType (argcv) {
+            return GraceTrue;
         }
     },
     className: "Type",
-    definitionModule: "basic library",
+    definitionModule: "built-in library",
     definitionLine: 0,
-    classUid: "Type-intrinsic"
+    classUid: "Type-built-in"
 };
 
 GraceType.prototype.methods["setName(1)"].confidential = true;
@@ -1921,9 +1927,9 @@ function assertTypeOrMsg(obj, type, objDesc, typeDesc) {
             raiseTypeError(message, type, obj);
         }
     } else {
-        throw new GraceExceptionPacket(ProgrammingErrorObject,
-                new GraceString("while checking that " + objDesc + " has type " +
-                  typeDesc + ", found that " + typeDesc + " is not a type (has no match or matches"));
+        raiseException(ProgrammingErrorObject,
+                "while checking that " + objDesc + " has type " +  typeDesc +
+                ", found that " + typeDesc + " is not a type (has no matches(_) method)");
     }
 }
 
@@ -2097,7 +2103,7 @@ GraceSequenceIterator.prototype.methods.next = function() {
     const selfString = request(this._obj, "asString")._value;
     raiseException(IteratorExhaustedObject, "on sequence " + selfString);
 };
-GraceSequenceIterator.prototype.classUid = "sequenceIterator-intrinsic";
+GraceSequenceIterator.prototype.classUid = "sequenceIterator-built-in";
 
 function GraceStringIterator(s) {
     this._value = s._value;
@@ -2129,7 +2135,7 @@ GraceStringIterator.prototype = {
     }
 };
 
-GraceStringIterator.prototype.classUid = "stringIterator-intrinsic";
+GraceStringIterator.prototype.classUid = "stringIterator-built-in";
 
 function GraceIterator(obj) {
     this._value = obj._value;
@@ -3022,7 +3028,7 @@ GraceExceptionPacket.prototype = {
     exctype: 'graceexception',
     get moduleName() { return this.method.definitionModule || "native code"; },
     definitionLine: 0,
-    classUid: "ExceptionPacket-intrinsic"
+    classUid: "ExceptionPacket-built-in"
 };
 
 function GraceException(name, parent) {
@@ -3061,7 +3067,7 @@ GraceException.prototype = {
             return GraceFalse;
         },
         "|(1)": function(argcv, o) {
-            return new GraceOrPattern(this, o);
+            return graceOrPattern(this, o);
         },
         "==(1)": function(argcv, o) {
             if (o === this) return GraceTrue; // not just for efficiency, but
@@ -3083,10 +3089,10 @@ GraceException.prototype = {
             return this._hash;
         },
         "&(1)": function(argcv, o) {
-            return new GraceAndPattern(this, o);
+            return graceAndPattern(this, o);
         },
         "prefix¬": function(argcv) {
-            return new GraceNotPattern(this);
+            return graceNotPattern(this);
         },
         "name": function(argcv) {
             return new GraceString(this.name);
@@ -3099,12 +3105,15 @@ GraceException.prototype = {
                 return this;
             else
                 return this.parent;
+        },
+        "isType": function exception_isType(argcv) {
+            return GraceFalse;
         }
     },
     className: 'Exception',
-    definitionModule: "basic library",
+    definitionModule: "built-in library",
     definitionLine: 0,
-    classUid: "Exception-intrinsic"
+    classUid: "Exception-built-in"
 };
 
 var importedModules = {};
@@ -3249,17 +3258,28 @@ function traitObjectFromInto(obj, that, aliases, exclusions) {
     for (var methName in obj.methods) {
         that.methods[methName] = obj.methods[methName];
     }
-    for (var aix in aliases) {
-        var oneAlias = aliases[aix];
-        that.methods[oneAlias.newName] = obj.methods[oneAlias.oldName];
+    for (let aix = 0, len = aliases.length; aix < len; aix++) {
+        var anAlias = aliases[aix];
+        that.methods[anAlias.newName] =
+              confidentialVersion(obj.methods[anAlias.oldName], anAlias.newName);
     }
-    for (var eix in exclusions) {
+    for (let eix = 0, len = exclusions.length; eix < len; eix ++) {
         var exMeth = exclusions[eix];
         delete that.methods[exMeth];
     }
     return nullFunction;
 }
 
+var var_$builtIn = new GraceModule("builtIn");
+
+var_$builtIn.methods['true$build(3)'] =
+    function true$build (argcv, inheritingObject, aliases, exclusions) {
+        return traitObjectFromInto(GraceTrue, inheritingObject, aliases, exclusions);
+    };
+var_$builtIn.methods['false$build(3)'] =
+    function false$build (argcv, inheritingObject, aliases, exclusions) {
+        return traitObjectFromInto(GraceFalse, inheritingObject, aliases, exclusions);
+    };
 
 //
 //  Access methods declared in Grace's collections
@@ -3444,6 +3464,7 @@ if (typeof global !== "undefined") {
     global.type_Type = type_Type;
     global.type_Unknown = type_Unknown;
     global.TypeErrorObject = TypeErrorObject;
+    global.var_$builtIn = var_$builtIn;
     global.var_Done = var_Done;
     global.var_done = var_done;
     global.var_Boolean = var_Boolean;
