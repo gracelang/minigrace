@@ -27,6 +27,8 @@ import "intrinsic" as intrinsic
 //      isPublic → Boolean
 // }
 
+use intrinsic.types
+
 type Mirror = Unknown
 type Sequence⟦T⟧ = Unknown
 type MethodMirror = Unknown
@@ -35,8 +37,11 @@ type Function3 = Unknown
 def MMhash = "MM".hash
 def OMhash = "OM".hash
 def thisModule = self
+def annotation is annotation
+def public is annotation
 
-class reflect(subj) → Mirror {
+class reflect(subj) {
+    // answers a Mirror on subj
     def subject is public = subj
     method asString { "a mirror on {subject}" }
     method methods → Sequence⟦MethodMirror⟧  {
@@ -52,7 +57,8 @@ class reflect(subj) → Mirror {
             return new GraceSequence(meths);
         ›
     }
-    method methodNames → Sequence⟦String⟧ {
+    method methodNames {
+        // answers a sorted sequecne of strings (not a set) being the names of subject's public methods
         native "js" code ‹
             var methNames = [];
             var current = this.data.subject;
@@ -66,7 +72,8 @@ class reflect(subj) → Mirror {
                     nm => new GraceString(nm)));
         ›
     }
-    method confidentialMethodNames -> Sequence⟦String⟧ {
+    method confidentialMethodNames {
+        // answers a sorted sequecne of strings (not a set) being the names of subject's confidential methods
         native "js" code ‹
             var methNames = [];
             var current = this.data.subject;
@@ -80,7 +87,8 @@ class reflect(subj) → Mirror {
                     nm => new GraceString(nm)));
         ›
     }
-    method allMethodNames → Sequence⟦String⟧ {
+    method allMethodNames {
+        // answers a sorted sequecne of strings, being the names of all of subject's methods
         native "js" code ‹
             var methNames = [];
             var current = this.data.subject;
@@ -93,9 +101,12 @@ class reflect(subj) → Mirror {
                     nm => new GraceString(nm)));
         ›
     }
-    method onMethod(nm:String) → MethodMirror { methodMirror(subject, nm) }
+    method onMethod(nm) {
+        // answers a MethodMirror on subject's method named nm
+        methodMirror(subject, nm)
+    }
 
-    method whenNoMethodDo(handlerBlock:Function3) → Done {
+    method whenNoMethodDo(handlerBlock) {
         // sets up handlerBlock (a function with 3 arguments) to be applied when
         // a requested method is not found.  The parameters of handlerBlock are
         //      name:String — the canonical name of the requested method
@@ -104,13 +115,13 @@ class reflect(subj) → Mirror {
         //                          (which will be the subject of this mirror)
         native "js" code ‹this.data.subject.noSuchMethodHandler = var_handlerBlock;›
     }
-    method ilk → String {
+    method ilk {
         native "js" code ‹return new GraceString(this.data.subject.classUid);›
     }
-    method definitionModule → String {
+    method definitionModule {
         native "js" code ‹return new GraceString(this.data.subject.definitionModule);›
     }
-    method definitionLine → Number {
+    method definitionLine {
         native "js" code ‹return new GraceNum(this.data.subject.definitionLine);›
     }
     method hash {
@@ -132,12 +143,12 @@ class reflect(subj) → Mirror {
     }
 }
 
-method canonicalName(n:String) {
+method canonicalName(n) {
     // converts n, a minigrace numeric method name, to the canonical name
     native "js" code ‹return new GraceString(canonicalMethodName(var_n._value));›
 }
 
-method numericName(c:String) {
+method numericName(c) {
     // converts c, a Grace canonical method name, to minigrace's numeric name
     native "js" code ‹return new GraceString(numericMethodName(var_c._value));›
 }
