@@ -23,13 +23,13 @@ JSRUNNERS = $(JSRUNNERS_WITHOUT_COMPILER) compiler-js
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
-PRELUDESOURCEFILES = collectionsPrelude.grace collections.grace standardGrace.grace standard.grace standardBundle.grace intrinsic.grace basicTypesBundle.grace pattern+typeBundle.grace equalityBundle.grace pointBundle.grace
+PRELUDESOURCEFILES = collections.grace standard.grace standardBundle.grace intrinsic.grace basicTypesBundle.grace pattern+typeBundle.grace equalityBundle.grace pointBundle.grace
 REALSOURCEFILES = ast.grace compiler.grace errormessages.grace fastDict.grace genjs.grace identifierKinds.grace identifierresolution.grace io.grace lexer.grace mirror.grace parser.grace regularExpression.grace shasum.grace sys.grace unicode.grace unixFilePath.grace util.grace xmodule.grace
 
 SOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES)
 MGSOURCEFILES = buildinfo.grace $(SOURCEFILES)
 TYPE_DIALECTS = staticTypes requireTypes
-TEST_DEPENDENCIES = ast lexer fastDict collectionsPrelude parser xmodule errormessages standardGrace identifierKinds standardGrace
+TEST_DEPENDENCIES = ast lexer fastDict collections parser xmodule errormessages standard identifierKinds
 #   these are modules used in running the full test suite
 NPM_VERSION_PREFIX=1.0
 VERSION := $(NPM_VERSION_PREFIX).$(shell ./tools/git-calculate-generation)$(ALPHA-BETA)
@@ -381,7 +381,7 @@ self.test: minigrace.env
 	chmod a+x selftest/mgc
 	rm -f $(MGSOURCEFILES:%.grace=./%.js)
 	@GRACE_MODULE_PATH=.:modules:js $(PREAMBLE)selftest/mgc $(VERB) --make --dir selftest compiler.grace && \
-	cp js/compiler-js js/minigrace-js js/minigrace-inspect js/gracelib.js js/tests/harness-js j2/standardGrace.js j2/collectionsPrelude.js selftest
+	cp js/compiler-js js/minigrace-js js/minigrace-inspect js/gracelib.js js/tests/harness-js  $(PRELUDESOURCEFILES:%.grace=j2/%.js) selftest
 	$(PREAMBLE)selftest/harness-js selftest/minigrace-js js/tests ""
 
 $(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
