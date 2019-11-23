@@ -28,6 +28,7 @@ import "intrinsic" as intrinsic
 // }
 
 use intrinsic.types
+use intrinsic.annotations
 
 type Mirror = Unknown
 type Sequence⟦T⟧ = Unknown
@@ -37,8 +38,6 @@ type Function3 = Unknown
 def MMhash = "MM".hash
 def OMhash = "OM".hash
 def thisModule = self
-def annotation is annotation
-def public is annotation
 
 class reflect(subj) {
     // answers a Mirror on subj

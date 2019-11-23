@@ -30,7 +30,6 @@ var fs = require("fs");
 
 function MiniGrace() {
     this.compileError = false;
-    this.vis = "standard";
     this.mode = "js";
     this.modname = "main";
     this.verbosity = 20;
@@ -281,13 +280,8 @@ try {
     if (typeof unicodedata === "undefined") {
         require(execDir + "unicodedata.js");
     }
-    minigrace.loadModule("standardGrace", execDir, []);
     minigrace.execFile = execDir + "compiler.js";
-
     minigrace.trapErrors(function() {
-        // as as special case, do_import("standardGrace", …) _adds_ to Grace_prelude,
-        // rather than creating a new module object.
-        do_import('standardGrace', gracecode_standardGrace);
         minigrace.run(minigrace.execFile);
     });
 } catch (e) {

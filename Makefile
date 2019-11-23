@@ -13,9 +13,10 @@ DIALECT_DEPENDENCIES = mirror.js errormessages.js ast.js util.js modules/gUnit.j
 DIALECTS_NEED = modules/dialect util ast modules/gUnit
 WEB_DIRECTORY ?= public_html/ide/
 DEV_WEB_DIRECTORY = public_html/dev/ide/
-
+OLD_PRELUDE_FILES = standardGrace.js collectionsPrelude.js
 JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
-J1-MINIGRACE = $(JS-KG) npm-sha j1/compiler.js j1/compiler-js $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/gracelib.js
+J1-MINIGRACE = $(JS-KG) npm-sha j1/compiler.js j1/compiler-js $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/gracelib.js $(OLD_PRELUDE_FILES:%=j1/%)
+# the last two files are needed while changing to the new prelude regime
 J2-MINIGRACE = $(J1-MINIGRACE) j2/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) j2/gracelib.js genjs.grace
 JSJSFILES = gracelib.js unicodedata.js
 JSRUNNERS_WITHOUT_COMPILER = grace grace-debug minigrace-js minigrace-inspect
@@ -208,7 +209,7 @@ $(JSJSFILES:%.js=j1/%.js): j1/%.js: $(JS-KG)/%.js
 
 j1-minigrace: $(J1-MINIGRACE)
 
-j1/compiler-js: j2/compiler-js
+j1/compiler-js: $(JS-KG)/compiler-js
 	cp -p $< $@
 
 j2/buildinfo.grace: buildinfo.grace
@@ -342,6 +343,10 @@ npm-sha:
 
 $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
+
+# this is for bootstrapping the new prelude
+$(OLD_PRELUDE_FILES:%.js=j1/%.js): j1/%.js: $(JS-KG)/%.js
+	cp -p $< $@
 
 oldWeb : WEB_DIRECTORY = public_html/minigrace/js
 oldWeb: $(WEBFILES) js/ace/ace.js

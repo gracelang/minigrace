@@ -11,7 +11,6 @@ var fs = require("fs");
 
 function MiniGrace() {
     this.compileError = false;
-    this.vis = "standard";
     this.mode = "js";
     this.modname = "main";
     this.verbosity = 20;
@@ -286,7 +285,6 @@ try {
         require(findOnPath("unicodedata.js", modulePathArray));
     }
     minigrace = new MiniGrace();
-    minigrace.loadModule("standardGrace", "./", modulePathArray);
 
     var executable = commandLineArgs[0];
     if (executable.endsWith(".grace")) {
@@ -296,9 +294,8 @@ try {
     if (! executable.endsWith(".js")) executable = executable + ".js";
     var exFile = findOnPath(executable, modulePathArray);
     minigrace.execFile = abspath(exFile);
-
+    minigrace.initialModule = path.basename(minigrace.execFile, ".js")
     minigrace.trapErrors(function() {
-        var___95__prelude = do_import('standardGrace', gracecode_standardGrace);
         minigrace.run(executable);
     });
 } catch (e) {

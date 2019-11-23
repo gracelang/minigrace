@@ -3192,10 +3192,16 @@ function ellipsisFun() {
     throw new GraceExceptionPacket(ProgrammingErrorObject,
          new GraceString("attempt to evaluate ellipsis (...)"));
 }
+function annotationFun() {
+    throw new GraceExceptionPacket(ProgrammingErrorObject,
+         new GraceString("attempt to evaluate an annotation"));
+}
 if (typeof global === "undefined") {
     Object.defineProperty(window, "ellipsis", { get: ellipsisFun });
+    Object.defineProperty(window, "annotation", { get: annotationFun });
 } else {
     Object.defineProperty(global, "ellipsis", { get: ellipsisFun });
+    Object.defineProperty(global, "annotation", { get: annotationFun });
 }
 function nullDefinition() {
     throw new GraceExceptionPacket(ProgrammingErrorObject,

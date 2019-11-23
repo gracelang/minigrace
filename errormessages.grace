@@ -292,7 +292,7 @@ def suggestion is public = object {
   }
 }
 
-method readableStringFrom(xs:Collection) {
+method readableStringFrom(xs:Collection) using (connectingWord:String) {
     // returns a string describing the contents of xs,
     // separating items with commas and the word "and"
     var result := ""
@@ -302,12 +302,16 @@ method readableStringFrom(xs:Collection) {
         count := count - 1
         if (count == 1) then {
             if (xs.size > 2) then { result := result ++ "," }
-            result := result ++ " and "
+            result := result ++ " " connectingWord ++ " "
         } elseif { count > 1 } then {
             result := result ++ ", "
         }
     }
     result
+}
+
+method readableStringFrom(xs) {
+    readableStringFrom(xs) using "and"
 }
 
 method name (p:String) mightBeIntendedToBe (target:String) {

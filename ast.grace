@@ -281,7 +281,8 @@ class baseNode {
     method isReturn { false }
     method isSelf { false }
     method isSuper { false }
-    method isPrelude { false }
+    method isPrelude { ProgrammingError.raise "isPrelude requested" }
+    method isBuiltIn { false }
     method isOuter { false }
     method isSelfOrOuter { false }
     method isBlock { false }
@@ -407,6 +408,8 @@ def nullNode is public = object {
         "// null"
     }
     method range { emptyRange }
+    method endPos { 0 }
+    method end -> Position { line (0) column (0) }
     method asString { "the nullNode" }
     method isNull { true }
     method accept(visitor) from (ac) { }
@@ -1445,7 +1448,7 @@ def callNode is public = object {
                 (nameString == "copy"))
         }
         method isClone {
-            ((receiver.isImplicit || receiver.isPrelude) &&
+            ((receiver.isImplicit || receiver.isBuiltIn) &&
                   (nameString == "clone(1)"))
         }
         method returnedObjectScope {
@@ -2199,7 +2202,8 @@ def identifierNode is public = object {
 
         method isSelf { "self" == value }
         method isSuper { "super" == value }
-        method isPrelude { ("prelude" == value) || ("_prelude" == value) }
+        method isPrelude { ProgrammingError.raise "isPrelude requested" }
+        method isBuiltIn { "$builtIn" == value }
         method isOuter {
             if ("outer" == value) then { return true }
             if ("prelude" == value) then { return true }
@@ -2554,6 +2558,8 @@ class declarationNode(identifier, val, declaredType) {
     var variable is public := "not yet bound"
 
     method isFieldDec { true }
+    method isAnnotationDecl { hasAnnotation "annotation" }
+    method isMarkerDeclaration { isAnnotationDecl }
     method end -> Position {
         if (false ≠ value) then { return value.end }
         if (annotations.isEmpty.not) then { return annotations.last.end }
@@ -2584,8 +2590,6 @@ def defDecNode is public = object {
         }
         method isWritable { false }
         method isReadable { isPublic }
-        method isAnnotationDecl { hasAnnotation "annotation" }
-        method isMarkerDeclaration { isAnnotationDecl }
         method declarationKindWithAncestors(ac) { k.defdec }
 
         method accept(visitor : AstVisitor) from(ac) {

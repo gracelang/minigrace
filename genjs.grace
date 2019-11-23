@@ -26,7 +26,6 @@ var output := list []
 var usedvars := list []
 var declaredvars := list []
 var initializedVars := set.empty
-var preludeRequested := false
 
 method saveInitializedVars {
     // returns the current set of initialized vars,
@@ -224,7 +223,12 @@ method removeTypeArgs(str) {
     return str.substringFrom 1 to (leftBracketIx - 1)
 }
 method compileobjdefdec(o, selfr) {
-    def val = compilenode(o.value)
+    o.register := "GraceDone"
+    def val = if (o.isAnnotationDecl) then {
+        "annotation"
+    } else {
+        compilenode(o.value)
+    }
     def oName = o.name.value
     def nm = escapeident(oName)
     compileCheckThat (val) called "value bound to {escapestring(oName)}"
@@ -232,6 +236,7 @@ method compileobjdefdec(o, selfr) {
     out "{selfr}.data.{nm} = {val};"
 }
 method compileobjvardec(o, selfr) {
+    o.register := "GraceDone"
     def oName = o.name.value
     def nm = escapeident(oName)
     if (false == o.value) then {
@@ -765,6 +770,8 @@ method compilemethodnode(o) in (objref) {
         compileDummyMethod(o, objref, "abstract")
     } elseif { o.isRequired } then {
         compileDummyMethod(o, objref, "required")
+    } elseif { o.isAnnotationDecl } then {
+        compileDummyAnnotationMethod(o, objref)
     } else {
         compileNormalMethod(o, objref)
     }
@@ -914,6 +921,23 @@ method compileDummyMethod(o, selfobj, kind) {
     decreaseindent
     out "\};"
 }
+method compileDummyAnnotationMethod(o, selfobj) {
+    def canonicalMethName = o.canonicalName
+    def funcName = o.register
+    priorLineEmitted := 0
+    def name = escapestring(o.nameString)
+    compileMethodPreamble (o, funcName, canonicalMethName)
+        withParams (paramlist(o) ++ typeParamlist(o))
+    compileParameterDebugFrame(o, name)
+    noteLineNumber (o.line) comment "annotation method"
+    debugModePrefix
+    out "raiseException(ProgrammingErrorObject,"
+    out "      \"{canonicalMethName} is an annotation; it cannot be requested as a method\");"
+    debugModeSuffix
+    compileMethodPostamble(o, funcName, canonicalMethName)
+    out "{selfobj}.methods[\"{name}\"] = {funcName};"
+    compileMetadata(o, funcName, name)
+}
 method compileBuildMethodFor(methNode) withObjCon (objNode) inside (outerRef) {
     // the $build method for a fresh method executes the statements in the
     // body of the fresh method, and then calls the build function of the
@@ -978,8 +1002,6 @@ method compileCallToBuildMethod(callExpr) withArgs (args) {
         compileOuterRequest(callExpr, args)
     } elseif { receiver.isSelf } then {
         compileSelfRequest(callExpr, args)
-    } elseif { receiver.isPrelude } then {
-        compilePreludeRequest(callExpr, args)
     } else {
         compileOtherRequest(callExpr, args)
     }
@@ -1111,7 +1133,11 @@ method compiledefdec(o) {
     if (debugMode) then {
         out "myframe.addVar(\"{escapestring(nm)}\", function() \{return {varf(nm)}});"
     }
-    def val = compilenode(o.value)
+    def val = if (o.isAnnotationDecl) then {
+        "annotation"
+    } else {
+        compilenode(o.value)
+    }
     out "var {var_nm} = {val};"
     def parentNodeKind = o.parentKind
     if (parentNodeKind == "module") then {
@@ -1269,13 +1295,7 @@ method compileSelfRequest(o, args) {
     out("var {o.register} = selfRequest(this" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
-method compilePreludeRequest(o, args) {
-    out "// call case 3: prelude request"
-    preludeRequested := true
-    util.log (util.defaultVerbosity) verbose "prelude.{o.nameString} on line {o.line}"
-    out("var {o.register} = request(var_prelude" ++
-          ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
-}
+
 method compileOtherRequest(o, args) {
     out "// call case 4: other requests"
     def target = compilenode(o.receiver)
@@ -1289,8 +1309,22 @@ method compilecall(o) {
     var args := list []
     compileArguments(o, args)
     def receiver = o.receiver
-    if ( receiver.isPrelude ) then {
-        compilePreludeRequest(o, args)
+    if (receiver.isBuiltIn) then {
+        def name = o.nameString
+        if (name == "print(1)") then {
+            compilePrint(o)
+        } elseif {name == "native(1)code(1)"} then {
+            compileNativeCode(o)
+        } elseif { name == "true" } then {
+            o.register := "GraceTrue"
+        } elseif { name == "false" } then {
+            o.register := "GraceFalse"
+        } elseif { name == "Unknown" } then {
+            o.register := "type_Unknown"
+        } else {
+            noteLineNumber(o.line) comment "unrecognized builtIn"
+            compileOuterRequest(o, args)
+        }
     } elseif { receiver.isOuter } then {
         compileOuterRequest(o, args)
     } elseif { receiver.isSelf } then {
@@ -1300,16 +1334,6 @@ method compilecall(o) {
     }
     o.register
 }
-method compileBuiltIn(o) {
-    def calltemp = uidWithPrefix "bi"
-    o.register := calltemp
-    var args := list []
-    compileArguments(o, args)
-    out "// call case 5: built-in request"
-    out("var {o.register} = request({standardPrelude}" ++
-          ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
-}
-
 method compileOuter(o) {
     o.register := o.theObjects.fold { a, obj -> "{a}.{outerProp(obj)}" }
                                     startingWith "this"
@@ -1442,17 +1466,7 @@ method compilenode(o) {
         if { oKind == "member" } then {
             compilemember(o)
         } elseif { oKind == "call" } then {
-            if (o.receiver.isPrelude) then {
-                if (o.nameString == "print(1)") then {
-                    compilePrint(o)
-                } elseif {o.nameString == "native(1)code(1)"} then {
-                    compileNativeCode(o)
-                } else {
-                    compileBuiltIn(o)
-                }
-            } else {
-                compilecall(o)
-            }
+            compilecall(o)
         } elseif { oKind == "op" } then {
             compileop(o)
         } elseif { oKind == "num" } then {
@@ -1574,13 +1588,8 @@ method initializeCodeGenerator(moduleObject) {
         util.outprint "let {fmtdModName}_minigraceRevision = \"{buildinfo.gitrevision}\";"
         util.outprint "let {fmtdModName}_minigraceGeneration = \"{buildinfo.gitgeneration}\";"
     }
-    if (moduleObject.theDialect.value ≠ "none") then {
-        util.outprint "{standardPrelude} = do_import(\"standardGrace\", gracecode_standardGrace);"
-    }
     util.setline(1)
 }
-
-def standardPrelude = "var_" ++ escapeident "_prelude"
 
 method outputModuleDefinition(moduleObject) {
     // output the definition of the module function, conventionally
@@ -1601,46 +1610,31 @@ method outputModuleDefinition(moduleObject) {
         out "stackFrames.push(myframe);"
     }
     def d = moduleObject.theDialect
-    if (modname == "standardGrace") then {
-        // compile components in non-standard order
-        compilenode(d)
-        if (d.path ≠ "none") then {
-            moduleObject.directImports.push(d.path)
-        }
-        moduleObject.methodsDo { o -> compilenode(o) }
-        moduleObject.importsDo { o -> moduleObject.directImports.push(o.path) }
-        moduleObject.value.do { o ->    // this treats importNodes as executable
-            if (o.isMethod.not) then {
-                compilenode(o)
-            }
-        }
-    } else {
-        // compile in normal order
-        compilenode(d)
-        if (d.path ≠ "none") then {
-            moduleObject.directImports.push(d.path)
-        }
-        moduleObject.importsDo { o ->
-            compilenode(o)
-            moduleObject.directImports.push(o.path)
-        }
-        compileobjouter(moduleObject, "var_$dialect")
-        def inheritsStmt = moduleObject.superclass
-        if (false != inheritsStmt) then {
-            compileInherit(inheritsStmt) forClass (modname)
-        }
-        moduleObject.usedTraits.do { t ->
-            compileUse(t) in (moduleObject)
-        }
-        moduleObject.methodsAndTypesDo { o ->
-            compilenode(o)
-        }
-        if (false != inheritsStmt) then {
-            compileSuperInitialization(inheritsStmt)
-        }
-        moduleObject.executableComponentsDo { o ->
-            compilenode(o)
-        }
+
+    compilenode(d)
+    if (d.path ≠ "none") then {
+        moduleObject.directImports.push(d.path)
+    }
+    moduleObject.importsDo { o ->
+        compilenode(o)
+        moduleObject.directImports.push(o.path)
+    }
+    compileobjouter(moduleObject, "var_$dialect")
+    def inheritsStmt = moduleObject.superclass
+    if (false != inheritsStmt) then {
+        compileInherit(inheritsStmt) forClass (modname)
+    }
+    moduleObject.usedTraits.do { t ->
+        compileUse(t) in (moduleObject)
+    }
+    moduleObject.methodsAndTypesDo { o ->
+        compilenode(o)
+    }
+    if (false != inheritsStmt) then {
+        compileSuperInitialization(inheritsStmt)
+    }
+    moduleObject.executableComponentsDo { o ->
+        compilenode(o)
     }
     if (xmodule.currentDialect.hasAtEnd) then {
         out "var var_thisDialect = selfRequest(var_$dialect, \"thisDialect\", [0]);"
@@ -1653,14 +1647,6 @@ method outputModuleDefinition(moduleObject) {
     decreaseindent
     out "\}"
 
-    if (preludeRequested) then {
-        if (modname == "standardGrace") then {
-            out "var var_prelude = importedModules[\"standardGrace\"];"
-        } else {
-            out "var var_prelude = do_import(\"standardGrace\", {formatModname "standardGrace"});"
-            moduleObject.directImports.push "standardGrace"
-        }
-    }
     out "if (typeof global !== \"undefined\")"
     out "  global.{generatedModuleName} = {generatedModuleName};"
     out "if (typeof window !== \"undefined\")"

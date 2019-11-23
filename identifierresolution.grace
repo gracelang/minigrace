@@ -1,12 +1,7 @@
 dialect "standard"
 // This is a transitional version of the compiler. There is now a dialect
-// scope in addition to the built-in preludeScope. The difference is that
-// the dialect is allowed to override what's in the preludeScope.
-
-// This version of the compiler is necessaryto enable us to deveop a real
-// prelude that defines the stuff that used to be magic.  Without it, it
-// would be impossible to define things like "print(1)" in a dialect, because
-// the name would alredy be defined.
+// scope in addition to a built-in scope. The predefined preludeScope has
+// been eliminated
 
 import "io" as io
 import "sys" as sys
@@ -16,6 +11,7 @@ import "xmodule" as xmodule
 import "fastDict" as map
 import "errormessages" as errormessages
 import "identifierKinds" as k
+import "mirror" as mirror
 
 def completed = singleton "completed"
 def inProgress = singleton "inProgress"
@@ -71,7 +67,6 @@ class newScopeIn(parent') kind(variety') {
     method isEmpty { elements.size == 0 }
     method addName(n) {
         elements.at(n)put(k.methdec)
-        elementLines.at(n)put(util.linenum)
     }
     method addName (n) asA (kind:DeclKind) {
         def oldKind = elements.at(n) ifAbsent {
@@ -82,7 +77,7 @@ class newScopeIn(parent') kind(variety') {
         if (kind.isImplicit) then {
             return  // don't overwrite local id with id from trait or super
         }
-        if ((oldKind.isImplicit) || ("prelude" == variety)) then {
+        if (oldKind.isImplicit)  then {
             elements.at(n)put(kind)
             elementLines.at(n)put(util.linenum)
             return
@@ -321,25 +316,16 @@ class newScopeIn(parent') kind(variety') {
 
         def outerChain = list [ ]
         withSurroundingScopesDo { s->
+            def v = s.variety
             if (s.contains(name)) then {
-                if (s.variety == "prelude") then {
+                if ((v == "dialect") || (v == "builtIn")) then {
                     return ast.memberNode.new(name,
-                          ast.identifierNode.new("_prelude", false)
+                          ast.identifierNode.new("$" ++ v, false)
                                 scope(self)) scope(self).
                                       onSelf.withGenericArgs(aNode.generics)
-                } elseif { s.variety == "dialect" } then {
-                    return ast.memberNode.new(name,
-                          ast.identifierNode.new("$dialect", false)
-                                scope(self)) scope(self).
-                                      onSelf.withGenericArgs(aNode.generics)
-                } elseif { s.variety == "module" } then {
+                } elseif { v == "module" } then {
                     return ast.memberNode.new(name, thisModule) scope(self).
                           onSelf.withGenericArgs(aNode.generics)
-                } elseif { s.variety == "builtIn" } then {
-                    return ast.memberNode.new(name,
-                          ast.identifierNode.new("_prelude", false)
-                                scope(self)) scope(self).
-                                      onSelf.withGenericArgs(aNode.generics)
                 }
                 def rcvr = if (outerChain.isEmpty) then {
                     ast.identifierNode.new("self", false) scope(self).
@@ -352,7 +338,7 @@ class newScopeIn(parent') kind(variety') {
                       setPositionFrom(aNode).
                         onSelf.withGenericArgs(aNode.generics)
             }
-            if (s.variety == "object") then {
+            if (v == "object") then {
                 def definingObjNode = s.node
                 if (outerChain.isEmpty.not && {outerChain.last == definingObjNode}) then {
                     ProgrammingError.raise "adding {definingObjNode} twice"
@@ -451,9 +437,6 @@ class newScopeIn(parent') kind(variety') {
         def priorScope = thatDefines(name) ifNone {
             return
         }
-        if (priorScope.variety == "prelude") then { return }
-            // one of the built-in names that are being removed,
-            // so let's not complain about re-declarations
         def description = if (priorScope == self) then {
             "this"
         } else {
@@ -495,11 +478,10 @@ class newScopeIn(parent') kind(variety') {
     }
 }
 
-def emptyScope = newScopeKind("empty")
+def emptyScope = newScopeKind "empty"
 ast.nullNode.scope := emptyScope      // TODO: eliminate!
 def builtInsScope = newScopeIn(emptyScope) kind "builtIn"
-def preludeScope = newScopeIn(builtInsScope) kind "prelude"
-def dialectScope = newScopeIn(preludeScope) kind "dialect"
+def dialectScope = newScopeIn(builtInsScope) kind "dialect"
 def moduleScope = newScopeIn(dialectScope) kind "module"
 def graceObjectScope = newScopeIn(emptyScope) kind "object"
 def booleanScope = newScopeIn(builtInsScope) kind "object"
@@ -576,14 +558,8 @@ method transformIdentifier(node) ancestors(anc) {
     }
     checkForAmbiguityOf (node) definedIn (definingScope) asA (nodeKind)
     def v = definingScope.variety
-    if (v == "builtIn") then { return node }
-    if (v == "prelude") then {
-        def p = ast.identifierNode.new("prelude", false) scope(nodeScope)
-        return ast.memberNode.new(nm, p)
-              scope(nodeScope).onSelf.withGenericArgs(node.generics)
-    }
-    if (v == "dialect") then {
-        def p = ast.identifierNode.new("$dialect", false) scope(nodeScope)
+    if ((v == "dialect") || (v == "builtIn")) then {
+        def p = ast.identifierNode.new("$" ++ v, false) scope(nodeScope)
         return ast.memberNode.new(nm, p)
               scope(nodeScope).onSelf.withGenericArgs(node.generics)
     }
@@ -659,7 +635,7 @@ method checkForReservedName(node) {
     }
 }
 
-method suggestionsForIdentifier(node) {
+method guessesForIdentifier(node) {
     def nm = node.nameString
     def suggestions = set.empty
     def nodeScope = node.scope
@@ -667,19 +643,14 @@ method suggestionsForIdentifier(node) {
     nodeScope.withSurroundingScopesDo { s ->
         s.elements.keysDo { v ->
             if (errormessages.name (nm) mightBeIntendedToBe(v)) then {
-                def sug = errormessages.suggestion.new
-                sug.replaceRange(node.linePos, node.linePos +
-                    node.value.size - 1) with (canonical(v)) onLine(node.line)
-                suggestions.add(sug)
+                suggestions.add(canonical(v))
                 if (suggestions.size ≥ thresh) then { return suggestions }
             }
         }
     }
     nodeScope.elementScopes.keysDo { s ->
         if (nodeScope.elementScopes.at(s).contains(nm)) then {
-            def sug = errormessages.suggestion.new
-            sug.insert "{s}." atPosition (node.linePos) onLine(node.line)
-            suggestions.add(sug)
+            suggestions.add "{s}.{nm}"
             if (suggestions.size ≥ thresh) then { return suggestions }
         }
     }
@@ -705,12 +676,14 @@ method canonical(numericName) {
 }
 
 method reportUndeclaredIdentifier(node) {
-    def suggestions = suggestionsForIdentifier(node)
+    def guesses = guessesForIdentifier(node)
     def cn = node.canonicalName
     def varBit = if (cn.endsWith ")") then { "" } else { " variable or" }
+    def guessBit = errormessages.readableStringFrom(guesses) using "or"
     errormessages.syntaxError("unknown{varBit} method '{cn}'; " ++
-          "this may be a spelling mistake, or an attempt to access a{varBit} method in another scope")
-          atRange (node.range) withSuggestions (suggestions)
+          "this may be a spelling mistake, or an attempt to access a{varBit} " ++
+          "method in another scope.  Did you mean {guessBit}?")
+          atRange (node.range)
 }
 
 method reportAssignmentTo(node) declaredInScope(scp) {
@@ -824,12 +797,11 @@ method processGCT(gct, importedModuleScope) {
 
 var isInBeginningStudentDialect := false
 
-method setupContext(moduleObject) {
+method setupContext(moduleNode) {
     // define the built-in names
     util.setPosition(0, 0)
 
     builtInsScope.clear         // so that resolve can be serially re-used.
-    preludeScope.clear
     dialectScope.clear
     moduleScope.clear
     graceObjectScope.clear
@@ -842,74 +814,29 @@ method setupContext(moduleObject) {
     moduleScope.addName "$dialect" asA (k.defdec)
     moduleScope.at "$dialect" putScope(dialectScope)
 
-    builtInsScope.addName "Type" asA(k.typedec)
-    builtInsScope.addName "Object" asA(k.typedec)
-    builtInsScope.addName "Unknown" asA(k.typedec)
-    builtInsScope.addName "String" asA(k.typedec)
-    builtInsScope.addName "Number" asA(k.typedec)
-    builtInsScope.addName "Boolean" asA(k.typedec)
-    builtInsScope.addName "Done" asA(k.typedec)
-    builtInsScope.addName "done" asA(k.defdec)
     builtInsScope.addName "true"
     builtInsScope.addName "false"
+    builtInsScope.addName "Unknown" asA (k.typedec)
     builtInsScope.addName "outer" asA(k.defdec)
-    builtInsScope.addName "readable"
-    builtInsScope.addName "writable"
-    builtInsScope.addName "public"
-    builtInsScope.addName "confidential"
-    builtInsScope.addName "override"
-    builtInsScope.addName "parent"
     builtInsScope.addName "..." asA(k.defdec)
     builtInsScope.addName "print(1)"
     builtInsScope.addName "native(1)code(1)"
     builtInsScope.addName "native(1)header(1)"
-    builtInsScope.addName "while(1)do(1)"
 
-    preludeScope.addName "asString"
-    preludeScope.addName "::(1)"
-    preludeScope.addName "++(1)"
-    preludeScope.addName "==(1)"
-    preludeScope.addName "≠(1)"
-    preludeScope.addName "hash"
-    preludeScope.addName "for(1)do(1)"
-    preludeScope.addName "Exception" asA(k.defdec)
-    preludeScope.addName "RuntimeError" asA(k.defdec)
-    preludeScope.addName "NoSuchMethod" asA(k.defdec)
-    preludeScope.addName "ProgrammingError" asA(k.defdec)
-    preludeScope.addName "TypeError" asA(k.defdec)
-    preludeScope.addName "ResourceException" asA(k.defdec)
-    preludeScope.addName "EnvironmentException" asA(k.defdec)
-    preludeScope.addName "π" asA(k.defdec)
-    preludeScope.addName "infinity" asA(k.defdec)
-    preludeScope.addName "minigrace"
-    preludeScope.addName "methods"
-    preludeScope.addName "primitiveArray"
-    preludeScope.addName "become(1)"
-    preludeScope.addName "unbecome(1)"
-    preludeScope.addName "clone(1)"
-    preludeScope.addName "inBrowser"
-    preludeScope.addName "engine"
+    mirror.reflect(object{}).allMethodNames.do { each ->
+        // we reflect on an empty object, rather than using type Object
+        // so that we include the confidential method names
+        graceObjectScope.addName (mirror.numericName(each))
+              asA (k.graceObjectMethod)
+    }
+    mirror.reflect(true).allMethodNames.do { each ->
+        booleanScope.addName (mirror.numericName(each))
+    }
 
-    graceObjectScope.addName "isMe(1)" asA (k.graceObjectMethod)
-    graceObjectScope.addName "myIdentityHash" asA (k.graceObjectMethod)
-    graceObjectScope.addName "asString" asA (k.graceObjectMethod)
-    graceObjectScope.addName "asDebugString" asA (k.graceObjectMethod)
-
-    booleanScope.addName "prefix!"
-    booleanScope.addName "&&(1)"
-    booleanScope.addName "||(1)"
-    booleanScope.addName "not"
-
-    builtInsScope.addName "graceObject"
-    builtInsScope.at "graceObject" putScope(graceObjectScope)
-    builtInsScope.addName "prelude" asA(k.defdec)
-    builtInsScope.at "prelude" putScope(preludeScope)
-    builtInsScope.addName "_prelude" asA(k.defdec)
-    builtInsScope.at "_prelude" putScope(preludeScope)
     builtInsScope.at "true" putScope(booleanScope)
     builtInsScope.at "false" putScope(booleanScope)
 
-    def dialectNode = moduleObject.theDialect
+    def dialectNode = moduleNode.theDialect
     def dialectName:String = dialectNode.value
     if (dialectName ≠ "none") then {
         xmodule.checkExternalModule(dialectNode)
@@ -1499,16 +1426,16 @@ method callReturnsFreshObject(cNode) {
     ansrScope.isObjectScope
 }
 
-method resolve(moduleObject) {
+method resolve(moduleNode) {
     util.log_verbose "rewriting tree."
-    setupContext(moduleObject)
+    setupContext(moduleNode)
     util.setPosition(0, 0)
-    moduleObject.scope := moduleScope
-    def preludeObject = ast.moduleNode.body([moduleObject])
-        named "prelude" scope (preludeScope)
-    def preludeChain = ast.ancestorChain.with(preludeObject)
+    moduleNode.scope := moduleScope
+    def dialectObject = ast.moduleNode.body [moduleNode]
+        named "$dialect" scope (dialectScope)
+    def dialectChain = ast.ancestorChain.with(dialectObject)
 
-    buildSymbolTableFor(moduleObject) ancestors(preludeChain)
+    buildSymbolTableFor(moduleNode) ancestors(dialectChain)
     util.log_verbose "symbol tables built."
 
     if (util.target == "symbols") then {
@@ -1517,15 +1444,15 @@ method resolve(moduleObject) {
         util.outprint "====================================="
         util.outprint "top-level"
         util.outprint "Universal scope = {universalScope.asDebugString}"
-        moduleObject.scope.withSurroundingScopesDo { each ->
+        moduleNode.scope.withSurroundingScopesDo { each ->
             util.outprint (each.asString)
             util.outprint (each.elementScopesAsString)
             util.outprint "----------------"
         }
-        util.outprint(moduleObject.pretty(0))
+        util.outprint(moduleNode.pretty(0))
         util.log_verbose "done"
         util.outfile.close
         sys.exit(0)
     }
-    resolveIdentifiers(moduleObject)
+    resolveIdentifiers(moduleNode)
 }
