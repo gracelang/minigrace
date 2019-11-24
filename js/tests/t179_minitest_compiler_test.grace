@@ -52,7 +52,7 @@ confidential:
  n(1)
  x
 dialect:
- standardGrace
+ standard
 fresh-methods:
 methodtypes-of:A:
  2 m1(n:Number) → Number
@@ -204,7 +204,7 @@ testSuite "module name ending with .grace #248" with {
               shouldRaise (em.SyntaxError)
               mentioning "import" and "must not end with \".grace\""
     }
-    test "dialect wih .grace" by {
+    test "dialect with .grace" by {
         assert { astNode "dialect" from ‹dialect "objectdraw.grace"› }
               shouldRaise (em.SyntaxError)
               mentioning "dialect" and "must not end with \".grace\""

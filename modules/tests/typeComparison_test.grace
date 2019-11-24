@@ -1,5 +1,6 @@
 dialect "minitest"
 import "typeComparison" as tc
+import "mirror" as m
 
 testSuite {
     test "missing — List and sequence" by {
@@ -21,17 +22,25 @@ testSuite {
     }
 
     test "canonical abc" by {
-        assert(tc.canonical "abc") shouldBe "abc"
+        assert(m.canonicalName "abc") shouldBe "abc"
     }
 
     test "canonical abc(3)" by {
-        assert(tc.canonical "abc(3)") shouldBe "abc(_,_,_)"
+        assert(m.canonicalName "abc(3)") shouldBe "abc(_,_,_)"
     }
 
     test "canonical abc(3)efg(1)" by {
-        assert(tc.canonical "abc(3)efg(1)") shouldBe "abc(_,_,_)efg(_)"
+        assert(m.canonicalName "abc(3)efg(1)") shouldBe "abc(_,_,_)efg(_)"
     }
-
+    test "numeric abc" by {
+        assert(m.numericName "abc") shouldBe "abc"
+    }
+    test "numeric abc(3)" by {
+        assert(m.numericName "abc(_,_,_)") shouldBe "abc(3)"
+    }
+    test "numeric abc(3)efg(1)" by {
+        assert(m.numericName "abc(_,_,_)efg(_)") shouldBe "abc(3)efg(1)"
+    }
 }
 
 exit

@@ -1,6 +1,5 @@
 dialect "beginningStudent"
-print "prelude is {prelude}"
-print "outer is {outer}"
+print "dialect is {outer}"
 
 var t1:Sequence[[Number]] := sequence
 print(t1)

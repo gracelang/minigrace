@@ -1,5 +1,6 @@
 dialect "minitest"
 import "option" as option
+import "collections" as collections
 
 testSuiteNamed "option tests" with {
     def e = option.empty
@@ -103,17 +104,17 @@ testSuiteNamed "sequence tests" with {
         assert(empty.size) shouldBe 0
         assert(evens.size) shouldBe 1
     }
-    test "test Option EmptyDo" by {
+    test "test Option Empty do" by {
         empty.do {each → failBecause "empty empty.do did with {each}"}
         assert(true)
     }
 
     test "test Option Equality empty" by {
-        assert(empty == option.empty) description "empty  Option  ≠ itself!"
-        assert(empty == emptyList) description "empty  Option  ≠ empty list"
+        assert(empty == option.empty) description "empty  Option ≠ itself!"
+        assert(empty == list.empty) description "empty  Option ≠ empty list"
     }
 
-    test "test Option InequalityEmpty" by {
+    test "test Option Inequality Empty" by {
         deny (empty == option.full 1)
         assert (empty ≠ option.full 1)
         deny (empty == 3)
@@ -192,7 +193,7 @@ testSuiteNamed "sequence tests" with {
     }
 
     test "test Option KeysAndValuesDo" by {
-        def accum = emptyDictionary
+        def accum = dictionary.empty
         var e := 1
         evens.keysAndValuesDo { k, v →
             accum.at(k)put(v)
@@ -260,7 +261,7 @@ testSuiteNamed "sequence tests" with {
             description "empty iterator has an element"
     }
     test "test Option Iterator to List" by {
-        def accum = emptyList
+        def accum = list.empty
         def iter =  evens.iterator
         while {iter.hasNext} do { accum.add(iter.next) }
         assert (accum) shouldBe (list [2])
