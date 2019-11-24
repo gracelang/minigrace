@@ -1586,7 +1586,7 @@ def moduleNode is public = object {
             alias oNPostCopy(_) = postCopy(_)
         def kind is public = "module"
         def sourceLines = util.lines
-        var theDialect is public := dialectNode.new "standardGrace"
+        var theDialect is public := dialectNode.new "standard"
         theDialect.setStart(noPosition)     // dialect is implicit
         setStart(line 1 column 1)           // always starts at the start of the puput
         var imports is public := list.empty

@@ -11,7 +11,6 @@ window.Grace_prelude = {};
 
 function MiniGrace() {
     this.compileError = false;
-    this.vis = "standard";
     this.mode = "js";
     this.modname = "main";
     this.verbosity = 20;
@@ -54,7 +53,6 @@ function MiniGrace() {
 
 MiniGrace.prototype.compile = function(grace_code) {
     importedModules = {};
-    do_import('standardGrace', gracecode_standardGrace);
 
     // Change stdin to read from code.
     var old_stdin_read = this.stdin_read;
@@ -71,10 +69,6 @@ MiniGrace.prototype.compile = function(grace_code) {
     
     this.compileError = false;
     extensionsMap = callmethod(var_HashMap, "new", [0]);
-    if (this.vis !== "standard") {
-        callmethod(extensionsMap, "put(2)", [2], new GraceString("DefaultVisibility"),
-                   new GraceString(this.vis));
-    }
     if (this.debugMode) {
         callmethod(extensionsMap, "put(2)", [2], new GraceString("Debug"), new GraceString("yes"));
     }
@@ -197,7 +191,6 @@ MiniGrace.prototype.trapErrors = function(func) {
 
 MiniGrace.prototype.run = function() {
     importedModules = {};
-    do_import('standardGrace', gracecode_standardGrace);
     stackFrames = [];
     lineNumber = 1;
     moduleName = this.modname;
@@ -222,14 +215,12 @@ MiniGrace.prototype.compilerun = function(grace_code) {
     var compiled = false;
     if (grace_code != this.lastSourceCode ||
             this.mode != this.lastMode ||
-            this.lastModule != document.getElementById("modname").value ||
-            this.visDefault != document.getElementById("defaultVisibility").value) {
+            this.lastModule != document.getElementById("modname").value) {
         loadDate = Date.now();
         this.compile(grace_code);
         this.lastSourceCode = grace_code;
         this.lastMode = this.mode;
-        this.lastModule = document.getElementById("modname").value;
-        this.visDefault = document.getElementById("defaultVisibility").value;        
+        this.lastModule = document.getElementById("modname").value;       
         compiled = true;
     }
     if (!this.compileError && this.mode == 'js') {

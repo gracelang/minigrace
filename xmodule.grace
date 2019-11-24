@@ -20,7 +20,8 @@ def gctCache = dictionary.empty
 def keyCompare = { a, b -> a.key.compare(b.key) }
 
 def currentDialect is public = object {
-    var name is public := "standardGrace"
+    var name is public := "standard"
+    var moduleObject is public  // will be assigned if the dialect is loaded
     var hasParseChecker is public := false
     var hasAstChecker is public := false
     var hasAtStart is public := false
