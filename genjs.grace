@@ -1239,9 +1239,11 @@ method compileTypeArguments(o, args) {
         }
     }
 }
-method compileArguments(o, args) {
+method compileArguments(o) {
+    def args = list.empty
     compileNormalArguments(o, args)
     compileTypeArguments(o, args)
+    args
 }
 method assembleArguments(args) {
     var result := ""
@@ -1306,8 +1308,6 @@ method compileOtherRequest(o, args) {
 method compilecall(o) {
     def calltemp = uidWithPrefix "call"
     o.register := calltemp
-    var args := list []
-    compileArguments(o, args)
     def receiver = o.receiver
     if (receiver.isBuiltIn) then {
         def name = o.nameString
@@ -1323,14 +1323,14 @@ method compilecall(o) {
             o.register := "type_Unknown"
         } else {
             noteLineNumber(o.line) comment "unrecognized builtIn"
-            compileOuterRequest(o, args)
+            compileOuterRequest(o, compileArguments(o))
         }
     } elseif { receiver.isOuter } then {
-        compileOuterRequest(o, args)
+        compileOuterRequest(o, compileArguments(o))
     } elseif { receiver.isSelf } then {
-        compileSelfRequest(o, args)
+        compileSelfRequest(o, compileArguments(o))
     } else {
-        compileOtherRequest(o, args)
+        compileOtherRequest(o, compileArguments(o))
     }
     o.register
 }
@@ -1393,21 +1393,10 @@ method compilereturn(o) {
     }
 }
 method compilePrint(o) {
-    // TODO: simplify; we know that there is one argument
+    // We know that there is one argument
     // Why is this a special case ansyway?
-    var args := list []
-    for (o.parts) do { part ->
-        for (part.args) do { prm ->
-            var r := compilenode(prm)
-            args.push(r)
-        }
-    }
-    if (args.size != 1) then {
-        errormessages.syntaxError "method print takes a single argument"
-            atRange(o.line, o.linePos, o.linePos + 4)
-    } else {
-        out ("Grace_print(" ++ args.first ++ ");")
-    }
+    def arg = compilenode(o.parts.first.args.first)
+    out "Grace_print({arg});"
     o.register := "GraceDone"
 }
 method compileNativeCode(o) {
