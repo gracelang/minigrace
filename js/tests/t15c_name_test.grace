@@ -33,3 +33,4 @@ def african = object {
 }
 print (african.elephant.asString)
 print (african.elephant.asDebugString)
+print (m.initialModuleName)

@@ -57,7 +57,7 @@ class reflect(subj) {
         ›
     }
     method methodNames {
-        // answers a sorted sequecne of strings (not a set) being the names of subject's public methods
+        // answers a sorted sequence of strings (not a set) being the names of subject's public methods
         native "js" code ‹
             var methNames = [];
             var current = this.data.subject;
@@ -267,4 +267,8 @@ class methodMirror(theSubject, aMethodName) {
 
 method loadModule(moduleName) {
     native "js" code ‹return loadDynamicModule(safeJsString(var_moduleName));›
+}
+
+method initialModuleName {
+    native "js" code ‹return new GraceString(minigrace.initialModule);›
 }
