@@ -112,7 +112,6 @@ method positionOfNext (needle1:String) or (needle2:String)
         return line (startLine) column (found + needle2.size - 1)
     }
     for (startLine..sourceLines.size) do { ln ->
-        if (ln > sourceLines.size) then { return noPosition }
         found := sourceLines.at(ln).indexOf (needle1)
         if (found ≠ 0) then {
             return line (ln) column (found + needle1.size - 1)
@@ -122,6 +121,7 @@ method positionOfNext (needle1:String) or (needle2:String)
             return line (ln) column (found + needle2.size - 1)
         }
     }
+    return noPosition
 }
 
 def lineLength is public = 80
