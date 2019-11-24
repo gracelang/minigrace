@@ -115,8 +115,7 @@ trait controlStructures {
             throw new GraceExceptionPacket(TypeErrorObject,
                 new GraceString("expected Block for first argument of " +
                                     "while(_)do(_), got " + c.className + "."));
-        if (this.methods['while(1)do(1)'] &&
-                this.methods['while(1)do(1)'].safe) {
+        if ((typeof minigrace != "undefined") && minigrace.breakLoops) {
             var count = 0;
             var runningTime = 0;
             var runningCount = 0;

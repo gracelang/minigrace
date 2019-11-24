@@ -17,7 +17,7 @@ function MiniGrace() {
     this.lastSourceCode = "";
     this.lastMode = "";
     this.lastModname = "";
-    this.breakLoops = true;
+    this.breakLoops = false;
     this.debugMode = false;
     this.lastDebugMode = false;
     this.printStackFrames = true;
@@ -184,8 +184,7 @@ MiniGrace.prototype.trapErrors = function(func) {
             throw e;
         }
     } finally {
-        if (Grace_prelude.methods["while(1)do(1)"])
-            Grace_prelude.methods["while(1)do(1)"].safe = false;
+        minigrace.breakLoops = false;
     }
 };
 
@@ -196,10 +195,8 @@ MiniGrace.prototype.run = function() {
     moduleName = this.modname;
     eval(minigrace.generated_output);   // defines a global gracecode_‹moduleName›
     var theModuleFunc = window[graceModuleName(this.modname)];
-    testpass = false;    // not used anywhere else ?
-    if (Grace_prelude.methods["while(1)do(1)"])
-        Grace_prelude.methods["while(1)do(1)"].safe = this.breakLoops;
     this.trapErrors(function() {
+        minigrace.breakLoops = true;
         if(document.getElementById("debugtoggle").checked) {
             GraceDebugger.cache.start();
             GraceDebugger.that = new GraceModule(this.modname);
