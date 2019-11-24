@@ -4,7 +4,6 @@ import "ast" as ast
 import "mirror" as mirror
 import "unicode" as unicode
 import "typeComparison" as tc
-import "minispec" as minispec
 import "collections" as collections
 import "standardBundle" as standardBundle
 import "minispecBundle" as minispecBundle

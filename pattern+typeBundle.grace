@@ -5,6 +5,7 @@ import "collections" as coll
 import "intrinsic" as intrinsic
 
 def ic = intrinsic.controlStructures
+use intrinsic.annotations
 
 trait open {
 
@@ -178,7 +179,7 @@ trait open {
         }
         method matchHook(o) {
             def oMethodNames = mirror.reflect(o).methodNames >> coll.set
-            for (self.methodNames) do { each ->
+            self.methodNames.do { each ->
                 if (! oMethodNames.contains(each)) then {
                     return false
                 }

@@ -1,4 +1,9 @@
 dialect "standard"
+
+import "collections" as collections
+
+def IteratorExhausted = outer.IteratorExhausted
+
 type FileStream = Object & interface {
     // The type FileStream describes the interface of an opened file.  Notice that
     // FileStream conforms to Iterator, so FileStreams can also be treated like Iterators.
@@ -530,8 +535,7 @@ method open(path, mode) {
         };
         o.methods['nextLine'] = function () {
             if (rw_pointer >= contents.length) {
-                var ie = callmethod(var___95__prelude, "IteratorExhausted", 0);
-                throw new GraceExceptionPacket(ie, new GraceString("End of file reached; there is no next line"));
+                raiseException(var_IteratorExhausted, "End of file reached; there is no next line");
             }
             var resultLine;
             var newline_index = contents.indexOf("\n", rw_pointer);
@@ -595,9 +599,8 @@ method open(path, mode) {
                 rw_pointer++;
                 return char;
             } else {
-                var ie = callmethod(var___95__prelude, "IteratorExhausted", 0);
-                throw new GraceExceptionPacket(ie, new GraceString(
-                    "End of file reached; there is no next character"));
+                raiseException(var_IteratorExhausted,
+                    "End of file reached; there is no next character");
             }
         };
         o.methods['close'] = function () {

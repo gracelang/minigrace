@@ -2,10 +2,8 @@ dialect "none"
 import "intrinsic" as intrinsic
 import "basicTypesBundle" as basicTypesBundle
 
+use intrinsic.annotations
 trait open {
-    method annotation is annotation
-    method required is annotation
-    method abstract is annotation
 
     trait equality {
         method == (other) is required

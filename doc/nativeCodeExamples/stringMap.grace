@@ -48,7 +48,7 @@ class new {
         // raises the NoSuchObject exception.
         native "js" code ‹if (this.data.inner.hasOwnProperty(var_k._value))
                 return this.data.inner[var_k._value];
-            var nso = callmethod(var___95__prelude, "NoSuchObject", [0]);
+            var nso = callmethod(var_$dialect, "NoSuchObject", [0]);
             var exceptionMsg = new GraceString("no value for key " + var_k._value);
             throw new GraceExceptionPacket(nso, exceptionMsg);›
         var t := findPosition(k)

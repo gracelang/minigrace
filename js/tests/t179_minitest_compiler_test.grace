@@ -115,7 +115,7 @@ types:
     }
 }
 
-def input3 = ‹
+def input3 = ‹dialect "standard"
 trait t1 {
     method x(size:Number) { "method x" }
     method y(name:String) { "method y arg {name}" }
@@ -213,12 +213,14 @@ testSuite "module name ending with .grace #248" with {
 
 testSuite "Unknown is reserved #290" with {
     test "Can't redefine type Unknown" by {
-        assert{ resolveIdentifiersIn ‹type Unknown = interface{}› }
+        assert{ resolveIdentifiersIn ‹dialect "none"
+type Unknown = interface{}› }
               shouldRaise (em.SyntaxError)
               mentioning "Unknown is a reserved name"
     }
     test "Can't def Unknown" by {
-        assert{ resolveIdentifiersIn ‹def Unknown = object{}› }
+        assert{ resolveIdentifiersIn ‹dialect "none"
+def Unknown = object{}› }
               shouldRaise (em.SyntaxError)
               mentioning "Unknown is a reserved name"
     }

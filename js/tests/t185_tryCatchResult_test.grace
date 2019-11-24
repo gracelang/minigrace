@@ -1,4 +1,7 @@
-dialect "standard"
+dialect "minitest"
+
+var output      // used to detect side-effects
+
 method tryOK -> Number {
     try {
         5
@@ -37,7 +40,7 @@ method tryOKFinally -> Number | String {
     } catch {e: ProgrammingError ->
         "five"
     } finally {
-        print "OK"
+        output := "OK"
     }
 }
 
@@ -47,7 +50,7 @@ method tryExceptionalFinally -> Number {
     } catch {e: ProgrammingError ->
         4
     } finally {
-        print "OK"
+        output := "OK"
     }
 }
 
@@ -57,7 +60,7 @@ method tryReturnOKFinally -> Number | String {
     } catch {e: ProgrammingError ->
         return "four"
     } finally {
-        print "OK"
+        output := "OK"
     }
 }
 
@@ -67,7 +70,7 @@ method tryReturnExceptionalFinally -> Done | String {
     } catch {e: ProgrammingError ->
         return "four"
     } finally {
-        print "OK"
+        output := "OK"
     }
 }
 
@@ -111,18 +114,43 @@ method tryReturnExceptionalFinallyReturns -> Number | Done {
     }
 }
 
-
-print "tryOK = {tryOK}"
-print "tryExceptional = {tryExceptional}"
-print "tryReturnOK = {tryReturnOK}"
-print "tryReturnExceptional = {tryReturnExceptional}"
-
-print "tryOKFinally = {tryOKFinally}"
-print "tryExceptionalFinally = {tryExceptionalFinally}"
-print "tryReturnOKFinally = {tryReturnOKFinally}"
-print "tryReturnExceptionalFinally = {tryReturnExceptionalFinally}"
-
-print "tryOKFinallyReturns = {tryOKFinallyReturns}"
-print "tryExceptionalFinallyReturns = {tryExceptionalFinallyReturns}"
-print "tryReturnOKFinallyReturns = {tryReturnOKFinallyReturns}"
-print "tryReturnExceptionalFinallyReturns = {tryReturnExceptionalFinallyReturns}"
+testSuite "try...catch...finally" with {
+    output := "none"
+    test "no exception" by { assert (tryOK) shouldBe 5 }
+    test "with exception" by { assert (tryExceptional) shouldBe 4 }
+    test "with return" by { assert (tryReturnOK) shouldBe 5 }
+    test "return in catch" by { assert (tryReturnExceptional) shouldBe 4 }
+    test "tryOKFinally" by {
+        assert (tryOKFinally) shouldBe 5
+        assert (output) shouldBe "OK"
+    }
+    test "tryExceptionalFinally" by {
+        assert (tryExceptionalFinally) shouldBe 4
+        assert (output) shouldBe "OK"
+    }
+    test "tryReturnOKFinally" by {
+        assert (tryReturnOKFinally) shouldBe 5
+        assert (output) shouldBe "OK"
+    }
+    test "tryReturnExceptionalFinally" by {
+        assert (tryReturnExceptionalFinally) shouldBe "four"
+        assert (output) shouldBe "OK"
+    }
+    test "tryOKFinallyReturns" by {
+        assert (tryOKFinallyReturns) shouldBe "OK"
+        assert (output) shouldBe "none"
+    }
+    test "tryExceptionalFinallyReturns" by {
+        assert (tryExceptionalFinallyReturns) shouldBe "OK"
+        assert (output) shouldBe "none"
+    }
+    test "tryReturnOKFinallyReturns" by {
+        assert (tryReturnOKFinallyReturns) shouldBe "OK"
+        assert (output) shouldBe "none"
+    }
+    test "tryReturnExceptionalFinallyReturns" by {
+        assert (tryReturnExceptionalFinallyReturns) shouldBe "OK"
+        assert (output) shouldBe "none"
+    }
+}
+exit

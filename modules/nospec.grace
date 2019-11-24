@@ -1,12 +1,12 @@
-dialect "standard"
+dialect "none"
 // This module is a subsitute for the minispec dialect.
 // It does no testing at all.  It exists so that student code that
 // depends on minispec can be run by the instuctor under gUnit,
 // without getting confounding results from the minispec specifications.
 
-inherit outer.methods
+import "standardBundle" as standardBundle
 
-type Procedure0 = self.Procedure0
+use standardBundle.open
 
 method expect(bb:Boolean) orSay (str:String) { }
 

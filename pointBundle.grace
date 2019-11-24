@@ -5,6 +5,7 @@ import "equalityBundle" as equalityBundle
 
 use equalityBundle.open
 use basicTypesBundle.open
+use intrinsic.annotations
 
 trait open {
     type Point =  EqualityObject & interface {

@@ -2,8 +2,8 @@ dialect "standard"
 
 import "gUnit" as gu
 
-def nullSuite = prelude.singleton "nullSuite"
-def nullBlock = prelude.singleton "nullBlock"
+def nullSuite = singleton "nullSuite"
+def nullBlock = singleton "nullBlock"
 
 var currentTestSuiteForDialect := nullSuite
 var currentSetupBlockForTesting := nullBlock

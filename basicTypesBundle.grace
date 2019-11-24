@@ -5,7 +5,7 @@ trait open {
 
     use intrinsic.types
 
-    type Done = interface {
+    type Object = interface {
         asString → String
         asDebugString → String
     }

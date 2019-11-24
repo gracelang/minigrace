@@ -1,15 +1,16 @@
 dialect "none"
 import "intrinsic" as intrinsic
 import "basicTypesBundle" as basicTypesBundle
-import "collections" as collections is public
-import "pattern+typeBundle" as patternsBundle
+import "collections" as collections
+import "pattern+typeBundle" as patternAndTypeBundle
 import "pointBundle" as pointBundle
 
 trait open {
     use basicTypesBundle.open
-    use patternsBundle.open
+    use patternAndTypeBundle.open
     use intrinsic.controlStructures
     use intrinsic.constants
+    use intrinsic.annotations
     use pointBundle.open
 
     method do(action)while(condition) {

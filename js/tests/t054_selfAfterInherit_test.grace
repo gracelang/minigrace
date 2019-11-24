@@ -1,5 +1,5 @@
 dialect "standard"
-import "pattern+type" as patternAndType
+import "pattern+typeBundle" as patternAndType
 
 // This is a test of a module with a name that's not an id.
 // It also tests that `self` is correctly bound at the
@@ -7,7 +7,7 @@ import "pattern+type" as patternAndType
 // object.  It also checks that outer from a nested
 // object also refers to the module object.
 
-inherit BasePattern
+inherit patternAndType.open.BasePattern
     // inheritance supplements the object under construction
     // (here the module object) by the
     // inherited object.  So this inherit statment

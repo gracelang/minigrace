@@ -2,6 +2,8 @@ dialect "none"
 import "collections" as collections
 import "intrinsic" as intrinsic
 
+use intrinsic.annotations
+
 def ConcurrentModification is public =
     intrinsic.constants.ProgrammingError.refine "ConcurrentModification"
 

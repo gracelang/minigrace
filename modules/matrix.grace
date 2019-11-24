@@ -1,7 +1,7 @@
 dialect "standard"
 // This module defines a 2-dimensional matrix datatype
 
-import "collectionsPrelude" as cp
+import "collections" as coll
 
 type Matrix⟦T⟧ = Collection⟦T⟧ & interface {
     size -> Number
@@ -162,7 +162,7 @@ class lazyZipperSequence⟦T⟧ (source1: Collection⟦Collection⟦T⟧⟧, sou
     // takes a collection of collections (source1) and adds a value from the given 
     //  collection (source2) to the end of each collection 
     // example: lazyZipperSequence([ [1], [2] ], [3, 4]) = ([ [1, 3], [2, 4] ])    
-    use cp.enumerable⟦Collection⟦T⟧⟧    
+    use coll.enumerable⟦Collection⟦T⟧⟧
     if (source1.size ≠ source2.size) then { TypeError.raise "must be same size" }
     method iterator {
         object {
@@ -171,7 +171,7 @@ class lazyZipperSequence⟦T⟧ (source1: Collection⟦Collection⟦T⟧⟧, sou
             
             method asString { "a zipper iterator over {iterator1} and {iterator2}" }
             method hasNext { iterator1.hasNext }
-            method next { cp.lazyConcatenation(iterator1.next, [iterator2.next]) }
+            method next { coll.lazyConcatenation(iterator1.next, [iterator2.next]) }
         }
     }
     method size { source1.size }
@@ -200,7 +200,7 @@ class matrix⟦T⟧(rs, cs) → MatrixFactory⟦T⟧ {
     }
     
     method rows(r: Collection⟦Collection⟦T⟧⟧) → Matrix⟦T⟧{
-        values( r.fold{ r1, r2 → cp.lazyConcatenation(r1,r2) } startingWith([]) )
+        values( r.fold{ r1, r2 → coll.lazyConcatenation(r1,r2) } startingWith([]) )
     }
     
     method columns(c: Collection⟦Collection⟦T⟧⟧) → Matrix⟦T⟧ {
@@ -212,7 +212,7 @@ class matrix⟦T⟧(rs, cs) → MatrixFactory⟦T⟧ {
     }
     
     class values(vs: Collection⟦T⟧) → Matrix⟦T⟧ {
-        use cp.collection⟦T⟧
+        use coll.collection⟦T⟧
         
         if ( (rs * cs) ≠ vs.size) then { MatrixDimensionsError.raise "dimensions {rs}x{cs} is not compatible with values of size {vs.size}" }
         var impl := vs >> list
@@ -260,7 +260,7 @@ class matrix⟦T⟧(rs, cs) → MatrixFactory⟦T⟧ {
         method rows -> Enumerable⟦Enumerable⟦T⟧⟧ {
             def sourceMatrix = self
             object {
-                use cp.enumerable⟦Enumerable⟦T⟧⟧
+                use coll.enumerable⟦Enumerable⟦T⟧⟧
                 class iterator {
                     var currentRow := 1
                     method hasNext { currentRow ≤ numRows }
@@ -283,7 +283,7 @@ class matrix⟦T⟧(rs, cs) → MatrixFactory⟦T⟧ {
         method columns -> Enumerable⟦Enumerable⟦T⟧⟧ {
             def sourceMatrix = self
             object {
-                use cp.enumerable⟦Enumerable⟦T⟧⟧
+                use coll.enumerable⟦Enumerable⟦T⟧⟧
                 class iterator {
                     var currentColumn := 1
                     method hasNext { currentColumn ≤ numColumns }
@@ -306,7 +306,7 @@ class matrix⟦T⟧(rs, cs) → MatrixFactory⟦T⟧ {
         method row(r) {
             def sourceMatrix = self
             object {
-                use cp.enumerable⟦T⟧
+                use coll.enumerable⟦T⟧
                 class iterator {
                     var currentColumn := 1
                     method hasNext { currentColumn ≤ numColumns }
@@ -329,7 +329,7 @@ class matrix⟦T⟧(rs, cs) → MatrixFactory⟦T⟧ {
         method column(c) {
             def sourceMatrix = self
             object {
-                use cp.enumerable⟦T⟧
+                use coll.enumerable⟦T⟧
                 class iterator {
                     var currentRow := 1
                     method hasNext { currentRow ≤ numRows }
@@ -543,7 +543,7 @@ class matrix⟦T⟧(rs, cs) → MatrixFactory⟦T⟧ {
         
         method ++(other) {
             if ( (other.size % self.numColumns) ≠ 0) then { MatrixDimensionsError.raise "size of {other} is incompatible with dimensions {numRows}x{numColumns}" }
-            matrix((impl.size + other.size) / self.numColumns, self.numColumns).values(cp.lazyConcatenation(impl, other.values))
+            matrix((impl.size + other.size) / self.numColumns, self.numColumns).values(coll.lazyConcatenation(impl, other.values))
         }
         
         method asString {

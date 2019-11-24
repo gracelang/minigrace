@@ -2,7 +2,6 @@
 dialect "dialect"
 import "ast" as ast
 import "util" as util
-import "pattern+type" as patAndType
 import "intrinsic" as intrinsic
 
 def TypeError = DialectError.refine "TypeError"
@@ -97,12 +96,12 @@ def aMethodType = object {
                 return false
             }
 
-            prelude.for (signature) and (other.signature) do { part, part' ->
+            for (signature) and (other.signature) do { part, part' ->
                 if (part.name != part'.name) then {
                     return false
                 }
 
-                prelude.for (part.parameters) and (part'.parameters) do { p, p' ->
+                for (part.parameters) and (part'.parameters) do { p, p' ->
                     def pt = p.typeAnnotation
                     def pt' = p'.typeAnnotation
 
@@ -354,7 +353,7 @@ def objectType = object {
                 return if (false ≠ lit.value) then {
                     object {
 //                        inherit oType & fromDType (intersection.last)
-                        inherit patAndType.TypeIntersection(oType, fromDType (intersection.last))
+                        inherit TypeIntersection(oType, fromDType (intersection.last))
 
                         method asString is override { lit.value }
                     }
@@ -374,7 +373,7 @@ def objectType = object {
                 return if (false ≠ lit.value) then {
                     object {
 //                        inherit oType | fromDType (union.last)
-                        inherit patAndType.TypeUnion(oType, fromDType (union.last))
+                        inherit TypeUnion(oType, fromDType (union.last))
                         def asString: String is public, override = lit.value
                     }
                 } else {
@@ -1062,7 +1061,7 @@ rule { ident: Identifier ->
 }
 
 method outerAt (i: Number) -> ObjectType is confidential {
-    // Required to cope with not knowing the prelude.
+    // Required to cope with not knowing the dialect.
     if (i <= 1) then {
         return objectType.unknown
     }

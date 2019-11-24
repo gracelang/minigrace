@@ -1,7 +1,10 @@
 dialect "none"
 import "intrinsic" as intrinsic
+import "basicTypesBundle" as basicTypesBundle
 
 use intrinsic.controlStructures
+use basicTypesBundle.open
+use intrinsic.annotations
 
 def intrinsicConstants = intrinsic.constants
 def primitiveArray = intrinsicConstants.primitiveArray
@@ -16,42 +19,7 @@ def RequestError is public = ProgrammingError.refine "RequestError"
 def ConcurrentModification is public = ProgrammingError.refine "ConcurrentModification"
 def SizeUnknown is public = Exception.refine "SizeUnknown"
 
-method annotation is annotation
-method required is annotation
-method abstract is annotation
-
 method for (xs) do (action) { xs.do (action) }
-
-type EqualityObject = Object & interface {
-    ::(o:Object) -> Binding
-    ==(other:Object) -> Boolean
-    ≠(other:Object) -> Boolean
-    hash -> Number
-}
-
-type Function0⟦ResultT⟧  = interface {
-    apply -> ResultT     // Function with no arguments and a result of type ResultT
-    //  matches -> Boolean   // answers true
-}
-type Function1⟦ArgT1, ResultT⟧ = interface {
-    apply(a1:ArgT1) -> ResultT    // Function with argument a1 of type ArgT1, and a result of type ResultT
-    //  matches(a1:Object) -> Boolean   // answers true if a1 <: ArgT1
-}
-type Function2⟦ArgT1, ArgT2, ResultT⟧ = interface {
-    apply(a1:ArgT1, a2:ArgT2) -> ResultT
-    // Function with arguments of types ArgT1 and ArgT2, and a result of type ResultT
-    //  matches(a1:Object, a2:Object) -> Boolean
-        // answers true if a1 <: ArgT1 and a2 <: ArgT2
-}
-type Procedure0 = Function0⟦Done⟧
-    // Function with no arguments and no result
-type Procedure1⟦ArgT1⟧ = Function1⟦ArgT1, Done⟧
-    // Function with 1 argument of type ArgT1, and no result
-type Procedure2⟦ArgT1, ArgT2⟧ = Function2⟦ArgT1, ArgT2, Done⟧
-    // Function with 2 argument of types ArgT1, and ArgT2, and no result
-type Predicate1⟦ArgT1⟧ = Function1⟦ArgT1, Boolean⟧
-    // Function with 1 argument of type ArgT1, returning Boolean
-
 
 type SelfType = Unknown     // becuase it's not yet in the language
 

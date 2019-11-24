@@ -7,47 +7,58 @@ dialect "none"
 once method Exception { native "js" code ‹return ExceptionObject;› }
 def UnimplementedMethod = Exception.refine "UnimplementedMethod"
 
-def NoneType = object {
-     def name is public = "None"
-
-     method matches(obj) { false }
-     method | (other) { other }
-     method & (other) { self }
-     method prefix ¬ { Done }
-     method +(other) { other }
-     method -(other) {
-         UnimplementedMethod.raise
-              "can't subtract methods from type {name}"
-     }
-     method asString { "type {name}" }
-     method methodNames {
-         UnimplementedMethod.raise
-              "can't get the methods of type {name} because they form an infinite set"
-     }
-     method ==(other) { isMe(other) }
-     method hash { myIdentityHash }
-     method setName(nu) is confidential {
-         UnimplementedMethod.raise
-              "attempting to change the name of type {name} to {nu}"
-     }
-     method isNone { true }
-}
+def TypeType = native "js" code ‹result = type_Type›
 def StringType = native "js" code ‹result = type_String›
 def NumberType = native "js" code ‹result = type_Number›
 def BooleanType = native "js" code ‹result = type_Boolean›
 def ObjectType = native "js" code ‹result = type_Object›
-def TypeType = native "js" code ‹result = type_Type›
+def DoneType = native "js" code ‹result = type_Done›
+
+def NoneType = object {
+    method name { "None" }
+    method matches(obj) { false }
+    method | (other) { other }
+    method & (other) { self }
+    method prefix ¬ { DoneType }
+    method +(other) { other }
+    method -(other) {
+        UnimplementedMethod.raise "can't subtract methods from type {name}"
+    }
+    method asString { "type {name}" }
+    method methodNames {
+        UnimplementedMethod.raise
+            "can't get the methods of type {name} because they form an infinite set"
+    }
+    method ==(other) { self.isMe(other) }
+    method hash { myIdentityHash }
+    method isNone { true }
+
+}
 
 trait types {
-    // these types are defined in terms of defs because the rhs of a type
-    // declaration cannot be an arbitrary request, such as native(_)code(_)
+    // these types are defined in terms of names defined elsewhere because the rhs
+    // of a type declaration cannot be an arbitrary request, such as native(_)code(_)
 
+    type Type = TypeType
     type None = NoneType
     type String = StringType
     type Number = NumberType
     type Boolean = BooleanType
-    type Object = ObjectType
-    type Type = TypeType
+    type Done = DoneType
+}
+
+trait annotations {
+    // these _can_ be declared in Grace, but we don't want to repeat the
+    // definitions in many files
+    
+    method annotation is annotation
+    method required is annotation
+    method abstract is annotation
+    method confidential is annotation
+    method public is annotation
+    method readable is annotation
+    method writable is annotation
+    method override is annotation
 }
 
 trait constants {
@@ -86,8 +97,10 @@ trait constants {
     once method infinity { native "js" code ‹
         return new GraceNum(Infinity); ›
     }
+    once method done { native "js" code ‹return GraceDone;› }
+
     once class primitiveArray {
-        method new(size:Number) {
+        method new(size) {
             native "js" code ‹return new GracePrimitiveArray(var_size._value);›
         }
     }
@@ -152,10 +165,11 @@ method engine {
 method become(a, b) {
     // not clear what this is actualy intended to do ... it's used in statictypes dialect
     native "js" code ‹
-    for (let k in var_a) {
-        const temp = var_a[k];
-        var_a[k] = var_b[k];
-        var_b[k] = temp;
-    }›
-    done
+        for (let k in var_a) {
+            const temp = var_a[k];
+            var_a[k] = var_b[k];
+            var_b[k] = temp;
+        }
+        GraceDone;
+    ›
 }

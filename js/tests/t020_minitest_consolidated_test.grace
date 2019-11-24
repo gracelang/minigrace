@@ -378,7 +378,7 @@ class dummyPrelude {
     method compareProtocols {
         def mSelf = (mirror.reflect(self).methodNames >> self.set) --
                     self.set ["hook", "compareProtocols", "doIt(_)"]
-        def mPrelude = mirror.reflect(_prelude).methodNames >> self.set
+        def mPrelude = mirror.reflect(standardBundle.open).methodNames >> self.set
         if (mPrelude == mSelf) then {
             true
         } else {
