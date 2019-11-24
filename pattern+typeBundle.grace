@@ -11,8 +11,6 @@ trait open {
 
     use equalityBundle.open
 
-    method asString { "pattern+typeBundle.open" }
-
     trait BasePattern {
         method &(o) {
             AndPattern(self, o)
