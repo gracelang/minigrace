@@ -5,8 +5,10 @@
         document.getElementById('code_txt_real').style.display = 'block';
         document.getElementById('code_txt').style.display = 'none';
         var editor = ace.edit("code_txt_real");
-        var GraceMode = require("ace/mode/grace").Mode;
-        editor.getSession().setMode(new GraceMode());
+        try {
+            var GraceMode = require("ace/mode-grace").Mode;
+            editor.getSession().setMode(new GraceMode());
+        } catch { ; }
         editor.setBehavioursEnabled(false);
         editor.setHighlightActiveLine(true);
         editor.setShowFoldWidgets(false);

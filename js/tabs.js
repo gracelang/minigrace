@@ -444,13 +444,24 @@ function startup() {
 
     document.getElementById('code_area').style.paddingBottom = "0px";
 
+    // Get code from editor.
+    getCode = function() {
+        if(document.getElementById("acetoggle").checked) {
+            return editor.getValue();
+        } else {
+            return document.getElementById("code_txt").value;
+        }
+    }
+
     if (ace) {
         document.getElementById('code_txt_real').style.display = 'block';
         document.getElementById('code_txt').style.display = 'none';
         editor = ace.edit("code_txt_real");
         editor.$blockScrolling = Infinity;
-        var GraceMode = require("ace/mode/grace").Mode;
-        editor.getSession().setMode(new GraceMode());
+        try {
+            var GraceMode = require("ace/mode-grace").Mode;
+            editor.getSession().setMode(new GraceMode());
+        } catch { ; }
         editor.setBehavioursEnabled(false);
         editor.setHighlightActiveLine(true);
         editor.setShowFoldWidgets(false);
@@ -466,15 +477,6 @@ function startup() {
         window.onresize = function(event) {
             document.getElementById('code_txt_real').style.height = document.getElementById('stdout_txt').clientHeight + 'px';
             document.getElementById('code_txt_real').style.width = (document.getElementById('stdout_txt').clientWidth - 30) + 'px';
-        }
-
-        // Get code from ace editor.
-        getCode = function() {
-            if(document.getElementById("acetoggle").checked) {
-                return editor.getValue();
-            } else {
-                return document.getElementById("code_txt").value;
-            }
         }
 
         // debugger stuff
@@ -503,9 +505,6 @@ function startup() {
     } else {
         document.getElementById("code_txt_real").style.display = "none";
         document.getElementById("acetoggle").parentNode.style.display = "none";
-        getCode = function() {
-            return document.getElementById("code_txt").value;
-        }
     }
     GraceDebugger.cache.init();
 
