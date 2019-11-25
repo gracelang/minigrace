@@ -84,6 +84,8 @@ trait open {
             result = new GraceNum((aHash * 2) ^ bHash);›
     }
 
+    type Collection⟦T⟧ = collections.Collection⟦T⟧
+    // type Sequence⟦T⟧ is defined in basicTypeBundle
     type List⟦T⟧ = collections.List⟦T⟧
     type Set⟦T⟧ = collections.Set⟦T⟧
     type Dictionary⟦K,T⟧ = collections.Dictionary⟦K,T⟧

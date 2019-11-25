@@ -2,7 +2,7 @@ dialect "beginningStudent"
 
 print "dialect is {outer}"
 
-var tl:List[[Number]] := list
+var tl:List[[Number]] := list.empty
 print(tl)
 
 tl := list(1)

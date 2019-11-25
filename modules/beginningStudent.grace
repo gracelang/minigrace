@@ -11,20 +11,11 @@ import "minispecBundle" as minispecBundle
 use minispecBundle.open
 
 use standardBundle.open
-    exclude list
     exclude list(_)
-    exclude dictionary
     exclude dictionary(_)
-    exclude sequence
     exclude sequence(_)
-    exclude set
     exclude set(_)
 
-type Collection = collections.Collection
-
-method list⟦T⟧ {
-    collections.list⟦T⟧.empty
-}
 method list⟦T⟧(a) {
     collections.list⟦T⟧.withAll [a]
 }
@@ -38,47 +29,6 @@ method list⟦T⟧(a, b, c, d) {
     collections.list⟦T⟧.withAll [a, b, c, d]
 }
 
-class sequence⟦T⟧ {
-    // returns an object that acts _both_ as an empty sequence, and as a collection
-    // factory.  Not sure why this is a good idea ...
-    use outer.collections.indexable
-    method size { 0 }
-    method sizeIfUnknown(action) { 0 }
-    method isEmpty { true }
-    method at(n) { BoundsError.raise "index {n} of empty sequence" }
-    method at(n) ifAbsent(action) { action.apply }
-    method keys { self }
-    method values { self }
-    method keysAndValuesDo(block2) { done }
-    method reversed { self }
-    method ++ (other: Collection) { sequence.withAll(other) }
-    method asString { "[]" }
-    method contains(element) { false }
-    method do(block1) { done }
-    method ==(other) {
-        match (other)
-          case {
-            o: Collection -> o.isEmpty
-        } else {
-            false
-        }
-    }
-    method hash { [].hash }
-    method :: (obj) { binding.key (self) value (obj) }
-    method ≠ (other) { (self == other).not }
-    class iterator {
-        method asString { "emptySequenceIterator" }
-        method hasNext { false }
-        method next { IteratorExhausted.raise "on empty sequence" }
-    }
-    method sorted { self }
-    method sortedBy(sortBlock:Function2){ self }
-
-    // finally the factory method
-    method withAll(elements) {
-        collections.sequence⟦T⟧.withAll(elements)
-    }
-}
 method sequence⟦T⟧(a) {
     collections.sequence⟦T⟧.withAll [a]
 }
@@ -92,9 +42,6 @@ method sequence⟦T⟧(a, b, c, d) {
     collections.sequence⟦T⟧.withAll [a, b, c, d]
 }
 
-method set⟦T⟧ {
-    collections.set⟦T⟧.empty
-}
 method set⟦T⟧(a) {
     collections.set⟦T⟧.withAll [a]
 }
@@ -107,9 +54,7 @@ method set⟦T⟧(a, b, c) {
 method set⟦T⟧(a, b, c, d) {
     collections.set⟦T⟧.withAll [a, b, c, d]
 }
-method dictionary⟦K,T⟧ {
-    collections.dictionary⟦K,T⟧.empty
-}
+
 method dictionary⟦K,T⟧(a) {
     collections.dictionary⟦K,T⟧.withAll [a]
 }
@@ -135,8 +80,7 @@ selfImage.whenNoMethodDo { name, args, receiver ->
     } elseif {isName (name) requesting "dictionary"} then {
         collections.dictionary.withAll (args)
     } else {
-        def cName = tc.canonical(name)
-        self.NoSuchMethod.raise "no method {cName} on {receiver}."
+        self.NoSuchMethod.raise "no method {name} on {receiver}."
     }
 }
 

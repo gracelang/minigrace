@@ -1,7 +1,7 @@
 dialect "beginningStudent"
 print "dialect is {outer}"
 
-var tl:Set[[Number]] := set
+var tl:Set[[Number]] := set.empty
 print(tl)
 
 tl := set(1)
