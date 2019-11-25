@@ -488,11 +488,10 @@ def booleanScope = newScopeIn(builtInsScope) kind "object"
 def varFieldDecls = list []   // a list of declarations of var fields
 
 util.setPosition(0, 0)
-def thisModule = ast.identifierNode.new("module()object", false)
+def thisModule = ast.identifierNode.new("$module", false)
                                        scope(moduleScope)
-    // a hack to give us a way of referring to this module,
-    // other than by a chain of `outer`s.  The name is one that
-    // cannot occur naturally in a program
+    // a way of referring to this module, other than by a chain of `outer`s.
+    // The name is one that cannot occur naturally in a Grace program
 
 def universalScope = object {
     // The scope that defines every identifier,
@@ -808,8 +807,8 @@ method setupContext(moduleNode) {
     booleanScope.clear
     varFieldDecls.clear
 
-    moduleScope.addName "module()object" asA (k.defdec)
-    moduleScope.at "module()object" putScope(moduleScope)
+    moduleScope.addName "$module" asA (k.defdec)
+    moduleScope.at "$module" putScope(moduleScope)
 
     moduleScope.addName "$dialect" asA (k.defdec)
     moduleScope.at "$dialect" putScope(dialectScope)

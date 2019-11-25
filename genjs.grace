@@ -1095,7 +1095,7 @@ method compileidentifier(o) {
         o.register := "this"
     } elseif { name == "..." } then {
         o.register := "ellipsis"
-    } elseif { name == "module()object" } then {
+    } elseif { name == "$module" } then {
         o.register := thisModule
     } elseif { name == "true" } then {
         o.register := "GraceTrue"

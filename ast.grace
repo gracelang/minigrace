@@ -2202,12 +2202,10 @@ def identifierNode is public = object {
 
         method isSelf { "self" == value }
         method isSuper { "super" == value }
-        method isPrelude { ProgrammingError.raise "isPrelude requested" }
         method isBuiltIn { "$builtIn" == value }
         method isOuter {
             if ("outer" == value) then { return true }
-            if ("prelude" == value) then { return true }
-            if ("module()object" == value) then { return true }
+            if ("$module" == value) then { return true }
             if ("$dialect" == value) then { return true }
             return false
         }

@@ -317,7 +317,6 @@ method readableStringFrom(xs) {
 method name (p:String) mightBeIntendedToBe (target:String) {
     // heuristics for finding typos, mis-spellings, etc.
 
-    if (p == "module()object") then { return false }
     if (p.contains "$") then { return false }
     if (p.startsWithLetter ≠ target.startsWithLetter) then { return false }
         // either both operators, or both names
