@@ -1554,7 +1554,7 @@ method initializeCodeGenerator(moduleObject) {
     }
     modname := moduleObject.name
     emod := escapeident(modname)
-    thisModule := "module$" ++ emod
+    thisModule := varf "$module"
     modNameAsString := "\"{escapestring(modname)}\""
     if (util.extensions.containsKey("Debug")) then {
         debugMode := true
