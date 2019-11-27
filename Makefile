@@ -13,9 +13,8 @@ DIALECT_DEPENDENCIES = mirror.js errormessages.js ast.js util.js modules/gUnit.j
 DIALECTS_NEED = modules/dialect util ast modules/gUnit
 WEB_DIRECTORY ?= public_html/ide/
 DEV_WEB_DIRECTORY = public_html/dev/ide/
-OLD_PRELUDE_FILES = standardGrace.js collectionsPrelude.js
 JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
-J1-MINIGRACE = $(JS-KG) npm-sha j1/compiler.js j1/compiler-js $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/gracelib.js $(OLD_PRELUDE_FILES:%=j1/%)
+J1-MINIGRACE = $(JS-KG) npm-sha j1/compiler.js j1/compiler-js $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js) j1/gracelib.js
 # the last two files are needed while changing to the new prelude regime
 J2-MINIGRACE = $(J1-MINIGRACE) j2/compiler.js $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) j2/gracelib.js genjs.grace
 JSJSFILES = gracelib.js unicodedata.js
@@ -34,7 +33,7 @@ TEST_DEPENDENCIES = ast lexer fastDict collections parser xmodule errormessages 
 #   these are modules used in running the full test suite
 NPM_VERSION_PREFIX=1.0
 VERSION := $(NPM_VERSION_PREFIX).$(shell ./tools/git-calculate-generation)$(ALPHA-BETA)
-NPM_STABLE_VERSION=1.0.4698
+NPM_STABLE_VERSION=1.0.4743
 OFFLINE ?= false
 
 VERBOSITY =
@@ -346,10 +345,6 @@ npm-sha:
 
 $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
-
-# this is for bootstrapping the new prelude
-$(OLD_PRELUDE_FILES:%.js=j1/%.js): j1/%.js: $(JS-KG)/%.js
-	cp -p $< $@
 
 oldWeb : WEB_DIRECTORY = public_html/minigrace/js
 oldWeb: $(WEBFILES) js/ace/ace.js js/ace/mode-grace.js
