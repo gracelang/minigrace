@@ -678,10 +678,14 @@ method reportUndeclaredIdentifier(node) {
     def guesses = guessesForIdentifier(node)
     def cn = node.canonicalName
     def varBit = if (cn.endsWith ")") then { "" } else { " variable or" }
-    def guessBit = errormessages.readableStringFrom(guesses) using "or"
+    def guessBit = if (guesses.isEmpty) then {
+        ""
+    } else {
+        ". Did you mean {errormessages.readableStringFrom(guesses) using "or"}?"
+    }
     errormessages.syntaxError("unknown{varBit} method '{cn}'; " ++
           "this may be a spelling mistake, or an attempt to access a{varBit} " ++
-          "method in another scope.  Did you mean {guessBit}?")
+          "method in another scope{guessBit}")
           atRange (node.range)
 }
 
