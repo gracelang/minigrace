@@ -249,6 +249,24 @@ describe "io" with {
         def shortStream2 = io.open("io-specify-hi.txt","r")
         expect (shortStream1 ≠ shortStream2) orSay "two distinct fileStreams are equal"
     }
+    specify "spawn executes a successful sub-process" by {
+        def proc = io.spawn("test", ["1", "-eq", "1"])
+        expect (proc.asString) toBe "process spawned to execute \"test\""
+        expect (proc.terminated) toBe true
+        expect (proc.wait) toBe 0
+        expect (proc.status) toBe 0
+        expect (proc.success) toBe true
+        expect (proc) toBe (proc) orSay "equality on processes does't recognize identity"
+    }
+    specify "spawn executes an unsuccessful sub-process" by {
+        def proc = io.spawn("test", ["1", "-eq", "2"])
+        expect (proc.asString) toBe "process spawned to execute \"test\""
+        expect (proc.terminated) toBe true
+        expect (proc.wait) toBe 1
+        expect (proc.status) toBe 1
+        expect (proc.success) toBe false
+        expect (proc) toBe (proc) orSay "equality on processes does't recognize identity"
+    }
 }
 
 io.unlink "io-specify-hi.txt"
