@@ -2,6 +2,9 @@ dialect "minitest"
 import "mirror" as mirror
 import "errormessages" as em
 
+
+numberOfErrorsToRerun := 1
+
 def testObj = object { }
 def tom = mirror.reflect(testObj)
 tom.whenNoMethodDo { name, args, receiver ->
@@ -41,7 +44,6 @@ testSuite "no such method handler" with  {
     }
 }
 
-numberOfErrorsToRerun := 1
 
 testSuite "EDP algorithm" with {
     test "one char match at pos 2" by {
@@ -154,6 +156,28 @@ testSuite "approx string match" with {
     test "Procedure and it" by {
         deny(em.name "Procedure" mightBeIntendedToBe "it")
             description "Procedure might be intended to be it"
+    }
+}
+
+testSuite "readable lists" with {
+    test "one element" by {
+        assert (em.readableStringFrom ["apples"]) shouldBe "apples"
+    }
+    test "two elements" by {
+        assert (em.readableStringFrom ["apples", "pears"])
+              shouldBe "apples and pears"
+    }
+    test "three elements" by {
+        assert (em.readableStringFrom ["apples", "pears", "peaches"])
+              shouldBe "apples, pears, and peaches"
+    }
+    test "four elements" by {
+        assert (em.readableStringFrom ["apples", "pears", "peaches", "oranges"])
+              shouldBe "apples, pears, peaches, and oranges"
+    }
+    test "four elements with or" by {
+        assert (em.readableStringFrom ["apples", "pears", "peaches", "oranges"] using "or")
+              shouldBe "apples, pears, peaches, or oranges"
     }
 }
 

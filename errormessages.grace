@@ -302,7 +302,7 @@ method readableStringFrom(xs:Collection) using (connectingWord:String) {
         count := count - 1
         if (count == 1) then {
             if (xs.size > 2) then { result := result ++ "," }
-            result := result ++ " " connectingWord ++ " "
+            result := result ++ " " ++ connectingWord ++ " "
         } elseif { count > 1 } then {
             result := result ++ ", "
         }
