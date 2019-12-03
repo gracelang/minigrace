@@ -701,26 +701,24 @@ method doif {
                     lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
             }
             next
-            while {successfulParse {statement}} do {
-                skipSeparators
-                if (values.isEmpty) then {
-                    ProgrammingError.raise "values is empty.\n  commentStack = {comments}\nsym = {sym}"
-                }
-                body.push(values.pop)
-            }
-            if (sym.isRBrace.not) then {
-                def suggestion = errormessages.suggestion.new
-                def closingBrace = findClosingBrace(btok, false)
-                if (closingBrace.found.not) then {
-                    if (closingBrace.tok == lastToken) then {
-                        suggestion.insert("}")afterToken(lastToken)
-                    } else {
-                        suggestion.addLine(closingBrace.tok.line + 0.1, "}")
+            while {sym.isRBrace.not} do {
+                if (unsuccessfulParse {statement}) then {
+                    def suggestion = errormessages.suggestion.new
+                    def closingBrace = findClosingBrace(btok, false)
+                    if (closingBrace.found.not) then {
+                        if (closingBrace.tok == lastToken) then {
+                            suggestion.insert("}")afterToken(lastToken)
+                        } else {
+                            suggestion.addLine(closingBrace.tok.line + 0.1, "}")
+                        }
                     }
+                    suggestion.deleteToken(sym)
+                    errormessages.syntaxError "the then clause of an if statement must end with a '}'"
+                          atPosition(sym.line, sym.linePos)
+                          withSuggestion(suggestion)
                 }
-                suggestion.deleteToken(sym)
-                errormessages.syntaxError("an if statement must end with a '}'.")atPosition(
-                    sym.line, sym.linePos)withSuggestion(suggestion)
+                separator
+                body.push(values.pop)
             }
             next
             var econd

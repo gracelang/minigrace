@@ -226,6 +226,20 @@ def Unknown = object{}› }
     }
 }
 
+testSuite "else block" with {
+    test "missing operator in statement in then block" by {
+        assert {astNode "defdec" from ‹
+def count = 1
+var result := "something"
+def xs = ["apple", "pear"]
+if (count == 1) then {
+    if (xs.size > 2) then { result := result ++ "," }
+    result := result ++ " " connectingWord ++ " "
+    // missing ++ here ----^
+}›} shouldRaise (em.SyntaxError) mentioning "statements must be separated"
+    }
+}
+
 testSuite "match case" with {
     test "case blocks must have a parameter" by {
         assert {astNode "try-catch" from ‹
