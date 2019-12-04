@@ -137,7 +137,7 @@ class reflect(subj) {
             if (this.data.subject !== other.data.subject) {
                 return GraceFalse;   // return false if we don't have the same subject
             }
-            return true;
+            return GraceTrue;
         ›
     }
 }
