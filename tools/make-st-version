@@ -1,9 +1,0 @@
-#! /bin/sh -f
-# a hack to get around the non-composable nature of dialects.
-# Takes the name of a file and dumps an 'st' version of it to stdout.
-
-N=`grep -n ^import "$1" | tail -n 1 | cut -f1 -d:`
-head -n $N $1
-echo 'import "staticTypes" as st'
-echo 'def thisDialect = st.thisDialect'
-tail -n +$(($N+1)) $1
