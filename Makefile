@@ -22,8 +22,7 @@ JSINSPECTORS = grace-inspect minigrace-inspect
 JSRUNNERS_WITHOUT_COMPILER = $(JSRUNNERS_BASE) $(JSINSPECTORS)
 JSRUNNERS = $(JSRUNNERS_WITHOUT_COMPILER) compiler-js
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
-OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
-OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
+OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace objectdrawBundle.grace
 PRELUDESOURCEFILES = collections.grace standard.grace standardBundle.grace intrinsic.grace basicTypesBundle.grace pattern+typeBundle.grace equalityBundle.grace pointBundle.grace
 REALSOURCEFILES = ast.grace compiler.grace errormessages.grace fastDict.grace genjs.grace identifierKinds.grace identifierresolution.grace io.grace lexer.grace mirror.grace parser.grace prefixTree.grace regularExpression.grace shasum.grace sys.grace unicode.grace unixFilePath.grace util.grace xmodule.grace
 
@@ -61,6 +60,7 @@ alltest: test module.test self.test
 .SUFFIXES:
 
 include Makefile.mgDependencies
+-include objectdraw/Makefile.odDepedencies
 
 # The rules that follow are in alphabetical order.  Keep them that way!
 
@@ -143,7 +143,6 @@ echo:
 	@echo WEBFILES_STATIC = $(sort $(WEBFILES_STATIC)) "\n"
 	@echo WEBFILES_DYNAMIC = $(sort $(WEBFILES_DYNAMIC)) "\n"
 	@echo JSONLY = $(JSONLY)
-	@echo OBJECTDRAW_REAL = $(OBJECTDRAW_REAL)
 	@echo OBJECTDRAW = $(OBJECTDRAW)
 	@echo ALL_LIBRARY_MODULES = $(ALL_LIBRARY_MODULES)
 	@echo OTHER_MODULES = $(OTHER_MODULES)
@@ -305,12 +304,6 @@ module.test: minigrace.env $(TYPE_DIALECTS:%=j2/%.js)
 	rm -f modules/tests/*.js
 	modules/tests/harness-js j2/minigrace-js modules/tests "" $(TESTS)
 
-modules/rtobjectdraw.grace: modules/objectdraw.grace tools/make-rt-version
-	./tools/make-rt-version $< > $@
-
-modules/stobjectdraw.grace: modules/objectdraw.grace tools/make-st-version
-	./tools/make-st-version $< > $@
-
 npm-get-kg: $(JS-KG)
 
 $(JS-KG):
@@ -354,7 +347,7 @@ npm-sha:
 	npm ls sha > /dev/null || npm install sha
 	touch npm-sha
 
-$(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: objectdraw/%.grace
+$(OBJECTDRAW:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
 
 $(OBJECTDRAW:%.grace=objectdraw/%.grace): objectdraw/%.grace: pull-objectdraw
