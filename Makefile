@@ -363,8 +363,8 @@ pull-web-editor:
 
 pull-objectdraw:
 	@$(OFFLINE) || if [ -e objectdraw ] ; \
-       then printf "objectdraw: " ; cd objectdraw; git pull ; \
-       else git clone https://github.com/gracelang/objectdraw/ ; fi
+       then printf "objectdraw: " ; cd objectdraw; git pull ; git checkout bundled ; \
+       else git clone --branch bundled https://github.com/gracelang/objectdraw/ ; fi
 
 pull-brace: pull-web-editor
 	@$(OFFLINE) || if [ -e grace-web-editor/brace ] ; \
