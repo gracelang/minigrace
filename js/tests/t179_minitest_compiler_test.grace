@@ -186,7 +186,7 @@ testSuiteNamed "toGrace methods" with {
         assert (sig.kind) shouldBe "methodtype"
         assert (sig.toGrace 1) shouldBe
               ‹firstPart(param1:Number, param2:String)seceondPart(param3:interface {
-                    foo → Done})thirdPart(param4:NewType⟦T⟧)›
+                foo → Done})thirdPart(param4:NewType⟦T⟧)›
     }
 }
 
