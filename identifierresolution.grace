@@ -1405,6 +1405,7 @@ method transformCall(cNode) -> ast.AstNode {
         cNode.onSelf
         if (definingScope.kind(methodName) == "object") then {
             cNode.isFresh := true
+            cNode.returnedObjectScope := definingScope.getScope(methodName)
         }
     } elseif { nominalRcvr.isOuter && (cNode.nameString == "outer") } then {
         // deal with outer.outer ..., which has been parsed into a memberNode

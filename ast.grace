@@ -1402,6 +1402,8 @@ def callNode is public = object {
         var isSelfRequest is public := false
         var isTailCall is public := false      // is possibly the result of a method
         var isFresh is public := false         // calls a fresh method
+        var returnedObjectScope is public := fakeSymbolTable
+                                               // the scope of the generated fresh object
         var cachedIdentifier := uninitialized
         var endPos is public := noPosition
 
@@ -1437,23 +1439,7 @@ def callNode is public = object {
 
         method isCall { true }
         method returnsObject {
-            // we recognize two special calls ac returning a fresh object
-            // self.copy, and prelude.clone(_)
-            if (isCopy) then { return true }
-            if (isClone) then { return true }
             isFresh
-        }
-        method isCopy {
-            ((receiver.isImplicit || receiver.isSelf) &&
-                (nameString == "copy"))
-        }
-        method isClone {
-            ((receiver.isImplicit || receiver.isBuiltIn) &&
-                  (nameString == "clone(1)"))
-        }
-        method returnedObjectScope {
-            // precondition: returnsObject
-            self.scope
         }
         method arguments {
             def result = list [ ]
@@ -1563,6 +1549,7 @@ def callNode is public = object {
             isSelfRequest := other.isSelfRequest
             isTailCall := other.isTailCall
             isFresh := other.isFresh
+            returnedObjectScope := other.returnedObjectScope
             endPos := other.endPos
             self
         }
@@ -1930,6 +1917,8 @@ def memberNode is public = object {
         var isSelfRequest is public := false
         var isTailCall is public := false      // is possibly the result of a method
         var isFresh is public := false         // calls a fresh method
+        var returnedObjectScope is public := fakeSymbolTable
+                                               // the scope of the generated fresh object
         method end -> Position {
             if (receiver.isImplicit) then {
                 positionOfNext (request) after (start)
@@ -2036,6 +2025,8 @@ def memberNode is public = object {
             generics := other.generics
             isSelfRequest := other.isSelfRequest
             isTailCall := other.isTailCall
+            isFresh := other.isFresh
+            returnedObjectScope := other.returnedObjectScope
             self
         }
     }
@@ -2285,10 +2276,7 @@ def identifierNode is public = object {
             } else {
                 s := self.value
             }
-            if (false != self.dtype) then {
-                s := s ++ ":" ++ self.dtype.toGrace(depth + 1)
-            }
-            if (false != generics) then {
+            if (false ≠ generics) then {
                 s := s ++ "⟦"
                 for (1..(generics.size - 1)) do {ix ->
                     s := s ++ generics.at(ix).toGrace(depth + 1) ++ ", "
@@ -2589,7 +2577,11 @@ def defDecNode is public = object {
         method isWritable { false }
         method isReadable { isPublic }
         method declarationKindWithAncestors(ac) { k.defdec }
-
+        method returnsObject { value.returnsObject }    // a call to a fresh method, or an object constructor
+        method returnedObjectScope {
+            // precondition: returnsObject
+            value.returnedObjectScope
+        }
         method accept(visitor : AstVisitor) from(ac) {
             if (visitor.visitDefDec(self) up(ac)) then {
                 def newChain = ac.extend(self)
@@ -3158,8 +3150,12 @@ def signaturePart is public = object {
             }
             if (params.isEmpty.not) then {
                 s := s ++ "("
-                params.do { each -> s := s ++ each.toGrace(depth + 1) }
-                    separatedBy { s := s ++ ", " }
+                params.do { each ->
+                    s := s ++ each.toGrace(depth + 1)
+                    if (false ≠ each.dtype) then {
+                        s := s ++ ":" ++ each.dtype.toGrace(depth + 1)
+                    }
+                } separatedBy { s := s ++ ", " }
                 s := s ++ ")"
             }
             s
