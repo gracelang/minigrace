@@ -604,12 +604,12 @@ method buildGctFor(module) {
         // TODO: replace this scan of the whole module by traversal of the
         // module symbol table
         if (v.kind == "vardec") then {
-            def gctType = if (false != v.dtype) then {v.dtype.toGrace(0)} else {"Unknown"}
+            def gctType = v.decType.toGrace 0
             def varRead: String = "{v.name.value} → {gctType}"
             if (v.isReadable) then {
                 meths.add(v.name.value)
                 publicMethodTypes.push(varRead)
-                gct.at("publicMethod:{v.name.value}") put(list[varRead])
+                // gct.at("publicMethod:{v.name.value}") put(list[varRead])
             } else {
                 confidentials.push(v.name.value)
             }
@@ -619,7 +619,7 @@ method buildGctFor(module) {
             if (v.isWritable) then {
                 meths.add(v.name.value ++ ":=(1)")
                 publicMethodTypes.push(varWrite)
-                gct.at("publicMethod:{v.name.value}:=(1)") put(list[varWrite])
+                // gct.at("publicMethod:{v.name.value}:=(1)") put(list[varWrite])
             } else {
                 confidentials.push(varWrite)
             }
@@ -627,7 +627,7 @@ method buildGctFor(module) {
             if (v.isPublic) then {
                 meths.add(v.nameString)
                 publicMethodTypes.push(generateMethodHeader(v))
-                gct.at("publicMethod:{v.nameString}") put([generateMethodHeader(v)])
+                // gct.at("publicMethod:{v.nameString}") put([generateMethodHeader(v)])
             } else {
                 confidentials.push(v.nameString)
             }
@@ -646,9 +646,9 @@ method buildGctFor(module) {
         } elseif {v.kind == "defdec"} then {
             if (v.isPublic) then {
                 meths.add(v.nameString)
-                def gctType = if (false != v.dtype) then {v.dtype.toGrace(0)} else {"Unknown"}
+                def gctType = v.decType.toGrace 0
                 publicMethodTypes.push("{v.name.value} → {gctType}")
-                gct.at("publicMethod:{v.name.value}") put (list["{v.name.value} → {gctType}"])
+                // gct.at("publicMethod:{v.name.value}") put (list["{v.name.value} → {gctType}"])
             } else {
                 confidentials.push(v.nameString)
             }
@@ -678,7 +678,7 @@ method buildGctFor(module) {
         } elseif {v.kind == "import"} then {
             if (v.isPublic) then {
                 meths.add(v.nameString)
-                def gctType = if (false != v.dtype) then {v.dtype.toGrace(0)} else {"Unknown"}
+                def gctType = v.decType.toGrace 0
                 publicMethodTypes.push("{v.name.value} → {gctType}")
             } else {
                 confidentials.push(v.nameString)
@@ -711,7 +711,9 @@ method addFreshMethodsOf (moduleObject) to (gct) is confidential {
     // because of the special treatment of prelude.clone
     // TODO: doesn't this just duplicate what's in 'classes' ? No: 'classes'
     // lists only classes declared inside a def'd object constructor, i.e.,
-    // something simulating he old "dotted" class
+    // something simulating the old "dotted" class, whereas isClass holds
+    // for all methods that return a fresh object. Time to remove 'classes',
+    // and generalize for any declaration that returns an object with a fresh method
     def freshmeths = list [ ]
     for (moduleObject.value) do { node->
         if (node.isClass) then {
