@@ -520,21 +520,23 @@ method compiletypedec(o) in (obj) {
     // with type parameters, or for types that are used before they are declared
     // (as must happen for mutually-recursive types)
 
-    def enclosing = o.scope.parent
+    def s = o.scope
+    def originalNode = s.node
     var reg := uidWithPrefix "type"
     def tName = o.nameString
     out "// Type decl {tName}"
     // declaredvars.push(escapeident(tName))
     if (o.value.kind == "typeliteral") then {o.value.name := tName }
     def typeMethod = ast.methodNode.new(
-            [ast.signaturePart.partName(o.nameString) scope(enclosing)],
-            typeFunBody (o.value) named (tName), ast.unknownType) scope(enclosing)
+            [ast.signaturePart.partName(o.nameString) scope(s)],
+            typeFunBody (o.value) named (tName), ast.unknownType) scope(s)
             // Why unknownType, rather than typeType?  Because the latter will
             // compile a check that the return value is actually a type, which
             // causes a circularity when trying to import collections. The check
             // is also unnecessary, if the type operators are correctly implemented.
     typeMethod.isOnceMethod := true
     typeMethod.withTypeParams(o.typeParams)
+    s.node := originalNode       // xmodule will scan the ast after code is generated
     def typeFun = compilenode(typeMethod)
     o.register := reg
     reg
