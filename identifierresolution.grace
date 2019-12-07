@@ -298,6 +298,11 @@ class newScopeIn(parent') kind(variety') {
         if (variety == "builtIn") then { return true }
         false
     }
+    method isFreshObjectScope {     // modules, dialects, etc are not fresh
+        if (variety == "object") then { return true }
+        if (variety == "class") then { return true }
+        false
+    }
     method allowsShadowing {
         if (variety == "type") then { return true }
         isObjectScope
@@ -1418,16 +1423,15 @@ method transformCall(cNode) -> ast.AstNode {
         result := nominalRcvr
     } else {
         if (cNode.isTailCall) then {    // don't do this work if no one cares
-            result.isFresh := callReturnsFreshObject(cNode)
+            def rcvrScope = cNode.scope.receiverScope(cNode.receiver)
+            def ansrScope = rcvrScope.getScope(cNode.nameString)
+            if (ansrScope.isFreshObjectScope) then {
+                result.isFresh := true
+                result.returnedObjectScope := ansrScope
+            }
         }
     }
     result
-}
-
-method callReturnsFreshObject(cNode) {
-    def rcvrScope = cNode.scope.receiverScope(cNode.receiver)
-    def ansrScope = rcvrScope.getScope(cNode.nameString)
-    ansrScope.isObjectScope
 }
 
 method resolve(moduleNode) {

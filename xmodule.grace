@@ -411,7 +411,7 @@ method extractGctFor(moduleName) fromJsFile(filepath) is confidential {
 
 method splitJsString(jsLine:String) is confidential {
     // jsLine is a line of javascript like
-    //   gctCache["xmodule"] = "classes:\nconfidential:\n CheckerFailure\n ..."
+    //   gctCache["xmodule"] = "objects:\nconfidential:\n CheckerFailure\n ..."
     // Evaluates the string on the rhs of the = sign, splits into lines,
     // and returns a (Grace) list containing those lines as (Grace) strings.
     native "js" code ‹
@@ -423,7 +423,7 @@ method splitJsString(jsLine:String) is confidential {
         var jsStringArray = gctString.split("\n");
         result = GraceList([]);
         for (var ix = 0, len = jsStringArray.length ; ix < len; ix++) {
-            callmethod(result, "push(1)", [1],
+            callmethod(result, "add(1)", [1],
                 new GraceString (jsStringArray[ix]));
         }›
 }
@@ -436,7 +436,7 @@ method extractGctFromCache(module) {
         var jsStringArray = gctString.split("\n");
         result = GraceList([]);
         for (var ix = 0, len = jsStringArray.length ; ix < len; ix++) {
-            callmethod(result, "push(1)", [1],
+            callmethod(result, "add(1)", [1],
                 new GraceString (jsStringArray[ix]));
         }›
 }
@@ -477,7 +477,7 @@ def typeVisitor = object {
     var literalCount := 1
 
     method visitIdentifier(ident) {
-        methodtypes.push("& {ident.value}")
+        methodtypes.add("& {ident.value}")
         return false
     }
 
@@ -522,7 +522,7 @@ def typeVisitor = object {
             if (meth.rtype != false) then {
                 mtstr := mtstr ++ " → " ++ meth.rtype.toGrace(1)
             }
-            methodtypes.push(mtstr)
+            methodtypes.add(mtstr)
         }
         return false
     }
@@ -532,23 +532,23 @@ def typeVisitor = object {
             def rightkind = op.right.kind
             if { leftkind=="typeliteral" } then {
                 literalCount := literalCount + 1
-                methodtypes.push("{op.value} {literalCount}")
+                methodtypes.add("{op.value} {literalCount}")
                 visitTypeLiteral(op.left)
             } elseif { leftkind=="op" } then {
                 visitOp(op.left)
             } else {
                 var typeIdent := op.left.toGrace(0)
-                methodtypes.push("{op.value} {typeIdent}")
+                methodtypes.add("{op.value} {typeIdent}")
             }
             if { rightkind=="typeliteral" } then {
                 literalCount := literalCount + 1
-                methodtypes.push("{op.value} {literalCount}")
+                methodtypes.add("{op.value} {literalCount}")
                 visitTypeLiteral(op.right)
             } elseif { rightkind=="op" } then {
                 visitOp(op.right)
             } else {
                 var typeIdent := op.right.toGrace(0)
-                methodtypes.push("{op.value} {typeIdent}")
+                methodtypes.add("{op.value} {typeIdent}")
             }
         }
         return false
@@ -560,37 +560,32 @@ method generateGctForModule(moduleObject) is confidential {
     return gct
 }
 
-method generateMethodHeader(methNode) -> String {
+method methodSignature(methNode) -> String {
     var depth: Number := 0
     var s: String := ""
-    var firstPart := true
+    var shouldEmitTypeParams := methNode.hasTypeParams
     for (methNode.signature) do { part ->
         s := s ++ part.name
-        if (firstPart && {false != methNode.typeParams}) then {
+        if (shouldEmitTypeParams) then {
             s := s ++ methNode.typeParams.toGrace(depth + 1)
+            shouldEmitTypeParams := false   // emit them once, after first part
         }
-        firstPart := false
-        if (part.params.size > 0) then {
+        if (part.params.isEmpty.not) then {
             s := s ++ "("
-            for (part.params.indices) do { pnr ->
-                var p := part.params.at(pnr)
-                s := s ++ p.toGrace(depth + 1)
-                if (pnr < part.params.size) then {
-                    s := s ++ ", "
-                }
+            part.params.do { p ->
+                s := "{s}{p.toGrace(depth + 1)}:{p.decType.toGrace(depth + 1)}"
+            } separatedBy {
+                s := "{s}, "
             }
             s := s ++ ")"
         }
     }
-    if (false != methNode.dtype) then {
-        s := s ++ " → {methNode.dtype.toGrace(0)}"
-    }
-    s
+    "{s} → {methNode.decType.toGrace 0}"
 }
 
 method buildGctFor(module) {
     def gct = dictionary.empty
-    def classes = list.empty
+    def objects = list.empty
     def confidentials = list.empty
     def meths = set.empty    // this must be a set, because the same name may be added
         // from a module.parent's providedNames, and a body node that is a method.
@@ -603,89 +598,118 @@ method buildGctFor(module) {
     for (module.value) do { v->
         // TODO: replace this scan of the whole module by traversal of the
         // module symbol table
+
+        def vName = v.nameString
         if (v.kind == "vardec") then {
             def gctType = v.decType.toGrace 0
-            def varRead: String = "{v.name.value} → {gctType}"
+            def readerSignature: String = "{vName} → {gctType}"
             if (v.isReadable) then {
-                meths.add(v.name.value)
-                publicMethodTypes.push(varRead)
-                // gct.at("publicMethod:{v.name.value}") put(list[varRead])
+                meths.add(vName)
+                publicMethodTypes.add(readerSignature)
+                // gct.at("publicMethod:{vName}") put(list[readerSignature])
             } else {
-                confidentials.push(v.name.value)
+                confidentials.add(vName)
             }
 
-            def varWrite: String = "{v.name.value}:=({v.name.value}': " ++
-                                                            "{gctType}) → Done"
+            def writerSignature: String = "{vName}:=(_:{gctType}) → Done"
             if (v.isWritable) then {
-                meths.add(v.name.value ++ ":=(1)")
-                publicMethodTypes.push(varWrite)
-                // gct.at("publicMethod:{v.name.value}:=(1)") put(list[varWrite])
+                meths.add "{vName}:=(1)"
+                publicMethodTypes.add(writerSignature)
+                // gct.at("publicMethod:{vName}:=(1)") put [writerSignature]
             } else {
-                confidentials.push(varWrite)
+                confidentials.add(writerSignature)
             }
-        } elseif {v.kind == "method"} then {
+        } elseif {v.kind == "method"} then {    // includes traits and classes
             if (v.isPublic) then {
-                meths.add(v.nameString)
-                publicMethodTypes.push(generateMethodHeader(v))
-                // gct.at("publicMethod:{v.nameString}") put([generateMethodHeader(v)])
+                meths.add(vName)
+                def sig = methodSignature(v)
+                publicMethodTypes.add(sig)
+                // gct.at "publicMethod:{vName}" put [sig]
             } else {
-                confidentials.push(v.nameString)
+                confidentials.add(vName)
+            }
+            if (v.returnsObject) then {
+                def sc = v.returnedObjectScope
+                if (sc.variety == "fake") then {
+                    util.log 30 verbose "fake symbol table found in node {v} on line {v.line}"
+                } else {
+                    def ob = sc.node
+                    def freshMethods = list [ ]
+                    if (ob.isObject) then {
+                      for (ob.value) do { nd ->
+                        if (nd.isClass) then {
+                            def factMethNm = "{vName}.{nd.nameString}"
+                            freshMethods.add (factMethNm)
+                            def exportedMethods = list.empty
+                            sc.getScope(nd.nameString).keysAndKindsDo { key, knd ->
+                                if (knd.forGct) then { exportedMethods.add(key) }
+                            }
+                            gct.at "methods-of:{factMethNm}"
+                                put(exportedMethods.sort)
+                        }
+                      }
+                    }
+                    if (freshMethods.isEmpty.not) then {
+                        gct.at "fresh-methods-of:{vName}"
+                            put(freshMethods)
+                        meths.add(vName)
+                    }
+                }
             }
         } elseif {v.kind == "typedec"} then {
             if (v.isPublic) then {
-                meths.add(v.nameString)
-                types.push(v.nameWithParams)
+                meths.add(vName)
+                types.add(v.nameWithParams)
                 methodtypes := list [ ]
                 v.value.accept(typeVisitor)
-                gct.at "methodtypes-of:{v.nameWithParams}" put(methodtypes)
-                gct.at "typedec-of:{v.nameWithParams}" put([v.toGrace(0)])
+                gct.at "methodtypes-of:{v.nameWithParams}" put (methodtypes)
+                gct.at "typedec-of:{v.nameWithParams}" put [v.toGrace(0)]
             } else {
-                confidentials.push(v.nameString)
+                confidentials.add(vName)
             }
-
         } elseif {v.kind == "defdec"} then {
             if (v.isPublic) then {
-                meths.add(v.nameString)
+                meths.add(vName)
                 def gctType = v.decType.toGrace 0
-                publicMethodTypes.push("{v.name.value} → {gctType}")
-                // gct.at("publicMethod:{v.name.value}") put (list["{v.name.value} → {gctType}"])
+                publicMethodTypes.add("{vName} → {gctType}")
+                // gct.at("publicMethod:{vName}") put ["{vName} → {gctType}"]
             } else {
-                confidentials.push(v.nameString)
+                confidentials.add(vName)
             }
             if (v.returnsObject) then {
                 def ob = v.returnedObjectScope.node
-                def obConstructors = list [ ]
+                def freshMethods = list [ ]
                 if (ob.isObject) then {
                   for (ob.value) do {nd->
                     if (nd.isClass) then {
                         def factMethNm = nd.nameString
-                        obConstructors.push(factMethNm)
+                        freshMethods.add(factMethNm)
                         def exportedMethods = list.empty
                         ob.scope.getScope(factMethNm).keysAndKindsDo { key, knd ->
                             if (knd.forGct) then { exportedMethods.add(key) }
                         }
-                        gct.at "methods-of:{v.name.value}.{factMethNm}"
+                        gct.at "methods-of:{vName}.{factMethNm}"
                             put(exportedMethods.sort)
                     }
                   }
                 }
-                if (obConstructors.size > 0) then {
-                    gct.at "constructors-of:{v.name.value}"
-                        put(obConstructors)
-                    classes.push(v.name.value)
+                if (freshMethods.isEmpty.not) then {
+                    gct.at "fresh-methods-of:{vName}"
+                        put(freshMethods)
+                    objects.add(vName)
                 }
             }
         } elseif {v.kind == "import"} then {
             if (v.isPublic) then {
-                meths.add(v.nameString)
+                meths.add(vName)
                 def gctType = v.decType.toGrace 0
-                publicMethodTypes.push("{v.name.value} → {gctType}")
+                publicMethodTypes.add("{vName} → {gctType}")
             } else {
-                confidentials.push(v.nameString)
+                confidentials.add(vName)
             }
         }
     }
-    gct.at "classes" put(classes.sort)
+    gct.at "objects" put(objects.sort)
     gct.at "confidential" put(confidentials.sort)
     gct.at "modules" put(list.withAll(module.imports).sorted)
     def p = util.infile.pathname
@@ -709,11 +733,7 @@ method addFreshMethodsOf (moduleObject) to (gct) is confidential {
     // adds information about the methods made available via fresh methods.
     // This is done in a separate pass after public information is in the gct,
     // because of the special treatment of prelude.clone
-    // TODO: doesn't this just duplicate what's in 'classes' ? No: 'classes'
-    // lists only classes declared inside a def'd object constructor, i.e.,
-    // something simulating the old "dotted" class, whereas isClass holds
-    // for all methods that return a fresh object. Time to remove 'classes',
-    // and generalize for any declaration that returns an object with a fresh method
+    // TODO: that rationale no longer applies — integrate?
     def freshmeths = list [ ]
     for (moduleObject.value) do { node->
         if (node.isClass) then {
@@ -725,7 +745,7 @@ method addFreshMethodsOf (moduleObject) to (gct) is confidential {
 
 method addFreshMethod (node) to (freshlist) for (gct) is confidential {
     def methName = node.nameString
-    freshlist.push(methName)
+    freshlist.add(methName)
     def freshMethExpression = node.body.last
     if (freshMethExpression.isObject) then {
         def exportedMethods = list.empty
