@@ -21,6 +21,7 @@ class kindConstant(name) {
     method fromParent { false }
     method forGct { true }
     method isRequired { false }
+    method fromGraceObject { false }
 }
 
 def undefined is public = kindConstant "undefined"
@@ -68,5 +69,6 @@ def graceObjectMethod is public = object {
     method isImplicit { true }
     method forUsers { false }
     method fromParent { true }
-    method forGct { false }
+    method forGct { true }
+    method fromGraceObject { true }
 }

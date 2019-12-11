@@ -779,27 +779,59 @@ method addAssignmentMethodsToSymbolTable {
 }
 
 method processGCT(gct, importedModuleScope) {
-    gct.at "classes" ifAbsent { [] }.do { c ->
-        def constrs = gct.at "constructors-of:{c}"
-        def classScope = newScopeIn(importedModuleScope) kind "class"
-        for (constrs) do { constr ->
-            def ns = newScopeIn(importedModuleScope) kind "object"
-            classScope.addName(constr)
-            classScope.at(constr) putScope(ns)
-            gct.at "methods-of:{c}.{constr}".do { mn ->
-                ns.addName(mn)
+    // Populates importedModuleScope with the information in gct,
+    // which is a dictionary mapping gct keys to collections.
+
+    def typeDecls = gct.at "types" ifAbsent { [] } >> set
+    gct.at "public" ifAbsent { [] }.do { meth ->
+        importedModuleScope.addName(meth) asA (
+            if (typeDecls.contains(meth)) then { k.typedec } else { k.methdec }
+        )
+    }
+    gct.at "objects" ifAbsent { [] }.do { obj ->
+        def freshMethods = gct.at "fresh-methods-of:{obj}"
+        def objScope = newScopeIn(importedModuleScope) kind "object"
+        importedModuleScope.addName(obj)
+        importedModuleScope.at(obj) putScope(objScope)
+        freshMethods.do { each ->
+            def ns = newScopeIn(objScope) kind "class"
+            objScope.addName(each)
+            objScope.at(each) putScope(ns)
+            gct.at "methods-of:{obj}.{each}".do { meth ->
+                addMethod (meth) toScope (ns)
             }
         }
-        importedModuleScope.addName(c)
-        importedModuleScope.at(c) putScope(classScope)
     }
-    gct.at "fresh-methods" ifAbsent { [] }.do { c ->
+    gct.at "fresh-methods" ifAbsent { [] }.do { each ->   // types, etc
         def objScope = newScopeIn(importedModuleScope) kind "object"
-        gct.at "fresh:{c}".do { mn ->
-            objScope.addName(mn)
+        gct.at "fresh:{each}" ifAbsent { [] }.do { meth ->
+            objScope.addName(meth)
         }
-        importedModuleScope.addName(c)
-        importedModuleScope.at(c) putScope(objScope)
+        gct.at "fresh-methods-of:{each}" ifAbsent { [] }.do { fresh ->
+            def freshScope = newScopeIn(objScope) kind "class"
+            gct.at "methods-of:{fresh}".do { meth ->
+                addMethod (meth) toScope (freshScope)
+            }
+        }
+        gct.at "methods-of:{each}" ifAbsent {
+            EnvironmentException.raise "gct missing entry for \"methods-of:{each}\""
+        }.do { meth ->
+            addMethod (meth) toScope (objScope)
+        }
+        importedModuleScope.addName(each)
+        importedModuleScope.at(each) putScope(objScope)
+        util.log 45 verbose "Scope for {each} contains {objScope.elements.keys}"
+    }
+}
+
+method addMethod (meth) toScope (s) {
+    // meth is s string: <methodName>" (fgo)"?
+    // add it to scope s, with the approriate kind
+    def split = meth.split " "
+    if (split.size == 1) then {
+        s.addName(meth) asA (k.methdec)
+    } elseif {(split.size == 2) && { split.second == "(fgo)" } } then {
+        s.addName(split.first) asA (k.graceObjectMethod)
     }
 }
 
@@ -848,13 +880,7 @@ method setupContext(moduleNode) {
     def dialectName:String = dialectNode.value
     if (dialectName ≠ "none") then {
         xmodule.checkExternalModule(dialectNode)
-        def gctDict = xmodule.gctDictionaryFor(dialectName)
-        def typeDecls = set.withAll(gctDict.at "types" ifAbsent {sequence.empty})
-        gctDict.at "public" ifAbsent { [] }.do { mn ->
-            dialectScope.addName(mn) asA (if (typeDecls.contains(mn))
-                                           then { k.typedec } else { k.methdec })
-        }
-        processGCT(gctDict, dialectScope)
+        processGCT(xmodule.gctDictionaryFor(dialectName), dialectScope)
     }
     if (dialectName == "beginningStudent") then {
         isInBeginningStudentDialect := true
@@ -1004,7 +1030,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 ident.isDeclaredByParent := true
                 // aliased and excluded names are appliedOccurrences
                 o.scope := newScopeIn(surroundingScope) kind "method"
-                if (o.returnsObject) then {
+                if (o.returnsObject && o.isOnceMethod.not) then {
                     o.isFresh := true
                 }
             }
@@ -1132,8 +1158,8 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
 }
 
 method collectParentNames(node) {
-    // node is an object or class; put the names that it inherit into its scope.
-    // In the process, checks for a cycle in the inheritance chain.
+    // node is an object or class; puts the names that it inherits and uses into
+    // its scope.  In the process, checks for a cycle in the inheritance chain
     def nodeScope = node.scope
     if (nodeScope.inheritedNames == completed) then {
         return
@@ -1210,6 +1236,7 @@ method gatherUsedNames(objNode) is confidential {
         if (traitNode.isNull.not) then {
             // if traitNode is null, the trait's scope comes from a gct, and
             // we have no information as to whether or not it references a trait.
+            // TODO: add this information to gct
             if (traitNode.isTrait.not) then {
                 errormessages.syntaxError("{t.value.toGrace 0} is not a trait,"
                       + " so it may not appear in a 'use' statement")

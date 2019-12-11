@@ -62,7 +62,11 @@ testSuiteNamed "gct" with {
         assert (gct.at "fresh-methods-of:other") shouldBe ["create"]
     }
     test "gct methods of other.create" by {
-        assert (gct.at "methods-of:other.create") shouldBe [ "things(1)", "thong"]
+        assert (gct.at "methods-of:other.create") shouldBe [
+              "asDebugString (fgo)", "asString (fgo)",
+              "basicAsString (fgo)", "isMe(1) (fgo)",
+              "myIdentityHash (fgo)", "things(1)", "thong"
+        ]
     }
     test "gct public" by {
         assert (gct.at "public") shouldBe ["A", "D", "H", "Z", "m(1)", "w:=(1)", "xx"]

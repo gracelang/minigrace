@@ -369,7 +369,8 @@ method gctDictionaryFrom(gctList) for(moduleName) is confidential {
                 key := line.substringFrom 1 to (line.size-1)  // dropping the ":"
                 gctDict.at(key) put(list [ ])
             } else {
-                gctDict.at(key).addLast(line.substringFrom 2 to (line.size))
+                gctDict.at(key).addLast(line.substringFrom 2)
+                util.log 45 verbose "reading {moduleName}'s gct: at {key} added {line.substringFrom 2}"
             }
         }
     }
@@ -591,6 +592,7 @@ method buildGctFor(module) {
     def meths = set.empty    // this must be a set, because the same name may be added
         // from a module.parent's providedNames, and a body node that is a method.
     def types = list.empty
+    def traits = list.empty
     def publicMethodTypes = list.empty
     def theDialect = module.theDialect.moduleName
     module.parentsDo { p ->
@@ -625,7 +627,7 @@ method buildGctFor(module) {
                 meths.add(vName)
                 def sig = methodSignature(v)
                 publicMethodTypes.add(sig)
-                // gct.at "publicMethod:{vName}" put [sig]
+                if (v.isTrait) then { traits.add(vName) }
             } else {
                 confidentials.add(vName)
             }
@@ -637,18 +639,22 @@ method buildGctFor(module) {
                     def ob = sc.node
                     def freshMethods = list [ ]
                     if (ob.isObject) then {
-                      for (ob.value) do { nd ->
-                        if (nd.isClass) then {
-                            def factMethNm = "{vName}.{nd.nameString}"
-                            freshMethods.add (factMethNm)
-                            def exportedMethods = list.empty
-                            sc.getScope(nd.nameString).keysAndKindsDo { key, knd ->
-                                if (knd.forGct) then { exportedMethods.add(key) }
+                        for (ob.value) do { nd ->
+                            if (nd.isClass) then {
+                                def factMethNm = "{vName}.{nd.nameString}"
+                                freshMethods.add (factMethNm)
+                                def exportedMethods = list.empty
+                                sc.getScope(nd.nameString).keysAndKindsDo { key, knd ->
+                                    if (knd.forGct) then {
+                                        def flag = if (knd.fromGraceObject) then {
+                                            " (fgo)" } else { "" }
+                                        exportedMethods.add(key ++ flag)
+                                    }
+                                }
+                                gct.at "methods-of:{factMethNm}"
+                                    put(exportedMethods.sort)
                             }
-                            gct.at "methods-of:{factMethNm}"
-                                put(exportedMethods.sort)
                         }
-                      }
                     }
                     if (freshMethods.isEmpty.not) then {
                         gct.at "fresh-methods-of:{vName}"
@@ -687,7 +693,11 @@ method buildGctFor(module) {
                         freshMethods.add(factMethNm)
                         def exportedMethods = list.empty
                         ob.scope.getScope(factMethNm).keysAndKindsDo { key, knd ->
-                            if (knd.forGct) then { exportedMethods.add(key) }
+                            if (knd.forGct) then {
+                                def flag = if (knd.fromGraceObject) then {
+                                    " (fgo)" } else { "" }
+                                exportedMethods.add(key ++ flag)
+                            }
                         }
                         gct.at "methods-of:{vName}.{factMethNm}"
                             put(exportedMethods.sort)
@@ -723,6 +733,7 @@ method buildGctFor(module) {
     } ]
     gct.at "public" put(list.withAll(meths).sort)
     gct.at "publicMethodTypes" put(publicMethodTypes.sort)
+    gct.at "traits" put(traits.sort)
     gct.at "types" put(types.sort)
     gct.at "dialect" put (
         if (theDialect == "none") then { [] } else { [theDialect] }
@@ -751,34 +762,13 @@ method addFreshMethod (node) to (freshlist) for (gct) is confidential {
     if (freshMethExpression.isObject) then {
         def exportedMethods = list.empty
         freshMethExpression.scope.keysAndKindsDo { key, knd ->
-            if (knd.forGct) then { exportedMethods.add(key) }
-        }
-        gct.at "fresh:{methName}" put (exportedMethods.sort)
-    } elseif {freshMethExpression.isCall} then {
-        // this deals with the two special cases, defined in
-        // ast.callNode.returnsObject.  The freshMethExpression must
-        // be a request of self.copy or prelude.clone(_)
-        def requestedName = freshMethExpression.nameString
-        if (requestedName == "copy") then {
-            gct.at "fresh:{methName}" put(gct.at "public")
-        } elseif {requestedName == "clone(1)"} then {
-            def cloneArg = freshMethExpression.parts.first.args.first
-            if (cloneArg.isSelf) then {
-                gct.at "fresh:{methName}" put(gct.at "public")
-            } else {
-                gct.at "fresh:{methName}"
-                    put(gct.at "methods-of:{cloneArg.toGrace 0}" isAbsent {
-                        ProgrammingError.raise (
-                            "unrecognized fresh method tail-call:\n" ++
-                              freshMethExpression.pretty(0) ++ "\n" ++
-                                "Can't find methods-of:{cloneArg.toGrace 0} in gct." )
-                } )
+            if (knd.forGct) then {
+                def flag = if (knd.fromGraceObject) then {
+                    " (fgo)" } else { "" }
+                exportedMethods.add(key ++ flag)
             }
-        } else {
-            // if it's not a call or an object constructor, why is it labelled as fresh?
-            ProgrammingError.raise
-                "unrecognized fresh method tail-call: {freshMethExpression.pretty(0)}"
         }
+        gct.at "methods-of:{methName}" put (exportedMethods.sort)
     } else {
         ProgrammingError.raise
             "fresh method result of an unexpected kind: {freshMethExpression.pretty(0)}"
