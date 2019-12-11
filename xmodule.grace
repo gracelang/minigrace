@@ -554,7 +554,8 @@ def typeVisitor = object {
         return false
     }
 }
-method generateGctForModule(moduleObject) is confidential {
+method generateGctForModule(moduleObject) {
+    // returns a dictionary mapping gct keys to collections of atttributes
     def gct = buildGctFor(moduleObject)
     addFreshMethodsOf (moduleObject) to (gct)
     return gct

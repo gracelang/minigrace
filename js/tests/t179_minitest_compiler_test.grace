@@ -11,107 +11,86 @@ import "errormessages" as em
 
 def MatchError = ProgrammingError.refine "MatchError"
 
-def input1 = list [
-    "var x: Number is writable := 100",
-    "def xx: Number is readable = 3",
-    "method m(y: Number) -> Done \{",
-    "    print(47+y)",
-    "\}",
-    "method n(a) -> Number is confidential \{3\}",
-    "type A = B⟦T⟧ | other.C | other.U⟦T⟧ | interface \{",
-    "    m1(n:Number) -> Number",
-    "    m2(n:Number) -> Done",
-    "\}",
-    "type D = Dictionary⟦K, T⟧ & F & G",
-    "type H⟦T⟧ = interface \{",
-    "    m3(x:T) -> T",
-    "\}",
-    "type Z = interface \{",
-    "    m4(x:Y) -> Y",
-    "\} & interface \{",
-    "    m5(x:Z) -> Z",
-    "\}"
-]
+def input1 = ‹var w: Number is writable := 100
+def xx: Number is readable = 3
+def other = object {
+    class create {
+        method things(n:Number) { "thing "*n }
+        method thong -> String { "thong" }
+    }
+    type C = interface { ca → Done }
+    type U⟦W⟧ = Collection⟦W⟧
+}
+method m(y: Number) -> Done {
+    print(47+y)
+}
+method n(a) -> Number is confidential {3}
+type A = other.C | other.U⟦Number⟧ | interface {
+    m1(n:Number) → Number
+    m2(n:Number) -> Done
+}
+type D = Dictionary⟦String, Number⟧ & A & H⟦String⟧
+type H⟦T⟧ = interface {
+    m3(x:T) → T
+}
+type Z = interface {
+    m4(x:D) -> A
+} & interface {
+    m5(x:Z) -> Z
+}›.split "\n"
+
 
 util.lines.clear
 util.lines.addAll(input1)
 util.gracelibPath := "../../j2/"
 def tokens1 = lexer.lexInputLines
 def module1 = parser.parse(tokens1)
-module1.name := "test_179_output"
-util.extensions.at "gctfile" put true
-util.outDir := "./"
-xmodule.writeGctForModule(module1)
-def gct = xmodule.gctDictionaryFor "test_179_output"
-def gctText = xmodule.gctAsString(gct)
+def resolvedModule1 = ir.resolve(module1)
+def gct = xmodule.generateGctForModule(resolvedModule1)
 
 testSuiteNamed "gct" with {
-    test "gct text" by {
-        assert (gctText) shouldBe ‹classes:
-confidential:
- n(1)
- x
-dialect:
- standard
-fresh-methods:
-methodtypes-of:A:
- 2 m1(n:Number) → Number
- 2 m2(n:Number) → Done
- | 2
- | B⟦T⟧
- | other.C
- | other.U⟦T⟧
-methodtypes-of:D:
- & Dictionary⟦K, T⟧
- & F
- & G
-methodtypes-of:H⟦T⟧:
- 2 m3(x:T) → T
-methodtypes-of:Z:
- & 3
- & 4
- 3 m4(x:Y) → Y
- 4 m5(x:Z) → Z
-modules:
-path:
- /dev/stdin
-public:
- A
- D
- H
- Z
- m(1)
- x:=(1)
- xx
-publicMethod:m(1):
- m(y:Number) → Done
-publicMethod:x:=(1):
- x:=(x': Number) → Done
-publicMethod:xx:
- xx → Number
-publicMethodTypes:
- m(y:Number) → Done
- x:=(x': Number) → Done
- xx → Number
-typedec-of:A:
- type A = B⟦T⟧ | other.C | other.U⟦T⟧ | interface {
+    test "gct object" by {
+        assert (gct.at "objects") shouldBe ["other"]
+    }
+    test "gct confidential" by {
+        assert (gct.at "confidential") shouldBe ["n(1)", "other", "w"]
+    }
+    test "gct dialect" by {
+        assert (gct.at "dialect") shouldBe ["standard"]
+    }
+    test "gct fresh-methods" by {
+        assert (gct.at "fresh-methods-of:other") shouldBe ["create"]
+    }
+    test "gct methods of other.create" by {
+        assert (gct.at "methods-of:other.create") shouldBe [ "things(1)", "thong"]
+    }
+    test "gct public" by {
+        assert (gct.at "public") shouldBe ["A", "D", "H", "Z", "m(1)", "w:=(1)", "xx"]
+    }
+    test "gct public method types" by {
+        assert (gct.at "publicMethodTypes") shouldBe [
+            "m(y:Number) → Done", "w:=(_:Number) → Done", "xx → Number"
+        ]
+    }
+    test "gct typedec A" by {
+        assert (gct.at "typedec-of:A") shouldBe [‹type A = other.C | other.U⟦Number⟧ | interface {
     m1(n:Number) → Number
-    m2(n:Number) → Done}
-typedec-of:D:
- type D = Dictionary⟦K, T⟧ & F & G
-typedec-of:H⟦T⟧:
- type H⟦T⟧ = interface {
-        m3(x:T) → T}
-typedec-of:Z:
- type Z = interface {
-    m4(x:Y) → Y} & interface {
-    m5(x:Z) → Z}
-types:
- A
- D
- H⟦T⟧
- Z
-›
+    m2(n:Number) → Done}›]
+    }
+    test "gct typedec D" by {
+        assert (gct.at "typedec-of:D") shouldBe [‹type D = Dictionary⟦String, Number⟧ & A & H⟦String⟧›]
+    }
+    test "gct typedec of H" by {
+        assert (gct.at "typedec-of:H⟦T⟧") shouldBe [‹type H⟦T⟧ = interface {
+        m3(x:T) → T}› ]
+    }
+    test "gct typedec of Z" by {
+        assert (gct.at "typedec-of:Z") shouldBe [‹type Z = interface {
+    m4(x:D) → A} & interface {
+    m5(x:Z) → Z}›]
+    }
+    test "gct types" by {
+        assert (gct.at "types") shouldBe ["A", "D", "H⟦T⟧", "Z"]
     }
 }
 
