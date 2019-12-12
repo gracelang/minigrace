@@ -6,6 +6,7 @@ import "util" as util
 import "unixFilePath" as filePath
 import "xmodule" as xmodule
 import "errormessages" as errormessages
+import "identifierresolution" as identifierresolution
 import "identifierKinds" as k
 import "fastDict" as map
 import "shasum" as shasum
@@ -536,7 +537,7 @@ method compiletypedec(o) in (obj) {
             // is also unnecessary, if the type operators are correctly implemented.
     typeMethod.isOnceMethod := true
     typeMethod.withTypeParams(o.typeParams)
-    s.node := originalNode       // xmodule will scan the ast after code is generated
+    s.node := originalNode       // gct generation will scan the ast after code is generated
     def typeFun = compilenode(typeMethod)
     o.register := reg
     reg
@@ -1702,7 +1703,7 @@ method compile(moduleObject, of, bt, glPath) {
     moduleObject.imports := imports.other
         // imports is modified by outputModuleDefinition; it is the
         // transitive closure of moduleObject.directImports.
-    xmodule.writeGctForModule(moduleObject)
+    identifierresolution.writeGctForModule(moduleObject)
     outputGct
     if (! inBrowser) then { outputSource }
 

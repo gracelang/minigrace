@@ -350,7 +350,7 @@ npm-sha:
 	npm ls sha > /dev/null || npm install sha
 	touch npm-sha
 
-$(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
+$(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw objectdraw/%.grace
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
 
 oldWeb : WEB_DIRECTORY = public_html/minigrace/js

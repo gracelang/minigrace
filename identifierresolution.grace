@@ -602,7 +602,7 @@ method checkForAmbiguityOf (node) definedIn (definingScope) asA (kind) {
     // the current scope by inheritance or trait use, rather than directly,
     // and also defined directly in an enclosing scope, then an implicit
     // request of m is ambiguous and is an error.
-    
+
     def currentScope = node.scope
     if (kind.fromParent.not) then { return }
     def name = node.nameString
@@ -618,7 +618,7 @@ method checkForAmbiguityOf (node) definedIn (definingScope) asA (kind) {
     def conflictingKind = conflictingScope.kind(name)
     if (conflictingKind.fromParent) then {
         return    // request is ambiguous only if name is defined
-                  // _directly_ in an enclosing scope.  
+                  // _directly_ in an enclosing scope.
     }
     var more := ""
     if (conflictingScope.elementLines.containsKey(name)) then {
@@ -775,6 +775,227 @@ method addAssignmentMethodsToSymbolTable {
             util.setPosition(decl.line, decl.linePos)
             dScope.addName(nameGets) asA (k.methdec)  // will complain if already declared
         }
+    }
+}
+
+method writeGctForModule(moduleObject) {
+    xmodule.writeGCT(moduleObject.name, generateGctForModule(moduleObject))
+}
+
+method generateGctForModule(moduleObject) {
+    // returns a dictionary mapping gct keys to collections of atttributes
+    def gct = buildGctFor(moduleObject)
+    addFreshMethodsOf (moduleObject) to (gct)
+    return gct
+}
+
+method buildGctFor(module) {
+    def gct = dictionary.empty
+    def objects = list.empty
+    def confidentials = list.empty
+    def meths = set.empty    // this must be a set, because the same name may be added
+        // from a module.parent's providedNames, and a body node that is a method.
+    def types = list.empty
+    def traits = list.empty
+    def publicMethodTypes = list.empty
+    def theDialect = module.theDialect.moduleName
+    module.parentsDo { p ->
+        meths.addAll(p.providedNames)       // add inherited and used methods
+    }
+    for (module.value) do { v->
+        // TODO: replace this scan of the whole module by traversal of the
+        // module symbol table
+
+        def vName = v.nameString
+        if (v.kind == "vardec") then {
+            def gctType = v.decType.toGrace 0
+            def readerSignature: String = "{vName} → {gctType}"
+            if (v.isReadable) then {
+                meths.add(vName)
+                publicMethodTypes.add(readerSignature)
+                // gct.at("publicMethod:{vName}") put(list[readerSignature])
+            } else {
+                confidentials.add(vName)
+            }
+
+            def writerSignature: String = "{vName}:=(_:{gctType}) → Done"
+            if (v.isWritable) then {
+                meths.add "{vName}:=(1)"
+                publicMethodTypes.add(writerSignature)
+                // gct.at("publicMethod:{vName}:=(1)") put [writerSignature]
+            } else {
+                confidentials.add(writerSignature)
+            }
+        } elseif {v.kind == "method"} then {    // includes traits and classes
+            if (v.isPublic) then {
+                meths.add(vName)
+                def sig = methodSignature(v)
+                publicMethodTypes.add(sig)
+                if (v.isTrait) then { traits.add(vName) }
+            } else {
+                confidentials.add(vName)
+            }
+            if (v.returnsObject) then {
+                def sc = v.returnedObjectScope
+                if (sc.variety == "fake") then {
+                    util.log 30 verbose "fake symbol table found in node {v} on line {v.line}"
+                } else {
+                    def ob = sc.node
+                    def freshMethods = list [ ]
+                    if (ob.isObject) then {
+                        for (ob.value) do { nd ->
+                            if (nd.isClass) then {
+                                def factMethNm = "{vName}.{nd.nameString}"
+                                freshMethods.add (factMethNm)
+                                def exportedMethods = list.empty
+                                sc.getScope(nd.nameString).keysAndKindsDo { key, knd ->
+                                    if (knd.forGct) then {
+                                        def flag = if (knd.fromGraceObject) then {
+                                            " (fgo)" } else { "" }
+                                        exportedMethods.add(key ++ flag)
+                                    }
+                                }
+                                gct.at "methods-of:{factMethNm}"
+                                    put(exportedMethods.sort)
+                            }
+                        }
+                    }
+                    if (freshMethods.isEmpty.not) then {
+                        gct.at "fresh-methods-of:{vName}"
+                            put(freshMethods)
+                        meths.add(vName)
+                    }
+                }
+            }
+        } elseif {v.kind == "typedec"} then {
+            if (v.isPublic) then {
+                meths.add(vName)
+                types.add(v.nameWithParams)
+                gct.at "typedec-of:{v.nameWithParams}" put [v.toGrace(0)]
+            } else {
+                confidentials.add(vName)
+            }
+        } elseif {v.kind == "defdec"} then {
+            if (v.isPublic) then {
+                meths.add(vName)
+                def gctType = v.decType.toGrace 0
+                publicMethodTypes.add("{vName} → {gctType}")
+                // gct.at("publicMethod:{vName}") put ["{vName} → {gctType}"]
+            } else {
+                confidentials.add(vName)
+            }
+            if (v.returnsObject) then {
+                def ob = v.returnedObjectScope.node
+                def freshMethods = list [ ]
+                if (ob.isObject) then {
+                  for (ob.value) do {nd->
+                    if (nd.isClass) then {
+                        def factMethNm = nd.nameString
+                        freshMethods.add(factMethNm)
+                        def exportedMethods = list.empty
+                        ob.scope.getScope(factMethNm).keysAndKindsDo { key, knd ->
+                            if (knd.forGct) then {
+                                def flag = if (knd.fromGraceObject) then {
+                                    " (fgo)" } else { "" }
+                                exportedMethods.add(key ++ flag)
+                            }
+                        }
+                        gct.at "methods-of:{vName}.{factMethNm}"
+                            put(exportedMethods.sort)
+                    }
+                  }
+                }
+                if (freshMethods.isEmpty.not) then {
+                    gct.at "fresh-methods-of:{vName}"
+                        put(freshMethods)
+                    objects.add(vName)
+                }
+            }
+        } elseif {v.kind == "import"} then {
+            if (v.isPublic) then {
+                meths.add(vName)
+                def gctType = v.decType.toGrace 0
+                publicMethodTypes.add("{vName} → {gctType}")
+            } else {
+                confidentials.add(vName)
+            }
+        }
+    }
+    gct.at "objects" put(objects.sort)
+    gct.at "confidential" put(confidentials.sort)
+    gct.at "modules" put(list.withAll(module.imports).sorted)
+    def p = util.infile.pathname
+    gct.at "path" put [ if (p.isEmpty) then {
+        ""
+    } elseif { p.startsWith "/" } then {
+        p
+    } else {
+        io.realpath(p)
+    } ]
+    gct.at "public" put(list.withAll(meths).sort)
+    gct.at "publicMethodTypes" put(publicMethodTypes.sort)
+    gct.at "traits" put(traits.sort)
+    gct.at "types" put(types.sort)
+    gct.at "dialect" put (
+        if (theDialect == "none") then { [] } else { [theDialect] }
+    )
+    gct
+}
+
+method addFreshMethodsOf (moduleObject) to (gct) is confidential {
+    // adds information about the methods made available via fresh methods.
+    // This is done in a separate pass after public information is in the gct,
+    // because of the special treatment of prelude.clone
+    // TODO: that rationale no longer applies — integrate?
+    def freshmeths = list [ ]
+    for (moduleObject.value) do { node->
+        if (node.isClass) then {
+            addFreshMethod (node) to (freshmeths) for (gct)
+        }
+    }
+    gct.at "fresh-methods" put(freshmeths)
+}
+
+method methodSignature(methNode) -> String {
+    var depth: Number := 0
+    var s: String := ""
+    var shouldEmitTypeParams := methNode.hasTypeParams
+    for (methNode.signature) do { part ->
+        s := s ++ part.name
+        if (shouldEmitTypeParams) then {
+            s := s ++ methNode.typeParams.toGrace(depth + 1)
+            shouldEmitTypeParams := false   // emit them once, after first part
+        }
+        if (part.params.isEmpty.not) then {
+            s := s ++ "("
+            part.params.do { p ->
+                s := "{s}{p.toGrace(depth + 1)}:{p.decType.toGrace(depth + 1)}"
+            } separatedBy {
+                s := "{s}, "
+            }
+            s := s ++ ")"
+        }
+    }
+    "{s} → {methNode.decType.toGrace 0}"
+}
+
+method addFreshMethod (node) to (freshlist) for (gct) is confidential {
+    def methName = node.nameString
+    freshlist.add(methName)
+    def freshMethExpression = node.body.last
+    if (freshMethExpression.isObject) then {
+        def exportedMethods = list.empty
+        freshMethExpression.scope.keysAndKindsDo { key, knd ->
+            if (knd.forGct) then {
+                def flag = if (knd.fromGraceObject) then {
+                    " (fgo)" } else { "" }
+                exportedMethods.add(key ++ flag)
+            }
+        }
+        gct.at "methods-of:{methName}" put (exportedMethods.sort)
+    } else {
+        ProgrammingError.raise
+            "fresh method result of an unexpected kind: {freshMethExpression.pretty(0)}"
     }
 }
 

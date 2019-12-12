@@ -5,7 +5,6 @@ import "parser" as parser
 import "ast" as ast
 import "util" as util
 import "io" as io
-import "xmodule" as xmodule
 import "identifierresolution" as ir
 import "errormessages" as em
 
@@ -46,7 +45,7 @@ util.gracelibPath := "../../j2/"
 def tokens1 = lexer.lexInputLines
 def module1 = parser.parse(tokens1)
 def resolvedModule1 = ir.resolve(module1)
-def gct = xmodule.generateGctForModule(resolvedModule1)
+def gct = ir.generateGctForModule(resolvedModule1)
 
 testSuiteNamed "gct" with {
     test "gct object" by {
