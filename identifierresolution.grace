@@ -368,9 +368,9 @@ class newScopeIn(parent') kind(variety') {
                         onSelf.withGenericArgs(aNode.generics)
             }
             if (v == "object") then {
-                outerChain.addLast(s.node)
+                    outerChain.addLast(s.node)
+                }
             }
-        }
         reportUndeclaredIdentifier(aNode.asIdentifier)
     }
     method isSpecial(name) is confidential {
@@ -1337,9 +1337,9 @@ method gatherInheritedNames(node) is confidential {
                 // an imported module, in which case the names have
                 // already been collected, or superScope is universal,
                 // when we have no information about inherited attributes
-                collectParentNames(superScope.node)
+                    collectParentNames(superScope.node)
+                }
             }
-        }
         def excludedNames = inhNode.exclusions.map { exMeth -> exMeth.nameString } >> list
         superScope.elements.keysDo { each ->
             if ((each ≠ "self") && (excludedNames.contains(each).not)) then {
