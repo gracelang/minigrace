@@ -372,7 +372,6 @@ method gctDictionaryFrom(gctList) for(moduleName) is confidential {
                 gctDict.at(key) put(list [ ])
             } else {
                 gctDict.at(key).addLast(line.substringFrom 2)
-                util.log 45 verbose "reading {moduleName}'s gct: at {key} added {line.substringFrom 2}"
             }
         }
     }
@@ -447,11 +446,9 @@ method extractGctFromCache(module) {
 method writeGCT(modname, dict) {
     if (util.extensions.containsKey "gctfile") then {
         def fp = io.open("{util.outDir}{modname}.gct", "w")
-        list.withAll(dict.bindings).sortBy(keyCompare).do { b ->
+        list (dict.bindings).sortBy(keyCompare).do { b ->
             fp.write "{b.key}:\n"
-            list.withAll(b.value).sort.do { v ->
-                fp.write " {v}\n"
-            }
+            b.value.do { v -> fp.write " {v}\n" }
         }
         fp.close
     }
@@ -459,13 +456,11 @@ method writeGCT(modname, dict) {
 }
 
 method gctAsString(gctDict) {
-    var ret := ""
-    list.withAll(gctDict.bindings).sortBy(keyCompare).do { b ->
-        ret := ret ++ "{b.key}:\n"
-        list.withAll(b.value).sort.do { v ->
-            ret := ret ++ " {v}\n"
-        }
+    var str := ""
+    list (gctDict.bindings).sortBy(keyCompare).do { b ->
+        str := str ++ "{b.key}:\n"
+        b.value.do { v -> str := str ++ " {v}\n" }
     }
-    return ret
+    str
 }
 
