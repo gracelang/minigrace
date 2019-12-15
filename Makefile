@@ -347,7 +347,7 @@ npm-sha:
 	npm ls sha > /dev/null || npm install sha
 	touch npm-sha
 
-$(OBJECTDRAW:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw objectdraw/%.grace
+$(OBJECTDRAW:%.grace=modules/%.grace): modules/%.grace: objectdraw/%.grace
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
 
 $(OBJECTDRAW:%.grace=objectdraw/%.grace): objectdraw/%.grace: pull-objectdraw
