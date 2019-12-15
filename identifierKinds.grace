@@ -9,6 +9,8 @@ type T = EqualityObject & interface {
     isRequired -> Boolean
     forUsers -> Boolean
     fromParent -> Boolean
+    isFresh -> Boolean
+    tag -> String
 }
 
 class kindConstant(name) {
@@ -22,6 +24,12 @@ class kindConstant(name) {
     method forGct { true }
     method isRequired { false }
     method fromGraceObject { false }
+    method isFresh  { false }
+    method tag -> String {
+        // converts a kind constant to a tag
+        def t = tags.at(self)
+        if (t.isEmpty) then { t } else { " " ++ t }
+    }
 }
 
 def undefined is public = kindConstant "undefined"
@@ -31,6 +39,10 @@ def typedec is public = kindConstant "typedec"
 def aliasdec is public = kindConstant "alias"
 def importdec is public = kindConstant "import"
 
+def freshmeth is public = object {
+    inherit kindConstant "freshmeth"
+    method isFresh  { true }
+}
 def selfDef is public = object {
     inherit kindConstant "selfDef"
     method isImplicit { true }
@@ -71,4 +83,29 @@ def graceObjectMethod is public = object {
     method fromParent { true }
     method forGct { true }
     method fromGraceObject { true }
+}
+
+def tags = dictionary [
+    undefined::"(und)",
+    defdec::"(def)",
+    methdec::"",
+    freshmeth::"(fresh)",
+    typedec::"(type)",
+    aliasdec::"(al)",
+    importdec::"(impt)",
+    fromTrait::"(ft)",
+    inherited::"(fs)",
+    required::"(req)",
+    vardec::"(var)",
+    parameter::"(par)",
+    typeparam::"(tpar)",
+    graceObjectMethod::"(fgo)"]
+
+def constants = dictionary.empty
+tags.keysAndValuesDo { k, v -> constants.at(v) put(k) }
+
+
+method for(aTag:String) -> T {
+    // converts a tag to a kind constant
+    constants.at(aTag)
 }
