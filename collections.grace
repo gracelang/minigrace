@@ -133,6 +133,7 @@ type Set⟦T⟧ = Collection⟦T⟧ & interface {
     remove(x: T) -> Set⟦T⟧
     remove(x: T) ifAbsent(block: Procedure0) -> Set⟦T⟧
     clear -> Set⟦T⟧
+    anyone -> T
     includes(booleanBlock: Predicate1⟦T⟧) -> Boolean
     find(booleanBlock: Predicate1⟦T⟧) ifNone(notFoundBlock: Function0⟦T⟧) -> T
     copy -> Set⟦T⟧
@@ -869,6 +870,10 @@ class set⟦T⟧ {
                 if (booleanBlock.apply(each)) then { return each }
             }
             return notFoundBlock.apply
+        }
+        method anyone {
+            self.do { each -> return each }
+            NoSuchObject.raise "no element in set"
         }
         method findPosition(x) is confidential {
             def h = x.hash
