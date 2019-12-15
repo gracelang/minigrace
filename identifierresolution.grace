@@ -261,8 +261,7 @@ class newScopeIn(parent') kind(variety') {
         // rcvrNode is the receiver of a request. Answer the scope
         // associated with it.  So, if the receiver is a.b.c,
         // find the scope associated with c in the scope associated with b
-        // in the scope associated with a in this scope.  Answers
-        // universalScope if we don't have enough information to be exact.
+        // in the scope associated with a in this scope.
 
         if (rcvrNode.isIdentifier) then {
             scopeInNest(rcvrNode.nameString)
@@ -275,15 +274,32 @@ class newScopeIn(parent') kind(variety') {
             }
             resultScope
         } elseif { rcvrNode.isConstant } then {
-            universalScope  //  TODO: define scopes for strings and numbers
+            match (rcvrNode.kind)
+                  case {"string" -> stringScope }
+                  case {"num" -> numberScope }
         } elseif { rcvrNode.isSequenceConstructor } then {
-            universalScope  //  TODO: define scope for Sequences
+            sequenceScope
         } elseif { rcvrNode.isObject } then {
-            rcvrNode.scope  //  TODO: do we need to remove the confidential attributes?
+            rcvrNode.scope
         } else {
             ProgrammingError.raise("unexpected receiver {rcvrNode.toGrace 0} " ++
                   "on line {rcvrNode.line}")
         }
+    }
+    method scopeForDottedName(dottedName:String) {
+        // dottedName is a_1.a_2.a_3. ... .a_n
+        // answers the scope for a_n, creating it if necessary
+        def splitName = dottedName.split "."
+        var result := self
+        splitName.do { component ->
+            var componentScope := result.getScope(component)
+            if (componentScope.isUniversal) then {
+                componentScope := newScopeKind "object"
+                result.at (component) putScope (componentScope)
+            }
+            result := componentScope
+        }
+        result
     }
     method isInSameObjectAs (enclosingScope) {
         if (self == enclosingScope) then { return true }
@@ -344,15 +360,9 @@ class newScopeIn(parent') kind(variety') {
                         onSelf.withGenericArgs(aNode.generics)
             }
             if (v == "object") then {
-                def definingObjNode = s.node
-                if (outerChain.isEmpty.not && {outerChain.last == definingObjNode}) then {
-                    ProgrammingError.raise "adding {definingObjNode} twice"
-                } else {
-                    outerChain.addLast(s.node)
-                }
+                outerChain.addLast(s.node)
             }
         }
-
         reportUndeclaredIdentifier(aNode.asIdentifier)
     }
     method isSpecial(name) is confidential {
@@ -381,7 +391,7 @@ class newScopeIn(parent') kind(variety') {
     }
     method scopeReferencedBy(nd:ast.AstNode) {
         // Finds the scope referenced by astNode nd.
-        // If nd references an object, then the returned
+        // If nd references an object, then the result
         // scope will have bindings for the methods of that object.
         // Otherwise, it will be the empty scope.
 
@@ -403,16 +413,12 @@ class newScopeIn(parent') kind(variety') {
             def receiverScope = self.scopeReferencedBy(nd.left)
             receiverScope.scopeReferencedBy(nd.asIdentifier)
         } elseif {nd.isCall} then { // this includes "memberNodes"
-            def receiver = nd.receiver
-            if (receiver.isImplicit) then {
-                util.log 60 verbose "inherit from implicit.{nd.nameString} on line {nd.line}"
-            }
-            def newNd = transformCall(nd)
+            def newNd = transformCall(nd)   // resolves implicit receiver
             def receiverScope = self.scopeReferencedBy(newNd.receiver)
             receiverScope.scopeReferencedBy(newNd.asIdentifier)
         } else {
-            ProgrammingError.raise("{nd.nameString} is not a Call, Member, Identifier, Outer or Op node.\n"
-                    ++ nd.pretty(0))
+            ProgrammingError.raise("{nd.nameString} is not a Call, Member, " ++
+                  "Identifier, Outer or Op node.\n{nd.pretty 0}")
         }
     }
     method enclosingObjectScope {
@@ -490,6 +496,12 @@ def dialectScope = newScopeIn(builtInsScope) kind "dialect"
 def moduleScope = newScopeIn(dialectScope) kind "module"
 def graceObjectScope = newScopeIn(emptyScope) kind "object"
 def booleanScope = newScopeIn(builtInsScope) kind "object"
+def numberScope = newScopeIn(builtInsScope) kind "object"
+def stringScope = newScopeIn(builtInsScope) kind "object"
+def sequenceScope = newScopeIn(builtInsScope) kind "object"
+
+initializeConstantScopes
+
 def varFieldDecls = list []   // a list of declarations of var fields
 
 util.setPosition(0, 0)
@@ -515,6 +527,40 @@ def universalScope = object {
     method isUniversal { true }
 }
 
+method initializeConstantScopes {
+    // populate the scopes corresponding to the language literals.
+    // we reflect on a witness object, rather than using its type,
+    // so that we include the confidential method names
+
+    mirror.reflect(object{}).allMethodNames.do { each ->
+        graceObjectScope.addName (mirror.numericName(each))
+              asA (k.graceObjectMethod)
+    }
+    mirror.reflect(true).allMethodNames.do { each ->
+        booleanScope.addName (mirror.numericName(each))
+    }
+    mirror.reflect(1).allMethodNames.do { each ->
+        numberScope.addName (mirror.numericName(each))
+    }
+    mirror.reflect "a".allMethodNames.do { each ->
+        stringScope.addName (mirror.numericName(each))
+    }
+    mirror.reflect [].allMethodNames.do { each ->
+        sequenceScope.addName (mirror.numericName(each))
+    }
+
+    builtInsScope.addName "true"
+    builtInsScope.addName "false"
+    builtInsScope.at "true" putScope(booleanScope)
+    builtInsScope.at "false" putScope(booleanScope)
+    builtInsScope.addName "Unknown" asA (k.typedec)
+    builtInsScope.addName "outer" asA(k.defdec)
+    builtInsScope.addName "..." asA(k.defdec)
+    builtInsScope.addName "print(1)"
+    builtInsScope.addName "native(1)code(1)"
+    builtInsScope.addName "native(1)header(1)"
+}
+
 method transformIdentifier(node) ancestors(anc) {
     // node is a (copy of an) ast node that represents an applied occurrence of
     // an identifer id.
@@ -524,8 +570,7 @@ method transformIdentifier(node) ancestors(anc) {
     // the transformed AST was sufficiecntly similar to the one emitted by the
     // old identifier resolution pass for the C code generator to accept it.
     // This method seems to do the following:
-    // - id is self => do nothing
-    // - id is super => do nothing
+    // - id is self, $module, $dialect => do nothing
     // - id is outer => transform to an outerNode
     // - id is in an assignment position and a method ‹id›:=(_) is in scope => do nothing.  The enclosing bind will transform it.
     // - id is in the lexical scope: store binding occurrence of id in node
@@ -557,8 +602,8 @@ method transformIdentifier(node) ancestors(anc) {
         return ast.outerNode [nodeScope.enclosingObjectScope.node].
                 setPositionFrom(node).setScope(nodeScope)
     }
-    if (nm == "self") then {
-        return node
+    if (nodeKind == k.selfDef) then {
+        return node     // covers self, $module, and $dialect
     }
     checkForAmbiguityOf (node) definedIn (definingScope) asA (nodeKind)
     def v = definingScope.variety
@@ -782,148 +827,42 @@ method writeGctForModule(moduleObject) {
     xmodule.writeGCT(moduleObject.name, generateGctForModule(moduleObject))
 }
 
-method generateGctForModule(moduleObject) {
-    // returns a dictionary mapping gct keys to collections of atttributes
-    def gct = buildGctFor(moduleObject)
-    addFreshMethodsOf (moduleObject) to (gct)
-    return gct
-}
+method generateGctForModule(module) {
+    // The gct is essentially a representation of module's symbol table.
+    // We built this representation by iterating over the symbol table.
+    // Older versions of this method used to iterate over the ast,
+    // but reused methods are not in the ast, and so were omitted.
 
-method buildGctFor(module) {
     def gct = dictionary.empty
-    def objects = list.empty
-    def confidentials = list.empty
-    def meths = set.empty    // this must be a set, because the same name may be added
-        // from a module.parent's providedNames, and a body node that is a method.
-    def types = list.empty
-    def traits = list.empty
     def publicMethodTypes = list.empty
     def theDialect = module.theDialect.moduleName
-    module.parentsDo { p ->
-        meths.addAll(p.providedNames)       // add inherited and used methods
-    }
-    for (module.value) do { v->
-        // TODO: replace this scan of the whole module by traversal of the
-        // module symbol table
-
-        def vName = v.nameString
-        if (v.kind == "vardec") then {
-            def gctType = v.decType.toGrace 0
-            def readerSignature: String = "{vName} → {gctType}"
-            if (v.isReadable) then {
-                meths.add(vName)
-                publicMethodTypes.add(readerSignature)
-                // gct.at("publicMethod:{vName}") put(list[readerSignature])
-            } else {
-                confidentials.add(vName)
-            }
-
-            def writerSignature: String = "{vName}:=(_:{gctType}) → Done"
-            if (v.isWritable) then {
-                meths.add "{vName}:=(1)"
-                publicMethodTypes.add(writerSignature)
-                // gct.at("publicMethod:{vName}:=(1)") put [writerSignature]
-            } else {
-                confidentials.add(writerSignature)
-            }
-        } elseif {v.kind == "method"} then {    // includes traits and classes
-            if (v.isPublic) then {
-                meths.add(vName)
-                def sig = methodSignature(v)
-                publicMethodTypes.add(sig)
-                if (v.isTrait) then { traits.add(vName) }
-            } else {
-                confidentials.add(vName)
-            }
-            if (v.returnsObject) then {
-                def sc = v.returnedObjectScope
-                if (sc.variety == "fake") then {
-                    util.log 30 verbose "fake symbol table found in node {v} on line {v.line}"
-                } else {
-                    def ob = sc.node
-                    def freshMethods = list [ ]
-                    if (ob.isObject) then {
-                        for (ob.value) do { nd ->
-                            if (nd.isClass) then {
-                                def factMethNm = "{vName}.{nd.nameString}"
-                                freshMethods.add (factMethNm)
-                                def exportedMethods = list.empty
-                                sc.getScope(nd.nameString).keysAndKindsDo { key, knd ->
-                                    if (knd.forGct) then {
-                                        def flag = if (knd.fromGraceObject) then {
-                                            " (fgo)" } else { "" }
-                                        exportedMethods.add(key ++ flag)
-                                    }
-                                }
-                                gct.at "methods-of:{factMethNm}"
-                                    put(exportedMethods.sort)
-                            }
-                        }
-                    }
-                    if (freshMethods.isEmpty.not) then {
-                        gct.at "fresh-methods-of:{vName}"
-                            put(freshMethods)
-                        meths.add(vName)
+    def methodList = list.empty
+    def ms = module.scope
+    ms.keysAndKindsDo { vName, knd ->
+        if (knd.forGct) then {
+            methodList.add (vName ++ knd.tag)
+            if (knd.isFresh) then {
+                def subList = list.empty
+                ms.getScope(vName).keysAndKindsDo { subName, subKnd ->
+                    if (subKnd.forGct) then {
+                        subList.add (subName ++ subKnd.tag)
                     }
                 }
+                gct.at "methods-of:{vName}" put (subList.sort)
             }
-        } elseif {v.kind == "typedec"} then {
-            if (v.isPublic) then {
-                meths.add(vName)
-                types.add(v.nameWithParams)
-                gct.at "typedec-of:{v.nameWithParams}" put [v.toGrace(0)]
-            } else {
-                confidentials.add(vName)
-            }
-        } elseif {v.kind == "defdec"} then {
-            if (v.isPublic) then {
-                meths.add(vName)
-                def gctType = v.decType.toGrace 0
-                publicMethodTypes.add("{vName} → {gctType}")
-                // gct.at("publicMethod:{vName}") put ["{vName} → {gctType}"]
-            } else {
-                confidentials.add(vName)
-            }
-            if (v.returnsObject) then {
-                def ob = v.returnedObjectScope.node
-                def freshMethods = list [ ]
-                if (ob.isObject) then {
-                  for (ob.value) do {nd->
-                    if (nd.isClass) then {
-                        def factMethNm = nd.nameString
-                        freshMethods.add(factMethNm)
-                        def exportedMethods = list.empty
-                        ob.scope.getScope(factMethNm).keysAndKindsDo { key, knd ->
-                            if (knd.forGct) then {
-                                def flag = if (knd.fromGraceObject) then {
-                                    " (fgo)" } else { "" }
-                                exportedMethods.add(key ++ flag)
-                            }
-                        }
-                        gct.at "methods-of:{vName}.{factMethNm}"
-                            put(exportedMethods.sort)
-                    }
-                  }
-                }
-                if (freshMethods.isEmpty.not) then {
-                    gct.at "fresh-methods-of:{vName}"
-                        put(freshMethods)
-                    objects.add(vName)
-                }
-            }
-        } elseif {v.kind == "import"} then {
-            if (v.isPublic) then {
-                meths.add(vName)
-                def gctType = v.decType.toGrace 0
-                publicMethodTypes.add("{vName} → {gctType}")
-            } else {
-                confidentials.add(vName)
+        }
+        def v = ms.getScope(vName).node
+        if (ast.nullNode ≠ v) then {
+            if (knd == k.typedec) then {
+                gct.at "typedec-of:{v.nameWithParams}" put [v.toGrace 0]
+            } elseif { knd == k.methdec } then {
+                publicMethodTypes.add (methodSignature(v))
             }
         }
     }
-    gct.at "objects" put(objects.sort)
-    gct.at "confidential" put(confidentials.sort)
-    gct.at "modules" put(list.withAll(module.imports).sorted)
+    gct.at "methods" put (methodList.sort)
+    gct.at "modules" put (list(module.imports).sort)
+    gct.at "publicMethodTypes" put(publicMethodTypes.sort)
     def p = util.infile.pathname
     gct.at "path" put [ if (p.isEmpty) then {
         ""
@@ -932,28 +871,10 @@ method buildGctFor(module) {
     } else {
         io.realpath(p)
     } ]
-    gct.at "public" put(list.withAll(meths).sort)
-    gct.at "publicMethodTypes" put(publicMethodTypes.sort)
-    gct.at "traits" put(traits.sort)
-    gct.at "types" put(types.sort)
     gct.at "dialect" put (
         if (theDialect == "none") then { [] } else { [theDialect] }
     )
     gct
-}
-
-method addFreshMethodsOf (moduleObject) to (gct) is confidential {
-    // adds information about the methods made available via fresh methods.
-    // This is done in a separate pass after public information is in the gct,
-    // because of the special treatment of prelude.clone
-    // TODO: that rationale no longer applies — integrate?
-    def freshmeths = list [ ]
-    for (moduleObject.value) do { node->
-        if (node.isClass) then {
-            addFreshMethod (node) to (freshmeths) for (gct)
-        }
-    }
-    gct.at "fresh-methods" put(freshmeths)
 }
 
 method methodSignature(methNode) -> String {
@@ -1003,56 +924,45 @@ method processGCT(gct, importedModuleScope) {
     // Populates importedModuleScope with the information in gct,
     // which is a dictionary mapping gct keys to collections.
 
-    def typeDecls = gct.at "types" ifAbsent { [] } >> set
-    gct.at "public" ifAbsent { [] }.do { meth ->
-        importedModuleScope.addName(meth) asA (
-            if (typeDecls.contains(meth)) then { k.typedec } else { k.methdec }
-        )
+    def moduleMethods = gct.at "methods" ifAbsent { [] } >> set
+    moduleMethods.do { meth ->
+        addMethod (meth) toScope (importedModuleScope)
     }
-    gct.at "objects" ifAbsent { [] }.do { obj ->
-        def freshMethods = gct.at "fresh-methods-of:{obj}"
-        def objScope = newScopeIn(importedModuleScope) kind "object"
-        importedModuleScope.addName(obj)
-        importedModuleScope.at(obj) putScope(objScope)
-        freshMethods.do { each ->
-            def ns = newScopeIn(objScope) kind "class"
-            objScope.addName(each)
-            objScope.at(each) putScope(ns)
-            gct.at "methods-of:{obj}.{each}".do { meth ->
-                addMethod (meth) toScope (ns)
+    while {moduleMethods.isEmpty.not} do {
+        def meth = moduleMethods.anyone
+        moduleMethods.remove(meth)
+        def split = meth.split " "
+        def methName = split.first
+        def knd = if (split.size == 1) then {
+            k.methdec
+        } else {
+            k.for(split.second)
+        }
+        if (knd == k.freshmeth) then {
+            def objScope = importedModuleScope.scopeForDottedName(methName)
+            gct.at "methods-of:{methName}" .do { each ->
+                def eachName = each.split " ".first
+                addMethod(each) toScope (objScope)
+                def ns = newScopeIn(objScope) kind "object"
+                objScope.at(eachName) putScope(ns)
+                moduleMethods.add "{methName}.{each}"
+            }
+            def where' = valueOf {
+                def namePrefix = methName.substringFrom 1 to (methName.lastIndexOf "." ifAbsent { 1 } - 1)
+                importedModuleScope.scopeForDottedName(namePrefix)
             }
         }
-    }
-    gct.at "fresh-methods" ifAbsent { [] }.do { each ->   // types, etc
-        def objScope = newScopeIn(importedModuleScope) kind "object"
-        gct.at "fresh:{each}" ifAbsent { [] }.do { meth ->
-            objScope.addName(meth)
-        }
-        gct.at "fresh-methods-of:{each}" ifAbsent { [] }.do { fresh ->
-            def freshScope = newScopeIn(objScope) kind "class"
-            gct.at "methods-of:{fresh}".do { meth ->
-                addMethod (meth) toScope (freshScope)
-            }
-        }
-        gct.at "methods-of:{each}" ifAbsent {
-            EnvironmentException.raise "gct missing entry for \"methods-of:{each}\""
-        }.do { meth ->
-            addMethod (meth) toScope (objScope)
-        }
-        importedModuleScope.addName(each)
-        importedModuleScope.at(each) putScope(objScope)
-        util.log 45 verbose "Scope for {each} contains {objScope.elements.keys}"
     }
 }
 
 method addMethod (meth) toScope (s) {
-    // meth is s string: <methodName>" (fgo)"?
-    // add it to scope s, with the approriate kind
+    // meth is s string: <methodName>" <tag>"?
+    // add it to scope s, with the approriate kind, based on the <tag>
     def split = meth.split " "
     if (split.size == 1) then {
         s.addName(meth) asA (k.methdec)
-    } elseif {(split.size == 2) && { split.second == "(fgo)" } } then {
-        s.addName(split.first) asA (k.graceObjectMethod)
+    } elseif {split.size == 2} then {
+        s.addName(split.first) asA (k.for(split.second))
     }
 }
 
@@ -1062,40 +972,15 @@ method setupContext(moduleNode) {
     // define the built-in names
     util.setPosition(0, 0)
 
-    builtInsScope.clear         // so that resolve can be serially re-used.
-    dialectScope.clear
+    dialectScope.clear      // so that resolve can be serially re-used.
     moduleScope.clear
-    graceObjectScope.clear
-    booleanScope.clear
     varFieldDecls.clear
 
-    moduleScope.addName "$module" asA (k.defdec)
+    moduleScope.addName "$module" asA (k.selfDef)
     moduleScope.at "$module" putScope(moduleScope)
 
-    moduleScope.addName "$dialect" asA (k.defdec)
+    moduleScope.addName "$dialect" asA (k.selfDef)
     moduleScope.at "$dialect" putScope(dialectScope)
-
-    builtInsScope.addName "true"
-    builtInsScope.addName "false"
-    builtInsScope.addName "Unknown" asA (k.typedec)
-    builtInsScope.addName "outer" asA(k.defdec)
-    builtInsScope.addName "..." asA(k.defdec)
-    builtInsScope.addName "print(1)"
-    builtInsScope.addName "native(1)code(1)"
-    builtInsScope.addName "native(1)header(1)"
-
-    mirror.reflect(object{}).allMethodNames.do { each ->
-        // we reflect on an empty object, rather than using type Object
-        // so that we include the confidential method names
-        graceObjectScope.addName (mirror.numericName(each))
-              asA (k.graceObjectMethod)
-    }
-    mirror.reflect(true).allMethodNames.do { each ->
-        booleanScope.addName (mirror.numericName(each))
-    }
-
-    builtInsScope.at "true" putScope(booleanScope)
-    builtInsScope.at "false" putScope(booleanScope)
 
     def dialectNode = moduleNode.theDialect
     def dialectName:String = dialectNode.value
@@ -1103,9 +988,7 @@ method setupContext(moduleNode) {
         xmodule.checkExternalModule(dialectNode)
         processGCT(xmodule.gctDictionaryFor(dialectName), dialectScope)
     }
-    if (dialectName == "beginningStudent") then {
-        isInBeginningStudentDialect := true
-    }
+    isInBeginningStudentDialect := (dialectName == "beginningStudent")
 }
 
 method checkTraitBody(traitObjNode) {
@@ -1242,18 +1125,20 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             def ident = o.asIdentifier
             checkForReservedName(ident)
             if (ident.isBindingOccurrence) then {
-                def knd = if (o.isRequired) then {
-                    k.required
-                } else {
-                    k.methdec
-                }
-                surroundingScope.addNode (ident) asA (knd)
                 ident.isDeclaredByParent := true
                 // aliased and excluded names are appliedOccurrences
                 o.scope := newScopeIn(surroundingScope) kind "method"
                 if (o.returnsObject && o.isOnceMethod.not) then {
                     o.isFresh := true
                 }
+                def knd = if (o.isRequired) then {
+                    k.required
+                } elseif {o.isFresh} then {
+                    k.freshmeth
+                } else {
+                    k.methdec
+                }
+                surroundingScope.addNode (ident) asA (knd)
             }
             if (o.body.isEmpty.not && {o.body.last.isObject}) then {
                 o.body.last.name := o.canonicalName
@@ -1647,6 +1532,9 @@ method transformCall(cNode) -> ast.AstNode {
     def nominalRcvr = cNode.receiver
     if (nominalRcvr.isImplicit) then {
         def rcvr = s.resolveOuterMethod(methodName) fromNode(cNode)
+        if ((rcvr.isMember) && {rcvr.value == "out(1)"}) then {
+            native "js" code "debugger;"
+        }
         if (rcvr.isIdentifier) then {
             util.log 60 verbose "Transformed {cNode.pretty 0} did nothing"
             return cNode
@@ -1656,7 +1544,7 @@ method transformCall(cNode) -> ast.AstNode {
             definedIn (definingScope) asA (definingScope.kind(methodName))
         cNode.receiver := rcvr.receiver
         cNode.onSelf
-        if (definingScope.kind(methodName) == "object") then {
+        if (definingScope.kind(methodName).isFresh) then {
             cNode.isFresh := true
             cNode.returnedObjectScope := definingScope.getScope(methodName)
         }
@@ -1695,6 +1583,7 @@ method resolve(moduleNode) {
     util.log_verbose "symbol tables built."
 
     if (util.target == "symbols") then {
+        def additionalScopes = set.empty
         util.outprint "====================================="
         util.outprint "module with symbol tables"
         util.outprint "====================================="
@@ -1703,9 +1592,14 @@ method resolve(moduleNode) {
         moduleNode.scope.withSurroundingScopesDo { each ->
             util.outprint (each.asString)
             util.outprint (each.elementScopesAsString)
+            each.elementScopes.values >> additionalScopes
+        }
+        additionalScopes.do { each ->
+            util.outprint (each.asString)
+            util.outprint (each.elementScopesAsString)
             util.outprint "----------------"
         }
-        util.outprint(moduleNode.pretty(0))
+        util.outprint(moduleNode.pretty 0)
         util.log_verbose "done"
         util.outfile.close
         sys.exit(0)
