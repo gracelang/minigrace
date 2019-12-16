@@ -838,27 +838,42 @@ method generateGctForModule(module) {
     def theDialect = module.theDialect.moduleName
     def methodList = list.empty
     def ms = module.scope
+    def pathsToProcess = list.empty
     ms.keysAndKindsDo { vName, knd ->
         if (knd.forGct) then {
             methodList.add (vName ++ knd.tag)
             if (knd.isFresh) then {
-                def subList = list.empty
-                ms.getScope(vName).keysAndKindsDo { subName, subKnd ->
-                    if (subKnd.forGct) then {
-                        subList.add (subName ++ subKnd.tag)
-                    }
-                }
-                gct.at "methods-of:{vName}" put (subList.sort)
+                pathsToProcess.addLast(vName)
             }
         }
-        def v = ms.getScope(vName).node
-        if (ast.nullNode ≠ v) then {
-            if (knd == k.typedec) then {
+        if (knd == k.typedec) then {
+            def v = ms.getScope(vName).node
+            if (ast.nullNode ≠ v) then {
                 gct.at "typedec-of:{v.nameWithParams}" put [v.toGrace 0]
-            } elseif { knd == k.methdec } then {
+            }
+        } elseif { knd == k.methdec } then {
+            var s := ms.getScope(vName)
+            if (s.variety == "object") then { s := s.parent }
+                // s is now the surrounding method
+            def v = s.node
+            if (ast.nullNode ≠ v) then {
                 publicMethodTypes.add (methodSignature(v))
             }
         }
+    }
+    while { pathsToProcess.isEmpty.not } do {
+        def subList = list.empty
+        def vName = pathsToProcess.removeFirst
+        util.log 45 verbose "generating gct entry for {vName}`"
+        ms.scopeForDottedName(vName).keysAndKindsDo { subName, subKnd ->
+            if (subKnd.forGct) then {
+                subList.add (subName ++ subKnd.tag)
+                if (subKnd.isFresh) then {
+                    pathsToProcess.addLast "{vName}.{subName}"
+                }
+            }
+        }
+        gct.at "methods-of:{vName}" put (subList.sort)
     }
     gct.at "methods" put (methodList.sort)
     gct.at "modules" put (list(module.imports).sort)
