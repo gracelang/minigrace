@@ -260,6 +260,7 @@ class baseNode {
         }
         false
     }
+    method hasTypeParams { false }
     method isNull { false }
     method isAppliedOccurrence { isBindingOccurrence.not }
     method isBindingOccurrence { true }
@@ -551,7 +552,6 @@ def blockNode is public = object {
         list.withAll(params.map { each -> each.nameString })
     }
     method typeParameterNames { list.empty }
-    method hasTypeParams { false }
     method aParametersHasATypeAnnotation {
         params.do { p -> if (false ≠ p.dtype) then { return true } }
         return false
