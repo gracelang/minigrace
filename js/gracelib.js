@@ -2737,7 +2737,7 @@ function numericMethodName(name) {
 }
 function dealWithNoMethod(name, target, args) {
     var dollarIx = name.indexOf("$");
-    if (dollarIx == -1) {
+    if (dollarIx <= 1) {
         if (target.noSuchMethodHandler) {
             return callmethod(target.noSuchMethodHandler, "apply(3)", [3],
                 new GraceString(canonicalMethodName(name)), args, target);
