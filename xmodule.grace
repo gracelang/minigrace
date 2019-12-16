@@ -66,7 +66,9 @@ method checkDialect(moduleObject) {
     util.log 50 verbose "checking dialect {dmn} used by module {moduleObject.name}"
     checkExternalModule(dialectNode)
     def dialectGct = gctDictionaryFor(dialectNode.path)
-    if ((dialectGct.at "public" ifAbsent { [] }).contains "thisDialect") then {
+    if (dialectGct.at "methods" ifAbsent { [] }.includes { each ->
+          each.startsWith "thisDialect"
+    }) then {
         util.log 50 verbose "loading dialect \"{dmn}\" for checkers."
         try {
             def dobj = mirror.loadModule(dialectNode.path)
