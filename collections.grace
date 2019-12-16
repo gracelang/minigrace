@@ -56,6 +56,8 @@ type Collection⟦T⟧ = Object & interface {
         // an internal iterator; applies body to each of my elements
     do (body:Procedure1⟦T⟧) separatedBy(separator:Procedure0) -> Done
         // an internal iterator; applies body to each of my elements, and applies separator in between
+    contains(elem:T) -> Boolean
+    includes(booleanBlock:Predicate1⟦T⟧) -> Boolean
     ++ (other: Collection⟦T⟧) -> Collection⟦T⟧
         // returns a new Collection over the concatenation of self and other
     fold (binaryFunction:Function2⟦T, T, T⟧) startingWith(initial:T) -> T
@@ -95,7 +97,6 @@ type Sequenceable⟦T⟧ = Enumerable⟦T⟧ & interface {
     last -> T
     indexOf⟦W⟧(elem:T) ifAbsent(action:Function0⟦W⟧) -> Number | W
     indexOf(elem:T) -> Number
-    contains(elem:T) -> Boolean
     reversed -> Sequence⟦T⟧
 }
 
@@ -134,7 +135,6 @@ type Set⟦T⟧ = Collection⟦T⟧ & interface {
     remove(x: T) ifAbsent(block: Procedure0) -> Set⟦T⟧
     clear -> Set⟦T⟧
     anyone -> T
-    includes(booleanBlock: Predicate1⟦T⟧) -> Boolean
     find(booleanBlock: Predicate1⟦T⟧) ifNone(notFoundBlock: Function0⟦T⟧) -> T
     copy -> Set⟦T⟧
     contains(elem:T) -> Boolean
@@ -293,6 +293,16 @@ trait collection⟦T⟧ {
     method do(action) {   // can be overridden for efficiency
         def iter = self.iterator
         while {iter.hasNext} do { action.apply(iter.next) }
+    }
+    method contains(element) {
+        do { each -> if (each == element) then { return true } }
+        return false
+    }
+    method includes(booleanBlock) {
+        self.do { each ->
+            if (booleanBlock.apply(each)) then { return true }
+        }
+        return false
     }
     method iterator is required
     method isEmpty {
@@ -652,10 +662,6 @@ class list⟦T⟧ {
                   separatedBy { s := s ++ ", " }
             s ++ "]"
         }
-        method contains(element) {
-            do { each -> if (each == element) then { return true } }
-            return false
-        }
         method do(block1) {
             def iMods = mods
             var i := 1
@@ -856,12 +862,6 @@ class set⟦T⟧ {
             var t := findPosition(x)
             if (inner.at(t) == x) then {
                 return true
-            }
-            return false
-        }
-        method includes(booleanBlock) {
-            self.do { each ->
-                if (booleanBlock.apply(each)) then { return true }
             }
             return false
         }

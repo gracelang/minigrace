@@ -495,6 +495,16 @@ GraceString.prototype = {
             if (result === -1) { return GraceFalse; }
             return GraceTrue;
         },
+        "includes(1)": function includes(argcv, predicate) {
+            var self = this._value;
+            for (let i=0; i<self.length; i++) {
+                const candidate = new GraceString(self[i]);
+                if (Grace_isTrue(request(predicate, "apply(1)", [1], candidate))) {
+                    return GraceTrue;
+                }
+            }
+            return GraceFalse;
+        },
         "split(1)": function string_split (argcv, spliter) {
             const self = this._value;
             if (spliter.className !== "string") {
@@ -1346,7 +1356,15 @@ GraceSequence.prototype = {
                     return GraceTrue;
             }
             return GraceFalse;
-        },                              
+        },
+        "includes(1)": function sequence_includes(argcv, booleanBlock) {
+            for (var i=0; i<this._value.length; i++) {
+                var v = this._value[i];
+                if (Grace_isTrue(callmethod(booleanBlock, "apply(1)", [1], v)))
+                    return GraceTrue;
+            }
+            return GraceFalse;
+        },
         "indexOf(1)ifAbsent(1)": function sequence_indexOf_ifAbsent(argcv, other, absentBlock) {
             for (var i=0; i<this._value.length; i++) {
                 var v = this._value[i];
@@ -3431,7 +3449,6 @@ if (typeof global !== "undefined") {
     global.IteratorExhaustedObject = IteratorExhaustedObject;
     global.inBrowser = inBrowser;
     global.jsTrue = jsTrue;
-    global.Lineup = GraceSequence;
     global.loadDate = loadDate;
     global.loadDynamicModule = loadDynamicModule;
     global.matchCase = matchCase;

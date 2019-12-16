@@ -23,7 +23,7 @@ testSuite "standard types and objects" with {
     test "sequences have type Sequence" by {
         assert [1, 2] hasType (Sequence⟦Number⟧)
     }
-    test "sequences describes numbers" by {
+    test "Sequence describes sequences" by {
         assertType (Sequence⟦Number⟧) describes [1, 2, 3]
     }
     test "> patterns have type Pattern" by {

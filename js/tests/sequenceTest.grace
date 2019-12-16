@@ -122,7 +122,15 @@ trait sequenceTest {
             deny (oneToFive.contains(0)) description "oneToFive contains 0"
             deny (oneToFive.contains(6)) description "oneToFive contains 6"
         }
-
+        method testSequnceIncludes {
+            assert (oneToFive.includes { x -> (x/2).isEven })
+                description "oneToFive does not include 4"
+            deny (empty.includes {_ -> true})
+                description "empty includes something!"
+            deny (oneToFive.includes {x -> x > 5})
+                description "oneToFive includes an element grreater than 5"
+            deny (oneToFive.includes { x -> x == 6 }) description "oneToFive includes 6"
+        }
         method testSequenceFirst {
             assert{empty.first} shouldRaise (BoundsError)
             assert(evens.first) shouldBe (2)
