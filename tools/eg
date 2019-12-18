@@ -1,0 +1,108 @@
+#! /usr/bin/env node
+
+const fs = require("fs");
+
+flags = {};
+
+function extractInfoFrom(jsFile) {
+    // opens the file at path jsFile, and reports on
+    // the gct, sha256 and source file
+    let result = {};
+    let fileLines = fs.readFileSync(jsFile).toString().split("\n");
+    var maxLines = 10  // look in first 10 lines of js file
+    for (const ix in fileLines) {
+        const line = fileLines[ix];
+        const sourceFile = line.match(/^let gracecode_(\w+)_sourceFile = "(.+\.grace)";/);
+        const sha = line.match(/^let gracecode_\w+_sha256 = "([\abcdef0-9]+)";/);
+        const mgGen = line.match(/^let gracecode_\w+_minigraceGeneration = "(\d+)"/);
+        if (line.startsWith("  gctCache[\"")){
+            result.gct = splitJsString(line);
+        } else if (sourceFile) {
+            result.moduleName = sourceFile[1];
+            result.fileName = sourceFile[2];
+        } else if (sha) {
+            result.sha256 = sha[1];
+        } else if (mgGen) {
+            result.mgGeneration = mgGen[1];
+        }
+        maxLines--;
+        if (maxLines = 0) break;
+    }
+    return result;
+}
+
+function  splitJsString(arg) {
+    // arg is a line of javascript like
+    //   gctCache["xmodule"] = "objects:\nconfidential:\n CheckerFailure\n ..."
+    // Evaluates the string on the rhs of the = sign, splits into lines,
+    // and returns a list containing those lines as strings.
+    var keyStr = "\"] = ";
+    var keyStart = arg.indexOf(keyStr);
+    var stringLit = arg.substr(keyStart + keyStr.length);
+    var gctString = eval(stringLit);
+    return gctString.split("\n");
+}
+
+function examine() {
+    const myArgs = process.argv.slice(2);
+        // arg 0 is node, and arg 1 is this script
+    if (myArgs[0].startsWith("-")) {
+        while (myArgs[0].startsWith("-")) {
+            if ((myArgs[0] == "--module") || (myArgs[0] == "-m")) {
+                flags.moduleName = true;
+            } else if ((myArgs[0] == "--source") || (myArgs[0] == "-s")) {
+                flags.source = true;
+            } else if ((myArgs[0] == "--version") || (myArgs[0] == "-v")) {
+                flags.mgVersion = true;
+            } else if ((myArgs[0] == "--dependencies") || (myArgs[0] == "-d")) {
+                flags.dependencies = true;
+            } else if ((myArgs[0] == "--gct") || (myArgs[0] == "-g")) {
+                flags.gct = true;
+            } else {
+                console.warn("unexpected flag %s", myArgs[0]);
+                process.exit(1);
+            }
+            myArgs.shift();   // removes the first element
+        }
+    } else {
+        flags.moduleName = true;
+        flags.source = true;
+        flags.mgVersion = true;
+        flags.dependencies = true;
+        flags.gct = true;
+    }
+    myArgs.forEach (f => display(extractInfoFrom(f)));
+}
+
+function dependencies(gctArray) {
+    const moduleHeader = gctArray.indexOf("modules:");
+    var first = true;
+    var result = "(none)";
+    if (moduleHeader == -1) {
+        console.warn("no modules: line");
+        return result;
+    }
+    for (let ix = moduleHeader + 1; gctArray[ix].charAt(0) == " "; ix++) {
+        if (first) {
+            result = gctArray[ix].substring(1);
+            first = false;
+        } else {
+            result = result + "," + gctArray[ix];
+        }
+    }
+    return result;
+}
+
+function display(info) {
+    if (flags.moduleName) console.log("module name: %s", info.moduleName);
+    if (flags.source) console.log("source: %s", info.fileName);
+    if (flags.mgVersion) console.log("compiled by: minigrace version %s", info.mgGeneration);
+    if (flags.dependencies) console.log("depends on: %s", dependencies(info.gct));
+    if (flags.gct) {
+        console.log("gct:");
+        for (const ix in info.gct) {
+            console.log(info.gct[ix]);
+        }
+    }
+}
+examine();
