@@ -47,18 +47,29 @@ def module1 = parser.parse(tokens1)
 def resolvedModule1 = ir.resolve(module1)
 def gct = ir.generateGctForModule(resolvedModule1)
 
-testSuiteNamed "gct" with {
-    test "gct object" by {
-        assert (gct.at "objects") shouldBe ["other"]
-    }
-    test "gct confidential" by {
-        assert (gct.at "confidential") shouldBe ["n(1)", "other", "w"]
+method assert (gctDict) at (key) includesEntryStartingWith (s) {
+    def value = gctDict.at(key)
+    assert (value.includes { each -> each.startsWith(s) })
+        description("gct entry \"{key}\" does not include an entry starting " ++
+            "with \"{s}\"; it is\n{value}")
+}
+
+method deny (gctDict) at (key) includesEntryStartingWith (s) {
+    def value = gctDict.at(key)
+    deny (value.includes { each -> each.startsWith(s) })
+        description("gct entry \"{key}\" includes an entry starting " ++
+            "with \"{s}\"")
+}
+
+testSuite "gct" with {
+    test "gct def'd object" by {
+        assert (gct) at "methods" includesEntryStartingWith "other (def)"
     }
     test "gct dialect" by {
         assert (gct.at "dialect") shouldBe ["standard"]
     }
-    test "gct fresh-methods" by {
-        assert (gct.at "fresh-methods-of:other") shouldBe ["create"]
+    test "gct fresh-methods of other" by {
+        assert (gct) at "methods-of:other" includesEntryStartingWith "create (fresh)"
     }
     test "gct methods of other.create" by {
         assert (gct.at "methods-of:other.create") shouldBe [
@@ -67,11 +78,18 @@ testSuiteNamed "gct" with {
               "myIdentityHash (fgo)", "things(1)", "thong"
         ]
     }
-    test "gct public" by {
-        assert (gct.at "public") shouldBe ["A", "D", "H", "Z", "m(1)", "w:=(1)", "xx"]
+    test "gct methods present" by {
+        ["A", "D", "H", "Z", "m(1)", "xx", "w (var)"].do { m ->
+            assert (gct) at "methods" includesEntryStartingWith (m)
+        }
     }
-    test "gct public method types" by {
-        assert (gct.at "publicMethodTypes") shouldBe [
+    test "gct methods absent" by {
+        deny (gct) at "methods" includesEntryStartingWith "w:=(1)"
+        // this entry should not be in the gct; instead, such
+        // a method can be inferred from the presence of w (var)
+    }
+    test "gct method types" by {
+        assert (gct.at "methodTypes") shouldBe [
             "m(y:Number) → Done", "w:=(_:Number) → Done", "xx → Number"
         ]
     }
@@ -84,8 +102,10 @@ testSuiteNamed "gct" with {
         assert (gct.at "typedec-of:D") shouldBe [‹type D = Dictionary⟦String, Number⟧ & A & H⟦String⟧›]
     }
     test "gct typedec of H" by {
-        assert (gct.at "typedec-of:H⟦T⟧") shouldBe [‹type H⟦T⟧ = interface {
+        assert (gct.at "typedec-of:H") shouldBe [‹type H⟦T⟧ = interface {
         m3(x:T) → T}› ]
+        // key can't be "typedec-of:H⟦T⟧", because we don't
+        // yet know about the existence of parameter T
     }
     test "gct typedec of Z" by {
         assert (gct.at "typedec-of:Z") shouldBe [‹type Z = interface {
@@ -93,7 +113,7 @@ testSuiteNamed "gct" with {
     m5(x:Z) → Z}›]
     }
     test "gct types" by {
-        assert (gct.at "types") shouldBe ["A", "D", "H⟦T⟧", "Z"]
+        assert (gct.at "types") shouldBe ["A", "D", "H", "Z", "other.C", "other.U"]
     }
 }
 
@@ -115,7 +135,7 @@ util.lines.addAll(input3)
 
 def module3 = parser.parse ( lexer.lexLines (input3) )
 
-testSuiteNamed "alias and method with same name" with {
+testSuite "alias and method with same name" with {
     test "alias w and method w clash" by {
         assert {ir.resolve(module3)} shouldRaise (em.SyntaxError)
             mentioning "'w(_)' cannot be redeclared"
@@ -138,7 +158,7 @@ method resolveIdentifiersIn (code) {
     resolved
 }
 
-testSuiteNamed "toGrace methods" with {
+testSuite "toGrace methods" with {
     test "methodRequest" by {
         def a = astNode "call" from
             ‹someTarget.firstPart(arg1, arg2) seceondPart(arg3) thirdPart "arg4"›
@@ -172,7 +192,7 @@ testSuiteNamed "toGrace methods" with {
     }
 }
 
-testSuiteNamed "RHS of typedec #289" with {
+testSuite "RHS of typedec #289" with {
     test "RHS must be type expression" by {
         assert { astNode "typeDec" from ‹type X = object{}› }
               shouldRaise (em.SyntaxError)

@@ -39,6 +39,7 @@ class newScopeIn(parent') kind(variety') {
     def elements is public = map.dictionary.empty
     def elementScopes is public = map.dictionary.empty
     def elementLines is public = map.dictionary.empty
+    def types is public = map.dictionary.empty
     def parent is public = parent'
     var hasParent is public := true
     def variety is public = variety'
@@ -580,9 +581,9 @@ method transformIdentifier(node) ancestors(anc) {
 
     def nm = node.nameString
     def nodeScope = node.scope
-    def nmGets = nm ++ ":=(1)"
     util.setPosition(node.line, node.linePos)
     if (node.isAssigned) then {
+        def nmGets = nm ++ ":=(1)"
         if (nodeScope.hasDefinitionInNest(nmGets)) then {
             if (nodeScope.kindInNest(nmGets) == k.methdec) then {
                 return node     // do nothing; this will be tranformed by the enclosing bind
@@ -834,38 +835,41 @@ method generateGctForModule(module) {
     // but reused methods are not in the ast, and so were omitted.
 
     def gct = dictionary.empty
-    def publicMethodTypes = list.empty
+    def methodTypes = list.empty
     def theDialect = module.theDialect.moduleName
     def methodList = list.empty
+    def typeList = list.empty
     def ms = module.scope
     def pathsToProcess = list.empty
+    ms.types.keysAndValuesDo { typeName, typeDec ->
+        gct.at "typedec-of:{typeName}" put [typeDec]
+        typeList.add (typeName)
+    }
+
     ms.keysAndKindsDo { vName, knd ->
         if (knd.forGct) then {
             methodList.add (vName ++ knd.tag)
-            if (knd.isFresh) then {
-                pathsToProcess.addLast(vName)
-            }
+            pathsToProcess.add(vName)
         }
-        if (knd == k.typedec) then {
-            def v = ms.getScope(vName).node
-            if (ast.nullNode ≠ v) then {
-                gct.at "typedec-of:{v.nameWithParams}" put [v.toGrace 0]
-            }
-        } elseif { knd == k.methdec } then {
+        if (knd == k.methdec) then {
             var s := ms.getScope(vName)
             if (s.variety == "object") then { s := s.parent }
                 // s is now the surrounding method
             def v = s.node
             if (ast.nullNode ≠ v) then {
-                publicMethodTypes.add (methodSignature(v))
+                methodTypes.add (methodSignature(v))
             }
         }
     }
     while { pathsToProcess.isEmpty.not } do {
         def subList = list.empty
         def vName = pathsToProcess.removeFirst
-        util.log 45 verbose "generating gct entry for {vName}`"
-        ms.scopeForDottedName(vName).keysAndKindsDo { subName, subKnd ->
+        def vNameScope = ms.scopeForDottedName(vName)
+        def v = vNameScope.node
+        if ((ast.nullNode ≠ v) && {v.isMethod}) then {
+            methodTypes.add (methodSignature(v))
+        }
+        vNameScope.keysAndKindsDo { subName, subKnd ->
             if (subKnd.forGct) then {
                 subList.add (subName ++ subKnd.tag)
                 if (subKnd.isFresh) then {
@@ -873,11 +877,18 @@ method generateGctForModule(module) {
                 }
             }
         }
-        gct.at "methods-of:{vName}" put (subList.sort)
+        if (subList.isEmpty.not) then {
+            gct.at "methods-of:{vName}" put (subList.sort)
+        }
+        vNameScope.types.keysAndValuesDo { tName, tDec ->
+            gct.at "typedec-of:{vName}.{tName}" put [tDec]
+            typeList.add "{vName}.{tName}"
+        }
     }
     gct.at "methods" put (methodList.sort)
+    gct.at "types" put (typeList.sort)
     gct.at "modules" put (list(module.imports).sort)
-    gct.at "publicMethodTypes" put(publicMethodTypes.sort)
+    gct.at "methodTypes" put(methodTypes.sort)
     def p = util.infile.pathname
     gct.at "path" put [ if (p.isEmpty) then {
         ""
@@ -913,26 +924,6 @@ method methodSignature(methNode) -> String {
         }
     }
     "{s} → {methNode.decType.toGrace 0}"
-}
-
-method addFreshMethod (node) to (freshlist) for (gct) is confidential {
-    def methName = node.nameString
-    freshlist.add(methName)
-    def freshMethExpression = node.body.last
-    if (freshMethExpression.isObject) then {
-        def exportedMethods = list.empty
-        freshMethExpression.scope.keysAndKindsDo { key, knd ->
-            if (knd.forGct) then {
-                def flag = if (knd.fromGraceObject) then {
-                    " (fgo)" } else { "" }
-                exportedMethods.add(key ++ flag)
-            }
-        }
-        gct.at "methods-of:{methName}" put (exportedMethods.sort)
-    } else {
-        ProgrammingError.raise
-            "fresh method result of an unexpected kind: {freshMethExpression.pretty(0)}"
-    }
 }
 
 method processGCT(gct, importedModuleScope) {
@@ -1194,6 +1185,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             def ident = o.name
             checkForReservedName(ident)
             enclosingScope.addNode(ident) asA(k.typedec)
+            enclosingScope.types.at(ident.nameString) put(o.toGrace 0)
             ident.isDeclaredByParent := true
             o.scope := newScopeIn(enclosingScope) kind "typedec"
             // this scope will be the home for any type parameters.
