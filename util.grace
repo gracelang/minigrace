@@ -30,13 +30,6 @@ def targets = set.withAll [
     "lex", "parse", "grace", "ast", "processed-ast", "symbols", "imports", "js"
 ]
 
-def requiredModules is public = object {
-    def other is public = set.empty
-    method isAlready ( moduleName ) -> Boolean {
-        other.contains(moduleName)
-    }
-}
-
 var errno is readable := 0
 
 method parseargs(buildinfo) {

@@ -887,7 +887,7 @@ method generateGctForModule(module) {
     }
     gct.at "methods" put (methodList.sort)
     gct.at "types" put (typeList.sort)
-    gct.at "modules" put (list(module.imports).sort)
+    gct.at "modules" put (list(xmodule.externalModules.keys).sort)
     gct.at "methodTypes" put(methodTypes.sort)
     def p = util.infile.pathname
     gct.at "path" put [ if (p.isEmpty) then {

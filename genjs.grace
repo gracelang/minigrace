@@ -52,7 +52,6 @@ var inBlock := false
 var compilationDepth := 0
 def importedModules = set.empty
 def topLevelTypes = set.empty
-def imports = util.requiredModules
 var debugMode := false
 var priorLineSeen := 0
 var priorLineComment := ""
@@ -1646,13 +1645,16 @@ method outputModuleDefinition(moduleObject) {
 }
 
 method outputModuleMetadata(moduleObject) {
-    var importList := "["
-    moduleObject.directImports.sorted.do { each ->
-        importList := importList ++ each.asDebugString
-    } separatedBy {
-        importList := importList ++ ", "
+    var importList := ""
+    var sep := "[ "
+    xmodule.externalModules.keysAndValuesDo { name, rec ->
+        importList := importList ++ "{sep}[{name.asDebugString}, {rec.sha.asDebugString}]"
+        // asDebugString encloses string in quotes and provides escapes
+        sep := ",\n    "
     }
-    importList := importList ++ "]"
+    importList := if (importList.isEmpty) then { "[]" } else {
+        importList ++ " ]"
+    }
     def fmtdModName = formatModname(modname);
     out "{fmtdModName}.definitionModule = \"{basename(modname).quoted}\";"
     if (! inBrowser) then {
@@ -1700,9 +1702,6 @@ method compile(moduleObject, of, bt, glPath) {
     initializeCodeGenerator(moduleObject)
     outputModuleDefinition(moduleObject)
     outputModuleMetadata(moduleObject)
-    moduleObject.imports := imports.other
-        // imports is modified by outputModuleDefinition; it is the
-        // transitive closure of moduleObject.directImports.
     identifierresolution.writeGctForModule(moduleObject)
     outputGct
     if (! inBrowser) then { outputSource }

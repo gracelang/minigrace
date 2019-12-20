@@ -42,9 +42,7 @@ type RangeSuggestions = {
     suggestions
 }
 
-def imports = util.requiredModules      // TODO: get rid of this, and replace by
-                                        // externalModules below
-def externalModules = fd.dictionary.empty
+def externalModules is public = fd.dictionary.empty
 
 type ModuleRecord = interface {  // a record describing an external module
     path -> filePath.filePath    // the path to the source file
@@ -184,7 +182,6 @@ method checkExternalModule(node) {
     util.log 50 verbose "checking module \"{moduleName}\""
     def moduleRec = findOrBuildCompiledModule(moduleName, modulePath, node)
     externalModules.at (moduleName) put (moduleRec)
-    imports.other.add(moduleName)
 }
 
 method compiledModuleExistsInBrowser(name) {
