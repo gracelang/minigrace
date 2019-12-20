@@ -1,13 +1,18 @@
-#! /usr/bin/env node
+#!/usr/bin/env node
 
 const fs = require("fs");
+let flags = {};
+examine();
 
-flags = {};
+function examine() {
+    let fileArgs = processCommandLineArguments();
+    fileArgs.forEach (f => display(extractInfoFrom(f)));
+}
 
 function extractInfoFrom(jsFile) {
     // opens the file at path jsFile, and reports on
     // the gct, sha256 and source file
-    let result = {};
+    let result = {file: jsFile};
     let fileLines = fs.readFileSync(jsFile).toString().split("\n");
     var maxLines = 10  // look in first 10 lines of js file
     for (const ix in fileLines) {
@@ -43,7 +48,7 @@ function  splitJsString(arg) {
     return gctString.split("\n");
 }
 
-function examine() {
+function processCommandLineArguments() {
     const myArgs = process.argv.slice(2);
         // arg 0 is node, and arg 1 is this script
     if (myArgs[0].startsWith("-")) {
@@ -58,8 +63,16 @@ function examine() {
                 flags.dependencies = true;
             } else if ((myArgs[0] == "--gct") || (myArgs[0] == "-g")) {
                 flags.gct = true;
+            } else if ((myArgs[0] == "--sha") || (myArgs[0] == "-ss")) {
+                flags.sha = true;
+            } else if ((myArgs[0] == "--file") || (myArgs[0] == "-f")) {
+                flags.file = true;
+            } else if ((myArgs[0] == "--help") || (myArgs[0] == "-h")) {
+                showHelp();
+                process.exit(0);
             } else {
                 console.warn("unexpected flag %s", myArgs[0]);
+                showHelp();
                 process.exit(1);
             }
             myArgs.shift();   // removes the first element
@@ -70,8 +83,29 @@ function examine() {
         flags.mgVersion = true;
         flags.dependencies = true;
         flags.gct = true;
+        flags.sha = true;
+        flags.file = true;
     }
-    myArgs.forEach (f => display(extractInfoFrom(f)));
+    return myArgs
+}
+
+function showHelp() {
+    let path = require('path');
+    let cmd = path.relative("./", process.argv[1]);
+    console.log("%s: examines a compiled Grace module file", cmd);
+    console.log("Usage: %s [<flags> ]* [<files>]+", cmd);
+    console.log("With no flags, displays all avalable information");
+    console.log("");
+    console.log("Flags:");
+    console.log("    --file or -f: displays the path to the file being examined")
+    console.log("    --module or -m: displays the name of the Grace module");
+    console.log("    --source or -s: displays the path to the source file from which this module was compiled");
+    console.log("    --version or -v: displays the vewrsion of minigrace used to create this compiled module");
+    console.log("    --dependencies or -d: displays the modules on which this module depends");
+    console.log("    --gct or -g: displays the gct information for this module, similar to using --gctfile with the original compilation");
+    console.log("    --sha or -ss: displays the sha-256 checksum of the source from which ths module was compiled");
+    console.log("    --help or -h: displays this text");
+    console.log("    ");
 }
 
 function dependencies(gctArray) {
@@ -94,8 +128,10 @@ function dependencies(gctArray) {
 }
 
 function display(info) {
+    if (flags.file) console.log("file: %s", info.file);
     if (flags.moduleName) console.log("module name: %s", info.moduleName);
     if (flags.source) console.log("source: %s", info.fileName);
+    if (flags.sha) console.log("source sha-256: %s", info.sha256)
     if (flags.mgVersion) console.log("compiled by: minigrace version %s", info.mgGeneration);
     if (flags.dependencies) console.log("depends on: %s", dependencies(info.gct));
     if (flags.gct) {
@@ -105,4 +141,3 @@ function display(info) {
         }
     }
 }
-examine();
