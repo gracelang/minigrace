@@ -160,7 +160,7 @@ MiniGrace.prototype.run = function(fileName) {
     };
     var modName = path.basename(fileName, ".js");
     var dirName = path.dirname(fileName);
-    this.loadModule(modName, dirName, modulePathArray);
+    this.loadModule(modName, "", dirName, modulePathArray);
         // defines a global gracecode_‹modName›
     var theModule = global[graceModuleName(modName)];
     this.trapErrors(function() {
@@ -168,18 +168,32 @@ MiniGrace.prototype.run = function(fileName) {
     }              );
 };
 
-function findOnPath(fn, pathArray) {
+function findOnPath(fn, pathArray, sourceSha) {
+    // finds the file fn on one of the directories in pathArray.
+    // sourceSha is optional: if present, the found file must have
+    // been compiled from a source file with this sha.
     pathArray = pathArray || modulePathArray;
     if (fn[0] === "/") {
-        if (fs.existsSync(fn)) { return fn; }
-        throw new Error('file "' + fn + '" does not exist.');
+        if (fs.existsSync(fn)) {
+            if (!sourceSha) return fn;
+            let fileSha = extractSha256From(fn);
+            if (sourceSha === fileSha) return fn;
+            throw new GraceExceptionPacket(EnvironmentExceptionObject,
+                new GraceString("findOnPath: seeking file " + fn + "compiled from " +
+                " source with sha " + sourceSha + ", but that file has sha " + fileSha));
+        }
     }
-    var candidates = [];
+    var failedCandidates = [];
     for (var ix = 0; ix < pathArray.length ; ix++) {
         var candidate = path.resolve(pathArray[ix], fn);  
             // path.resolve joins, normalizes, & makes absolute
-        if (fs.existsSync(candidate)) { return candidate; }
-        candidates.push(candidate);
+        if  (  fs.existsSync(candidate) &&
+               ((! sourceSha) || (extractSha256From(candidate) === sourceSha))
+            ) {
+            return candidate;
+        } else {
+            failedCandidates.push(candidate);
+        }
     }
     const slashIndex = fn.indexOf("/");
     if (slashIndex > 0) {
@@ -187,16 +201,41 @@ function findOnPath(fn, pathArray) {
         for (var ix = 0; ix < pathArray.length ; ix++) {
             var candidate = path.resolve(pathArray[ix], fn);
                 // path.resolve joins, normalizes, & makes absolute
-            if (fs.existsSync(candidate)) { return candidate; }
-            candidates.push(candidate);
+            if  (  fs.existsSync(candidate) &&
+                   ((! sourceSha) || (extractSha256From(candidate) === sourceSha))
+                ) {
+                return candidate;
+            } else {
+                failedCandidates.push(candidate);
+            }
         }
     }
     console.error('module "' + fn + '" not found.  Tried:');
-    for (ix = 0; ix < candidates.length ; ix++) {
-        console.error(candidates[ix]);
+    for (ix = 0; ix < failedCandidates.length ; ix++) {
+        console.error(failedCandidates[ix]);
+    }
+    let shabit = sourceSha ? (" with source sha " + sourceSha) : ""
+    throw new GraceExceptionPacket(EnvironmentExceptionObject,
+        new GraceString('module "' + fn + '"' + shabit + ' not found'));
+}
+
+function extractSha256From(jsFile) {
+    // opens the file at path jsFile, and returns the
+    // sha256 of the source from which it was compiled
+    let result = {};
+    let fileLines = fs.readFileSync(jsFile).toString().split("\n");
+    var maxLines = 10  // look in first 10 lines of js file
+    for (const ix in fileLines) {
+        const line = fileLines[ix];
+        const sha = line.match(/^let gracecode_\w+_sha256 = "([\abcdef0-9]+)";/);
+        if (sha) {
+            return sha[1];
+        }
+        if (maxLines = 0) break;
+        maxLines --
     }
     throw new GraceExceptionPacket(EnvironmentExceptionObject,
-        new GraceString('module "' + fn + '" not found'));
+        new GraceString("extractSha256From(" + jsFile + ") can't find sha256"));
 }
 
 function addToPathIfNecessary(dir) {
@@ -205,9 +244,16 @@ function addToPathIfNecessary(dir) {
     }
 }
 
-MiniGrace.prototype.loadModule = function(moduleName, referencingDir, pathdirs) {
+MiniGrace.prototype.loadModule = function(moduleName, sourceSha, referencingDir, pathdirs) {
     var graceModule = graceModuleName(moduleName);
-    if (typeof global[graceModule] === "function") return;   //already loaded
+    if (typeof global[graceModule] === "function") {
+        if (! sourceSha) return;  //already loaded
+        if (sourceSha === global[graceModule].sha256) return;  //already loaded
+        console.error("loadModule: requesting module " + moduleName +
+              " with source sha " + sourceSha + ", but same module with sha " +
+              global[graceModule].sha256 + " previously loaded");
+        process.exit(2);
+    }
     var extn = ".js";
     var fileName = moduleName;
     if (moduleName.endsWith(extn)) {
@@ -215,11 +261,8 @@ MiniGrace.prototype.loadModule = function(moduleName, referencingDir, pathdirs) 
     } else {
         fileName = fileName + extn;
     }
-    if (! pathdirs) {
-        // provide default value for parameter
-        pathdirs = modulePathArray;
-    }
-    var found = findOnPath(fileName, [referencingDir].concat(pathdirs));
+    if (! pathdirs) pathdirs = modulePathArray;
+    var found = findOnPath(fileName, [referencingDir].concat(pathdirs), sourceSha);
     var sourceDir = path.dirname(fs.realpathSync(found));
     try {
         require(found);
@@ -236,7 +279,19 @@ MiniGrace.prototype.loadModule = function(moduleName, referencingDir, pathdirs) 
     }
     var recursiveImports = global[graceModule].imports;
     for (var ix = 0; ix < recursiveImports.length; ix++) {
-        MiniGrace.prototype.loadModule(recursiveImports[ix], sourceDir, pathdirs);
+        let anImport = recursiveImports[ix];
+        if (anImport.constructor.name === "Array") {
+            var module = anImport[0];
+            var sha = anImport[1];
+        } else if (anImport.constructor.name === "String") {
+            var module = anImport;
+            var sha = "";
+        } else {
+            console.error("can't interpret recursive import %s of module %s",
+                anImport.toString(), moduleName);
+            process.exit(2);
+        }
+        MiniGrace.prototype.loadModule(module, sha, sourceDir, pathdirs);
     }
 };
 

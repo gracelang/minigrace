@@ -2552,7 +2552,7 @@ function loadDynamicModule (moduleName, directory) {
         if (! directory) {
             directory = path.dirname(findOnPath(moduleName + ".js"));
         }
-        minigrace.loadModule(moduleName, directory);
+        minigrace.loadModule(moduleName, "", directory);
         try {
             moduleFunc = global[graceModuleName(moduleName)];
         } catch (ex) {
@@ -3338,7 +3338,7 @@ function basename(n) {
 
 function graceModuleName(fileName) {
     var prefix = "gracecode_";
-    var base = basename(fileName, ".js");
+    var base = basename(fileName);
     return prefix + escapeident(base);
 }
 
