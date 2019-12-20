@@ -131,7 +131,7 @@ MiniGrace.prototype.trapErrors = function(func) {
             process.exit(2);
         } else if (e != "SystemExit") {
             this.stderr_write("Internal error around line " +
-                lineNumber + " of " + arguments.callee.caller.definitionModule + ": " + e);
+                lineNumber + " of " + arguments.callee.caller.definitionModule + "\n");
             throw e;
             process.exit(2);
         }
@@ -235,7 +235,7 @@ MiniGrace.prototype.loadModule = function(moduleName, referencingDir, pathdirs) 
     if (typeof global[graceModule] === 'function') return;   //already loaded
     var extn = ".js";
     var fileName = moduleName;
-    if ( moduleName.endsWith(extn)) {
+    if (moduleName.endsWith(extn)) {
         moduleName = moduleName.substring(0, moduleName.length - extn.length);
     } else {
         fileName = fileName + extn;
