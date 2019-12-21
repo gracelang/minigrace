@@ -49,8 +49,8 @@ shift
 
 cd "$TESTDIR"
 
-rm -f test-*.{err,out,log}
-# clear out old logs
+rm -f test-*.{err,out,log}      # clear out old logs
+rm -f *[Tt]est.js               # remove old compiled files
 
 echo "Beginning test run at $(date)" > test.log
 echo "    in `pwd`" >> test.log
