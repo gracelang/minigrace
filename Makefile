@@ -14,8 +14,8 @@ DIALECTS_NEED = modules/dialect util ast modules/gUnit
 WEB_DIRECTORY ?= public_html/ide/
 DEV_WEB_DIRECTORY = public_html/dev/ide/
 JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
-J1-MINIGRACE = $(sort $(filter-out $(JSINSPECTORS:%=j1/%), $(JS-KG) npm-sha $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js)))
-J2-MINIGRACE = $(sort $(filter-out $(JSINSPECTORS:%=j2/%), $(J1-MINIGRACE) $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) genjs.grace))
+J1-MINIGRACE = $(sort $(JS-KG) npm-sha $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js))
+J2-MINIGRACE = $(sort $(J1-MINIGRACE) $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) genjs.grace)
 JSJSFILES = gracelib.js unicodedata.js
 JSRUNNERS_BASE = grace minigrace-js
 JSINSPECTORS = grace-inspect minigrace-inspect
@@ -135,6 +135,8 @@ echo:
 	@echo MAKEFLAGS = $(MAKEFLAGS)
 	@echo JS-KG = $(JS-KG)
 	@echo JSRUNNERS = $(JSRUNNERS)
+	@echo J1-MINIGRACE = $(J1-MINIGRACE)
+	@echo J2-MINIGRACE = $(J2-MINIGRACE)
 	@echo MGSOURCEFILES = $(MGSOURCEFILES) "\n"
 	@echo SOURCEFILES = $(SOURCEFILES) "\n"
 	@echo WEBFILES = $(WEBFILES) "\n"
@@ -142,6 +144,7 @@ echo:
 	@echo WEBFILES_DYNAMIC = $(sort $(WEBFILES_DYNAMIC)) "\n"
 	@echo JSONLY = $(JSONLY)
 	@echo OBJECTDRAW_REAL = $(OBJECTDRAW_REAL)
+	@echo OBJECTDRAW = $(OBJECTDRAW)
 	@echo ALL_LIBRARY_MODULES = $(ALL_LIBRARY_MODULES)
 	@echo OTHER_MODULES = $(OTHER_MODULES)
 	@echo WEBFILES_SIMPLE = $(WEBFILES_SIMPLE)
@@ -203,9 +206,9 @@ install: minigrace $(COMPILER_MODULES:%.grace=j2/%.js) js/grace js/grace-inspect
 	@./tools/warnAbout PATH $(PREFIX)/bin
 	@./tools/warnAbout GRACE_MODULE_PATH $(MODULE_PATH)
 
-$(JSJSFILES:%.js=j1/%.js): j1/%.js: $(JS-KG)/%.js
-# The j1/*.js files are used to run the j1 compiler, and so need to be
-# consistent with the code generated from the known-good compiler.
+$(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
+# The j1/*.js files are used to run the j1 compiler, and so need to be consistent
+# with the current source, and the code generated from the known-good compiler.
 	cp -p $< $@
 
 j1-minigrace: $(J1-MINIGRACE) $(JSINSPECTORS:%=j1/%)
