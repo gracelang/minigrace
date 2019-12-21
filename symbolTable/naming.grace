@@ -7,6 +7,18 @@ import "util" as util
 import "sourcePosition" as sourcePosition
 import "scope" as scope
 
+method assert (aPredicate) {
+    if (aPredicate.apply.not) then {
+        ProgrammingError.raise "Assertion failure"
+    }
+}
+
+def markerAnnotations = ["annotation", "required", "abstract"]
+
+method isMarkerAnnotation(anAnnotation) {
+    markerAnnotations.contains(anAnnotation)
+}
+
 def moduleRegistry = object {
     // I am a singleton object that stores the parse trees for previosuly compiled modules.
 
@@ -358,12 +370,43 @@ def namingError = object {
     }
 }
 
+def syntaxError = object {
+
+    method bodyAndMarker(annotation) node (aNode) {
+        def message = "{aNode.description} with the annotation `{annotation}` " ++
+            "is a marker declaration, and must not have a body"
+        errormessages.SyntaxError.raise(message) with (aNode)
+    }
+    method initializerAndMarker (annotation) on (aNode) {
+        def message = "{aNode.description} with the annotation `{aNode}` is a " ++
+            "marker declaration, and must not have an initialzation expression"
+        errormessages.SyntaxError.raise (message) with (aNode)
+    }
+    method declaration (aDeclaration) cannotBeMadeWritable (aWritableAnnotation) {
+        def message = "{aDeclaration.description} cannot be made writable"
+        errormessages.SyntaxError.raise (message) with (aWritableAnnotation)
+    }
+    method noBodyIn (aMethodDecl) {
+        def message = "{aMethodDecl.description} must have a body enclosed in "
+            ++ "\{ and \} after the header"
+        errormessages.SyntaxError.raise (message) with (aMethodDecl)
+    }
+    method noInitializerIn (aDefDecl) {
+        def message = "a definition must have `=` and a value after the name"
+        errormessages.SyntaxError.raise (message) with (aDefDecl)
+    }
+    method annotation (a1) conflictsWith (a2) in (anAnnotationsNode) {
+        def message = "the annotations {a1} and {a2} conflict; choose one or the other"
+        errormessages.SyntaxError.raise (message) with (anAnnotationsNode)
+    }
+}
+
 class disambiguationVisitor {
     inherit ast.rootVisitor
         alias superVisitAnnotations(_) = newVisitAnnotations(_)
         alias superVisitIdentifier(_) = newVisitIdentifier(_)
-        alias superVisitImplicitRequest(_) = newVisitImplicitRequest(_)
-        alias superVisitAssignment(_) = newVisitAssignment(_)
+        alias superVisitCall(_) = newVisitCall(_)
+        alias superVisitBind(_) = newVisitBind(_)
 
     // I replace implicit requests by explicit requests.  I also make some other
     // checks on the parse tree: those that cannot be performed until all of the
@@ -392,28 +435,28 @@ class disambiguationVisitor {
         // We may re-write this identifier into a OneselfRequest.  In this case, the
         // super-visitation will be on a different class of node.
         def possiblyRewrittenNode = nodeRewriter.rewriteIdentifier (anIdentifier)
-        return if (possiblyRewrittenNode.isIdentifier) then {
+        if (possiblyRewrittenNode.isIdentifier) then {
             superVisitIdentifier (possiblyRewrittenNode)
         } else {
-            acceptNode (possiblyRewrittenNode)
+            possiblyRewrittenNode.newAccept(self)
         }
     }
-    method assignmentError (aMessage) node (aParseNode) {
-        AssignmentError.raise (aMessage) with (aParseNode)
-    }
-    method newVisitImplicitRequest (anImplicitNode) {
-        def rewrittenNode = nodeRewriter.rewriteImplicitRequest (anImplicitNode)
-        return if ((rewrittenNode == anImplicitNode )) then {
-            superVisitImplicitRequest (anImplicitNode)
+    method newVisitCall (aCallNode) {
+        if (aCallNode.receiver.isImplicit.not) then {
+            return superVisitCall(aCallNode)
+        }
+        def rewrittenNode = nodeRewriter.rewriteImplicitRequest (aCallNode)
+        if ((rewrittenNode == aCallNode )) then {
+            superVisitCall (aCallNode)
         } else {
             rewrittenNode.acceptVisitor (self)
         }
     }
-    method newVisitAssignment (anAssignment) {
+    method newVisitBind (anAssignment) {
         // if this is an assignment request, replace this assignment node with a request node
         def rewrittenNode = nodeRewriter.rewriteAssignment (anAssignment)
-        return if ((rewrittenNode == anAssignment )) then {
-            superVisitAssignment (anAssignment)
+        if ((rewrittenNode == anAssignment )) then {
+            superVisitBind (anAssignment)
         } else {
             rewrittenNode.acceptVisitor (self)
         }
@@ -426,16 +469,14 @@ def nodeRewriter = object {
 
     method rewriteImplicitRequest (anImplicitRequest) {
         def theRequest = anImplicitRequest.request
-        def defs = GraceResolvedVariable.definitionsOf (theRequest.requestedName) visibleIn (anImplicitRequest.scope)
+        def defs = variableResolver.definitionsOf (theRequest.requestedName) visibleIn (anImplicitRequest.scope)
         if (defs.isEmpty) then {
             return namingError.undeclaredIdentifier (theRequest)
         }
         if ((defs.size == 1)) then {
             return updateImplicitRequest (anImplicitRequest) using (defs.first)
         }
-        assert {
-            (defs.size > 1)
-        }
+        assert { defs.size > 1 }
         return ambiguityError (defs) node (anImplicitRequest)
     }
     method updateIdentifier (anIdentifierNode) using (aResolvedVariable) {
@@ -478,7 +519,7 @@ def nodeRewriter = object {
         if (anIdentifier.isDefinition) then {
             return anIdentifier
         }
-        def defs = GraceResolvedVariable.definitionsOf (anIdentifier.name) visibleIn (anIdentifier.scope)
+        def defs = variableResolver.definitionsOf (anIdentifier.name) visibleIn (anIdentifier.scope)
         if (defs.isEmpty) then {
             return namingError.undeclaredIdentifier (anIdentifier)
         }
@@ -491,7 +532,7 @@ def nodeRewriter = object {
     }
     method rewriteAssignment (anAssignment) {
         def lhs = anAssignment.lhs
-        def defs = GraceResolvedVariable.definitionsOf (anAssignment.assignmentRequestName) visibleIn (anAssignment.scope)
+        def defs = variableResolver.definitionsOf (anAssignment.assignmentRequestName) visibleIn (anAssignment.scope)
         defs.ifEmpty {
             def badBinding = anAssignment.scope.lookup (lhs.name) ifAbsent {
                 assignmentError "`{lhs.name}` is not declared" node (lhs)
@@ -503,6 +544,9 @@ def nodeRewriter = object {
             ambiguityError (defs) node (lhs)
         }
         updateAssignment (anAssignment) using (defs.first)
+    }
+    method assignmentError (aMessage) node (aParseNode) is confidential {
+        AssignmentError.raise (aMessage) with (aParseNode)
     }
     method generateOneselfRequestOf (request) from (aSourceNode) objectsOut (objectsUp) {
         var newNode
@@ -534,12 +578,10 @@ def nodeRewriter = object {
 }
 class reuseVisitor {
     inherit ancestorsVisitor
-        alias superVisitClassDeclaration(_) = newVisitClassDeclaration(_)
-        alias superVisitMethodDeclaration(_) = newVisitMethodDeclaration(_)
-        alias superVisitObjectConstructor(_) = newVisitObjectConstructor(_)
-        alias superVisitTypeDeclaration(_) = newVisitTypeDeclaration(_)
+        alias superVisitMethod(_) = newVisitMethod(_)
+        alias superVisitObject(_) = newVisitObject(_)
+        alias superVisitTypeDec(_) = newVisitTypeDec(_)
         alias superVisitBlock(_) = newVisitBlock(_)
-        alias superVisitTraitDeclaration(_) = newVisitTraitDeclaration(_)
     // I add reused names to object scopes.
     // Reused names are those that are made available through trait use or
     // inherit statements.  I visit the parse tree, and expect the scopes to
@@ -551,35 +593,27 @@ class reuseVisitor {
     // requires that resused names already be in the scopes?   Scopes are
     // built on demand to avoid this problem.
 
-    method newVisitClassDeclaration (aClass) {
-        definitionGatherer.for (aClass).collectReusedNames
-        return superVisitClassDeclaration (aClass)
-    }
-    method newVisitMethodDeclaration (aMethod) {
+    method newVisitMethod (aMethod) {
         // Check for shadowing
         aMethod.scope.reportShadowingErrors
-        return superVisitMethodDeclaration (aMethod)
+        return superVisitMethod (aMethod)
     }
-    method newVisitObjectConstructor (anObjectConstructor) {
+    method newVisitObject(anObjectConstructor) {
         // this method is also used to visit Module nodes — a subclass of ObjectConstructor nodes
         definitionGatherer.for (anObjectConstructor).collectReusedNames
-        return superVisitObjectConstructor (anObjectConstructor)
+        return superVisitObject (anObjectConstructor)
     }
-    method newVisitTypeDeclaration (aTypeDecl) {
+    method newVisitTypeDec (aTypeDecl) {
         // Check for shadowing of the type parameters
         aTypeDecl.typeParameterList.ifNotNil { tp →
             tp.scope.reportShadowingErrors
         }
-        return superVisitTypeDeclaration (aTypeDecl)
+        return superVisitTypeDec (aTypeDecl)
     }
     method newVisitBlock (aBlock) {
         // Check for shadowing
         aBlock.scope.reportShadowingErrors
         return superVisitBlock (aBlock)
-    }
-    method newVisitTraitDeclaration (aClass) {
-        definitionGatherer.for (aClass).collectReusedNames
-        return superVisitTraitDeclaration (aClass)
     }
 }
 
@@ -592,31 +626,27 @@ class buildScopesVisitor {
     // I am a visitor, and thus inherit (indirectly) from ast.rootVisitor
 
     inherit ancestorsVisitor
-        alias superVisitDefDeclaration(_) = newVisitDefDeclaration(_)
-        alias superVisitMethodParameter(_) = newVisitMethodParameter(_)
+        alias superVisitDefDec(_) = newVisitDefDec(_)
+        alias superVisitIdentifier(_) = newVisitIdentifier(_)
         alias superVisitDialect(_) = newVisitDialect(_)
         alias superVisitInterfaceLiteral(_) = newVisitInterfaceLiteral(_)
-        alias superVisitSignature(_) = newVisitSignature(_)
-        alias superVisitGenerativeDeclaration(_) = newVisitGenerativeDeclaration(_)
+        alias superVisitMethodSignature(_) = newVisitMethodSignature(_)
+        alias superVisitMethod(_) = newVisitMethod(_)
         alias superVisitReturn(_) = newVisitReturn(_)
-        alias superVisitAssignmentMethodHeader(_) = newVisitAssignmentMethodHeader(_)
         alias superVisitImport(_) = newVisitImport(_)
-        alias superVisitTypeParameter(_) = newVisitTypeParameter(_)
         alias superVisitModule(_) = newVisitModule(_)
-        alias superVisitBlockParameter(_) = newVisitBlockParameter(_)
-        alias superVisitObjectConstructor(_) = newVisitObjectConstructor(_)
-        alias superVisitTypeDeclaration(_) = newVisitTypeDeclaration(_)
+        alias superVisitObject(_) = newVisitObject(_)
+        alias superVisitTypeDeclaration(_) = newVisitTypeDec(_)
         alias superVisitBlock(_) = newVisitBlock(_)
-        alias superVisitTraitDeclaration(_) = newVisitTraitDeclaration(_)
-        alias superVisitVarDeclaration(_) = newVisitVarDeclaration(_)
+        alias superVisitVarDec(_) = newVisitVarDec(_)
 
-    method newVisitDefDeclaration (aDefDecl) {
+    method newVisitDefDec (aDefDecl) {
         aDefDecl.id.markAsDefinition
         checkDefAnnotations (aDefDecl)
         if (aDefDecl.id.isAnonymous.not) then {
             aDefDecl.scope.add (GraceDef.fromParseTreeNode (aDefDecl))
         }
-        return superVisitDefDeclaration (aDefDecl)
+        return superVisitDefDec (aDefDecl)
     }
     method newVisitMethodParameter (aMethodParameter) {
         aMethodParameter.id.markAsDefinition
@@ -635,7 +665,7 @@ class buildScopesVisitor {
         }
         return superVisitDialect (aDialectNode)
     }
-    method installScopeForDialect (dialectName) outside (currentScope) {
+    method installScopeForDialect (dialectName) outside (currentScope) is confidential {
         def dialectScope = moduleRegistry.attributeScopeOf (dialectName)
         currentScope.outerScope (dialectScope)
         addOuterBindingFor (dialectScope) in (currentScope)
@@ -644,7 +674,7 @@ class buildScopesVisitor {
         createScope (GraceInterfaceScope) in (anInterfaceLiteral)
         return superVisitInterfaceLiteral (anInterfaceLiteral)
     }
-    method createScope (ScopeClass) in (aNode) {
+    method createScope (ScopeClass) in (aNode) is confidential {
         def newScope = ScopeClass.new
         newScope.outerScope (aNode.parent.scope)
         newScope.node := aNode
@@ -657,44 +687,43 @@ class buildScopesVisitor {
         }
         return newScope
     }
-    method newVisitSignature (aSignature) {
+    method newVisitMethodSignature (aSignature) {
         aSignature.scope.add (GraceMethod.fromParseTreeNode (aSignature))
         createScope (aSignature.scopeKind) in (aSignature)
-        return superVisitSignature (aSignature)
+        return superVisitMethodSignature (aSignature)
     }
-    method newVisitGenerativeDeclaration (aGenDeclaration) {
-        if ((aGenDeclaration.isMarkerDeclaration.not && {
-            aGenDeclaration.hasBody.not
-        })) then {
-            GraceSyntaxError.noBodyIn (aGenDeclaration)
+    method newVisitMethod (aMethodDecl) {
+        if (aMethodDecl.isMarkerDeclaration.not && { aMethodDecl.hasBody.not }) then {
+            syntaxError.noBodyIn (aMethodDecl)
         }
-        if (aGenDeclaration.hasBody) then {
-            aGenDeclaration.annotationNames.do { each →
-                if (GraceParser.isMarkerAnnotation (each)) then {
-                    GraceSyntaxError.bodyAndMarker (each) on (aGenDeclaration)
+        if (aMethodDecl.hasBody) then {
+            aMethodDecl.annotationNames.do { each →
+                if (isMarkerAnnotation (each)) then {
+                    syntaxError.bodyAndMarker (each) node (aMethodDecl)
                 }
             }
         }
-        if (aGenDeclaration.hasAnnotations "public" and "confidential") then {
-            GraceSyntaxError.annotation "public" conflictsWith "confidential" in (aGenDeclaration.annotationList)
+        if (aMethodDecl.hasAnnotations "public" and "confidential") then {
+            syntaxError.annotation "public" conflictsWith "confidential" in (aMethodDecl.annotationList)
         }
-        if (aGenDeclaration.hasAnnotation "writable") then {
-            GraceSyntaxError.declaration (aGenDeclaration) cannotBeMadeWritable (aGenDeclaration.annotationList)
+        if (aMethodDecl.hasAnnotation "writable") then {
+            syntaxError.declaration (aMethodDecl) cannotBeMadeWritable (aMethodDecl.annotationList)
         }
-        aGenDeclaration.scope.add (GraceMethod.fromParseTreeNode (aGenDeclaration))
-        createScope (aGenDeclaration.scopeKind) in (aGenDeclaration)
-        return superVisitGenerativeDeclaration (aGenDeclaration)
+        aMethodDecl.scope.add (GraceMethod.fromParseTreeNode (aMethodDecl))
+        createScope (aMethodDecl.scopeKind) in (aMethodDecl)
+        return superVisitMethod (aMethodDecl)
     }
     method newVisitIdentifier (anIdentifier) {
-        if (anIdentifier.isApplication && { anIdentifier.isAnonymous }) then {
-            namingError.underscore (anIdentifier)
+        if (anIdentifier.isAnonymous) then {
+            if (anIdentifier.isApplication) then {
+                namingError.underscore (anIdentifier)
+            }
+        } elseif { anIdentifier.isParameter } then {
+            anIdentifier.scope.add (GraceParameter.fromParseTreeNode (anIdentifier))
+        } elseif { anIdentifier.isTypeParameter } then {
+            anIdentifier.scope.add (GraceTypeParameter.fromParseTreeNode (anIdentifier))
         }
-    }
-    method addOuterBindingFor (enclosingObjectScope) in (newScope) {
-        newScope.add (GracePseudovariable.fromParseTreeNode (enclosingObjectScope.node).attributeScope (enclosingObjectScope)) withName "outer"
-    }
-    method dialectScopeFor (aDialectNode) {
-        moduleRegistry.lookup (aDialectNode.name).scope
+        superVisitIdentifier (anIdentifier)
     }
     method newVisitReturn (aReturn) {
         def theMethod = aReturn.enclosingMethod
@@ -706,48 +735,40 @@ class buildScopesVisitor {
         aReturn.declaredType (theMethod.decType)
         superVisitReturn (aReturn)
     }
-    method checkDefAnnotations (aDefDecl) {
+    method addOuterBindingFor (enclosingObjectScope) in (newScope) is confidential {
+        newScope.add (GracePseudovariable.fromParseTreeNode (enclosingObjectScope.node).attributeScope (enclosingObjectScope)) withName "outer"
+    }
+    method dialectScopeFor (aDialectNode) is confidential {
+        moduleRegistry.lookup (aDialectNode.name).scope
+    }
+    method checkDefAnnotations (aDefDecl)is confidential  {
         if (aDefDecl.isMarkerDeclaration.not && {
             aDefDecl.hasInitializer.not
         }) then {
-            GraceSyntaxError.noInitializerIn (aDefDecl)
+            syntaxError.noInitializerIn (aDefDecl)
         }
         if (aDefDecl.hasInitializer) then {
             aDefDecl.annotationNames.do { each →
-                if (GraceParser.isMarkerAnnotation (each)) then {
-                    GraceSyntaxError.initializerAndMarker (each) on (aDefDecl)
+                if (isMarkerAnnotation (each)) then {
+                    syntaxError.initializerAndMarker (each) on (aDefDecl)
                 }
             }
         }
         if (aDefDecl.hasAnnotation "writable") then {
-            GraceSyntaxError.declaration (aDefDecl) cannotBeMadeWritable (aDefDecl.annotationList)
+            syntaxError.declaration (aDefDecl) cannotBeMadeWritable (aDefDecl.annotationList)
         }
         if (aDefDecl.hasAnnotation "confidential") then {
             aDefDecl.annotationNames.do { each →
                 if (GraceParser.confidentialConflictsWith (each)) then {
-                    GraceSyntaxError.annotation (each) conflictsWith "confidential" in (aDefDecl.annotation)
+                    syntaxError.annotation (each) conflictsWith "confidential" in (aDefDecl.annotation)
                 }
             }
         }
-    }
-    method newVisitAssignmentMethodHeader (anAssignmentMethodHeader) {
-        anAssignmentMethodHeader.id.markAsDefinition
-        return superVisitAssignmentMethodHeader (anAssignmentMethodHeader)
     }
     method newVisitImport (anImport) {
         anImport.id.markAsDefinition
         anImport.scope.add (GraceImport.fromParseTreeNode (anImport))
         return superVisitImport (anImport)
-    }
-    method newVisitTypeParameter (typeParam) {
-        typeParam.id.markAsDefinition
-        if (typeParam.id.isAnonymous.not) then {
-            typeParam.scope.add (GraceTypeParameter.fromParseTreeNode (typeParam))
-        }
-        return superVisitTypeParameter (typeParam)
-    }
-    method createWildcardIdFor (aGraceBlockParameterNode) {
-        shouldBeImplemented
     }
     method newVisitModule (aModule) {
         createScope (GraceModuleScope) in (aModule)
@@ -765,13 +786,20 @@ class buildScopesVisitor {
         }
         return superVisitBlockParameter (blockParam)
     }
-    method newVisitObjectConstructor (anObjCons) {
+    method newVisitObject (anObjCons) {
         if (anObjCons.scopeNotYetSet) then {
             createScope (GraceObjectScope) in (anObjCons)
         }
-        return superVisitObjectConstructor (anObjCons)
+        if (anObjCons.inTrait) then {   // object declared with trait syntax
+            anObjCons.items.do { each →
+                if (each.isLegalInTrait.not) then {
+                    reuseError.malformedTraitContaining (each)
+                }
+            }
+        }
+        return superVisitObject (anObjCons)
     }
-    method newVisitTypeDeclaration (aTypeDecl) {
+    method newVisitTypeDec (aTypeDecl) {
         aTypeDecl.id.markAsDefinition
         aTypeDecl.scope.add (GraceType.fromParseTreeNode (aTypeDecl))
         createScope (GraceTypeScope) in (aTypeDecl)
@@ -781,22 +809,14 @@ class buildScopesVisitor {
         createScope (GraceBlockScope) in (aBlock)
         return superVisitBlock (aBlock)
     }
-    method newVisitTraitDeclaration (aTraitDeclaration) {
-        aTraitDeclaration.items.do { each →
-            if (each.isLegalInTrait.not) then {
-                error.malformedTraitContaining (each)
-            }
-        }
-        return superVisitTraitDeclaration (aTraitDeclaration)
-    }
-    method newVisitVarDeclaration (aVarDecl) {
+    method newVisitVarDec (aVarDecl) {
         def theScope = aVarDecl.scope
         aVarDecl.id.markAsDefinition
         if (aVarDecl.id.isAnonymous.not) then {
             theScope.add (GraceVar.fromParseTreeNode (aVarDecl))
             theScope.add (GraceImplicitMethod.fromParseTreeNode (aVarDecl)) withName ((aVarDecl.declaredName ++ ":=(_)"))
         }
-        return superVisitVarDeclaration (aVarDecl)
+        return superVisitVarDec (aVarDecl)
     }
 }
 
@@ -854,3 +874,176 @@ class nameResolutionVisitor {   // no longer used; kept for the comment
     // into the other visitors.
 }
 
+class resolvedVariable {   
+    // My instances represent the defining occurence of a name, as seen from
+    // the perspective of an applied occurrence of that name.
+
+    var definition is public // a subinstance of GraceAbstractVariable, representing the defining occurence.
+    var isReused  is public  // true if the definition is obtained from a use of a trait, or from
+                    // an inherited object.
+    var objectsUp is public  // the number of levels of object nesting above me where the
+                    // defining occurence was found.  0 means that the defining occurence
+                    // is in the current object, 1 in the outer object, etc.
+    var levelsUp is public  // the number of levels of scope above me where the defining occurence was found
+
+    method resolutionString {
+        // Answers a string, suitable for printing, that describes the location of this variable.
+        return String.streamContents { s →
+            (s << definition.kind << " " << reuseString << " by the ")
+            if ((objectsUp == 0)) then {
+                (s << "current")
+            } else {
+                (1 .. objectsUp ).do { _ →
+                    (s << "outer")
+                } separatedBy {
+                    (s << ".")
+                }
+            }
+            (s << " object")
+        }
+    }
+    method reuseString {
+        // Answers a string, suitable for printing, that describes my reuse.
+        return if (isReused) then {
+             "reused "
+        } else {
+             "lexically-enclosing "
+        }
+    }
+    method definingScope {
+        // the scope in which this 'variable' is defined
+        return definition.definingParseNode.scope
+    }
+    method printStringOn (msg) {
+        (msg << reuseString << definition.kind << " declared on " << definition.rangeLongPrintString)
+    }
+    method moduleName {
+        // the name of the module in which this name was defined
+        return definition.moduleName
+    }
+}
+def variableResolver = object {
+    // I respresent the process of finding the defining occurences of a name
+    // I am a singleton object with no state
+
+    method outerDefinitionOf (aName) in (aScope) addTo (aCollection) {
+        // Looks for definitions of aName in the scopes surrounding aScope, and adds the first one to aCollection, after tagging it with its depth from our start point.  This method is complicated by the fact that we stop searching one level above the first module, since that scope is our dialect.
+        var currentScope
+        var objectLevel
+        var scopeLevel
+        currentScope := aScope
+        objectLevel := 0
+        scopeLevel := 0
+        while {
+            currentScope.isModuleScope.not
+        } do {
+            scopeLevel := (scopeLevel + 1)
+            if (currentScope.isObjectScope) then {
+                objectLevel := (objectLevel + 1)
+            }
+            currentScope := currentScope.outerScope
+            currentScope.lookupLocally (aName) ifAbsent {
+                currentScope.lookupReused (aName) ifAbsent {
+
+                } ifPresent { defn →
+                    aCollection.add (reusedDefinition (defn) atObject (objectLevel) levels (scopeLevel))
+                    return aCollection
+                }
+            } ifPresent { defn →
+                aCollection.add (definition (defn) atObject (objectLevel) levels (scopeLevel))
+                return aCollection
+            }
+        }
+        def dialectDef = currentScope.outerScope.lookupLocallyOrReused (aName) ifAbsent {
+            return aCollection
+        }
+        if (dialectDef.isPublic) then {
+            if (currentScope.outerScope.definesLocally (aName)) then {
+                aCollection.add (definition (dialectDef) atObject ((objectLevel + 1)) levels (scopeLevel))
+            } else {
+                aCollection.add (reusedDefinition (dialectDef) atObject ((objectLevel + 1)) levels (scopeLevel))
+            }
+        }
+        return aCollection
+    }
+    method reusedDefinitionOf (aName) in (aScope) addTo (aCollection) {
+        if (aScope.areReusedNamesCompleted.not) then {
+            return aCollection
+        }
+        def defn = aScope.lookupReused (aName) ifAbsent {
+            return aCollection
+        }
+        aCollection.add (reusedDefinition (defn))
+        return aCollection
+    }
+    method definition (aVariable) atObject (o) levels (n) {
+        def result = resolvedVariable
+        result.definition := aVariable 
+        result.isReused := false 
+        result.objectsUp := o 
+        result.levelsUp := n
+        result
+    }
+    method reusedDefinition (aVariable) atObject (o) levels (n) {
+        def result = resolvedVariable
+        result.definition := aVariable 
+        result.isReused := true 
+        result.objectsUp := o 
+        result.levelsUp := n
+        result
+    }
+    method lexicalOrLocalDefinitionOf (aName) in (aScope) {
+        // Look for aName in the nest of method and block scopes including and surrounding aScope,
+        // but not outside the current object.  Don't look at reused names.  Returns nil if
+        // aName is not found.
+        var currentScope
+        currentScope := aScope
+        {
+            currentScope.lookupLocally (aName) ifAbsent {
+
+            } ifPresent { defn →
+                return localDefinition (defn)
+            }
+            if (currentScope.isObjectScope) then {
+                return nil
+            }
+            currentScope := currentScope.outerScope
+        }.repeat
+    }
+    method lexicalOrLocalDefinitionOf (aName) in (aScope) ifPresent (pBlock) {
+        // Look for a definition of aName in the nest of method and block scopes including and
+        // surrounding aScope, but not outside the current object.  Don't look at reused names.
+        // Returns nil if aName is not found; if it is found, applies pBlock to a ResolvedVariable
+        // containing the definition.
+        var currentScope
+        currentScope := aScope
+        {
+            currentScope.lookupLocally (aName) ifAbsent {
+
+            } ifPresent { defn →
+                return pBlock.apply (localDefinition (defn))
+            }
+            if (currentScope.isObjectScope) then {
+                return nil
+            }
+            currentScope := currentScope.outerScope
+        }.repeat
+    }
+    method reusedDefinition (aVariable) {
+        reusedDefinition (aVariable) atObject 0 levels 0
+    }
+    method localDefinition (aVariable) {
+        definition (aVariable) atObject 0 levels 0
+    }
+    method definitionsOf (aName) visibleIn (aScope) {
+        // answers a collection of my instances describing the definitions of aName, visible from aScope. The collection is empty if there is no definition. If aName is defined locally in aScope, then we allways answer a singleton collection, ignoring inherited definitions and those in outer scopes; this gives local definitions priority over inherited and enclosing definitions. If aName is defined by inheritance _and_ in an outer scope, then the collection will have 2 elements.  In no case will it have more than 2 elements.
+        var result
+        lexicalOrLocalDefinitionOf (aName) in (aScope) ifPresent { defn →
+            return list.with (defn)
+        }
+        def objectScope = aScope.objectScope
+        result := reusedDefinitionOf (aName) in (objectScope) addTo (list.empty)
+        result := outerDefinitionOf (aName) in (objectScope) addTo (result)
+        return result
+    }
+}
