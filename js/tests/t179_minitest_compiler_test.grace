@@ -90,8 +90,9 @@ testSuite "gct" with {
     }
     test "gct method types" by {
         assert (gct.at "methodTypes") shouldBe [
-            "m(y:Number) → Done", "w:=(_:Number) → Done", "xx → Number"
-        ]
+            "m(y:Number) → Done", "w:=(_:Number) → Done", "xx → Number" ]
+        // should include all public methods, including readers and writers,
+        // but not confidential methods.  These are supposed to be _types_
     }
     test "gct typedec A" by {
         assert (gct.at "typedec-of:A") shouldBe [‹type A = other.C | other.U⟦Number⟧ | interface {

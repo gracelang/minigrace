@@ -40,6 +40,7 @@ class newScopeIn(parent') kind(variety') {
     def elementScopes is public = map.dictionary.empty
     def elementLines is public = map.dictionary.empty
     def types is public = map.dictionary.empty
+    def methodTypes is public = map.dictionary.empty
     def parent is public = parent'
     var hasParent is public := true
     def variety is public = variety'
@@ -835,7 +836,6 @@ method generateGctForModule(module) {
     // but reused methods are not in the ast, and so were omitted.
 
     def gct = dictionary.empty
-    def methodTypes = list.empty
     def theDialect = module.theDialect.moduleName
     def methodList = list.empty
     def typeList = list.empty
@@ -851,24 +851,12 @@ method generateGctForModule(module) {
             methodList.add (vName ++ knd.tag)
             pathsToProcess.add(vName)
         }
-        if (knd == k.methdec) then {
-            var s := ms.getScope(vName)
-            if (s.variety == "object") then { s := s.parent }
-                // s is now the surrounding method
-            def v = s.node
-            if (ast.nullNode ≠ v) then {
-                methodTypes.add (methodSignature(v))
-            }
-        }
     }
     while { pathsToProcess.isEmpty.not } do {
         def subList = list.empty
         def vName = pathsToProcess.removeFirst
         def vNameScope = ms.scopeForDottedName(vName)
         def v = vNameScope.node
-        if ((ast.nullNode ≠ v) && {v.isMethod}) then {
-            methodTypes.add (methodSignature(v))
-        }
         vNameScope.keysAndKindsDo { subName, subKnd ->
             if (subKnd.forGct) then {
                 subList.add (subName ++ subKnd.tag)
@@ -887,8 +875,8 @@ method generateGctForModule(module) {
     }
     gct.at "methods" put (methodList.sort)
     gct.at "types" put (typeList.sort)
-    gct.at "modules" put (list(xmodule.externalModules.keys).sort)
-    gct.at "methodTypes" put(methodTypes.sort)
+    gct.at "modules" put (xmodule.externalModules.keys.sorted)
+    gct.at "methodTypes" put (ms.methodTypes.values.sorted)
     def p = util.infile.pathname
     gct.at "path" put [ if (p.isEmpty) then {
         ""
@@ -904,19 +892,18 @@ method generateGctForModule(module) {
 }
 
 method methodSignature(methNode) -> String {
-    var depth: Number := 0
     var s: String := ""
     var shouldEmitTypeParams := methNode.hasTypeParams
     for (methNode.signature) do { part ->
         s := s ++ part.name
         if (shouldEmitTypeParams) then {
-            s := s ++ methNode.typeParams.toGrace(depth + 1)
+            s := s ++ methNode.typeParams.toGrace 1
             shouldEmitTypeParams := false   // emit them once, after first part
         }
         if (part.params.isEmpty.not) then {
             s := s ++ "("
             part.params.do { p ->
-                s := "{s}{p.toGrace(depth + 1)}:{p.decType.toGrace(depth + 1)}"
+                s := "{s}{p.toGrace 1}:{p.decType.toGrace 1}"
             } separatedBy {
                 s := "{s}, "
             }
@@ -924,6 +911,14 @@ method methodSignature(methNode) -> String {
         }
     }
     "{s} → {methNode.decType.toGrace 0}"
+}
+
+method readerSignature(declNode) -> String {
+    "{declNode.nameString} → {declNode.decType.toGrace 0}"
+}
+
+method writerSignature(declNode) -> String {
+    "{declNode.nameString}:=(_:{declNode.decType.toGrace 0}) → Done"
 }
 
 method processGCT(gct, importedModuleScope) {
@@ -1050,16 +1045,29 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         }
         method visitDefDec (o) up (anc) {
             def myParent = anc.parent
-            o.scope := myParent.scope
+            def s = myParent.scope
+            o.scope := s
             o.parentKind := myParent.kind
-            def declaredName = o.nameString
-            if (o.value.isObject) then { o.value.name := declaredName }
+            def rhs = o.value
+            if (rhs.isObject) then { rhs.name := o.nameString }
+            if (myParent.isObject && o.isReadable) then {
+                s.methodTypes.at(o.nameString) put(readerSignature(o))
+            }
             true
         }
         method visitVarDec(o) up (anc) {
             def myParent = anc.parent
-            o.scope := myParent.scope
+            def s = myParent.scope
+            o.scope := s
             o.parentKind := myParent.kind
+            if (myParent.isObject) then {
+                if (o.isReadable) then {
+                    s.methodTypes.at(o.nameString) put(readerSignature(o))
+                }
+                if (o.isWritable) then {
+                    s.methodTypes.at(o.nameString) put(writerSignature(o))
+                }
+            }
             true
         }
         method visitIdentifier (o) up (anc) {
@@ -1145,6 +1153,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                     k.methdec
                 }
                 surroundingScope.addNode (ident) asA (knd)
+                if (o.isPublic) then {
+                    surroundingScope.methodTypes.at(ident.nameString) put(methodSignature(o))
+                }
             }
             if (o.body.isEmpty.not && {o.body.last.isObject}) then {
                 o.body.last.name := o.canonicalName
