@@ -20,7 +20,7 @@ def undiscovered = singleton "undiscovered"
 
 var stSerial := 100
 
-def reserved = ["self", "outer", "true", "false", "Unknown"]
+def reserved = ["self", "outer", "true", "false", "Unknown", "Self"]
 // reserved names that cannot be re-assigned or re-declared
 
 method newScopeKind(variety') {
@@ -49,11 +49,8 @@ class newScopeIn(parent') kind(variety') {
     stSerial := stSerial + 1
     def serialNumber is public = stSerial
     def hash is public = serialNumber.hash
+    addSelfReference
 
-    if (isObjectScope) then {
-        addName "self" asA(k.selfDef)
-        at "self" putScope(self)
-    }
 
     method clear {
         elements.clear
@@ -61,9 +58,15 @@ class newScopeIn(parent') kind(variety') {
         elementLines.clear
         node := ast.nullNode
         inheritedNames := undiscovered
+        addSelfReference
+    }
+    method addSelfReference {
         if (isObjectScope) then {
             addName "self" asA(k.selfDef)
             at "self" putScope(self)
+        } elseif {isTypeScope } then {
+            addName "Self" asA(k.selfDef)
+            at "Self" putScope(self)
         }
     }
     method isEmpty { elements.size == 0 }
@@ -324,6 +327,9 @@ class newScopeIn(parent') kind(variety') {
     method allowsShadowing {
         if (variety == "type") then { return true }
         isObjectScope
+    }
+    method isTypeScope {
+        variety == "type"
     }
     method isMethodScope {
         variety == "method"
