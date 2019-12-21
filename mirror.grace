@@ -1,39 +1,35 @@
 dialect "none"
 import "intrinsic" as intrinsic
+import "basicTypesBundle" as basicTypesBundle
 
-// type Mirror = Object & interface {
-//     methods → Sequence⟦MethodMirror⟧    // mirrors on all of subject's methods
-//     methodNames → Sequence⟦String⟧      // the names of the subject's non-confidential methods
-//     confidentialMethodNames → Sequence⟦String⟧  // the names of the subject's confidential methods
-//     allMethodNames → Sequence⟦String⟧   // the names of all of the subject's methods
-//     onMethod(nm:String) → MethodMirror // a mirror on the method with name nm
-//     ilk → String        // a uid for the subject's object constructor
-//     definitionModule → String   // the name of the module containing the subject's constructor
-//     definitionLine → String     // the line number of the start of the subject's constructor
-//     subject → Object            // the object on which I reflect
-//     whenNoMethodDo(action:Function3) →  Done
-//         // if subject is sent a request named nm, and there is no method nm,
-//         // action will be applied to the arguments subject and nm.
-// }
-
-// type MethodMirror = Object & interface {
-//      name → String
-//      numberOfParams → Number
-//      partCount → Number
-//      paramCounts → Sequence⟦Number⟧
-//      paramNames → Sequence⟦String⟧
-//      requestWithArgs(args:Sequence⟦Object⟧) → Unknown
-//      isConfidential → Boolean
-//      isPublic → Boolean
-// }
-
-use intrinsic.types
 use intrinsic.annotations
+use basicTypesBundle.open
 
-type Mirror = Unknown
-type Sequence⟦T⟧ = Unknown
-type MethodMirror = Unknown
-type Function3 = Unknown
+type Mirror = Object & interface {
+    methods → Sequence⟦MethodMirror⟧    // mirrors on all of subject's methods
+    methodNames → Sequence⟦String⟧      // the names of the subject's non-confidential methods
+    confidentialMethodNames → Sequence⟦String⟧  // the names of the subject's confidential methods
+    allMethodNames → Sequence⟦String⟧           // the names of all of the subject's methods
+    onMethod(nm:String) → MethodMirror // a mirror on the method with name nm
+    ilk → String                       // a uid for the subject's object constructor
+    definitionModule → String   // the name of the module containing the subject's constructor
+    definitionLine → String     // the line number of the start of the subject's constructor
+    subject → Object            // the object on which I reflect
+    whenNoMethodDo(action:Function3) →  Done
+        // if subject is sent a request named nm, and there is no method nm,
+        // action will be applied to the arguments subject and nm.
+}
+
+type MethodMirror = Object & interface {
+     name → String
+     numberOfParams → Number
+     partCount → Number
+     paramCounts → Sequence⟦Number⟧
+     paramNames → Sequence⟦String⟧
+     requestWithArgs(args:Sequence⟦Object⟧) → Unknown
+     isConfidential → Boolean
+     isPublic → Boolean
+}
 
 def MMhash = "MM".hash
 def OMhash = "OM".hash
@@ -57,7 +53,7 @@ class reflect(subj) {
         ›
     }
     method methodNames {
-        // answers a sorted sequence of strings (not a set) being the names of subject's public methods
+        // answers a sorted sequence of strings (not a set), being the names of subject's public methods
         native "js" code ‹
             var methNames = [];
             var current = this.data.subject;
@@ -153,6 +149,7 @@ method numericName(c) {
 }
 
 class methodMirror(theSubject, aMethodName) {
+    // For flexibility, we allow aMethodName to be canonical or numeric
     def subject is public = theSubject
 
     native "js" code ‹
