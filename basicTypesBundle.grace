@@ -11,18 +11,16 @@ trait open {
     }
 
     type Pattern = Object & interface {
+        matches(value:Object) → Boolean
         & (other:Pattern) → Pattern
         | (other:Pattern) → Pattern
-        matches(value:Object) → Boolean
         prefix ¬ → Pattern
         isType → Boolean
     }
 
-    type Binding⟦K,T⟧ = Object & interface {
+    type Binding⟦K,T⟧ = EqualityObject & interface {
         key → K
         value → T
-        hash → Number
-        ==(other) → Boolean
     }
 
     type EqualityObject = Object & interface {
@@ -45,8 +43,8 @@ trait open {
         message → String            // the message provided when this exception was raised.
 
         data → Object               // the data object associated with this exception
-                                     // when it was raised, if there was one. Otherwise,
-                                     // the string "no data".
+                                    // when it was raised, if there was one. Otherwise,
+                                    // the string "no data".
 
         lineNumber → Number         // the source-code line of the raise request
                                     //  that created this exception.
@@ -73,9 +71,9 @@ trait open {
         apply → ResultT     // Function with no arguments and a result of type ResultT
     }
     type Function1⟦ArgT1, ResultT⟧ = Object & interface {
-        apply(a1:ArgT1) → ResultT      // Function with argument a1 of type ArgT1,
+        apply(a1:ArgT1) → ResultT       // Function with argument a1 of type ArgT1,
                                         // and a result of type ResultT
-        matches(a1:Object) → Boolean   // answers true if a1 <: ArgT1
+        matches(a1:Object) → Boolean    // answers true if a1 <: ArgT1
     }
     type Function2⟦ArgT1, ArgT2, ResultT⟧ = Object & interface {
         apply(a1:ArgT1, a2:ArgT2) → ResultT
@@ -89,7 +87,7 @@ trait open {
             // answers true if a1 <: ArgT1 and a2 <: ArgT2 and a3 :< ArgT3
     }
 
-    // Procedures are fuctions that have no result
+    // Procedures are functions that have no result (oterh than Done)
     type Procedure0 = Function0⟦Done⟧
         // Function with no arguments and no result
     type Procedure1⟦ArgT1⟧ = Function1⟦ArgT1, Done⟧
@@ -110,7 +108,8 @@ trait open {
 
     type Collection⟦T⟧ = Object & interface {
         // Note that Collection does not include :: or hash, so collections
-        // cannot be used as keys in dictionaries (although Sequences can)
+        // cannot be used as keys in dictionaries (although Sequences can).
+        // In general, a collection may be mutable; Lists are, but Sequences are not.
 
         iterator → Iterator⟦T⟧
             // the iterator on which I am based
@@ -161,11 +160,6 @@ trait open {
         next → T
     }
 
-    type Expandable⟦T⟧ = Collection⟦T⟧ & interface {
-        add(x: T) → SelfType
-        addAll(xs: Collection⟦T⟧) → SelfType
-    }
-
     type Enumerable⟦T⟧ = Collection⟦T⟧ & interface {
         values → Collection⟦T⟧
         keysAndValuesDo(action:Function2⟦Number,T,Object⟧) → Done
@@ -191,5 +185,5 @@ trait open {
 
     type Sequence⟦T⟧ = EqualityObject & Sequenceable⟦T⟧
 
-    type SelfType = Unknown     // becuase it's not yet in the language
+    type SelfType = Unknown     // becuase Self is not yet in the language
 }

@@ -21,87 +21,6 @@ def SizeUnknown is public = Exception.refine "SizeUnknown"
 
 method for (xs) do (action) { xs.do (action) }
 
-type SelfType = Unknown     // becuase it's not yet in the language
-
-type CollectionFactory⟦T⟧ = interface {
-    empty -> Collection⟦T⟧
-        // an empty collection
-    with(element:T) -> Collection⟦T⟧
-        // a collection containing a single element
-    withAll(elements:Collection⟦T⟧) -> Collection⟦T⟧
-        // a collection containing elements
-    << (source:Collection⟦T⟧) -> Collection⟦T⟧
-}
-
-type Collection⟦T⟧ = Object & interface {
-    // Note that Collection does not include :: or hash, so collections
-    // cannot be used as keys in dictionaries (although Sequences can)
-
-    iterator -> Iterator⟦T⟧
-        // the iterator on which I am based
-    isEmpty -> Boolean
-        // true if I have no elements
-    size -> Number
-        // my size (the number of elements that I contain);
-        // may raise SizeUnknown.
-    sizeIfUnknown(action: Function0⟦Number⟧)
-        // my size; if not known, then the result of applying action
-    == (other) -> Boolean
-        // other and self have the same size, and contain the same elements.
-    ≠ (other) -> Boolean
-        // other and self do not contain the same elements.
-    first -> T
-        // my first element; raises BoundsError if I have none.
-    do (body: Procedure1⟦T⟧) -> Done
-        // an internal iterator; applies body to each of my elements
-    do (body:Procedure1⟦T⟧) separatedBy(separator:Procedure0) -> Done
-        // an internal iterator; applies body to each of my elements, and applies separator in between
-    contains(elem:T) -> Boolean
-    includes(booleanBlock:Predicate1⟦T⟧) -> Boolean
-    ++ (other: Collection⟦T⟧) -> Collection⟦T⟧
-        // returns a new Collection over the concatenation of self and other
-    fold (binaryFunction:Function2⟦T, T, T⟧) startingWith(initial:T) -> T
-        // the left-associative fold of binaryFunction over self, starting with initial
-    map⟦U⟧ (function:Function1⟦T, U⟧) -> Collection⟦U⟧
-        // returns a new collection that yields my elements mapped by function
-    filter (condition:Predicate1⟦T⟧) -> Collection⟦T⟧
-        // returns a new collection that yields those of my elements for which condition holds
-    >> (target: Collection⟦T⟧ | CollectionFactory⟦T⟧) -> Collection⟦T⟧
-        // returns target << self; used for writing pipelines
-    << (source: Collection⟦T⟧) -> Collection⟦T⟧
-        // returns self ++ source; used for writing pipelines
-}
-
-type Expandable⟦T⟧ = Collection⟦T⟧ & interface {
-    add(x: T) -> SelfType
-    addAll(xs: Collection⟦T⟧) -> SelfType
-}
-
-type Enumerable⟦T⟧ = Collection⟦T⟧ & interface {
-    values -> Collection⟦T⟧
-    keysAndValuesDo(action:Function2⟦Number,T,Object⟧) -> Done
-    sortedBy(comparison:Function2⟦T,T,Number⟧) -> SelfType
-    sorted -> SelfType
-}
-
-type Sequenceable⟦T⟧ = Enumerable⟦T⟧ & interface {
-    size -> Number
-    at(n:Number) -> T
-    at⟦W⟧(n:Number) ifAbsent(action:Function0⟦W⟧) -> T | W
-    indices -> Sequence⟦Number⟧
-    keys -> Sequence⟦Number⟧
-    second -> T
-    third -> T
-    fourth -> T
-    fifth -> T
-    last -> T
-    indexOf⟦W⟧(elem:T) ifAbsent(action:Function0⟦W⟧) -> Number | W
-    indexOf(elem:T) -> Number
-    reversed -> Sequence⟦T⟧
-}
-
-type Sequence⟦T⟧ = EqualityObject & Sequenceable⟦T⟧
-
 type List⟦T⟧ = Sequenceable⟦T⟧ & interface {
     add(x: T) -> List⟦T⟧
     addAll(xs: Collection⟦T⟧) -> List⟦T⟧
@@ -184,11 +103,6 @@ type DictionaryFactory⟦K,T⟧ = interface {
 
     <<(bs:Binding⟦K,T⟧) -> Dictionary⟦K,T⟧
     // identical to withAll(_)
-}
-
-type Iterator⟦T⟧ = interface {
-    hasNext -> Boolean
-    next -> T
 }
 
 trait iteratorOver⟦T,R⟧ (sourceIterator: Iterator⟦T⟧)
@@ -1054,13 +968,6 @@ class set⟦T⟧ {
     }
 }
 
-type Binding⟦K,T⟧ = {
-    key -> K
-    value -> T
-    hash -> Number
-    ==(other) -> Boolean
-}
-
 class binding⟦K, T⟧ {
     method asString { "the binding factory" }
 
@@ -1076,6 +983,7 @@ class binding⟦K, T⟧ {
                 else { return false }
         }
         method ≠ (other) { (self == other).not }
+        method :: (obj) { binding.key (self) value (obj) }
     }
 }
 
