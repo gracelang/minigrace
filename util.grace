@@ -420,7 +420,7 @@ method file(name) onPath(pathString) otherwise(action) {
         // might compile an imported file, but then be unable to find the
         // code that it just generated.
     if (locations.contains(execDir).not) then { locations.addLast(execDir) }
-    def candidate = filePath.fromString(name)
+    def candidate = filePath.fromString(name.asString)
     def originalDir = name.directory
     if (originalDir.first == "/") then {
         if (candidate.exists) then {
