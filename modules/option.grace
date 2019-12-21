@@ -44,6 +44,7 @@ class full⟦T⟧(contents:T) → Option {
     method do(action:Function1⟦T, Done⟧) → Done { action.apply(value) }
     method keysAndValuesDo(action:Function2⟦Number,T,Object⟧) -> Done { action.apply(1, value) }
     method contains(v) { value == v }
+    method includes(predicate) { predicate.apply(value) }
     method indices { sequence [1] }
     method keys { sequence [1] }
     method ==(other) {
@@ -123,6 +124,7 @@ class empty⟦T⟧ → Option {
     method do(action:Function1⟦T, Done⟧) → Done { done }
     method keysAndValuesDo(action:Function2⟦Number,T,Object⟧) -> Done { done }
     method contains(_) { false }
+    method includes(_) { false }
     method indices { [] }
     method keys { [] }
     method ==(other) {
