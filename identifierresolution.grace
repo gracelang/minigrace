@@ -1150,7 +1150,8 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 if (o.returnsObject && o.isOnceMethod.not) then {
                     o.isFresh := true
                 }
-                def knd = if (o.isRequired) then {
+                def knd = if (o.isRequired || o.isAbstract) then {
+                    // TODO: do we need to distinguish abstract and required methods?
                     k.required
                 } elseif {o.isFresh} then {
                     k.freshmeth
