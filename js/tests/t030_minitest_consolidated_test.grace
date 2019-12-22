@@ -5,7 +5,7 @@ method unfinished {
     ...
 }
 
-testSuiteNamed "gracelib tests" with {
+testSuite "gracelib tests" with {
     test "string multiply" by {
         assert ("hello " * 3) shouldBe "hello hello hello "
     }
@@ -26,7 +26,7 @@ method trymatch(e) {
     }
 }
 
-testSuiteNamed "match case" with {
+testSuite "match case" with {
     test "number" by {
         assert(trymatch 4) shouldBe 5
     }
@@ -39,7 +39,7 @@ testSuiteNamed "match case" with {
     }
 }
 
-testSuiteNamed "for and" with {
+testSuite "for and" with {
     test "same size" by {
         def result = list.empty
         def a's = [1, 2, 3, 4, 5]
@@ -122,7 +122,7 @@ class sub {
     method baz { foo ++ " " ++ foo2 }
     method asString is override { "the subobject" }
     method foo is override { "override" }
-    method bad { foo ++ bar }
+    method bad { foo ++ self.bar }
 }
 
 class subp {
@@ -133,10 +133,10 @@ class subp {
     method baz { foo ++ " " ++ foo2 }
     method asString is override { "the subobject" }
     method foo is override { "override" }
-    method bad { foo ++ bar }
+    method bad { foo ++ self.bar }
 }
 
-testSuiteNamed "inheritance modifiers" with {
+testSuite "inheritance modifiers" with {
     def o = sub
     test "access alias in o" by {
         assert {o.foo2} shouldRaise (NoSuchMethod) mentioning "confidential"
@@ -176,7 +176,7 @@ testSuiteNamed "inheritance modifiers" with {
     }
 }
 
-testSuiteNamed "collection factories" with {
+testSuite "collection factories" with {
     test "new list construction" by {
         def l = list [1, 2, 3]
         assert(l) hasType (List)
@@ -301,7 +301,7 @@ trait fish {
     method move { "swim" }
 }
 
-testSuiteNamed "conflict resolution" with {
+testSuite "conflict resolution" with {
     test "composed method with exclusion" by {
         assert (twoTraitsExcludeMove.move) shouldBe "swim walk"
     }
@@ -351,12 +351,12 @@ class justY {
     use top 
         exclude x
         alias y = x
-    method publicX { x }
+    method publicX { self.x }   
     method publicY { y }
 }
 
 
-testSuiteNamed "alias excluded" with {
+testSuite "alias excluded" with {
     test "bottom.x is y" by {
         assert (bottom.publicX) shouldBe "y"
     }
@@ -372,7 +372,7 @@ testSuiteNamed "alias excluded" with {
     }
 }
 
-testSuiteNamed "number methods" with {
+testSuite "number methods" with {
     test "same hash" by {
         def n4041 = 4041
         def n4041a = 4041
@@ -483,3 +483,5 @@ testSuiteNamed "number methods" with {
         assert { n.asStringDecimals 21 } shouldRaise (RequestError)
     }
 }
+
+exit

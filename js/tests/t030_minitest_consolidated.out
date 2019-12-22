@@ -1,8 +1,0 @@
-gracelib tests: 3 run, 0 failed, 0 errors
-match case: 3 run, 0 failed, 0 errors
-for and: 6 run, 0 failed, 0 errors
-inheritance modifiers: 10 run, 0 failed, 0 errors
-collection factories: 8 run, 0 failed, 0 errors
-conflict resolution: 9 run, 0 failed, 0 errors
-alias excluded: 4 run, 0 failed, 0 errors
-number methods: 28 run, 0 failed, 0 errors

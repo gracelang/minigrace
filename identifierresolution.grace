@@ -862,7 +862,6 @@ method generateGctForModule(module) {
         def subList = list.empty
         def vName = pathsToProcess.removeFirst
         def vNameScope = ms.scopeForDottedName(vName)
-        def v = vNameScope.node
         vNameScope.keysAndKindsDo { subName, subKnd ->
             if (subKnd.forGct) then {
                 subList.add (subName ++ subKnd.tag)
@@ -1327,16 +1326,21 @@ method gatherInheritedNames(node) is confidential {
                 }
             }
         }
+        def excludedNames = inhNode.exclusions.map { exMeth -> exMeth.nameString } >> list
         superScope.elements.keysDo { each ->
-            if (each != "self") then {
+            if ((each ≠ "self") && (excludedNames.contains(each).not)) then {
                 objScope.addName(each) asA(inheritedKind)
+                objScope.at(each) putScope(superScope.getScope(each))
                 inhNode.providedNames.add(each)
             }
         }
         inhNode.aliases.do { a ->
             def old = a.oldName.nameString
+            def new = a.newName.nameString
             if (superScope.contains(old)) then {
-                inhNode.providedNames.add(a.newName.nameString)
+                objScope.addName(new) asA(inheritedKind)
+                objScope.at(new) putScope(superScope.getScope(old))
+                inhNode.providedNames.add(new)
             } else {
                 errormessages.syntaxError("can't define an alias for " ++ a.oldName.canonicalName ++
                     " because it is not present in the inherited object")
@@ -1344,7 +1348,7 @@ method gatherInheritedNames(node) is confidential {
             }
         }
         inhNode.exclusions.do { exMeth ->
-            inhNode.providedNames.remove(exMeth.nameString) ifAbsent {
+            if (superScope.contains(exMeth.nameString).not) then {
                 errormessages.syntaxError("can't exclude {exMeth.canonicalName} " ++
                     "because it is not present in the inherited object")
                     atRange(exMeth.range)
@@ -1358,6 +1362,7 @@ method gatherUsedNames(objNode) is confidential {
     // introduced by that trait, as modified by alias and exclude.
 
     def traitMethods = map.dictionary.empty
+        // maps method names to the trait(s) that provide(s) them - for detecting conflicts
     def objScope = objNode.scope
     objNode.usedTraits.do { t ->
         def traitScope = objScope.scopeReferencedBy(t.value)
@@ -1376,8 +1381,9 @@ method gatherUsedNames(objNode) is confidential {
         if (traitNode.isObject) then {
             collectParentNames(traitScope.node)
         }
+        def excludedNames = t.exclusions.map { exMeth -> exMeth.nameString } >> list
         traitScope.keysAndKindsDo { nm, kd ->
-            if (kd.forUsers) then {
+            if (kd.forUsers && excludedNames.contains(nm).not) then {
                 objScope.addName(nm) asA(k.fromTrait)
                 t.providedNames.add(nm)
                 if (kd.isRequired) then {
@@ -1387,7 +1393,10 @@ method gatherUsedNames(objNode) is confidential {
         }
         t.aliases.do { a ->
             def old = a.oldName.nameString
+            def new = a.newName.nameString
             if (traitScope.contains(old)) then {
+                objScope.addName(new) asA(k.fromTrait)
+                objScope.at(new) putScope(traitScope.getScope(old))
                 t.providedNames.add(a.newName.nameString)
             } else {
                 errormessages.syntaxError("can't define an alias for " ++ a.oldName.canonicalName ++
@@ -1396,7 +1405,7 @@ method gatherUsedNames(objNode) is confidential {
             }
         }
         t.exclusions.do { exMeth ->
-            t.providedNames.remove(exMeth.nameString) ifAbsent {
+            if (traitScope.contains(exMeth.nameString).not) then {
                 errormessages.syntaxError("can't exclude {exMeth.canonicalName} " ++
                     "because it is not available in the used trait")
                     atRange(exMeth.range)
