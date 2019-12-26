@@ -57,9 +57,6 @@ try {
         sys.exit(0)
     }
 
-    xmodule.checkDialect(moduleObject)
-    xmodule.doParseCheck(moduleObject)
-
     if (util.target == "imports") then {
         def imps = set.empty
         def vis = object {
@@ -77,18 +74,8 @@ try {
         util.outfile.close
         sys.exit(0)
     }
+    
     moduleObject := identifierresolution.resolve(moduleObject)
-    if ((util.target == "processed-ast") || (util.target == "ast")) then {
-        util.outprint "====================================="
-        util.outprint "module-level symbol table"
-        util.outprint (moduleObject.scope.asStringWithParents)
-        util.outprint "====================================="
-        util.outprint(moduleObject.pretty(0))
-        util.outfile.close
-        sys.exit(0)
-    }
-
-    xmodule.doAstCheck(moduleObject)
 
     // Perform the actual compilation
     match(util.target)

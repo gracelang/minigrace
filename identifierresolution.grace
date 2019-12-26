@@ -991,7 +991,7 @@ method setupContext(moduleNode) {
     def dialectNode = moduleNode.theDialect
     def dialectName:String = dialectNode.value
     if (dialectName ≠ "none") then {
-        xmodule.checkExternalModule(dialectNode)
+        xmodule.checkDialect(moduleNode)
         processGCT(xmodule.gctDictionaryFor(dialectName), dialectScope)
     }
     isInBeginningStudentDialect := (dialectName == "beginningStudent")
@@ -1607,6 +1607,7 @@ method transformCall(cNode) -> ast.AstNode {
 method resolve(moduleNode) {
     util.log_verbose "rewriting tree."
     setupContext(moduleNode)
+    xmodule.doParseCheck(moduleNode)
     util.setPosition(0, 0)
     moduleNode.scope := moduleScope
     def dialectObject = ast.moduleNode.body [moduleNode]
@@ -1638,5 +1639,17 @@ method resolve(moduleNode) {
         util.outfile.close
         sys.exit(0)
     }
-    resolveIdentifiers(moduleNode)
+    def processedAst = resolveIdentifiers(moduleNode)
+
+    if ((util.target == "processed-ast") || (util.target == "ast")) then {
+        util.outprint "====================================="
+        util.outprint "module-level symbol table"
+        util.outprint (processedAst.scope.asStringWithParents)
+        util.outprint "====================================="
+        util.outprint(processedAst.pretty 0)
+        util.outfile.close
+        sys.exit(0)
+    }
+    xmodule.doAstCheck(processedAst)
+    processedAst
 }
