@@ -66,6 +66,7 @@ MiniGrace.prototype.compile = function(grace_code) {
         this.generated_output += value;
     };
     this.generated_output = "";
+    this.initialModuleName = "compiler";
     
     this.compileError = false;
     extensionsMap = callmethod(var_HashMap, "new", [0]);
@@ -193,6 +194,7 @@ MiniGrace.prototype.run = function() {
     stackFrames = [];
     lineNumber = 1;
     moduleName = this.modname;
+    minigrace.initialModuleName = moduleName;
     eval(minigrace.generated_output);   // defines a global gracecode_‹moduleName›
     var theModuleFunc = window[graceModuleName(this.modname)];
     this.trapErrors(function() {

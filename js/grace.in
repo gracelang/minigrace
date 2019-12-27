@@ -349,7 +349,7 @@ try {
     if (! executable.endsWith(".js")) executable = executable + ".js";
     var exFile = findOnPath(executable, modulePathArray);
     minigrace.execFile = abspath(exFile);
-    minigrace.initialModule = path.basename(minigrace.execFile, ".js")
+    minigrace.initialModuleName = path.basename(minigrace.execFile, ".js");
     minigrace.trapErrors(function() {
         minigrace.run(executable);
     });

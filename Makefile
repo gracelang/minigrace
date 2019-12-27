@@ -216,7 +216,7 @@ j1-minigrace: $(J1-MINIGRACE) $(JSINSPECTORS:%=j1/%)
 j1/buildinfo.js: j1/buildinfo.grace
 	GRACE_MODULE_PATH=modules:. $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
 
-j1/compiler-js: $(JS-KG)/compiler-js
+j1/compiler-js: js/compiler-js Makefile
 	cp -p $< $@
 
 j1/grace-inspect: j1/grace.in tools/make-grace-inspect

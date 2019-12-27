@@ -337,6 +337,7 @@ try {
         require(execDir + "unicodedata.js");
     }
     minigrace.execFile = execDir + "compiler.js";
+    minigrace.initialModuleName = "compiler";
     minigrace.trapErrors(function() {
         minigrace.run(minigrace.execFile);
     });
