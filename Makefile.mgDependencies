@@ -66,7 +66,6 @@ j2/date.js: j2/standard.js
 j2/dialect.js: j2/standardBundle.js j2/errormessages.js
 j2/dom.js: j2/standard.js
 j2/gUnit.js: j2/standard.js
-j2/graphix.js: j2/standard.js
 j2/graphix.js: j2/standard.js j2/createJsGraphicsWrapper.js
 j2/logo.js: j2/turtle.js j2/standard.js
 j2/matrix.js: j2/standard.js
