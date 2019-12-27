@@ -29,5 +29,5 @@ else
     echo "buildinfo up-to-date."
 fi
 /bin/rm -f buildinfo_tmp.grace.*
-[ -e l1 ] && `dirname $0`/check-l1-buildinfo $PREFIX $INCLUDE_PATH $MODULE_PATH $OBJECT_PATH
+
 [ -e j1 ] && `dirname $0`/check-j1-buildinfo $PREFIX $INCLUDE_PATH $MODULE_PATH $OBJECT_PATH

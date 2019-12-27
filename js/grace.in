@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-// this file, `grace.in`, is used to generate `grace`, and `grace-debug`,
-// which execute compiled Grace code at the command line
+// This file, `grace.in`, is used to generate `grace`, and `grace-inspect`,
+// which execute compiled Grace code at the command line.
 
 var path = require("path");
 var fs = require("fs");
