@@ -14,8 +14,8 @@ DIALECTS_NEED = modules/dialect util ast modules/gUnit
 WEB_DIRECTORY ?= public_html/ide/
 DEV_WEB_DIRECTORY = public_html/dev/ide/
 JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
-J1-MINIGRACE = $(sort $(JS-KG) npm-sha $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js))
-J2-MINIGRACE = $(sort $(J1-MINIGRACE) $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) genjs.grace)
+J1-MINIGRACE = $(sort $(filter-out $(JSINSPECTORS:%=j1/%), $(JS-KG) npm-sha $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js)))
+J2-MINIGRACE = $(sort $(filter-out $(JSINSPECTORS:%=j2/%), $(J1-MINIGRACE) $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) genjs.grace))
 JSJSFILES = gracelib.js unicodedata.js
 JSRUNNERS_BASE = grace minigrace-js
 JSINSPECTORS = grace-inspect minigrace-inspect
