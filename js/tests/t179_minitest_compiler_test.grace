@@ -1,14 +1,13 @@
 dialect "minitest"
 
-import "lexer" as lexer
-import "parser" as parser
+import "compiler" as compiler
 import "ast" as ast
-import "util" as util
 import "io" as io
-import "identifierresolution" as ir
-import "errormessages" as em
+import "identifierresolution" as identifierresolution
+import "errormessages" as errormessages
 
 def MatchError = ProgrammingError.refine "MatchError"
+def SyntaxError = errormessages.SyntaxError
 
 def input1 = ‹var w: Number is writable := 100
 def xx: Number is readable = 3
@@ -36,16 +35,11 @@ type Z = interface {
     m4(x:D) -> A
 } & interface {
     m5(x:Z) -> Z
-}›.split "\n"
+}›
 
 
-util.lines.clear
-util.lines.addAll(input1)
-util.gracelibPath := "../../j2/"
-def tokens1 = lexer.lexInputLines
-def module1 = parser.parse(tokens1)
-def resolvedModule1 = ir.resolve(module1)
-def gct = ir.generateGctForModule(resolvedModule1)
+def resolvedModule1 = compiler.astFromString(input1)
+def gct = identifierresolution.generateGctForModule(resolvedModule1)
 
 method assert (gctDict) at (key) includesEntryStartingWith (s) {
     def value = gctDict.at(key)
@@ -129,46 +123,41 @@ class c1 {
     method w(kind) { "should be a redeclaration error" }
     method w'(kind) { w(kind) }
 }
-›.split "\n"
+›
 
-util.lines.clear
-util.lines.addAll(input3)
-
-def module3 = parser.parse ( lexer.lexLines (input3) )
+def module3 = compiler.parseString (input3)
 
 testSuite "alias and method with same name" with {
     test "alias w and method w clash" by {
-        assert {ir.resolve(module3)} shouldRaise (em.SyntaxError)
+        assert {identifierresolution.resolve(module3)} shouldRaise (SyntaxError)
             mentioning "'w(_)' cannot be redeclared"
     }
 }
 
-
 method astNode (kind) from (code) {
-    def toks = lexer.lexString(code)
-    def module = parser.parse(toks)
-    def result = module.body.first
+    def moduleNode = compiler.astFromString(code)
+    def result = moduleNode.body.first
     assert (result.kind) shouldBe (kind)
     result
 }
 
-method resolveIdentifiersIn (code) {
-    def toks = lexer.lexString(code)
-    def module = parser.parse(toks)
-    def resolved = ir.resolve(module)
-    resolved
+method parseNode (kind) from (code) {
+    def moduleNode = compiler.parseString(code)
+    def result = moduleNode.body.first
+    assert (result.kind) shouldBe (kind)
+    result
 }
 
 testSuite "toGrace methods" with {
     test "methodRequest" by {
-        def a = astNode "call" from
+        def a = parseNode "call" from
             ‹someTarget.firstPart(arg1, arg2) seceondPart(arg3) thirdPart "arg4"›
         assert (a.toGrace 1) shouldBe
             ‹someTarget.firstPart(arg1, arg2) seceondPart(arg3) thirdPart "arg4"›
     }
 
     test "typeDec" by {
-        def a = astNode "typedec" from ‹type NewType⟦T⟧ = interface {
+        def a = parseNode "typedec" from ‹type NewType⟦T⟧ = interface {
     foo → Done
     bar(x:T) → NewType ⟦T⟧
 }›
@@ -179,7 +168,7 @@ testSuite "toGrace methods" with {
     }
 
     test "methodSignature" by {
-        def a = astNode "typeliteral" from
+        def a = parseNode "typeliteral" from
             ‹interface {
     firstPart(param1:Number, param2:String)
         seceondPart(param3:interface{foo→Done})
@@ -196,40 +185,40 @@ testSuite "toGrace methods" with {
 testSuite "RHS of typedec #289" with {
     test "RHS must be type expression" by {
         assert { astNode "typeDec" from ‹type X = object{}› }
-              shouldRaise (em.SyntaxError)
+              shouldRaise (SyntaxError)
               mentioning "a type declaration must have a type expression"
     }
 }
 
 testSuite "module name ending with .grace #248" with {
     test "import wih .grace" by {
-        assert { resolveIdentifiersIn ‹import "mirror.grace" as m› }
-              shouldRaise (em.SyntaxError)
+        assert { parseNode "import" from ‹import "mirror.grace" as m› }
+              shouldRaise (SyntaxError)
               mentioning "import" and "must not end with \".grace\""
     }
     test "dialect with .grace" by {
-        assert { astNode "dialect" from ‹dialect "objectdraw.grace"› }
-              shouldRaise (em.SyntaxError)
+        assert { parseNode "dialect" from ‹dialect "objectdraw.grace"› }
+              shouldRaise (SyntaxError)
               mentioning "dialect" and "must not end with \".grace\""
     }
 }
 
 testSuite "Unknown is reserved #290" with {
     test "Can't redefine type Unknown" by {
-        assert{ resolveIdentifiersIn ‹dialect "none"
+        assert{ compiler.astFromString ‹dialect "none"
 type Unknown = interface{}› }
-              shouldRaise (em.SyntaxError)
+              shouldRaise (SyntaxError)
               mentioning "Unknown is a reserved name"
     }
     test "Can't def Unknown" by {
-        assert{ resolveIdentifiersIn ‹dialect "none"
+        assert{ compiler.astFromString ‹dialect "none"
 def Unknown = object{}› }
-              shouldRaise (em.SyntaxError)
+              shouldRaise (SyntaxError)
               mentioning "Unknown is a reserved name"
     }
 }
 
-testSuite "else block" with {
+testSuite "then block" with {
     test "missing operator in statement in then block" by {
         assert {astNode "defdec" from ‹
 def count = 1
@@ -239,7 +228,7 @@ if (count == 1) then {
     if (xs.size > 2) then { result := result ++ "," }
     result := result ++ " " connectingWord ++ " "
     // missing ++ here ----^
-}›} shouldRaise (em.SyntaxError) mentioning "statements must be separated"
+}›} shouldRaise (SyntaxError) mentioning "statements must be separated"
     }
 }
 
@@ -256,7 +245,7 @@ method tryIt(a) {
         print "some other value ({a})"
     }
 }
-›} shouldRaise (em.SyntaxError) mentioning "the case block" and "must have one parameter"
+›} shouldRaise (SyntaxError) mentioning "the case block" and "must have one parameter"
     }
     test "exactly one block must match" by {
         assert {
