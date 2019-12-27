@@ -5,6 +5,7 @@ import "unixFilePath" as filePath
 import "fastDict" as map
 
 def defaultVerbosity is public = 30
+def defaultTarget is public = "js"
 var verbosity is public := defaultVerbosity
 var outfilev := io.output
 var infilev := io.input
@@ -15,7 +16,7 @@ var linenumv := 1
 var lineposv := 1
 var vtagv := false
 var noexecv := false
-var targetv := "js"
+var targetv := defaultTarget
 var extensionsv := map.dictionary.empty
 var recurse is readable := true
 var dynamicModule is public := false
