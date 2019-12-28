@@ -81,7 +81,6 @@ def graceObjectMethod is public = object {
     method isImplicit { true }
     method forUsers { false }
     method fromParent { true }
-    method forGct { true }
     method fromGraceObject { true }
 }
 
