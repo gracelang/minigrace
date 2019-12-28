@@ -112,13 +112,13 @@ do
 #   if the test name does NOT end with fail_test
     then
         rm -f ${tcase%%.*}.{js,gct} ../${tcase%%.*}.{js,gct}
-        COMMAND="GRACE_MODULE_PATH=../../j2:../..:../../modules $COMPILER --verbose 60 --target js --dir . --make $tcase"
+        COMMAND="GRACE_MODULE_PATH=../../j2:../..:../../modules:subtest $COMPILER --verbose 60 --target js --dir . --make $tcase"
         echo compilation cmd = $COMMAND > test-$$.log
         if eval "$COMMAND" >> test-$$.log 2>&1
         then
             execname="${tcase%%.*}"
 #   The %%.* _deletes_ the longest . extension.
-            COMMAND="GRACE_MODULE_PATH=../../:../../j2:../../modules:. $EXECUTOR\"./$execname\""
+            COMMAND="GRACE_MODULE_PATH=../../:../../j2:../../modules:.:subtest $EXECUTOR\"./$execname\""
             echo execution cmd for case "$tcase" = $COMMAND > test-$$.log
             eval $COMMAND >> test-$$.out 2> test-$$.err
             exitCode=$?
