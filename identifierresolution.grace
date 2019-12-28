@@ -862,12 +862,13 @@ method generateGctForModule(module) {
         def subList = list.empty
         def vName = pathsToProcess.removeFirst
         def vNameScope = ms.scopeForDottedName(vName)
+        if (vName == "graphicApplicationSize(1)") then {
+            util.log 45 verbose "graphicApplicationSize(1) scope contains keys {vNameScope.keysAsList}"
+        }
         vNameScope.keysAndKindsDo { subName, subKnd ->
             if (subKnd.forGct) then {
                 subList.add (subName ++ subKnd.tag)
-                if (subKnd.isFresh) then {
-                    pathsToProcess.addLast "{vName}.{subName}"
-                }
+                pathsToProcess.addLast "{vName}.{subName}"
             }
         }
         if (subList.isEmpty.not) then {
@@ -926,10 +927,12 @@ method writerSignature(declNode) -> String {
     "{declNode.nameString}:=(_:{declNode.decType.toGrace 0}) → Done"
 }
 
-method processGCT(gct, importedModuleScope) {
+method processGct(gct, importedModuleScope) {
     // Populates importedModuleScope with the information in gct,
     // which is a dictionary mapping gct keys to collections.
 
+    def moduleName = (ast.withoutLeadingComponents (gct.at "path".first)).
+            replace ".grace" with ""
     def moduleMethods = gct.at "methods" ifAbsent { [] } >> set
     moduleMethods.do { meth ->
         addMethod (meth) toScope (importedModuleScope)
@@ -946,16 +949,24 @@ method processGCT(gct, importedModuleScope) {
         }
         if (knd == k.freshmeth) then {
             def objScope = importedModuleScope.scopeForDottedName(methName)
-            gct.at "methods-of:{methName}" .do { each ->
+            if (methName.endsWith "graphicApplicationSize(1)") then {
+                util.log 45 verbose "processing scope for {methName}"
+            }
+            gct.at "methods-of:{methName}" ifAbsent {
+                util.log 45 verbose "no {moduleName} gct entry for \"methods-of:{methName}\""
+                []
+            }.do { each ->
+                if (methName.endsWith "graphicApplicationSize(1)") then {
+                    util.log 45 verbose "adding `{each}` to {objScope.asDebugString}"
+                }
                 def eachName = each.split " ".first
                 addMethod(each) toScope (objScope)
                 def ns = newScopeIn(objScope) kind "object"
                 objScope.at(eachName) putScope(ns)
                 moduleMethods.add "{methName}.{each}"
-            }
-            def where' = valueOf {
-                def namePrefix = methName.substringFrom 1 to (methName.lastIndexOf "." ifAbsent { 1 } - 1)
-                importedModuleScope.scopeForDottedName(namePrefix)
+                if (eachName == "graphicApplicationSize(1)") then {
+                    util.log 45 verbose "objScope for {eachName} is {ns.asDebugString}\n    added `{methName}.{each}` to moduleMethods"
+                }
             }
         }
     }
@@ -992,7 +1003,7 @@ method setupContext(moduleNode) {
     def dialectName:String = dialectNode.value
     if (dialectName ≠ "none") then {
         xmodule.checkDialect(moduleNode)
-        processGCT(xmodule.gctDictionaryFor(dialectName), dialectScope)
+        processGct(xmodule.gctDictionaryFor(dialectName), dialectScope)
     }
     isInBeginningStudentDialect := (dialectName == "beginningStudent")
 }
@@ -1108,7 +1119,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             def gct = xmodule.gctDictionaryFor(o.moduleName)
             def otherModule = newScopeIn(anc.parent.scope) kind "module"
             otherModule.node := o
-            processGCT(gct, otherModule)
+            processGct(gct, otherModule)
             o.scope.at(o.nameString) putScope(otherModule)
             true
         }
@@ -1243,7 +1254,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         // This traversal can't be completed in the buildSymbolTable visitor,
         // because the visitation is top-down, and hence the scope of the
         // body of a def or method won't have been allocated when the
-        // delcaration is visited.
+        // declaration is visited.
 
         inherit ast.baseVisitor
         method visitDefDec (o) up (anc) {
@@ -1256,11 +1267,15 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitMethod (o) up (anc) {
             def myParent = anc.parent
             if (o.returnsObject) then {
-                myParent.scope.at(o.nameString) putScope(o.returnedObjectScope)
+                def ros = o.returnedObjectScope
+                def methodName = o.nameString
+                myParent.scope.at(o.nameString) putScope(ros)
+                util.log 45 verbose "putting returned object scope {ros.asDebugString} at \"{methodName}\" in {myParent.scope.asDebugString}"
                 if (anc.forebears.forebears.isEmpty.not) then {
+                    // associates a dotted name with the returned object
                     // omit this if I'm at the module-level
                     def factoryName = myParent.name
-                    def tailNode = o.body.last
+                    def tailNode = o.returnedObject
                     if ((factoryName != "object") && (tailNode.isObject)) then {
                         tailNode.name := factoryName ++ "." ++ tailNode.name
                     }
@@ -1317,14 +1332,12 @@ method gatherInheritedNames(node) is confidential {
             inheritedKind := k.graceObjectMethod
         } else {
             superScope := objScope.scopeReferencedBy(inhNode.value)
-            // If superScope is the universal scope, then we have no information
-            // about the inherited attributes
-            if (superScope.isUniversal.not) then {
-                if (ast.nullNode != superScope.node) then {
-                    // superScope.node == nullNode when superScope describes
-                    // an imported module.
-                    collectParentNames(superScope.node)
-                }
+            if (superScope.node.isNull.not) then {
+                // superScope.node.isNull when superScope describes
+                // an imported module, in which case the names have
+                // already been collected, or superScope is universal,
+                // when we have no information about inherited attributes
+                collectParentNames(superScope.node)
             }
         }
         def excludedNames = inhNode.exclusions.map { exMeth -> exMeth.nameString } >> list
@@ -1367,6 +1380,8 @@ method gatherUsedNames(objNode) is confidential {
     def objScope = objNode.scope
     objNode.usedTraits.do { t ->
         def traitScope = objScope.scopeReferencedBy(t.value)
+        util.log 46 verbose "Trait: {t.toGrace 0} with scope {traitScope}"
+
         def traitNode = traitScope.node
         def requiredNames = list.empty
         if (traitNode.isNull.not) then {
@@ -1378,14 +1393,16 @@ method gatherUsedNames(objNode) is confidential {
                       + " so it may not appear in a 'use' statement")
                       atRange(t)
             }
-        }
-        if (traitNode.isObject) then {
-            collectParentNames(traitScope.node)
+            collectParentNames(traitNode)
         }
         def excludedNames = t.exclusions.map { exMeth -> exMeth.nameString } >> list
         traitScope.keysAndKindsDo { nm, kd ->
             if (kd.forUsers && excludedNames.contains(nm).not) then {
                 objScope.addName(nm) asA(k.fromTrait)
+                objScope.at(nm) putScope(traitScope.getScope(nm))
+                if (nm == "graphicApplicationSize(1)") then {
+                    util.log 45 verbose "put scope {traitScope.getScope(nm).asDebugString} at {nm} in {objScope.asDebugString}"
+                }
                 t.providedNames.add(nm)
                 if (kd.isRequired) then {
                     requiredNames.add(nm)
