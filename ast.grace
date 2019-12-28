@@ -538,6 +538,10 @@ def blockNode is public = object {
     method returnsObject {
         (body.size > 0) && { body.last.returnsObject }
     }
+    method returnedObject {
+        // precondition: returnsObject
+        body.last.returnedObject
+    }
     method returnedObjectScope {
         // precondition: returnsObject
         body.last.returnedObjectScope
@@ -1261,6 +1265,10 @@ def methodNode is public = object {
         method returnsObject {
             body.isEmpty.not && {body.last.returnsObject}
         }
+        method returnedObject {
+            // precondition: returnsObject
+            body.last.returnedObject
+        }
         method returnedObjectScope {
             // precondition: returnsObject
             body.last.returnedObjectScope
@@ -1440,6 +1448,10 @@ def callNode is public = object {
         method isCall { true }
         method returnsObject {
             isFresh
+        }
+        method returnedObject {
+            // precondition: returnsObject
+            returnedObjectScope.node
         }
         method arguments {
             def result = list [ ]
@@ -1737,6 +1749,7 @@ def objectNode is public = object {
         }
         method body { value }
         method returnsObject { true }
+        method returnedObject { self }
         method returnedObjectScope { scope }
         method canInherit { inTrait.not }   // an object can inherit if not in a trait
         method canUse { true }
@@ -2578,6 +2591,10 @@ def defDecNode is public = object {
         method isReadable { isPublic }
         method declarationKindWithAncestors(ac) { k.defdec }
         method returnsObject { value.returnsObject }    // a call to a fresh method, or an object constructor
+        method returnedObject {
+            // precondition: returnsObject
+            value.returnedObject
+        }
         method returnedObjectScope {
             // precondition: returnsObject
             value.returnedObjectScope
@@ -2913,6 +2930,10 @@ def returnNode is public = object {
         self
     }
     method returnsObject { value.returnsObject }
+    method returnedObject {
+        // precondition: returnsObject
+        value.returnedObject
+    }
     method returnedObjectScope {
         // precondition: returns object
         value.returnedObjectScope
