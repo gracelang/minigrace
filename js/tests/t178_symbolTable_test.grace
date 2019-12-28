@@ -2,8 +2,15 @@ dialect "minispec"
 
 import "compiler" as compiler
 import "ast" as ast
-import "identifierresolution" as identifierresolution
+import "identifierresolution" as idRes
 import "errormessages" as errormessages
+import "xmodule" as xmodule
+
+import "subtest/t178_gctTestDialect" as _
+    // this import is here to force compilation of subtest/t178_gctTestDialect and
+    // subtest/t178_gctTestDialect
+
+numberOfErrorsToRerun := 0
 
 def SyntaxError = errormessages.SyntaxError
 
@@ -37,7 +44,7 @@ type Z = interface {
 
 
 def resolvedModule1 = compiler.astFromString(input1)
-def gct = identifierresolution.generateGctForModule(resolvedModule1)
+def gct = idRes.generateGctForModule(resolvedModule1)
 
 method expect (gctDict) at (key) toIncludeEntryStartingWith (s) {
     def value = gctDict.at(key)
@@ -116,4 +123,76 @@ describe "gct external representation" with {
     }
 }
 
+def bundleScope = idRes.newScopeKind "module"
+xmodule.checkExternalModule ( ast.dialectNode.new "subtest/t178_gctTestBundle" )
+    // finds the .js file
+def bundleGct = xmodule.gctDictionaryFor "t178_gctTestBundle"
+idRes.processGct(bundleGct, bundleScope)  // puts the gct information into the scope
+
+describe "bundle gct imported to symbol table" with {
+    specify "testDialect methods" by {
+        expect (bundleScope.contains "open") orSay "`open` not a method of bundle"
+    }
+    specify "testDialect.open methods (using getScope)" by {
+        def openScope = bundleScope.getScope "open"
+        expect (openScope.contains "graphicApplicationSize(1)") orSay
+            "`graphicApplicationSize(1)` is not a method of bundle.open"
+    }
+    specify "testDialect.open methods (using dotted name)" by {
+        def openScope = bundleScope.scopeForDottedName "open"
+        expect (openScope.contains "graphicApplicationSize(1)") orSay
+            "`graphicApplicationSize(1)` is not a method of bundle.open"
+    }
+    specify "testDialect.open.graphicApplicationSize methods" by {
+        def gaScope = bundleScope.scopeForDottedName "open.graphicApplicationSize(1)"
+        expect (gaScope.contains "canvas") orSay
+            "`canvas` is not a method of bundle.open.graphicApplicationSize(1)"
+    }
+}
+
+def dialectScope = idRes.newScopeKind "dialect"
+xmodule.checkExternalModule ( ast.dialectNode.new "subtest/t178_gctTestDialect" )
+    // finds the .js file
+def dialectGct = xmodule.gctDictionaryFor "t178_gctTestDialect"
+
+describe "dialect gct" with {
+    specify "dialect methods contains identityEquality" by {
+        expect (dialectGct) at "methods" toIncludeEntryStartingWith "identityEquality"
+    }
+    specify "dialect methods contains graphicApplicationSize" by {
+        expect (dialectGct) at "methods"
+              toIncludeEntryStartingWith "graphicApplicationSize(1)"
+    }
+    specify "dialect gct has key `methods-of:graphicApplicationSize(1)`" by {
+        expect (dialectGct.containsKey "methods-of:graphicApplicationSize(1)")
+              orSay "no entry with key methods-of:graphicApplicationSize(1)"
+    }
+    specify "dialect gct at `methods-of:graphicApplicationSize(1)` has entry `canvas`" by {
+        expect (dialectGct) at "methods-of:graphicApplicationSize(1)" toIncludeEntryStartingWith "canvas"
+    }
+}
+
+idRes.processGct(dialectGct, dialectScope)  // puts the gct information into the scope
+
+describe "dialect gct imported to symbol table" with {
+    specify "testDialect exposes list method" by {
+        expect (dialectScope.contains "list") orSay "`list` not a method of dialect"
+    }
+    specify "testDialect exposes drawingCanvasSize method" by {
+        expect (dialectScope.contains "drawingCanvasSize(1)") orSay "`drawingCanvasSize(1)` not a method of dialect"
+    }
+    specify "testDialect exposes graphicApplicationSize method" by {
+        expect (dialectScope.contains "graphicApplicationSize(1)") orSay "`graphicApplicationSize(1)` not a method of dialect"
+    }
+    specify "testDialect.graphicApplicationSize methods (dotted)" by {
+        def gaScope = dialectScope.scopeForDottedName "graphicApplicationSize(1)"
+        expect (gaScope.contains "canvas") orSay
+            "`canvas` is not a method of dialect.graphicApplicationSize(1)"
+    }
+    specify "testDialect.graphicApplicationSize methods (getScope)" by {
+        def gaScope = dialectScope.getScope "graphicApplicationSize(1)"
+        expect (gaScope.contains "canvas") orSay
+            "`canvas` is not a method of dialect.graphicApplicationSize(1), which contains {gaScope.elementScopes.keys >> sequence}"
+    }
+}
 exit
