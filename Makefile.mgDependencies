@@ -1,5 +1,5 @@
 j1/standard.js: j1/standardBundle.js
-j1/standardBundle.js: j1/basicTypesBundle.js j1/collections.js j1/intrinsic.js j1/pattern+typeBundle.js
+j1/standardBundle.js: j1/basicTypesBundle.js j1/collections.js j1/intrinsic.js j1/pattern+typeBundle.js j1/pointBundle.js
 j1/basicTypesBundle.js: j1/intrinsic.js
 j1/collections.js: j1/intrinsic.js
 j1/pattern+typeBundle.js: j1/equalityBundle.js j1/mirror.js
@@ -30,7 +30,7 @@ j1/regularExpression.js: j1/standard.js
 j1/timer.js: j1/standard.js
 
 j2/standard.js: j2/standardBundle.js
-j2/standardBundle.js: j2/basicTypesBundle.js j2/collections.js j2/intrinsic.js j2/pattern+typeBundle.js
+j2/standardBundle.js: j2/basicTypesBundle.js j2/collections.js j2/intrinsic.js j2/pattern+typeBundle.js j2/pointBundle.js
 j2/basicTypesBundle.js: j2/intrinsic.js
 j2/collections.js: j2/intrinsic.js
 j2/pattern+typeBundle.js: j2/equalityBundle.js j2/mirror.js
