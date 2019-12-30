@@ -28,6 +28,10 @@ trait open {
             }
         }
 
+        method children -> Collection {     // not fresh
+            theGraphics
+        }
+
         method clear -> Done {
         // remove all items from canvas
             theGraphics.clear
