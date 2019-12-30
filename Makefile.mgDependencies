@@ -14,7 +14,7 @@ j1/compiler.js: j1/util.js j1/genjs.js j1/lexer.js j1/parser.js j1/identifierres
 j1/errormessages.js: j1/util.js j1/standard.js
 j1/genjs.js: j1/ast.js j1/util.js j1/unixFilePath.js j1/xmodule.js j1/errormessages.js j1/identifierKinds.js j1/identifierresolution.js j1/xmodule.js j1/standard.js j1/shasum.js j1/buildinfo.js
 j1/identifierKinds.js: j1/standard.js
-j1/identifierresolution.js: j1/ast.js j1/util.js j1/xmodule.js j1/fastDict.js j1/errormessages.js j1/identifierKinds.js j1/standard.js
+j1/identifierresolution.js: j1/standard.js j1/io.js j1/sys.js j1/ast.js j1/util.js j1/xmodule.js j1/fastDict.js j1/errormessages.js j1/identifierKinds.js j1/mirror.js j1/prefixTree.js
 j1/lexer.js: j1/util.js j1/unicode.js  j1/fastDict.js j1/errormessages.js j1/standard.js j1/regularExpression.js
 j1/parser.js: j1/io.js  j1/util.js j1/ast.js j1/errormessages.js j1/standard.js
 j1/fastDict.js: j1/collections.js
@@ -23,6 +23,7 @@ j1/unixFilePath.js: j1/standard.js j1/io.js
 j1/util.js: j1/io.js j1/sys.js j1/unixFilePath.js j1/standard.js j1/fastDict.js
 j1/xmodule.js: j1/io.js j1/sys.js j1/util.js j1/ast.js j1/mirror.js j1/errormessages.js j1/unixFilePath.js j1/standard.js j1/shasum.js j1/regularExpression.js j1/buildinfo.js
 j1/sys.js: j1/standard.js
+j1/prefixTree.js: j1/standard.js j1/fastDict.js
 j1/io.js: j1/standard.js
 j1/unicode.js: j1/standard.js
 j1/shasum.js: j1/standard.js
@@ -44,7 +45,7 @@ j2/compiler.js: j2/util.js j2/genjs.js j2/lexer.js j2/parser.js j2/identifierres
 j2/errormessages.js: j2/util.js j2/standard.js
 j2/genjs.js: j2/ast.js j2/util.js j2/unixFilePath.js j2/xmodule.js j2/errormessages.js j2/identifierKinds.js j2/identifierresolution.js j2/xmodule.js j2/standard.js j2/buildinfo.js
 j2/identifierKinds.js: j2/standard.js j2/shasum.js
-j2/identifierresolution.js: j2/ast.js j2/util.js j2/xmodule.js j2/fastDict.js j2/errormessages.js j2/identifierKinds.js j2/standard.js
+j2/identifierresolution.js: j2/standard.js j2/io.js j2/sys.js j2/ast.js j2/util.js j2/xmodule.js j2/fastDict.js j2/errormessages.js j2/identifierKinds.js j2/mirror.js j2/prefixTree.js
 j2/lexer.js: j2/util.js j2/unicode.js  j2/fastDict.js j2/errormessages.js j2/standard.js j2/regularExpression.js
 j2/parser.js: j2/io.js  j2/util.js j2/ast.js j2/errormessages.js j2/standard.js
 j2/requireTypes.js: j2/dialect.js j2/standard.js
@@ -55,6 +56,7 @@ j2/unixFilePath.js: j2/standard.js j2/io.js
 j2/util.js: j2/io.js j2/sys.js j2/unixFilePath.js j2/standard.js j2/fastDict.js
 j2/xmodule.js: j2/io.js j2/sys.js j2/util.js j2/ast.js j2/mirror.js j2/errormessages.js j2/unixFilePath.js j2/standard.js j2/shasum.js j2/regularExpression.js j2/buildinfo.js
 j2/sys.js: j2/standard.js
+j2/prefixTree.js: j2/standard.js j2/fastDict.js
 j2/io.js: j2/standard.js
 j2/unicode.js: j2/standard.js
 j2/shasum.js: j2/standard.js
