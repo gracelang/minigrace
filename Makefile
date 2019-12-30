@@ -24,7 +24,7 @@ JSRUNNERS = $(JSRUNNERS_WITHOUT_COMPILER) compiler-js
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace objectdrawBundle.grace
 PRELUDESOURCEFILES = collections.grace standard.grace standardBundle.grace intrinsic.grace basicTypesBundle.grace pattern+typeBundle.grace equalityBundle.grace pointBundle.grace
-REALSOURCEFILES = ast.grace compiler.grace errormessages.grace fastDict.grace genjs.grace identifierKinds.grace identifierresolution.grace io.grace lexer.grace mirror.grace parser.grace regularExpression.grace shasum.grace sys.grace unicode.grace unixFilePath.grace util.grace xmodule.grace
+REALSOURCEFILES = ast.grace compiler.grace errormessages.grace fastDict.grace genjs.grace identifierKinds.grace identifierresolution.grace io.grace lexer.grace mirror.grace parser.grace prefixTree.grace regularExpression.grace shasum.grace sys.grace unicode.grace unixFilePath.grace util.grace xmodule.grace
 
 SOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES)
 MGSOURCEFILES = buildinfo.grace $(SOURCEFILES)
