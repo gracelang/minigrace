@@ -226,13 +226,11 @@ j1/grace: js/grace
 j1/grace-inspect: j1/grace.in tools/make-grace-inspect
 	tools/make-grace-inspect $(MODULE_PATH) $< $@
 
-j1/minigrace-js: $(JS-KG)/minigrace-js
+j1/minigrace-js: js/minigrace-js
 # The j1/*.js files are created by the kg compiler, and so need
 # to be run with the kg runners and libraries.
+# But we need more heap space ... so changed to use current version
 	cp -p $< $@
-
-j1/grace-inspect: j1/grace tools/make-grace-inspect
-	tools/make-grace-inspect $< $@
 
 j1/minigrace-inspect: j1/minigrace-js tools/make-minigrace-inspect
 	tools/make-minigrace-inspect $< $@
