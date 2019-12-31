@@ -4,34 +4,35 @@ import "sourcePosition" as sourcePosition
 
 def NamingError is public = errormessages.SyntaxError.refine "NamingError"
 
-class graceBlockScope {
-    inherit graceScope
-}
 type MinimalScope = interface {
     localNames → Collection
     reusedNames → Collection
 }
-
+class graceBlockScope {
+    inherit graceScope
+}
 def graceEmptyScope is public = object {
     // I represent the empty scope, with no definitions, and to which no definitions can be added.
 
     method isTheEmptyScope {
-        return true
+        true
     }
-//    method lookup (name) ifAbsent (aBlock) ifPresent (pBlock) {
-//        return aBlock.apply
-//    }
+    method lookup (name) ifAbsent (aBlock) ifPresent (pBlock) {
+        aBlock.apply
+    }
     def localNames is public = dictionary.empty
     def reusedNames is public = localNames
     method lookup (name) ifAbsent (aBlock) {
-        return aBlock.apply
+        aBlock.apply
     }
-    method lookup(name) { ProgrammingError.raise "{name} was not found in any lexical scope" }
+    method lookup(name) {
+        ProgrammingError.raise "{name} was not found in any lexical scope"
+    }
     method lookupLocally (name) ifAbsent (aBlock) {
-        return aBlock.apply
+        aBlock.apply
     }
     method localAndReusedNamesAndValuesDo (aBlock) {
-        return self
+        self
     }
     method node {
         ProgrammingError.raise "the empty scope is not associated with a node"
@@ -47,35 +48,36 @@ def graceEmptyScope is public = object {
             "name {aString} to a non-existant scope")
     }
     method lookupLocallyOrReused (name) ifAbsent (aBlock) {
-        return aBlock.apply
+        aBlock.apply
     }
     method allNamesAndValuesDo (aBlock) {
-        return self
+        self
     }
     method lookupLexically (name) ifAbsent (aBlock) {
-        return aBlock.apply
+        aBlock.apply
     }
     method enclosingObjectScope {
-        return self
+        self
     }
     method defines (name) {
-        return false
+        false
     }
     method allNamesAndValuesDo (aBlock) filteringOut (closerDefinitions) {
-        return self
+        self
     }
     method lookupLocallyOrReused (name) ifAbsent (aBlock) ifPresent (pBlock) {
-        return aBlock.apply
+        aBlock.apply
     }
     method localNamesAndValuesDo (aBlock) {
-        return self
+        self
     }
     method isObjectScope {
-        // I'm treated as an object scope so that every non-empty scope has an enclosingObjectScope
-        return true
+        // I'm treated as an object scope so that every non-empty scope has
+        // an enclosingObjectScope
+        true
     }
     method lookupLexically (name) ifAbsent (aBlock) ifPresent (pBlock) {
-        return aBlock.apply
+        aBlock.apply
     }
     method outerScope {
         ProgrammingError.raise "the empty scope has no outerScope"
@@ -130,7 +132,8 @@ def graceUniversalScope is public = object {
         iterationError
     }
     method isObjectScope {
-        // I'm treated as an object scope so that every non-empty scope has an enclosingObjectScope
+        // I'm treated as an object scope so that every non-empty scope has
+        // an enclosingObjectScope
         true
     }
     method lookupLexically (name) ifAbsent (aBlock) ifPresent (pBlock) {
@@ -146,13 +149,14 @@ def graceUniversalScope is public = object {
 }
 class graceInterfaceScope {
     inherit graceScope
-    // I represent an iterface scope, that is, a set of methods.  Thus, I also represent the methods in an interface type.
+    // I represent an iterface scope, that is, a set of methods.  Thus, I also
+    // represent the methods in an interface type.
 
     var outerScope is public
 
     method meet (anotherScope) {
-        // create and return a new scope that is the mathematical meet of self and anotherTypeScope.
-        // It contains those names common to both self and anotherScope.
+        // create and return a new scope that is the mathematical meet of self
+        // and anotherScope; it contains those names common to both scopes.
         def result = graceInterfaceScope
         anotherScope.localNamesAndValuesDo { nm, rightVal →
             lookupLocally (nm) ifAbsent {
@@ -160,11 +164,11 @@ class graceInterfaceScope {
                 result.add (leftVal.meet (rightVal)) withName (nm)
             }
         }
-        return result
+        result
     }
     method join (anotherScope) {
-        // create and return a new scope that is the mathematical join of self and anotherTypeScope.
-        // it contains the definitions from both of these scopes.
+        // create and return a new scope that is the mathematical join of self
+        // and anotherTypeScope; it contains the definitions from both scopes.
         def result = self.copy
         anotherScope.localNamesAndValuesDo { nm, val →
             result.lookupLocally (nm) ifAbsent {
@@ -173,7 +177,7 @@ class graceInterfaceScope {
                 result.redefine (val.join (originalVal)) withName (nm)
             }
         }
-        return result
+        result
     }
     method kind { "interface" }
 }
@@ -185,9 +189,10 @@ class graceMethodScope {
 
     method add (aVariable) withName (aString) {
         if (aVariable.isExplicitMethod) then {
-            structuralError "sorry, you can't declare a method immediately inside a method" variable (aVariable)
+            structuralError "sorry, you can't declare a method immediately inside a method"
+                  variable (aVariable)
         }
-        return superAdd (aVariable) withName (aString)
+        superAdd (aVariable) withName (aString)
     }
     method kind { "menthod" }
 }
@@ -215,12 +220,12 @@ class graceObjectScope {
         statusOfReusedNames := "inProgress"
     }
     method isLegalAsTrait {
-        return node.items.allSatisfy { each →
+        node.items.allSatisfy { each →
             each.isLegalInTrait
         }
     }
     method objectScope {
-        return self
+        self
     }
     method addLocalAndReusedFrom (anotherScope) {
         anotherScope.localAndReusedNamesAndValuesDo { nm, defn →
@@ -254,7 +259,7 @@ class graceObjectScope {
     }
     method addReused (aVariable) withName (aName) {
         reusedNames.at (aName) put (aVariable)
-        return aVariable
+        aVariable
     }
     method isGenerative {
         print "aScope.isGenerative is deprecated — use aScope.isReusable"
@@ -267,7 +272,7 @@ class graceObjectScope {
             ProgrammingError.raise ("reused names of {self} declared on " ++
                 "{node.range.lineRangePrintString} have not been gathered")
         }
-        return reusedNames.at (name) ifAbsent {
+        reusedNames.at (name) ifAbsent {
             aBlock.apply
         }
     }
@@ -275,7 +280,7 @@ class graceObjectScope {
         reusedNames.keysAndValuesDo (aBlock)
     }
     method areReusedNamesInProgress {
-        return (statusOfReusedNames == "inProgress")
+        (statusOfReusedNames == "inProgress")
     }
     method lookupReused (name) ifAbsent (aBlock) ifPresent (pBlock) {
         // If the variable corresponding to name is defined in a scope that this
@@ -288,7 +293,7 @@ class graceObjectScope {
         def variable = reusedNames.at (name) ifAbsent {
             return aBlock.apply
         }
-        return pBlock.apply (variable)
+        pBlock.apply (variable)
     }
     method copy(other) {
         def result = superCopy(other)
@@ -298,19 +303,19 @@ class graceObjectScope {
         result
     }
     method areReusedNamesCompleted {
-        return (statusOfReusedNames == "completed")
+        (statusOfReusedNames == "completed")
     }
     method markReusedNamesAsCompleted {
         statusOfReusedNames := "completed"
     }
     method isObjectScope {
-        return true
+        true
     }
     method kind { "object" }
 }
 class graceParameterScope {
-    // A parameter scope is used to declare the type parameters and the value parameters
-    // of a method.  Type parameters of a type go in the type scope.
+    // A parameter scope is used to declare the type parameters and the value
+    // parameters of a method.  Type parameters of a type go in the type scope.
     inherit graceScope
 
     var outerScope is public
@@ -331,9 +336,10 @@ class graceModuleScope {
 
     method isModuleScope { true }
     method lookup (name) ifAbsent (aBlock) {
-        // Return the variable corresponding to name, which may or may not be defined in this scope,
-        // or in the surroundng dialect scope, but no further.  If name is not defined, return the value
-        // of executing aBlock.
+        // Return the variable corresponding to name, which may or may not be
+        // defined in this scope, or in the surroundng dialect scope, but no further.
+        // If name is not defined, return the value of executing aBlock.
+
         lookupLocallyOrReused (name) ifAbsent {
             outerScope.lookupLocallyOrReused (name) ifAbsent {
                 aBlock.apply
@@ -344,26 +350,19 @@ class graceModuleScope {
         // answer true if this scope can be reused and its definitions overridden
         false
     }
-    method lookupLocallyOrOutwards (name) ifAbsent (aBlock) {
-        // Return the variable corresponding to name, which may or may not be defined in this scope,
-        // or in the lexically-enclosing dialect scope, but no further.  We do NOT look in the reused names of this scope. If name is not defined, return the value of executing aBlock.
-        return lookupLocally (name) ifAbsent {
-            outerScope.lookupLocallyOrReused (name) ifAbsent {
-                aBlock.apply
-            }
-        }
-    }
     method lookupLexically (name) ifAbsent (aBlock) {
-        // Return the variable corresponding to name, which may or may not be defined in this scope, or in the surroundng dialect scope, but no further.  If name is not defined, return the value of executing aBlock.
+        // Return the variable corresponding to name, which may or may not be
+        // defined in this scope, or in the surroundng dialect scope,
+        // but no further.  If name is not defined, return the value of executing aBlock.
         // Note that this method ignores reused names; it is intended for implementing Grace's shadowing check
-        return lookupLocally (name) ifAbsent {
+        lookupLocally (name) ifAbsent {
             outerScope.lookupLocally (name) ifAbsent {
                 aBlock.apply
             }
         }
     }
     method importedModules {
-        return names.values.select { each →
+        names.values.select { each →
             each.isImport
         }
     }
@@ -397,7 +396,8 @@ class graceScope {
             }
         }
     }
-    method localAndReusedNamesAndValuesDo (aBlock) filteringOut (closerDefinitions) {
+    method localAndReusedNamesAndValuesDo (aBlock)
+          filteringOut (closerDefinitions) is confidential {
         names.keysAndValuesDo { name, defn →
             if (closerDefinitions.includes (name).not) then {
                 aBlock.apply (name, defn)
@@ -412,7 +412,7 @@ class graceScope {
         def variable = names.at (name) ifAbsent {
             return aBlock.apply
         }
-        return pBlock.apply (variable)
+        pBlock.apply (variable)
     }
     method isReusable {
         // answer true if this scope is one that can be used or inherited
@@ -428,7 +428,7 @@ class graceScope {
         // Return the variable corresponding to name, which may or may not be defined in this scope,
         // or in one of the scopes that it reuses.
         // If name is not defined, return the value of executing aBlock.
-        return lookupLocally (name) ifAbsent {
+        lookupLocally (name) ifAbsent {
             lookupReused (name) ifAbsent {
                 aBlock.apply
             }
@@ -444,7 +444,7 @@ class graceScope {
     }
     method areReusedNamesCompleted {
         // Overriden in graceObjectScope
-        return true
+        true
     }
     method enclosingObjectScope {
         var s
@@ -454,7 +454,7 @@ class graceScope {
         } while {
             s := s.outerScope.isObjectScope.not
         }
-        return s
+        s
     }
     method reusedNames { dictionary.empty }
     method isModuleScope { false }
@@ -563,27 +563,31 @@ class graceScope {
         localAndReusedNamesAndValuesDo (aBlock) filteringOut (Set.new)
     }
     method lookupReused (name) ifAbsent (aBlock) {
-        // this is the default behaviour for scopes that don't allow reuse.  This method is overriden for  object scopes
-        return aBlock.apply
+        // this is the default behaviour for scopes that don't allow reuse.
+        // This method is overriden for  object scopes
+        aBlock.apply
     }
     method lookupReused (name) ifAbsent (aBlock) ifPresent (pBlock) {
-        // this is the default behaviour for scopes that don't allow reuse.  This method is overriden for  object scopes
-        return aBlock.apply
+        // this is the default behaviour for scopes that don't allow reuse.
+        // This method is overriden for  object scopes
+        aBlock.apply
     }
     method lookupLexically (name) ifAbsent (aBlock) {
-        // Return the variable corresponding to name, which may or may not be defined in this scope, or in one of the lexically surrounding scopes.  If name is not defined, return the value of executing aBlock.
-        // Note that this method ignores reused names; it is intended for implementing Grace's shadowing check
-        return lookupLocally (name) ifAbsent {
+        // Return the variable corresponding to name, which may or may not be
+        // defined in this scope, or in one of the lexically surrounding scopes.
+        // If name is not defined, return the value of executing aBlock.
+        // Note that this method ignores reused names; it is intended for
+        // implementing Grace's shadowing check
+        lookupLocally (name) ifAbsent {
             outerScope.lookupLexically (name) ifAbsent {
                 aBlock.apply
             }
         }
     }
     method definesLocallyOrReuses (name) {
-        // Is name defined in this scope, or a scope that it reuses (ignoring surrounding scopes)
-        return (names.includesKey (name) || {
-            reuses (name)
-        })
+        // Is name defined in this scope, or a scope that it reuses
+        // (ignoring surrounding scopes)
+        names.includesKey (name) || { reuses (name) }
     }
     method dialectError (aString) {
         errormessages.CompilationError.raise (aString) with (sourcePosition.emptyRange)
@@ -595,11 +599,12 @@ class graceScope {
         ProgrammingError.raise "a {kind} scope has no reused names"
     }
     method objectScope {
-        return enclosingObjectScope
+        enclosingObjectScope
     }
     method lookupLocallyOrOutwards (name) ifAbsent (aBlock) {
-        // Return the variable corresponding to name, which may or may not be defined in this scope,
-        // or in one of the lexically-enclosing scopes.  We do NOT look in the reused names of this scope.
+        // Return the variable corresponding to name, which may or may not be
+        // defined in this scope, or in one of the lexically-enclosing scopes.
+        // We do NOT look in the reused names of this scope.
         // If name is not defined, return the value of executing aBlock.
         lookupLocally (name) ifAbsent {
             outerScope.lookup (name) ifAbsent {
@@ -614,8 +619,9 @@ class graceScope {
         names
     }
     method lookupLocally (name) ifAbsent (aBlock) {
-        // Return the variable corresponding to name, which may or may not be defined in this scope.
-        // If its is not defined, return the value of executing aBlock.
+        // Return the variable corresponding to name, which may or may not be
+        // defined in this scope.  If name is not defined, return the value of
+        // executing aBlock.
         names.at (name) ifAbsent {
             aBlock.apply
         }
@@ -653,31 +659,30 @@ class resolvedVariable(aVariable) {
     // the perspective of an applied occurrence of that name.
     // - definition: an subinstance of graceAbstractVariable, representing the defining occurence.
     // - objectsUp: the number of levels of object nesting above me where the
-    // defining occurence was found.  0 means that the definiing occurence
-    // is in the current object, 1 in the outer object, etc.
+    //              defining occurence was found.  0 means that the definiing occurence
+    //              is in the current object, 1 in the outer object, etc.
     // - isReused: true if the definition is obtained from a use of a trait, or from
-    // an inherited object.
+    //             an inherited object.
 
     def definition is public = aVariable
     var objectsUp is public
-    var isReused is public  // true if this variable is accessible by virtue of a reuse (inherit or use) statement
+    var isReused is public  // true if this variable is accessible by virtue of
+                            // a reuse (inherit or use) statement
     var levelsUp is public
 
     method resolutionString {
         // Answers a string, suitable for printing, that describes the location of this variable.
-        return String.streamContents { s →
-            (s << definition.kind << " " << reuseString << " by the ")
-            if ((objectsUp == 0)) then {
-                (s << "current")
-            } else {
-                (1 .. objectsUp ).do { _ →
-                    (s << "outer")
-                } separatedBy {
-                    (s << ".")
-                }
+        var s := "{definition.kind} {reuseString} by the "
+        if (objectsUp == 0) then {
+            s := s ++ "current"
+        } else {
+            (1 .. objectsUp).do { _ →
+                s := s ++ "outer"
+            } separatedBy {
+                s := s + "."
             }
-            (s << " object")
         }
+        s ++ " object"
     }
     method reuseString {
         // Answers a string, suitable for printing, that describes my reuse.
@@ -691,12 +696,12 @@ class resolvedVariable(aVariable) {
         // the scope in which this 'variable' is defined
         definition.definingParseNode.scope
     }
-    method printStringOn (msg) {
-        (msg << reuseString << definition.kind << " declared on " << definition.rangeLongPrintString)
+    method asString {
+        "{reuseString} {definition.kind} declared on {definition.rangeLongPrintString}"
     }
     method moduleName {
         // the name of the module in which this name was defined
-        return definition.moduleName
+        definition.moduleName
     }
 }
 class variableResolver {
@@ -720,7 +725,6 @@ class variableResolver {
             currentScope := currentScope.outerScope
             currentScope.lookupLocally (aName) ifAbsent {
                 currentScope.lookupReused (aName) ifAbsent {
-
                 } ifPresent { defn →
                     aCollection.add (reusedDefinition (defn) atObject (objectLevel)
                                 levels (scopeLevel))
@@ -742,7 +746,7 @@ class variableResolver {
                 aCollection.add (reusedDefinition (dialectDef) atObject ((objectLevel + 1)) levels (scopeLevel))
             }
         }
-        return aCollection
+        aCollection
     }
     method reusedDefinitionOf (aName) in (aScope) addTo (aCollection) {
         if (aScope.areReusedNamesCompleted.not) then {
@@ -752,7 +756,7 @@ class variableResolver {
             return aCollection
         }
         aCollection.add (reusedDefinition (defn))
-        return aCollection
+        aCollection
     }
     method definition (aVariable) atObject (o) levels (n) {
         def result = resolvedVariable (aVariable)
