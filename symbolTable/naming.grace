@@ -372,12 +372,12 @@ def namingError = object {
 
 def syntaxError = object {
 
-    method bodyAndMarker(annotation) node (aNode) {
-        def message = "{aNode.description} with the annotation `{annotation}` " ++
+    method bodyAndMarker(anAnnotation) node (aNode) {
+        def message = "{aNode.description} with the annotation `{anAnnotation}` " ++
             "is a marker declaration, and must not have a body"
         errormessages.SyntaxError.raise(message) with (aNode)
     }
-    method initializerAndMarker (annotation) on (aNode) {
+    method initializerAndMarker (anAnnotation) on (aNode) {
         def message = "{aNode.description} with the annotation `{aNode}` is a " ++
             "marker declaration, and must not have an initialzation expression"
         errormessages.SyntaxError.raise (message) with (aNode)
