@@ -300,6 +300,8 @@ method findJsFile (jsFileName:filePath.FilePath) suchThat (p:Predicate1) otherwi
 }
 
 method file(f) createdBy(thisCompiler) withSHA(sourceSHA) {
+    // was f created by thisCompiler from a Grace file with sourceSHA?
+    
     def jsStream = io.open(f, "r")
     try {
         def originalSHA = extract "sha256" from (jsStream)
@@ -307,6 +309,9 @@ method file(f) createdBy(thisCompiler) withSHA(sourceSHA) {
         def usedCompiler = extract "minigraceGeneration" from (jsStream)
         if (usedCompiler ≠ thisCompiler) then { return false }
         return true
+    } catch { ex:EnvironmentException ->
+        util.log (util.defaultVerbosity) verbose (ex.message)
+        return false
     } finally {
         jsStream.close
     }
