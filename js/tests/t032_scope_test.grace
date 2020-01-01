@@ -5,7 +5,7 @@ import "sourcePosition" as pos
 import "variables" as vars
 import "nameDictionary" as nd
 
-testSuiteNamed "symbol table" with {
+testSuite "scope" with {
     test "empty scope construction" by {
         assert (scope.graceEmptyScope.isTheEmptyScope) description
             "graceEmptyScope isn't the empty scope"
@@ -109,3 +109,5 @@ method varMethFooBar -> vars.Variable {
 method varSpecialControl -> vars.Variable {
     vars.graceSpecialControlStructureFrom(magicMethNode)
 }
+
+exit

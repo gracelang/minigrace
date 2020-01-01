@@ -12,6 +12,7 @@ import "fastDict" as map
 import "errormessages" as errormessages
 import "identifierKinds" as k
 import "mirror" as mirror
+import "scope" as sm
 
 def completed = singleton "completed"
 def inProgress = singleton "inProgress"
