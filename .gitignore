@@ -29,7 +29,7 @@ selftest
 buildinfo.grace
 objectdraw.grace
 rtobjectdraw.grace
-grace-debug
+grace-inspect
 animation.grace
 js/.DS_Store
 js/animation.js
@@ -47,7 +47,7 @@ js/gUnit_test.js
 js/genjs.js
 js/grace
 js/gracedoc.js
-js/grace-debug
+js/grace-inspect
 js/graphix.js
 js/identifierKinds.js
 js/identifierresolution.js
@@ -82,11 +82,9 @@ js/tests/*.txt
 js/tests/*.js
 js-kg/
 modules/tests/test*.log
-stubs/collectionsPrelude.grace
-stubs/standardGrace.grace
 .git-generation-cache
 modules/tests/test.log
-modules/stobjectdraw.grace
+modules/*objectdraw*.grace
 node_modules
 Makefile.conf
 .directory-environ
