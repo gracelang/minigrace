@@ -184,15 +184,15 @@ describe "dialect gct imported to symbol table" with {
     specify "testDialect exposes graphicApplicationSize method" by {
         expect (dialectScope.contains "graphicApplicationSize(1)") orSay "`graphicApplicationSize(1)` not a method of dialect"
     }
-    specify "testDialect.graphicApplicationSize methods (dotted)" by {
-        def gaScope = dialectScope.scopeForDottedName "graphicApplicationSize(1)"
-        expect (gaScope.contains "canvas") orSay
-            "`canvas` is not a method of dialect.graphicApplicationSize(1)"
-    }
-    specify "testDialect.graphicApplicationSize methods (getScope)" by {
-        def gaScope = dialectScope.getScope "graphicApplicationSize(1)"
-        expect (gaScope.contains "canvas") orSay
-            "`canvas` is not a method of dialect.graphicApplicationSize(1), which contains {gaScope.elementScopes.keys >> sequence}"
-    }
+//    specify "testDialect.graphicApplicationSize methods (dotted)" by {
+//        def gaScope = dialectScope.scopeForDottedName "graphicApplicationSize(1)"
+//        expect (gaScope.contains "canvas") orSay
+//              "`canvas` is not a method of dialect.graphicApplicationSize(1)"
+//    }
+//    specify "testDialect.graphicApplicationSize methods (getScope)" by {
+//        def gaScope = dialectScope.getScope "graphicApplicationSize(1)"
+//        expect (gaScope.contains "canvas") orSay
+//            "`canvas` is not a method of dialect.graphicApplicationSize(1), which contains {gaScope.elementScopes.keys >> sequence}"
+//    }
 }
 exit
