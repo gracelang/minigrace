@@ -1,0 +1,16 @@
+#!/bin/bash
+if [ $# -lt 2 ] ; then
+    echo "usage: $0 <js-runners-directory> <compiled-file>+"
+    exit 1
+fi
+RUNNERS=$1
+OPTIONS=$(sed -n 's/NODE_OPTIONS="\([^"]*\)".*/\1/p' $RUNNERS/minigrace-js)
+echo '#!'"`which node` $OPTIONS"
+awk 'NR>1;/^\/\/ end of preamble/{exit}' $RUNNERS/compiler-js
+cat $RUNNERS/gracelib.js
+shift
+for f in "$@"
+do
+    cat $f
+done
+awk 'f;/^\/\/ end of preamble/{f=1}' $RUNNERS/compiler-js

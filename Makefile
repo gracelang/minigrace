@@ -389,13 +389,10 @@ self.test: minigrace.env $(JSINSPECTORS:%=js/%)
 	rm -rf selftest
 	mkdir -p selftest
 	cd selftest && ln -sf ../js/unicodedata.js .
-	echo '#!'"`which node` --max-old-space-size=2048" > selftest/compiler-js-head
-	awk 'NR>1;/^\/\/ end of preamble/{exit}' js/compiler-js >> selftest/compiler-js-head
-	awk 'f;/^\/\/ end of preamble/{f=1}' js/compiler-js  > selftest/compiler-js-tail
-	cat selftest/compiler-js-head j2/gracelib.js $(MGSOURCEFILES:%.grace=j2/%.js) selftest/compiler-js-tail > selftest/mgc
+	tools/make-mgc js $(MGSOURCEFILES:%.grace=j2/%.js) > selftest/mgc
 	chmod a+x selftest/mgc
 	rm -f $(MGSOURCEFILES:%.grace=./%.js)
-	@GRACE_MODULE_PATH=.:modules:js $(PREAMBLE)selftest/mgc $(VERB) --make --dir selftest compiler.grace && \
+	GRACE_MODULE_PATH=.:modules:js $(PREAMBLE)selftest/mgc $(VERB) --make --dir selftest compiler.grace && \
 	cp js/compiler-js js/minigrace-js js/minigrace-inspect js/gracelib.js js/tests/harness-js  $(PRELUDESOURCEFILES:%.grace=j2/%.js) selftest
 	$(PREAMBLE)selftest/harness-js selftest/minigrace-js js/tests ""
 
