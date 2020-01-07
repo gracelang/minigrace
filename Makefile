@@ -209,7 +209,7 @@ install: minigrace $(COMPILER_MODULES:%.grace=j2/%.js) js/grace js/grace-inspect
 $(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
 # The j1/*.js files are used to run the j1 compiler, and so need to be consistent
 # with the current source, and the code generated from the known-good compiler.
-	cp -p $< $@
+	cp -pf $< $@
 
 j1-minigrace: $(J1-MINIGRACE) $(JSINSPECTORS:%=j1/%)
 
@@ -217,7 +217,7 @@ j1/buildinfo.js: j1/buildinfo.grace
 	GRACE_MODULE_PATH=modules:. $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
 
 j1/compiler-js: js/compiler-js Makefile
-	cp -p $< $@
+	cp -pf $< $@
 
 j1/grace-inspect: j1/grace.in tools/make-grace-inspect
 	tools/make-grace-inspect $(MODULE_PATH) $< $@
@@ -226,12 +226,12 @@ j1/minigrace-inspect: j1/minigrace-js tools/make-minigrace-inspect
 	tools/make-minigrace-inspect $< $@
 
 j2/buildinfo.grace: buildinfo.grace
-	cp -p $< $@
+	cp -pf $< $@
 
 j2-minigrace: $(J2-MINIGRACE) $(JSINSPECTORS:%=j2/%)
 
 $(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
-	cp -p $< $@
+	cp -pf $< $@
 
 $(JSONLY:%.grace=js/%.js): js/%.js: modules/%.grace minigrace
 	GRACE_MODULE_PATH=js:modules ./minigrace --dir js --make $(VERBOSITY) $<
@@ -242,7 +242,7 @@ $(JSRUNNERS_BASE:%=j1/%): j1/%: $(JS-KG)/%
 	rm -f $@ && cp -p $< $@
 
 $(JSRUNNERS:%=j2/%): j2/%: js/%
-	rm -f $@ && cp -p $< $@
+	cp -pf $< $@
 
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
