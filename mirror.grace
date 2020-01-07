@@ -263,9 +263,13 @@ class methodMirror(theSubject, aMethodName) {
 }
 
 method loadModule(moduleName) {
+    // loads moduleName dynamically
+    
     native "js" code ‹return loadDynamicModule(safeJsString(var_moduleName));›
 }
 
 method initialModuleName {
-    native "js" code ‹return new GraceString(minigrace.initialModule);›
+    // the name of the "main" module being run from the command line or ide
+
+    native "js" code ‹return new GraceString(minigrace.initialModuleName);›
 }
