@@ -2318,51 +2318,6 @@ function gracecode_util() {
         minigrace.stdout_write(s._value + "\n");
         return GraceDone;
     };
-
-    var obj_requiredModules = Grace_allocObject(GraceObject, "requiredModules");
-    var obj_init_requiredModules = function () {
-        var meth_isAlready = function(argcv, var_moduleName) {    // method isAlready(1)
-            setLineNumber(0);
-            var staticv = selfRequest(this, "static", [0]);
-            var sc = callmethod(staticv, "contains(1)", [1], var_moduleName);
-            if (Grace_isTrue(sc)) {
-                return GraceTrue;
-            }
-            var otherv = selfRequest(this, "other", [0]);
-            return callmethod(otherv, "contains(1)", [1], var_moduleName);
-        };
-        meth_isAlready.paramCounts = [1];
-        meth_isAlready.variableArities = [false];
-        obj_requiredModules.methods['isAlready(1)'] = meth_isAlready;
-        meth_isAlready.definitionModule = "util";
-
-        const setObject = request(loadDynamicModule("collections"), "set", [0]);
-        obj_requiredModules.data['static'] = request(setObject, "empty", [0]);
-        var reader_util_static1257 = function() {
-            return this.data['static'];
-        };
-        reader_util_static1257.def = true;
-        obj_requiredModules.methods['static'] = reader_util_static1257;
-        obj_requiredModules.data['linkfiles'] = callmethod(listObject(), "empty", [0]);
-        var reader_util_linkfiles1260 = function() {
-            return this.data['linkfiles'];
-        };
-        reader_util_linkfiles1260.def = true;
-        obj_requiredModules.methods['linkfiles'] = reader_util_linkfiles1260;
-        obj_requiredModules.data['other'] = callmethod(setObject, "empty", [0]);
-        var reader_util_other1263 = function() {
-            return this.data['other'];
-        };
-        reader_util_other1263.def = true;
-        obj_requiredModules.methods['other'] = reader_util_other1263;
-    };
-    obj_init_requiredModules.apply(obj_requiredModules, []);
-    var var_requiredModules = obj_requiredModules;
-    var util_requiredmodules = function(argcv) {    // method requiredModules
-        return var_requiredModules;
-    };
-    util_requiredmodules.paramCounts = [ 0 ];
-    this.methods.requiredModules = util_requiredmodules;
     this.methods['debug(1)'] = function util_debug(argcv, s) {
         dbg(s._value);
         return GraceDone;
@@ -2377,12 +2332,6 @@ function gracecode_util() {
         for (var i = 0; i < len; i++)
             callmethod(result, "addLast", [1], new GraceString(locations[i]));
         return result;
-    };
-    this.methods['file(1)on(1)orPath(1)otherwise(1)'] =
-        function util_file_on_orPath_otherwise (argcv, fn, origin, pth, blk) {
-        var jsFn = callmethod(fn, "asString", [0])._value;
-        if (fileExists(jsFn)) return fn;
-        return callmethod(blk, "apply(1)", [1], new GraceString("gct cache"));
     };
     this.methods['file(1)onPath(1)otherwise(1)'] = function (argcv, fn, p, blk) {
         var jsFn = fn._value;
