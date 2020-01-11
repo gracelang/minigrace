@@ -1,6 +1,6 @@
 import "gUnit" as gu
 import "naming" as mut
-import "variables" as variables
+import "variable" as variable
 
 def nameTests = object {
   class forMethod(m) {
@@ -181,7 +181,7 @@ var writableInner is writable := list.empty
         def variable = aScope.lookupLocally (aName) ifAbsent {
             fail "{aName} is not in scope"
         }
-        assert (variable) hasType (variables.Variable)
+        assert (variable) hasType (variable.Variable)
         def variableM = mirror.reflect(variable)
         visibilities.do { each →
             def methodName = "is" ++ each.capitalized

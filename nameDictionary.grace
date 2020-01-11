@@ -4,9 +4,9 @@
 
 import "fastDict" as fastDict
 import "regularExpression" as regEx
-import "variables" as variables
+import "variable" as variable
 
-type Variable = variables.Variable 
+type Variable = variable.Variable
 
 def ctrlStructureRegEx is public = regEx.fromString ( 
     ‹^((if\(1\)then\(1\)(elseif\(1\)then\(1\))*(else\(1\))?)$|› ++
@@ -24,7 +24,7 @@ class empty {
         ctrlStructureRegEx.matches (aName)
     }
     method specialVariableFor (markerDef) withName (key) {
-        variables.graceSpecialControlStructureFrom (markerDef.definingParseNode) withName (key)
+        variable.graceSpecialControlStructureFrom (markerDef.definingParseNode) withName (key)
     }
     method at (key) ifAbsent (aBlock) {
         // Answer the value associated with key or, if key isn't found, answer
@@ -35,9 +35,9 @@ class empty {
                 isNameOfSpecialControlStructure (key)
             }) then {
                 def markerDef = self.at (magicKey)
-                def variable = specialVariableFor (markerDef) withName (key)
-                self.at (key) put (variable)
-                variable
+                def specialVar = specialVariableFor (markerDef) withName (key)
+                self.at (key) put (specialVar)
+                specialVar
             } else {
                 aBlock.apply
             }

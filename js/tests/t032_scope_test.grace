@@ -2,7 +2,7 @@ dialect "minitest"
 import "scope" as scope
 import "ast" as ast
 import "sourcePosition" as pos
-import "variables" as vars
+import "variable" as vars
 import "nameDictionary" as nd
 
 testSuite "scope" with {
