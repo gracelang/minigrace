@@ -85,11 +85,11 @@ method compileInputFile {
             sys.exit(1)
         }
     } catch { se:errormessages.SyntaxError ->
-        util.generalError("Syntax error: {se.message}", se.data.lineNum, se.data.position, se.data.arrow, se.data.sugg)
+        util.generalError("Syntax error: {se.message}", se.data.line, se.data.position, se.data.arrow, se.data.sugg)
     } catch { se:errormessages.ReuseError ->
-        util.generalError("Reuse error: {se.message}", se.data.lineNum, se.data.position, se.data.arrow, se.data.sugg)
+        util.generalError("Reuse error: {se.message}", se.data.line, se.data.position, se.data.arrow, se.data.sugg)
     } catch { se:errormessages.CompilationError ->
-        util.generalError("Compilation error: {se.message}", se.data.lineNum, se.data.position, se.data.arrow, se.data.sugg)
+        util.generalError("Compilation error: {se.message}", se.data.line, se.data.position, se.data.arrow, se.data.sugg)
     }
 }
 ////////////////////////////////////////////////////
