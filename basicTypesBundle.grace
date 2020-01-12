@@ -28,6 +28,7 @@ trait open {
         ==(other:Object) → Boolean
         ≠(other:Object) → Boolean
         hash → Number
+        matches(other:Object) → Boolean
     }
 
     type ExceptionKind = EqualityObject & Pattern & interface {

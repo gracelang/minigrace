@@ -2887,13 +2887,14 @@ function matchCase(obj, cases, elseCase) {
     if (trueCount === 0) {
         if (elseCase !== false) return callmethod(elseCase, "apply", [0]);
         raiseException(MatchErrorObject,
-                       "in match(_)case(_)…, no case matches",
+                       "in match(_)case(_)…, no case matches " + safeJsString(obj),
                        obj);
     }
     const matching = trueCases.map(i => "case " + (i+1) + " on line " + cases[i].definitionLine);
-    const matchingDesc = "(" + listWithAnd(matching) + ")";
+    const matchingDesc = " (" + listWithAnd(matching) + ")";
     raiseException(MatchErrorObject,
-                   "in match(_)case(_)…, " + trueCount + " cases match " + matchingDesc,
+                   "in match(_)case(_)…, " + trueCount + " cases match " +
+                       safeJsString(obj) + matchingDesc,
                    obj);
 }
 
