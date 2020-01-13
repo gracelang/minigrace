@@ -2101,10 +2101,12 @@ class outerNode(nodes) {
     def theObjects is public = list.withAll(nodes)
 
     method childrenDo(anAction:Procedure1) {
-        theObjects.do(anAction)
+        // don't iterate over theObjects, since this would introduce a cycle
+        // theObjects.do(anAction)
     }
     method childrenMap(f:Function1) {
-        theObjects.map(f) >> sequence
+        // don't map theObjects, since this would introduce a cycle
+        // heObjects.map(f) >> sequence
     }
     method newAccept(aVisitor) {
         aVisitor.preVisit(self)
@@ -2116,7 +2118,7 @@ class outerNode(nodes) {
     method pretty(depth) { basePretty(depth) ++ asString }
     method accept(visitor) from (ac) {
         visitor.visitOuter(self) up (ac)
-        // don't visit theObject, since this would introduce a cycle
+        // don't visit theObjects, since this would introduce a cycle
     }
     method toGrace(depth) {
         "outer" ++ (".outer" * (theObjects.size - 1))
