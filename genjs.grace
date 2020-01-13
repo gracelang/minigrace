@@ -915,7 +915,8 @@ method compileDummyMethod(o, selfobj, kind) {
     noteLineNumber (o.line) comment "{kind} method"
     debugModePrefix
     out "throw new GraceExceptionPacket(ProgrammingErrorObject,"
-    out "          new GraceString(\"{kind} method {canonicalMethName} was not supplied\"));"
+    out "          new GraceString(\"{kind} method {canonicalMethName} \" ++"
+    out "                          \"was not supplied for \" + safeJSString(this)));"
     debugModeSuffix
     compileMethodPostamble(o, funcName, canonicalMethName)
     out "{selfobj}.methods[\"{name}\"] = {funcName};"
