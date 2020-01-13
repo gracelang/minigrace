@@ -1899,7 +1899,7 @@ GraceBlock.prototype.noSuchMethodHandler = {
                 const closeMatches = closeMatchesForMethodNamed(numericName, recvr);
                 let suggestions = "";
                 if (closeMatches.length !== 0) {
-                    let options = readableOptions(closeMatches.sort().map(n => canonicalName(n)));
+                    let options = readableOptions(closeMatches.sort());
                     suggestions = "  Did you mean " + options + "?";
                 }
                 throw new GraceExceptionPacket(NoSuchMethodErrorObject,
