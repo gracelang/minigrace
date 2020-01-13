@@ -360,7 +360,7 @@ def namingError = object {
 
     method definition (aGraceMethod) usedAsAnnotation (anAnnotationNode) {
         def declaringModule = aGraceMethod.definingParseNode.moduleName
-        var location := aGraceMethod.definingParseNode.range.lineRangePrintString
+        var location := aGraceMethod.definingParseNode.range.lineRangeString
         if (declaringModule ≠ anAnnotationNode.moduleName) then {
             location := "{location} of module {declaringModule}"
         }
@@ -914,8 +914,8 @@ class resolvedVariable {
         // the scope in which this 'variable' is defined
         return definition.definingParseNode.scope
     }
-    method printStringOn (msg) {
-        (msg << reuseString << definition.kind << " declared on " << definition.rangeLongPrintString)
+    method asString {
+        "reuseString{definition.kind} declared on {definition.rangeLongString}"
     }
     method moduleName {
         // the name of the module in which this name was defined

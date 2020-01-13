@@ -103,15 +103,15 @@ def suggestion is public = object {
     // characters.
 
     method getTokenStart(token)includeLeadingSpace(includeLeading) {
-        var start := token.linePos
+        var start := token.column
         // Include leading whitespace.
         if (true == includeLeading) then {
             if (token.hasPrev && {token.prev.line == token.line}) then {
-                start := token.prev.linePos + token.prev.size
+                start := token.prev.column + token.prev.size
             }
         }
         // Include indentation if this is the only token on the line.
-        if (token.linePos == (token.indent + 1)) then {
+        if (token.column == (token.indent + 1)) then {
             if (token.hasNext.not || {token.next.line ≠ token.line}) then {
                 start := 1
             }
@@ -120,11 +120,11 @@ def suggestion is public = object {
     }
 
     method getTokenEnd(token)includeTrailingSpace(includeTrailing) {
-        var end := token.linePos + token.size - 1
+        var end := token.column + token.size - 1
         // Include trailing space.
         if (true == includeTrailing) then {
             if (token.hasNext && {token.next.line == token.line}) then {
-                end := token.next.linePos - 1
+                end := token.next.column - 1
             } else {
                 end := getLine(token.line).size
             }
@@ -218,7 +218,7 @@ def suggestion is public = object {
     }
 
     method insert(s)beforeToken(token) {
-        insert(s)atPosition(token.linePos)onLine(token.line)
+        insert(s)atPosition(token.column)onLine(token.line)
     }
 
     // Insert a new line. This stores the line with the same number as the line it comes after.

@@ -995,7 +995,7 @@ method compileBuildMethodFor(methNode) withFreshCall (callExpr) inside (outerRef
     compileMetadata(methNode, funcName, name)
 }
 method compileCallToBuildMethod(callExpr) withArgs (args) {
-    util.setPosition(callExpr.line, callExpr.linePos)
+    util.setPosition(callExpr.line, callExpr.column)
     callExpr.parts.addLast(
         ast.requestPart.request "$build"
             withArgs [ast.nullNode, ast.nullNode, ast.nullNode]
@@ -1373,7 +1373,7 @@ method compileimport(o) {
     def accessor = (ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(currentScope)],
         [o.value], o.dtype) scope(currentScope))
     accessor.line := o.line
-    accessor.linePos := o.linePos
+    accessor.column := o.column
     accessor.annotations.addAll(o.annotations)
     compilenode(accessor)
     out("{accessor.register}.debug = \"import\";")
@@ -1406,7 +1406,7 @@ method compileNativeCode(o) {
     def param1 = o.parts.first.args.first
     if (param1.kind != "string") then {
         errormessages.syntaxError "the first argument to native(_)code(_) must be a string literal"
-            atRange(param1.line, param1.linePos, param1.linePos)
+            atRange(param1.line, param1.column, param1.column)
     }
     if (param1.value != "js") then {
         o.register := "GraceDone"

@@ -589,7 +589,7 @@ method transformIdentifier(node) ancestors(anc) {
 
     def nm = node.nameString
     def nodeScope = node.scope
-    util.setPosition(node.line, node.linePos)
+    util.setPosition(node.line, node.column)
     if (node.isAssigned) then {
         def nmGets = nm ++ ":=(1)"
         if (nodeScope.hasDefinitionInNest(nmGets)) then {
@@ -863,7 +863,7 @@ method generateGctForModule(module) {
         def subList = list.empty
         def vName = pathsToProcess.removeFirst
         def vNameScope = ms.scopeForDottedName(vName)
-        if (vName == "graphicApplicationSize(1)") then {
+                if (vName == "graphicApplicationSize(1)") then {
             util.log 45 verbose "graphicApplicationSize(1) scope contains keys {vNameScope.keysAsList}"
         }
         vNameScope.keysAndKindsDo { subName, subKnd ->
@@ -1312,7 +1312,7 @@ method collectParentNames(node) {
     }
     if (nodeScope.inheritedNames == inProgress) then {
         errormessages.syntaxError "cyclic inheritance or trait use."
-            atRange(node.line, node.linePos, node.linePos + 4)
+            atRange(node.line, node.column, node.column + 4)
     }
     nodeScope.inheritedNames := inProgress
     gatherInheritedNames(node)
@@ -1489,7 +1489,7 @@ method transformBind(bindNode) ancestors(anc) {
 
     def dest = bindNode.dest
     def currentScope = bindNode.scope
-    util.setPosition(bindNode.line, bindNode.linePos)
+    util.setPosition(bindNode.line, bindNode.column)
     if ( dest.isMember ) then {
         def nm = dest.nameString
         def nmGets = nm ++ ":="

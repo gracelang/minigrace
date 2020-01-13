@@ -29,12 +29,6 @@ def currentDialect is public = object {
 }
 // TODO: this partially duplicates information in the moduleNode; integrate
 
-
-type LinePos = {
-    line -> Number
-    linePos -> Number
-}
-
 type RangeSuggestions = {
     line -> Number
     posStart -> Number

@@ -27,7 +27,7 @@ method compileInputFile {
             for (tokens) do { v ->
                 def val = if ("\n" == v.value) then { "\\n" } else { v.value }
                 if (util.verbosity > 30) then {
-                    util.outprint "{v.kind}: {val}  [pos: {v.line}.{v.linePos} size: {v.size} indent: {v.indent}]"
+                    util.outprint "{v.kind}: {val}  [pos: {v.line}:{v.column} size: {v.size} indent: {v.indent}]"
                 } else {
                     util.outprint "{v.kind}: {val}"
                 }
@@ -85,11 +85,11 @@ method compileInputFile {
             sys.exit(1)
         }
     } catch { se:errormessages.SyntaxError ->
-        util.generalError("Syntax error: {se.message}", se.data.line, se.data.position, se.data.arrow, se.data.sugg)
+        util.generalError("Syntax error: {se.message}", se.data.line, se.data.column, se.data.arrow, se.data.sugg)
     } catch { se:errormessages.ReuseError ->
-        util.generalError("Reuse error: {se.message}", se.data.line, se.data.position, se.data.arrow, se.data.sugg)
+        util.generalError("Reuse error: {se.message}", se.data.line, se.data.column, se.data.arrow, se.data.sugg)
     } catch { se:errormessages.CompilationError ->
-        util.generalError("Compilation error: {se.message}", se.data.line, se.data.position, se.data.arrow, se.data.sugg)
+        util.generalError("Compilation error: {se.message}", se.data.line, se.data.column, se.data.arrow, se.data.sugg)
     }
 }
 ////////////////////////////////////////////////////

@@ -13,7 +13,7 @@ var modnamev := "standardInput"
 var buildtypev := "run"
 var gracelibPathv := false
 var linenumv := 1
-var lineposv := 1
+var columnv := 1
 var vtagv := false
 var noexecv := false
 var targetv := defaultTarget
@@ -287,7 +287,7 @@ method type_error(s) {
     if (false ≠ vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
-    io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: Type error: {s}")
+    io.error.write("{modnamev}.grace:{linenumv}:{columnv}: Type error: {s}")
     io.error.write("\n")
     io.error.write(lines.at(linenumv) ++ "\n")
     sys.exit(2)
@@ -296,7 +296,7 @@ method semantic_error(s) {
     if (false ≠ vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
-    io.error.write "{modnamev}.grace:{linenumv}:{lineposv}: Semantic error"
+    io.error.write "{modnamev}.grace:{linenumv}:{columnv}: Semantic error"
     if (s == "") then {
         io.error.write "\n"
         sys.exit(2)
@@ -307,7 +307,7 @@ method semantic_error(s) {
             io.error.write("{padl(linenumv - 1)}: {lines.at(linenumv - 1)}\n")
         }
     }
-    def arr = "-" * (lineNumberWidth + lineposv)
+    def arr = "-" * (lineNumberWidth + columnv)
 
     if (lines.size >= linenumv) then {
         io.error.write("{padl(linenumv)}: {lines.at(linenumv)}\n{leader}{arr}^\n")
@@ -318,7 +318,7 @@ method semantic_error(s) {
     sys.exit(2)
 }
 method warning(s) {
-    io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: warning: {s}")
+    io.error.write("{modnamev}.grace:{linenumv}:{columnv}: warning: {s}")
     io.error.write("\n")
 }
 
@@ -340,15 +340,15 @@ method gracelibPath {
 method setline(l) {
     linenumv := l
 }
-method setPosition(l, p) {
+method setPosition(l, c) {
     linenumv := l
-    lineposv := p
+    columnv := c
 }
 method linenum {
     linenumv
 }
-method linepos {
-    lineposv
+method column {
+    columnv
 }
 method vtag {
     vtagv
