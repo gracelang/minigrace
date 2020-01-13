@@ -209,6 +209,7 @@ class baseNode {
     }
     method start { sourcePosition.line (line) column (column) }
     method end { sourcePosition.line (line) column (column + self.value.size - 1) }
+    method endCol { end.column }
     method range { sourcePosition.start (start) end (end) }
     method kind is abstract
     method annotations { [] }   // overriden by those nodes that can be annotated
@@ -342,6 +343,10 @@ class baseNode {
     method statementName { kind }
     method toGrace(depth) is abstract
     method toGrace { toGrace 0 }
+    method arrow { ("-" * (column-1)) ++ ("^" * (endCol - column + 1)) }
+        // so that the node can behave as an error object
+    method sugg { [] }
+        // so that the node can behave as an error object
 }
 
 def implicit is public = object {
@@ -934,9 +939,6 @@ class methodSignatureNode(parts', rtype') {
     method end -> Position {
         if ((false ≠ rtype) && {rtype.line ≠ 0}) then { return rtype.end }
         signatureParts.last.end
-    }
-    method endCol {
-        end.column
     }
     method nameString {
         // the name of the method being defined, in numeric form
