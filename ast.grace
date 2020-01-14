@@ -2820,6 +2820,8 @@ def bindNode is public = object {
     var dest is public := dest'
     var value is public := val'
 
+    method lhs { dest }
+    method rhs { value }
     method childrenDo(anAction:Procedure1) {
         dest.do(anAction)
         value.do(anAction)
@@ -3350,6 +3352,8 @@ def inheritNode is public = object {
         var aliases is public := list [ ]
         var exclusions is public := list [ ]
         var isUse is public := false  // this is a `use trait` clause, not an inherit
+
+        method reuseExpr { value }
 
         method childrenDo(anAction:Procedure1) {
             value.do(anAction)
