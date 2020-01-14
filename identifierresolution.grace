@@ -13,6 +13,7 @@ import "errormessages" as errormessages
 import "identifierKinds" as k
 import "mirror" as mirror
 import "scope" as sm
+import "variable" as variable
 
 def completed = singleton "completed"
 def inProgress = singleton "inProgress"
@@ -24,517 +25,27 @@ var stSerial := 100
 def reserved = ["self", "outer", "true", "false", "Unknown", "Self"]
 // reserved names that cannot be re-assigned or re-declared
 
-method newScopeKind(variety') {
-    // for the top of the scope chain
-    def s = newScopeIn(object {})kind(variety')
-    s.hasParent := false
-    s
-}
-
 def keyOrdering = { a, b -> a.key.compare(b.key) }
 
 type DeclKind = k.T
 
-class newScopeIn(parent') kind(variety') {
-    use identityEquality
-    def elements is public = map.dictionary.empty
-    def elementScopes is public = map.dictionary.empty
-    def elementLines is public = map.dictionary.empty
-    def types is public = map.dictionary.empty
-    def methodTypes is public = map.dictionary.empty
-    def parent is public = parent'
-    var hasParent is public := true
-    def variety is public = variety'
-    var node is public := ast.nullNode      // the outermost ast node that I'm in
-    var inheritedNames is public := undiscovered
-    stSerial := stSerial + 1
-    def serialNumber is public = stSerial
-    def hash is public = serialNumber.hash
-    addSelfReference
-
-
-    method clear {
-        elements.clear
-        elementScopes.clear
-        elementLines.clear
-        node := ast.nullNode
-        inheritedNames := undiscovered
-        addSelfReference
-    }
-    method addSelfReference {
-        if (isObjectScope) then {
-            addName "self" asA(k.selfDef)
-            at "self" putScope(self)
-        } elseif {isTypeScope } then {
-            addName "Self" asA(k.selfDef)
-            at "Self" putScope(self)
-        }
-    }
-    method isEmpty { elements.size == 0 }
-    method addName(n) {
-        elements.at(n)put(k.methdec)
-    }
-    method addName (n) asA (kind:DeclKind) {
-        def oldKind = elements.at(n) ifAbsent {
-            elements.at(n)put(kind)
-            elementLines.at(n)put(util.linenum)
-            return
-        }
-        if (kind.isImplicit) then {
-            return  // don't overwrite local id with id from trait or super
-        }
-        if (oldKind.isImplicit)  then {
-            elements.at(n)put(kind)
-            elementLines.at(n)put(util.linenum)
-            return
-        }
-        errormessages.syntaxError("'{n}' cannot be" ++
-            " redefined in a {variety} scope as {kind} because it is already declared as {oldKind}")
-            atRange(util.linenum, util.linepos, util.linepos + n.size - 1)
-    }
-    method addNode (nd) asA (kind) {
-        def ndName = nd.value
-        checkShadowing(nd) asA(kind)
-        def oldKind = elements.at(ndName) ifAbsent {
-            elements.at(ndName)put(kind)
-            elementLines.at(ndName)put(nd.line)
-            return
-        }
-        if (kind.isImplicit) then {
-            return  // don't overwrite local id with id from trait or super
-        }
-        if (oldKind.isImplicit)  then {
-            elements.at(ndName)put(kind)
-            elementLines.at(ndName)put(nd.line)
-            return
-        }
-        var more := " in this scope"
-        if (elementLines.containsKey(ndName)) then {
-            more := " as a {oldKind}"
-                ++ " on line {elementLines.at(ndName)}"
-        }
-        errormessages.syntaxError("'{nd.canonicalName}' cannot be"
-            ++ " redeclared because it is already declared" ++ more )
-            atRange(nd.range)
-    }
-    method contains (n) {
-        if (elements.containsKey(n)) then { return true }
-        if (isInBeginningStudentDialect.not) then { return false }
-        if (self ≠ dialectScope) then { return false }
-        return isSpecial(n)
-    }
-    method withSurroundingScopesDo (b) {
-        // do b in this scope and all surounding scopes.
-        var cur := self
-        while {b.apply(cur); cur.hasParent} do {
-            cur := cur.parent
-        }
-    }
-    method keysAsList {
-        def result = list.empty
-        elements.keysDo { each -> result.addLast(each) }
-        result
-    }
-    method keysAndKindsDo (action) {
-        elements.keysAndValuesDo(action)
-    }
-    method kind (n) {
-        if { isInBeginningStudentDialect } then {
-            if (isSpecial(n)) then { return k.methdec }
-        }
-        elements.at(n)
-    }
-    method kind (n) ifAbsent (action) {
-        if { isInBeginningStudentDialect } then {
-            if (isSpecial(n)) then { return k.methdec }
-        }
-        elements.at(n) ifAbsent (action)
-    }
-    method at(n) putScope(scp) {
-        elementScopes.at(n)put(scp)
-    }
-    method getScope(n) {
-        if (elementScopes.containsKey(n)) then {
-            return elementScopes.at(n)
-        }
-//        util.log 70 verbose ("scope {self}: elements.containsKey({n}) = {elements.containsKey(n)}" ++
-//              " but elementScopes.containsKey({n}) = {elementScopes.containsKey(n)}")
-        //  This occurs for names like `true` that are built-in, but for which there
-        //  is no symbolTable describing their atttributes.
-        //  TODO: add complete information for the built-in names.
-        //  in the meantime:
-        return universalScope
-    }
-    method asStringWithParents {
-        var result := "\nCurrent: {self}"
-        var s := self
-        while {s.hasParent} do {
-            s := s.parent
-            result := result ++ "\nParent: {s}"
-        }
-        result ++ "\n"
-    }
-    method asString {
-        var result := "({variety} ST: "
-        withSurroundingScopesDo { each ->
-            result := result ++ each.serialNumber
-            if (each.hasParent) then { result := result ++ "➞" }
-        }
-        result := result ++  "):\n    "
-        elements.bindings.sortedBy(keyOrdering).do { each ->
-            result := "{result} {each.key}({kind(each.key)}) "
-        }
-        result ++ "\n"
-    }
-
-    method asDebugString { "(ST {serialNumber})" }
-
-    method elementScopesAsString {
-        def referencedScopes = set.empty
-        var result := "\n    [elementScopes:"
-        elementScopes.bindings.sortedBy(keyOrdering).do { each ->
-            result := "{result} {each.key}➞{each.value.asDebugString}"
-            referencedScopes.add (each.value)
-        }
-        result := result ++ "]\n____________\n"
-        list.withAll(referencedScopes)
-            .sortBy { a, b -> a.serialNumber.compare(b.serialNumber) }
-                .do { each -> result := result ++ each.asString }
-        result ++ "____________\n"
-    }
-    method hasDefinitionInNest(nm) {
-        withSurroundingScopesDo { s ->
-            if (s.contains(nm)) then {
-                return true
-            }
-        }
-        if { isInBeginningStudentDialect } then {
-            if (isSpecial(nm)) then { return true }
-        }
-        return false
-    }
-    method kindInNest(nm) {
-        // NEVER answers `inherited` or `fromTrait` !
-        withSurroundingScopesDo {s->
-            if (s.contains(nm)) then {
-                def kd = s.kind(nm)
-                if (kd.fromParent) then {
-                    return k.methdec
-                } else {
-                    return kd
-                }
-            }
-        }
-        if { isInBeginningStudentDialect } then {
-            if (isSpecial(nm)) then { return k.methdec }
-        }
-        return k.undefined
-    }
-    method scopeInNest(nm) {
-        // answers the elementScope associated with nm, or universalScope
-        // if there is none
-
-        withSurroundingScopesDo { s->
-            if (s.contains(nm)) then {
-                return s.getScope(nm)
-            }
-        }
-        if { isInBeginningStudentDialect } then {
-            if (isSpecial(nm)) then { return dialectScope }
-        }
-        return universalScope
-    }
-    method thatDefines(name) ifNone(action) {
-        withSurroundingScopesDo { s->
-            if (s.contains(name)) then { return s }
-        }
-        if { isInBeginningStudentDialect } then {
-            if (isSpecial(name)) then { return dialectScope }
-        }
-        action.apply
-    }
-    method thatDefines(name) {
-        withSurroundingScopesDo { s->
-            if (s.contains(name)) then { return s }
-        }
-        if { isInBeginningStudentDialect } then {
-            if (isSpecial(name)) then { return dialectScope }
-        }
-        print(self.asStringWithParents)
-        ProgrammingError.raise "no scope defines {name}"
-    }
-    method receiverScope(rcvrNode) {
-        // rcvrNode is the receiver of a request. Answer the scope
-        // associated with it.  So, if the receiver is a.b.c,
-        // find the scope associated with c in the scope associated with b
-        // in the scope associated with a in this scope.
-
-        if (rcvrNode.isIdentifier) then {
-            scopeInNest(rcvrNode.nameString)
-        } elseif { rcvrNode.isCall } then {
-            receiverScope(rcvrNode.receiver).getScope(rcvrNode.nameString)
-        } elseif { rcvrNode.isOuter } then {
-            var resultScope := rcvrNode.scope.enclosingObjectScope  // self's scope
-            repeat (rcvrNode.numberOfLevels) times {
-                resultScope := resultScope.enclosingObjectScope
-            }
-            resultScope
-        } elseif { rcvrNode.isConstant } then {
-            match (rcvrNode.kind)
-                  case {"string" -> stringScope }
-                  case {"num" -> numberScope }
-        } elseif { rcvrNode.isSequenceConstructor } then {
-            sequenceScope
-        } elseif { rcvrNode.isObject } then {
-            rcvrNode.scope
-        } else {
-            ProgrammingError.raise("unexpected receiver {rcvrNode.toGrace 0} " ++
-                  "on line {rcvrNode.line}")
-        }
-    }
-    method scopeForDottedName(dottedName:String) {
-        // dottedName is a_1.a_2.a_3. ... .a_n
-        // answers the scope for a_n, creating it if necessary
-        def splitName = dottedName.split "."
-        var result := self
-        splitName.do { component ->
-            var componentScope := result.getScope(component)
-            if (componentScope.isUniversal) then {
-                componentScope := newScopeKind "object"
-                result.at (component) putScope (componentScope)
-            }
-            result := componentScope
-        }
-        result
-    }
-    method isInSameObjectAs (enclosingScope) {
-        if (self == enclosingScope) then { return true }
-        if (self.parent.isObjectScope) then { return false }
-        self.parent.isInSameObjectAs(enclosingScope)
-    }
-    method isObjectScope {
-        if (variety == "object") then { return true }
-        if (variety == "module") then { return true }
-        if (variety == "dialect") then { return true }
-        if (variety == "class") then { return true }
-        if (variety == "builtIn") then { return true }
-        false
-    }
-    method isFreshObjectScope {     // modules, dialects, etc are not fresh
-        if (variety == "object") then { return true }
-        if (variety == "class") then { return true }
-        false
-    }
-    method allowsShadowing {
-        if (variety == "type") then { return true }
-        isObjectScope
-    }
-    method isTypeScope {
-        variety == "type"
-    }
-    method isMethodScope {
-        variety == "method"
-    }
-    method isModuleScope {
-        variety == "module"
-    }
-    method isInheritableScope {
-        "class | object".contains(variety)
-    }
-    method resolveOuterMethod(name) fromNode (aNode) {
-        // replace name by a request with receiver self, or an outerNode
-
-        def outerChain = list [ ]
-        withSurroundingScopesDo { s->
-            def v = s.variety
-            if (s.contains(name)) then {
-                if ((v == "dialect") || (v == "builtIn")) then {
-                    return ast.memberNode.new(name,
-                          ast.identifierNode.new("$" ++ v, false)
-                                scope(self)) scope(self).
-                                      onSelf.withGenericArgs(aNode.generics)
-                } elseif { v == "module" } then {
-                    return ast.memberNode.new(name, thisModule) scope(self).
-                          onSelf.withGenericArgs(aNode.generics)
-                }
-                def rcvr = if (outerChain.isEmpty) then {
-                    ast.identifierNode.new("self", false) scope(self).
-                          setStart(ast.noPosition)
-                } else {
-                    ast.outerNode(outerChain).setScope(self).
-                          setStart(ast.noPosition)
-                }
-                return ast.memberNode.new(name, rcvr).setScope(self).
-                      setPositionFrom(aNode).
-                        onSelf.withGenericArgs(aNode.generics)
-            }
-            if (v == "object") then {
-                    outerChain.addLast(s.node)
-                }
-            }
-        reportUndeclaredIdentifier(aNode.asIdentifier)
-    }
-    method isSpecial(name) is confidential {
-        if (name.startsWith "list") then {
-            endsWithParenthesizedNumber(name, 5)
-        } elseif { name.startsWith "set" } then {
-            endsWithParenthesizedNumber(name, 4)
-        } elseif { name.startsWith "sequence" } then {
-            endsWithParenthesizedNumber(name, 9)
-        } elseif { name.startsWith "dictionary" } then {
-            endsWithParenthesizedNumber(name, 11)
-        } else {
-            false
-        }
-    }
-    method endsWithParenthesizedNumber(name, startIndex) is confidential {
-        def sz = name.size
-        if ( startIndex ≥ sz ) then { return false }
-        if ( name.at(startIndex) ≠ "(" ) then { return false }
-        var i := startIndex + 1
-        while { name.at(i).startsWithDigit } do {
-            i := i + 1
-            if (i > sz) then { return false }
-        }
-        ( name.at(i) == ")" ) && ( i == sz )
-    }
-    method scopeReferencedBy(nd:ast.AstNode) {
-        // Finds the scope referenced by astNode nd.
-        // If nd references an object, then the result
-        // scope will have bindings for the methods of that object.
-        // Otherwise, it will be the empty scope.
-
-        if (nd.isIdentifier) then {
-            def sought = nd.nameString
-            if (sought == "outer") then {
-                return parent.enclosingObjectScope
-            }
-            withSurroundingScopesDo {s->
-                if (s.contains(sought)) then {
-                    return s.getScope(sought)
-                }
-            }
-            errormessages.syntaxError "no method {nd.canonicalName}."
-                  atRange (nd.range)
-        } elseif {nd.kind == "outer"} then {
-            nd.theObjects.last.scope
-        } elseif {nd.kind == "op"} then {
-            def receiverScope = self.scopeReferencedBy(nd.left)
-            receiverScope.scopeReferencedBy(nd.asIdentifier)
-        } elseif {nd.isCall} then { // this includes "memberNodes"
-            def newNd = transformCall(nd)   // resolves implicit receiver
-            def receiverScope = self.scopeReferencedBy(newNd.receiver)
-            receiverScope.scopeReferencedBy(newNd.asIdentifier)
-        } else {
-            ProgrammingError.raise("{nd.nameString} is not a Call, Member, " ++
-                  "Identifier, Outer or Op node.\n{nd.pretty 0}")
-        }
-    }
-    method enclosingObjectScope {
-        // Answer the closest enclosing scope that describes an
-        // object, class or module.  Could answer self.
-        withSurroundingScopesDo { s ->
-            if (s.isObjectScope) then { return s }
-        }
-        ProgrammingError.raise "no object scope found!"
-        // the outermost scope should always be a module scope,
-        // which is an object scope.
-    }
-    method inSameContextAs(encScope) {
-        // Is this scope within the same context as encScope?
-        // i.e. within the same method and object?
-        if (encScope.isObjectScope) then { return false }
-        withSurroundingScopesDo { s ->
-            if (s == encScope) then { return true }
-            if (s.isObjectScope) then { return false }
-            if (s.isMethodScope) then { return false }
-        }
-        ProgrammingError.raise "self = {self}; encScope = {encScope}"
-    }
-    method isUniversal { false }
-    method checkShadowing(ident) asA(newKind) {
-        def name = ident.nameString
-        def priorScope = thatDefines(name) ifNone {
-            return
-        }
-        def description = if (priorScope == self) then {
-            "this"
-        } else {
-            "an enclosing {priorScope.variety}"
-        }
-        def priorKind = priorScope.kind(name)
-        if (priorScope.allowsShadowing && {self.allowsShadowing}) then {
-            return
-        }
-        // new object attributes can shadow old, but other shadowing is illegal
-        var more := ""
-        if (priorScope.elementLines.containsKey(name)) then {
-            def ln = priorScope.elementLines.at(name)
-            if (ln > 0) then {
-                more := " on line {priorScope.elementLines.at(name)}"
-            }
-        }
-        if (newKind == k.vardec) then {
-            def suggs = list [ ]
-            def sugg = errormessages.suggestion.new
-            if (sugg.replaceUntil("=")with("{name} :=")
-                    onLine(ident.line)) then {
-                suggs.push(sugg)
-            }
-            if (priorKind == k.vardec) then {
-                more := more ++ ". To assign to the existing variable, remove 'var'"
-            }
-            errormessages.syntaxError("'{ident.canonicalName}' cannot be "
-                ++ "redeclared because it is already declared in "
-                ++ "{description} scope{more}.")
-                atRange(ident.range)
-                withSuggestions(suggs)
-        } else {
-            errormessages.syntaxError("'{ident.canonicalName}' cannot be "
-                ++ "redeclared in this {variety} scope because it is already declared in "
-                ++ "{description} scope{more}. Use a different name.")
-                atRange(ident.range)
-        }
-    }
-}
-
-def emptyScope = newScopeKind "empty"
+def emptyScope = sm.graceEmptyScope
 ast.nullNode.scope := emptyScope      // TODO: eliminate!
-def builtInsScope = newScopeIn(emptyScope) kind "builtIn"
-def dialectScope = newScopeIn(builtInsScope) kind "dialect"
-def moduleScope = newScopeIn(dialectScope) kind "module"
-def graceObjectScope = newScopeIn(emptyScope) kind "object"
-def booleanScope = newScopeIn(builtInsScope) kind "object"
-def numberScope = newScopeIn(builtInsScope) kind "object"
-def stringScope = newScopeIn(builtInsScope) kind "object"
-def sequenceScope = newScopeIn(builtInsScope) kind "object"
+def builtInsScope = sm.graceBuiltInScope.in(emptyScope)
+def dialectScope = sm.graceDialectScope.in(builtInsScope)
+def moduleScope = sm.graceModuleScope.in(dialectScope)
+def graceObjectScope = sm.graceObjectScope.in(emptyScope)
+def booleanScope = sm.graceObjectScope.in(builtInsScope)
+def numberScope = sm.graceObjectScope.in(builtInsScope)
+def stringScope = sm.graceObjectScope.in(builtInsScope)
+def sequenceScope = sm.graceObjectScope.in(builtInsScope)
+// TODO:  shouldn't the last 4 all be in emptyScope?
 
 initializeConstantScopes
 
-def varFieldDecls = list []   // a list of declarations of var fields
+def varFieldDecls = list []   // a list of nodes that declare var fields
 
 util.setPosition(0, 0)
-def thisModule = ast.identifierNode.new("$module", false)
-                                       scope(moduleScope)
-    // a way of referring to this module, other than by a chain of `outer`s.
-    // The name is one that cannot occur naturally in a Grace program
-
-def universalScope = object {
-    // The scope that defines every identifier,
-    // used when we have no information about an object
-    inherit newScopeIn(emptyScope) kind "universal"
-    method hasParent { false }
-    method parent { ProgrammingError.raise "universal scope has no parent" }
-    method addName(n) { ProgrammingError.raise "can't add to the universal scope" }
-    method addName(n)asA(kd) { ProgrammingError.raise "can't add to the universal scope" }
-    method addNode(n)asA(kd) { ProgrammingError.raise "can't add to the universal scope" }
-    method contains(n) { true }
-    method withSurroundingScopesDo(b) { b.apply(self) }
-    method kind(n) { "unknown" }
-    method at(n) putScope(scp) { }
-    method getScope(n) { self }
-    method isUniversal { true }
-}
 
 method initializeConstantScopes {
     // populate the scopes corresponding to the language literals.
@@ -542,155 +53,129 @@ method initializeConstantScopes {
     // so that we include the confidential method names
 
     mirror.reflect(object{}).allMethodNames.do { each ->
-        graceObjectScope.addName (mirror.numericName(each))
-              asA (k.graceObjectMethod)
+        graceObjectScope.add(
+            variable.named (mirror.numericName(each))
+                typed (ast.unknownType)
+                kind (k.graceObjectMethod) )
     }
     mirror.reflect(true).allMethodNames.do { each ->
-        booleanScope.addName (mirror.numericName(each))
+        booleanScope.add(
+            variable.named (mirror.numericName(each))
+                typed (ast.unknownType)
+                kind (k.methdec) )
     }
     mirror.reflect(1).allMethodNames.do { each ->
-        numberScope.addName (mirror.numericName(each))
+        numberScope.add(
+            variable.named (mirror.numericName(each))
+                typed (ast.unknownType)
+                kind (k.methdec) )
     }
     mirror.reflect "a".allMethodNames.do { each ->
-        stringScope.addName (mirror.numericName(each))
+        stringScope.add(
+            variable.named (mirror.numericName(each))
+                typed (ast.unknownType)
+                kind (k.methdec) )
     }
     mirror.reflect [].allMethodNames.do { each ->
-        sequenceScope.addName (mirror.numericName(each))
+        sequenceScope.add(
+            variable.named (mirror.numericName(each))
+                typed (ast.unknownType)
+                kind (k.methdec) )
     }
 
-    builtInsScope.addName "true"
-    builtInsScope.addName "false"
-    builtInsScope.at "true" putScope(booleanScope)
-    builtInsScope.at "false" putScope(booleanScope)
-    builtInsScope.addName "Unknown" asA (k.typedec)
-    builtInsScope.addName "outer" asA(k.defdec)
-    builtInsScope.addName "..." asA(k.defdec)
-    builtInsScope.addName "print(1)"
-    builtInsScope.addName "native(1)code(1)"
-    builtInsScope.addName "native(1)header(1)"
+    builtInsScope.add(
+        variable.named "true"
+            typed (ast.identifierNode.new("Boolean", ast.typeType))
+            kind (k.methdec)
+            attributeScope(booleanScope) )
+    builtInsScope.add(
+        variable.named "false"
+            typed (ast.identifierNode.new("Boolean", ast.typeType))
+            kind (k.methdec)
+            attributeScope(booleanScope) )
+    builtInsScope.add(
+        variable.named "Unknown"
+            typed (ast.typeType)
+            kind (k.typedec) )
+    builtInsScope.add(
+        variable.named "outer"
+            typed (ast.unknownType)
+            kind (k.defdec) )
+    builtInsScope.add(
+        variable.named "..."
+            typed (ast.unknownType)
+            kind (k.defdec) )
+    builtInsScope.add(
+        variable.named "print(1)"
+            typed (ast.unknownType)
+            kind (k.methdec) )
+    builtInsScope.add(
+        variable.named "native(1)code(1)"
+            typed (ast.unknownType)
+            kind (k.methdec) )
+    builtInsScope.add(
+        variable.named "native(1)header(1)"
+            typed (ast.unknownType)
+            kind (k.methdec) )
 }
 
-method transformIdentifier(node) ancestors(anc) {
+method transformIdentifier(anIdentifier) ancestors(anc) {
     // node is a (copy of an) ast node that represents an applied occurrence of
     // an identifer id.
-    // This method may or may not transform node into another ast.
-    // There is no spec for what this method should do.  The code below
-    // was developed by addding and removing particular cases until
-    // the transformed AST was sufficiecntly similar to the one emitted by the
-    // old identifier resolution pass for the C code generator to accept it.
-    // This method seems to do the following:
-    // - id is self, $module, $dialect => do nothing
-    // - id is outer => transform to an outerNode
-    // - id is in an assignment position and a method ‹id›:=(_) is in scope => do nothing.  The enclosing bind will transform it.
-    // - id is in the lexical scope: store binding occurrence of id in node
-    // - id is a method in an outer object scope: transform into member nodes or requests on outerNodes
-    // - id is a self-method: transform into a request on self
-    // - id is not declared: generate an error message
-
-    def nm = node.nameString
-    def nodeScope = node.scope
-    util.setPosition(node.line, node.column)
-    if (node.isAssigned) then {
-        def nmGets = nm ++ ":=(1)"
-        if (nodeScope.hasDefinitionInNest(nmGets)) then {
-            if (nodeScope.kindInNest(nmGets) == k.methdec) then {
-                return node     // do nothing; this will be tranformed by the enclosing bind
-            }
-        }
+    // This method may or may not transform node into another ast node
+    def defs = sm.variableResolver.definitionsOf (anIdentifier.name) visibleIn (anIdentifier.scope)
+    if (defs.isEmpty) then {
+        reportUndeclaredIdentifier (anIdentifier)
     }
-    def definingScope = nodeScope.thatDefines(nm) ifNone {
-        reportUndeclaredIdentifier(node)
+    if ((defs.size > 1)) then {
+        reportAmbiguityError (defs) node (anIdentifier)
     }
-    def nodeKind = definingScope.kind(nm)
-    if (node.isAssigned) then {
-        if (nodeKind.isAssignable.not) then {
-            reportAssignmentTo(node) declaredInScope(definingScope)
-        }
-    }
-    if (nm == "outer") then {
-        return ast.outerNode [nodeScope.enclosingObjectScope.node].
-                setPositionFrom(node).setScope(nodeScope)
-    }
-    if (nodeKind == k.selfDef) then {
-        return node     // covers self, $module, and $dialect
-    }
-    checkForAmbiguityOf (node) definedIn (definingScope) asA (nodeKind)
-    def v = definingScope.variety
-    if ((v == "dialect") || (v == "builtIn")) then {
-        def p = ast.identifierNode.new("$" ++ v, false) scope(nodeScope)
-        return ast.memberNode.new(nm, p)
-              scope(nodeScope).onSelf.withGenericArgs(node.generics)
-    }
-    if (nodeKind.isParameter) then { return node }
-
-    if (definingScope == moduleScope) then {
-        if (nodeKind == k.defdec) then { return node }
-        if (nodeKind == k.vardec) then { return node }
-        if (nodeKind == k.importdec) then { return node }
-    }
-    if (definingScope == nodeScope.enclosingObjectScope) then {
-        return ast.memberNode.new(nm,
-            ast.identifierNode.new("self", false) scope(nodeScope)
-        ) scope(nodeScope).onSelf.withGenericArgs(node.generics)
-    }
-    if (nodeScope.isObjectScope.not
-             && {nodeScope.isInSameObjectAs(definingScope)}) then {
-        if (nodeKind == k.methdec) then { return node }     // can this ever happen?
-        if (nodeKind == k.defdec) then { return node }
-        if (nodeKind == k.vardec) then { return node }
-    }
-    if (v == "method") then { return node }
-        // node is defined in the closest enclosing method.
-        // there may be intervening blocks, but no objects or clases.
-        // If this identifier is in a block that is returned, then ids
-        // defined in the enclosing method scope have to go in a closure
-        // In that case, leaving the id untouched may be wrong
-    if (v == "block") then { return node }
-    return nodeScope.resolveOuterMethod(nm) fromNode(node)
+    def request = ast.requestPart.request (anIdentifier.nameString)
+    generateOneselfRequestOf (request) from (anIdentifier) using (defs.first)
 }
-method checkForAmbiguityOf (node) definedIn (definingScope) asA (kind) {
-    // The spec says:
-    // When resolving an implicit request, the usual rules of lexical scoping
-    // apply, so a definition of m in the current scope will take precedence
-    // over any definitions in enclosing scopes. However, if m is defined in
-    // the current scope by inheritance or trait use, rather than directly,
-    // and also defined directly in an enclosing scope, then an implicit
-    // request of m is ambiguous and is an error.
 
-    def currentScope = node.scope
-    if (kind.fromParent.not) then { return }
-    def name = node.nameString
-    def conflictingScope = definingScope.parent.thatDefines(name) ifNone {
-        return
-    }
-    if (conflictingScope.variety == "builtIn") then {
-        return  // TODO:  this is a temporary hack to
-                // allow us to get rid of the built-ins.
-                // If we can't redefine them in a Grace file
-                // we can't get rid of them!
-    }
-    def conflictingKind = conflictingScope.kind(name)
-    if (conflictingKind.fromParent) then {
-        return    // request is ambiguous only if name is defined
-                  // _directly_ in an enclosing scope.
-    }
-    var more := ""
-    if (conflictingScope.elementLines.containsKey(name)) then {
-        def earlierDef = conflictingScope.elementLines.at(name)
-        if (earlierDef != 0) then {
-            more := " at line {earlierDef}"
-        }
-    }
-    util.log 60 verbose "currentScope = {currentScope}\n defines {name} as {kind}\nconflictingScope = {conflictingScope}\n defines {name} as {conflictingKind}"
-    errormessages.syntaxError "{node.canonicalName} is both {kind}, and defined in an enclosing scope{more}."
-        atRange(node.range)
-}
 method checkForReservedName(node) {
     def ns = node.nameString
     if (reserved.contains(ns)) then {
         errormessages.syntaxError "{ns} is a reserved name and cannot be re-declared."
             atRange(node.range)
     }
+}
+method generateOneselfRequestOf (request) from (aSourceNode) using (aResolvedVariable) {
+    // generates seom form of "self request" based on aSourceNode — the receiver may be
+    // a literal self, an outerNode, or a direct reference to the module or dialect
+
+    def objectsUp = aResolvedVariable.objectsUp
+    def nodeScope = aSourceNode.scope
+    def receiver = valueOf {
+        def outerChain = list.empty
+        var s := aSourceNode.scope.enclosingObjectScope
+        repeat (objectsUp) times {
+            outerChain.addLast(s.node)
+            s := s.enlosingObjectScope
+        }
+        def v = s.variety
+        if ("dialect | builtIn | module".contains(v)) then {
+            ast.identifierNode.new("$" ++ v, false) scope(self)
+        } elseif {outerChain.isEmpty} then {
+            ast.identifierNode.new("self", false) scope(nodeScope)
+        } else {
+            ast.outerNode(outerChain).setScope(nodeScope)
+        }
+    }
+    ast.memberNode.new (request, receiver).onSelf.scope(nodeScope).
+        withGenericArgs (aSourceNode.generics).setPositionFrom (aSourceNode)
+}
+method reportAmbiguityError (defs) node (node) → None {
+    // Signals an ambiguity error.  Does not return
+
+    var msg := "the name `{node.canonicalName}` is ambiguous; it might refer to either the "
+    defs.do { aVar →
+        msg := msg ++ variable.resolutionString
+    } separatedBy {
+        msg := msg ++ ", or the "
+    }
+    errormessages.syntaxError (msg) atRange (node.range)
 }
 
 method guessesForIdentifier(node) {
@@ -801,11 +286,9 @@ method resolveIdentifiers(topNode) {
         } elseif { node.isCall } then {
             transformCall(node)
         } elseif { node.isInherits } then {
-            transformInherits(node) ancestors(anc)
+            transformReuse(node) ancestors(anc)
         } elseif { node.isBind } then {
             transformBind(node) ancestors(anc)
-        } elseif { node.isTypeDec } then {
-            node
         } else {
             node
         }
@@ -820,14 +303,15 @@ method addAssignmentMethodsToSymbolTable {
     // identifiers have been resolved, so that assignments to module-level
     // var fields are _not_ resolved into requests on the ‹var›(_):= method,
     // but are compiled as simple assignments (which are more efficient). Note
-    // that module-level var fields that are not public don't get (_):= methods
+    // that module-level var fields that are not public don't get (_):= methods;
+    // because module can't be re-used, such methods are never needed.
 
-    varFieldDecls.do { decl ->
-        def dScope = decl.scope
-        def nameGets = decl.nameString ++ ":=(_)"
-        if (dScope.isModuleScope.not || decl.isPublic) then {
-            util.setPosition(decl.line, decl.linePos)
-            dScope.addName(nameGets) asA (k.methdec)  // will complain if already declared
+    varFieldDecls.do { declNode ->
+        def dScope = declNode.scope
+        def nameGets = declNode.nameString ++ ":=(_)"
+        if (dScope.isModuleScope.not || declNode.isPublic) then {
+            dScope.add(declNode) withName (nameGets)  // will complain if already declared
+            // is it necessary to construct a fake method node? The old symbol table did
         }
     }
 }
@@ -841,43 +325,51 @@ method generateGctForModule(module) {
     // We built this representation by iterating over the symbol table.
     // Older versions of this method used to iterate over the ast,
     // but reused methods are not in the ast, and so were omitted.
+    //
+    // The lines in the gct will be parsed by addGctLine(_)toScope(_) and has format
+    // <methodName> <declaredType> <kindString> <attributeScope> <attributes>,
+    // where attributes is optional, and consists of a comma-separated list of strings
 
     def gct = dictionary.empty
     def theDialect = module.theDialect.moduleName
     def methodList = list.empty
     def typeList = list.empty
     def ms = module.scope
-    def pathsToProcess = list.empty
+    def scopesToProcess = set.empty
+    def scopesAlreadyProcessed = set [ms, sm.graceEmptyScope, sm.graceUniversalScope]
     ms.types.keysAndValuesDo { typeName, typeDec ->
         gct.at "typedec-of:{typeName}" put [typeDec]
         typeList.add (typeName)
     }
 
-    ms.keysAndKindsDo { vName, knd ->
-        if (knd.forGct) then {
-            methodList.add (vName ++ knd.tag)
-            pathsToProcess.add(vName)
+    ms.localAndReusedNamesAndValuesDo { vName, defn ->
+        if (defn.kind.forGct) then {
+            methodList.add (serializeVariable (defn) in (ms))
+            scopesToProcess.add(defn.attributeScope)
         }
     }
-    while { pathsToProcess.isEmpty.not } do {
-        def subList = list.empty
-        def vName = pathsToProcess.removeFirst
-        def vNameScope = ms.scopeForDottedName(vName)
+    while { scopesToProcess.isEmpty.not } do {
+        def s = scopesToProcess.removeFirst
+        if (scopesAlreadyProcessed.contains(s).not) then {
+            scopesAlreadyProcessed.add(s)
+            def entries = list.empty
+            s.localNamesAndValuesDo { vName, v ->
                 if (vName == "graphicApplicationSize(1)") then {
-            util.log 45 verbose "graphicApplicationSize(1) scope contains keys {vNameScope.keysAsList}"
-        }
-        vNameScope.keysAndKindsDo { subName, subKnd ->
-            if (subKnd.forGct) then {
-                subList.add (subName ++ subKnd.tag)
-                pathsToProcess.addLast "{vName}.{subName}"
+                    util.log 45 verbose "graphicApplicationSize(1) scope contains names {vName.attributeScope.allNames}"
+                }
+                entries.add(serializeVariable (v) in (s))
+                def subScope = v.attributeScope
+                if (scopesAlreadyProcessed.contains(subScope).not) then {
+                    scopesToProcess.add(subScope)
+                }
             }
-        }
-        if (subList.isEmpty.not) then {
-            gct.at "methods-of:{vName}" put (subList.sort)
-        }
-        vNameScope.types.keysAndValuesDo { tName, tDec ->
-            gct.at "typedec-of:{vName}.{tName}" put [tDec]
-            typeList.add "{vName}.{tName}"
+            if (entries.isEmpty.not) then {
+                gct.at (s.uid) put (entries.sort)
+            }
+            s.types.keysAndValuesDo { eachType, eachDef ->
+                gct.at "typedec-of:{s.uid}.{eachType}" put [eachDef.toGrace]
+                typeList.add "{s.uid}.{eachType}"
+            }
         }
     }
     gct.at "methods" put (methodList.sort)
@@ -896,6 +388,37 @@ method generateGctForModule(module) {
         if (theDialect == "none") then { [] } else { [theDialect] }
     )
     gct
+}
+
+method serializeVariable (defn) in (s) {
+    // returns a string representation of the variable defn
+    var anns := ""
+    if (defn.hasAnnotations) then {
+        anns := defn.annotations.fold {
+            acc, each -> "{acc},{each}"
+        } startingWith " "
+    }
+    def attrScp = defn.attributeScope
+    "{defn.nameString} {typeName (defn.declaredType) in (attrScp)} {defn.kind.tag} {attrScp.uid}{anns}"
+}
+
+method typeName (typeNode) in (scope) {
+    // returns a name for the type expression denoted by tyepNode
+    // Creates a name starting with $ if necessary
+    if (typeNode.isIdentifier) then {
+        typeNode.nameString
+    } else {
+        def name = "$type{sequenceNr}"
+        scope.types.at (name) put (typeNode.toGrace 0)
+        name
+    }
+}
+
+var seed := 100
+
+method sequenceNr {
+    seed := seed + 1
+    seed
 }
 
 method methodSignature(methNode) -> String {
@@ -928,15 +451,18 @@ method writerSignature(declNode) -> String {
     "{declNode.nameString}:=(_:{declNode.decType.toGrace 0}) → Done"
 }
 
+def importedSubscopes = dictionary.empty
+
 method processGct(gct, importedModuleScope) {
     // Populates importedModuleScope with the information in gct,
     // which is a dictionary mapping gct keys to collections.
 
     def moduleName = (ast.withoutLeadingComponents (gct.at "path".first)).
             replace ".grace" with ""
+    importedSubscopes.clear        // because we will be importing multiple modules
     def moduleMethods = gct.at "methods" ifAbsent { [] } >> set
     moduleMethods.do { meth ->
-        addMethod (meth) toScope (importedModuleScope)
+        addGctLine (meth) toScope (importedModuleScope) for (gct)
     }
     while {moduleMethods.isEmpty.not} do {
         def meth = moduleMethods.anyone
@@ -961,8 +487,8 @@ method processGct(gct, importedModuleScope) {
                     util.log 45 verbose "adding `{each}` to {objScope.asDebugString}"
                 }
                 def eachName = each.split " ".first
-                addMethod(each) toScope (objScope)
-                def ns = newScopeIn(objScope) kind "object"
+                addGctLine (each) toScope (objScope) for (gct)
+                def ns = sm.graceObjectScope.in(objScope)
                 objScope.at(eachName) putScope(ns)
                 moduleMethods.add "{methName}.{each}"
                 if (eachName == "graphicApplicationSize(1)") then {
@@ -973,14 +499,38 @@ method processGct(gct, importedModuleScope) {
     }
 }
 
-method addMethod (meth) toScope (s) {
-    // meth is s string: <methodName>" <tag>"?
-    // add it to scope s, with the approriate kind, based on the <tag>
-    def split = meth.split " "
-    if (split.size == 1) then {
-        s.addName(meth) asA (k.methdec)
-    } elseif {split.size == 2} then {
-        s.addName(split.first) asA (k.for(split.second))
+method addGctLine (gctLine:String) toScope (s) for (gct) {
+    // Adds a symbol table entry based on gctLine to scope s
+    //
+    // gctLine generated by the method generateGctForModule, and has format
+    // <methodName> <declaredType> <kindString> <attributeScope> <attributes>
+    // where attributes is optional, and consists of a comma-separated list of strings
+
+    def split = gctLine.split " "
+    if (split.size < 4) then {
+        EnvironmentException.raise "gct line \"{gctLine}\" has wrong number of fields"
+    }
+    def newVar = variable.named (split.first)
+        typed (split.second)
+        kind (k.for(split.third))
+        attributeScope (scopeWithUid(split.fourth) for (gct))
+    if (split.size == 5) then {
+        def annotations = split.fifth.split ","
+        newVar.isAnnotation := annotations.contains "annotation"
+        newVar.isRequired := annotations.contains "required"
+        newVar.isAbstract := annotations.contains "abstract"
+    }
+    s.add(newVar)
+}
+
+method scopeWithUid(str) for (gct) {
+    importedSubscopes.at(str) ifAbsent {
+        def newScope = sm.graceObjectScope
+        importedSubscopes.at(str) put (newScope)
+        gct.at "scope:{str}" do { gctLine ->
+            addGctLine (gctLine) toScope (newScope) for (gct)
+        }
+        newScope
     }
 }
 
@@ -994,11 +544,11 @@ method setupContext(moduleNode) {
     moduleScope.clear
     varFieldDecls.clear
 
-    moduleScope.addName "$module" asA (k.selfDef)
-    moduleScope.at "$module" putScope(moduleScope)
+    moduleScope.add(variable.named "$module"
+        typed (ast.unknownType) kind (k.selfDef) attributeScope (moduleScope))
 
-    moduleScope.addName "$dialect" asA (k.selfDef)
-    moduleScope.at "$dialect" putScope(dialectScope)
+    moduleScope.add(variable.named "$dialect"
+        typed (ast.unknownType) kind (k.selfDef) attributeScope (dialectScope))
 
     def dialectNode = moduleNode.theDialect
     def dialectName:String = dialectNode.value
@@ -1057,7 +607,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             return true
         }
         method visitBlock (o) up (anc) {
-            o.scope := newScopeIn(anc.parent.scope) kind "block"
+            o.scope := sm.graceBlockScope.in(anc.parent.scope)
             true
         }
         method visitDefDec (o) up (anc) {
@@ -1101,7 +651,12 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                         // direct assignments, and hence have to distinguish
                         // programmer-writen :=(_) methods from synthetic ones.
                     }
-                    scope.addNode(o) asA (kind)
+                    scope.add(match (kind)
+                        case {k.vardec -> variable.graceVarFrom(o)}
+                        case {k.defdec -> variable.graceDefFrom(o)}
+                        case {k.typedec -> variable.graceTypeFrom(o)}
+                        case {k.parameter -> variable.graceParameterFrom(o)}
+                    )
                 }
             } elseif {o.wildcard} then {
                 errormessages.syntaxError("'_' cannot be used in an expression")
@@ -1118,7 +673,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.scope := anc.parent.scope
             xmodule.checkExternalModule(o)
             def gct = xmodule.gctDictionaryFor(o.moduleName)
-            def otherModule = newScopeIn(anc.parent.scope) kind "module"
+            def otherModule = sm.graceModuleScope.in(anc.parent.scope)
             otherModule.node := o
             processGct(gct, otherModule)
             o.scope.at(o.nameString) putScope(otherModule)
@@ -1158,19 +713,17 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             if (ident.isBindingOccurrence) then {
                 ident.isDeclaredByParent := true
                 // aliased and excluded names are appliedOccurrences
-                o.scope := newScopeIn(surroundingScope) kind "method"
+                o.scope := sm.graceMethodScope.in(surroundingScope)
                 if (o.returnsObject && o.isOnceMethod.not) then {
                     o.isFresh := true
                 }
-                def knd = if (o.isRequired || o.isAbstract) then {
+                def varObj = if (o.isRequired || o.isAbstract) then {
                     // TODO: do we need to distinguish abstract and required methods?
-                    k.required
-                } elseif {o.isFresh} then {
-                    k.freshmeth
+                    variable.graceRequiredMethodFrom(o)
                 } else {
-                    k.methdec
+                    variable.graceMethodFrom (o)
                 }
-                surroundingScope.addNode (ident) asA (knd)
+                surroundingScope.add(varObj)
                 if (o.isPublic) then {
                     surroundingScope.methodTypes.at(ident.nameString) put(methodSignature(o))
                 }
@@ -1188,16 +741,16 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             def ident = o.asIdentifier
             checkForReservedName(ident)
-            surroundingScope.addNode (ident) asA (k.methdec)
+            surroundingScope.add(variable.graceMethodFrom (o))
             ident.isDeclaredByParent := true
-            o.scope := newScopeIn(anc.parent.scope) kind "methodtype"
+            o.scope := sm.graceParameterScope.in(anc.parent.scope)
             // the scope for the parameters (including the type parameters,
             // if any) of this method.
             true
         }
         method visitObject (o) up (anc) {
             def myParent = anc.parent
-            o.scope := newScopeIn(myParent.scope) kind "object"
+            o.scope := sm.graceObjectScope.in(myParent.scope)
             if (o.inTrait) then { checkTraitBody(o) }
             true
         }
@@ -1213,16 +766,16 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             def ident = o.name
             checkForReservedName(ident)
-            enclosingScope.addNode(ident) asA(k.typedec)
+            enclosingScope.add(variable.graceTypeFrom(ident))
             enclosingScope.types.at(ident.nameString) put(o.toGrace 0)
             ident.isDeclaredByParent := true
-            o.scope := newScopeIn(enclosingScope) kind "typedec"
+            o.scope := sm.graceTypeScope.in(enclosingScope)
             // this scope will be the home for any type parameters.
             // If there are no parameters, it won't be used.
             true
         }
         method visitTypeLiteral (o) up (anc) {
-            o.scope := newScopeIn(anc.parent.scope) kind "type"
+            o.scope := sm.graceInterfaceScope.in(anc.parent.scope)
             true
         }
         method visitReturn(o) up (anc) {
@@ -1307,17 +860,17 @@ method collectParentNames(node) {
     // node is an object or class; puts the names that it inherits and uses into
     // its scope.  In the process, checks for a cycle in the inheritance chain
     def nodeScope = node.scope
-    if (nodeScope.inheritedNames == completed) then {
+    if (nodeScope.areReusedNamesCompleted) then {
         return
     }
-    if (nodeScope.inheritedNames == inProgress) then {
+    if (nodeScope.areReusedNamesInProgress) then {
         errormessages.syntaxError "cyclic inheritance or trait use."
             atRange(node.line, node.column, node.column + 4)
     }
-    nodeScope.inheritedNames := inProgress
+    nodeScope.markReusedNamesAsInProgress
     gatherInheritedNames(node)
     gatherUsedNames(node)
-    nodeScope.inheritedNames := completed
+    nodeScope.markReusedNamesAsCompleted
 }
 
 method gatherInheritedNames(node) is confidential {
@@ -1338,23 +891,24 @@ method gatherInheritedNames(node) is confidential {
                 // an imported module, in which case the names have
                 // already been collected, or superScope is universal,
                 // when we have no information about inherited attributes
-                    collectParentNames(superScope.node)
-                }
+                collectParentNames(superScope.node)
             }
+        }
         def excludedNames = inhNode.exclusions.map { exMeth -> exMeth.nameString } >> list
-        superScope.elements.keysDo { each ->
-            if ((each ≠ "self") && (excludedNames.contains(each).not)) then {
-                objScope.addName(each) asA(inheritedKind)
-                objScope.at(each) putScope(superScope.getScope(each))
-                inhNode.providedNames.add(each)
+        superScope.localAndReusedNamesAndValuesDo { name, defn ->
+            if ((name ≠ "self") && (excludedNames.contains(name).not)) then {
+                objScope.addReused(defn) withName (name)
+                inhNode.providedNames.add(name)
             }
         }
         inhNode.aliases.do { a ->
             def old = a.oldName.nameString
             def new = a.newName.nameString
-            if (superScope.contains(old)) then {
-                objScope.addName(new) asA(inheritedKind)
-                objScope.at(new) putScope(superScope.getScope(old))
+            if (superScope.defines(old)) then {
+                def defn = superScope.lookupLocallyOrReused(old) ifAbsent {
+                    ProgrammingError.raise "superscope is inconsistet"
+                }
+                objScope.addReused (defn) withName (new)
                 inhNode.providedNames.add(new)
             } else {
                 errormessages.syntaxError("can't define an alias for " ++ a.oldName.canonicalName ++
@@ -1397,15 +951,14 @@ method gatherUsedNames(objNode) is confidential {
             collectParentNames(traitNode)
         }
         def excludedNames = t.exclusions.map { exMeth -> exMeth.nameString } >> list
-        traitScope.keysAndKindsDo { nm, kd ->
-            if (kd.forUsers && excludedNames.contains(nm).not) then {
-                objScope.addName(nm) asA(k.fromTrait)
-                objScope.at(nm) putScope(traitScope.getScope(nm))
+        traitScope.localAndReusedNamesAndValuesDo { nm, defn ->
+            if (defn.kind.forUsers && excludedNames.contains(nm).not) then {
+                objScope.addReused(defn)
                 if (nm == "graphicApplicationSize(1)") then {
-                    util.log 45 verbose "put scope {traitScope.getScope(nm).asDebugString} at {nm} in {objScope.asDebugString}"
+                    util.log 45 verbose "put scope {traitScope.lookupReused(nm).asDebugString} at {nm} in {objScope.asDebugString}"
                 }
                 t.providedNames.add(nm)
-                if (kd.isRequired) then {
+                if (defn.isRequired) then {
                     requiredNames.add(nm)
                 }
             }
@@ -1413,14 +966,13 @@ method gatherUsedNames(objNode) is confidential {
         t.aliases.do { a ->
             def old = a.oldName.nameString
             def new = a.newName.nameString
-            if (traitScope.contains(old)) then {
-                objScope.addName(new) asA(k.fromTrait)
-                objScope.at(new) putScope(traitScope.getScope(old))
-                t.providedNames.add(a.newName.nameString)
-            } else {
-                errormessages.syntaxError("can't define an alias for " ++ a.oldName.canonicalName ++
-                    " because it is not present in the trait")
+            traitScope.lookupLocallyOrReused(old) ifAbsent {
+                errormessages.syntaxError("can't define an alias for " ++
+                    "{a.oldName.canonicalName} because it is not present in the trait")
                     atRange(a.oldName.range)
+            } ifPresent { defn ->
+                objScope.addReused (defn) withName (new)
+                t.providedNames.add(new)
             }
         }
         t.exclusions.do { exMeth ->
@@ -1483,98 +1035,83 @@ class conflictForMethodName(nm) from(srcs) {
     def sources is public = srcs
 }
 
+method reusedScope (aReuseStatement) {
+    // answers the scope referenced by the super expression in aReuseStatement
+    def expr = aReuseStatement.reuseExpr
+    if (expr.receiver.isSelf) then {
+        selfReuseError (aReuseStatement)
+    }
+    expr.objectScopeFor (aReuseStatement)
+}
+
+method selfReuseError (aReuseNode) {
+    errormessages.SyntaxError(
+          "it's not possible to {aReuseNode.statementName} `self`, because " ++
+          "`self` does not yet exist when the {aReuseNode.statementName} " ++
+          "statement is executed"
+    ) atRange (aReuseNode.reuseExpr.range)
+}
+
 method transformBind(bindNode) ancestors(anc) {
     // bindNode is (a shallow copy of) a bindNode.  If it is binding a
     // "member" or an identifier, transform it into a request on a setter
 
-    def dest = bindNode.dest
-    def currentScope = bindNode.scope
-    util.setPosition(bindNode.line, bindNode.column)
-    if ( dest.isMember ) then {
-        def nm = dest.nameString
-        def nmGets = nm ++ ":="
-        def part = ast.requestPart.request(nmGets) withArgs [bindNode.value]
-                scope(currentScope)
-        def newCall = ast.callNode.new(dest.receiver, [part]) scope(currentScope)
-        newCall.end := bindNode.value.end
-        if (dest.receiver.isSelfOrOuter) then {
-            newCall.onSelf
-        }
-        return newCall
-    } elseif { dest.isIdentifier } then {
-        def nm = dest.nameString
-        def nmGets = nm ++ ":=(1)"
-        if (currentScope.hasDefinitionInNest(nmGets)) then {
-            if (currentScope.kindInNest(nmGets) == k.methdec) then {
-                def rcvr = currentScope.resolveOuterMethod(nmGets) fromNode(bindNode).receiver
-                def part = ast.requestPart.request(nm ++ ":=")
-                        withArgs [ bindNode.value ] scope(currentScope)
-                def newCall = ast.callNode.new(rcvr, [ part ]) scope(currentScope).onSelf
-                newCall.end := bindNode.value.end
-                return newCall
-            } else {
-                util.log 20 verbose "bind check 2 failed"
-            }
+    def lhs = bindNode.lhs
+    def nm = lhs.nameString
+    def nmGets = nm ++ ":=(1)"
+    def defs = sm.variableResolver.definitionsOf (nmGets) visibleIn (bindNode.scope)
+    defs.ifEmpty {
+        def badBinding = bindNode.scope.lookup (lhs.name) ifAbsent {
+            reportAssignmentTo (lhs) declaredInScope (lhs.scope)
         }
     }
-    bindNode
+    if (defs.size > 1) then {
+        reportAmbiguityError (defs) node (lhs)
+    }
+    def aResolvedVariable = defs.first
+    if (aResolvedVariable.definition.isMethod) then {
+        def request = ast.requestPart.request(nm ++ ":=")
+                withArgs [bindNode.rhs] scope(bindNode.scope).
+                setPositionFrom(bindNode)
+        generateOneselfRequestOf (request) from (bindNode) using (aResolvedVariable)
+    } else {
+        bindNode
+    }
 }
 
+method transformReuse (ruNode) ancestors(anc) {
+    // ruNode is (a shallow copy of) a reuseNode (inherit or use).  Transform its
+    // request to disambiguate the receiver.  Superobject initialization and
+    // alias and exclude modifiers are dealt with in the code generator
+    // Checks on the legality of the reuse
 
-method transformInherits(inhNode) ancestors(anc) {
-    // inhNode is (a shallow copy of) an inheritNode.  Transform it to deal
-    // with superobject initialization and inherited names, including
-    // inheritance modifiers
-    def superExpr = inhNode.value
-    def currentScope = inhNode.scope
+    def reuseExpr = ruNode.reuseExpr
+    def currentScope = ruNode.scope
     if (currentScope.isObjectScope.not) then {
-        errormessages.syntaxError "{inhNode.statementName} statements must be directly inside an object."
-                    atRange(inhNode.range)
+        errormessages.syntaxError
+              "{ruNode.statementName} statements must be directly inside an object."
+              atRange(ruNode.range)
     }
-    if (superExpr.isAppliedOccurrence) then {
-        def nm = superExpr.nameString
-        def definingScope = currentScope.thatDefines(nm)
-        if (definingScope == currentScope) then {
-            errormessages.syntaxError "the object being inherited must be from an enclosing scope."
-                atRange(superExpr.range)
-        }
-        if ((definingScope.kind(nm)) ≠ k.methdec) then {
-            errormessages.syntaxError "the object being inherited must be freshly generated from a method."
-                  atRange(superExpr.range)
-        }
-        def sv = definingScope.variety
-        if ((sv == "builtIn") || (sv == "dialect")) then {
-            // this deals with "inherit true" etc; identifiers from the built-in
-            // scope have not been transformed to member nodes
-
-            def receiverNode = ast.identifierNode.new("$" ++ sv, false) scope(currentScope)
-            def newCall = ast.callNode.new(receiverNode, [
-                ast.requestPart.request (nm) withArgs [] scope(currentScope),
-                ast.requestPart.request "$object" withArgs [
-                    ast.identifierNode.new("self", false) scope(currentScope)] scope(currentScope) ])
-            newCall.end := superExpr.end
-            inhNode.value := newCall
-        } else {
-            ProgrammingError.raise ("untransformed idfentifer `{nm}` found " ++
-                "in {inhNode.statementName} statement on line {inhNode.line}")
-        }
-    } elseif {superExpr.isMember} then {
-        def newCall = ast.callNode.new(inhNode.value.receiver, [
-            ast.requestPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
-            ast.requestPart.request "$object" withArgs (
-            [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope) ]
-            ) scope(currentScope)
-        newCall.isSelfRequest := superExpr.isSelfRequest
-        newCall.end := superExpr.end
-        inhNode.value := newCall
-    } elseif {superExpr.isCall} then {
-        superExpr.parts.push(ast.requestPart.request "$object"
-            withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
+    if (reuseExpr.isAppliedOccurrence) then {
+        ruNode.value := transformIdentifier (reuseExpr) ancestors (anc)
+    } elseif {reuseExpr.isCall} then {
+        ruNode.value := transformCall (reuseExpr)
     } else {
-        errormessages.syntaxError "inheritance must be from a freshly-created object."
-            atRange(inhNode.range)
+        errormessages.CompilationError.raise "unknown reuse expression {reuseExpr.toGrace 0}"
     }
-    inhNode
+    def reusedScope = reusedScope (ruNode)
+    if (reusedScope.isGenerative.not) then {
+        errormessages.syntaxError "inheritance must be from a freshly-created object."
+              atRange(ruNode.range)
+    }
+    if (ruNode.isUse) then {
+        if (reusedScope.isLegalAsTrait.not) then {
+            errormessages.syntaxError ("the expression in your use " ++
+                  "statement does not refer to a trait")
+                  atRange (reuseExpr)
+        }
+    }
+    ruNode
 }
 
 method transformCall(cNode) -> ast.AstNode {
@@ -1641,7 +1178,7 @@ method resolve(moduleNode) {
         util.outprint "module with symbol tables"
         util.outprint "====================================="
         util.outprint "top-level"
-        util.outprint "Universal scope = {universalScope.asDebugString}"
+        util.outprint "Universal scope = {sm.graceUniversalScope.asDebugString}"
         moduleNode.scope.withSurroundingScopesDo { each ->
             util.outprint (each.asString)
             util.outprint (each.elementScopesAsString)
