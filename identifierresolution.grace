@@ -119,6 +119,37 @@ method initializeConstantScopes {
             kind (k.methdec) )
 }
 
+method pathScope(reqs) {
+    // reqs is an AST node representing a sequence of requests, such as a.b.c;
+    // return the scope. That is, find the scope associated with c in the scope
+    // associated with b in the scope associated with a in a's scope.  Answers
+    // universalScope if we don't have enough information to be exact.
+
+    def s = reqs.scope
+    if (reqs.isIdentifier) then {
+        s.lookup(reqs.nameString)
+    } elseif { reqs.isCall } then {
+        pathScope(reqs.receiver).attributeScopeOf(reqs.nameString)
+    } elseif { reqs.isOuter } then {
+        var resultScope := s.objectScope  // self's scope
+        repeat (reqs.numberOfLevels) times {
+            resultScope := resultScope.objectScope
+        }
+        resultScope
+    } elseif { reqs.isConstant } then {
+        match (reqs.kind)
+              case {"string" -> stringScope }
+              case {"num" -> numberScope }
+    } elseif { reqs.isSequenceConstructor } then {
+        sequenceScope
+    } elseif { reqs.isObject } then {
+        s  // this is for the case where a is an literal object constructor
+    } else {
+        ProgrammingError.raise("In pathScopes — unexpected request sequence {reqs.toGrace 0} " ++
+              "on line {reqs.line}")
+    }
+}
+
 method transformIdentifier(anIdentifier) ancestors(anc) {
     // node is a (copy of an) ast node that represents an applied occurrence of
     // an identifer id.
@@ -127,7 +158,7 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
     if (defs.isEmpty) then {
         reportUndeclaredIdentifier (anIdentifier)
     }
-    if ((defs.size > 1)) then {
+    if (defs.size > 1) then {
         reportAmbiguityError (defs) node (anIdentifier)
     }
     def request = ast.requestPart.request (anIdentifier.nameString)
@@ -142,17 +173,18 @@ method checkForReservedName(node) {
     }
 }
 method generateOneselfRequestOf (request) from (aSourceNode) using (aResolvedVariable) {
-    // generates seom form of "self request" based on aSourceNode — the receiver may be
-    // a literal self, an outerNode, or a direct reference to the module or dialect
+    // generates and returns some form of "self request" based on aSourceNode.
+    // The receiver may be a literal self, an outerNode, or a direct reference
+    // to the module or dialect
 
     def objectsUp = aResolvedVariable.objectsUp
     def nodeScope = aSourceNode.scope
     def receiver = valueOf {
         def outerChain = list.empty
-        var s := aSourceNode.scope.enclosingObjectScope
+        var s := aSourceNode.scope.objectScope
         repeat (objectsUp) times {
             outerChain.addLast(s.node)
-            s := s.enlosingObjectScope
+            s := s.objectScope
         }
         def v = s.variety
         if ("dialect | builtIn | module".contains(v)) then {
@@ -1116,44 +1148,36 @@ method transformReuse (ruNode) ancestors(anc) {
 
 method transformCall(cNode) -> ast.AstNode {
     def methodName = cNode.nameString
-    var result := cNode
     def s = cNode.scope
     def nominalRcvr = cNode.receiver
-    if (nominalRcvr.isImplicit) then {
-        def rcvr = s.resolveOuterMethod(methodName) fromNode(cNode)
-        if ((rcvr.isMember) && {rcvr.value == "out(1)"}) then {
-            native "js" code "debugger;"
+    def result = if (nominalRcvr.isImplicit) then {
+        def theRequest = cNode.nameString
+        def defs = sm.variableResolver.definitionsOf (methodName) visibleIn (s)
+        if (defs.isEmpty) then {
+            reportUndeclaredIdentifier (cNode)
         }
-        if (rcvr.isIdentifier) then {
-            util.log 60 verbose "Transformed {cNode.pretty 0} did nothing"
-            return cNode
+        if (defs.size > 1) then {
+            reportAmbiguityError (defs) node (cNode)
         }
-        def definingScope = s.thatDefines(methodName)
-        checkForAmbiguityOf (cNode)
-            definedIn (definingScope) asA (definingScope.kind(methodName))
-        cNode.receiver := rcvr.receiver
-        cNode.onSelf
-        if (definingScope.kind(methodName).isFresh) then {
-            cNode.isFresh := true
-            cNode.returnedObjectScope := definingScope.getScope(methodName)
-        }
+        generateOneselfRequestOf (theRequest) from (cNode) using (defs.first)
     } elseif { nominalRcvr.isOuter && (cNode.nameString == "outer") } then {
-        // deal with outer.outer ..., which has been parsed into a memberNode
-        // The reciever has already been converted from an identifier to an
-        // outerNode; here we add another object to that outerNode's object list.
+        // deal with outer.outer ..., which has been (incorrectly) parsed into a
+        // a request of `outer` with an outernode as receiver.
+        // Here we add another object to that outerNode's object list.
 
         def priorOuter = nominalRcvr.theObjects.last
-        def newOuter = priorOuter.scope.parent.enclosingObjectScope.node
+        def newOuter = priorOuter.objectScope.outerScope.objectScope.node
         nominalRcvr.theObjects.addLast(newOuter)
-        result := nominalRcvr
+        nominalRcvr
     } else {
-        if (cNode.isTailCall) then {    // don't do this work if no one cares
-            def rcvrScope = cNode.scope.receiverScope(cNode.receiver)
-            def ansrScope = rcvrScope.getScope(cNode.nameString)
-            if (ansrScope.isFreshObjectScope) then {
-                result.isFresh := true
-                result.returnedObjectScope := ansrScope
-            }
+        cNode
+    }
+    if (result.isTailCall) then {    // do this work only when someone might care
+        def rcvrScope = pathScope(result.receiver)
+        def answerScope = rcvrScope.attributeScopeOf(result.nameString)
+        if (answerScope.isFreshObjectScope) then {
+            result.isFresh := true
+            result.returnedObjectScope := answerScope
         }
     }
     result
