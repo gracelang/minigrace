@@ -298,7 +298,7 @@ class graceObjectScope {
         // scope reuses.	If it is not defined, return the value of executing aBlock.
         if (areReusedNamesCompleted.not) then {
             ProgrammingError.raise ("reused names of {self} declared on " ++
-                "{node.lineRangeString} have not been gathered")
+                "{node.range.lineRangeString} have not been gathered")
         }
         reusedNames.at (name) ifAbsent {
             aBlock.apply
