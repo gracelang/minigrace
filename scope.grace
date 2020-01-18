@@ -69,7 +69,7 @@ def graceEmptyScope is public = object {
     method lookupLexically (name) ifAbsent (aBlock) {
         aBlock.apply
     }
-    method enclosingObjectScope {
+    method objectScope {
         self
     }
     method defines (name) {
@@ -135,7 +135,7 @@ def graceUniversalScope is public = object {
     method lookupLocallyOrReused (name) ifAbsent (aBlock) { universalVariable }
     method allNamesAndValuesDo (aBlock) { iterationError }
     method lookupLexically (name) ifAbsent (aBlock) { universalVariable }
-    method enclosingObjectScope { self }
+    method objectScope { self }
     method defines (name) { true }
     method allNamesAndValuesDo (aBlock) filteringOut (closerDefinitions) {
         iterationError
@@ -148,7 +148,7 @@ def graceUniversalScope is public = object {
     }
     method isObjectScope {
         // I'm treated as an object scope so that every non-empty scope has
-        // an enclosingObjectScope
+        // an enclosing objectScope
         true
     }
     method lookupLexically (name) ifAbsent (aBlock) ifPresent (pBlock) {
@@ -252,6 +252,7 @@ class graceObjectScope {
         }
     }
     method objectScope {
+        // this scope, since it is an object scope
         self
     }
     method addLocalAndReusedFrom (anotherScope) {
@@ -504,13 +505,11 @@ class graceScope {
         // Overriden in graceObjectScope
         true
     }
-    method enclosingObjectScope {
-        var s
-        s := self
-        do {
-
-        } while {
-            s := s.outerScope.isObjectScope.not
+    method objectScope {
+        // the enclosing object scope, since this scope is not an object scope
+        var s := self.outerScope
+        while { s.isObjectScope.not } do {
+             s := s.outerScope
         }
         s
     }
@@ -649,9 +648,6 @@ class graceScope {
     }
     method removeReused (aName) ifAbsent (aBlock) {
         ProgrammingError.raise "a {variety} scope has no reused names"
-    }
-    method objectScope {
-        enclosingObjectScope
     }
     method lookupLocallyOrOutwards (name) ifAbsent (aBlock) {
         // Return the variable corresponding to name, which may or may not be
