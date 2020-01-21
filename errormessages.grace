@@ -416,7 +416,7 @@ method syntaxError(message:String, errLinenum:Number,
 
     def errorObj = object {
         def line is public = errLinenum
-        def position is public = errPosition
+        def column is public = errPosition
         def arrow is public = arr
         def sugg is public = suggestions
     }
@@ -552,7 +552,7 @@ method error(message) atLine(errLinenum) withSuggestions(suggestions) {
     }
     def errorObj = object {
         def line is public = errLinenum
-        def position is public = ""
+        def column is public = ""
         def arrow is public = arr
         def sugg is public = suggestions
     }
