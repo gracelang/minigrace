@@ -166,6 +166,7 @@ type SymbolTable = Unknown
 
 trait typeArguments {
     method generics -> Collection | Boolean is required
+    method generics:=(nu) is required
 
     method numTypeArgs {
         if (false == generics) then { 0 } else { generics.size }
@@ -174,6 +175,11 @@ trait typeArguments {
         if (false == generics) then { [] } else { generics }
     }
     method hasTypeArgs { false ≠ generics }
+
+    method withGenericArgs(gens) {
+        generics := gens
+        self
+    }
 }
 
 class baseNode {
@@ -1557,8 +1563,7 @@ def callNode is public = object {
         use typeArguments
 
         def kind is public = "call"
-        var parts is public := parts'            // [ requestPart ]
-        var generics is public := false
+        var parts is public := parts'          // [ requestPart ]
         var receiver is public := receiver'    // formerly `value`
         var isSelfRequest is public := false
         var isTailCall is public := false      // is possibly the result of a method
@@ -1608,6 +1613,12 @@ def callNode is public = object {
             parts.fold { acc, each -> acc ++ each.nameString } startingWith ""
         }
 
+        method generics:=(gens) {
+            parts.first.withGenericArgs(gens)
+        }
+
+        method generics { parts.first.generics }
+
         method canonicalName {
             // the name of the method being requested, in underscore form
             parts.fold { acc, each -> acc ++ each.canonicalName }
@@ -1649,11 +1660,6 @@ def callNode is public = object {
                         arg.accept(visitor) from(newChain)
                     }
                 }
-                if (false != generics) then {
-                    generics.do { each ->
-                        each.accept(visitor) from(newChain)
-                    }
-                }
             }
         }
         method map(blk) ancestors(ac) {
@@ -1661,7 +1667,6 @@ def callNode is public = object {
             def newChain = ac.extend(n)
             n.receiver := receiver.map(blk) ancestors(newChain)
             n.parts := listMap(parts, blk) ancestors(newChain)
-            n.generics := maybeListMap(generics, blk) ancestors(newChain)
             blk.apply(n, ac)
         }
         method pretty(depth) {
@@ -1670,12 +1675,6 @@ def callNode is public = object {
             s := s ++ if (isSelfRequest) then { " on self\n" } else { "\n" }
             s := s ++ spc ++ "Receiver: {receiver.pretty(depth + 1)}\n"
             s := s ++ spc ++ "Method Name: {nameString}\n"
-            if (false != generics) then {
-                s := s ++ spc ++ "  Generics:\n"
-                for (generics) do {g->
-                    s := s ++ spc ++ "    " ++ g.pretty(depth + 2) ++ "\n"
-                }
-            }
             s := s ++ spc ++ "Parts:"
             for (self.parts) do { part ->
                 s := s ++ "\n  " ++ spc ++ part.pretty(depth + 2)
@@ -2448,6 +2447,7 @@ def identifierNode is public = object {
         var isAssigned is public := false
         var inRequest is public := false
         var generics is public := false
+            // TODO: remove them and see what happens
         var isDeclaredByParent is public := false
         var variable is public := "not yet bound"   // the variable for this id
         var end:Position is public := if (line ≠ 0) then {
@@ -2473,6 +2473,7 @@ def identifierNode is public = object {
             isBindingOccurrence := true
             self
         }
+        method numArgs { 0 }
         method appliedOccurrence {
             isBindingOccurrence := false
             self
