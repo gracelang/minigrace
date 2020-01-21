@@ -17,10 +17,24 @@ class graceBlockScope {
 class graceBuiltInScope {
     inherit graceModuleScope
     method variety { "builtIn" }
+    method areReusedNamesCompleted {
+        native "js" code "debugger;"
+        true
+    }
 }
 class graceDialectScope {
     inherit graceModuleScope
     method variety { "dialect" }
+    method markReusedNamesAsInProgress {
+        ProgrammingError.raise "dialects don't reuse"
+    }
+    method areReusedNamesCompleted {
+        native "js" code "debugger;"
+        true
+    }
+    method isDialectScope { true }
+    markReusedNamesAsCompleted  // because any reuse in the dialect
+                                // happended before it became our dialect
 }
 def graceEmptyScope is public = object {
     // I represent the empty scope, with no definitions, and to which no definitions can be added.
@@ -30,6 +44,7 @@ def graceEmptyScope is public = object {
     method isTheEmptyScope {
         true
     }
+    method isDialectScope { false }
     method lookup (name) ifAbsent (aBlock) ifPresent (pBlock) {
         aBlock.apply
     }
@@ -478,7 +493,7 @@ class graceScope {
         lookup (aName).attributeScope
     }
     method asString {
-        "scope {uid} containing " ++ (names.keys.sorted >> sequence)
+        "{variety} scope {uid} containing " ++ (names.keys.sorted >> sequence)
     }
     method lookupLocallyOrReused (name) ifAbsent (aBlock) {
         // Return the variable corresponding to name, which may or may not be defined in this scope,
@@ -601,6 +616,7 @@ class graceScope {
     method hash is abstract
     method isLegalAsTrait { false }
     method isTheEmptyScope { false }
+    method isDialectScope { false }
     method reportShadowingErrors {
         names.keysAndValuesDo { name, defn →
             outerScope.lookup (name) ifAbsent {
@@ -709,6 +725,16 @@ class graceScope {
             variable.attributeScope := attrScope
         }
     }
+
+    method withSurroundingScopesDo (b) {
+        // do b in this scope and all surounding scopes.
+        var cur := self
+        while {
+            b.apply(cur)
+            cur := cur.outerScope
+            cur.isTheEmptyScope.not
+        } do { }
+    }
 }
 
 class resolvedVariable(aVariable) {
@@ -763,23 +789,23 @@ class resolvedVariable(aVariable) {
 }
 class variableResolver {
     method outerDefinitionOf (aName) in (aScope) addTo (aCollection) {
-        // Looks for definitions of aName in the scopes surrounding aScope,
-        // and adds the first one to aCollection, after tagging it with its
-        // depth from our start point.  This method is complicated by the fact
-        // that we stop searching one level above the first module, since that
-        // scope is our dialect.
+        // Looks for definitions of aName in the scopes _surrounding_
+        // aScope, and adds the first one to aCollection, along with its
+        // depth from our start point.  Although the language spec says
+        // that we stop searching in the dialect scope, we need to
+        // also look in the builtIn scope, which surrounds the dialect
 
         var currentScope := aScope
         var objectLevel := 0
         var scopeLevel := 0
         while {
-            currentScope.isModuleScope.not
-        } do {
-            scopeLevel := (scopeLevel + 1)
+            scopeLevel := scopeLevel + 1
             if (currentScope.isObjectScope) then {
-                objectLevel := (objectLevel + 1)
+                objectLevel := objectLevel + 1
             }
             currentScope := currentScope.outerScope
+            currentScope.isDialectScope.not
+        } do {
             currentScope.lookupLocally (aName) ifAbsent {
                 currentScope.lookupReused (aName) ifAbsent {
                 } ifPresent { defn →
@@ -793,14 +819,21 @@ class variableResolver {
                 return aCollection
             }
         }
-        def dialectDef = currentScope.outerScope.lookupLocallyOrReused (aName) ifAbsent {
-            return aCollection
-        }
-        if (dialectDef.isPublic) then {
-            if (currentScope.outerScope.definesLocally (aName)) then {
-                aCollection.add (definition (dialectDef) atObject ((objectLevel + 1)) levels (scopeLevel))
-            } else {
-                aCollection.add (reusedDefinition (dialectDef) atObject ((objectLevel + 1)) levels (scopeLevel))
+        currentScope.lookupLocallyOrReused (aName) ifAbsent {
+            currentScope := currentScope.outerScope // the builtIn scope
+            currentScope.lookupLocallyOrReused (aName) ifAbsent {
+                aCollection
+            } ifPresent { builtInDef ->
+                aCollection.add (definition (builtInDef) atObject (objectLevel+1) levels (scopeLevel+1))
+            }
+        } ifPresent { dialectDef ->
+            if (dialectDef.isPublic) then {
+                // confidential defs in the dialect are hidden
+                if (currentScope.definesLocally (aName)) then {
+                    aCollection.add (definition (dialectDef) atObject (objectLevel) levels (scopeLevel))
+                } else {
+                    aCollection.add (reusedDefinition (dialectDef) atObject (objectLevel) levels (scopeLevel))
+                }
             }
         }
         aCollection
@@ -873,7 +906,7 @@ class variableResolver {
         lexicalOrLocalDefinitionOf (aName) in (aScope) ifPresent { defn →
             list.with(defn)
         } ifAbsent {
-            def objectScope = aScope.objectScope
+            def objectScope = aScope.objectScope  //  may be aScope itself
             def result = reusedDefinitionOf (aName) in (objectScope) addTo (list.empty)
             outerDefinitionOf (aName) in (objectScope) addTo (result)
         }

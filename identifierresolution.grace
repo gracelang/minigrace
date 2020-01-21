@@ -161,8 +161,7 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
     if (defs.size > 1) then {
         reportAmbiguityError (defs) node (anIdentifier)
     }
-    def request = ast.requestPart.request (anIdentifier.nameString)
-    generateOneselfRequestOf (request) from (anIdentifier) using (defs.first)
+    generateOneselfRequestFrom (anIdentifier) using (defs.first)
 }
 
 method checkForReservedName(node) {
@@ -172,10 +171,10 @@ method checkForReservedName(node) {
             atRange(node.range)
     }
 }
-method generateOneselfRequestOf (request) from (aSourceNode) using (aResolvedVariable) {
+method generateOneselfRequestFrom (aSourceNode) using (aResolvedVariable) {
     // generates and returns some form of "self request" based on aSourceNode.
     // The receiver may be a literal self, an outerNode, or a direct reference
-    // to the module or dialect
+    // to the module or dialect.
 
     def objectsUp = aResolvedVariable.objectsUp
     def nodeScope = aSourceNode.scope
@@ -195,8 +194,15 @@ method generateOneselfRequestOf (request) from (aSourceNode) using (aResolvedVar
             ast.outerNode(outerChain).setScope(nodeScope)
         }
     }
-    ast.memberNode.new (request, receiver).onSelf.scope(nodeScope).
-        withGenericArgs (aSourceNode.generics).setPositionFrom (aSourceNode)
+    def result = if (aSourceNode.numArgs == 0) then {
+        ast.memberNode.new (aSourceNode.nameString, receiver)
+    } else {
+        ast.callNode.new (receiver, aSourceNode.parts)
+    }
+    result.setScope(nodeScope).
+          onSelf.
+          withGenericArgs (aSourceNode.generics).
+          setPositionFrom (aSourceNode)
 }
 method reportAmbiguityError (defs) node (node) → None {
     // Signals an ambiguity error.  Does not return
@@ -212,24 +218,24 @@ method reportAmbiguityError (defs) node (node) → None {
 
 method guessesForIdentifier(node) {
     def nm = node.nameString
-    def suggestions = set.empty
+    def guesses = set.empty
     def nodeScope = node.scope
-    def thresh = 4      // max number of suggestions
+    def thresh = 4      // max number of guesses
     nodeScope.withSurroundingScopesDo { s ->
-        s.elements.keysDo { v ->
-            if (errormessages.name (nm) mightBeIntendedToBe(v)) then {
-                suggestions.add(canonical(v))
-                if (suggestions.size ≥ thresh) then { return suggestions }
+        s.localAndReusedNamesAndValuesDo { n, _ ->
+            if (errormessages.name (nm) mightBeIntendedToBe(n)) then {
+                guesses.add(canonical(n))
+                if (guesses.size ≥ thresh) then { return guesses }
             }
         }
     }
-    nodeScope.elementScopes.keysDo { s ->
-        if (nodeScope.elementScopes.at(s).contains(nm)) then {
-            suggestions.add "{s}.{nm}"
-            if (suggestions.size ≥ thresh) then { return suggestions }
+    nodeScope.localAndReusedNamesAndValuesDo { n, v ->
+        if (v.attributeScope.contains(nm)) then {
+            guesses.add "{n}.{canonical(nm)}"
+            if (guesses.size ≥ thresh) then { return guesses }
         }
     }
-    suggestions
+    guesses
 }
 
 method canonical(numericName) {
@@ -569,7 +575,6 @@ method scopeWithUid(str) for (gct) {
 var isInBeginningStudentDialect := false
 
 method setupContext(moduleNode) {
-    // define the built-in names
     util.setPosition(0, 0)
 
     dialectScope.clear      // so that resolve can be serially re-used.
@@ -1102,10 +1107,7 @@ method transformBind(bindNode) ancestors(anc) {
     }
     def aResolvedVariable = defs.first
     if (aResolvedVariable.definition.isMethod) then {
-        def request = ast.requestPart.request(nm ++ ":=")
-                withArgs [bindNode.rhs] scope(bindNode.scope).
-                setPositionFrom(bindNode)
-        generateOneselfRequestOf (request) from (bindNode) using (aResolvedVariable)
+        generateOneselfRequestFrom (bindNode) using (aResolvedVariable)
     } else {
         bindNode
     }
@@ -1151,7 +1153,6 @@ method transformCall(cNode) -> ast.AstNode {
     def s = cNode.scope
     def nominalRcvr = cNode.receiver
     def result = if (nominalRcvr.isImplicit) then {
-        def theRequest = cNode.nameString
         def defs = sm.variableResolver.definitionsOf (methodName) visibleIn (s)
         if (defs.isEmpty) then {
             reportUndeclaredIdentifier (cNode)
@@ -1159,7 +1160,7 @@ method transformCall(cNode) -> ast.AstNode {
         if (defs.size > 1) then {
             reportAmbiguityError (defs) node (cNode)
         }
-        generateOneselfRequestOf (theRequest) from (cNode) using (defs.first)
+        generateOneselfRequestFrom (cNode) using (defs.first)
     } elseif { nominalRcvr.isOuter && (cNode.nameString == "outer") } then {
         // deal with outer.outer ..., which has been (incorrectly) parsed into a
         // a request of `outer` with an outernode as receiver.
@@ -1189,7 +1190,7 @@ method resolve(moduleNode) {
     xmodule.doParseCheck(moduleNode)
     util.setPosition(0, 0)
     moduleNode.scope := moduleScope
-    def dialectObject = ast.moduleNode.body [moduleNode]
+    def dialectObject = ast.moduleNode.body [moduleNode.theDialect]
         named "$dialect" scope (dialectScope)
     def dialectChain = ast.ancestorChain.with(dialectObject)
 
