@@ -1,6 +1,8 @@
 import "errormessages" as errormessages
-import "nameDictionary" as nameDictionary
+import "fastDict" as fastDict
+import "regularExpression" as regEx
 import "sourcePosition" as sourcePosition
+import "ast" as ast
 
 def NamingError is public = errormessages.SyntaxError.refine "NamingError"
 
@@ -8,6 +10,91 @@ type MinimalScope = interface {
     localNames → Collection
     reusedNames → Collection
 }
+
+type Scope = Object & interface {
+    outerScope → Scope
+    node → ast.AstNode
+    uid → String
+    allNames → Sequence⟦String⟧
+    in(anotherScope) → SelfType
+        // sets the outerScope for this scope, and returns self
+    node(nu:ast.AstNode) → SelfType
+        // sets the node for this scope, and returns self
+    lookup (name) ifAbsent (aBlock)
+        // Return the variable corresponding to name, which may or may not be
+        // defined in this scope, or in one of the lexically surrounding scopes.
+        // If it is not defined, return the value of executing aBlock.
+    lookup (name)
+        // Return the variable corresponding to name, which must be
+        // defined in this scope, or in one of the lexically surrounding scopes.
+
+    lookupLocally (name) ifAbsent (aBlock) ifPresent (pBlock)
+        // Look up variable corresponding to name, which may or may not be defined
+        // in this scope. If it is not defined, return the result of executing
+        // aBlock; otherwise, return the result of applying pBlock to the variable.
+    isReusable → Boolean
+        // answer true if this scope is one that can be used or inherited
+    attributeScopeOf (aName) → Scope
+    asString → String
+    lookupLocallyOrReused (name) ifAbsent (aBlock)
+        // Return the variable corresponding to name, which may or may not be defined in this scope,
+        // or in one of the scopes that it reuses.
+        // If name is not defined, return the value of executing aBlock.
+    lookupLocallyOrReused (name)
+    copy(other)
+    areReusedNamesCompleted → Boolean
+    objectScope → SelfType
+    reusedNames → Dictionary
+    isModuleScope → Boolean
+    reuses (name) → Boolean
+        // Is name defined by a scope that this scope reuses?
+    lookup (name) ifAbsent (aBlock) ifPresent (pBlock)
+        // applies pBlock to the variable corresponding to name, if it is defined
+        // in this scope, or in one of the lexically surrounding scopes.  If it
+        // is not defined, return the value of executing aBlock
+    == (other) → Boolean
+    lookupLexically (name)
+    redeclarationError (aMessage) variable (aVariable) → None
+        // raises a NamingError
+    add (aVariable) withName (aName) → Variable
+    structuralError (aMessage) variable (aVariable) → None
+        // riases a NamingError
+    allNamesAndValuesDo (aBlock) → Done
+    defines (name) → Boolean
+        // Is name defined in this scope, or in one of the lexically surrounding scopes?
+    redefine (aVariable) withName (aName) → Variable
+    hash → Number
+    isLegalAsTrait → Boolean
+    isTheEmptyScope → Boolean
+    isDialectScope → Boolean
+    localAndReusedNamesAndValuesDo (aBlock) → Done
+    lookupReused (name) ifAbsent (aBlock)
+    lookupReused (name) ifAbsent (aBlock) ifPresent (pBlock)
+    lookupLexically (name) ifAbsent (aBlock)
+    definesLocallyOrReuses (name) → Boolean
+    dialectError (aString) → None
+        // raises a CompilationError
+    localNamesAndValuesDo (aBlock) → Done
+    removeReused (aName) ifAbsent (aBlock) → Done
+    lookupLocallyOrOutwards (name) ifAbsent (aBlock) → Variable
+    add (aVariable) → Variable
+    localNames → Dictionary
+    lookupLocally (name) ifAbsent (aBlock) → Variable
+    reusedNamesAndValuesDo (aBlock) → Done
+    definesLocally (name) → Boolean
+        // Is name defined in this scope (ignoring surrounding scopes and required methods)
+
+    doesNotDefineLocally (name) → Boolean
+    lookupLocallyOrReused (name) ifAbsent (aBlock) ifPresent (pBlock) → Variable
+    isObjectScope → Boolean
+    variety → String
+    clear → Done
+    at (name) putScope (attrScope)
+        // mutates the variable associated with name so that its attributeScope is attrScope
+    withSurroundingScopesDo (b) → Done
+        // do b in this scope and all surounding scopes.
+}
+
 var id := 100       // for generating unique ids for scopes
 
 class graceBlockScope {
@@ -36,11 +123,11 @@ class graceDialectScope {
     markReusedNamesAsCompleted  // because any reuse in the dialect
                                 // happended before it became our dialect
 }
-def graceEmptyScope is public = object {
+def graceEmptyScope:Scope is public = object {
     // I represent the empty scope, with no definitions, and to which no definitions can be added.
+    inherit graceScope
 
     def uid is public = "$scopeEmpty"
-
     method isTheEmptyScope {
         true
     }
@@ -117,7 +204,7 @@ def graceEmptyScope is public = object {
     method clear { }
 }
 
-def graceUniversalScope is public = object {
+def graceUniversalScope:Scope is public = object {
     inherit graceScope
     def universalVariable = singleton "universal variable"
     // I represent the universal scope, which defines all names
@@ -250,7 +337,7 @@ class graceObjectScope {
         alias superClear = clear
 
     var outerScope is public
-    def reusedNames is public = nameDictionary.empty
+    def reusedNames is public = nameDictionary []
     var statusOfReusedNames := "undiscovered"
     def methodTypes is public = dictionary.empty
     def types is public = dictionary.empty
@@ -423,7 +510,7 @@ class graceScope {
     //          The values are the "variable" objects that represent the declaration.
     //   outerScope — the scope surrounding me, or emptyScope if there is none.
 
-    def names = nameDictionary.empty
+    def names = nameDictionary []
     var outerScope is public := graceEmptyScope
     var node is public
     var uidCache := ""
@@ -552,7 +639,7 @@ class graceScope {
             false
         }
     }
-    method error (innerDefn) shadows (outerDefn) {
+    method error (innerDefn) shadows (outerDefn) is confidential {
         NamingError.raise ("You can't use `{innerDefn.declaredName}` as the name " ++
               "of a {innerDefn.kind}, because `{innerDefn.declaredName}` " ++
               "is declared as a {outerDefn.kind} on {outerDefn.lineRangeString} " ++
@@ -721,7 +808,7 @@ class graceScope {
         // changes the variable associated with name so that its attributeScope is attrScope
         lookupLocally (name) ifAbsent {
             ProgrammingError.raise "attempt to putScope for {name}, which is not present in {self}"
-        } ifPresent { variable ->
+        } ifPresent { variable →
             variable.attributeScope := attrScope
         }
     }
@@ -740,7 +827,7 @@ class graceScope {
 class resolvedVariable(aVariable) {
     // My instances represent the defining occurence of a name, as seen from
     // the perspective of an applied occurrence of that name.
-    // - definition: an subinstance of graceAbstractVariable, representing the defining occurence.
+    // - definition: an subinstance of abstractVariable, representing the defining occurence.
     // - objectsUp: the number of levels of object nesting above me where the
     //              defining occurence was found.  0 means that the definiing occurence
     //              is in the current object, 1 in the outer object, etc.
@@ -823,10 +910,10 @@ class variableResolver {
             currentScope := currentScope.outerScope // the builtIn scope
             currentScope.lookupLocallyOrReused (aName) ifAbsent {
                 aCollection
-            } ifPresent { builtInDef ->
+            } ifPresent { builtInDef →
                 aCollection.add (definition (builtInDef) atObject (objectLevel+1) levels (scopeLevel+1))
             }
-        } ifPresent { dialectDef ->
+        } ifPresent { dialectDef →
             if (dialectDef.isPublic) then {
                 // confidential defs in the dialect are hidden
                 if (currentScope.definesLocally (aName)) then {
@@ -911,4 +998,583 @@ class variableResolver {
             outerDefinitionOf (aName) in (objectScope) addTo (result)
         }
     }
+}
+
+// We now define "variables": the objects that populate the symbol table.
+// Every name declared in a Grace program is bound to one of these "variables",
+// so methods, types, parameters, and imported modules are all "variables" in
+// this sense.
+
+// Type variables also double as type objects for type checking; this is
+// probably wrong, and has been commented out.
+
+var moduleRegistry
+
+type Variable = interface {
+    canBeOrginOfSuperExpression → Boolean
+    declaredName → String
+    definingParseNode → ast.AstNode
+    definingScope → Scope
+    isAnnotatedConfidential → Boolean
+    isAnnotatedPublic → Boolean
+    isAnnotatedReadable → Boolean
+    isAnnotatedWith (anAnnotationName) → Boolean
+    isAnnotatedWritable → Boolean
+    isAssignable → Boolean
+    isAvailableForReuse → Boolean
+    isConcrete → Boolean
+    isConfidential → Boolean
+    isExplicitMethod → Boolean
+    isIfThenElse → Boolean
+    isImport → Boolean
+    isMatchCase → Boolean
+    isMethod → Boolean
+    isMethodOrParameterizedType → Boolean
+    isOnceMethod → Boolean
+    isPublic → Boolean
+    isPublicByDefault → Boolean
+    isReadable → Boolean
+    isSpecialControlStructure → Boolean
+    isTryCatch → Boolean
+    isType → Boolean
+    isTypeParameter → Boolean
+    isWritable → Boolean
+    kind → String
+    lineRangeString → String
+    moduleName → String
+    range → sourcePosition.Range
+    rangeLongString → String
+    rangeString → Boolean
+    startPosition → sourcePosition.Position
+    stopPosition → sourcePosition.Position
+}
+
+class variableDefFrom (node) {
+    inherit abstractVariableFrom (node)
+    // I describe the variable defined in a def declaration.
+
+    method canBeOrginOfSuperExpression {
+        definingParseNode.parent.isModule
+    }
+    once method isPublic {
+        isAnnotatedPublic || { isAnnotatedReadable }
+    }
+    method == (anotherType) {
+        (self == anotherType )
+    }
+    method asString {
+        "def "++ name
+    }
+    once method attributeScope {
+        definingParseNode.initializer.scope
+    }
+    method kind { "def" }
+}
+
+class variableImportFrom (node) {
+    inherit abstractVariableFrom (node)
+    // I describe the "nickname" variable defined in an import declaration.
+
+    method canBeOrginOfSuperExpression {
+        true
+    }
+    once method isPublic {
+        isAnnotatedPublic || { isAnnotatedReadable }
+    }
+    method isAvailableForReuse {
+        false
+    }
+    method canBeOverridden {
+        false
+    }
+    method asString {
+        "import " ++ name
+    }
+    once method attributeScope {
+        moduleRegistry.attributeScopeOf (definingParseNode.resourceValue)
+    }
+    method isImport {
+        true
+    }
+    method kind { "import" }
+}
+class variableMethodFrom (node) {
+    inherit abstractVariableFrom (node)
+    // I describe a method defined in a method declaration.
+
+    method isPublicByDefault {
+        true
+    }
+    method substitute (bindings) {
+        self.shouldBeImplemented
+    }
+    method isMethodOrParameterizedType {
+        true
+    }
+    method asString {
+        "meth " ++ name
+    }
+    once method attributeScope {
+        definingParseNode.attributeScope
+    }
+    method isExplicitMethod {
+        true
+    }
+    method returns {
+        definingParseNode.returns
+    }
+    once method isOnceMethod {
+        definingParseNode.isOnceMethod
+    }
+    method parameters {
+        definingParseNode.header.parameters
+    }
+//    method join (anotherMethod) {
+//        def result = graceImplicitSignatureFrom(ast.nullNode)
+//        return result
+//    }
+    method isMethod { true }
+    method kind { "method" }
+}
+class variableParameterFrom (node) {
+    inherit abstractVariableFrom (node)
+    // I describe the paramter to  a method or block.
+
+    method isAvailableForReuse {
+        false
+    }
+    method asString {
+        "param " ++ name
+    }
+    method kind { "parameter" }
+}
+class variablePseudoFrom (node) {
+    inherit abstractVariableFrom (node)
+    // I represent the pseudoVariable self, or the pseudovariable outer, or outer.outer, or outer.outer.outer ...
+    // isModule:  true if the object that I refer to is a module object
+    // isDialect: true if the object that I refer to is a dialect object
+    // elementScope: the scope defined by the object to which I refer
+
+
+    def isModule is public = node.isModule
+    def isDialect is public = node.isDialect
+
+    method isAvailableForReuse { false }
+    method name {
+        name.ifNotNil {
+            return name
+        }
+        if (isModule) then {
+            return "the module"
+        }
+        if (isDialect) then {
+            return "the dialect"
+        }
+        return "an Object"
+    }
+    method canBeOverridden {
+        // the object associated with self or outer... is not subject to overriding
+        return false
+    }
+    method asString {
+        "psdVar for " ++ name
+    }
+    method returns { definingParseNode.returns }
+    method kind { "pseudo-variable" }
+}
+class variableTypeFrom (node) {
+    inherit abstractVariableFrom (node)
+    // I describe the type name defined in a type declaration.
+    // instance variables:
+    // typeValue --- once type objects have been created, a type object representing me.
+    // It will be a subinstance of graceAbstractType
+
+    method typeName { name }
+//    method methodNamed (aName) {
+//        methodNamed (aName) ifAbsent {
+//            errormessages.error "the type {name} does not have a method {aName}"
+//        }
+//    }
+    method isPublicByDefault { true }
+    method isType { true }
+//    method substitute (bindings) {
+//        return self
+//    }
+    method isMethodOrParameterizedType {
+        return (numberOfParameters > 0)
+    }
+//    method methodNamesAndSignaturesDo (a2ArgBlock) {
+//        attributeScope.localNamesAndValuesDo { n, v →
+//            def sig = graceSignatureOfMethod (v)
+//            a2ArgBlock.value (n) value (sig)
+//        }
+//   }
+    method isSelfTypeType { false }
+    method asString {
+        var result := "type " ++ name
+        if (hasParameters) then {
+            result := result ++ "⟦"
+            parameters.do { each →
+                result := result ++ each.name
+            } separatedBy {
+                result := result ++  ", "
+            }
+            result := result ++ "⟧"
+        }
+        result
+    }
+//    method methodNames {
+//        typeValue.methodNames
+//    }
+    once method attributeScope {
+        // the scope for the attributes of this type
+        definingParseNode.value.attributeScope
+    }
+//    once method typeValue {
+//        // typeValue unwinds this type definition exactly once.  Any references into this variable in
+//        // the resulting type are NOT replaced by the type that they name, since this would lead to infinite
+//        // regress.
+//        graceBuildType.from (definingParseNode.value) typeName (name)
+//    }
+    method numberOfParameters { definingParseNode.numberOfTypeParameters }
+    method parameters { definingParseNode.typeParameters.parameters }
+//    method conformsTo (aGraceType) underAssumptions (assumptions) {
+//        return typeValue.conformsTo (aGraceType) underAssumptions (assumptions)
+//    }
+//    method isUnknown {
+//        return typeValue.isUnknown
+//    }
+//    method conformsTo (aGraceType) {
+//        return typeValue.conformsTo (aGraceType)
+//    }
+    method isPublic { true }
+//    method conformsTo (anotherType) inType (selfType) underAssumptions (assumptions) {
+//        return typeValue.conformsTo (anotherType) inType (selfType) underAssumptions (assumptions)
+//    }
+//    method variants {
+//        // this method was not complete in the Smalltalk code
+//        def val = definingParseNode.value
+//        if (val.isInterface) then {
+//            [ self ]
+//        } else {
+//            buildTypeFrom(val).variants
+//        }
+//    }
+//    method instantiateWithArgs (aCollectionOfTypes) {
+//        def instance = graceTypeInstance.newFrom (self) withArguments (aCollectionOfTypes)
+//        return instance
+//    }
+//    method methodNamed (aString) ifAbsent (aBlockClosure) {
+//        return typeValue.methodNamed (aString) ifAbsent (aBlockClosure)
+//    }
+    method checkNumberOfTypeArguments (aType) {
+        if ((aType.numberOfArguments == numberOfParameters).not) then {
+            errormessages.syntaxError.
+                  raise "type {typeName} needs {numberOfParameters} arguments, but given {aType.numberOfArguments}"
+                  with (aType)
+        }
+    }
+//    method isVariant {
+//        return typeValue.isVariant
+//    }
+//    method typeValue (aTypeObject) {
+//        // sets the typeValue field to aTypeObject, and returns aTypeObject.
+//        // Makes the aTypeObject aware that it now has a name
+//        aTypeObject.typeName (typeName)
+//        typeValue := aTypeObject
+//        aTypeObject
+//    }
+    method hasParameters {
+        return (numberOfParameters > 0)
+    }
+    method kind { "type" }
+}
+class variableTypeParameterFrom (node) {
+    inherit abstractVariableFrom (node)
+    // I describe a type parameter to a type or method.
+
+    method hash {
+        // == has been overriden to be identity
+        myIdentityHash
+    }
+//    method conformsTo (anotherType) inType (selfType) underAssumptions (assumptions) {
+//        return anotherType.isTypeParameter
+//    }
+    method == (other) {
+        // is other the same parameter as me?
+        self.isMe (other)
+    }
+    method isAvailableForReuse { false }
+    method isType { true }
+    method variants {
+        return [ self ]
+    }
+//    method substitute (bindings) {
+//        // bindings maps type parameters to argument values
+//        def argValue = bindings.at (self) ifAbsent {
+//            return self
+//        }
+//        halt
+//        return argValue
+//    }
+    method isTypeParameter { true }
+    method asString {
+        "typeParam " ++ name
+    }
+    method kind { "type parameter" }
+}
+class variableVarFrom (node) {
+    inherit abstractVariableFrom (node)
+    // I describe the variable defined in a var declaration.
+
+    method isAssignable { true }
+    method asString {
+        "var " ++ name
+    }
+    method isWritable { isPublic || { isAnnotatedWritable } }
+    method isConfidential { isReadable.not && { isWritable.not } }
+    method kind { "var" }
+}
+class variableImplicitMethodFrom (node) {
+    inherit variableMethodFrom (node)
+    // I represent a writer method implicitly declared by a var declaration
+
+    method isPublic { false }
+    method asString { "implicitMeth " ++ name }
+    method isExplicitMethod { false }
+    method kind { "var" }
+}
+class variableRequiredMethodFrom (node) {
+    inherit variableMethodFrom (node)
+    // A required method is one that has no body, but serves as a marker that the
+    // programmer should provide a real method.   Required methods never override
+    // real methods, even if the required method comes from a trait and the real
+    // method comes from a superobject.
+
+    method isPublic { false }
+    method isConcrete { false }
+    method kind { "required method" }
+}
+class variableSpecialControlStructureFrom (node) withName (aMethodName) {
+    inherit variableMethodFrom (node)
+    // I represent a method implicitly declared for one of the special control structures.
+    // These are (using regular expression notation and omitting argument lists):
+    // - if then ( elseif then )* else?
+    // - match case+
+    // - try catch * finally?
+
+    name := aMethodName
+    method isSpecialControlStructure { true }
+    method asString { "ctrl " ++ name }
+    method kind { "method" }
+    method isTryCatch { name.startsWith "try" }
+    method isIfThenElse { name.startsWith "if" }
+    method isMatchCase { name.startsWith "match" }
+}
+//class implicitSignatureFrom (node) {
+//    inherit variableMethodFrom (node)
+//    // I represent a signature created implicitly while calculating the meet and join of other signatures.
+//
+//    method initializeAsJoinOf (methA) and (methB) {
+//        name := methA.declaredName
+//        argumentTypes := methA.arguments.with (methB.arguments) collect { a, b →
+//            a.declaredType.meet (b.declaredType)
+//        }
+//        resultType := methA.result.declaredType.join (methB.result.declaredType)
+//    }
+//}
+//class graceTypeInstanceFrom (aGraceType) withArguments (typeArgs) {
+//    inherit variableTypeFrom (aGraceType.definingParseNode)
+//    // I represent a graceType that has been instantiated with type arguments.
+//    // Instance variables:
+//    // arguments – a list of type arguments, with size self.numberOfParameters.
+//
+//
+//    attributeScope := aGraceType.attributeScope
+//    definingAstNode := aGraceType.definingAstNode
+//    isAnnotation := aGraceType.isAnnotation
+//    isMarker := aGraceType.isMarker
+//    isPublic := aGraceType.isPublic
+//    name := aGraceType.name
+//    arguments := typeArgs
+//
+//    method substituteForParametersIn (aSignature) {
+//        def bindings = Dictionary.new
+//        parameters.with (arguments) do { param, val →
+//            bindings.at (param.variable) put (val)
+//        }
+//        return aSignature.substitute (bindings)
+//    }
+//    method arguments {
+//        return arguments
+//    }
+//
+//    method substitute (bindings) {
+//        arguments.doWithIndex { each, i →
+//            bindings.at (each) ifAbsent {
+//            } ifPresent { val →
+//                arguments.at (i) put (val)
+//            }
+//        }
+//    }
+//    method parameters {
+//        return definingParseNode.typeParameters.parameters
+//    }
+//}
+class abstractVariable {
+
+    // The superclass of classes that describe the various kinds of variable
+    // in a Grace program.
+    // The common interface lets clients make the following requests
+    //   isAssignable  — true for vars only
+    //   isType — true for types only
+    //   isMethod — true for methods, both implicit & explicit
+    //   isExplicitMethod — true for expliict methods only
+    //   kind — a string ('var', 'def', 'method', 'parameter' etc.)
+    //   definingNode — the parse tree node that defines this variable
+    //   range — the source-code range of my declaration
+    //   startPosition — the start of the range
+    //   stopPosition  — the end of the range
+    //   attributeScope — characterizes the attributes of the  object bound
+    //      to this variable.  For example, if I am a def bound to an object j,
+    //      then attributeScope describes the attibutes of j.
+    //      paramaters and vars have the emptyScope as attributeScope,
+    //      because we don't know to what object they will be bound.
+
+    var name is public
+    var declaredType is public
+    var definingAstNode is public
+    var attributeScope is public
+    var isMarker is readable
+    var isAnnotation is public
+    var definingParseNode is readable
+    var isModule is readable := false
+    var isDialect is readable := false
+
+    method stopPosition { definingParseNode.stopPosition }
+    method canBeOrginOfSuperExpression { false }
+    method isPublicByDefault { false }
+    method isAvailableForReuse { true }
+    method isAnnotatedReadable {
+        return isAnnotatedWith "readable"
+    }
+    method isType { false }
+    method isConcrete { true }
+    method isMethodOrParameterizedType { false }
+    method kind is abstract
+    method isAnnotatedConfidential {
+        return isAnnotatedWith "confidential"
+    }
+    method isWritable { false }
+    method isExplicitMethod { false }
+    method definingScope { definingParseNode.scope }
+    method isImport { false }
+    method isOnceMethod { false }
+    method rangeLongString { range.rangeLongString }
+    method declaredName { name }
+    method isAnnotatedWith (anAnnotationName) {
+        definingParseNode.annotationNames.includes (anAnnotationName)
+    }
+    method isSpecialControlStructure { false }
+    method isAssignable { false }
+    method range { definingParseNode.range }
+    method isAnnotatedWritable { isAnnotatedWith "writable" }
+    once method isPublic {
+        isAnnotatedPublic || { isAnnotatedConfidential.not && isPublicByDefault }
+    }
+    method startPosition { definingParseNode.startPosition }
+    method lineRangeString { range.lineRangeString }
+    method isReadable { isPublic || { isAnnotatedReadable } }
+    method rangeString { range.rangeString }
+    method isTypeParameter { false }
+    method isConfidential { isPublic.not }
+    method isAnnotatedPublic { isAnnotatedWith "public" }
+    method isMethod { false }
+    method isTryCatch { false }
+    method isIfThenElse { false }
+    method isMatchCase { false }
+    method moduleName { definingParseNode.moduleName }
+}
+
+class abstractVariableFrom (aDeclarationNode) {
+    inherit abstractVariable
+
+    name := aDeclarationNode.nameString
+    declaredType := aDeclarationNode.dtype
+    isMarker := aDeclarationNode.isMarkerDeclaration
+    isAnnotation := aDeclarationNode.hasAnnotation "annotation"
+    definingParseNode := aDeclarationNode
+}
+
+class variableNamed (aName) typed (dType) kind (aKind) {
+    // defines a variable that does not have a parse node, as when
+    // the variable is imported from another module.
+    inherit abstractVariable
+
+    name := aName
+    declaredType := dType
+    isAnnotation := false
+    isMarker := false
+    definingParseNode := ast.nullNode
+    def kind is public = "imported {aKind}"
+    def asString is public = "a variable named {aName} typed {dType} kind {aKind}"
+}
+
+class variableNamed (aName) typed (dType) kind (aKind) attributeScope (s) {
+    inherit variableNamed (aName) typed (dType) kind (aKind)
+    attributeScope := s
+}
+
+// defines a dictionary with special logic for finding the names of Grace's
+// "special" control structures, such as if .. then .. elseif .. then .. else
+// These names are found in any dictionary that contains the magicKey.
+
+def ctrlStructureRegEx is public = regEx.fromString (
+    ‹^((if\(1\)then\(1\)(elseif\(1\)then\(1\))*(else\(1\))?)$|› ++
+    ‹(match\(1\)(case\(1\))+(else\(1\))?)|› ++
+    ‹(try\(1\)(catch\(1\))*(finally\(1\))?))$› )
+
+def magicKey is public = "standardGraceExtendedControlStructures"
+
+class nameDictionary (initialBindings: Collection⟦Binding⟧) → Dictionary⟦String,Variable⟧ {
+    inherit fastDict.dictionary⟦String,Variable⟧.empty
+        alias superAt(_)ifAbsent(_) = at(_)ifAbsent(_)
+    // This is a dictionary with special logic for looking-up the names of Grace's control structures.
+
+    initialBindings.do { b:Binding → self.add(b) }  // TODO: can we remove "self" now?
+
+    method isNameOfSpecialControlStructure (aName) {
+        ctrlStructureRegEx.matches (aName)
+    }
+    method specialVariableFor (markerDef) withName (key) {
+        variableSpecialControlStructureFrom (markerDef.definingParseNode) withName (key)
+    }
+    method at (key) ifAbsent (aBlock) {
+        // Answer the value associated with key or, if key isn't found, answer
+        // the result of evaluating aBlock.  Make sure that the names of the special control
+        // structures are found if the key "standardGraceExtendedControlStructures" is present.
+        superAt (key) ifAbsent {
+            if (self.containsKey (magicKey) && {
+                isNameOfSpecialControlStructure (key)
+            }) then {
+                def markerDef = self.at (magicKey)
+                def specialVar = specialVariableFor (markerDef) withName (key)
+                self.at (key) put (specialVar)
+                specialVar
+            } else {
+                aBlock.apply
+            }
+        }
+    }
+    method at (key) {
+        at(key) ifAbsent {
+            NoSuchObject.raise "dictionary does not contain entry with key {key}"
+        }
+    }
+}
+
+def nameDictionary = object {
+    method empty { nameDictionary [] }
+    method withAll (initialBindings) { nameDictionary (initialBindings) }
+    method << (source:Collection⟦Binding⟧) { nameDictionary (source) }
 }

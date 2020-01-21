@@ -13,7 +13,6 @@ import "errormessages" as errormessages
 import "identifierKinds" as k
 import "mirror" as mirror
 import "scope" as sm
-import "variable" as variable
 
 def completed = singleton "completed"
 def inProgress = singleton "inProgress"
@@ -54,67 +53,67 @@ method initializeConstantScopes {
 
     mirror.reflect(object{}).allMethodNames.do { each ->
         graceObjectScope.add(
-            variable.named (mirror.numericName(each))
+            sm.variableNamed (mirror.numericName(each))
                 typed (ast.unknownType)
                 kind (k.graceObjectMethod) )
     }
     mirror.reflect(true).allMethodNames.do { each ->
         booleanScope.add(
-            variable.named (mirror.numericName(each))
+            sm.variableNamed (mirror.numericName(each))
                 typed (ast.unknownType)
                 kind (k.methdec) )
     }
     mirror.reflect(1).allMethodNames.do { each ->
         numberScope.add(
-            variable.named (mirror.numericName(each))
+            sm.variableNamed (mirror.numericName(each))
                 typed (ast.unknownType)
                 kind (k.methdec) )
     }
     mirror.reflect "a".allMethodNames.do { each ->
         stringScope.add(
-            variable.named (mirror.numericName(each))
+            sm.variableNamed (mirror.numericName(each))
                 typed (ast.unknownType)
                 kind (k.methdec) )
     }
     mirror.reflect [].allMethodNames.do { each ->
         sequenceScope.add(
-            variable.named (mirror.numericName(each))
+            sm.variableNamed (mirror.numericName(each))
                 typed (ast.unknownType)
                 kind (k.methdec) )
     }
 
     builtInsScope.add(
-        variable.named "true"
+        sm.variableNamed "true"
             typed (ast.identifierNode.new("Boolean", ast.typeType))
             kind (k.methdec)
             attributeScope(booleanScope) )
     builtInsScope.add(
-        variable.named "false"
+        sm.variableNamed "false"
             typed (ast.identifierNode.new("Boolean", ast.typeType))
             kind (k.methdec)
             attributeScope(booleanScope) )
     builtInsScope.add(
-        variable.named "Unknown"
+        sm.variableNamed "Unknown"
             typed (ast.typeType)
             kind (k.typedec) )
     builtInsScope.add(
-        variable.named "outer"
+        sm.variableNamed "outer"
             typed (ast.unknownType)
             kind (k.defdec) )
     builtInsScope.add(
-        variable.named "..."
+        sm.variableNamed "..."
             typed (ast.unknownType)
             kind (k.defdec) )
     builtInsScope.add(
-        variable.named "print(1)"
+        sm.variableNamed "print(1)"
             typed (ast.unknownType)
             kind (k.methdec) )
     builtInsScope.add(
-        variable.named "native(1)code(1)"
+        sm.variableNamed "native(1)code(1)"
             typed (ast.unknownType)
             kind (k.methdec) )
     builtInsScope.add(
-        variable.named "native(1)header(1)"
+        sm.variableNamed "native(1)header(1)"
             typed (ast.unknownType)
             kind (k.methdec) )
 }
@@ -209,7 +208,7 @@ method reportAmbiguityError (defs) node (node) → None {
 
     var msg := "the name `{node.canonicalName}` is ambiguous; it might refer to either the "
     defs.do { aVar →
-        msg := msg ++ variable.resolutionString
+        msg := msg ++ aVar.resolutionString
     } separatedBy {
         msg := msg ++ ", or the "
     }
@@ -548,7 +547,7 @@ method addGctLine (gctLine:String) toScope (s) for (gct) {
     if (split.size < 4) then {
         EnvironmentException.raise "gct line \"{gctLine}\" has wrong number of fields"
     }
-    def newVar = variable.named (split.first)
+    def newVar = sm.variableNamed (split.first)
         typed (split.second)
         kind (k.for(split.third))
         attributeScope (scopeWithUid(split.fourth) for (gct))
@@ -581,10 +580,10 @@ method setupContext(moduleNode) {
     moduleScope.clear
     varFieldDecls.clear
 
-    moduleScope.add(variable.named "$module"
+    moduleScope.add(sm.variableNamed "$module"
         typed (ast.unknownType) kind (k.selfDef) attributeScope (moduleScope))
 
-    moduleScope.add(variable.named "$dialect"
+    moduleScope.add(sm.variableNamed "$dialect"
         typed (ast.unknownType) kind (k.selfDef) attributeScope (dialectScope))
 
     def dialectNode = moduleNode.theDialect
@@ -689,10 +688,10 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                         // programmer-writen :=(_) methods from synthetic ones.
                     }
                     scope.add(match (kind)
-                        case {k.vardec -> variable.graceVarFrom(o)}
-                        case {k.defdec -> variable.graceDefFrom(o)}
-                        case {k.typedec -> variable.graceTypeFrom(o)}
-                        case {k.parameter -> variable.graceParameterFrom(o)}
+                        case {k.vardec -> sm.variableVarFrom(o)}
+                        case {k.defdec -> sm.variableDefFrom(o)}
+                        case {k.typedec -> sm.variableTypeFrom(o)}
+                        case {k.parameter -> sm.variableParameterFrom(o)}
                     )
                 }
             } elseif {o.wildcard} then {
@@ -756,9 +755,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 }
                 def varObj = if (o.isRequired || o.isAbstract) then {
                     // TODO: do we need to distinguish abstract and required methods?
-                    variable.graceRequiredMethodFrom(o)
+                    sm.variableRequiredMethodFrom(o)
                 } else {
-                    variable.graceMethodFrom (o)
+                    sm.variableMethodFrom (o)
                 }
                 surroundingScope.add(varObj)
                 if (o.isPublic) then {
@@ -778,7 +777,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             def ident = o.asIdentifier
             checkForReservedName(ident)
-            surroundingScope.add(variable.graceMethodFrom (o))
+            surroundingScope.add(sm.variableMethodFrom (o))
             ident.isDeclaredByParent := true
             o.scope := sm.graceParameterScope.in(anc.parent.scope)
             // the scope for the parameters (including the type parameters,
@@ -803,7 +802,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             def ident = o.name
             checkForReservedName(ident)
-            enclosingScope.add(variable.graceTypeFrom(ident))
+            enclosingScope.add(sm.variableTypeFrom(ident))
             enclosingScope.types.at(ident.nameString) put(o.toGrace 0)
             ident.isDeclaredByParent := true
             o.scope := sm.graceTypeScope.in(enclosingScope)

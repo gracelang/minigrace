@@ -2,8 +2,6 @@ dialect "minitest"
 import "scope" as scope
 import "ast" as ast
 import "sourcePosition" as pos
-import "variable" as vars
-import "nameDictionary" as nd
 
 testSuite "scope" with {
     test "empty scope construction" by {
@@ -52,8 +50,8 @@ testSuite "scope" with {
         def s = scope.graceModuleScope
         s.outerScope := scope.graceEmptyScope
         s.node := objectNode
-        def m = vars.graceMethodFrom(magicMethNode)
-        assert (m.declaredName) shouldBe(nd.magicKey)
+        def m = scope.variableMethodFrom(magicMethNode)
+        assert (m.declaredName) shouldBe(scope.magicKey)
         s.add(m)
         assert(s.definesLocally "if(1)then(1)")
               description "{s} does not define `if(1)then(1)`"
@@ -92,13 +90,13 @@ method methNode {
 }
 
 method magicMethNode {
-    def sig = [ ast.signaturePart.partName(nd.magicKey) ]
+    def sig = [ ast.signaturePart.partName(scope.magicKey) ]
     def result = ast.methodNode.new(sig, [], ast.unknownType)
     result.setStart(pos.line 1 column 5)
     result
 }
 
-method varDefWombat -> vars.Variable {
+method varDefWombat -> scope.Variable {
     vars.graceDefFrom(defNode)
 }
 
