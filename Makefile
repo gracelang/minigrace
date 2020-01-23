@@ -134,6 +134,7 @@ echo:
 	@echo OFFLINE = $(OFFLINE)
 	@echo MAKEFLAGS = $(MAKEFLAGS)
 	@echo JS-KG = $(JS-KG)
+	@echo JSRUNNERS = $(JSRUNNERS)
 	@echo MGSOURCEFILES = $(MGSOURCEFILES) "\n"
 	@echo SOURCEFILES = $(SOURCEFILES) "\n"
 	@echo WEBFILES = $(WEBFILES) "\n"
@@ -209,17 +210,17 @@ $(JSJSFILES:%.js=j1/%.js): j1/%.js: $(JS-KG)/%.js
 
 j1-minigrace: $(J1-MINIGRACE) $(JSINSPECTORS:%=j1/%)
 
+j1/buildinfo.js: j1/buildinfo.grace
+	GRACE_MODULE_PATH=modules:. $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
+
 j1/compiler-js: $(JS-KG)/compiler-js
 	cp -p $< $@
 
-j1/grace-inspect: j1/grace tools/make-grace-inspect
-	tools/make-grace-inspect $< $@
+j1/grace-inspect: j1/grace.in tools/make-grace-inspect
+	tools/make-grace-inspect $(MODULE_PATH) $< $@
 
 j1/minigrace-inspect: j1/minigrace-js tools/make-minigrace-inspect
 	tools/make-minigrace-inspect $< $@
-
-j1/buildinfo.js: j1/buildinfo.grace
-	GRACE_MODULE_PATH=modules:. $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
 
 j2/buildinfo.grace: buildinfo.grace
 	cp -p $< $@
@@ -250,8 +251,8 @@ js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 js/grace: js/grace.in tools/make-grace
 	tools/make-grace $(MODULE_PATH) $< $@
 
-js/grace-inspect: js/grace tools/make-grace-inspect
-	tools/make-grace-inspect $< $@
+js/grace-inspect: js/grace.in tools/make-grace-inspect
+	tools/make-grace-inspect $(MODULE_PATH) $< $@
 
 js/mgc: minigrace.env
 	rm -rf mgcTemp js/mgc
