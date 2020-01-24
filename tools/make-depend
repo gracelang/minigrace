@@ -1,19 +1,32 @@
 #!/usr/bin/env bash
+# make-depend <file> outputs the make-compatible dependents list for Grace <file>,
+# preceded by the dependents of its dependents.  Does _not_ do transitive closure.
+# works only for files in the current directory; does not search GRACE_MODULE_PATH
+# if there is a -p <prefix> option, then each file name will be prefixed
 
-Dependents=$(awk 'BEGIN { ORS = " " }
-    /^import / { print substr($2, 2, length($2)-2)
-}' $1.grace)
+shopt -s extglob;        # extended globbbing
+if [ $1 == "-p" ]
+then
+    shift
+    prefix=$1
+    shift
+fi
+file=$1
+file=${file%.grace};     # removes the .grace, if present
+Dependents=( $(awk 'BEGIN { ORS = " " }
+    /^import |^dialect / { if ("\"none\"" != $2) print substr($2, 2, length($2)-2)".js"
+}' ${file}.grace) )      # the extra parents makes teh result a bash array
 for mod in ${Dependents}; do
-    if [ -f ${mod}.grace ]; then
-        subDependents=$(awk 'BEGIN { ORS = " " }
-            /^import / { print substr($2, 2, length($2)-2)".gct"
-        }' ${mod}.grace)
-        if [ -n "${subDependents}" ]; then 
-            echo ${mod}.gct: ${subDependents}
+    source=${mod%.js}.grace
+    if [ -f ${source} ]; then
+        subDependents=( $(awk 'BEGIN { ORS = " " }
+            /^import |^dialect / {  if ("\"none\"" != $2) print substr($2, 2, length($2)-2)".js"
+        }' ${source}) )
+        if [ -n "${subDependents}" ]; then
+            subDependents=( "${subDependents[@]/#/${prefix}}" )   # put prefix at the start of each
+            echo ${prefix}${mod}: ${subDependents[@]}
         fi
     fi
 done
-Dependents=$(awk 'BEGIN { ORS = " " }
-    /^import / { print substr($2, 2, length($2)-2)".gct"
-}' $1.grace)
-echo $1.gct: ${Dependents}
+Dependents=( "${Dependents[@]/#/${prefix}}" )      # put prefix at the start of each
+echo ${prefix}$1.js: ${Dependents[@]}
