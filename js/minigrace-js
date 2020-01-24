@@ -7,4 +7,4 @@ absolutePath(){
 
 HERE="`absolutePath $0`"
 HERE="`dirname ${HERE}`"
-NODE_OPTIONS="--max-old-space-size=2048" node ${HERE}/compiler-js $*
+NODE_OPTIONS="--max-old-space-size=4096" node ${HERE}/compiler-js $*
