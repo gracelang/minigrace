@@ -34,7 +34,7 @@ TEST_DEPENDENCIES = ast lexer fastDict collections parser xmodule errormessages 
 #   these are modules used in running the full test suite
 NPM_VERSION_PREFIX=1.0
 VERSION := $(NPM_VERSION_PREFIX).$(shell ./tools/git-calculate-generation)$(ALPHA-BETA)
-NPM_STABLE_VERSION=1.0.4743
+NPM_STABLE_VERSION=1.0.4811
 OFFLINE ?= false
 
 VERBOSITY =
