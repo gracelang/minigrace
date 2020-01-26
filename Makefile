@@ -302,6 +302,7 @@ minigrace.env: minigrace libraries
 #$(JSRUNNERS:%=j2/%)
 
 module.test: minigrace.env $(TYPE_DIALECTS:%=j2/%.js)
+	rm -f modules/tests/*.js
 	modules/tests/harness-js j2/minigrace-js modules/tests "" $(TESTS)
 
 modules/rtobjectdraw.grace: modules/objectdraw.grace tools/make-rt-version
@@ -408,6 +409,7 @@ tarWeb: js
 	@echo "subdirectory that tar creates readable and executable by your web daemon."
 
 test.compile: minigrace
+	rm -f js/tests/*.js
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/'\
     | while read -r fileName num; \
@@ -419,6 +421,7 @@ $(TYPE_DIALECTS:%=js/%.js): js/%.js: $(DIALECTS_NEED:%=%.js) $(patsubst modules/
 test: minigrace.env js/tests/gracelib.js
 # if TESTS is underfined, runs all tests.  Otherwise, TESTS should be set to a
 # space-separated sequence of test-name prefixes, e.g., "TESTS=t001 t027 t041"
+	rm -f js/tests/*.js
 	js/tests/harness-js j2/minigrace-js js/tests "" $(TESTS)
 
 togracetest: minigrace
