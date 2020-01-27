@@ -237,6 +237,7 @@ class baseNode {
     method isLegalInTrait { false }
     method isMember { false }
     method isMethod { false }
+    method isModule { false }
     method isExecutable { true }
     method isCall { false }
     method isComment { false }
@@ -892,6 +893,7 @@ class methodSignatureNode(parts', rtype') {
 
     method postCopy(other) {
         isBindingOccurrence := other.isBindingOccurrence
+        cachedIdentifier := other.cachedIdentifier  
     }
 
     method appliedOccurrence {
@@ -1169,6 +1171,7 @@ def typeDecNode is public = object {
 
     method isExecutable { false }
     method declarationKindWithAncestors(ac) { k.typeparam }
+    method declaringNodeWithAncestors(ac) { self }
     method isConfidential { hasAnnotation  "confidential" }
     method isPublic { isConfidential.not }
     method isWritable { false }
@@ -1276,7 +1279,7 @@ def methodNode is public = object {
         var isBindingOccurrence is readable := true
 
         method end -> Position {
-            if (body.isEmpty.not) then {
+            if (hasBody) then {
                 if (usesClassSyntax) then { return body.last.end }
                 return positionOfNext "}" after (body.last.end)
             }
@@ -1399,6 +1402,7 @@ def methodNode is public = object {
             st.node := self
         }
         method declarationKindWithAncestors(ac) { k.parameter }
+        method declaringNodeWithAncestors(ac) { self }
         method isConfidential { hasAnnotation  "confidential" }
         method isPublic { isConfidential.not }
         method isWritable { false }
@@ -1879,6 +1883,9 @@ def objectNode is public = object {
             } else {
                 kind
             }
+        }
+        method dtype {
+            false // because the syntax does not allow type annotations on objects
         }
         method isFresh { true }     // the epitome of freshness!
         method isTrait {
@@ -2515,7 +2522,10 @@ def identifierNode is public = object {
             }
         }
         method declarationKindWithAncestors(ac) {
-            ac.parent.declarationKindWithAncestors(ac)
+            ac.parent.declarationKindWithAncestors(ac.forebears)
+        }
+        method declaringNodeWithAncestors(ac) {
+            ac.parent.declaringNodeWithAncestors(ac.forebears)
         }
         method inTypePositionWithAncestors(ac) {
             // am I used by my parent node as a type?
@@ -2648,8 +2658,12 @@ def stringNode is public = object {
             "{basePretty(depth)}({self.value})"
         }
         method toGrace(depth : Number) -> String {
-            def q = "\""
-            q ++ value.quoted ++ q
+            if (end.line > start.line) then {
+                "‹" ++value ++ "›"
+            } else {
+                def q = "\""
+                q ++ value.quoted ++ q
+            }
         }
         method asString { "string {toGrace}" }
         method shallowCopy {
@@ -2945,6 +2959,7 @@ def defDecNode is public = object {
         method isWritable { false }
         method isReadable { isPublic }
         method declarationKindWithAncestors(ac) { k.defdec }
+        method declaringNodeWithAncestors(ac) { self }
         method returnsObject { value.returnsObject }    // a call to a fresh method, or an object constructor
         method returnedObject {
             // precondition: returnsObject
@@ -3050,6 +3065,7 @@ def varDecNode is public = object {
             false
         }
         method declarationKindWithAncestors(ac) { k.vardec }
+        method declaringNodeWithAncestors(ac) { self }
 
         method accept(visitor : AstVisitor) from(ac) {
             if (visitor.visitVarDec(self) up(ac)) then {
@@ -3587,6 +3603,9 @@ def signaturePart is public = object {
             }
         }
         method declarationKindWithAncestors(ac) { k.parameter }
+        method declaringNodeWithAncestors(ac) {
+            ac.parent.declaringNodeWithAncestors(ac.forebears)
+        }
         method map(blk) ancestors(ac) {
             var nd := shallowCopy
             def newChain = ac.extend(nd)
@@ -3672,6 +3691,9 @@ def requestPart is public = object {
             aVisitor.postVisit(self) result(aVisitor.newVisitRequestPart(self))
         }
 
+        method declarationKindWithAncestors(ac) { k.parameter }
+        method declaringNodeWithAncestors(ac) { self }
+        
         method end -> Position {
             if (args.isEmpty.not) then {
                 return args.last.end  // there may or may not be a following `)`
