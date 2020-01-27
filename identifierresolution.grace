@@ -120,19 +120,19 @@ method initializeConstantScopes {
 
 method pathScope(reqs) {
     // reqs is an AST node representing a sequence of requests, such as a.b.c;
-    // return the scope. That is, find the scope associated with c in the scope
-    // associated with b in the scope associated with a in a's scope.  Answers
-    // universalScope if we don't have enough information to be exact.
+    // return the scope. That is, find the attribute scope of c in the attribute
+    // scope of b in the attribute scope of a.
+    // Answers universalScope if we don't have enough information to be exact.
 
     def s = reqs.scope
-    if (reqs.isIdentifier) then {
-        s.lookup(reqs.nameString)
+    if (reqs.isIdentifier) then {   // this handles a literal `self`
+        s.attributeScopeOf(reqs.nameString)
     } elseif { reqs.isCall } then {
         pathScope(reqs.receiver).attributeScopeOf(reqs.nameString)
     } elseif { reqs.isOuter } then {
         var resultScope := s.objectScope  // self's scope
         repeat (reqs.numberOfLevels) times {
-            resultScope := resultScope.objectScope
+            resultScope := resultScope.outerScope.objectScope
         }
         resultScope
     } elseif { reqs.isConstant } then {
@@ -144,8 +144,9 @@ method pathScope(reqs) {
     } elseif { reqs.isObject } then {
         s  // this is for the case where a is an literal object constructor
     } else {
-        ProgrammingError.raise("In pathScopes — unexpected request sequence {reqs.toGrace 0} " ++
+        util.log 20 verbose ("In pathScope — unexpected request sequence {reqs.toGrace 0} " ++
               "on line {reqs.line}")
+        sm.graceUniversalScope
     }
 }
 
@@ -229,7 +230,7 @@ method guessesForIdentifier(node) {
         }
     }
     nodeScope.localAndReusedNamesAndValuesDo { n, v ->
-        if (v.attributeScope.contains(nm)) then {
+        if (v.attributeScope.defines(nm)) then {
             guesses.add "{n}.{canonical(nm)}"
             if (guesses.size ≥ thresh) then { return guesses }
         }
@@ -677,6 +678,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             var scope := anc.parent.scope
             o.scope := scope
             if (o.isBindingOccurrence) then {
+                def declaringNode = o.declaringNodeWithAncestors(anc)
                 if ((o.isDeclaredByParent.not) && {o.wildcard.not}) then {
                     checkForReservedName(o)
                     def kind = o.declarationKindWithAncestors(anc)
@@ -686,12 +688,15 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                         // Because we want some field assignments to be compiled as
                         // direct assignments, and hence have to distinguish
                         // programmer-writen :=(_) methods from synthetic ones.
+                        // TODO: isn't this comment just WRONG?
+                        // If any field assignments are compiled directly, then they
+                        // won't be overridden when a <field>:=(_) method is defined!
                     }
                     scope.add(match (kind)
-                        case {k.vardec -> sm.variableVarFrom(o)}
-                        case {k.defdec -> sm.variableDefFrom(o)}
-                        case {k.typedec -> sm.variableTypeFrom(o)}
-                        case {k.parameter -> sm.variableParameterFrom(o)}
+                        case {k.vardec -> sm.variableVarFrom(declaringNode)}
+                        case {k.defdec -> sm.variableDefFrom(declaringNode)}
+                        case {k.typedec -> sm.variableTypeFrom(declaringNode)}
+                        case {k.parameter -> sm.variableParameterFrom(o) }
                     )
                 }
             } elseif {o.wildcard} then {
@@ -757,14 +762,14 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                     // TODO: do we need to distinguish abstract and required methods?
                     sm.variableRequiredMethodFrom(o)
                 } else {
-                    sm.variableMethodFrom (o)
+                    sm.variableMethodFrom(o)
                 }
                 surroundingScope.add(varObj)
                 if (o.isPublic) then {
                     surroundingScope.methodTypes.at(ident.nameString) put(methodSignature(o))
                 }
             }
-            if (o.body.isEmpty.not && {o.body.last.isObject}) then {
+            if (o.hasBody && {o.body.last.isObject}) then {
                 o.body.last.name := o.canonicalName
             }
             true

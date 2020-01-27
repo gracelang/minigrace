@@ -9,6 +9,7 @@ def NamingError is public = errormessages.SyntaxError.refine "NamingError"
 type MinimalScope = interface {
     localNames → Collection
     reusedNames → Collection
+    defines(name) → Boolean
 }
 
 type Scope = Object & interface {
@@ -105,27 +106,21 @@ class graceBuiltInScope {
     inherit graceModuleScope
     method variety { "builtIn" }
     method areReusedNamesCompleted {
-        native "js" code "debugger;"
         true
     }
+    method isBuiltInScope { true }
 }
 class graceDialectScope {
     inherit graceModuleScope
     method variety { "dialect" }
-    method markReusedNamesAsInProgress {
-        ProgrammingError.raise "dialects don't reuse"
-    }
     method areReusedNamesCompleted {
-        native "js" code "debugger;"
-        true
+        true    // because any reuse in the dialect
+                // happended before it became our dialect
     }
     method isDialectScope { true }
-    markReusedNamesAsCompleted  // because any reuse in the dialect
-                                // happended before it became our dialect
 }
-def graceEmptyScope:Scope is public = object {
+def graceEmptyScope:MinimalScope is public = object {
     // I represent the empty scope, with no definitions, and to which no definitions can be added.
-    inherit graceScope
 
     def uid is public = "$scopeEmpty"
     method isTheEmptyScope {
@@ -275,6 +270,12 @@ class graceInterfaceScope {
 
     var outerScope is public
 
+    method initialize(aNode) is confidential {
+        if (definesLocally "Self".not) then {
+            add (variableTypeFrom(aNode)) withName "Self"
+        }
+    }
+
     method meet (anotherScope) {
         // create and return a new scope that is the mathematical meet of self
         // and anotherScope; it contains those names common to both scopes.
@@ -342,6 +343,11 @@ class graceObjectScope {
     def methodTypes is public = dictionary.empty
     def types is public = dictionary.empty
 
+    method initialize(aNode) is confidential {
+        if (definesLocally "self".not) then {
+            add (variablePseudoFrom(aNode)) withName "self"
+        }
+    }
     method allNames {
         (names.keys ++ reusedNames.keys) >> sequence
     }
@@ -512,7 +518,7 @@ class graceScope {
 
     def names = nameDictionary []
     var outerScope is public := graceEmptyScope
-    var node is public
+    var openingNode
     var uidCache := ""
 
     method uid {
@@ -531,8 +537,20 @@ class graceScope {
     }
     method node(nu) {
         // sets the node for this scope, and returns self
-        node := nu
+        openingNode := nu
+        initialize(openingNode)
         self
+    }
+    method node:=(nu) {
+        openingNode := nu
+        initialize(openingNode)
+        done
+    }
+    method node {
+        openingNode
+    }
+    method initialize(aNode) is confidential {
+        // a hook method
     }
     method lookup (name) ifAbsent (aBlock) {
         // Return the variable corresponding to name, which may or may not be
@@ -550,7 +568,7 @@ class graceScope {
         // defined in this scope, or in one of the lexically surrounding scopes.
 
         lookup (name) ifAbsent {
-            ProgrammingError.raise "name {name} not found"
+            ProgrammingError.raise "name {name} not found in scope {self}"
         }
     }
     method localAndReusedNamesAndValuesDo (aBlock)
@@ -616,7 +634,6 @@ class graceScope {
         s
     }
     method reusedNames { dictionary.empty }
-    method isModuleScope { false }
     method reuses (name) {
         // Is name defined by a scope that this scope reuses?
         false
@@ -704,6 +721,8 @@ class graceScope {
     method isLegalAsTrait { false }
     method isTheEmptyScope { false }
     method isDialectScope { false }
+    method isModuleScope { false }
+    method isBuiltInScope { false }
     method reportShadowingErrors {
         names.keysAndValuesDo { name, defn →
             outerScope.lookup (name) ifAbsent {
@@ -1066,7 +1085,7 @@ class variableDefFrom (node) {
         "def "++ name
     }
     once method attributeScope {
-        definingParseNode.initializer.scope
+        definingParseNode.value.attributeScope
     }
     method kind { "def" }
 }
@@ -1126,8 +1145,8 @@ class variableMethodFrom (node) {
     once method isOnceMethod {
         definingParseNode.isOnceMethod
     }
-    method parameters {
-        definingParseNode.header.parameters
+    method parametersDo(b) {
+        definingParseNode.parametersDo(b)
     }
 //    method join (anotherMethod) {
 //        def result = graceImplicitSignatureFrom(ast.nullNode)
@@ -1137,8 +1156,10 @@ class variableMethodFrom (node) {
     method kind { "method" }
 }
 class variableParameterFrom (node) {
+    // I describe the parameter to  a method or block.
+    // node is the identifier, since parameters don't have real declaration nodes
+
     inherit abstractVariableFrom (node)
-    // I describe the paramter to  a method or block.
 
     method isAvailableForReuse {
         false
@@ -1444,7 +1465,7 @@ class abstractVariable {
     var name is public
     var declaredType is public
     var definingAstNode is public
-    var attributeScope is public
+    var attributeScope is public := graceEmptyScope
     var isMarker is readable
     var isAnnotation is public
     var definingParseNode is readable
@@ -1500,7 +1521,7 @@ class abstractVariableFrom (aDeclarationNode) {
     inherit abstractVariable
 
     name := aDeclarationNode.nameString
-    declaredType := aDeclarationNode.dtype
+    declaredType := aDeclarationNode.decType
     isMarker := aDeclarationNode.isMarkerDeclaration
     isAnnotation := aDeclarationNode.hasAnnotation "annotation"
     definingParseNode := aDeclarationNode
