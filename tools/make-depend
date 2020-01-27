@@ -4,6 +4,15 @@
 # works only for files in the current directory; does not search GRACE_MODULE_PATH
 # if there is a -p <prefix> option, then each file name will be prefixed
 
+
+elementIn () {  # checks if first arg is in the remaining args (an array)
+   # sample call:  if elementIn "$mod" "${ProcessedMods[@]}" ...
+   local e match="$1"
+   shift
+   for e; do [[ "$e" == "$match" ]] && return 0; done
+   return 1
+}
+
 shopt -s extglob;        # extended globbbing
 if [ $1 == "-p" ]
 then
@@ -13,20 +22,52 @@ then
 fi
 file=$1
 file=${file%.grace};     # removes the .grace, if present
+file=${file%.js};        # removes the .js, if present
 Dependents=( $(awk 'BEGIN { ORS = " " }
     /^import |^dialect / { if ("\"none\"" != $2) print substr($2, 2, length($2)-2)".js"
-}' ${file}.grace) )      # the extra parents makes teh result a bash array
-for mod in ${Dependents}; do
+}' ${file}.grace) )      # the extra parents makes the result a bash array
+if ! (grep -q ^dialect ${file}.grace)
+then
+    if ! elementIn "standard.js" "${Dependents[@]}"
+    then
+        Dependents+=( "standard.js" )
+    fi
+fi
+echo ${prefix}${file}.js: "${Dependents[@]/#/${prefix}}"     # put prefix at the start of each
+
+# echo Dependents[@] = ${Dependents[@]} with length ${#Dependents[@]}
+ProcessedMods=( )           # initialize to empty array
+while (( ${#Dependents[@]} ))
+do
+    mod=${Dependents[0]}     # gets the first element
+    ProcessedMods+=( ${mod} )
+    Dependents=( "${Dependents[@]:1}" )
+    # echo mod = ${mod}, ProcessedMods = ${ProcessedMods[@]}, Dependents = ${Dependents[@]}
     source=${mod%.js}.grace
     if [ -f ${source} ]; then
         subDependents=( $(awk 'BEGIN { ORS = " " }
             /^import |^dialect / {  if ("\"none\"" != $2) print substr($2, 2, length($2)-2)".js"
         }' ${source}) )
-        if [ -n "${subDependents}" ]; then
-            subDependents=( "${subDependents[@]/#/${prefix}}" )   # put prefix at the start of each
-            echo ${prefix}${mod}: ${subDependents[@]}
+        if ! (grep -q ^dialect ${source})
+        then
+            if ! elementIn "standard.js" "${subDependents[@]}"
+            then
+                subDependents+=( "standard.js" )
+            fi
+        fi
+        # echo subDependents = "${subDependents[@]}"
+        if [ -n "${subDependents}" ]
+        then
+            echo ${prefix}${mod}: ${subDependents[@]/#/${prefix}}
         fi
     fi
+    for f in ${subDependents[@]}
+    do
+        if ! elementIn "$f" "${ProcessedMods[@]}" "${Dependents[@]}"
+        then
+            Dependents+=( $f )
+        fi
+    done
+    # echo "Dependents is now ${Dependents[@]}"
 done
-Dependents=( "${Dependents[@]/#/${prefix}}" )      # put prefix at the start of each
-echo ${prefix}$1.js: ${Dependents[@]}
+
