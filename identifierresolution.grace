@@ -29,7 +29,6 @@ def keyOrdering = { a, b -> a.key.compare(b.key) }
 type DeclKind = k.T
 
 def emptyScope = sm.graceEmptyScope
-ast.nullNode.scope := emptyScope      // TODO: eliminate!
 def builtInsScope = sm.graceBuiltInScope.in(emptyScope)
 def dialectScope = sm.graceDialectScope.in(builtInsScope)
 def moduleScope = sm.graceModuleScope.in(dialectScope)
@@ -1178,6 +1177,11 @@ method transformCall(cNode) -> ast.AstNode {
         cNode
     }
     if (result.isTailCall) then {    // do this work only when someone might care
+        if (result.nameString == "raise(1)") then {
+            print "result.receiver = {result.receiver.pretty 0}"
+            print "receiver scope = {pathScope(result.receiver)}"
+            native "js" code "debugger;"
+        }
         def rcvrScope = pathScope(result.receiver)
         def answerScope = rcvrScope.attributeScopeOf(result.nameString)
         if (answerScope.isFreshObjectScope) then {

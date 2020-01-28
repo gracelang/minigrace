@@ -492,8 +492,8 @@ method error (message)
     } else { "{startpos}-{endline}:{endpos}" }
     def arr = ("-" * (startpos-1)) ++ ("^" * (endpos - startpos + 1))
     def errorObj = object {
-        def lineNum is public = startline
-        def position is public = loc
+        def line is public = startline
+        def column is public = loc
         def arrow is public = arr
         def sugg is public = suggestions
     }

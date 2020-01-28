@@ -1,8 +1,10 @@
 import "errormessages" as errormessages
 import "fastDict" as fastDict
 import "regularExpression" as regEx
-import "sourcePosition" as sourcePosition
+import "basic" as basic
 import "ast" as ast
+
+use basic.open
 
 def NamingError is public = errormessages.SyntaxError.refine "NamingError"
 
@@ -10,90 +12,6 @@ type MinimalScope = interface {
     localNames → Collection
     reusedNames → Collection
     defines(name) → Boolean
-}
-
-type Scope = Object & interface {
-    outerScope → Scope
-    node → ast.AstNode
-    uid → String
-    allNames → Sequence⟦String⟧
-    in(anotherScope) → SelfType
-        // sets the outerScope for this scope, and returns self
-    node(nu:ast.AstNode) → SelfType
-        // sets the node for this scope, and returns self
-    lookup (name) ifAbsent (aBlock)
-        // Return the variable corresponding to name, which may or may not be
-        // defined in this scope, or in one of the lexically surrounding scopes.
-        // If it is not defined, return the value of executing aBlock.
-    lookup (name)
-        // Return the variable corresponding to name, which must be
-        // defined in this scope, or in one of the lexically surrounding scopes.
-
-    lookupLocally (name) ifAbsent (aBlock) ifPresent (pBlock)
-        // Look up variable corresponding to name, which may or may not be defined
-        // in this scope. If it is not defined, return the result of executing
-        // aBlock; otherwise, return the result of applying pBlock to the variable.
-    isReusable → Boolean
-        // answer true if this scope is one that can be used or inherited
-    attributeScopeOf (aName) → Scope
-    asString → String
-    lookupLocallyOrReused (name) ifAbsent (aBlock)
-        // Return the variable corresponding to name, which may or may not be defined in this scope,
-        // or in one of the scopes that it reuses.
-        // If name is not defined, return the value of executing aBlock.
-    lookupLocallyOrReused (name)
-    copy(other)
-    areReusedNamesCompleted → Boolean
-    objectScope → SelfType
-    reusedNames → Dictionary
-    isModuleScope → Boolean
-    reuses (name) → Boolean
-        // Is name defined by a scope that this scope reuses?
-    lookup (name) ifAbsent (aBlock) ifPresent (pBlock)
-        // applies pBlock to the variable corresponding to name, if it is defined
-        // in this scope, or in one of the lexically surrounding scopes.  If it
-        // is not defined, return the value of executing aBlock
-    == (other) → Boolean
-    lookupLexically (name)
-    redeclarationError (aMessage) variable (aVariable) → None
-        // raises a NamingError
-    add (aVariable) withName (aName) → Variable
-    structuralError (aMessage) variable (aVariable) → None
-        // riases a NamingError
-    allNamesAndValuesDo (aBlock) → Done
-    defines (name) → Boolean
-        // Is name defined in this scope, or in one of the lexically surrounding scopes?
-    redefine (aVariable) withName (aName) → Variable
-    hash → Number
-    isLegalAsTrait → Boolean
-    isTheEmptyScope → Boolean
-    isDialectScope → Boolean
-    localAndReusedNamesAndValuesDo (aBlock) → Done
-    lookupReused (name) ifAbsent (aBlock)
-    lookupReused (name) ifAbsent (aBlock) ifPresent (pBlock)
-    lookupLexically (name) ifAbsent (aBlock)
-    definesLocallyOrReuses (name) → Boolean
-    dialectError (aString) → None
-        // raises a CompilationError
-    localNamesAndValuesDo (aBlock) → Done
-    removeReused (aName) ifAbsent (aBlock) → Done
-    lookupLocallyOrOutwards (name) ifAbsent (aBlock) → Variable
-    add (aVariable) → Variable
-    localNames → Dictionary
-    lookupLocally (name) ifAbsent (aBlock) → Variable
-    reusedNamesAndValuesDo (aBlock) → Done
-    definesLocally (name) → Boolean
-        // Is name defined in this scope (ignoring surrounding scopes and required methods)
-
-    doesNotDefineLocally (name) → Boolean
-    lookupLocallyOrReused (name) ifAbsent (aBlock) ifPresent (pBlock) → Variable
-    isObjectScope → Boolean
-    variety → String
-    clear → Done
-    at (name) putScope (attrScope)
-        // mutates the variable associated with name so that its attributeScope is attrScope
-    withSurroundingScopesDo (b) → Done
-        // do b in this scope and all surounding scopes.
 }
 
 var id := 100       // for generating unique ids for scopes
@@ -763,7 +681,7 @@ class graceScope {
         names.includesKey (name) || { reuses (name) }
     }
     method dialectError (aString) {
-        errormessages.CompilationError.raise (aString) with (sourcePosition.emptyRange)
+        errormessages.CompilationError.raise (aString) with (emptyRange)
     }
     method localNamesAndValuesDo (aBlock) {
         names.keysAndValuesDo (aBlock)
@@ -1029,50 +947,12 @@ class variableResolver {
 
 var moduleRegistry
 
-type Variable = interface {
-    canBeOrginOfSuperExpression → Boolean
-    declaredName → String
-    definingParseNode → ast.AstNode
-    definingScope → Scope
-    isAnnotatedConfidential → Boolean
-    isAnnotatedPublic → Boolean
-    isAnnotatedReadable → Boolean
-    isAnnotatedWith (anAnnotationName) → Boolean
-    isAnnotatedWritable → Boolean
-    isAssignable → Boolean
-    isAvailableForReuse → Boolean
-    isConcrete → Boolean
-    isConfidential → Boolean
-    isExplicitMethod → Boolean
-    isIfThenElse → Boolean
-    isImport → Boolean
-    isMatchCase → Boolean
-    isMethod → Boolean
-    isMethodOrParameterizedType → Boolean
-    isOnceMethod → Boolean
-    isPublic → Boolean
-    isPublicByDefault → Boolean
-    isReadable → Boolean
-    isSpecialControlStructure → Boolean
-    isTryCatch → Boolean
-    isType → Boolean
-    isTypeParameter → Boolean
-    isWritable → Boolean
-    kind → String
-    lineRangeString → String
-    moduleName → String
-    range → sourcePosition.Range
-    rangeLongString → String
-    rangeString → Boolean
-    startPosition → sourcePosition.Position
-    stopPosition → sourcePosition.Position
-}
 
 class variableDefFrom (node) {
     inherit abstractVariableFrom (node)
     // I describe the variable defined in a def declaration.
 
-    method canBeOrginOfSuperExpression {
+    method canBeOriginOfSuperExpression {
         definingParseNode.parent.isModule
     }
     once method isPublic {
@@ -1094,7 +974,7 @@ class variableImportFrom (node) {
     inherit abstractVariableFrom (node)
     // I describe the "nickname" variable defined in an import declaration.
 
-    method canBeOrginOfSuperExpression {
+    method canBeOriginOfSuperExpression {
         true
     }
     once method isPublic {
@@ -1473,7 +1353,7 @@ class abstractVariable {
     var isDialect is readable := false
 
     method stopPosition { definingParseNode.stopPosition }
-    method canBeOrginOfSuperExpression { false }
+    method canBeOriginOfSuperExpression { false }
     method isPublicByDefault { false }
     method isAvailableForReuse { true }
     method isAnnotatedReadable {
@@ -1571,7 +1451,7 @@ class nameDictionary (initialBindings: Collection⟦Binding⟧) → Dictionary�
         variableSpecialControlStructureFrom (markerDef.definingParseNode) withName (key)
     }
     method at (key) ifAbsent (aBlock) {
-        // Answer the value associated with key or, if key isn't found, answer
+        // Answer the value associated with key; if key isn't found, answer
         // the result of evaluating aBlock.  Make sure that the names of the special control
         // structures are found if the key "standardGraceExtendedControlStructures" is present.
         superAt (key) ifAbsent {

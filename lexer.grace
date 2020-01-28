@@ -4,7 +4,9 @@ import "unicode" as unicode
 import "errormessages" as errormessages
 import "fastDict" as map
 import "regularExpression" as re
-import "sourcePosition" as sourcePosition
+import "basic" as basic
+
+use basic.open
 
 def keywords = map.dictionary.empty
 keywords.at "alias" put true
@@ -192,9 +194,9 @@ class token {
             (line == other.line) && (column == other.column)
         }
     }
-    method range { sourcePosition.start (start) end (end) }
-    method start { sourcePosition.line (line) column (column) }
-    method end { sourcePosition.line (endLine) column (endCol) }
+    method range { start (start) end (end) }
+    method start { line (line) column (column) }
+    method end { line (endLine) column (endCol) }
     method hash { hashCombine(line.hash, column.hash) }
     method asString { "({line}.{column}){self.kind} {self.value}" }
     method value { abstract }

@@ -3,7 +3,9 @@ import "io" as io
 import "ast" as ast
 import "util" as util
 import "errormessages" as errormessages
-import "sourcePosition" as sourcePosition
+import "basic" as basic
+
+use basic.open
 
 var tokens := false
 var moduleObject
@@ -281,7 +283,7 @@ method pushNum {
 method pushString {
     // Push the current token onto the output stack as a string
     var o := ast.stringNode.new(sym.value)
-    o.end := sourcePosition.line (sym.line) column (sym.endCol)
+    o.end := line (sym.line) column (sym.endCol)
     values.push(o)
     next
     return o
@@ -1037,7 +1039,7 @@ method prefixop {
         def rcvr = values.pop
         def call = ast.callNode.new(rcvr,
             [ ast.requestPart.request "prefix{op}" withArgs [] ] )
-        call.end := sourcePosition.line (lastToken.line) column (lastToken.endCol)
+        call.end := line (lastToken.line) column (lastToken.endCol)
         values.push(call)
     }
 }
@@ -1756,8 +1758,8 @@ method callrest(acceptBlocks) {
                     "  The indentation tells me that this is a continuation of" ++
                         " the previous line; is that what you intended?"
                 } else { "" }
-                def reqStart = sourcePosition.line (lnum) column (lpos)
-                def reqEnd = sourcePosition.line (lastToken.line) column (lastToken.endCol)
+                def reqStart = line (lnum) column (lpos)
+                def reqEnd = line (lastToken.line) column (lastToken.endCol)
                 def reqRange = ast.start (reqStart) end (reqEnd)
                 errormessages.syntaxError("a multi-part method request must end with an argument list," ++
                     " either parenthesized or self-delimiting." ++ more)
@@ -1765,7 +1767,7 @@ method callrest(acceptBlocks) {
             }
             argumentParts.addLast(namePart)
         }
-        meth.end := sourcePosition.line (lastToken.line) column (lastToken.endCol)
+        meth.end := line (lastToken.line) column (lastToken.endCol)
         // we do this indside the if, because outside meth might be an
         // identifierNode or a memberNode
     }
@@ -1829,8 +1831,8 @@ method parenthesizedArgs(part) startingWith (tok) {
         checkBadOperators
         def suggestion = errormessages.suggestion.new
         suggestion.insert(")")afterToken(lastToken)
-        def rng = ast.start (sourcePosition.line (tok.line) column (tok.column))
-                        end (sourcePosition.line (lastToken.line) column (lastToken.column + lastToken.size))
+        def rng = ast.start (line (tok.line) column (tok.column))
+                        end (line (lastToken.line) column (lastToken.column + lastToken.size))
         errormessages.syntaxError "an argument list beginning with a '(' must end with a ')'."
               atRange (rng) withSuggestion (suggestion)
     }

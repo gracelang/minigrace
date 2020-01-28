@@ -1,7 +1,7 @@
 dialect "standard"
 import "util" as util
 import "identifierKinds" as k
-import "sourcePosition" as sourcePosition
+import "basic" as basic
 
 // This module contains classes and pseudo-classes for all the AST nodes used
 // in the parser. Because of the limitations of the class syntax, classes that
@@ -14,10 +14,7 @@ import "sourcePosition" as sourcePosition
 // each case. Some nodes contain other fields for their specific use: while has
 // both a value (the condition) and a body, for example.
 
-def noPosition is public = sourcePosition.noPosition
-def emptyRange is public = sourcePosition.emptyRange
-type Range = sourcePosition.Range
-type Position = sourcePosition.Position
+use basic.open
 
 method positionOfNext (needle:String) after (pos:Position) -> Position {
     // returns the Position of the end of needle in the source
@@ -37,7 +34,7 @@ method positionOfNext (needle:String) after (pos:Position) -> Position {
         if (lineNr > sourceLines.size) then { return noPosition }
         found := sourceLines.at(lineNr).indexOf (needle)
     }
-    sourcePosition.line (lineNr) column (found + needle.size - 1)
+    line (lineNr) column (found + needle.size - 1)
 }
 
 method positionOfNext (needle1:String) or (needle2:String)
@@ -47,20 +44,20 @@ method positionOfNext (needle1:String) or (needle2:String)
     if (startLine == 0) then { return noPosition }
     var found := sourceLines.at(startLine).indexOf (needle1) startingAt (pos.column + 1)
     if (found ≠ 0) then {
-        return sourcePosition.line (startLine) column (found + needle1.size - 1)
+        return line (startLine) column (found + needle1.size - 1)
     }
     found := sourceLines.at(startLine).indexOf (needle2) startingAt (pos.column + 1)
     if (found ≠ 0) then {
-        return sourcePosition.line (startLine) column (found + needle2.size - 1)
+        return line (startLine) column (found + needle2.size - 1)
     }
     for (startLine..sourceLines.size) do { ln ->
         found := sourceLines.at(ln).indexOf (needle1)
         if (found ≠ 0) then {
-            return sourcePosition.line (ln) column (found + needle1.size - 1)
+            return line (ln) column (found + needle1.size - 1)
         }
         found := sourceLines.at(ln).indexOf (needle2)
         if (found ≠ 0) then {
-            return sourcePosition.line (ln) column (found + needle2.size - 1)
+            return line (ln) column (found + needle2.size - 1)
         }
     }
     return noPosition
@@ -137,33 +134,6 @@ def ancestorChain is public = object {
 
 def emptySeq = []
 
-type AstNode = interface {
-    kind -> String
-        // Used for pseudo-instanceof tests, and for printing
-    register -> String
-        // Used in the code generator to name the resulting object
-    line -> Number
-        // The source line the node came from; the first line is 1
-    line:=(ln:Number)
-    column -> Number
-        // the first column is 1
-    column:=(lp:Number)
-    scope -> SymbolTable
-        // The symbolTable for names defined in this node and its sub-nodes
-    pretty(n:Number) -> String
-        // Pretty-print-string of node at depth n
-    comments -> AstNode
-        // Comments associated with this node
-    range -> Range
-        // The source range represented by this node
-    start -> Position
-        // The start of the source range represented by this node
-    end -> Position
-        // The end of the source range represented by this node
-}
-
-type SymbolTable = Unknown
-
 trait typeArguments {
     method generics -> Collection | Boolean is required
     method generics:=(nu) is required
@@ -213,10 +183,10 @@ class baseNode {
         column := p.column
         self
     }
-    method start { sourcePosition.line (line) column (column) }
-    method end { sourcePosition.line (line) column (column + self.value.size - 1) }
+    method start { line (line) column (column) }
+    method end { line (line) column (column + self.value.size - 1) }
     method endCol { end.column }
-    method range { sourcePosition.start (start) end (end) }
+    method range { start (start) end (end) }
     method kind is abstract
     method annotations { [] }   // overriden by those nodes that can be annotated
     method hasAnnotation(annName) {
@@ -379,53 +349,6 @@ def implicit is public = object {
         visitor.visitImplicit(self) up (ac)
     }
     method pretty(depth) { "implicit" }
-}
-
-def nullNode is public = object {
-    inherit baseNode
-    def kind is public = "null"
-
-    method childrenDo(anAction:Procedure1) { done }
-    method childrenMap(f:Function1) { [] }
-    method newAccept(aVisitor) {
-        aVisitor.preVisit(self)
-        aVisitor.postVisit(self) result(aVisitor.newVisitNull(self))
-    }
-
-    method toGrace(depth) {
-        "// null"
-    }
-    method range { emptyRange }
-    method endCol { 0 }
-    method end -> Position { sourcePosition.line (0) column (0) }
-    method asString { "the nullNode" }
-    method isNull { true }
-    method accept(visitor) from (ac) { }
-    method map(blk) ancestors(ac) { self }
-    method shallowCopy { self }
-}
-
-class fakeSymbolTable is public {
-    use identityEquality
-    var node is public    // will be initialized when this node
-      // is placed in an AstNode using scope:=(_).
-      // Can't make it nullNode now, because nullNode
-      // inherits from baseNode, which uses fakeSymbolTable
-    method asString { "the fakeSymbolTable" }
-    method addNode (n) ac (kind) {
-        ProgrammingError.raise "fakeSymbolTable(on node {node}).addNode({n}) ac \"{kind}\""
-    }
-    method thatDefines (name) ifNone (action) {
-        action.apply
-    }
-    method thatDefines (name) {
-        ProgrammingError.raise "fakeSymbolTable(on node {node}).thatDefines({name})."
-    }
-    method enclosingObjectScope {
-        ProgrammingError.raise "fakeSymbolTable(on node {node}).enclosingObjectScope"
-    }
-    method variety { "fake" }
-    method elementScopesAsString { "[fake]" }
 }
 
 def ifNode is public = object {
@@ -1341,7 +1264,7 @@ def methodNode is public = object {
             lastPart.column + lastPart.name.size - 1
         }
         method headerRange {
-            sourcePosition.start ( self.start ) end ( signature.last.end )
+            start ( self.start ) end ( signature.last.end )
         }
 
         method nameString {
@@ -1755,7 +1678,7 @@ def moduleNode is public = object {
         def sourceLines = util.lines
         var theDialect is public := dialectNode.new "standard"
         theDialect.setStart(noPosition)             // dialect is implicit
-        setStart(sourcePosition.line 1 column 1)    // the start of the input
+        setStart(line 1 column 1)    // the start of the input
         var imports is public := list.empty
         var directImports is public := list.empty
 
@@ -1774,7 +1697,7 @@ def moduleNode is public = object {
         }
 
         method end -> Position {
-            sourcePosition.line (util.lines.size) column (util.lines.last.size)
+            line (util.lines.size) column (util.lines.last.size)
         }
         method isModule { true }
         method isTrait { false }
@@ -2139,7 +2062,7 @@ class outerNode(nodes) {
         blk.apply(nd, ac)
     }
     def end is public = if (line == 0) then { noPosition } else {
-        sourcePosition.line (line) column (column + 4)
+        line (line) column (column + 4)
     }
 }
 def memberNode is public = object {
@@ -2199,7 +2122,7 @@ def memberNode is public = object {
                 start
             } else {
                 def reqEnd = positionOfNext (request) after (receiver.end)
-                sourcePosition.line (reqEnd.line) column (reqEnd.column - request.size + 1)
+                line (reqEnd.line) column (reqEnd.column - request.size + 1)
             }
         }
         method nameString { value }
@@ -2437,7 +2360,7 @@ def identifierNode is public = object {
         wildcardCount := wildcardCount + 1
         def idNode = new("__{wildcardCount}", dtype)
         idNode.wildcard := true
-        idNode.end := sourcePosition.line (idNode.line) column (idNode.column)
+        idNode.end := line (idNode.line) column (idNode.column)
         idNode
     }
 
@@ -2458,9 +2381,9 @@ def identifierNode is public = object {
         var isDeclaredByParent is public := false
         var variable is public := "not yet bound"   // the variable for this id
         var end:Position is public := if (line ≠ 0) then {
-            sourcePosition.line (line) column (column + value.size - 1)
+            line (line) column (column + value.size - 1)
         } else {
-            sourcePosition.line (line) column (column-1)
+            line (line) column (column-1)
         }
 
         method childrenDo(anAction:Procedure1) {
@@ -2493,7 +2416,7 @@ def identifierNode is public = object {
         method name { value }
         method name:=(nu) {
             value := nu
-            end := sourcePosition.line (line) column (column + nu.size - 1)
+            end := line (line) column (column + nu.size - 1)
         }
         method nameString { value }
         var canonicalName is public := value
@@ -2636,7 +2559,7 @@ def stringNode is public = object {
         inherit baseNode
         def kind is public = "string"
         var value is public := v
-        var end is public := sourcePosition.line (line) column (column + v.size + 1)
+        var end is public := line (line) column (column + v.size + 1)
             // +1 to allow for quotes
 
         method childrenDo(anAction:Procedure1) { done }
@@ -3309,7 +3232,7 @@ def returnNode is public = object {
         if (noPosition ≠ value.end) then {
             value.end
         } else {
-            sourcePosition.line (line) column (column + 5)
+            line (line) column (column + 5)
         }
     }
     method isReturn { true }
@@ -3575,7 +3498,7 @@ def signaturePart is public = object {
             if (false ≠ typeParams) then {
                 return positionOfNext "⟧" after (typeParams.last.end)
             }
-            return sourcePosition.line (line) column (column + name.size - 1)
+            return line (line) column (column + name.size - 1)
         }
         method hasTypeParams { false ≠ typeParams }
         method numTypeParams { if (hasTypeParams) then {typeParams.size} else {0} }
@@ -3701,7 +3624,7 @@ def requestPart is public = object {
             if (typeArgs.isEmpty.not) then {
                 return positionOfNext "⟧" after (typeArgs.last.end)
             }
-            return sourcePosition.line (line) column (column + name.size - 1)
+            return line (line) column (column + name.size - 1)
         }
         method nameString {
             if (args.size == 0) then {return name}
@@ -3787,7 +3710,7 @@ def commentNode is public = object {
             aVisitor.postVisit(self) result(aVisitor.newVisitComment(self))
         }
 
-        method end -> Position { sourcePosition.line (endLine) column (util.lines.at(endLine).size) }
+        method end -> Position { line (endLine) column (util.lines.at(endLine).size) }
         method isComment { true }
         method isLegalInTrait { true }
         method isExecutable { false }

@@ -4,8 +4,10 @@ import "errormessages" as errormessages
 import "xmodule" as xmodule
 import "sys" as sys
 import "util" as util
-import "sourcePosition" as sourcePosition
+import "basic" as basic
 import "scope" as scope
+
+use basic.open
 
 method assert (aPredicate) {
     if (aPredicate.apply.not) then {
@@ -71,13 +73,13 @@ def moduleRegistry = object {
             errormessages.error
                   ("can't find source for module \"{aModule}\"; " ++
                   "looked in {errormessages.readableStringFrom(dirs)}")
-                  atRange(sourcePosition.emptyRange)  // TODO get the range
+                  atRange(emptyRange)  // TODO get the range
         }
     }
     method tryToCompile (aModuleName) {
         def source = locateSourceFor (aModuleName)
         xmodule.compileModule (aModuleName) inFile (source) forDialect(false) // TODO is this a dialect?
-              atRange(sourcePosition.emptyRange)  // TODO get the range
+              atRange(emptyRange)  // TODO get the range
     }
 }
 
