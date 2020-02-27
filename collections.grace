@@ -212,11 +212,17 @@ trait collection⟦T⟧ {
         do { each -> if (each == element) then { return true } }
         return false
     }
-    method includes(booleanBlock) {
-        self.do { each ->
+    method anySatisfy(booleanBlock) {
+        do { each ->
             if (booleanBlock.apply(each)) then { return true }
         }
-        return false
+        false
+    }
+    method allSatisfy(booleanBlock) {
+        do { each ->
+            if (booleanBlock.apply(each).not) then { return false }
+        }
+        true
     }
     method iterator is required
     method isEmpty {

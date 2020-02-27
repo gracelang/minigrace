@@ -70,7 +70,7 @@ method checkDialect(moduleObject) {
     util.log 50 verbose "checking dialect {dmn} used by module {moduleObject.name}"
     checkExternalModule(dialectNode)
     def dialectGct = gctDictionaryFor(dialectNode.moduleName)
-    if (dialectGct.at "methods" ifAbsent { [] }.includes { each ->
+    if (dialectGct.at "methods" ifAbsent { [] }.anySatisfy { each ->
           each.startsWith "thisDialect"
     }) then {
         util.log 50 verbose "loading dialect \"{dmn}\" for checkers."

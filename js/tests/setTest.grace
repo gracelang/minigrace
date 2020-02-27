@@ -276,5 +276,23 @@ trait setTest {
             var toClear := set [1, 2, 3]
             assert (toClear.clear) shouldBe (set.empty)
         }
+        method testSetAnySatisfy {
+            assert (oneToFive.anySatisfy { x -> (x/2).isEven })
+                description "oneToFive does not any element x s.t. x/2 is even"
+            deny (empty.anySatisfy {_ -> true})
+                description "empty includes some element!"
+            deny (oneToFive.anySatisfy {x -> x > 5})
+                description "oneToFive includes an element greater than 5"
+            deny (oneToFive.anySatisfy { x -> x == 6 }) description "oneToFive includes 6"
+        }
+        method testSetAllSatisfy {
+            assert (oneToFive.allSatisfy { x -> (x/2) < x })
+                description "not all of oneToFive are s.t. x > x/2"
+            assert (empty.allSatisfy {_ -> false})
+                description "all of empty satisfies all predicates"
+            deny (oneToFive.allSatisfy {x -> x > 2})
+                description "all of oneToFive are greater than 2"
+            assert (oneToFive.allSatisfy { x -> x ≠ 6 }) description "one of oneToFive == 6"
+        }
     }
 }

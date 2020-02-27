@@ -140,8 +140,10 @@ trait open {
             // returns a new collection that yields those of my elements for which condition holds
         contains (elem:T) → Boolean
             // returns true if elem is one of my elements
-        includes (condition:Predicate1⟦T⟧) → Boolean
+        anySatisfy (condition:Predicate1⟦T⟧) → Boolean
             // returns true if I contain an element e such that condition.apply(e) holds
+        allSatisfy (condition:Predicate1⟦T⟧) → Boolean
+            // returns true all of my elements e are such that condition.apply(e) holds
         >> (target: Collection⟦T⟧ | CollectionFactory⟦T⟧) → Collection⟦T⟧
             // returns target << self; used for writing pipelines
         << (source: Collection⟦T⟧) → Collection⟦T⟧

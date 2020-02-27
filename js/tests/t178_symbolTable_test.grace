@@ -48,14 +48,14 @@ def gct = idRes.generateGctForModule(resolvedModule1)
 
 method expect (gctDict) at (key) toIncludeEntryStartingWith (s) {
     def value = gctDict.at(key)
-    expect (value.includes { each -> each.startsWith(s) })
+    expect (value.anySatisfy { each -> each.startsWith(s) })
         orSay ("gct entry \"{key}\" does not include an entry starting " ++
             "with \"{s}\"; it is\n{value}")
 }
 
 method expect (gctDict) at (key) notToIncludeEntryStartingWith (s) {
     def value = gctDict.at(key)
-    expect (value.includes { each -> each.startsWith(s) }.not)
+    expect (value.anySatisfy { each -> each.startsWith(s) }.not)
         orSay("gct entry \"{key}\" includes an entry starting " ++
             "with \"{s}\"")
 }

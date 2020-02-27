@@ -44,7 +44,8 @@ class full⟦T⟧(contents:T) → Option {
     method do(action:Function1⟦T, Done⟧) → Done { action.apply(value) }
     method keysAndValuesDo(action:Function2⟦Number,T,Object⟧) -> Done { action.apply(1, value) }
     method contains(v) { value == v }
-    method includes(predicate) { predicate.apply(value) }
+    method anySatisfy(predicate) { predicate.apply(value) }
+    method allSatisfy(predicate) { predicate.apply(value) }
     method indices { sequence [1] }
     method keys { sequence [1] }
     method ==(other) {
@@ -120,11 +121,12 @@ class empty⟦T⟧ → Option {
     method asString { "option.empty" }
     method value → T { ValueError.raise "{self} has no value." }
     method valueIfEmpty(eValue:Function0) { eValue.apply }
-    method first { BoundsError.raise "attemp to use first on {self}." }
+    method first { BoundsError.raise "{self} is empty." }
     method do(action:Function1⟦T, Done⟧) → Done { done }
     method keysAndValuesDo(action:Function2⟦Number,T,Object⟧) -> Done { done }
     method contains(_) { false }
-    method includes(_) { false }
+    method anySatisfy(_) { false }
+    method allSatisfy(_) { true }
     method indices { [] }
     method keys { [] }
     method ==(other) {

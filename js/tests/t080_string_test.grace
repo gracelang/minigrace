@@ -513,18 +513,18 @@ def stringAsCollectionTests = object {
             deny (concatLetters.contains "w")
         }
         method testIncludesPositive {
-            assert (vowels.includes { ch -> ch < "b"})
+            assert (vowels.anySatisfy { ch -> ch < "b"})
                   description "no vowel preceeds \"b\""
         }
         method testIncludesNegative {
-            deny (vowels.includes { ch -> ch == "w" })
+            deny (vowels.anySatisfy { ch -> ch == "w" })
                   description "w is a vowel"
         }
         method testContainsEmpty {
             deny (empty.contains "a")
         }
         method testIncludesEmpty {
-            deny (empty.includes { ch -> true })
+            deny (empty.anySatisfy { ch -> true })
                   description "empty includes something"
         }
         method testDo {
