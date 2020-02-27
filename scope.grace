@@ -68,7 +68,7 @@ def graceEmptyScope:MinimalScope is public = object {
         aBlock.apply
     }
     method localAndReusedNamesAndValuesDo (aBlock) {
-        self
+        done
     }
     method node {
         ProgrammingError.raise "the empty scope is not associated with a node"
@@ -553,7 +553,10 @@ class graceScope {
         pBlock.apply (variable)
     }
     method attributeScopeOf (aName) {
-        lookup (aName).attributeScope
+        lookup (aName) ifAbsent {
+            print "no entry for `{aName}` in scope {self}"
+            return graceEmptyScope
+        }.attributeScope
     }
     method asString {
         "{variety} scope {uid} containing " ++ (names.keys.sorted >> sequence)
@@ -1057,8 +1060,9 @@ class variableMethodFrom (node) {
     def tagString = "mth"
 }
 class variableGraceObjectMethodFrom (node) {
-    inherit abstractVariableFrom (node)
+    inherit variableMethodFrom (node)
     method fromGraceObject { true }
+    method forUsers { false }
     def tagString = "go"
 }
 
@@ -1410,7 +1414,7 @@ class abstractVariable {
     method forUsers { true }
     method fromParent { false }
     method forGct { true }
-    var fromGraceObject is public := false
+    method fromGraceObject { false }
     var isFresh is public := false
     method range { definingParseNode.range }
     method isAnnotatedWritable { isAnnotatedWith "writable" }

@@ -156,7 +156,7 @@ method generateGctForModule(module) {
         if (scopesAlreadyProcessed.contains(s).not) then {
             scopesAlreadyProcessed.add(s)
             def entries = list.empty
-            s.localNamesAndValuesDo { vName, v →
+            s.localAndReusedNamesAndValuesDo { vName, v →
                 if (vName == "graphicApplicationSize(1)") then {
                     util.log 45 verbose "graphicApplicationSize(1) scope contains names {vName.attributeScope.allNames}"
                 }
@@ -790,7 +790,7 @@ method gatherUsedNames(objNode) is confidential {
                     def definingTraits = traitMethods.at(nm) ifAbsent { list [] }
                     definingTraits.add(t)
                     traitMethods.at(nm)put(definingTraits)
-                    // TODO:  Make definingtraits a multidictionary
+                    // TODO:  Make definingtraits a multi-dictionary
                 }
             }
         }
@@ -943,8 +943,8 @@ method transformBind(bindNode) ancestors(anc) {
     def nm = lhs.nameString
     def nmGets = nm ++ ":=(1)"
     def defs = sm.variableResolver.definitionsOf (nmGets) visibleIn (bindNode.scope)
-    defs.ifEmpty {
-        def badBinding = bindNode.scope.lookup (lhs.name) ifAbsent {
+    if (defs.isEmpty) then {
+        def badBinding = bindNode.scope.lookup (lhs.nameString) ifAbsent {
             errormessages.badAssignmentTo (lhs) declaredInScope (lhs.scope)
         }
     }

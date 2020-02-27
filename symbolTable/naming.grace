@@ -277,9 +277,7 @@ class definitionGatherer {
         def tempScope = scope.graceObjectScope
         traitScopes.do { s →
             s.localAndReusedNamesAndValuesDo { nm, vl →
-                if ((vl.isAvailableForReuse && {
-                    nodeScope.definesLocally (nm).not
-                })) then {
+                if (vl.isAvailableForReuse && { nodeScope.definesLocally(nm).not }) then {
                     if (tempScope.definesLocally (nm)) then {
                         ReuseError.raise ("trait conflict — there are multiple " ++
                               "definitions of `{nm}`, but no local override")
