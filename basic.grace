@@ -1,6 +1,6 @@
 dialect "standard"
 
-// basic definitions used in many parts of the minigrace compiler
+// A bundle of basic definitions used in many parts of the minigrace compiler
 //
 // AstNode: the type of a parse node cum AST node
 // Position — the type of a point in the source code
@@ -53,7 +53,7 @@ trait open {
             // Look up variable corresponding to name, which may or may not be defined
             // in this scope. If it is not defined, return the result of executing
             // aBlock; otherwise, return the result of applying pBlock to the variable.
-        isReusable → Boolean
+        isFresh → Boolean
             // answer true if this scope is one that can be used or inherited
         attributeScopeOf (aName) → Scope
         asString → String
@@ -85,7 +85,7 @@ trait open {
             // Is name defined in this scope, or in one of the lexically surrounding scopes?
         redefine (aVariable) withName (aName) → Variable
         hash → Number
-        isLegalAsTrait → Boolean
+        isTrait → Boolean
         isTheEmptyScope → Boolean
         isDialectScope → Boolean
         localAndReusedNamesAndValuesDo (aBlock) → Done
@@ -258,6 +258,39 @@ trait open {
         def line is public = 0
         def column is public = 0
         def scope is public = fakeSymbolTable
+        method decType {
+            self   // can't be Unknown, because ast depends on this module
+        }
+        method nameString { asString }
+        method isMarkerDeclaration { false }
+        method hasAnnotation(_) { false }
+        method isMember { false }
+        method isMethod { false }
+        method isDialect { false }
+        method isModule { false }
+        method isExecutable { false }
+        method isCall { false }
+        method isComment { false }
+        method isClass { false }    // is a method that returns a fresh object
+        method inClass { false }    // object in a syntactic class definiton
+        method isTrait { false }    // is a method that returns a trait object
+        method inTrait { false }    // object in a syntactic trait definition
+        method isBind { false }
+        method isReturn { false }
+        method isSelf { false }
+        method isSuper { false }
+        method isBuiltIn { false }
+        method isOuter { false }
+        method isSelfOrOuter { false }
+        method isBlock { false }
+        method isObject { false }
+        method isIdentifier { false }
+        method isImport { false }
+        method isTypeDec { false }
+        method isExternal { false }
+        method isFresh { false }
+        method isConstant { false }
+        method isSequenceConstructor { false }
         method start { line (line) column (column) }
         method childrenDo(anAction:Procedure1) { done }
         method childrenMap(f:Function1) { [] }
@@ -270,6 +303,7 @@ trait open {
         }
         method range { emptyRange }
         method endCol { 0 }
+        method annotations { [] }
         method end -> Position { line (0) column (0) }
         method asString { "the nullNode" }
         method isNull { true }
@@ -292,16 +326,6 @@ trait open {
         method addNode (n) ac (kind) {
             ProgrammingError.raise "fakeSymbolTable(on node {node}).addNode({n}) ac \"{kind}\""
         }
-        method thatDefines (name) ifNone (action) {
-            action.apply
-        }
-        method thatDefines (name) {
-            ProgrammingError.raise "fakeSymbolTable(on node {node}).thatDefines({name})."
-        }
-        method enclosingObjectScope {
-            ProgrammingError.raise "fakeSymbolTable(on node {node}).enclosingObjectScope"
-        }
         method variety { "fake" }
-        method elementScopesAsString { "[fake]" }
     }
 }

@@ -1936,6 +1936,7 @@ function badBlockArgs(...args) {
                 typeName = "required type";
             }
             var argDesc = (numArgs === 1) ? "argument" : "argument " + n ;
+            argDesc += " (" + safeJsString(args[ix]) + ")";
             if (typeSpec.className.startsWith("Type")) {
                 // startsWith("Type") catches TypeIntersection, TypeUnion,
                 // etc, as well as class "Type" itself.
@@ -1943,9 +1944,10 @@ function badBlockArgs(...args) {
                             " does not have " + typeName,
                             typeSpec, args[ix]);
             } else {
+                let typeDesc = safeJsString(typeSpec);
                 throw new GraceExceptionPacket(RequestErrorObject,
                    new GraceString(argDesc + " to block." +
-                       canonicalName + " does not match pattern"));
+                       canonicalName + " does not match " + typeDesc));
             }
 
         }
@@ -3124,8 +3126,13 @@ function do_import(modname, moduleCodeFunc) {
 
 function requestModuleInitialization(moduleObject, modname, moduleInitializationFunction) {
     // execute moduleInitializationFunction with moduleObject as `this`
+    let oldLineNumber = lineNumber;
     lineNumber = 0;
-    return moduleInitializationFunction.call(moduleObject);  // makes moduleObject `this`
+    try {
+        return moduleInitializationFunction.call(moduleObject);  // makes moduleObject `this`
+    } finally {
+        lineNumber = oldLineNumber;
+    }
 }
 requestModuleInitialization.isGraceRequest = true;
 

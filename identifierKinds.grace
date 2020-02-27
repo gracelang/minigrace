@@ -40,7 +40,7 @@ def aliasdec is public = kindConstant "alias"
 def importdec is public = kindConstant "import"
 
 def freshmeth is public = object {
-    inherit kindConstant "freshmeth"
+    inherit kindConstant "fresh method"
     method isFresh  { true }
 }
 def selfDef is public = object {
@@ -73,11 +73,11 @@ def parameter is public = object {
     method isParameter { true }
 }
 def typeparam is public = object {
-    inherit kindConstant "typeparam"
+    inherit kindConstant "type parameter"
     method isParameter { true }
 }
 def graceObjectMethod is public = object {
-    inherit kindConstant "from graceObject"
+    inherit kindConstant "graceObject method"
     method isImplicit { true }
     method forUsers { false }
     method fromParent { true }
@@ -98,7 +98,7 @@ def tags = dictionary [
     vardec::"(var)",
     parameter::"(par)",
     typeparam::"(tpar)",
-    graceObjectMethod::"(fgo)"]
+    graceObjectMethod::"(go)"]
 
 def constants = dictionary.empty
 tags.keysAndValuesDo { k, v -> constants.at(v) put(k) }

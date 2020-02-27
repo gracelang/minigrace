@@ -321,7 +321,7 @@ class definitionGatherer {
         if (reusedScope.isGenerative.not) then {
             return reuseError.notGenerative (aUseStatement)
         }
-        if (reusedScope.isLegalAsTrait.not) then {
+        if (reusedScope.isTrait.not) then {
             return reuseError.notLegalTrait (aUseStatement)
         }
         def result = scope.graceObjectScope.node (aUseStatement)

@@ -1255,12 +1255,21 @@ method assembleArguments(args) {
     }
     result
 }
+method scopeThatDefines(id) ifNone (action) {
+    var thisScope := id.scope
+    def name = id.nameString
+    while {thisScope.definesLocallyOrReuses(name).not} do {
+        thisScope := thisScope.outerScope
+        if (thisScope.isTheEmptyScope) then { return action.apply }
+    }
+    thisScope
+}
 method compileUninitializedCheck(id) {
     // id is an identiferNode.   If it is possible that this identifier is
     // undefined, emit a check.
     if (emitUndefinedChecks.not) then { return }
     def name = id.nameString
-    def definingScope = id.scope.thatDefines(name) ifNone {
+    def definingScope = scopeThatDefines(id) ifNone {
         // this happens for the "unknown" identifierNode
         return
     }
@@ -1269,9 +1278,10 @@ method compileUninitializedCheck(id) {
     if ("module | method | dialect | block".contains(definingScope.variety)) then {
         if (initializedVars.contains(name)) then { return }
     }
-    def idKind = definingScope.kind(name)
-    if ((idKind == k.defdec) || (idKind == k.vardec)) then {
+    def variable = definingScope.lookup(name)
+    if (variable.needsUndefinedCheck) then {
         out "if ({varf(name)} === undefined) raiseUninitializedVariable(\"{name}\");"
+        initializedVars.add(name)
     }
 }
 method partl(o) {

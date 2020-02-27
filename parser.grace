@@ -2362,8 +2362,10 @@ method classOrTrait(btok) {
     objNode.name := methNode.canonicalName
     if (myKind == "class") then {
         objNode.inClass := true
+        objNode.isFresh := true
     } elseif { myKind == "trait" } then {
         objNode.inTrait := true
+        objNode.isFresh := true
     }
     values.push(methNode)
     reconcileComments

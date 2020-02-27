@@ -496,7 +496,7 @@ method extractGctFromCache(module) {
 method writeGCT(modname, dict) {
     if (util.extensions.containsKey "gctfile") then {
         def fp = io.open("{util.outDir}{modname}.gct", "w")
-        list (dict.bindings).sortBy(keyCompare).do { b ->
+        dict.bindings.sortedBy(keyCompare).do { b ->
             fp.write "{b.key}:\n"
             b.value.do { v -> fp.write " {v}\n" }
         }
@@ -507,11 +507,9 @@ method writeGCT(modname, dict) {
 
 method gctAsString(gctDict) {
     var ret := ""
-    list.withAll(gctDict.bindings).sortBy(keyCompare).do { b ->
+    gctDict.bindings.sortedBy(keyCompare).do { b ->
         ret := ret ++ "{b.key}:\n"
-        list.withAll(b.value).sort.do { v ->
-            ret := ret ++ " {v}\n"
-        }
+        b.value.do { v -> ret := ret ++ " {v}\n" }
     }
-    return ret
+    ret
 }
