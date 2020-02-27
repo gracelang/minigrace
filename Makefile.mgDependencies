@@ -27,6 +27,7 @@ j1/unicode.js: j1/standard.js
 j1/unixFilePath.js: j1/standard.js j1/io.js
 j1/util.js: j1/standard.js j1/io.js j1/sys.js j1/unixFilePath.js j1/fastDict.js
 j1/xmodule.js: j1/standard.js j1/io.js j1/sys.js j1/util.js j1/ast.js j1/mirror.js j1/errormessages.js j1/unixFilePath.js j1/shasum.js j1/regularExpression.js j1/buildinfo.js j1/fastDict.js j1/intrinsic.js
+j1/typeComparison.js: j1/standard.js j1/mirror.js
 
 j2/ast.js: j2/constantScope.js j2/standard.js j2/util.js j2/identifierKinds.js j2/basic.js
 j2/basic.js: j2/standard.js
