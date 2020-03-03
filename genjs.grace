@@ -1258,7 +1258,13 @@ method assembleArguments(args) {
 method scopeThatDefines(id) ifNone (action) {
     var thisScope := id.scope
     def name = id.nameString
-    while {thisScope.definesLocallyOrReuses(name).not} do {
+    while {
+        if (thisScope.variety == "fake") then {
+            util.log 30 verbose "found fake symbol table in {id} at {id.range}"
+            return action.apply
+        }
+        thisScope.definesLocallyOrReuses(name).not
+    } do {
         thisScope := thisScope.outerScope
         if (thisScope.isTheEmptyScope) then { return action.apply }
     }
