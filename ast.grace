@@ -145,8 +145,13 @@ trait typeArguments {
     method typeArgs {
         if (false == generics) then { [] } else { generics }
     }
-    method hasTypeArgs { false ≠ generics }
-
+    method typeArgsDo (action) {
+        if (false == generics) then { return }
+        generics.do(action)
+    }
+    method hasTypeArgs {
+        if (false == generics) then { false } else { generics.isEmpty }
+    }
     method withGenericArgs(gens) {
         generics := gens
         self
@@ -1591,7 +1596,7 @@ def callNode is public = object {
             parts.fold { acc, each -> acc ++ each.nameString } startingWith ""
         }
 
-        method generics:=(gens) {
+        method generics:=(gens) {   // required by typeArguments trait
             parts.first.withGenericArgs(gens)
         }
 
@@ -1633,11 +1638,8 @@ def callNode is public = object {
             if (visitor.visitCall(self) up(ac)) then {
                 def newChain = ac.extend(self)
                 self.receiver.accept(visitor) from(newChain)
-                for (self.parts) do { part ->
-                    for (part.args) do { arg ->
-                        arg.accept(visitor) from(newChain)
-                    }
-                }
+                typeArgsDo { t -> t.accept(visitor) from(newChain) }
+                argumentsDo { arg -> arg.accept(visitor) from(newChain) }
             }
         }
         method map(blk) ancestors(ac) {
