@@ -947,15 +947,16 @@ method transformBind(bindNode) ancestors(anc) {
         def badBinding = bindNode.scope.lookup (lhs.nameString) ifAbsent {
             errormessages.badAssignmentTo (lhs) declaredInScope (lhs.scope)
         }
-    }
-    if (defs.size > 1) then {
+        bindNode      // no definition for <name>:=(_), so we do not transform
+    } elseif { defs.size > 1 } then {
         errormessages.ambiguityError (defs) node (lhs)
-    }
-    def aResolvedVariable = defs.first
-    if (aResolvedVariable.definition.isMethod) then {
-        generateOneselfRequestFrom (bindNode) using (aResolvedVariable)
-    } else {
-        bindNode
+    } else {    // exactly one definition
+        def aResolvedVariable = defs.first
+        if (aResolvedVariable.definition.isMethod) then {
+            generateOneselfRequestFrom (bindNode) using (aResolvedVariable)
+        } else {
+            bindNode
+        }
     }
 }
 
