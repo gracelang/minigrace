@@ -554,7 +554,8 @@ class graceScope {
     }
     method attributeScopeOf (aName) {
         lookup (aName) ifAbsent {
-            print "no entry for `{aName}` in scope {self}"
+            // this happens with, e.g., parameters and vars,
+            // where we don't know the attribute scope
             return graceEmptyScope
         }.attributeScope
     }
