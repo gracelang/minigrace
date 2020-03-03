@@ -370,7 +370,7 @@ class graceObjectScope {
         result
     }
     method areReusedNamesCompleted {
-        (statusOfReusedNames == "completed")
+        statusOfReusedNames == "completed"
     }
     method markReusedNamesAsCompleted {
         statusOfReusedNames := "completed"
@@ -399,6 +399,7 @@ class externalScope {
     var isFresh is public := false
     method isExternal { true }
     method variety { "external" }
+    method areReusedNamesCompleted { true }
 }
 
 class predefinedObjectScope(name) {
