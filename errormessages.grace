@@ -2,6 +2,7 @@ dialect "standard"
 import "io" as io
 import "sys" as sys
 import "util" as util
+import "mirror" as mirror
 import "identifierKinds" as k
 
 def suggestion is public = object {
@@ -578,36 +579,18 @@ method guessesForIdentifier(node) {
     nodeScope.withSurroundingScopesDo { s →
         s.localAndReusedNamesAndValuesDo { n, _ →
             if (name (nm) mightBeIntendedToBe(n)) then {
-                guesses.add(canonical(n))
+                guesses.add(mirror.canonicalName(n))
                 if (guesses.size ≥ thresh) then { return guesses }
             }
         }
     }
     nodeScope.localAndReusedNamesAndValuesDo { n, v →
         if (v.attributeScope.defines(nm)) then {
-            guesses.add "{n}.{canonical(nm)}"
+            guesses.add "{n}.{mirror.canonicalName(nm)}"
             if (guesses.size ≥ thresh) then { return guesses }
         }
     }
     guesses
-}
-
-method canonical(numericName) {
-    def parts = numericName.split "("
-    var output := parts.first
-    for (2..parts.size) do { i →
-        def part_split = parts.at(i).split ")"
-        def n = part_split.first.asNumber
-        if (n.isNaN) then {
-            output := output ++ part_split.first
-        } else {
-            output := output ++ "(" ++ ("_," * (n - 1)) ++ "_)"
-            if (part_split.size > 1) then {
-                output := output ++ part_split.second
-            }
-        }
-    }
-    return output
 }
 
 method badAssignmentTo(node) declaredInScope(scp) {
