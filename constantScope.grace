@@ -31,18 +31,18 @@ def bool = typeNode "Boolean"
 def str = typeNode "String"
 def num = typeNode "Number"
 def obj = typeNode "Object"
-def seq = typeNode "Sequence"
-def iter = typeNode "Iterator"
+def seq = typeNode "Sequence" params 1
+def iter = typeNode "Iterator" params 1
 def dn = typeNode "Done"
 def non = typeNode "None"
-def fn0 = typeNode "Function0"
-def fn1 = typeNode "Function1"
-def fn2 = typeNode "Function2"
-def fn3 = typeNode "Function3"
+def fn0 = typeNode "Function0" params 2
+def fn1 = typeNode "Function1" params 2
+def fn2 = typeNode "Function2" params 2
+def fn3 = typeNode "Function3" params 2
 def pat = typeNode "Pattern"
 def ex = typeNode "Exception"
-def bind = typeNode "Binding"
-def typ = typeNode "Type"
+def bind = typeNode "Binding"  params 2
+def typ = typeNode "Type"  params 1
 
 // The dictionaries below define the attributes of various built-in objects
 // It's ok that some methods are missing; they are treated as returning
@@ -250,7 +250,7 @@ method initializeConstantScopes {
         sm.variableMethodFrom (pseudoNode "native(1)header(1)" typed (un)))
 }
 
-class pseudoNode (name) typed (t) {
+class pseudoNode (name) typed (t) scope (s) {
     // a pseudoNode is a fake AST node for things that don't  have
     // a real AST node, eg., imported things, and built-in things.
     // It support just enough of the AstNode interface to work …
@@ -260,6 +260,7 @@ class pseudoNode (name) typed (t) {
     method == (other) { nameString == other.nameString }
     def hash is public = nameString.hash    // we KNOW that we will need this
     def decType is public = t
+    def scope is public = s
 
     method range { emptyRange }
     method isMarkerDeclaration { false }
@@ -269,6 +270,9 @@ class pseudoNode (name) typed (t) {
     method isDialect { name == "$dialect" }
     method isModule { (name == "$module") || isDialect }
     once method attributeScope { scopeFor(t) }   // delayed evaluation to allow for circularity
+    method isDeclaredByParent { false }
+    var numberOfParameters is public := mirror.numberOfParameters(name)
+    var numTypeParams is public := 0
 }
 
 once class typeType {
@@ -280,7 +284,17 @@ once class typeType {
 }
 
 method typeNode (name) {
-    pseudoNode (name) typed (typeType)
+    typeNode (name) params 0
 }
 
+class typeNode (name) params (n) {
+    inherit pseudoNode (name) typed (typeType)
+    def numTypeParams is public = n
+}
+
+class pseudoNode (name) typed (t) {
+    inherit pseudoNode (name) typed (t) scope (builtInsScope)
+    // TODO: make this a method that just delegates to the above
+    // not currently recognized as fresh
+}
 

@@ -148,6 +148,22 @@ method numericName(c) {
     native "js" code ‹return new GraceString(numericMethodName(var_c._value));›
 }
 
+method numberOfParameters(numericName) → Number {
+    def parts = numericName.split "("
+    var result := 0
+    (2..parts.size).do { i →
+        def part_split = parts.at(i).split ")"
+        def n = part_split.first.asNumber
+        if (n.isNaN) then {
+            intrinsic.constants.ProgrammingError.raise
+                  "ill-formed numeric method name {numericName}"
+        } else {
+            result := result + n
+        }
+    }
+    result
+}
+
 class methodMirror(theSubject, aMethodName) {
     // For flexibility, we allow aMethodName to be canonical or numeric
     def subject is public = theSubject
