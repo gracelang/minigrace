@@ -79,7 +79,7 @@ def graceEmptyScope:MinimalScope is public = object {
     method asString {
         "the empty scope"
     }
-    method add (aVariable) withName (aString) {
+    method add (aVariable:Variable) withName (aString) {
         ProgrammingError.raise("an attempt was made to add {aVariable.name} with " ++
             "name {aString} to the empty scope")
     }
@@ -112,7 +112,6 @@ def graceEmptyScope:MinimalScope is public = object {
         // an enclosingObjectScope
         true
     }
-    method isReusable { false }
     method lookupLexically (name) ifAbsent (aBlock) ifPresent (pBlock) {
         aBlock.apply
     }
@@ -160,7 +159,7 @@ def graceUniversalScope:Scope is public = object {
     method asString {
         "the universal scope"
     }
-    method add (aVariable) withName (aString) {
+    method add (aVariable:Variable) withName (aString) {
         ProgrammingError.raise("an attempt was made to add {aVariable.name} with " ++
             "name {aString} to the universal scope")
     }
@@ -240,7 +239,7 @@ class graceMethodScope {
     inherit graceScope
         alias superAdd(_)withName(_) = add(_)withName(_)
 
-    method add (aVariable) withName (aString) {
+    method add (aVariable:Variable) withName (aString) {
         if (aVariable.isExplicitMethod) then {
             structuralError "sorry, you can't declare a method immediately inside a method"
                   variable (aVariable)
@@ -311,7 +310,7 @@ class graceObjectScope {
             }
         }
     }
-    method addReused (aVariable) {
+    method addReused (aVariable:Variable) {
         addReused (aVariable) withName (aVariable.declaredName)
     }
     method localAndReusedNamesAndValuesDo (aBlock) filteringOut (closerDefinitions) {
@@ -328,7 +327,7 @@ class graceObjectScope {
             }
         }
     }
-    method addReused (aVariable) withName (aName) {
+    method addReused (aVariable:Variable) withName (aName) {
         reusedNames.at (aName) put (aVariable)
         aVariable
     }
@@ -422,7 +421,6 @@ class graceParameterScope {
     inherit graceScope
 
     method variety { "parameter" }
-
 }
 class graceTypeScope {
     // I record the names introduced by a type declaration.  These are the
@@ -474,6 +472,10 @@ class graceScope {
     //   names — a dictionary containing as keys all of the names declared in my scope.
     //          The values are the "variable" objects that represent the declaration.
     //   outerScope — the scope surrounding me, or emptyScope if there is none.
+    //   openingNode — the node that opens this scope. For example, if this is a method scope,
+    //                   then openingNode is the method node
+    //   uidCache — a string that uniquely identifies this scope within the current compilation,
+    //              or the empty string if the uid has yet to be requested.
 
     use identityEquality
 
@@ -610,15 +612,6 @@ class graceScope {
             outerScope.lookup (name) ifAbsent (aBlock) ifPresent (pBlock)
         } ifPresent (pBlock)
     }
-    method == (other) {
-        match (other)
-          case { sc:MinimalScope →
-                (localNames.keys == sc.localNames.keys) && {
-                    reusedNames.keys == sc.reusedNames.keys}
-        } else {
-            false
-        }
-    }
     method error (innerDefn) shadows (outerDefn) is confidential {
         NamingError.raise ("You can't use `{innerDefn.declaredName}` as the name " ++
               "of a {innerDefn.kind}, because `{innerDefn.declaredName}` " ++
@@ -639,7 +632,7 @@ class graceScope {
     method redeclarationError (aMessage) variable (aVariable) {
         NamingError.raise (aMessage) with (aVariable.definingParseNode)
     }
-    method add (aVariable) withName (aName) {
+    method add (aVariable:Variable) withName (aName) {
         def priorDeclaration = names.at (aName) ifAbsent {
             names.at (aName) put (aVariable)
             return aVariable
@@ -680,7 +673,6 @@ class graceScope {
         names.at (aName) put (aVariable)
         aVariable
     }
-    method hash is abstract
     method isTrait { false }
     method isFresh { false }
     method isTheEmptyScope { false }
@@ -746,7 +738,7 @@ class graceScope {
             }
         }
     }
-    method add (aVariable) {
+    method add (aVariable:Variable) {
         add (aVariable) withName (aVariable.declaredName)
     }
     method localNames {
@@ -1029,8 +1021,8 @@ class variableImportFrom (node) {
 }
 
 class variableMethodFrom (node) {
+    // I describe a method defined in the method declaration `node`.
     inherit abstractVariableFrom (node)
-    // I describe a method defined in a method declaration.
 
     method isPublicByDefault {
         true
@@ -1153,7 +1145,7 @@ class variableTypeFrom (node) {
 //        // regress.
 //        graceBuildType.from (definingParseNode.value) typeName (name)
 //    }
-    method numberOfParameters { definingParseNode.numberOfTypeParameters }
+    method numberOfParameters { definingParseNode.numTypeParams }
     method parameters { definingParseNode.typeParameters.parameters }
 //    method conformsTo (aGraceType) underAssumptions (assumptions) {
 //        return typeValue.conformsTo (aGraceType) underAssumptions (assumptions)
@@ -1209,21 +1201,14 @@ class variableTypeFrom (node) {
 }
 class variableTypeParameterFrom (node) {
     inherit abstractVariableFrom (node)
+    use identityEquality
     // I describe a type parameter to a type or method.
 
-    method hash {
-        // == has been overriden to be identity
-        myIdentityHash
-    }
 //    method conformsTo (anotherType) inType (selfType) underAssumptions (assumptions) {
 //        return anotherType.isTypeParameter
 //    }
 
     method isParameter { true }
-    method == (other) {
-        // is other the same parameter as me?
-        self.isMe (other)
-    }
     method isAvailableForReuse { false }
     method isType { true }
     method variants {
@@ -1348,6 +1333,16 @@ class variableSpecialControlStructureFrom (node) withName (aMethodName) {
 //        return definingParseNode.typeParameters.parameters
 //    }
 //}
+
+type Variable = interface {
+    name -> String
+    declaredType
+    definingScope
+    attributeScope
+    isMarker -> Boolean
+    forGct -> Boolean
+    // and lots more
+}
 class abstractVariable {
 
     // The superclass of classes that describe the various kinds of variable
@@ -1371,6 +1366,7 @@ class abstractVariable {
 
     var name is public
     var declaredType is public
+    var definingScope is public
     var attributeScope is public := graceEmptyScope  // TODO: graceUniversalScope?
     var isMarker is readable
     method annotationNames is required
@@ -1398,7 +1394,6 @@ class abstractVariable {
     }
     method isWritable { false }
     method isExplicitMethod { false }
-    method definingScope { definingParseNode.scope }
     method isImport { false }
     method isOnceMethod { false }
     method rangeLongString { range.rangeLongString }
@@ -1453,6 +1448,11 @@ class abstractVariableFrom (aDeclarationNode) {
     var annotationNames is public :=
           aDeclarationNode.annotations.map { idNode -> idNode.nameString }
     definingParseNode := aDeclarationNode
+    definingScope := if (aDeclarationNode.isDeclaredByParent) then {
+        aDeclarationNode.scope.outerScope
+    } else {
+        aDeclarationNode.scope
+    }
 }
 
 method variable(tag) from(node) {
