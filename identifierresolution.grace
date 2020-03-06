@@ -36,7 +36,11 @@ util.setPosition(0, 0)
 method transformIdentifier(anIdentifier) ancestors(anc) {
     // node is a (copy of an) ast node that represents an applied occurrence of
     // an identifer id.
-    // This method may or may not transform node into another ast node
+    // This method may or may not transform node into another ast node.
+    // If the identifier refers to a variable in a block or method, or in a module
+    // or dialect, then it should be left as a variable.  However, if it refers to
+    // a field in an object that might be reused, then it must be tranformed into
+    // a method request.
     def defs = sm.variableResolver.definitionsOf (anIdentifier.name) visibleIn (anIdentifier.scope)
     if (defs.isEmpty) then {
         errormessages.undeclaredIdentifier (anIdentifier)
@@ -44,7 +48,21 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
     if (defs.size > 1) then {
         errormessages.ambiguityError (defs) node (anIdentifier)
     }
-    generateOneselfRequestFrom (anIdentifier) using (defs.first)
+    def resolution = defs.first
+    def variable = resolution.definition
+    if (variable.isMethodOrParameterizedType) then {
+        generateOneselfRequestFrom (anIdentifier) using (resolution)
+    } elseif { variable.definingScope.isFresh } then {
+        // Anything defined in a fresh scope, including a var, can be overridden.
+        // Hence, we need to access it via a request, unless it's on the lhs of an assigment
+        if (anIdentifier.isAssigned) then {
+            anIdentifier
+        } else {
+            generateOneselfRequestFrom (anIdentifier) using (resolution)
+        }
+    } else {
+        anIdentifier
+    }
 }
 
 method generateOneselfRequestFrom (aSourceNode) using (aResolvedVariable) {
@@ -67,7 +85,7 @@ method generateOneselfRequestFrom (aSourceNode) using (aResolvedVariable) {
         } elseif {outerChain.isEmpty} then {
             ast.identifierNode.new("self", false) scope(nodeScope)
         } else {
-            ast.outerNode(outerChain).setScope(nodeScope)
+            ast.outerNode(outerChain).setPositionFrom(aSourceNode).setScope(nodeScope)
         }
     }
     def result = if (aSourceNode.numArgs == 0) then {
@@ -309,7 +327,7 @@ method addGctLine (gctLine:String) toScope (s) for (gct) {
     }
     def newVar = sm.variable (split.third) from (
         constantScope.pseudoNode (split.first)
-        typed (split.second))
+              typed (split.second) scope (s) )
     newVar.attributeScope := scopeWithUid(split.fourth) for (gct)
     if (split.size ≥ 5) then {
         newVar.annotationNames := split.fifth.split ","
@@ -350,11 +368,11 @@ method setupContext(moduleNode) {
 
     moduleScope.add(sm.variablePseudoFrom(
         constantScope.pseudoNode "$module"
-        typed (constantScope.un)).attributeScope (moduleScope))
+        typed (constantScope.un) scope (moduleScope)).attributeScope (moduleScope))
 
     moduleScope.add(sm.variablePseudoFrom(
         constantScope.pseudoNode "$dialect"
-        typed (constantScope.un)).attributeScope (dialectScope))
+        typed (constantScope.un) scope (moduleScope)).attributeScope (dialectScope))
 
     def dialectNode = moduleNode.theDialect
     def dialectName:String = dialectNode.value
@@ -999,7 +1017,7 @@ method transformReuse (ruNode) ancestors(anc) {
 method transformCall(cNode) → ast.AstNode {
     def methodName = cNode.nameString
     def s = cNode.scope
-    def nominalRcvr = cNode.receiver
+    var nominalRcvr := cNode.receiver
     def result = if (nominalRcvr.isImplicit) then {
         def defs = sm.variableResolver.definitionsOf (methodName) visibleIn (s)
         if (defs.isEmpty) then {
@@ -1009,15 +1027,24 @@ method transformCall(cNode) → ast.AstNode {
             errormessages.ambiguityError (defs) node (cNode)
         }
         generateOneselfRequestFrom (cNode) using (defs.first)
-    } elseif { nominalRcvr.isOuter && (cNode.nameString == "outer") } then {
-        // deal with outer.outer ..., which has been (incorrectly) parsed into a
-        // a request of `outer` with an outernode as receiver.
-        // Here we add another object to that outerNode's object list.
+    } elseif { nominalRcvr.isOuter } then {  // TODO: this is wrong in the case of $module or $dialect
+        if (nominalRcvr.isIdentifier) then {
+            nominalRcvr := (ast.outerNode [s.objectScope.outerScope.node]).
+                  setPositionFrom(nominalRcvr).setScope(s)
+            cNode.receiver := nominalRcvr
+        }
+        if (cNode.nameString == "outer") then {
+            // deal with outer.outer ..., which has been (incorrectly) parsed into a
+            // a request of `outer` with an outernode as receiver.
+            // Here we add another object to that outerNode's object list.
 
-        def priorOuter = nominalRcvr.theObjects.last
-        def newOuter = priorOuter.objectScope.outerScope.objectScope.node
-        nominalRcvr.theObjects.addLast(newOuter)
-        nominalRcvr
+            def priorOuter = nominalRcvr.theObjects.last
+            def newOuter = priorOuter.objectScope.outerScope.objectScope.node
+            nominalRcvr.theObjects.addLast(newOuter)
+            nominalRcvr
+        } else {
+            cNode
+        }
     } else {
         cNode
     }
