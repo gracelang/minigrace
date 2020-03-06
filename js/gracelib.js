@@ -1728,14 +1728,11 @@ function Grace_print(obj) {
 
 function Grace_errorPrint(obj) {
     try {
-        try {
-            var s = callmethod(obj, "asString", [0]);
-            minigrace.stderr_write(s._value);
-        } catch (ex) {
-            minigrace.stderr_write(describe(obj));
-        }
+        const s = callmethod(obj, "asString", [0]);
+        minigrace.stderr_write(s._value);
+    } catch (ex) {
+        minigrace.stderr_write(describe(obj));
     } finally {
-        if (! inBrowser) minigrace.stderr_write("\n");
         return GraceDone;
     }
 }

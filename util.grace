@@ -227,7 +227,7 @@ method log(level) verbose(s) {
         }
         def elapsed = (sys.elapsedTime * 100).rounded / 100
         io.error.write("minigrace{vtagw}: {modnamev}: "
-            ++ "{elapsed} (+{elapsed - previousElapsed}): {s}\n")
+            ++ "{elapsed} (+{elapsed - previousElapsed}): {s}")
         previousElapsed := elapsed
     }
 }

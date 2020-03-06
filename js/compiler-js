@@ -40,24 +40,20 @@ function MiniGrace() {
     this.debugMode = false;
     this.lastDebugMode = false;
     this.printStackFrames = true;
-    
     this.generated_output = "";
-    
-    this.stdout_write = function(value) {
-        if(typeof(process) != "undefined") {
-            process.stdout.write(value);
-        }
-    };
-    
-    this.stderr_write = function(value) {
-        console.log(value + "\n");
-    };
-    
-    this.stdin_read = function() {
-        return process.stdin.read();
-    };
 }
 
+MiniGrace.prototype.stdout_write = function(value) {
+    process.stdout.write(value, "utf-8");
+}
+
+MiniGrace.prototype.stderr_write = function(value) {
+    process.stderr.write(value + "\n", "utf-8");
+}
+
+MiniGrace.prototype.stdin_read = function() {
+    return "";
+}
 
 MiniGrace.prototype.padToFour = function(num) {
     return num <= 9999 ? ("   "+num).slice(-4) : num;
@@ -173,15 +169,6 @@ global.findOnPath = findOnPath;
 MiniGrace.prototype.run = function(fileName) {
     stackFrames = [];
     var code = minigrace.generated_output;
-    minigrace.stdout_write = function(value) {
-        process.stdout.write(value, "utf-8");
-    };
-    minigrace.stderr_write = function(value) {
-        process.stderr.write(value, "utf-8");
-    };
-    minigrace.stdin_read = function() {
-        return "";
-    };
     var modName = path.basename(fileName, ".js");
     var dirName = path.dirname(fileName);
     this.loadModule(modName, "", dirName, []);
