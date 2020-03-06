@@ -117,7 +117,8 @@ method addAssignmentMethodsToSymbolTable {
         def dScope = declNode.scope
         def nameGets = declNode.nameString ++ ":=(_)"
         if (dScope.isModuleScope.not || declNode.isPublic) then {
-            dScope.add(declNode) withName (nameGets)  // will complain if already declared
+            dScope.add(sm.variableVarFrom(declNode)) withName (nameGets)
+            // will complain if already declared
             // is it necessary to construct a fake method node? The old symbol table did
         }
     }
