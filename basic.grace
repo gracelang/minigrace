@@ -227,6 +227,9 @@ trait open {
     once method emptyRange { start (noPosition) end (noPosition) }
 
     type AstNode = interface {
+        isDeclaredByParent -> Boolean
+            // for a declaration node or identifier, true when the thing being
+            // declared is decared in the outerscope, rather than in scope
         kind -> String
             // Used for pseudo-instanceof tests, and for printing
         register -> String
@@ -264,6 +267,7 @@ trait open {
         method nameString { asString }
         method isMarkerDeclaration { false }
         method hasAnnotation(_) { false }
+        method isDeclaredByParent { false }
         method isMember { false }
         method isMethod { false }
         method isDialect { false }
@@ -326,6 +330,7 @@ trait open {
         method addNode (n) ac (kind) {
             ProgrammingError.raise "fakeSymbolTable(on node {node}).addNode({n}) ac \"{kind}\""
         }
+        method isFresh { false }
         method variety { "fake" }
     }
 }

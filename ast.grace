@@ -171,6 +171,7 @@ class baseNode {
     method attributeScope is abstract
     // for expressions, the scope that defines the attributes of the corresponding value
 
+    method isDeclaredByParent { false }
     method childrenDo(anAction:Procedure1) is abstract
     method childrenMap(f:Function1) is abstract
     method newAccept(aVisitor) is abstract
@@ -246,17 +247,21 @@ class baseNode {
     method isImplicit { false }
     method usesAsType(aNode) { false }
     method hash { line.hash * column.hash }
-    method asString { "{kind} {nameString}" }
-    method nameString { "?" }
+    method asString { "{kind} {nodeString} ({range})" }
+    method nameString is abstract
+    method nodeString { "" }
     method isWritable { true }
     method isReadable { true }
     method isPublic { true }
     method isConfidential { isPublic.not }
     method decType {
-        if (false == self.dtype) then {
-            return unknownType
-        }
-        return self.dtype
+        if (false == self.dtype) then { return unknownType }
+        self.dtype
+    }
+    method isTyped {
+        if (false == self.dtype) then { return false }
+        if (self.dtype.nameString == "Unknown") then { return false }
+        true
     }
     method isSimple { true }  // needs no parens when used as receiver
     method isDelimited { false }  // needs no parens when used as argument
@@ -350,7 +355,7 @@ def implicit is public = object {
     method range { emptyRange }
     method isImplicit { true }
     method toGrace(depth) { "implicit" }
-    method asString { "the implicit receiver" }
+    method nodeString { "" }
     method map(blk) ancestors(ac) { self }
     method accept(visitor) from (ac) {
         visitor.visitImplicit(self) up (ac)
@@ -483,7 +488,7 @@ class annotationsNode(someAnnotations) {
         }
         s
     }
-    method asString { pretty 0 }
+    method nodeString { pretty 0 }
     method shallowCopy {
         annotationsNode(anns).shallowCopyFieldsFrom(self)
             // this shares ans, rather than copying.
@@ -830,7 +835,7 @@ class methodSignatureNode(parts', dtype') {
     var isBindingOccurrence is readable := true
             // the only exceptions are the oldMethodName in an alias clause,
             // and an excluded name
-
+    method nodeString { nameString }
     method childrenDo(anAction:Procedure1) {
         signatureParts.do(anAction)
         dtype.do(anAction)
@@ -1022,8 +1027,8 @@ def typeLiteralNode is public = object {
         value := n
         anonymous := false
     }
-    method asString {
-        "typeliteral: methods = {methods}, types = {types}"
+    method nodeString {
+        "(methods = {methods}, types = {types})"
     }
     method declarationKindWithAncestors(ac) { k.typedec }
     method isExecutable { false }
@@ -1220,6 +1225,9 @@ def methodNode is public = object {
         var isFresh is public := false      // a method is 'fresh' if it answers a new object
         var isOnceMethod is public := false
 
+        method isDeclaredByParent { true }
+        method nodeString { nameString }
+
         method attributeScope {
             if (returnsObject) then {
                 returnedObjectScope
@@ -1315,7 +1323,7 @@ def methodNode is public = object {
             start ( self.start ) end ( signature.last.end )
         }
 
-        method nameString {
+        once method nameString {
             signature.fold { acc, each -> acc ++ each.nameString }
                 startingWith ""
         }
@@ -1357,12 +1365,7 @@ def methodNode is public = object {
         method isTrait { usesTraitSyntax || (isFresh && { body.last.isTrait } ) }
         method needsArgChecks {
             signature.do { part ->
-                part.params.do { p ->
-                    if ((false != p.dtype) &&
-                          { p.dtype.nameString != "Unknown" }) then {
-                        return true
-                    }
-                }
+                part.params.do { p -> if (p.isTyped) then { return true } }
             }
             return false
         }
@@ -1695,7 +1698,7 @@ def callNode is public = object {
             }
             cachedIdentifier
         }
-        method asString { "call {toGrace}" }
+        method nodeString { toGrace 0 }
         method shallowCopy {
             callNode.new(receiver, parts).shallowCopyFieldsFrom(self)
         }
@@ -2010,9 +2013,7 @@ def objectNode is public = object {
             annotations := other.annotations
             self
         }
-        method asString {
-            kind ++ " " ++ nameString
-        }
+        method nodeString { nameString }
     }
 }
 def arrayNode is public = object {
@@ -2108,7 +2109,7 @@ class outerNode(nodes) {
     }
 
     method numberOfLevels { theObjects.size }
-    method asString { "‹object outside that at line {theObjects.last.line}›" }
+    method nodeString { "‹object outside that at line {theObjects.last.line}›" }
     method pretty(depth) { basePretty(depth) ++ asString }
     method accept(visitor) from (ac) {
         visitor.visitOuter(self) up (ac)
@@ -2251,7 +2252,7 @@ def memberNode is public = object {
             }
             s
         }
-        method asString { toGrace }
+        method nodeString { toGrace 0 }
         method asIdentifier {
             // make and return an identifiderNode for my request
             if (scope.variety == "fake") then {
@@ -2303,7 +2304,7 @@ def genericNode is public = object {
 
     method end -> Position { positionOfNext "⟧" after (args.last.end) }
     method nameString { value.nameString }
-    method asString { toGrace }
+    method nodeString { toGrace 0 }
     method accept(visitor : AstVisitor) from(ac) {
         if (visitor.visitGeneric(self) up(ac)) then {
             def newChain = ac.extend(self)
@@ -2343,7 +2344,7 @@ class typeParametersNode(params') whereClauses (conditions) {
     def kind is public = "typeparams"
     var params is public := params'
     var whereClauses is public := conditions
-    method asString { toGrace }
+    method nodeString { toGrace 0 }
     method declarationKindWithAncestors(ac) { k.typeparam }
 
     method childrenDo(anAction:Procedure1) {
@@ -2458,7 +2459,7 @@ def identifierNode is public = object {
         method attributeScope {
             scope.attributeScopeOf(nameString)
         }
-        method numberOfTypeParameters { 0 }
+        method numTypeParams { 0 }
 
         method childrenDo(anAction:Procedure1) {
             typeArgs.do(anAction)
@@ -2594,11 +2595,11 @@ def identifierNode is public = object {
             s
         }
 
-        method asString {
+        method nodeString {
             if (isBindingOccurrence) then {
-                "identifierBinding‹{value}›"
+                "binding ‹{value}›"
             } else {
-                "identifier‹{value}›"
+                "‹{value}›"
             }
         }
         method shallowCopy {
@@ -2622,8 +2623,10 @@ def identifierNode is public = object {
     }
 }
 
-def typeType is public = identifierNode.new("Type", false)
-def unknownType is public = identifierNode.new("Unknown", typeType)
+def typeType is public = identifierNode.new("Type", false).
+                                setScope(constantScope.typeScope)
+def unknownType is public = identifierNode.new("Unknown", typeType).
+                                setScope(constantScope.emptyScope)
 
 def stringNode is public = object {
     method new(v) scope(s) {
@@ -2669,7 +2672,7 @@ def stringNode is public = object {
                 q ++ value.quoted ++ q
             }
         }
-        method asString { "string {toGrace}" }
+        method nodeString { toGrace 0 }
         method shallowCopy {
             stringNode.new(value).shallowCopyFieldsFrom(self)
         }
@@ -2712,7 +2715,7 @@ def numNode is public = object {
         method toGrace(depth : Number) -> String {
             self.value.asString
         }
-        method asString { "num {value}" }
+        method nodeString { value }
         method shallowCopy {
             numNode.new(value).shallowCopyFieldsFrom(self)
         }
@@ -2768,6 +2771,7 @@ def opNode is public = object {
     method isSimple { false }    // needs parens when used as receiver
     method nameString { value ++ "(1)" }
     method canonicalName { value ++ "(_)" }
+    method nodeString { value }
     method receiver { left }
     method isCall { true }
 
@@ -2870,7 +2874,7 @@ def bindNode is public = object {
     method nameString { dest.nameString ++ ":=(1)" }
     method canonicalName { dest.nameString ++ ":=(_)" }
     method isBind { true }
-    method asString { "bind {value}" }
+    method nodeString { "{dest} := {value}" }
     method accept(visitor : AstVisitor) from(ac) {
         if (visitor.visitBind(self) up(ac)) then {
             def newChain = ac.extend(self)
@@ -2947,6 +2951,7 @@ class declarationNode(identifier, val, declaredType) {
         aNode == dtype
     }
     method isConcrete { true }
+    method nodeString { nameString }
 }
 
 def defDecNode is public = object {
@@ -3030,8 +3035,8 @@ def defDecNode is public = object {
         method toGrace(depth : Number) -> String {
             def spc = "    " * depth
             var s := "def {self.name.toGrace(0)}"
-            if ((false != self.dtype) && { self.dtype.value != "Unknown" }) then {
-                s := s ++ " : " ++ self.dtype.toGrace(0)
+            if (isTyped) then {
+                s := s ++ " : " ++ self.dtype.toGrace 0
             }
             if (self.annotations.size > 0) then {
                 s := s ++ " is "
@@ -3128,10 +3133,8 @@ def varDecNode is public = object {
         method toGrace(depth : Number) -> String {
             def spc = "    " * depth
             var s := "var {self.name.toGrace(0)}"
-            if ((false != self.dtype) && {
-                    self.dtype.value != "Unknown"
-            }) then {
-                s := s ++ " : " ++ self.dtype.toGrace(0)
+            if (isTyped) then {
+                s := s ++ " : " ++ self.dtype.toGrace 0
             }
             if (self.annotations.size > 0) then {
                 s := s ++ " is "
@@ -3189,6 +3192,7 @@ def importNode is public = object {
     method isExecutable { false }
     method name { value }
     method nameString { value.nameString }
+    method nodeString { nameString }
     method isPublic {
         // imports, like defs, are confidential by default
         if (hasAnnotation "public") then { return true }
@@ -3269,7 +3273,7 @@ def dialectNode is public = object {
     method isDialect { true }
     method isExternal { true }
     method isExecutable { false }
-    method moduleName {
+    once method moduleName {
         var bnm := ""
         for (value) do {c->
             if (c == "/") then {
@@ -3280,6 +3284,7 @@ def dialectNode is public = object {
         }
         bnm
     }
+    method nodeString { moduleName }
     method path {
         value
     }
@@ -3476,10 +3481,13 @@ def inheritNode is public = object {
             }
             s
         }
-        method asString {
-            statementName ++ value.toGrace
+        method asString is override {
+            "{statementName} {nodeString} ({self.range})"
+            // TODO: is this `self.` still necessary?
+            // use statementName rather than kind
         }
-        method nameString { value.toGrace(0) }
+        method nodeString { value.toGrace 0 }
+        method nameString { value.toGrace 0 }
         method addAlias (newSig) for (oldSig) {
             aliases.push(aliasNew(newSig) old(oldSig))
         }
@@ -3532,7 +3540,7 @@ class aliasNew(n) old(o) {
 
     method newName {newSignature.asIdentifier}
     method oldName {oldSignature.asIdentifier}
-    method asString { "alias {newSignature.nameString} = {oldSignature.nameString}" }
+    method nodeString { "{newSignature.nameString} = {oldSignature.nameString}" }
     method pretty(depth) {
         def spc = "  " * (depth+1)
         "{spc}alias\n{spc}  {newSignature.pretty(depth+2)}\n{spc}  =\n{spc}  {oldSignature.pretty(depth+2)}"
@@ -3682,9 +3690,7 @@ def signaturePart is public = object {
             lineLength := other.lineLength
             self
         }
-        method asString {
-            "part: {nameString}"
-        }
+        method nodeString { nameString }
     }
 }
 
@@ -3819,7 +3825,7 @@ def commentNode is public = object {
         method isComment { true }
         method isLegalInTrait { true }
         method isExecutable { false }
-        method asString { "comment ({line}–{endLine}): {value}" }
+        method nodeString { value }
         method extendCommentUsing(cmtNode) {
             value := value ++ " " ++ cmtNode.value
             endLine := cmtNode.endLine
