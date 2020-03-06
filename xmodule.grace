@@ -2,7 +2,6 @@ dialect "standard"
 import "io" as io
 import "sys" as sys
 import "util" as util
-import "ast" as ast
 import "mirror" as mirror
 import "errormessages" as errormessages
 import "unixFilePath" as filePath
@@ -11,6 +10,9 @@ import "regularExpression" as regex
 import "buildinfo" as buildinfo
 import "fastDict" as fd
 import "intrinsic" as intrinsic
+import "basic" as basic
+
+use basic.open
 
 def CheckerFailure = Exception.refine "CheckerFailure"
 def DialectError is public = Exception.refine "DialectError"
@@ -131,10 +133,10 @@ method reportDialectError(ex) {
         errormessages.error "Dialect {currentDialect.name}: {ex.message}."
             atRange(rs)
             withSuggestions(rs.suggestions)
-    } case { r:ast.Range ->  //  inlcudes ast.AstNode
+    } case { r:Range ->  //  inlcudes AstNode
         errormessages.error "Dialect {currentDialect.name}: {ex.message}."
             atRange(r)
-    } case { p:ast.Position ->
+    } case { p:Position ->
         errormessages.error "Dialect {currentDialect.name}: {ex.message}."
             atPosition(p.line, p.column)
     } else {
