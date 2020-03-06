@@ -33,6 +33,7 @@ trait open {
                     else { return false }
             }
             method ≠ (other) { (self == other).not }
+            method :: (obj) { binding.key (self) value (obj) }
         }
     }
 }

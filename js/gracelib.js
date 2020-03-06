@@ -1785,7 +1785,6 @@ GraceType.prototype = {
                 let c = this.matchCache[cUid];
                 if (c !== undefined) return c;
             } else {
-                cuid = null;
                 minigrace.stderr_write(dbgp(other) + " has no classUid\n");
             }
             for (var i=0; i<this.typeMethods.length; i++) {

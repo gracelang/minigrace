@@ -1,10 +1,12 @@
 dialect "none"
 import "intrinsic" as intrinsic
 import "basicTypesBundle" as basicTypesBundle
+import "equalityBundle" as equalityBundle
 
 use intrinsic.controlStructures
 use basicTypesBundle.open
 use intrinsic.annotations
+use equalityBundle.open
 
 def intrinsicConstants = intrinsic.constants
 def primitiveArray = intrinsicConstants.primitiveArray
@@ -76,7 +78,7 @@ type Dictionary⟦K,T⟧ = Collection⟦T⟧ & interface {
     at(k:K) -> T
     removeAllKeys(keys: Collection⟦K⟧) -> Dictionary⟦K,T⟧
     removeKey(key:K) -> Dictionary⟦K,T⟧
-    removeAllValues(removals: Collection⟦T⟧) -> Dictionary⟦K,T⟧
+    removeAllValues(values: Collection⟦T⟧) -> Dictionary⟦K,T⟧
     removeValue(v:T) -> Dictionary⟦K,T⟧
     clear -> Dictionary⟦K,T⟧
     keys -> Enumerable⟦K⟧
@@ -393,7 +395,7 @@ method isEqual(left) toCollection(right) {
             }
         }
         leftIter.hasNext == rightIter.hasNext
-    } else { 
+    } else {
         false
     }
 }
@@ -406,11 +408,11 @@ method hashAndCombine(aHash, anObj) {
 }
 
 class list⟦T⟧ {
-    
+
     method asString { "the list factory" }
-    
+
     method empty -> List⟦T⟧ { withAll [] }
-    
+
     method with(x:T)  -> List⟦T⟧ { withAll [x] }
 
     class withAll(a: Collection⟦T⟧) -> List⟦T⟧ {
@@ -689,7 +691,7 @@ class set⟦T⟧ {
     method empty -> Set⟦T⟧ {
         ofCapacity 8
     }
-    
+
     method << (source) { self.withAll(source) }
 
     class ofCapacity(cap) -> Set⟦T⟧ is confidential {
@@ -697,6 +699,7 @@ class set⟦T⟧ {
         var mods := 0
         var inner := primitiveArray.new(cap)
         var size is readable := 0
+        var removals := 0
         (0..(cap - 1)).do { i ->
             inner.at (i) put (unused)
         }
@@ -710,9 +713,7 @@ class set⟦T⟧ {
                     def t = findPositionForAdd(x)
                     inner.at(t)put(x)
                     size := size + 1
-                    if (size > (inner.size / 2)) then {
-                        expand
-                    }
+                    expandIfNecessary
                 }
             }
             self    // for chaining
@@ -724,9 +725,7 @@ class set⟦T⟧ {
                 def t = findPositionForAdd(x)
                 inner.at(t)put(x)
                 size := size + 1
-                if (size > (inner.size / 2)) then {
-                    expand
-                }
+                expandIfNecessary
             }
             self    // for chaining
         }
@@ -745,11 +744,13 @@ class set⟦T⟧ {
                 var t := findPosition(x)
                 if (inner.at(t) == x) then {
                     inner.at(t) put (removed)
+                    removals := removals + 1
                     size := size - 1
                 } else {
                     block.apply(x)
                 }
             }
+            expandIfNecessary
             self    // for chaining
         }
         method clear {
@@ -763,6 +764,7 @@ class set⟦T⟧ {
             var t := findPosition(elt)
             if (inner.at(t) == elt) then {
                 inner.at(t) put (removed)
+                removals := removals + 1
                 mods := mods + 1
                 size := size - 1
             } else {
@@ -808,7 +810,7 @@ class set⟦T⟧ {
                 if (candidate == x) then {
                     return t
                 }
-                if (jump != 0) then {
+                if (jump ≠ 0) then {
                     t := (t * 3 + 1) % s
                     jump := jump - 1
                 } else {
@@ -867,7 +869,7 @@ class set⟦T⟧ {
                     ConcurrentModification.raise (outer.asDebugString)
                 }
                 candidate := inner.at(i)
-                if ((unused != candidate) && (removed != candidate)) then {
+                if ((unused ≠ candidate) && (removed ≠ candidate)) then {
                     found := found + 1
                     block1.apply(candidate)
                 }
@@ -900,18 +902,23 @@ class set⟦T⟧ {
             }
         }
 
-        method expand is confidential {
-            def c = inner.size
-            def n = c * 2
-            def oldInner = inner
-            size := 0
-            inner := primitiveArray.new(n)
-            for (0..(inner.size-1)) do {i->
-                inner.at(i)put(unused)
-            }
-            for (0..(oldInner.size-1)) do {i->
-                if ((unused != oldInner.at(i)) && (removed != oldInner.at(i))) then {
-                    add(oldInner.at(i))
+        method expandIfNecessary is confidential {
+            // this might actually reduce the size of inner, if
+            // it contains many removals
+
+            if ((removals + size) > (inner.size / 2)) then {
+                def n = max(size * 2, 8)
+                def oldInner = inner
+                size := 0
+                removals := 0
+                inner := primitiveArray.new(n)
+                for (0..(inner.size-1)) do { i ->
+                    inner.at(i)put(unused)
+                }
+                oldInner.do { oldValue ->
+                    if ((unused ≠ oldValue) && (removed ≠ oldValue)) then {
+                        add(oldValue)
+                    }
                 }
             }
         }
@@ -925,7 +932,7 @@ class set⟦T⟧ {
                     }
                 }
                 otherSize == self.size
-            } else { 
+            } else {
                 false
             }
         }
@@ -974,25 +981,6 @@ class set⟦T⟧ {
     }
 }
 
-class binding⟦K, T⟧ {
-    method asString { "the binding factory" }
-
-    class key(k)value(v) {
-        def key is public = k
-        def value is public = v
-        method asString { "{key}::{value}" }
-        method asDebugString { "{key.asDebugString}::{value.asDebugString}" }
-        method hash { (key.hash * 1021) + value.hash }
-        method == (other) {
-            match (other)
-                case { o:Binding -> (key == o.key) && (value == o.value) }
-                else { return false }
-        }
-        method ≠ (other) { (self == other).not }
-        method :: (obj) { binding.key (self) value (obj) }
-    }
-}
-
 type ComparableToDictionary⟦K,T⟧ = interface {
     size -> Number
     at(_:K)ifAbsent(_) -> T
@@ -1014,7 +1002,7 @@ class dictionary⟦K,T⟧ {
         initialBindings.do { b:Binding -> result.add(b) }
         result
     }
-    
+
     method << (source:Collection⟦Binding⟦K,T⟧⟧) { self.withAll(source) }
 
     class empty {
@@ -1024,6 +1012,7 @@ class dictionary⟦K,T⟧ {
         use collection⟦T⟧
         var mods := 0
         var numBindings := 0
+        var removals := 0
         var inner := primitiveArray.new(8)
         for (0..(inner.size-1)) do { i ->
             inner.at(i)put(unused)
@@ -1036,7 +1025,7 @@ class dictionary⟦K,T⟧ {
                 numBindings := numBindings + 1
             }
             inner.at(t)put(binding.key(key')value(value'))
-            if ((size * 2) > inner.size) then { expand }
+            expandIfNecessary
             self    // for chaining
         }
         method add(aBinding) {
@@ -1046,7 +1035,7 @@ class dictionary⟦K,T⟧ {
                 numBindings := numBindings + 1
             }
             inner.at(t)put(aBinding)
-            if ((size * 2) > inner.size) then { expand }
+            expandIfNecessary
             self    // for chaining
         }
         method addAll(bindings) {
@@ -1109,12 +1098,13 @@ class dictionary⟦K,T⟧ {
             }
             self
         }
-        method removeAllValues(removals) {
+        method removeAllValues(valuesToBeRemoved) {
             mods := mods + 1
             for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
-                if (removals.contains(a.value)) then {
+                if (valuesToBeRemoved.contains(a.value)) then {
                     inner.at(i)put(removed)
+                    removals := removals + 1
                     numBindings := numBindings - 1
                 }
             }
@@ -1297,19 +1287,23 @@ class dictionary⟦K,T⟧ {
                 elt
             }
         }
-        method expand is confidential {
-            def c = inner.size
-            def n = c * 2
-            def oldInner = inner
-            inner := primitiveArray.new(n)
-            for (0..(n - 1)) do {i->
-                inner.at(i)put(unused)
-            }
-            numBindings := 0
-            for (0..(c - 1)) do {i->
-                def a = oldInner.at(i)
-                if ((unused ≠ a) && (removed ≠ a)) then {
-                    self.at(a.key)put(a.value)
+        method expandIfNecessary is confidential {
+            // the new inner array might actually be smaller than the old inner,
+            // if there are a lot of removed entries
+
+            if ((removals + size) > (inner.size / 2)) then {
+                def n = size * 2
+                def oldInner = inner
+                inner := primitiveArray.new(n)
+                for (0..(n - 1)) do {i->
+                    inner.at(i)put(unused)
+                }
+                numBindings := 0
+                removals := 0
+                oldInner.do { each ->
+                    if ((unused ≠ each) && (removed ≠ each)) then {
+                        self.add(each) // reuse the binding
+                    }
                 }
             }
         }
