@@ -3,6 +3,8 @@ import "intrinsic" as intrinsic
 import "basicTypesBundle" as basicTypesBundle
 
 use intrinsic.annotations
+use basicTypesBundle.open
+
 trait open {
 
     trait equality {
@@ -29,7 +31,7 @@ trait open {
             method hash { intrinsic.hashCombine (key.hash, value.hash) }
             method == (other) {
                 match (other)
-                    case { o:basicTypesBundle.Binding -> (key == o.key) && (value == o.value) }
+                    case { o:Binding -> (key == o.key) && (value == o.value) }
                     else { return false }
             }
             method ≠ (other) { (self == other).not }
