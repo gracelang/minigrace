@@ -1714,8 +1714,10 @@ method compile(moduleObject, of, bt, glPath) {
     initializeCodeGenerator(moduleObject)
     outputModuleDefinition(moduleObject)
     outputModuleMetadata(moduleObject)
+    util.log_verbose "writingGct"
     identifierresolution.writeGctForModule(moduleObject)
     outputGct
+    util.log_verbose "Gct written"
     if (! inBrowser) then { outputSource }
 
     emitBufferedOutput
