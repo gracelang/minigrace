@@ -294,5 +294,16 @@ trait setTest {
                 description "all of oneToFive are greater than 2"
             assert (oneToFive.allSatisfy { x -> x ≠ 6 }) description "one of oneToFive == 6"
         }
+        method testSetMultipleRemoves {
+            // this test causes set to fill up with removed tombestones,
+            // even though it stillhas plenty of space
+            var smallSet := set.with 1
+            assert (smallSet) shouldBe (set.with 1)
+            (2..1000).do { each → 
+                smallSet.add(each)
+                smallSet.remove(each)
+            }
+            assert (smallSet) shouldBe (set.with 1)
+        }
     }
 }

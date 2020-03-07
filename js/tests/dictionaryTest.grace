@@ -445,5 +445,34 @@ trait dictionaryTest {
         method testDictionaryClear {
             assert (evens.clear) shouldBe (dictionary.empty)
         }
+        method testDictionaryAnySatisfy {
+            assert (oneToFive.anySatisfy { x -> (x/2).isEven })
+                description "oneToFive does not any element x s.t. x/2 is even"
+            deny (empty.anySatisfy {_ -> true})
+                description "empty includes some element!"
+            deny (oneToFive.anySatisfy {x -> x > 5})
+                description "oneToFive includes an element greater than 5"
+            deny (oneToFive.anySatisfy { x -> x == 6 }) description "oneToFive includes 6"
+        }
+        method testDictionaryAllSatisfy {
+            assert (oneToFive.allSatisfy { x -> (x/2) < x })
+                description "not all of oneToFive are s.t. x > x/2"
+            assert (empty.allSatisfy {_ -> false})
+                description "all of empty satisfies all predicates"
+            deny (oneToFive.allSatisfy {x -> x > 2})
+                description "all of oneToFive are greater than 2"
+            assert (oneToFive.allSatisfy { x -> x ≠ 6 }) description "one of oneToFive == 6"
+        }
+        method testDictionaryMultipleRemoves {
+            // this test causes set to fill up with removed tombestones,
+            // even though it stillhas plenty of space
+            var smallDict := dictionary.with (1::2)
+            assert (smallDict) shouldBe (dictionary.with (1::2))
+            (2..1000).do { each → 
+                smallDict.add(each::(each*2))
+                smallDict.removeKey(each)
+            }
+            assert (smallDict) shouldBe (dictionary.with (1::2))
+        }
     }
 }
