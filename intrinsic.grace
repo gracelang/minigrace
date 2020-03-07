@@ -97,7 +97,9 @@ trait constants {
     once method infinity { native "js" code ‹
         return new GraceNum(Infinity); ›
     }
-    once method done { native "js" code ‹return GraceDone;› }
+    method done { native "js" code ‹
+        return GraceDone;›
+    }
 
     once class primitiveArray {
         method new(size) {
@@ -163,6 +165,7 @@ method engine {
 
 method become(a, b) {
     // not clear what this is actualy intended to do ... it's used in statictypes dialect
+    // it won't exchange the prototypes of the two objects, so they may not work.
     native "js" code ‹
         for (let k in var_a) {
             const temp = var_a[k];
@@ -171,4 +174,19 @@ method become(a, b) {
         }
         GraceDone;
     ›
+}
+
+method hashCombine(a, b) {
+    native "c" code ‹
+        int a = (int)(args[0]->data);
+        int b = (int)(args[1]->data);
+        int aHash = a * 1664525;
+        int bHash = (b * 1664525 - 0xA21FE89) * 3;
+        return alloc_Float64((aHash * 2) ^ bHash);›
+    native "js" code ‹
+        var a = var_a._value;
+        var b = var_b._value;
+        var aHash = a * 1664525;
+        var bHash = (b * 1664525 - 0xA21FE89) * 3;
+        result = new GraceNum((aHash * 2) ^ bHash);›
 }

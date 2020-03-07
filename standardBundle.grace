@@ -69,21 +69,6 @@ trait open {
         method asString { nameString }
     }
 
-    method hashCombine(a, b) {
-        native "c" code ‹
-            int a = (int)(args[0]->data);
-            int b = (int)(args[1]->data);
-            int aHash = a * 1664525;
-            int bHash = (b * 1664525 - 0xA21FE89) * 3;
-            return alloc_Float64((aHash * 2) ^ bHash);›
-        native "js" code ‹
-            var a = var_a._value;
-            var b = var_b._value;
-            var aHash = a * 1664525;
-            var bHash = (b * 1664525 - 0xA21FE89) * 3;
-            result = new GraceNum((aHash * 2) ^ bHash);›
-    }
-
     type Collection⟦T⟧ = collections.Collection⟦T⟧
     // type Sequence⟦T⟧ is defined in basicTypeBundle
     type List⟦T⟧ = collections.List⟦T⟧
@@ -119,5 +104,7 @@ trait open {
 
     once method binding { collections.binding }
     once method range { collections.range }
+
+    method hashCombine(h1, h2) { intrinsic.hashCombine(h1, h2) }
 
 }
