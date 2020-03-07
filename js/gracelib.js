@@ -2586,6 +2586,8 @@ function handleRequestException(ex, obj, methname, method, methodArgs) {
             toString: GraceCallStackToString
         });
         throw ex;
+    } else if ((ex == "ErrorExit") || (ex == "SystemExit")) {
+        throw ex;
     } else if (obj == undefined) {
         throw new GraceExceptionPacket(UninitializedVariableObject,
             new GraceString("requested method '" + methname + "' on uninitialised variable."));
@@ -2600,8 +2602,6 @@ function handleRequestException(ex, obj, methname, method, methodArgs) {
     } else if (typeof(obj.methods[methname]) !== "function") {
         var argsGSeq = new GraceSequence( methodArgs.slice(1) );
         return dealWithNoMethod(methname, obj, argsGSeq);
-    } else if (ex == "ErrorExit") {
-        throw ex;
     } else {
         throwStackOverflowIfAppropriate(ex);
         const newEx = new GraceExceptionPacket(MinigraceErrorObject,
