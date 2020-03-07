@@ -1012,7 +1012,7 @@ GraceNum.prototype = {
                 throw new GraceExceptionPacket(RequestErrorObject,
                     new GraceString("attempting to hash NaN"));
             }
-            var raw = self * 13;
+            var raw = self * 7;   // was 13, but hash tables can be of size 13!
             return new GraceNum(Math.abs(raw & raw));  // & converts to 32-bit int
         },
         "inBase(1)": function(argcv, other) {
