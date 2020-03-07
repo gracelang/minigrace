@@ -26,19 +26,19 @@ var constants := list []
 var output := list []
 var usedvars := list []
 var declaredvars := list []
-var initializedVars := set.empty
+var initializedVars := set  ["$dialect", "$module"]
 
 method saveInitializedVars {
     // returns the current set of initialized vars,
     // to be used in restoreInitializedVars
     def result = initializedVars
-    initializedVars := set.empty
+    initializedVars := set ["$dialect", "$module"]
     result
 }
 
 method restoreInitializedVars(savedState) {
     // restores the set of initialized vars to savedState,
-    // the result od saveInitializedVars
+    // the result of saveInitializedVars
     initializedVars := savedState
 }
 
@@ -1117,12 +1117,7 @@ method compilebind(o) {
         def nm = lhs.value
         usedvars.push(nm)
         out "{varf(nm)} = {val};"
-        if (o.scope.isInheritableScope) then {
-            // if this scope is inheritable (an object or class), then
-            // the fact that we have just assigned to nm is no guarantee
-            // that it is initialised!
-            initializedVars.add(nm)
-        }
+        initializedVars.add(nm)
         o.register := "GraceDone"
     } else {
         ProgrammingError.raise "bindNode {o} does not bind an identifer"
@@ -1259,6 +1254,7 @@ method scopeThatDefines(id) ifNone (action) {
     var thisScope := id.scope
     def name = id.nameString
     while {
+        if (thisScope.isTheEmptyScope) then { return action.apply }
         if (thisScope.variety == "fake") then {
             util.log 30 verbose "found fake symbol table in {id} at {id.range}"
             return action.apply
@@ -1266,7 +1262,6 @@ method scopeThatDefines(id) ifNone (action) {
         thisScope.definesLocallyOrReuses(name).not
     } do {
         thisScope := thisScope.outerScope
-        if (thisScope.isTheEmptyScope) then { return action.apply }
     }
     thisScope
 }
