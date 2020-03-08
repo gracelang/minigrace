@@ -331,6 +331,14 @@ class graceObjectScope {
         reusedNames.at (aName) put (aVariable)
         aVariable
     }
+    method reuses (name) {
+        // Is name defined by a scope that this scope reuses?
+        if (areReusedNamesCompleted.not) then {
+            ProgrammingError.raise ("reused names of {self} declared on " ++
+                "{node.range.lineRangeString} have not been gathered")
+        }
+        reusedNames.containsKey (name)
+    }
     method lookupReused (name) ifAbsent (aBlock) {
         // Return the variable corresponding to name, if it is defined in a scope that this
         // scope reuses.	If it is not defined, return the value of executing aBlock.
