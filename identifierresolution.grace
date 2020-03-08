@@ -484,6 +484,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                         case { k.typedec → sm.variableTypeFrom(declaringNode) }
                         case { k.parameter → sm.variableParameterFrom(o) }
                         case { k.typeparam → sm.variableTypeParameterFrom(o) }
+                        case { k.aliasdec → sm.variableMethodFrom(o) }
                     )
                 }
             } elseif {o.wildcard} then {
@@ -661,7 +662,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 def ros = o.returnedObjectScope
                 def methodName = o.nameString
                 myParent.scope.at(o.nameString) putScope(ros)
-                util.log 45 verbose "putting returned object scope {ros.asDebugString} at \"{methodName}\" in {myParent.scope.asDebugString}"
                 if (anc.forebears.forebears.isEmpty.not) then {
                     // associates a dotted name with the returned object
                     // omit this if I'm at the module-level
@@ -799,9 +799,6 @@ method gatherUsedNames(objNode) is confidential {
         traitScope.localAndReusedNamesAndValuesDo { nm, defn →
             if (defn.forUsers && excludedNames.contains(nm).not) then {
                 objScope.addReused(defn)
-                if (nm == "graphicApplicationSize(1)") then {
-                    util.log 45 verbose "put scope {traitScope.lookupReused(nm).asDebugString} at {nm} in {objScope.asDebugString}"
-                }
                 if (defn.isRequired) then {
                     requiredNames.add(nm)
                 } else {
@@ -824,7 +821,7 @@ method gatherUsedNames(objNode) is confidential {
             }
         }
         t.exclusions.do { exMeth →
-            if (traitScope.contains(exMeth.nameString).not) then {
+            if (traitScope.definesLocallyOrReuses(exMeth.nameString).not) then {
                 errormessages.syntaxError("can't exclude {exMeth.canonicalName} " ++
                     "because it is not available in the used trait")
                     atRange(exMeth.range)
