@@ -109,9 +109,9 @@ method parseargs(buildinfo) {
                     targetv := argv.at(ai + 1)
 
                     if (targetv == "help") then {
-                        io.error.write "Valid targets:\n"
+                        io.error.write "Valid targets:"
                         list.withAll(targets).sort.do { t ->
-                            io.error.write "  {t}\n"
+                            io.error.write "  {t}"
                         }
                         sys.exit(0)
                     }
@@ -240,9 +240,7 @@ method outprint(s) {
 method startupFailure (message) {
     // Terminates the compilation because of an error in the commmand line
 
-    io.error.write "{sys.argv.at(1)}: "
-    io.error.write (message)
-    io.error.write "\n"
+    io.error.write "{sys.argv.at(1)}: {message}"
     sys.exit 1
 }
 
@@ -258,17 +256,17 @@ method generalError(message, errlinenum, position, arr, suggestions) {
     if (false ≠ vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
-    io.error.write("{modnamev}.grace[{errlinenum}:{position}]: {message}\n")
+    io.error.write("{modnamev}.grace[{errlinenum}:{position}]: {message}")
     if ((errlinenum > 1) && (lines.size >= (errlinenum - 1))) then {
-        io.error.write("{padl(errlinenum - 1)}: {lines.at(errlinenum - 1)}\n")
+        io.error.write("{padl(errlinenum - 1)}: {lines.at(errlinenum - 1)}")
     }
     if ((errlinenum > 0) && (lines.size >= errlinenum)) then {
-        io.error.write "{padl(errlinenum)}: {lines.at(errlinenum)}\n"
-        io.error.write "{leader}{arr}\n"
+        io.error.write "{padl(errlinenum)}: {lines.at(errlinenum)}"
+        io.error.write "{leader}{arr}"
     }
     if (suggestions.size > 0) then {
         for(suggestions) do { s ->
-            io.error.write "\nDid you mean:\n"
+            io.error.write "\nDid you mean:"
             s.print
         }
     }
@@ -288,8 +286,7 @@ method type_error(s) {
         io.error.write("[" ++ vtagv ++ "]")
     }
     io.error.write("{modnamev}.grace:{linenumv}:{columnv}: Type error: {s}")
-    io.error.write("\n")
-    io.error.write(lines.at(linenumv) ++ "\n")
+    io.error.write(lines.at(linenumv))
     sys.exit(2)
 }
 method semantic_error(s) {
@@ -298,28 +295,26 @@ method semantic_error(s) {
     }
     io.error.write "{modnamev}.grace:{linenumv}:{columnv}: Semantic error"
     if (s == "") then {
-        io.error.write "\n"
         sys.exit(2)
     }
-    io.error.write ": {s}\n"
+    io.error.write ": {s}"
     if (linenumv > 1) then {
         if (lines.size > 0) then {
-            io.error.write("{padl(linenumv - 1)}: {lines.at(linenumv - 1)}\n")
+            io.error.write("{padl(linenumv - 1)}: {lines.at(linenumv - 1)}")
         }
     }
     def arr = "-" * (lineNumberWidth + columnv)
 
     if (lines.size >= linenumv) then {
-        io.error.write("{padl(linenumv)}: {lines.at(linenumv)}\n{leader}{arr}^\n")
+        io.error.write("{padl(linenumv)}: {lines.at(linenumv)}\n{leader}{arr}^")
     }
     if (linenumv < lines.size) then {
-        io.error.write("{padl(linenumv + 1)}: {lines.at(linenumv + 1)}\n")
+        io.error.write("{padl(linenumv + 1)}: {lines.at(linenumv + 1)}")
     }
     sys.exit(2)
 }
 method warning(s) {
     io.error.write("{modnamev}.grace:{linenumv}:{columnv}: warning: {s}")
-    io.error.write("\n")
 }
 
 method outfile {
