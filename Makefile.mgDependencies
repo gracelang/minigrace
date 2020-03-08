@@ -46,7 +46,7 @@ j2/io.js: j2/standard.js j2/intrinsic.js j2/collections.js
 j2/lexer.js: j2/standard.js j2/util.js j2/unicode.js j2/errormessages.js j2/fastDict.js j2/regularExpression.js j2/basic.js
 j2/mirror.js: j2/intrinsic.js j2/basicTypesBundle.js
 j2/parser.js: j2/standard.js j2/io.js j2/ast.js j2/util.js j2/errormessages.js j2/basic.js
-j2/pattern+typeBundle.js: j2/collections.js j2/equalityBundle.js j2/intrinsic.j j2/mirror.jss
+j2/pattern+typeBundle.js: j2/collections.js j2/equalityBundle.js j2/intrinsic.js j2/mirror.js
 j2/pointBundle.js: j2/intrinsic.js j2/basicTypesBundle.js j2/equalityBundle.js
 j2/regularExpression.js: j2/standard.js
 j2/scope.js: j2/errormessages.js j2/fastDict.js j2/regularExpression.js j2/basic.js j2/standard.js

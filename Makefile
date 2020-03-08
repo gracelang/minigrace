@@ -3,7 +3,7 @@
 MAKEFLAGS += -r
 
 ARCH := $(shell uname -s)-$(shell uname -m)
-ALPHA-BETA = ""
+ALPHA-BETA =
 ALL_LIBRARY_MODULES = $(sort $(filter-out $(COMPILER_MODULES), $(LIBRARY_MODULES) $(OBJECTDRAW)))
 
 # COMPILER_MODULES are the parts of the compiler that should go into the modules
@@ -24,7 +24,7 @@ JSRUNNERS = $(JSRUNNERS_WITHOUT_COMPILER) compiler-js
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace objectdrawBundle.grace
 PRELUDESOURCEFILES = collections.grace standard.grace standardBundle.grace intrinsic.grace basicTypesBundle.grace pattern+typeBundle.grace equalityBundle.grace pointBundle.grace
-REALSOURCEFILES = ast.grace compiler.grace constantScope.grace errormessages.grace fastDict.grace genjs.grace identifierKinds.grace identifierresolution.grace io.grace lexer.grace mirror.grace parser.grace prefixTree.grace regularExpression.grace scope.grace shasum.grace basic.grace sys.grace unicode.grace unixFilePath.grace util.grace xmodule.grace
+REALSOURCEFILES = ast.grace compiler.grace constantScope.grace errormessages.grace fastDict.grace genjs.grace identifierKinds.grace identifierresolution.grace io.grace lexer.grace mirror.grace parser.grace regularExpression.grace scope.grace shasum.grace basic.grace sys.grace unicode.grace unixFilePath.grace util.grace xmodule.grace
 
 SOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES)
 MGSOURCEFILES = buildinfo.grace $(SOURCEFILES)
@@ -205,11 +205,6 @@ install: minigrace $(COMPILER_MODULES:%.grace=j2/%.js) js/grace js/grace-inspect
 	@./tools/warnAbout PATH $(PREFIX)/bin
 	@./tools/warnAbout GRACE_MODULE_PATH $(MODULE_PATH)
 
-$(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
-# The j1/*.js files are used to run the j1 compiler, and so need to be consistent
-# with the current source, and the code generated from the known-good compiler.
-	cp -pf $< $@
-
 j1-minigrace: $(J1-MINIGRACE) $(JSINSPECTORS:%=j1/%)
 
 j1/buildinfo.js: j1/buildinfo.grace
@@ -223,8 +218,8 @@ j1/grace: js/grace
 # to be run with the current runners and libraries.
 	cp -pf $< $@
 
-j1/grace-inspect: j1/grace.in tools/make-grace-inspect
-	tools/make-grace-inspect $(MODULE_PATH) $< $@
+j1/grace-inspect: j1/grace-inspect
+	cp -pf $< $@
 
 j1/minigrace-js: js/minigrace-js
 # The j1/*.js files are created by the kg compiler, and so need
@@ -232,24 +227,22 @@ j1/minigrace-js: js/minigrace-js
 # But we need more heap space ... so changed to use current version
 	cp -pf $< $@
 
-j1/minigrace-inspect: j1/minigrace-js tools/make-minigrace-inspect
-	tools/make-minigrace-inspect $< $@
+j1/minigrace-inspect: js/minigrace-inspect
+	cp -pf $< $@
 
 j2/buildinfo.grace: buildinfo.grace
 	cp -pf $< $@
 
 j2-minigrace: $(J2-MINIGRACE) $(JSINSPECTORS:%=j2/%)
 
+$(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
+	cp -pf $< $@
+
 $(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
 	cp -pf $< $@
 
 $(JSONLY:%.grace=js/%.js): js/%.js: modules/%.grace minigrace
 	GRACE_MODULE_PATH=js:modules ./minigrace --dir js --make $(VERBOSITY) $<
-
-$(JSRUNNERS_BASE:%=j1/%): j1/%: $(JS-KG)/%
-# The j1/*.js files are created by the kg compiler, and so need
-# to be run with the kg runners and libraries.
-	rm -f $@ && cp -p $< $@
 
 $(JSRUNNERS:%=j2/%): j2/%: js/%
 	cp -pf $< $@
