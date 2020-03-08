@@ -123,17 +123,17 @@ method resolveIdentifiers(topNode) {
 }
 
 method addAssignmentMethodsToSymbolTable {
-    // Adds the ‹var›(_):= methods for var fields to the symbol table, so that
+    // Adds the ‹var›(1):= methods for var fields to the symbol table, so that
     // they will be inserted into the gct file.  This is delayed until after
     // identifiers have been resolved, so that assignments to module-level
-    // var fields are _not_ resolved into requests on the ‹var›(_):= method,
+    // var fields are _not_ resolved into requests on the ‹var›(1):= method,
     // but are compiled as simple assignments (which are more efficient). Note
-    // that module-level var fields that are not public don't get (_):= methods;
+    // that module-level var fields that are not public don't get (1):= methods;
     // because module can't be re-used, such methods are never needed.
 
     varFieldDecls.do { declNode →
         def dScope = declNode.scope
-        def nameGets = declNode.nameString ++ ":=(_)"
+        def nameGets = declNode.nameString ++ ":=(1)"
         if (dScope.isModuleScope.not || declNode.isPublic) then {
             dScope.add(sm.variableVarFrom(declNode)) withName (nameGets)
             // will complain if already declared
@@ -176,11 +176,8 @@ method generateGctForModule(module) {
             scopesAlreadyProcessed.add(s)
             def entries = list.empty
             s.localAndReusedNamesAndValuesDo { vName, v →
-                if (vName == "graphicApplicationSize(1)") then {
-                    util.log 45 verbose "graphicApplicationSize(1) scope contains names {vName.attributeScope.allNames}"
-                }
                 if (v.forGct) then {
-                    entries.add(serializeVariable (v) in (s))
+                    entries.add(serializeVariable (v) withName(vName) in (s))
                     def subScope = v.attributeScope
                     if (scopesAlreadyProcessed.contains(subScope).not) then {
                         scopesToProcess.add(subScope)
@@ -223,15 +220,17 @@ method generateGctForModule(module) {
     gct
 }
 
-method serializeVariable (defn) in (s) {
+method serializeVariable (defn) withName(n) in (s) {
     // returns a string representation of the variable defn
+    // Note that in the case of a writer method for a variable x,
+    // n will be x:=(1), whereas defn.name will be x
     var anns := ""
     defn.annotations.do { each →
         anns := anns ++ each.nameString
     } separatedBy { anns := anns ++ "," }
     def attrScp = defn.attributeScope
     def tn = typeName (defn.declaredType) in (attrScp)
-    "{defn.name} {tn} {defn.tag} {attrScp.uid} {anns}"
+    "{n} {tn} {defn.tag} {attrScp.uid} {anns}"
 }
 
 type HasName = interface { nameString → String }
