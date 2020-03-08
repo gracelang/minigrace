@@ -273,6 +273,10 @@ class pseudoNode (name) typed (t) scope (s) {
     method isDeclaredByParent { false }
     var numberOfParameters is public := mirror.numberOfParameters(name)
     var numTypeParams is public := 0
+    method line { 0 }
+    method column { 0 }
+    method arrow { "" }
+    method sugg { [] }
 }
 
 once class typeType {
