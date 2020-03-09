@@ -1258,7 +1258,7 @@ def methodNode is public = object {
         var isBindingOccurrence is readable := true
 
         method end -> Position {
-            if (hasBody) then {
+            if (hasBody && {body.isEmpty.not}) then {
                 if (usesClassSyntax) then { return body.last.end }
                 return positionOfNext "}" after (body.last.end)
             }
@@ -2870,6 +2870,7 @@ def bindNode is public = object {
         aVisitor.postVisit(self) result(aVisitor.newVisitBind(self))
     }
 
+    method parts { [ requestPart.request(nameString).setPositionFrom(self).setScope(scope) ] }
     method end -> Position { value.end }
     method nameString { dest.nameString ++ ":=(1)" }
     method canonicalName { dest.nameString ++ ":=(_)" }
@@ -2882,8 +2883,9 @@ def bindNode is public = object {
             self.value.accept(visitor) from(newChain)
         }
     }
-    method generics { false }   // an assignable variable can't have type params.
+    method generics { false }   // TODO: an assignable variable can't have type params.
                                 // But perhaps a writer method can?
+    method numArgs { 1 }        // When considered as a request on a writer method
     method map(blk) ancestors(ac) {
         var n := shallowCopy
         def newChain = ac.extend(n)
@@ -3545,6 +3547,7 @@ class aliasNew(n) old(o) {
         def spc = "  " * (depth+1)
         "{spc}alias\n{spc}  {newSignature.pretty(depth+2)}\n{spc}  =\n{spc}  {oldSignature.pretty(depth+2)}"
     }
+    method end { oldSignature.end }
     method accept(visitor) from (ac) {
         if (visitor.visitAlias(self) up (ac)) then {
             def newChain = ac.extend(self)
