@@ -302,3 +302,4 @@ class pseudoNode (name) typed (t) {
     // not currently recognized as fresh
 }
 
+sm.typeType := typeType
