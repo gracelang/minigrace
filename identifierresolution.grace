@@ -24,8 +24,6 @@ var stSerial := 100
 
 def keyOrdering = { a, b → a.key.compare(b.key) }
 
-type DeclKind = k.T
-
 def dialectScope = sm.graceDialectScope.in(constantScope.builtInsScope)
 def moduleScope = sm.graceModuleScope.in(dialectScope)
 
@@ -156,9 +154,30 @@ method generateGctForModule(module) {
     // Older versions of this method used to iterate over the ast,
     // but reused methods are not in the ast, and so were omitted.
     //
-    // The lines in the gct will be parsed by addGctLine(_)toScope(_).  Each has format
-    // <methodName> <declaredType> <kindString> <attributeScope> <attributes>,
-    // where attributes is optional, and consists of a comma-separated list of strings
+    // The Gct should be thought of as a mapping from keys to collections of
+    // "gcLines".  A plain-text version of any gct can be obtained by running
+    // tools/eg --gct module.js on the compiled file module.js
+    //
+    // Important keys are:
+    // -- dialect:  the name of the dialect in which this module is written
+    //              (empty if no dialect)
+    // -- freshScopes: the uid of every scope that describes a fresh object
+    //              the uid is tagged with "trait" if the object is a trait
+    // -- methodTypes:<uid>: the type signatures of all methods defined in scope <uid>
+    // -- modules: the names of the directly-imported modules (including the dialect)
+    // -- path: the path in the file system where the source code was found
+    // -- self:  the value is the uid for the moduleScope
+    // -- scope:<uid>:  the entries in that scope
+    // -- types: the declarations of all named types.  The name is prefixed
+    //              by the uid of the scope that defines that type name
+    //
+    // The lines in a scope:<uid> entry be parsed by addGctLine(_)toScope(_).
+    // Each has one of two formats:
+    //  - <typeName> type
+    //      this is used for types
+    //  - <methodName> <declaredType> <kindString> <attributeScope> <attributes>
+    //      used for everything else.
+    // <attributes> is optional, and consists of a comma-separated list of strings
 
     def gct = dictionary.empty
     def theDialect = module.theDialect.moduleName
@@ -168,10 +187,6 @@ method generateGctForModule(module) {
     gct.at "self" put [ms.uid]
     def scopesToProcess = set.with(ms)
     def scopesAlreadyProcessed = set.withAll(sm.predefined.values)
-    ms.types.keysAndValuesDo { typeName, typeDec →
-        gct.at "typedec-of:{typeName}" put [typeDec]
-        typeList.add (typeName)
-    }
 
     while { scopesToProcess.isEmpty.not } do {
         def s = scopesToProcess.anyone
@@ -191,16 +206,15 @@ method generateGctForModule(module) {
             if (entries.isEmpty.not) then {
                 gct.at "scope:{s.uid}" put (entries.sort)
             }
+            gct.at "methodTypes:{s.uid}" put (s.methodTypes.values.sorted)
             s.types.keysAndValuesDo { eachType, eachDef →
-                gct.at "typedec-of:{s.uid}.{eachType}" put [eachDef]
+                gct.at "typedec:{s.uid}.{eachType}" put [eachDef]
                 typeList.add "{s.uid}.{eachType}"
             }
         }
     }
-    gct.at "methods" put (methodList.sort)
     gct.at "types" put (typeList.sort)
     gct.at "modules" put (xmodule.externalModules.keys.sorted)
-    gct.at "methodTypes" put (ms.methodTypes.values.sorted)
     def p = util.infile.pathname
     gct.at "path" put [ if (p.isEmpty) then {
         ""
@@ -228,26 +242,37 @@ method serializeVariable (defn) withName(n) in (s) {
     // returns a string representation of the variable defn
     // Note that in the case of a writer method for a variable x,
     // n will be x:=(1), whereas defn.name will be x
-    var anns := ""
-    defn.annotations.do { each →
-        anns := anns ++ each.nameString
-    } separatedBy { anns := anns ++ "," }
+
+    if (defn.isType) then { return "{n} type" }
+    var anns
+    if { defn.annotations.isEmpty } then {
+        anns := ""
+    } else {
+        anns := " "
+        defn.annotations.do { each →
+            anns := anns ++ each.nameString
+        } separatedBy { anns := anns ++ "," }
+    }
     def attrScp = defn.attributeScope
     def tn = typeName (defn.declaredType) in (attrScp)
-    "{n} {tn} {defn.tag} {attrScp.uid} {anns}"
+    "{n} {tn} {defn.tag} {attrScp.uid}{anns}"
 }
 
 type HasName = interface { nameString → String }
 
 method typeName (typeNode) in (scope) {
-    // returns a name for the type expression denoted by typeNode
-    // Creates a name starting with $ if necessary
+    // returns a name for the type expression denoted by typeNode.
+    // typeNode may be an ast.identifierNode, a constantScope.typeNode
+    // or a string (such as "Unknown").
+    // If necessary, creates a name starting with $, and enters it in scope's
+    // types dictionary
 
-    if (HasName.matches(typeNode)) then {
-        typeNode.nameString
+    match(typeNode)
+      case { nd:HasName -> nd.nameString
+    } case { s:String -> s
     } else {
         def name = "$type{sequenceNr}"
-        scope.types.at (name) put (typeNode.asString)
+        scope.types.at (name) put (typeNode.toGrace 0)
         name
     }
 }
@@ -325,20 +350,38 @@ method addGctLine (gctLine:String) toScope (s) for (gct) {
     // where attributes is optional, and consists of a comma-separated list of strings
 
     def split = gctLine.split " "
-    if (split.size < 4) then {
+    var newVar
+    if (split.size == 2) then {
+        def typeName = split.first
+        newVar := sm.variableTypeFrom (
+            constantScope.typeNode (typeName) params (numTypeParams(typeName)))
+    } elseif { split.size ≥ 4 } then {
+        newVar := sm.variable (split.third) from (
+              constantScope.pseudoNode (split.first)
+                  typed (split.second) scope (s) )
+        newVar.attributeScope := scopeWithUid(split.fourth) for (gct)
+        if (split.size ≥ 5) then {
+            def annNames = split.fifth
+            newVar.annotationNames := annNames.split ","
+            if (newVar.annotationNames.contains "$fresh") then {
+                newVar.attributeScope.markAsFresh
+            }
+        }
+    } else {
         EnvironmentException.raise "gct line \"{gctLine}\" has wrong number of fields"
     }
-    def newVar = sm.variable (split.third) from (
-        constantScope.pseudoNode (split.first)
-              typed (split.second) scope (s) )
-    newVar.attributeScope := scopeWithUid(split.fourth) for (gct)
-    if (split.size ≥ 5) then {
-        newVar.annotationNames := split.fifth.split ","
-        if (newVar.annotationNames.contains "$fresh") then {
-            newVar.attributeScope.markAsFresh
-        }
-    }
     s.add(newVar)
+}
+
+method numTypeParams(typeName) is confidential {
+    // typeName can contain a parameter list, as in "Dictonary⟦K,T⟧"
+
+    var ix := typeName.indexOf "⟦" ifAbsent { return 0 }
+    var p := 1
+    while { true } do {
+        ix := typeName.indexOf "," startingAt (ix + 1) ifAbsent { return p }
+        p := p + 1
+    }
 }
 
 method scopeWithUid(str) for (gct) {
@@ -445,7 +488,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             def rhs = o.value
             if (rhs.isObject) then { rhs.name := o.nameString }
             if (myParent.isObject && o.isReadable) then {
-                s.methodTypes.at(o.nameString) put(readerSignature(o))
+                if (o.isTyped) then {
+                    s.methodTypes.at(o.nameString) put(readerSignature(o))
+                }
             }
             true
         }
@@ -455,11 +500,13 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.scope := s
             o.parentKind := myParent.kind
             if (myParent.isObject) then {
-                if (o.isReadable) then {
-                    s.methodTypes.at(o.nameString) put(readerSignature(o))
-                }
-                if (o.isWritable) then {
-                    s.methodTypes.at(o.nameString) put(writerSignature(o))
+                if (o.isTyped) then {
+                    if (o.isReadable) then {
+                        s.methodTypes.at(o.nameString) put(readerSignature(o))
+                    }
+                    if (o.isWritable) then {
+                        s.methodTypes.at(o.nameString) put(writerSignature(o))
+                    }
                 }
             }
             true
@@ -481,6 +528,8 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                         // TODO: isn't this comment just WRONG?
                         // If any field assignments are compiled directly, then they
                         // won't be overridden when a <field>:=(_) method is defined!
+                        // The only place where we can compile them directly is in an
+                        // object that is not fresh — which we can check for
                     }
                     scope.add(match (kind)
                         case { k.vardec → sm.variableVarFrom(declaringNode) }
@@ -558,7 +607,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 }
                 surroundingScope.add(variable)
                 if (o.isPublic) then {
-                    surroundingScope.methodTypes.at(ident.nameString) put(methodSignature(o))
+                    if (o.isTyped) then {
+                        surroundingScope.methodTypes.at(ident.nameString) put(methodSignature(o))
+                    }
                 }
             }
             if (o.returnsObject) then {
@@ -739,12 +790,10 @@ method gatherInheritedNames(node) is confidential {
         var inhNode := node.superclass
         def objScope = node.scope
         var superScope
-        var inheritedKind := k.inherited
         if (false == inhNode) then {
             def gO = ast.identifierNode.new("graceObject", false) scope(objScope)
             inhNode := ast.inheritNode.new(gO) scope(objScope)
             superScope := constantScope.graceObjectScope
-            inheritedKind := k.graceObjectMethod
         } else {
             superScope := scopeReferencedByReuseExpr(inhNode.value)
             inhNode.reusedScope := superScope
@@ -789,9 +838,8 @@ method gatherUsedNames(objNode) is confidential {
     def objScope = objNode.scope
     objNode.usedTraits.do { t ->
         def traitScope = scopeReferencedByReuseExpr(t.value)
-        util.log 46 verbose "Trait: {t.toGrace 0} with scope {traitScope}"
+        util.log 46 verbose "gathering trait {t.value.toGrace 0} with {traitScope}"
         t.reusedScope := traitScope
-
         if (traitScope.isTrait.not) then {
             errormessages.syntaxError("{t.value.toGrace 0} is not a trait," ++
                   " so it may not appear in a 'use' statement") atRange(t)
