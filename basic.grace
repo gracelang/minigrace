@@ -180,6 +180,8 @@ trait open {
             (other ≥ self).not
         }
         method asString { "{line}:{column}" }
+        method addColumn(n) { line  (line) column (column+n) }
+        method addLine(n) { line (line+n) column (column) }
     }
     class start (s:Position) end (e:Position) -> Range {
         use equality
