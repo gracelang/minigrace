@@ -2110,7 +2110,7 @@ class outerNode(nodes) {
 
     method numberOfLevels { theObjects.size }
     method nodeString { "‹object outside that at line {theObjects.last.line}›" }
-    method pretty(depth) { basePretty(depth) ++ asString }
+    method pretty(depth) { basePretty(depth) ++ nodeString }
     method accept(visitor) from (ac) {
         visitor.visitOuter(self) up (ac)
         // don't visit theObjects, since this would introduce a cycle
