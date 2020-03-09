@@ -54,9 +54,11 @@ trait open {
         method -(o) { TypeSubtraction(self, o) }
         method asString { "type {self.name}" }
         method setName(nu) is confidential {
-            self.name:=(nu)
+            name := nu
             return self     // for chaining
         }
+        method name:=(nu) is required
+        method name is required
         method matchHook(obj) is required   // does the actual matching
         method matches(obj) {
             // this caches the result of matchHook, under the assumption
