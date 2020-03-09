@@ -7,7 +7,6 @@ import "errormessages" as errormessages
 import "unixFilePath" as filePath
 import "shasum" as shasum
 import "regularExpression" as regex
-import "buildinfo" as buildinfo
 import "fastDict" as fd
 import "intrinsic" as intrinsic
 import "basic" as basic
@@ -215,7 +214,7 @@ method findOrBuildCompiledModule(moduleName, modulePath, sourceRange) -> ModuleR
                   atRange (sourceRange)
         }
         def sourceSHA = shasum.sha256OfFile(graceFile)
-        def thisCompiler = buildinfo.gitgeneration
+        def thisCompiler = util.buildinfo.gitgeneration
         def jsFileName = filePath.withBase(graceFile.base).setExtension ".js"
         def jsFile = findJsFile(jsFileName) suchThat { f ->
             file(f) createdBy(thisCompiler) withSHA(sourceSHA)

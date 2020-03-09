@@ -10,7 +10,6 @@ import "identifierresolution" as identifierresolution
 import "identifierKinds" as k
 import "fastDict" as map
 import "shasum" as shasum
-import "buildinfo" as buildinfo
 import "regularExpression" as regex
 
 def nodeTally = map.dictionary.empty
@@ -1588,8 +1587,8 @@ method initializeCodeGenerator(moduleObject) {
     if (! inBrowser) then {
         util.outprint "let {fmtdModName}_sourceFile = \"{util.filename.quoted}\";"
         util.outprint "let {fmtdModName}_sha256 = \"{shasum.sha256OfFile(util.filename)}\";"
-        util.outprint "let {fmtdModName}_minigraceRevision = \"{buildinfo.gitrevision}\";"
-        util.outprint "let {fmtdModName}_minigraceGeneration = \"{buildinfo.gitgeneration}\";"
+        util.outprint "let {fmtdModName}_minigraceRevision = \"{util.buildinfo.gitrevision}\";"
+        util.outprint "let {fmtdModName}_minigraceGeneration = \"{util.buildinfo.gitgeneration}\";"
     }
     util.setline(1)
 }

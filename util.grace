@@ -25,6 +25,7 @@ def lines is readable = list [ ]
 def nullFile = filePath.null        // don't modify this one
 var filename is readable := nullFile
 var commandLineExtensions is readable := ""
+var buildinfo is readable           // injected from compiler
 
 
 def targets = set.withAll [
@@ -33,7 +34,8 @@ def targets = set.withAll [
 
 var errno is readable := 0
 
-method parseargs(buildinfo) {
+method parseargs(bi) {
+    buildinfo := bi
     var argv := sys.argv
     var toStdout := false
     if (argv.size > 1) then {
