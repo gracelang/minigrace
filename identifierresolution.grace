@@ -34,10 +34,10 @@ def varFieldDecls = list []   // a list of nodes that declare var fields
 util.setPosition(0, 0)
 
 method transformIdentifier(anIdentifier) ancestors(anc) {
-    // node is a (copy of an) ast node that represents an applied occurrence of
+    // anIdentifier is a (copy of an) ast node that represents an applied occurrence of
     // an identifer id.
-    // This method may or may not transform node into another ast node.
-    // If the identifier refers to a variable in a block or method, or in a module
+    // This method may or may not transform anIdentifier into another ast node.
+    // If anIdentifier refers to a variable in a block or method, or in a module
     // or dialect, then it should be left as a variable.  However, if it refers to
     // a field in an object that might be reused, then it must be tranformed into
     // a method request.
@@ -53,9 +53,13 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
     if (variable.isMethodOrParameterizedType) then {
         generateOneselfRequestFrom (anIdentifier) using (resolution)
     } elseif { variable.definingScope.isFresh } then {
-        // Anything defined in a fresh scope, including a var, can be overridden.
-        // Hence, we need to access it via a request, unless it's on the lhs of an assigment
+        // Anything defined in a fresh scope, including a var, can be overridden,
+        // so we need to access it via a request.  If the var is on the lhs of an
+        // assigment, we don't re-write it here; this will happen in transfromBind
         if (anIdentifier.isAssigned) then {
+            if (variable.isAssignable.not) then {
+                errormessages.badAssignmentTo(anIdentifier) declaredInScope(variable.definingScope)
+            }
             anIdentifier
         } else {
             generateOneselfRequestFrom (anIdentifier) using (resolution)
@@ -67,8 +71,8 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
 
 method generateOneselfRequestFrom (aSourceNode) using (aResolvedVariable) {
     // generates and returns some form of "self request" based on aSourceNode.
-    // The receiver may be a literal self, an outerNode, or a direct reference
-    // to the module or dialect.
+    // The receiver may be a literal self, an outerNode, a bind node,
+    // or a direct reference to the module or dialect.
 
     def objectsUp = aResolvedVariable.objectsUp
     def nodeScope = aSourceNode.scope
@@ -236,7 +240,7 @@ method serializeVariable (defn) withName(n) in (s) {
 type HasName = interface { nameString → String }
 
 method typeName (typeNode) in (scope) {
-    // returns a name for the type expression denoted by tyepNode
+    // returns a name for the type expression denoted by typeNode
     // Creates a name starting with $ if necessary
 
     if (HasName.matches(typeNode)) then {
@@ -557,8 +561,8 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                     surroundingScope.methodTypes.at(ident.nameString) put(methodSignature(o))
                 }
             }
-            if (o.hasBody && {o.body.last.isObject}) then {
-                o.body.last.name := o.canonicalName
+            if (o.returnsObject) then {
+                o.returnedObject.name := o.canonicalName
             }
             true
         }
@@ -687,11 +691,11 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
     def inheritanceVis = object {
         inherit ast.baseVisitor
         method visitObject (o) up (anc) {
-            collectParentNames(o)
+            collectReusedNames(o)
             true
         }
         method visitModule (o) up (anc) {
-            collectParentNames(o)
+            collectReusedNames(o)
             true
         }
     }
@@ -713,7 +717,7 @@ class earlyReturnVis {
     }
 }
 
-method collectParentNames(node) {
+method collectReusedNames(node) is confidential {
     // node is an object or class; puts the names that it inherits and uses into
     // its scope.  In the process, checks for a cycle in the inheritance chain
     def nodeScope = node.scope
@@ -744,7 +748,7 @@ method gatherInheritedNames(node) is confidential {
         } else {
             superScope := scopeReferencedByReuseExpr(inhNode.value)
             inhNode.reusedScope := superScope
-            if (superScope.isExternal.not) then { collectParentNames(superScope.node) }
+            if (superScope.isExternal.not) then { collectReusedNames(superScope.node) }
         }
         def excludedNames = inhNode.exclusions.map { exMeth → exMeth.nameString } >> list
         superScope.localAndReusedNamesAndValuesDo { name, defn →
@@ -792,7 +796,7 @@ method gatherUsedNames(objNode) is confidential {
             errormessages.syntaxError("{t.value.toGrace 0} is not a trait," ++
                   " so it may not appear in a 'use' statement") atRange(t)
         }   // TODO: is this necessary? There is another check in transformReuse(_)ancestors(_)
-        if (traitScope.isExternal.not) then { collectParentNames(traitScope.node) }
+        if (traitScope.isExternal.not) then { collectReusedNames(traitScope.node) }
         def excludedNames = t.exclusions.map { exMeth → exMeth.nameString } >> list
 
         def requiredNames = list.empty
@@ -896,6 +900,7 @@ method scopeReferencedByReuseExpr(nd) {
             return scp.outerScope.enclosingObjectScope
         }
         def variable = scp.lookupLocally (sought) ifAbsent {
+            ensureOuterScopesCollected(scp)
             return scp.outerScope.lookup (sought) ifAbsent {
                 errormessages.undeclaredIdentifier(nd)
             }.attributeScope
@@ -933,6 +938,16 @@ method scopeReferencedByReuseExpr(nd) {
     }
 }
 
+method ensureOuterScopesCollected(s) {
+    // look at all the scopes surrounding s, and make sure that their
+    // reused names have been collected.
+    var scp := s.outerScope.objectScope
+    while {scp.isDialectScope.not} do {
+        collectReusedNames(scp.node)
+        scp := scp.outerScope.objectScope
+    }
+}
+
 method reusedScope (aReuseStatement) {
     // answers the scope referenced by the super expression in aReuseStatement
     def expr = aReuseStatement.reuseExpr
@@ -956,13 +971,25 @@ method transformBind(bindNode) ancestors(anc) {
 
     def lhs = bindNode.lhs
     def nm = lhs.nameString
+    def s = bindNode.scope
+    if (lhs.isMember) then {
+        // we know that this must be a request, and not a normal assignment
+        def part = ast.requestPart.request(nm ++ ":=") withArgs [bindNode.rhs] scope(s)
+              .setStart(lhs.receiver.end.addColumn 2)
+        def newCall = ast.callNode.new(lhs.receiver, [part])
+              scope(s).setPositionFrom(bindNode)
+        newCall.end := bindNode.end
+        if (lhs.receiver.isSelfOrOuter) then { newCall.onSelf }
+        return newCall
+    }
     def nmGets = nm ++ ":=(1)"
-    def defs = sm.variableResolver.definitionsOf (nmGets) visibleIn (bindNode.scope)
+    def defs = sm.variableResolver.definitionsOf (nmGets) visibleIn (s)
     if (defs.isEmpty) then {
-        def badBinding = bindNode.scope.lookup (lhs.nameString) ifAbsent {
-            errormessages.badAssignmentTo (lhs) declaredInScope (lhs.scope)
+        if (s.defines (nm)) then {
+            bindNode      // no definition for <name>:=(_), so we do not transform
+        } else {
+            errormessages.undeclaredIdentifier (lhs)
         }
-        bindNode      // no definition for <name>:=(_), so we do not transform
     } elseif { defs.size > 1 } then {
         errormessages.ambiguityError (defs) node (lhs)
     } else {    // exactly one definition
