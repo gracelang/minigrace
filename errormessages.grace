@@ -3,7 +3,6 @@ import "io" as io
 import "sys" as sys
 import "util" as util
 import "mirror" as mirror
-import "identifierKinds" as k
 
 def suggestion is public = object {
     // Contains modified lines used as suggestions for error messages.
@@ -597,12 +596,13 @@ method badAssignmentTo(node) declaredInScope(scp) {
     // Report a syntax error for an illegal assignment
 
     def name = node.nameString
-    def kind = scp.kind(name)
-    var lineInfo := ""
-    if (scp.elementLines.containsKey(name)) then {
-        lineInfo := " on line {scp.elementLines.at(name)}"
+    def variable = scp.lookupLocallyOrReused(name)
+    def lineInfo = if (variable.range.start.line == 0) then {
+        ""
+    } else {
+        " on {variable.lineRangeString}"
     }
-    if (kind == k.selfDef) then {
+    if (variable.kind == "pseudo-variable") then {
         syntaxError("'{name}' cannot be re-bound; " ++
             "it always refers to the current object.")
             atRange(node.range)
@@ -610,24 +610,24 @@ method badAssignmentTo(node) declaredInScope(scp) {
         syntaxError("'{name}' is a reserved name and " ++
             "cannot be re-bound.")
             atRange(node.range)
-    } elseif { kind == k.defdec } then {
+    } elseif { variable.kind == "def" } then {
         syntaxError("'{name}' cannot be changed " ++
             "because it was declared with 'def'{lineInfo}. To make it " ++
             "a variable, use 'var {name}' and ':=' in the declaration")
             atRange(node.range)
-    } elseif { kind == k.importdec } then {
+    } elseif { variable.kind == "import" } then {
         syntaxError("'{name}' cannot be changed " ++
             "because it was declared with 'import'{lineInfo}.")
             atRange(node.range)
-    } elseif { kind == k.typedec } then {
+    } elseif { variable.kind == "type" } then {
         syntaxError("'{name}' cannot be re-bound " ++
             "because it is declared as a type{lineInfo}.")
             atRange(node.range)
-    } elseif { kind.isParameter } then {
+    } elseif { variable.isParameter } then {
         syntaxError("'{name}' cannot be re-bound " ++
             "because it is declared as a parameter{lineInfo}.")
             atRange(node.range)
-    } elseif { kind == k.methdec } then {
+    } elseif { variable.kind == "method" } then {
         syntaxError("'{name}' cannot be re-bound " ++
             "because it is declared as a method{lineInfo}.")
             atRange(node.range)
