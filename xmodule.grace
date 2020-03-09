@@ -37,8 +37,8 @@ type RangeSuggestions = {
     suggestions
 }
 
-def externalModules is public = fd.dictionary.empty  // dialect & direct imports
-def transitiveModules = fd.dictionary.empty          // transitive imports
+def externalModules is public = fd.dictionary.empty  // dialect, & direct imports
+def allModules = fd.dictionary.empty     // includes above and transitive imports
 
 type ModuleRecord = interface {  // a record describing an external module
     path -> filePath.FilePath    // the path to the source file
@@ -188,6 +188,7 @@ method checkExternalModule(node) {
     util.log 50 verbose "checking module \"{moduleName}\" used by {util.modname}"
     def moduleInfo = findOrBuildCompiledModule(moduleName, node.path, node.range)
     externalModules.at (moduleName) put (moduleInfo)
+    allModules.at(moduleName) put (moduleInfo)
     checkTransitiveImports(moduleInfo, node)
 }
 
@@ -207,7 +208,7 @@ method findOrBuildCompiledModule(moduleName, modulePath, sourceRange) -> ModuleR
     // modulePath is the whole string from the dialect or import, potentially
     // containing "/" characters; moduleName is the name after the final "/"
 
-    transitiveModules.at(moduleName) ifAbsent {
+    allModules.at(moduleName) ifAbsent {
         def graceFile = findGraceFile(modulePath) otherwise { m ->
             def rm = errormessages.readableStringFrom(m)
             errormessages.error "I can't find {modulePath}; tried {rm}."
@@ -229,12 +230,12 @@ method findOrBuildCompiledModule(moduleName, modulePath, sourceRange) -> ModuleR
                       "but {objectFile} does not exist") atRange (sourceRange)
             }
             def newModuleRecord = filePath (graceFile) sha (sourceSHA) jsFile (objectFile) checked (true)
-            transitiveModules.at(moduleName) put (newModuleRecord)
+            allModules.at(moduleName) put (newModuleRecord)
             return newModuleRecord
         }
-        util.log 50 verbose "found compiled module \"{moduleName}\" in {jsFile}"
+        util.log 55 verbose "found compiled module \"{moduleName}\" in {jsFile}"
         def newModuleRecord = filePath (graceFile) sha (sourceSHA) jsFile (jsFile) checked (false)
-        transitiveModules.at(moduleName) put (newModuleRecord)
+        allModules.at(moduleName) put (newModuleRecord)
         newModuleRecord
     }
 }
@@ -332,7 +333,7 @@ method checkTransitiveImports(moduleRecord, node) {
     def modulePath = moduleRecord.path
     def moduleName = modulePath.base
     def gctDict = gctDictionaryFor(moduleName)
-    util.log 50 verbose "checking module \"{moduleName}\""
+    util.log 50 verbose "checking modules imported by \"{moduleName}\""
     def importedModules = gctDict.at "modules" // includes the dialect
     def m = util.modname
     importedModules.do { eachImport ->
@@ -435,7 +436,7 @@ method extractGctFor(moduleName) is confidential {
     // Returns the gct information as a collection of Strings.
 
     if (intrinsic.inBrowser) then { return extractGctFromCache(moduleName) }
-    def jsFile = transitiveModules.at(moduleName).jsFile
+    def jsFile = allModules.at(moduleName).jsFile
     try {
         extractGctFor(moduleName) fromJsFile(jsFile)
     } catch {ex:EnvironmentException ->
