@@ -218,7 +218,7 @@ j1/grace: js/grace
 # to be run with the current runners and libraries.
 	cp -pf $< $@
 
-j1/grace-inspect: j1/grace-inspect
+j1/grace-inspect: js/grace-inspect
 	cp -pf $< $@
 
 j1/minigrace-js: js/minigrace-js
@@ -233,7 +233,7 @@ j1/minigrace-inspect: js/minigrace-inspect
 j2/buildinfo.grace: buildinfo.grace
 	cp -pf $< $@
 
-j2-minigrace: $(J2-MINIGRACE) $(JSINSPECTORS:%=j2/%)
+j2-minigrace: j1-minigrace $(J2-MINIGRACE) $(JSINSPECTORS:%=j2/%)
 
 $(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
 	cp -pf $< $@
