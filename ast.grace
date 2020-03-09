@@ -1210,6 +1210,7 @@ def methodNode is public = object {
         // dtype is the declared return type of the method, or false.
 
         inherit baseNode
+            alias hasReturnType = isTyped
         def kind is public = "method"
         var description is public := kind   // changed to "class" or "trait" by parser
         var signature is public := signature'
@@ -1235,7 +1236,10 @@ def methodNode is public = object {
                 constantScope.doneScope
             }
         }
-
+        method isTyped {
+            if (hasReturnType) then { return true }
+            signature.anySatisfy{ each -> each.isTyped }
+        }
         method childrenDo(anAction:Procedure1) {
             signature.do(anAction)
             decType.do(anAction)
@@ -3473,8 +3477,7 @@ def inheritNode is public = object {
             repeat (depth) times {
                 s := s ++ "    "
             }
-            s := s ++ statementName
-            s := s ++ self.value.toGrace(0)
+            s := s ++ "{statementName} {value.toGrace 0}"
             aliases.do { a ->
                 s := "{s} {a} "
             }
@@ -3622,6 +3625,9 @@ def signaturePart is public = object {
         method nameString {
             if (params.isEmpty) then {return name}
             name ++ "(" ++ params.size ++ ")"
+        }
+        method isTyped {
+            params.anySatisfy { each -> each.isTyped }
         }
         method canonicalName {
             if (params.isEmpty) then {return name}
