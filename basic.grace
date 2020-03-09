@@ -332,5 +332,6 @@ trait open {
         }
         method isFresh { false }
         method variety { "fake" }
+        method areReusedNamesCompleted { true }
     }
 }
