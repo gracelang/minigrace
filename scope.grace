@@ -7,6 +7,7 @@ use basic.open
 
 def NamingError is public = errormessages.SyntaxError.refine "NamingError"
 def predefined is public = dictionary.empty
+var typeType is writable        // dependency injected from constantScope
 
 type MinimalScope = interface {
     localNames → Collection
@@ -177,6 +178,7 @@ def graceUniversalScope:Scope is public = object {
     method localNamesAndValuesDo (aBlock) {
         iterationError
     }
+    method attributeScopeOf (aName) { self }
     method isObjectScope {
         // I'm treated as an object scope so that every non-empty scope has
         // an enclosing objectScope
@@ -195,6 +197,7 @@ def graceUniversalScope:Scope is public = object {
     method clear {
         ProgrammingError.raise "can't clear the universal scope"
     }
+    method types { dictionary.empty }
 
 }
 class graceInterfaceScope {
@@ -567,7 +570,7 @@ class graceScope {
         lookup (aName) ifAbsent {
             // this happens with, e.g., parameters and vars,
             // where we don't know the attribute scope
-            return graceEmptyScope
+            return graceUniversalScope
         }.attributeScope
     }
     method asString {
@@ -824,14 +827,18 @@ class resolvedVariable(aVariable) {
 
     method resolutionString {
         // Answers a string, suitable for printing, that describes the location of this variable.
-        var s := "{definition.kind} {reuseString} the "
+        var s :=  if (isReused) then {
+            "reused {definition.kind} in the "
+        } else {
+            "lexically-enclosing {definition.kind} in the "
+        }
         if (objectsUp == 0) then {
             s := s ++ "current"
         } else {
             (1 .. objectsUp).do { _ →
                 s := s ++ "outer"
             } separatedBy {
-                s := s + "."
+                s := s ++ "."
             }
         }
         s ++ " object"
@@ -839,7 +846,7 @@ class resolvedVariable(aVariable) {
     method reuseString {
         // Answers a string, suitable for printing, that describes my reuse.
         if (isReused) then {
-             "reused in"
+             "reused"
         } else {
              "lexically-enclosing"
         }
@@ -1078,6 +1085,7 @@ class variableParameterFrom (node) {
     method asString { "param " ++ name }
     method isParameter { true }
     method kind { "parameter" }
+    attributeScope := graceUniversalScope
     def tagString = "par"
 }
 class variablePseudoFrom (node) {
@@ -1110,6 +1118,7 @@ class variableTypeFrom (node) {
     // typeValue --- once type objects have been created, a type object representing me.
     // It will be a subinstance of graceAbstractType
 
+    method declaredType is override { typeType }
     method typeName { name }
 //    method methodNamed (aName) {
 //        methodNamed (aName) ifAbsent {
@@ -1242,6 +1251,7 @@ class variableVarFrom (node) {
     inherit abstractVariableFrom (node)
     // I describe the variable defined in a var declaration.
 
+    attributeScope := graceUniversalScope
     method isAssignable { true }
     method asString {
         "var " ++ name
@@ -1260,7 +1270,7 @@ class variableImplicitMethodFrom (node) {
     method isPublic { false }
     method asString { "implicitMeth " ++ name }
     method isImplicit { true }
-    method kind { "var" }
+    method kind { "method" }
 }
 class variableRequiredMethodFrom (node) {
     inherit variableMethodFrom (node)
@@ -1342,15 +1352,6 @@ class variableSpecialControlStructureFrom (node) withName (aMethodName) {
 //    }
 //}
 
-type Variable = interface {
-    name -> String
-    declaredType
-    definingScope
-    attributeScope
-    isMarker -> Boolean
-    forGct -> Boolean
-    // and lots more
-}
 class abstractVariable {
 
     // The superclass of classes that describe the various kinds of variable
