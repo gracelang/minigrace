@@ -264,7 +264,6 @@ class pseudoNode (name) typed (t) scope (s) {
 
     method range { emptyRange }
     method isMarkerDeclaration { false }
-    method hasAnnotation(_) { false }
     method annotations { [] }
     method isIdentifier { false }
     method isDialect { name == "$dialect" }
