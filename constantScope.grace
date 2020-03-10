@@ -251,7 +251,7 @@ method initializeConstantScopes {
 }
 
 class pseudoNode (name) typed (t) scope (s) {
-    // a pseudoNode is a fake AST node for things that don't  have
+    // a pseudoNode is a fake AST node for things that do not have
     // a real AST node, eg., imported things, and built-in things.
     // It support just enough of the AstNode interface to work …
     use equality

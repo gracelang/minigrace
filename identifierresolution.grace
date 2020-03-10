@@ -206,7 +206,9 @@ method generateGctForModule(module) {
             if (entries.isEmpty.not) then {
                 gct.at "scope:{s.uid}" put (entries.sort)
             }
-            gct.at "methodTypes:{s.uid}" put (s.methodTypes.values.sorted)
+            if (s.methodTypes.isEmpty.not) then {
+                gct.at "methodTypes:{s.uid}" put (s.methodTypes.values.sorted)
+            }
             s.types.keysAndValuesDo { eachType, eachDef →
                 gct.at "typedec:{s.uid}.{eachType}" put [eachDef]
                 typeList.add "{s.uid}.{eachType}"
