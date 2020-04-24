@@ -1027,6 +1027,7 @@ def typeLiteralNode is public = object {
         value := n
         anonymous := false
     }
+    method nameString { value }
     method nodeString {
         "(methods = {methods}, types = {types})"
     }
@@ -3243,7 +3244,7 @@ def importNode is public = object {
         s
     }
     method toGrace(depth : Number) -> String {
-        "import \"{self.path}\" ac {nameString}"
+        "import \"{self.path}\" as {nameString}"
     }
     method shallowCopy {
         importNode.new(path, nullNode, false).shallowCopyFieldsFrom(self)
