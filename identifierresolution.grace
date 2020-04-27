@@ -76,10 +76,10 @@ method generateOneselfRequestFrom (aSourceNode) using (aResolvedVariable) {
     def nodeScope = aSourceNode.scope
     def receiver = valueOf {
         def outerChain = list.empty
-        var s := aSourceNode.scope.objectScope
+        var s := aSourceNode.scope.enclosingObjectScope
         repeat (objectsUp) times {
             outerChain.addLast(s.node)
-            s := s.objectScope
+            s := s.enclosingObjectScope
         }
         def v = s.variety
         if ("dialect | builtIn | module".contains(v)) then {

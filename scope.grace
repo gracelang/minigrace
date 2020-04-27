@@ -95,6 +95,9 @@ def graceEmptyScope:MinimalScope is public = object {
     method objectScope {
         self
     }
+    method enclosingObjectScope {
+        self.outerScope.objectScope
+    }
     method defines (name) {
         false
     }
@@ -167,6 +170,9 @@ def graceUniversalScope:Scope is public = object {
     method allNamesAndValuesDo (aBlock) { iterationError }
     method lookupLexically (name) ifAbsent (aBlock) { universalVariable }
     method objectScope { self }
+    method enclosingObjectScope {
+        self.outerScope.objectScope
+    }
     method defines (name) { true }
     method allNamesAndValuesDo (aBlock) filteringOut (closerDefinitions) {
         iterationError
@@ -304,6 +310,9 @@ class graceObjectScope {
     method objectScope {
         // this scope, since it is an object scope
         self
+    }
+    method enclosingObjectScope {
+        self.outerScope.objectScope
     }
     method addLocalAndReusedFrom (anotherScope) {
         anotherScope.localAndReusedNamesAndValuesDo { nm, defn →
@@ -607,6 +616,10 @@ class graceScope {
              s := s.outerScope
         }
         s
+    }
+    method enclosingObjectScope {
+        // because I am not an objectscope, this is the same as objectScope
+        objectScope
     }
     method reusedNames { dictionary.empty }
     method reuses (name) {
