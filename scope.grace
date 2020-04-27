@@ -53,8 +53,8 @@ def graceEmptyScope:MinimalScope is public = object {
     method lookup (name) ifAbsent (aBlock) ifPresent (pBlock) {
         aBlock.apply
     }
-    method localNames { dictionary.empty }
-    method reusedNames { dictionary.empty }
+    method localNames { nameDictionary [] }
+    method reusedNames { nameDictionary [] }
     method types { dictionary.empty }
     method lookup (name) ifAbsent (aBlock) {
         aBlock.apply
