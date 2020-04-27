@@ -204,22 +204,22 @@ method compileCheckThat(val) called (description)
     // message, and lineNumber the line on which the error occurred (or 0
     // if we don't want to emit a setLineNumber command).
 
-    if (emitTypeChecks) then {
-        if ((false ≠ expectedType) && ("never returns" ≠ val)) then {
-            if ((expectedType.value ≠ "Unknown") && (expectedType.value ≠ "Done")) then {
-                def nm_t = compilenode(expectedType)
-                if (lineNumber ≠ 0) then {
-                    noteLineNumber(lineNumber) comment "typecheck"
-                }
-                def typeDesc = removeTypeArgs(expectedType.toGrace 0.quoted)
-                out "assertTypeOrMsg({val}, {nm_t}, \"{description}\", \"{typeDesc}\");"
-            }
-        }
+    if (emitTypeChecks.not) then { return }
+    if (false == expectedType) then { return }
+    if ("never returns" == val) then { return }     // Charlie on the MTA?
+    if (expectedType.isUnknownType) then { return }
+    if ("Done" == expectedType.value) then { return }
+
+    def nm_t = compilenode(expectedType)
+    if (lineNumber ≠ 0) then {
+        noteLineNumber(lineNumber) comment "typecheck"
     }
+    def typeDesc = withoutTypeArgs(expectedType.toGrace 0.quoted)
+    out "assertTypeOrMsg({val}, {nm_t}, \"{description}\", \"{typeDesc}\");"
 }
-method removeTypeArgs(str) {
+method withoutTypeArgs(str) {
     def leftBracketIx = str.indexOf "⟦" ifAbsent { return str }
-    return str.substringFrom 1 to (leftBracketIx - 1)
+    str.substringFrom 1 to (leftBracketIx - 1)
 }
 method compileobjdefdec(o, selfr) {
     o.register := "GraceDone"
@@ -459,7 +459,7 @@ method compileblock(o) {
     for (o.params) do { each ->
         def dType = each.decType
         paramTypes.push(compilenode(dType))
-        if (dType != ast.unknownType) then {
+        if (dType.isUnknownType.not) then {
             paramsAreTyped := true
         }
         if (first) then {
@@ -525,10 +525,11 @@ method compiletypedec(o) in (obj) {
     def tName = o.nameString
     out "// Type decl {tName}"
     // declaredvars.push(escapeident(tName))
-    if (o.value.kind == "typeliteral") then {o.value.name := tName }
+    def rhs = o.value
+    if (rhs.isInterface) then { rhs.name := tName }
     def typeMethod = ast.methodNode.new(
             [ast.signaturePart.partName(o.nameString) scope(s)],
-            typeFunBody (o.value) named (tName), ast.unknownType) scope(s)
+            typeFunBody (rhs) named (tName), ast.unknownNode) scope(s)
             // Why unknownType, rather than typeType?  Because the latter will
             // compile a check that the return value is actually a type, which
             // causes a circularity when trying to import collections. The check
@@ -585,9 +586,7 @@ method hasTypedParams(o) {
     for (o.signature) do { part ->
         for (part.params) do { p->
             if (p.dtype != false) then {
-                if ((p.dtype.value != "Unknown")
-                    && ((p.dtype.kind == "identifier")
-                        || (p.dtype.kind == "typeliteral"))) then {
+                if ((p.dtype.isIdentifier) || (p.dtype.isInterface)) then {
                     return true
                 }
             }
@@ -689,7 +688,7 @@ method compileMethodBodyWithTypecheck(o) {
     def ret = compileMethodBody(o)
     def ln = if (o.body.isEmpty) then { o.end.line } else { o.resultExpression.line }
     compileCheckThat(ret) called "result of method {o.canonicalName}"
-        hasType (o.dtype) onLine (ln)
+        hasType (o.decType) onLine (ln)
     ret
 }
 
@@ -786,7 +785,7 @@ method isSimpleAccessor(o) {
     if (o.isOnceMethod) then { return false }
     if (o.hasTypeParams) then { return false }
     if (o.hasParams) then { return false }
-    if (ast.unknownType ≠ o.decType) then { return false }
+    if (o.decType.isUnknownType.not) then { return false }
         // to ensure that we compile a type check for the method's return type
     o.body.first.isIdentifier
 }
@@ -1038,9 +1037,9 @@ method compilemethodtypes(func, o) {
         for (part.params) do {p->
             // We store information for static top-level types only:
             // absent information is treated as Unknown (and unchecked).
+            // TODO: figure out what to do about type that are not top-level
             if (false != p.dtype) then {
-                if (((p.dtype.kind == "identifier") && {p.dtype.value != "Unknown"})
-                    || (p.dtype.kind == "typeliteral")) then {
+                if ((p.dtype.isIdentifier) || (p.dtype.isInterface)) then {
                     def typeid = escapeident(p.dtype.value)
                     if (topLevelTypes.contains(typeid)) then {
                         out("{func}.paramTypes.push(["
@@ -1270,7 +1269,8 @@ method compileUninitializedCheck(id) {
     if (emitUndefinedChecks.not) then { return }
     def name = id.nameString
     def definingScope = scopeThatDefines(id) ifNone {
-        // this happens for the "unknown" identifierNode
+        // this used to happen for the "unknown" identifierNode
+        // TODO: remove this check?
         return
     }
     def scopeVariety = definingScope.variety
@@ -1332,8 +1332,6 @@ method compilecall(o) {
             o.register := "GraceTrue"
         } elseif { name == "false" } then {
             o.register := "GraceFalse"
-        } elseif { name == "Unknown" } then {
-            o.register := "type_Unknown"
         } else {
             noteLineNumber(o.line) comment "unrecognized builtIn"
             compileOuterRequest(o, compileArguments(o))
@@ -1512,6 +1510,8 @@ method compilenode(o) {
             compiledialect(o)
         } elseif { oKind == "import" } then {
             compileimport(o)
+        } elseif { oKind == "unknown" } then {
+            compileUnknown(o)
         } elseif {o.isNull} then {
             compileNull(o)
         } else {
@@ -1578,7 +1578,6 @@ method initializeCodeGenerator(moduleObject) {
     topLevelTypes.add "Boolean"
     topLevelTypes.add "Done"
     topLevelTypes.add "Type"
-    topLevelTypes.add "Unknown"
     topLevelTypes.add "Object"
     if (util.extensions.containsKey "strict") then {
         util.outprint ";\"use strict\";"
@@ -1725,6 +1724,9 @@ method compile(moduleObject, of, bt, glPath) {
     if (buildtype == "run") then { runJsCode(of, glPath) }
 }
 
+method compileUnknown(uNode) {
+    uNode.register := "type_Unknown"
+}
 method compileInherit(inhNode) forClass(className) {
     // The object under construction is `this`.
     // Compile code to implement inheritance from inhNode

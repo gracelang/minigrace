@@ -26,6 +26,7 @@ keywords.at "prefix" put true
 keywords.at "return" put true
 keywords.at "trait" put true
 keywords.at "type" put true
+keywords.at "Unknown" put true
 keywords.at "use" put true
 keywords.at "var" put true
 keywords.at "where" put true

@@ -72,7 +72,7 @@ method defNode {
     def result = ast.defDecNode.new(
           ast.identifierNode.new("wombat", false),
           objectNode,
-          ast.unknownType)
+          ast.unknownNode)
     result.setStart(pos.line 2 column 5)
     result
 }
@@ -84,14 +84,14 @@ method methNode {
     def sig = list []
     sig.add(ast.signaturePart.partName "foo" params [a])
     sig.add(ast.signaturePart.partName "bar" params [b])
-    def result = ast.methodNode.new(sig, [], ast.unknownType)
+    def result = ast.methodNode.new(sig, [], ast.unknownNode)
     result.setStart(pos.line 3 column 5)
     result
 }
 
 method magicMethNode {
     def sig = [ ast.signaturePart.partName(scope.magicKey) ]
-    def result = ast.methodNode.new(sig, [], ast.unknownType)
+    def result = ast.methodNode.new(sig, [], ast.unknownNode)
     result.setStart(pos.line 1 column 5)
     result
 }

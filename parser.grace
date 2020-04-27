@@ -365,10 +365,11 @@ method dotypeterm {
         pushIdentifier
         generic
         dotrest(noBlocks)
-    } else {
-        if (acceptKeyword "interface") then {
-            interfaceLiteral
-        }
+    } elseif {acceptKeyword "interface"} then {
+        interfaceLiteral
+    } elseif {acceptKeyword "Unknown"} then {
+        values.push(ast.unknownNode)
+        next
     }
 }
 
@@ -1325,7 +1326,7 @@ method matchcase {
         if (case.isBlock) then {
             if (case.hasParams) then {
                 def guard = case.params.first.decType
-                if (ast.unknownType == guard) then {
+                if (guard.isUnknownType) then {
                     util.log 20 verbose "case pattern on line {case.params.first.line} is type Unknown; this is not useful, because it will always be true.  Perhaps you want an 'else' branch, which is true only when all other cases are false?"
                 }
             } else {
