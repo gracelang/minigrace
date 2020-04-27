@@ -5,7 +5,6 @@ import "basic" as basic
 
 use basic.open
 
-def NamingError is public = errormessages.SyntaxError.refine "NamingError"
 def predefined is public = dictionary.empty
 var typeType is writable        // dependency injected from constantScope
 
@@ -100,13 +99,13 @@ def graceEmptyScope:MinimalScope is public = object {
         false
     }
     method allNamesAndValuesDo (aBlock) filteringOut (closerDefinitions) {
-        self
+        done
     }
     method lookupLocallyOrReused (name) ifAbsent (aBlock) ifPresent (pBlock) {
         aBlock.apply
     }
     method localNamesAndValuesDo (aBlock) {
-        self
+        done
     }
     method isObjectScope {
         // I'm treated as an object scope so that every non-empty scope has
@@ -624,11 +623,11 @@ class graceScope {
         } ifPresent (pBlock)
     }
     method error (innerDefn) shadows (outerDefn) is confidential {
-        NamingError.raise ("You can't use `{innerDefn.declaredName}` as the name " ++
+        errormessages.namingError ("You can't use `{innerDefn.declaredName}` as the name " ++
               "of a {innerDefn.kind}, because `{innerDefn.declaredName}` " ++
               "is declared as a {outerDefn.kind} on {outerDefn.lineRangeString} " ++
               "in a surrounding scope; use a different name")
-              with (innerDefn.definingParseNode)
+              atRange (innerDefn.definingParseNode)
     }
     method lookupLexically (name) {
         // Return the variable corresponding to name, which may or may not be
@@ -637,25 +636,25 @@ class graceScope {
         // Note that this method ignores reused names; it is intended for
         // implementing Grace's shadowing check
         lookupLexically (name) ifAbsent {
-            NamingError.raise "{name} was not found in any lexical scope"
+            errormessages.namingError  "{name} was not found in any lexical scope"
         }
     }
     method redeclarationError (aMessage) variable (aVariable) {
-        NamingError.raise (aMessage) with (aVariable.definingParseNode)
+        errormessages.namingError  (aMessage) atRange (aVariable.definingParseNode)
     }
     method add (aVariable:Variable) withName (aName) {
         def priorDeclaration = names.at (aName) ifAbsent {
             names.at (aName) put (aVariable)
             return aVariable
         }
-        NamingError.raise ("sorry, you can't declare `{aName}` as a " ++
+        errormessages.namingError ("sorry, you can't declare `{aName}` as a " ++
               "{aVariable.kind}, because it's already declared as a "++
               "{priorDeclaration.kind} on {priorDeclaration.rangeLongString}, " ++
               "which is in the same scope; use a different name")
-              with (aVariable.definingParseNode)
+              atRange (aVariable.definingParseNode)
     }
     method structuralError (aMessage) variable (aVariable) {
-        NamingError.raise (aMessage) with (aVariable.definingParseNode)
+        errormessages.namingError (aMessage) atRange (aVariable.definingParseNode)
     }
     method allNamesAndValuesDo (aBlock) {
         allNamesAndValuesDo (aBlock) filteringOut (Set.new)
@@ -680,7 +679,7 @@ class graceScope {
         outerScope.allNamesAndValuesDo (aBlock) filteringOut (closerDefinitions)
     }
     method redefine (aVariable) withName (aName) {
-        // overwites an existing defintion
+        // overwrites an existing defintion
         names.at (aName) put (aVariable)
         aVariable
     }

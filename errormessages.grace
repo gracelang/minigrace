@@ -404,6 +404,7 @@ method min3(a, b, c) is confidential {
 def CompilationError is public = Exception.refine "CompilationError"
 def SyntaxError is public = CompilationError.refine "SyntaxError"
 def ReuseError is public = CompilationError.refine "ReuseError"
+def NamingError is public = CompilationError.refine "NamingError"
 
 method syntaxError(message:String, errLinenum:Number,
             errPosition:String, arr:String, suggestions:Collection) {
@@ -473,6 +474,14 @@ method syntaxError (message)
     } else { "{startpos}-{endline}:{endpos}" }
     def arr = ("-" * (startpos-1)) ++ ("^" * (endpos - startpos + 1))
     syntaxError(message, startline, "{loc}", arr, suggestions)
+}
+
+method namingError (message) atRange (r) {
+    NamingError.raise (message) with (r)
+}
+
+method namingError (message) {
+    NamingError.raise (message)
 }
 
 method error (message) atRange (r) {
@@ -634,13 +643,13 @@ method badAssignmentTo(node) declaredInScope(scp) {
     }
 }
 
-def reserved = ["self", "outer", "true", "false", "Unknown", "Self"]
+def reserved = ["self", "outer", "Unknown", "Self"]
 // reserved names that cannot be re-assigned or re-declared
 
 method checkForReservedName(node) {
     def ns = node.nameString
     if (reserved.contains(ns)) then {
-        syntaxError "{ns} is a reserved name and cannot be re-declared."
+        namingError "the name {ns} is reserved, and cannot be re-declared."
             atRange(node.range)
     }
 }
