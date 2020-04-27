@@ -239,8 +239,6 @@ method initializeConstantScopes {
     builtInsScope.add(
         sm.variableDefFrom (pseudoNode "false" typed (bool)))
     builtInsScope.add(
-        sm.variableTypeFrom (pseudoNode "Unknown" typed (typ)))
-    builtInsScope.add(
         sm.variableDefFrom (pseudoNode "..." typed (un)))
     builtInsScope.add(
         sm.variableMethodFrom (pseudoNode "print(1)" typed (dn)))
