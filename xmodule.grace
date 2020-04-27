@@ -339,7 +339,7 @@ method checkTransitiveImports(moduleRecord, node) {
     importedModules.do { eachImport ->
         if (m == eachImport) then {
             errormessages.error("cyclic import detected — '{m}' is imported "
-                ++ "by '{eachImport}', which is imported by '{m}'")
+                ++ "by '{moduleName}', which is imported by '{m}'")
                 atRange(node.range)
         }
         if (intrinsic.inBrowser) then {
