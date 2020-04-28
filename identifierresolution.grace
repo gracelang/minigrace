@@ -841,12 +841,16 @@ method generateGctForModule(module) {
     // Older versions of this method used to iterate over the ast,
     // but reused methods are not in the ast, and so were omitted.
 
+    util.log_verbose "generating gct"
     def gct = dictionary.empty
     def theDialect = module.theDialect.moduleName
     def methodList = list.empty
     def typeList = list.empty
     def ms = module.scope
-    def pathsToProcess = list.empty
+    def pathsToProcess = set.empty
+    var pathCount := 0
+    def epl = sys.environ.at "PATH_LIMIT"
+    def pathLimit = if (epl.isEmpty) then { 1000 } else {epl.asNumber}
     ms.types.keysAndValuesDo { typeName, typeDec ->
         gct.at "typedec-of:{typeName}" put [typeDec]
         typeList.add (typeName)
@@ -856,19 +860,23 @@ method generateGctForModule(module) {
         if (knd.forGct) then {
             methodList.add (vName ++ knd.tag)
             pathsToProcess.add(vName)
+            pathCount := pathCount + 1
         }
     }
     while { pathsToProcess.isEmpty.not } do {
         def subList = list.empty
-        def vName = pathsToProcess.removeFirst
+        def vName = pathsToProcess.anyone
+        pathsToProcess.remove(vName)
+        util.log 45 verbose "        removed {vName}"
         def vNameScope = ms.scopeForDottedName(vName)
-        if (vName == "graphicApplicationSize(1)") then {
-            util.log 45 verbose "graphicApplicationSize(1) scope contains keys {vNameScope.keysAsList}"
-        }
         vNameScope.keysAndKindsDo { subName, subKnd ->
             if (subKnd.forGct) then {
                 subList.add (subName ++ subKnd.tag)
-                pathsToProcess.addLast "{vName}.{subName}"
+                def newPath = "{vName}.{subName}"
+                if (pathCount < pathLimit) then {
+                    pathsToProcess.add "{vName}.{subName}"
+                    pathCount := pathCount + 1
+                }
             }
         }
         if (subList.isEmpty.not) then {
@@ -894,6 +902,7 @@ method generateGctForModule(module) {
     gct.at "dialect" put (
         if (theDialect == "none") then { [] } else { [theDialect] }
     )
+    util.log_verbose "{pathCount} paths added to gct (limit = {pathLimit})"
     gct
 }
 
