@@ -20,6 +20,9 @@ function getModuleName() {
 function jsTrue() {
     return true;
 }
+function jsFalse() {
+    return false;
+}
 
 Array.prototype.sum = function () {
     return this.reduce(function(a,b) {return a+b;}, 0);
@@ -1204,18 +1207,18 @@ GraceBoolean.prototype = {
         "&&(1)": function(argcv, other) {
             if (!this._value)
                 return this;
-            if ((other.hasOwnProperty("_value")) && (typeof other._value === "boolean"))
+            if ((this.className === other.className) ||
+                    other.methods['ifTrue(1)ifFalse(1)'])
                 return other;
-            var o = callmethod(other, "apply", [0]);
-            return o;
+            return callmethod(other, "apply", [0]);
         },
         "||(1)": function(argcv, other) {
             if (this._value)
                 return this;
-            if ((other.hasOwnProperty("_value")) && (typeof other._value === "boolean"))
+            if ((this.className === other.className) ||
+                    other.methods['ifTrue(1)ifFalse(1)'])
                 return other;
-            var o = callmethod(other, "apply", [0]);
-            return o;
+            return callmethod(other, "apply", [0]);
         },
         "asString": function(argcv) {
             return new GraceString("" + this._value);
@@ -1224,11 +1227,12 @@ GraceBoolean.prototype = {
             return new GraceString("" + this._value);
         },
         "==(1)": function(argcv, other) {
-            if (this === other)
-                return GraceTrue;
-            if (this._value === other._value)
-                return GraceTrue;
-            return GraceFalse;
+            try {
+                if (this._value === Grace_isTrue(other)) return GraceTrue;
+                return GraceFalse;
+            } catch {
+                return GraceFalse;
+            }
         },
         "matches(1)": function(argcv, o) {
             return (callmethod(this, "==(1)", [1], o));
@@ -1720,11 +1724,42 @@ function graceNotPattern(o) {
     return request(patternAndType(), "NotPattern(1)", [1], o);
 }
 
+const jsTrueBlock = function() {
+    let result = new GraceBlock({definitionModule: "built-in library"}, 0, 0);
+    result.guard = jsTrue;
+    result.real = jsTrue;
+    let applyMeth = () => true;
+    applyMeth.methodName = "apply";
+    applyMeth.paramCounts = [0];
+    applyMeth.paramNames = [];
+    applyMeth.definitionLine = 0;
+    applyMeth.definitionModule = "built-in library";
+    result.methods.apply = applyMeth;
+    return result;
+}();
+
+const jsFalseBlock = function() {
+    let result = new GraceBlock({definitionModule: "built-in library"}, 0, 0);
+    result.guard = jsTrue;
+    result.real = jsFalse;
+    let applyMeth = () => false;
+    applyMeth.methodName = "apply";
+    applyMeth.paramCounts = [0];
+    applyMeth.paramNames = [];
+    applyMeth.definitionLine = 0;
+    applyMeth.definitionModule = "built-in library";
+    result.methods.apply = applyMeth;
+    return result;
+}();
+
 function Grace_isTrue(o) {
     if (o._value === false)
         return false;
     if (o._value === true)
         return true;
+    let it = o.methods['ifTrue(1)ifFalse(1)']
+    if (it)
+        return it.call(o, [1], jsTrueBlock, jsFalseBlock);
     throw new GraceExceptionPacket(ProgrammingErrorObject,
         new GraceString("non-Boolean object " + describe(o) + " used as condition."));
 }
