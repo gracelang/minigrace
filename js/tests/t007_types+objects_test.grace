@@ -5,17 +5,26 @@ testSuite "standard types and objects" with {
     test "numbers have type Number" by {
         assert 3 hasType (Number)
     }
+    test "numbers have type Pattern" by {
+        assert 3 hasType (Pattern)
+    }
     test "Number describes numbers" by {
         assertType (Number) describes 3
     }
     test "strings have type String" by {
         assert "test" hasType (String)
     }
+    test "strings have type Pattern" by {
+        assert "test" hasType (Pattern)
+    }
     test "String describes strings" by {
         assertType (String) describes "test"
     }
     test "booleans have type Boolean" by {
         assert true hasType (Boolean)
+    }
+    test "booleans have type Pattern" by {
+        assert true hasType (Pattern)
     }
     test "Boolean describes booleans" by {
         assertType (Boolean) describes true
@@ -35,8 +44,17 @@ testSuite "standard types and objects" with {
     test "Pattern describes AndPattern" by {
         assertType (Pattern) describes (>3 & <10)
     }
+    test "OrPatterns have type Pattern" by {
+        assert (<3 | >10) hasType (Pattern)
+    }
+    test "Pattern describes OrPattern" by {
+        assertType (Pattern) describes (<3 | >10)
+    }
     test "UninitializedVariable has type ExceptionKind" by {
         assert (UninitializedVariable) hasType (ExceptionKind)
+    }
+    test "UninitializedVariable has type Pattern" by {
+        assert (UninitializedVariable) hasType (Pattern)
     }
     test "ExceptionKind describes UninitializedVariable" by {
         assertType (ExceptionKind) describes (UninitializedVariable)

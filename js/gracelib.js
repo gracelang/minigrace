@@ -782,6 +782,9 @@ GraceString.prototype = {
                                    accum, new GraceString(self[ix]));
             }
             return accum;
+        },
+        "isType": function(argcv) {
+            return GraceFalse;
         }
     },
     className: "string",
@@ -1103,6 +1106,9 @@ GraceNum.prototype = {
         },
         "prefix¬": function(argcv) {
             return graceNotPattern(this);
+        },
+        "isType": function(argcv) {
+            return GraceFalse;
         }
     },
     className: "number",
@@ -1229,6 +1235,9 @@ GraceBoolean.prototype = {
         },
         "hash": function(argcv) {
             return new GraceNum(this._value ? 3637 : 1741);
+        },
+        "isType": function(argcv) {
+            return GraceFalse;
         }
     },
     className: "boolean",

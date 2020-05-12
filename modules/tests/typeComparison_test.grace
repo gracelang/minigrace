@@ -15,7 +15,7 @@ testSuite {
 
     test "coverage – false and Iterable" by {
         assert(tc.protocolOf (false) notCoveredBy (Object)) shouldBe
-            "&&(_), &(_), ::(_), ==(_), hash, ifFalse(_), ifFalse(_)ifTrue(_), ifTrue(_), ifTrue(_)ifFalse(_), matches(_), not, prefix!, prefix¬, |(_), ||(_), and ≠(_)"
+            "&&(_), &(_), ::(_), ==(_), hash, ifFalse(_), ifFalse(_)ifTrue(_), ifTrue(_), ifTrue(_)ifFalse(_), isType, matches(_), not, prefix!, prefix¬, |(_), ||(_), and ≠(_)"
     }
     test "coverage – done and Object" by {
         assert(tc.protocolOf (done) notCoveredBy (Done)) shouldBe ""
