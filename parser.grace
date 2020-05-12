@@ -6,7 +6,7 @@ import "errormessages" as errormessages
 
 var tokens := false
 var moduleObject
-var comments := list.empty   // so we can request `removeAt`
+def comments = list.empty   // so we can request `removeAt`
 
 var auto_count := 0
 def noBlocks = false
@@ -3217,5 +3217,12 @@ method parse(toks) {
         }
         separator
     }
-    return moduleObject
+    def result = moduleObject
+    tokens := object {}
+    moduleObject := {}
+    sym := object {}
+    lastToken := object {}
+    statementToken := object {}
+    comments.clear
+    result
 }

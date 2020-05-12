@@ -37,7 +37,7 @@ method compileInputFile {
         }
 
         var moduleObject := parser.parse(tokens)
-
+        tokens := false     // release the memory
         var values := moduleObject.value
 
         if (util.target == "parse") then {

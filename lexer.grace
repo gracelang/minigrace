@@ -120,7 +120,7 @@ method initialize {
 }
 
 var tokens                  // a linked-list of output tokens
-var lastNonCommentToken     // the most last token pushed that was not a comment
+var lastNonCommentToken     // the most recent token pushed that was not a comment
 var lineNumber              // the current input line number
 var linePosition            // the character position on the input line
 var startLine               // the line on which the current token starts
@@ -1593,5 +1593,8 @@ method lexInputLines {
             atRange(startLine, stringStart, inputLines.at(startLine).size)
     }
     tokens.push(eofToken)
-    tokens
+    def result = tokens
+    tokens := object {}
+    lastNonCommentToken := object {}
+    result
 }
