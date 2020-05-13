@@ -447,7 +447,7 @@ trait dictionaryTest {
         }
         method testDictionaryAnySatisfy {
             assert (oneToFive.anySatisfy { x -> (x/2).isEven })
-                description "oneToFive does not any element x s.t. x/2 is even"
+                description "oneToFive does not contain an x s.t. x/2 is even"
             deny (empty.anySatisfy {_ -> true})
                 description "empty includes some element!"
             deny (oneToFive.anySatisfy {x -> x > 5})
