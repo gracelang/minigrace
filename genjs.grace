@@ -8,7 +8,7 @@ import "xmodule" as xmodule
 import "errormessages" as errormessages
 import "identifierresolution" as identifierresolution
 import "identifierKinds" as k
-import "fastDict" as map
+import "mapDict" as map
 import "shasum" as shasum
 import "buildinfo" as buildinfo
 import "regularExpression" as regex
@@ -533,7 +533,7 @@ method compiletypedec(o) in (obj) {
             // Why unknownType, rather than typeType?  Because the latter will
             // compile a check that the return value is actually a type, which
             // causes a circularity when trying to import collections. The check
-            // is also unnecessary, if the type operators are correctly implemented.
+            // is subsumed by a call to `isType` in the body of `setTypeName`
     typeMethod.isOnceMethod := true
     typeMethod.withTypeParams(o.typeParams)
     s.node := originalNode       // gct generation will scan the ast after code is generated

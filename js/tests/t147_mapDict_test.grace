@@ -5,7 +5,7 @@ import "dictionaryTest" as dictionaryTest
 
 def ConcurrentModification is public = ProgrammingError.refine "ConcurrentModification"
 
-trait fastDictTest {
+trait mapDictTest {
     class forMethod(m) {
         inherit dictionaryTest.dictionaryTest.forMethod(m)
 
@@ -17,7 +17,7 @@ trait fastDictTest {
     }
 }
 
-def dictTests = gU.testSuite.fromTestMethodsIn(fastDictTest) named "dictionaryTest"
+def dictTests = gU.testSuite.fromTestMethodsIn(mapDictTest) named "dictionaryTest"
 dictTests.runAndPrintResults
 
 gU.exit

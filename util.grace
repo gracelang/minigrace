@@ -2,7 +2,7 @@ dialect "standard"
 import "io" as io
 import "sys" as sys
 import "unixFilePath" as filePath
-import "fastDict" as map
+import "mapDict" as map
 
 def defaultVerbosity is public = 30
 def defaultTarget is public = "js"

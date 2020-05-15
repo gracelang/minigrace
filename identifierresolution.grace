@@ -8,7 +8,7 @@ import "sys" as sys
 import "ast" as ast
 import "util" as util
 import "xmodule" as xmodule
-import "fastDict" as map
+import "mapDict" as map
 import "errormessages" as errormessages
 import "identifierKinds" as k
 import "mirror" as mirror

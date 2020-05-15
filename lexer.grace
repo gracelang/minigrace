@@ -2,7 +2,7 @@ dialect "standard"
 import "util" as util
 import "unicode" as unicode
 import "errormessages" as errormessages
-import "fastDict" as map
+import "mapDict" as map
 import "regularExpression" as re
 
 def keywords = map.dictionary.empty

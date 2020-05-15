@@ -6,7 +6,7 @@ dialect "standard"
 // all prefixes, i.e., [], [a] and [a, b], even though it has size 1
 // The empty prefix tree contains the empty sequence.
 
-import "fastDict" as fd
+import "mapDict" as d
 
 def end = object {
     inherit singleton "end"
@@ -17,7 +17,7 @@ def end = object {
 
 class prefixTree {
     // answers an empty prefix tree
-    def dict = fd.dictionary.empty
+    def dict = d.dictionary.empty
     
     method add (entry:Collection) {
         add (entry) index 1
