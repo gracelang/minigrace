@@ -78,6 +78,7 @@ j2/minitest.js: j2/minitestBundle.js
 j2/minitestBundle.js: j2/standardBundle.js j2/gUnit.js
 j2/nospec.js: j2/standard.js
 j2/notest.js: j2/standard.js
+j2/objectdraw.js: j2/random.js j2/standard.js
 j2/option.js: j2/standard.js
 j2/random.js: j2/standard.js
 j2/requireTypes.js: j2/dialect.js j2/standard.js
