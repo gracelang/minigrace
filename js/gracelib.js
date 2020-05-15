@@ -1809,6 +1809,12 @@ function GraceTypeVariant(l, r) {
 function GraceTypeSubtraction(l, r) {
     return request(patternAndType(), "TypeSubtraction(2)", [2], l, r);
 }
+function type_setName (argcv, nu) {
+    if (nu.className !== "string") nu = request(nu, "asString", [0]);
+    this.name = nu._value;
+    return this;
+}
+type_setName.confidential = true;
 
 function GraceType(name) {
     this.name = name;
@@ -1877,10 +1883,9 @@ GraceType.prototype = {
         "hash": function type_hash (argcv) {
             return selfRequest(this, "myIdentityHash", argcv)
         },
-        "setName(1)": function type_setName (argcv, nu) {
-            if (nu.className !== "string") nu = request(nu, "asString", [0]);
-            this.name = nu._value;
-            return this;
+        "setName(1)": type_setName,
+        "setTypeName(1)": function type_setTypeName (argcv, nu) {
+            return type_setName.call(this, argcv, nu)
         },
         "name": function type_name (argcv) {
             return new GraceString(this.name);

@@ -546,7 +546,7 @@ method typeFunBody(typeExpr) named (tName) {
         // this guard prevents us from renaming the rhs in decls like type A⟦T⟧ = B⟦T⟧
         [ ast.callNode.new(
                 typeExpr,
-                [ast.requestPart.request "setName"
+                [ast.requestPart.request "setTypeName"
                      withArgs[ ast.stringNode.new(tName) ] ]
         ).onSelf ]
     } else {

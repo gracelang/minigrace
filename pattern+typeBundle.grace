@@ -22,6 +22,12 @@ trait open {
             NotPattern(self)
         }
         method isType { false }
+        method setTypeName(_) is confidential {
+            // This method exists so that if compiled code tries to setTypeName
+            // on a pattern, we will get a nicer error than NoSuchMethod.
+            // It is confidetial so that it does not show up in the Pattern type.
+            intrinsic.constants.TypeError.raise "{self} is a Pattern, but not a Type"
+        }
     }
 
     trait AndPattern(p1, p2) {
@@ -54,8 +60,11 @@ trait open {
         method -(o) { TypeSubtraction(self, o) }
         method asString { "type {self.name}" }
         method setName(nu) is confidential {
-            self.name:=(nu)
-            return self     // for chaining
+            self.name := nu
+            self     // for chaining
+        }
+        method setTypeName(nu) {
+            self.setName(nu)
         }
         method matchHook(obj) is required   // does the actual matching
         method matches(obj) {
@@ -121,6 +130,7 @@ trait open {
             exclude |(_)
             exclude matches(_)
             exclude isType
+            exclude setTypeName(_)
         use BaseType
         var name is readable := "‹anon›"
         method methodNames {
@@ -148,6 +158,7 @@ trait open {
             exclude |(_)
             exclude matches(_)
             exclude isType
+            exclude setTypeName(_)
         use BaseType
         var name is readable := "‹anon›"
         method methodNames {
