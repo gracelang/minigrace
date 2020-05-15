@@ -154,14 +154,9 @@ method printBacktrace(exceptionPacket) asFarAs (methodName) {
     def msg = exceptionPacket.message
     def lineNr = exceptionPacket.lineNumber
     def mod = exceptionPacket.moduleName
-    if (lineNr == 0) then {
-        io.error.write "{ex} in {mod}: {msg}\n"
-    } else {
-        io.error.write "{ex} on line {lineNr} of {mod}: {msg}\n"
-    }
+    io.error.write "{ex}: {msg}\n"
     def bt = exceptionPacket.backtrace
-    while {bt.size > 0} do {
-        def frameDescription = bt.pop
+    bt.reversed.do { frameDescription ->
         io.error.write "  requested from {frameDescription}\n"
         if (frameDescription.contains(methodName)) then { return }
     }
