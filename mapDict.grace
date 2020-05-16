@@ -12,15 +12,13 @@ type Collection⟦T⟧ = collections.Collection⟦T⟧
 def NoSuchObject = collections.NoSuchObject
 def IteratorExhausted = collections.IteratorExhausted
 
-def prims = object {
-    method emptyJSMap {
-        native "js" code ‹return new Map();
-    ›
-    }
+method emptyJSMap {
+    native "js" code ‹return new Map();›
 }
 
+
 def removed = object {
-    // Used as a tombestone to mark the location of a removed VALUE.
+    // Used as a tombstone to mark the location of a removed VALUE.
     // The key, and the key-value binding object, remain in the dictionary
     method asString { "removed" }
     method == (other) { self.isMe(other) }
@@ -52,7 +50,7 @@ class dictionary⟦K,T⟧ {
         use collections.collection⟦T⟧
         var mods is readable := 0
         var numBindings := 0
-        var table := prims.emptyJSMap
+        var table := emptyJSMap
 
         method size { numBindings }
 
