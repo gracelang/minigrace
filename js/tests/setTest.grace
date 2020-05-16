@@ -1,4 +1,5 @@
 dialect "standard"
+import "collections" as collections
 import "gUnit" as gU
 
 trait setTest {
@@ -9,26 +10,31 @@ trait setTest {
         var evens
         var empty
 
+        method setUnderTestWith (elements) {
+            collections.set⟦Number⟧.withAll (elements)
+        }
+        method setUnderTestEmpty { collections.set.empty }
+        method setUnderTestFactory { collections.set }
         method setup {
-            oneToFive := set [1, 2, 3, 4, 5]
-            evens := set [2, 4, 6, 8]
-            empty := set [ ]
+            oneToFive := setUnderTestWith [1, 2, 3, 4, 5]
+            evens := setUnderTestWith [2, 4, 6, 8]
+            empty := setUnderTestEmpty
         }
         
         method testSetTypeCollection {
-            def witness = set⟦Number⟧ [1, 2, 3, 4, 5, 6]
+            def witness = setUnderTestWith [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (Collection⟦Number⟧)
         }
         method testSetTypeSet {
-            def witness = set⟦Number⟧ [1, 2, 3, 4, 5, 6]
+            def witness = setUnderTestWith [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (Set⟦Number⟧)
         }
-        method testSingletonSeteTypeSet {
-            def witness = set.with "a word"
+        method testSingletonSetHasTypeSet {
+            def witness = setUnderTestWith [1]
             assert (witness) hasType (Set)
         }
         method testSetTypeNotSequence {
-            def witness = set⟦Number⟧ [1, 2, 3, 4, 5, 6]
+            def witness = setUnderTestWith [1, 2, 3, 4, 5, 6]
             deny (witness) hasType (Sequence⟦Number⟧)
         }
 
@@ -38,12 +44,12 @@ trait setTest {
             assert(evens.size) shouldBe 4
         }
         method testSingletonSetSize {
-            def singletonSeq = set.with "a word"
+            def singletonSeq = setUnderTestWith [17]
             assert (singletonSeq.size) shouldBe 1
         }
 
         method testSetEmptyDo {
-            empty.do {each -> failBecause "set.empty.do did with {each}"}
+            empty.do {each -> failBecause "empty.do did with {each}"}
             assert(true)
         }
 
@@ -71,7 +77,7 @@ trait setTest {
         }
 
         method testSetOneToFiveDo {
-            def accum = set.empty
+            def accum = setUnderTestEmpty
             var n := 1
             oneToFive.do { each ->
                 accum.add(each)
@@ -84,16 +90,16 @@ trait setTest {
         method testPipeIntoSetFactory {
             def witness = (list.withAll [1, 2, 3]) >> set
             assert (witness) hasType (Set)
-            assert (witness) shouldBe (set.withAll [1, 2, 3])
+            assert (witness) shouldBe (setUnderTestWith [1, 2, 3])
             deny (witness) hasType (List)
         }
 
         method testPipeIntoExistingSet {
             def witness = (list.withAll [1, 2, 3]) >> evens
             assert (witness) hasType (Set)
-            assert (witness) shouldBe (set.withAll [2, 4, 6, 8, 1, 2, 3])
+            assert (witness) shouldBe (setUnderTestWith [2, 4, 6, 8, 1, 2, 3])
             deny (witness) hasType (List)
-            assert (evens) shouldBe (set.withAll [2, 4, 6, 8, 1, 2, 3])
+            assert (evens) shouldBe (setUnderTestWith [2, 4, 6, 8, 1, 2, 3])
         }
 
         method testSetAdd {
@@ -187,7 +193,7 @@ trait setTest {
         }
 
         method testSetMapEmpty {
-            assert (empty.map{x -> x * x} >> set) shouldBe (set.empty)
+            assert (empty.map{x -> x * x} >> set) shouldBe (setUnderTestEmpty)
         }
 
         method testSetMapEvens {
@@ -274,7 +280,7 @@ trait setTest {
         }
         method testSetClear {
             var toClear := set [1, 2, 3]
-            assert (toClear.clear) shouldBe (set.empty)
+            assert (toClear.clear) shouldBe (setUnderTestEmpty)
         }
         method testSetAnySatisfy {
             assert (oneToFive.anySatisfy { x -> (x/2).isEven })
@@ -297,13 +303,58 @@ trait setTest {
         method testSetMultipleRemoves {
             // this test causes set to fill up with removed tombestones,
             // even though it stillhas plenty of space
-            var smallSet := set.with 1
-            assert (smallSet) shouldBe (set.with 1)
+            var smallSet := setUnderTestWith [1]
+            assert (smallSet) shouldBe (setUnderTestWith [1])
             (2..1000).do { each → 
                 smallSet.add(each)
                 smallSet.remove(each)
             }
-            assert (smallSet) shouldBe (set.with 1)
+            assert (smallSet) shouldBe (setUnderTestWith [1])
         }
+        method testIntersectionEmpty {
+            assert (empty ** evens) shouldBe (setUnderTestEmpty)
+            assert (evens ** empty) shouldBe (setUnderTestEmpty)
+        }
+        method testIntersectionNonEmpty {
+            assert (oneToFive ** evens) shouldBe (setUnderTestWith [2, 4])
+            assert (evens ** oneToFive) shouldBe (setUnderTestWith [2, 4])
+        }
+        method testUnionEmpty {
+            assert (oneToFive ++ empty) shouldBe (setUnderTestWith [1, 2, 3, 4, 5])
+            assert (empty ++ oneToFive) shouldBe (setUnderTestWith [1, 2, 3, 4, 5])
+        }
+        method testUnionNonEmpty {
+            assert (oneToFive ++ evens) shouldBe (setUnderTestWith [1, 2, 3, 4, 5, 6, 8])
+            assert (evens ++ oneToFive) shouldBe (setUnderTestWith [1, 2, 3, 4, 5, 6, 8])
+        }
+        method testDifferenceEmpty {
+            assert (oneToFive -- empty) shouldBe (setUnderTestWith [1, 2, 3, 4, 5])
+            assert (empty -- oneToFive) shouldBe (setUnderTestEmpty)
+        }
+        method testDifferenceNonEmpty {
+            assert (oneToFive -- evens) shouldBe (setUnderTestWith [1, 3, 5])
+            assert (evens -- oneToFive) shouldBe (setUnderTestWith [6, 8])
+        }
+        method testIsSubset {
+            assert ((oneToFive -- evens).isSubset (oneToFive))
+                description "oneToFive minus some elements is not a subset of oneToFive"
+        }
+        method testIsSubsetEqual {
+            assert (oneToFive.isSubset (oneToFive))
+                description "oneToFive is not a subset of oneToFive"
+        }
+        method testIsSubsetFalse {
+            deny (oneToFive.isSubset (evens))
+                description "oneToFive is a subset of evens"
+        }
+        method testIsSupersetEqual {
+            assert (oneToFive.isSuperset (oneToFive))
+                description "oneToFive is not a superset of oneToFive"
+        }
+        method testIsSupersetFalse {
+            deny (oneToFive.isSuperset (evens))
+                description "oneToFive is a superset of evens"
+        }
+
     }
 }
