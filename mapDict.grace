@@ -73,6 +73,21 @@ class dictionary⟦K, T⟧ (initialBindings: Collection⟦Binding⟦K,T⟧⟧) {
         bindings.do{ each -> add(each) }
         self    // for chaining
     }
+    method rehash is confidential {
+        // makes a new map, without any of the removed entries
+        mods := mods + 1
+        numBindings := 0;
+        native "js" code ‹
+        let oldT = this.data.table;
+        this.data.table = new Map();
+        for (let p of oldT.values()) {
+            if (var_removed !== p.value) {
+                request(this, 'at(1)put(1)', [2], p.key, p.value);
+            }
+        }
+        ›
+        self
+    }
     method at(k) {
         native "js" code ‹
         var hc = request(var_k, "hash", [0])._value;
@@ -137,7 +152,6 @@ class dictionary⟦K, T⟧ (initialBindings: Collection⟦Binding⟦K,T⟧⟧) {
         NoSuchObject.raise "dictionary does not contain entry with key {k}"
     }
     method removeKey(k) ifAbsent (action) {
-        mods := mods + 1
         native "js" code ‹
         var hc = request(var_k, "hash", [0])._value;
         while (true) {
@@ -147,6 +161,9 @@ class dictionary⟦K, T⟧ (initialBindings: Collection⟦Binding⟦K,T⟧⟧) {
                 if (var_removed === b.value) break;
                 b.value = var_removed;
                 this.data.numBindings = new GraceNum(this.data.numBindings._value - 1);
+                this.data.mods = new GraceNum(this.data.mods._value + 1)
+                if (this.data.table.size > (2 * this.data.numBindings._value))
+                    selfRequest(this, 'rehash');
                 return this;
             }
             hc++;
@@ -163,7 +180,10 @@ class dictionary⟦K, T⟧ (initialBindings: Collection⟦Binding⟦K,T⟧⟧) {
                 b.value = var_removed;
                 this.data.numBindings = new GraceNum(this.data.numBindings._value - 1);
             }
-        };›
+        };
+        if (this.data.table.size > (2 * this.data.numBindings._value))
+            selfRequest(this, 'rehash');
+        ›
         self
     }
     method removeValue(v) {
@@ -237,9 +257,11 @@ class dictionary⟦K, T⟧ (initialBindings: Collection⟦Binding⟦K,T⟧⟧) {
     }
     method asDebugString {
         native "js" code ‹
-        var s = "mapDict⟬";
+        const t = this.data.table;
+        const size = this.data.numBindings._value;
+        const cap = t.size;
+        var s = "mapDict " + size + "/" + cap + "⟬";
         var first = true;
-        let t = this.data.table;
         for (let p of t.values()) {
             if (first)
                 first = false;
@@ -266,7 +288,7 @@ class dictionary⟦K, T⟧ (initialBindings: Collection⟦Binding⟦K,T⟧⟧) {
                 }
             }
             def size is public = sourceDictionary.size
-            method asDebugString {
+            method asString {
                 "a lazy sequence over keys of {sourceDictionary}"
             }
         }
@@ -285,7 +307,7 @@ class dictionary⟦K, T⟧ (initialBindings: Collection⟦Binding⟦K,T⟧⟧) {
                 }
             }
             def size is public = sourceDictionary.size
-            method asDebugString {
+            method asString {
                 "a lazy sequence over values of {sourceDictionary}"
             }
         }
@@ -297,7 +319,7 @@ class dictionary⟦K, T⟧ (initialBindings: Collection⟦Binding⟦K,T⟧⟧) {
             method iterator { sourceDictionary.bindingsIterator }
             // should be request on outer
             def size is public = sourceDictionary.size
-            method asDebugString {
+            method asString {
                 "a lazy sequence over bindings of {sourceDictionary}"
             }
         }
