@@ -57,17 +57,35 @@ class set⟦T⟧ (initialContents: Collection⟦T⟧) -> collections.Set⟦T⟧ 
             while (true) {
                 let entry = this.data.table.get(hc)
                 if (! entry) break;  // get answers undefined if hc is not present
-                if (Grace_isTrue(request(entry, "==(1)", [1], var_x))) {
-                    if (var_removed === entry) break;
-                    return this;  // otherwise, the element is already present
+                if (var_removed === entry) {
+                    var recyclableHashCode = hc;
+                } else if (Grace_isTrue(request(entry, "==(1)", [1], var_x))) {
+                    return this;  // the element is already present
                 }
                 hc++;
             }
+            if (recyclableHashCode) hc = recyclableHashCode;
             this.data.table.set(hc, var_x);
             this.data.mods = new GraceNum(this.data.mods._value + 1);
             this.data.size = new GraceNum(this.data.size._value + 1);
             return this;
         ›
+    }
+
+    method rehash is confidential {
+        // makes a new map, without any of the removed entries
+        mods := mods + 1
+        size := 0;
+        native "js" code ‹
+        let oldT = this.data.table;
+        this.data.table = new Map();
+        for (let p of oldT.values()) {
+            if (var_removed !== p) {
+                request(this, 'add(1)', [1], p);
+            }
+        }
+        ›
+        self
     }
 
     method removeAll(elements) {
@@ -101,6 +119,8 @@ class set⟦T⟧ (initialContents: Collection⟦T⟧) -> collections.Set⟦T⟧ 
                 this.data.table.set(hc, var_removed);
                 this.data.size = new GraceNum(this.data.size._value - 1);
                 this.data.mods = new GraceNum(this.data.mods._value + 1);
+                if (this.data.table.size > (2 * this.data.size._value))
+                    selfRequest(this, 'rehash');
                 return this;
             }
             hc++;
@@ -143,8 +163,11 @@ class set⟦T⟧ (initialContents: Collection⟦T⟧) -> collections.Set⟦T⟧ 
             separatedBy { s := s ++ ", " }
         s ++ "]"
     }
+    method allocated is confidential {
+       native "js" code ‹return new GraceNum(this.data.table.size);›
+    }
     method asDebugString {
-        var s := "set\{"
+        var s := "mapSet {size}/{allocated}\{"
         do {each -> s := s ++ each.asDebugString }
             separatedBy { s := s ++ ", " }
         s ++ "\}"
@@ -205,7 +228,7 @@ class set⟦T⟧ (initialContents: Collection⟦T⟧) -> collections.Set⟦T⟧ 
     }
     method hash {
         // we have to sort our elements to obtain the same hash for two equal sets
-        collections.list.withAll(self).sort.hash
+        collections.list(self).sort.hash
     }
     method ≠ (other) { (self == other).not }
     method copy {
@@ -227,7 +250,7 @@ class set⟦T⟧ (initialContents: Collection⟦T⟧) -> collections.Set⟦T⟧ 
     }
     method ** (other) {
     // set intersection
-        set.withAll (filter {each -> other.contains(each)})
+        set (filter {each -> other.contains(each)})
     }
     method isSubset(s2: collections.Set⟦T⟧) {
         self.do{ each ->
