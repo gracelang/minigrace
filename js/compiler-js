@@ -85,7 +85,7 @@ MiniGrace.prototype.trapErrors = function(func) {
                             new GraceString("minispec"),
                             new GraceString("beginningStudent")
                 ]);
-                callmethod(e, "printBacktraceSkippingModules", [1], skipable);
+                callmethod(e, "printBacktraceSkippingModules(1)", [1], skipable);
                 // stderr_write("  requested on line " + lineNumber + " of " + this.lastModname + ".");
             } else {
                 callmethod(e, "printBacktrace", [0]);
