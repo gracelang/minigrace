@@ -1,4 +1,5 @@
--include Makefile.conf
+THIS_DIR := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+-include ./Makefile.conf
 
 MAKEFLAGS += -r
 
@@ -49,7 +50,7 @@ WEB_GRAPHICS_MODULES = modules/turtle.grace modules/logo.grace
 
 CREATE_J1 := $(shell if [ ! -e j1 ] ; then mkdir -p j1 ; fi)
 CREATE_J2 := $(shell if [ ! -e j2 ] ; then mkdir -p j2 ; fi)
-CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
+CHECK_BUILDINFO := $(shell ./tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
 
 all: minigrace.env ideBuild
 
@@ -60,7 +61,7 @@ alltest: test module.test self.test
 # clear out the default rules: produces far less --debug output
 .SUFFIXES:
 
-include Makefile.mgDependencies
+include ./Makefile.mgDependencies
 
 # The rules that follow are in alphabetical order.  Keep them that way!
 
@@ -72,7 +73,7 @@ $(ALL_LIBRARY_MODULES:%.grace=j2/%.js): j2/%.js: modules/%.grace $(J1-MINIGRACE)
 ace-code: js/ace/ace.js
 
 buildinfo.grace:
-	tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH)
+	./tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH)
 
 clean:
 	rm -f gracelib.o gracelib-basic.o standardInput{.grace,.gct,.gcn,.gso,.o,}
@@ -112,13 +113,13 @@ clean:
 	cd js/sample/dialects && $(MAKE) clean
 
 checkjs: j2/ast.js
-	@jsl -nologo -conf tools/jsl.gracelib.conf -process js/gracelib.js | perl -p -e 's/gracelib.js\n/gracelib.js –– /'
-	@jsl -nologo -conf tools/jsl.gracemod.conf -process j2/ast.js | perl -p -e 's/ast.js\n/ast.js -- /'
+	@jsl -nologo -conf ./tools/jsl.gracelib.conf -process js/gracelib.js | perl -p -e 's/gracelib.js\n/gracelib.js –– /'
+	@jsl -nologo -conf ./tools/jsl.gracemod.conf -process j2/ast.js | perl -p -e 's/ast.js\n/ast.js -- /'
 
 checkgenjs: j1/minigrace
 	if [ ! -e js/ast.js ] ;\
         then j1/minigrace --dir js --verbose ast.grace ; fi
-	jsl -nologo -conf tools/jsl.genjs.conf -process js/ast.js
+	jsl -nologo -conf ./tools/jsl.genjs.conf -process js/ast.js
 
 dev-ide:
 	$(MAKE) dev-ideDeploy
@@ -130,6 +131,7 @@ dev-ideDeploy: ideBuild
 dialects: gracelib.o js js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
 
 echo:
+	@echo THIS_DIR = $(THIS_DIR)
 	@echo VERSION = $(VERSION)
 	@echo OFFLINE = $(OFFLINE)
 	@echo MAKEFLAGS = $(MAKEFLAGS)
@@ -155,6 +157,9 @@ echo:
 	@echo NPM_STABLE_VERSION = $(NPM_STABLE_VERSION)
 	@echo REALSOURCEFILES = $(REALSOURCEFILES)
 
+embedded:
+	./tools/includeJSLibraries index.in.html $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
+
 fullclean: clean
 	rm -rf $$(ls -d js-kg/* | grep -v $(NPM_STABLE_VERSION))
 	rm -rf npm-build-dir
@@ -162,9 +167,9 @@ fullclean: clean
 fulltest: gencheck clean minigrace.env self.test test module.test
 
 gencheck:
-	X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache
+	X=$$(./tools/git-calculate-generation) ; mv ./.git-generation-cache ./.git-generation-cache.$$$$ ; Y=$$(./tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf ./.git-generation-cache ; mv ./.git-generation-cache.$$$$ ./.git-generation-cache
 
-gracedoc: tools/gracedoc
+gracedoc: ./tools/gracedoc
 
 grace-web-editor/index.html: pull-web-editor grace-web-editor/index.in.html
 	./tools/includeJSLibraries $(ALL_LIBRARY_MODULES:%.grace=js/%.js)
@@ -219,10 +224,10 @@ j1/buildinfo.js: j1/buildinfo.grace
 j1/compiler-js: js/compiler-js Makefile
 	cp -pf $< $@
 
-j1/grace-inspect: j1/grace.in tools/make-grace-inspect
+j1/grace-inspect: j1/grace.in ./tools/make-grace-inspect
 	tools/make-grace-inspect $(MODULE_PATH) $< $@
 
-j1/minigrace-inspect: j1/minigrace-js tools/make-minigrace-inspect
+j1/minigrace-inspect: j1/minigrace-js ./tools/make-minigrace-inspect
 	tools/make-minigrace-inspect $< $@
 
 j2/buildinfo.grace: buildinfo.grace
@@ -251,10 +256,10 @@ js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' $< > $@
 
-js/grace: js/grace.in tools/make-grace
+js/grace: js/grace.in ./tools/make-grace
 	tools/make-grace $(MODULE_PATH) $< $@
 
-js/grace-inspect: js/grace.in tools/make-grace-inspect
+js/grace-inspect: js/grace.in ./tools/make-grace-inspect
 	tools/make-grace-inspect $(MODULE_PATH) $< $@
 
 js/mgc: minigrace.env
@@ -274,7 +279,7 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
-js/minigrace-inspect: js/minigrace-js tools/make-minigrace-inspect
+js/minigrace-inspect: js/minigrace-js ./tools/make-minigrace-inspect
 	tools/make-minigrace-inspect $< $@
 
 js/tests/gracelib.js: js/gracelib.js
@@ -305,10 +310,10 @@ module.test: minigrace.env $(TYPE_DIALECTS:%=j2/%.js)
 	rm -f modules/tests/*.js
 	modules/tests/harness-js j2/minigrace-js modules/tests "" $(TESTS)
 
-modules/rtobjectdraw.grace: modules/objectdraw.grace tools/make-rt-version
+modules/rtobjectdraw.grace: modules/objectdraw.grace ./tools/make-rt-version
 	./tools/make-rt-version $< > $@
 
-modules/stobjectdraw.grace: modules/objectdraw.grace tools/make-st-version
+modules/stobjectdraw.grace: modules/objectdraw.grace ./tools/make-st-version
 	./tools/make-st-version $< > $@
 
 npm-get-kg: $(JS-KG)
@@ -328,7 +333,7 @@ $(JS-KG)/gracelib.js: $(JS-KG)
 $(JS-KG)/unicodedata.js: $(JS-KG)
 $(JS-KG)/minigrace-js: $(JS-KG)
 
-$(JS-KG)/minigrace-inspect: $(JS-KG)/minigrace-js tools/make-minigrace-inspect
+$(JS-KG)/minigrace-inspect: $(JS-KG)/minigrace-js ./tools/make-minigrace-inspect
 	tools/make-minigrace-inspect $< $@
 
 js/ace/mode-grace.js: pull-web-editor grace-web-editor/scripts/ace/mode-grace.js
@@ -436,5 +441,5 @@ uninstall:
 	rm -rf $(MODULE_PATH)/*.{gct,js,grace,gcn,gso,gso.dSYM,c}
 	rm -rf $(MODULE_PATH)/gracelib.o
 
-.git/hooks/commit-msg: tools/validate-commit-message
+.git/hooks/commit-msg: ./tools/validate-commit-message
 	@ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
