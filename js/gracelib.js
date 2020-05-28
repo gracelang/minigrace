@@ -1948,7 +1948,7 @@ GraceBlock.prototype.noSuchMethodHandler = {
                 const closeMatches = closeMatchesForMethodNamed(numericName, recvr);
                 let suggestions = "";
                 if (closeMatches.length !== 0) {
-                    let options = readableOptions(closeMatches.sort().map(n => canonicalName(n)));
+                    let options = readableOptions(closeMatches.sort());
                     suggestions = "  Did you mean " + options + "?";
                 }
                 throw new GraceExceptionPacket(NoSuchMethodErrorObject,
@@ -2752,36 +2752,38 @@ function numericMethodName(name) {
     return output;
 }
 function dealWithNoMethod(name, target, args) {
-    var dollarIx = name.indexOf("$");
+    const dollarIx = name.indexOf("$");
     if (dollarIx <= 1) {
+        let cName = canonicalMethodName(name);
         if (target.noSuchMethodHandler) {
             return callmethod(target.noSuchMethodHandler, "apply(3)", [3],
-                new GraceString(canonicalMethodName(name)), args, target);
+                new GraceString(cName), args, target);
         } else {
-            var closeMatches = closeMatchesForMethodNamed(name, target);
+            var closeMatches = closeMatchesForMethodNamed(cName, target);
             var suggestions = "";
             if (closeMatches.length !== 0) {
                 suggestions = "  Did you mean " + readableOptions(closeMatches) + "?";
             }
             throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("no method " + canonicalMethodName(name) + " on " +
+                new GraceString("no method " + cName + " on " +
                     describe(target) + "." + suggestions));
         }
     } else {
-        var baseName = name.substring(0, dollarIx);
+        const baseName = name.substring(0, dollarIx);
+        let cName = canonicalMethodName(baseName);
         if (typeof target.methods[baseName] === "function") {
             throw new GraceExceptionPacket(ProgrammingErrorObject,
                 new GraceString("attempting to inherit from '" +
-                    canonicalMethodName(baseName) + "' on " +
+                    cName + "' on " +
                     describe(target) + ". This is not a fresh method."));
         } else {
-            closeMatches = closeMatchesForMethodNamed(name, target);
+            closeMatches = closeMatchesForMethodNamed(cName, target);
             suggestions = "";
             if (closeMatches.length !== 0) {
                 suggestions = "  Did you mean " + readableOptions(closeMatches) + "?";
             }
             throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("no method " + canonicalMethodName(baseName) + " on " +
+                new GraceString("no method " + cName + " on " +
                     describe(target) + "." + suggestions));
         }
     }
