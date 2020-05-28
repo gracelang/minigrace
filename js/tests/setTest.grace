@@ -301,8 +301,8 @@ trait setTest {
             assert (oneToFive.allSatisfy { x -> x ≠ 6 }) description "one of oneToFive == 6"
         }
         method testSetMultipleRemoves {
-            // this test causes set to fill up with removed tombestones,
-            // even though it stillhas plenty of space
+            // this test causes set to fill up with removed tombstones,
+            // even though it still has plenty of space
             var smallSet := setUnderTestWith [1]
             assert (smallSet) shouldBe (setUnderTestWith [1])
             (2..1000).do { each → 
