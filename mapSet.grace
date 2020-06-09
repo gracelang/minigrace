@@ -172,6 +172,17 @@ class set⟦T⟧ (initialContents: Collection⟦T⟧) -> collections.Set⟦T⟧ 
             separatedBy { s := s ++ ", " }
         s ++ "\}"
     }
+    method asStringWithRemovals {
+        "mapSet {size}/{allocated} \{" ++ native "js" code ‹
+        let t = this.data.table;
+        result = "";
+        for (let h of t.keys()) {
+            result = result + h + "->" + request(t.get(h), "asString")._value + " ";
+        }
+        result = new GraceString(result + "}");
+        ›
+    }
+
     method do(block1) {
         native "js" code ‹
         let t = this.data.table;
