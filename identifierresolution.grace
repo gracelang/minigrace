@@ -867,7 +867,6 @@ method generateGctForModule(module) {
         def subList = list.empty
         def vName = pathsToProcess.anyone
         pathsToProcess.remove(vName)
-        util.log 45 verbose "        removed {vName}"
         def vNameScope = ms.scopeForDottedName(vName)
         vNameScope.keysAndKindsDo { subName, subKnd ->
             if (subKnd.forGct) then {
