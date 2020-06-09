@@ -281,6 +281,10 @@ method findJsFile (jsFileName:filePath.FilePath) suchThat (p:Predicate1) otherwi
         rejects.add(candidate)
     }
     def locations = filePath.split(sys.environ.at "GRACE_MODULE_PATH")
+    def od = util.outDir
+    if (locations.contains(od).not) then {
+        locations.add(od)
+    }
     locations.do { each ->
         if (directoryPrefix ≠ "./") then {
             candidate := candidate.copy.setDirectory(each ++ directoryPrefix)
