@@ -957,24 +957,14 @@ method processGct(gct, importedModuleScope) {
         }
         if (knd == k.freshmeth) then {
             def objScope = importedModuleScope.scopeForDottedName(methName)
-            if (methName.endsWith "graphicApplicationSize(1)") then {
-                util.log 45 verbose "processing scope for {methName}"
-            }
             gct.at "methods-of:{methName}" ifAbsent {
-                util.log 45 verbose "no {moduleName} gct entry for \"methods-of:{methName}\""
                 []
             }.do { each ->
-                if (methName.endsWith "graphicApplicationSize(1)") then {
-                    util.log 45 verbose "adding `{each}` to {objScope.asDebugString}"
-                }
                 def eachName = each.split " ".first
                 addMethod(each) toScope (objScope)
                 def ns = newScopeIn(objScope) kind "object"
                 objScope.at(eachName) putScope(ns)
                 moduleMethods.add "{methName}.{each}"
-                if (eachName == "graphicApplicationSize(1)") then {
-                    util.log 45 verbose "objScope for {eachName} is {ns.asDebugString}\n    added `{methName}.{each}` to moduleMethods"
-                }
             }
         }
     }
@@ -1278,7 +1268,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 def ros = o.returnedObjectScope
                 def methodName = o.nameString
                 myParent.scope.at(o.nameString) putScope(ros)
-                util.log 45 verbose "putting returned object scope {ros.asDebugString} at \"{methodName}\" in {myParent.scope.asDebugString}"
                 if (anc.forebears.forebears.isEmpty.not) then {
                     // associates a dotted name with the returned object
                     // omit this if I'm at the module-level
@@ -1388,8 +1377,6 @@ method gatherUsedNames(objNode) is confidential {
     def objScope = objNode.scope
     objNode.usedTraits.do { t ->
         def traitScope = objScope.scopeReferencedBy(t.value)
-        util.log 46 verbose "Trait: {t.toGrace 0} with scope {traitScope}"
-
         def traitNode = traitScope.node
         def requiredNames = list.empty
         if (traitNode.isNull.not) then {
@@ -1408,9 +1395,6 @@ method gatherUsedNames(objNode) is confidential {
             if (kd.forUsers && excludedNames.contains(nm).not) then {
                 objScope.addName(nm) asA(k.fromTrait)
                 objScope.at(nm) putScope(traitScope.getScope(nm))
-                if (nm == "graphicApplicationSize(1)") then {
-                    util.log 45 verbose "put scope {traitScope.getScope(nm).asDebugString} at {nm} in {objScope.asDebugString}"
-                }
                 t.providedNames.add(nm)
                 if (kd.isRequired) then {
                     requiredNames.add(nm)
