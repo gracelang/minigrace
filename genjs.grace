@@ -8,12 +8,11 @@ import "xmodule" as xmodule
 import "errormessages" as errormessages
 import "identifierresolution" as identifierresolution
 import "identifierKinds" as k
-import "mapDict" as map
 import "shasum" as shasum
 import "buildinfo" as buildinfo
 import "regularExpression" as regex
 
-def nodeTally = map.dictionary.empty
+def nodeTally = dictionary.empty
 def inBrowser = native "js" code ‹
     result = (typeof global === "undefined" ? GraceTrue : GraceFalse);
 ›

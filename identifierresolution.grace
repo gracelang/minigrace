@@ -8,7 +8,6 @@ import "sys" as sys
 import "ast" as ast
 import "util" as util
 import "xmodule" as xmodule
-import "mapDict" as map
 import "errormessages" as errormessages
 import "identifierKinds" as k
 import "mirror" as mirror
@@ -36,11 +35,11 @@ type DeclKind = k.T
 
 class newScopeIn(parent') kind(variety') {
     use identityEquality
-    def elements is public = map.dictionary.empty
-    def elementScopes is public = map.dictionary.empty
-    def elementLines is public = map.dictionary.empty
-    def types is public = map.dictionary.empty
-    def methodTypes is public = map.dictionary.empty
+    def elements is public = dictionary.empty
+    def elementScopes is public = dictionary.empty
+    def elementLines is public = dictionary.empty
+    def types is public = dictionary.empty
+    def methodTypes is public = dictionary.empty
     def parent is public = parent'
     var hasParent is public := true
     def variety is public = variety'
@@ -1372,7 +1371,7 @@ method gatherUsedNames(objNode) is confidential {
     // For each of objNodes's used traits, gather the names
     // introduced by that trait, as modified by alias and exclude.
 
-    def traitMethods = map.dictionary.empty
+    def traitMethods = dictionary.empty
         // maps method names to the trait(s) that provide(s) them - for detecting conflicts
     def objScope = objNode.scope
     objNode.usedTraits.do { t ->

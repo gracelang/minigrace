@@ -197,7 +197,7 @@ def x:a.B = 3
 
 testSuite "type in type" with {
     test "type methods" by {
-        assert (A.methodNames) shouldBe (set.withAll ["m(_)", "B"])
+        assert (A.methodNames) shouldBe ["B", "m(_)"]
     }
     test "test type in object" by {
         assert (a.B) shouldBe (Number)

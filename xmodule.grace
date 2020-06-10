@@ -9,7 +9,6 @@ import "unixFilePath" as filePath
 import "shasum" as shasum
 import "regularExpression" as regex
 import "buildinfo" as buildinfo
-import "mapDict" as mapDict
 import "intrinsic" as intrinsic
 
 def CheckerFailure = Exception.refine "CheckerFailure"
@@ -42,8 +41,8 @@ type RangeSuggestions = {
     suggestions
 }
 
-def externalModules is public = mapDict.dictionary.empty  // dialect & direct imports
-def transitiveModules = mapDict.dictionary.empty          // transitive imports
+def externalModules is public = dictionary.empty  // dialect & direct imports
+def transitiveModules = dictionary.empty          // transitive imports
 
 type ModuleRecord = interface {  // a record describing an external module
     path -> filePath.FilePath    // the path to the source file

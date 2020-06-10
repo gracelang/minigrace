@@ -2,30 +2,30 @@ dialect "standard"
 import "util" as util
 import "unicode" as unicode
 import "errormessages" as errormessages
-import "mapDict" as map
 import "regularExpression" as re
 
-def keywords = map.dictionary.empty
-keywords.at "alias" put true
-keywords.at "as" put true
-keywords.at "class" put true
-keywords.at "def" put true
-keywords.at "dialect" put true
-keywords.at "exclude" put true
-keywords.at "import" put true
-keywords.at "inherit" put true
-keywords.at "interface" put true
-keywords.at "is" put true
-keywords.at "method" put true
-keywords.at "object" put true
-keywords.at "once" put true
-keywords.at "prefix" put true
-keywords.at "return" put true
-keywords.at "trait" put true
-keywords.at "type" put true
-keywords.at "use" put true
-keywords.at "var" put true
-keywords.at "where" put true
+def keywords = set
+    [ "alias"
+    , "as"
+    , "class"
+    , "def"
+    , "dialect"
+    , "exclude"
+    , "import"
+    , "inherit"
+    , "interface"
+    , "is"
+    , "method"
+    , "object"
+    , "once"
+    , "prefix"
+    , "return"
+    , "trait"
+    , "type"
+    , "use"
+    , "var"
+    , "where"
+]
 
 def keywordsStartingStatement = re.fromString ‹^(class|def|inherit|method|once|trait|type|use|var)\b›
 method lineSeemsToStartStatement -> Boolean {
@@ -631,7 +631,7 @@ def identifierState = object {
     method consume (c) {
         checkSeparator(c)
         if (!isIdentifierChar(c)) then {
-            if (keywords.containsKey(accum)) then {
+            if (keywords.contains(accum)) then {
                 emit(keywordToken(accum))
             } else {
                 emit(identifierToken(accum))

@@ -1,19 +1,16 @@
 dialect "standard"
-import "gUnit" as gU
-import "mapSet" as mapSet
+import "gUnit" as g
 import "setTest" as setTest
-
-def ConcurrentModification is public = mapSet.ConcurrentModification
 
 trait mapSetTest {
     class forMethod(m) {
         inherit setTest.setTest.forMethod(m)
 
         method setUnderTestWith (members) is override {
-            mapSet.set⟦Number⟧.withAll (members)
+            set⟦Number⟧ (members)
         }
-        method setUnderTestEmpty { mapSet.set.empty }
-        method setUnderTestFactory { mapSet.set }
+        method setUnderTestEmpty { set.empty }
+        method setUnderTestFactory { set }
     }
 }
 

@@ -2,7 +2,6 @@ dialect "standard"
 import "io" as io
 import "sys" as sys
 import "unixFilePath" as filePath
-import "mapDict" as map
 
 def defaultVerbosity is public = 30
 def defaultTarget is public = "js"
@@ -17,7 +16,7 @@ var lineposv := 1
 var vtagv := false
 var noexecv := false
 var targetv := defaultTarget
-var extensionsv := map.dictionary.empty
+var extensionsv := dictionary.empty
 var recurse is readable := true
 var dynamicModule is public := false
 def cLines is readable = list [ ]

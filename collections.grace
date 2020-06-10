@@ -21,8 +21,6 @@ def RequestError is public = ProgrammingError.refine "RequestError"
 def ConcurrentModification is public = ProgrammingError.refine "ConcurrentModification"
 def SizeUnknown is public = Exception.refine "SizeUnknown"
 
-method for (xs) do (action) { xs.do (action) }
-
 type List⟦T⟧ = Sequenceable⟦T⟧ & interface {
     add(x: T) -> List⟦T⟧
     addAll(xs: Collection⟦T⟧) -> List⟦T⟧
@@ -362,24 +360,19 @@ method max(a,b) is confidential {       // copied from standard prelude
     if (a > b) then { a } else { b }
 }
 
-// we used to define
-// once method emptySequence⟦T⟧ is confidential { ... }
-// and use this to define sequence.empty, but it turns out that getting the
-// correct emptySequence from the cache is slower than just creating a [ ]
+method emptyJSMap is confidential {
+    native "js" code ‹return new Map();›
+}
 
 class sequence⟦T⟧ {
-
     method asString { "the sequence factory" }
-
-    method empty { [] }
-
+    method empty { [] }   // faster than caching an emptySequence
     method with(x:T) { [] ++ [x] }
-
     method withAll(arg: Collection⟦T⟧) { [] ++ arg }
-
     method << (source) { [] ++ source }
-
 }
+
+method sequence⟦T⟧(xs) { [] ++ xs }
 
 type MinimalyIterable = interface {
     iterator -> Iterator
@@ -408,576 +401,512 @@ method hashAndCombine(aHash, anObj) {
 }
 
 class list⟦T⟧ {
-
     method asString { "the list factory" }
-
-    method empty -> List⟦T⟧ { withAll [] }
-
-    method with(x:T)  -> List⟦T⟧ { withAll [x] }
-
-    class withAll(a: Collection⟦T⟧) -> List⟦T⟧ {
-        use indexable⟦T⟧
-
-        var mods := 0
-        native "js" code ‹this._value = [];
-            this.className = 'list';›
-        a.do { each ->
-            native "js" code ‹this._value.push(var_each);›
-        }
-        method size {
-            native "js" code ‹return new GraceNum(this._value.length);›
-        }
-        method at(n) {
-            native "js" code ‹var idx = var_n._value;
-                var result = this._value[idx-1];
-                if (result !== undefined) return result;     // fast path
-                // Now investigate the cause of the problem:
-                checkBounds(this, var_n);›
-        }
-
-        method at(n) ifAbsent(action) {
-            native "js" code ‹var idx = var_n._value;
-                var result = this._value[idx-1];
-                if (result !== undefined) return result;     // fast path
-                return request(var_action, "apply", [0]);›
-        }
-
-        method at(n)put(x) {
-            mods := mods + 1
-            native "js" code ‹var  ix = var_n._value;
-                checkBounds(this, var_n, this._value.length + 1);
-                    // we allow n to be one greater than the current size
-                this._value[ix-1] = var_x;
-                return this;›
-        }
-
-        method add(x:T) {
-            mods := mods + 1
-            native "js" code ‹this._value.push(var_x);
-                return this;›
-        }
-        method addAll(l) {
-            mods := mods + 1
-            l.do { each ->
-                native "js" code ‹this._value.push(var_each);›
-            }
-            self
-        }
-        method push(x) {        // backward compatibility
-            mods := mods + 1
-            native "js" code ‹this._value.push(var_x);
-                return this;›
-        }
-        method addLast(x) {
-            mods := mods + 1
-            native "js" code ‹this._value.push(var_x);
-                return this;›
-        }
-        method removeLast {
-            mods := mods + 1
-            if (size == 0) then {
-                BoundsError.raise "you can't remove an element from an empty list"
-            }
-            native "js" code ‹return this._value.pop();›
-        }
-        method addAllFirst(l) {
-            mods := mods + 1
-            var ix := l.size;
-            while {ix > 0} do {
-                def each = l.at(ix)
-                ix := ix - 1
-                native "js" code ‹this._value.unshift(var_each);›
-            }
-            self
-        }
-        method addFirst(elem) {
-            mods := mods + 1
-            native "js" code ‹this._value.unshift(var_elem);›
-            self
-        }
-        method clear {
-            mods := mods + 1
-            native "js" code ‹this._value = [];
-                return this;›
-        }
-
-        method removeFirst {
-            removeAt(1)
-        }
-        method removeAt(n) {
-            mods := mods + 1
-            def removed = self.at(n)    // does the bounds check
-            native "js" code ‹this._value.splice(var_n._value - 1, 1);›
-            return removed
-        }
-
-        method remove(elt:T) {
-            def ix = self.indexOf(elt) ifAbsent {
-                NoSuchObject.raise "list does not contain {elt}"
-            }
-            removeAt(ix)
-            self
-        }
-
-        method remove(elt:T) ifAbsent(action:Procedure0) {
-            def ix = self.indexOf(elt) ifAbsent {
-                action.apply
-                return self
-            }
-            removeAt(ix)
-            self
-        }
-
-        method removeAll(vs: Collection⟦T⟧) {
-            removeAll(vs) ifAbsent { NoSuchObject.raise "list does not contain object" }
-            self
-        }
-        method removeAll(vs: Collection⟦T⟧) ifAbsent(action:Procedure0)  {
-            for (vs) do { each ->
-                def ix = indexOf(each) ifAbsent { 0 }
-                if (ix ≠ 0) then {
-                    removeAt(ix)
-                } else {
-                    action.apply
-                }
-            }
-            self
-        }
-        method insert(elt:T) at(n) {
-            mods := mods + 1
-            native "js" code ‹checkBounds(this, var_n, this._value.length + 1);
-                this._value.splice(var_n._value - 1, 0, var_elt);›
-            self
-        }
-        method pop { removeLast }
-        method reversed {
-            def result = list.empty
-            do { each -> result.addFirst(each) }
-            result
-        }
-        method reverse {
-            mods := mods + 1
-            var hiIx := size
-            var loIx := 1
-            while {loIx < hiIx} do {
-                def hiVal = self.at(hiIx)
-                self.at(hiIx) put (self.at(loIx))
-                self.at(loIx) put (hiVal)
-                hiIx := hiIx - 1
-                loIx := loIx + 1
-            }
-            self
-        }
-        method ++ (o:Collection⟦T⟧) {
-            def l = list.withAll(self)
-            l.addAll(o)
-        }
-        method asString {
-            var s := "list ["
-            do { each -> s := s ++ each.asString }
-                  separatedBy { s := s ++ ", " }
-            s ++ "]"
-        }
-        method asDebugString {
-            var s := "list ["
-            do { each -> s := s ++ each.asDebugString }
-                  separatedBy { s := s ++ ", " }
-            s ++ "]"
-        }
-        method do(block1) {
-            def iMods = mods
-            var i := 1
-            while {i ≤ size} do {
-                if (iMods ≠ mods) then {
-                    ConcurrentModification.raise (asDebugString)
-                }
-                block1.apply(self.at(i))
-                i := i + 1
-            }
-        }
-        method iterator {
-            object {
-                def iMods = mods
-                var idx := 1
-                method asDebugString { "{asString}⟪{idx}⟫" }
-                method asString { "aListIterator" }
-                method hasNext { idx <= size }
-                method next {
-                    if (iMods != mods) then {
-                        ConcurrentModification.raise (asDebugString)
-                    }
-                    if (idx > size) then { IteratorExhausted.raise "on list" }
-                    def ret = at(idx)
-                    idx := idx + 1
-                    ret
-                }
-            }
-        }
-        method values {
-            self
-        }
-        method keys {
-            self.indices
-        }
-        method sortBy(sortBlock:Function2) {
-            mods := mods + 1
-            native "js" code ‹var compareFun = function compareFun(a, b) {
-                    var res = callmethod(var_sortBlock, "apply(2)", [2], a, b);
-                    if (res.className == "number") return res._value;
-                    throw new GraceExceptionPacket(TypeErrorObject,
-                           new GraceString("sort block in list.sortBy method did not return a number"));
-          };
-          this._value.sort(compareFun);›
-            self
-        }
-        method sort {
-            sortBy { l, r ->
-                if (l == r) then {0}
-                    elseif {l < r} then {-1}
-                    else {1}
-            }
-        }
-        method sortedBy(sortBlock:Function2) {
-            copy.sortBy(sortBlock)
-        }
-        method sorted {
-            copy.sort
-        }
-        method copy {
-            outer.withAll(self)
-        }
-        method << (source) {
-            self.addAll(source)
-        }
-    }   // end of list.withAll
-
-    method << (source) { self.withAll(source) }
-
-}   // end of list class
-
-def unused = object {
-    var unused := true
-    def key is public = self
-    def value is public = self
-    method asString { "unused" }
-    method == (other) { self.isMe(other) }
-    method ≠ (other) { self.isMe(other).not }
-    method hash { self.myIdentityHash }
+    method empty -> List⟦T⟧ { list [] }
+    method with(x:T)  -> List⟦T⟧ { list [x] }
+    method withAll(xs) -> List⟦T⟧ { list (xs) }
+    method << (source) { list (source) }
 }
 
+class list⟦T⟧ (a: Collection⟦T⟧) -> List⟦T⟧ {
+    use indexable⟦T⟧
+
+    var mods := 0
+    native "js" code ‹this._value = [];
+        this.className = 'list';›
+    a.do { each ->
+        native "js" code ‹this._value.push(var_each);›
+    }
+    method size {
+        native "js" code ‹return new GraceNum(this._value.length);›
+    }
+    method at(n) {
+        native "js" code ‹var idx = var_n._value;
+            var result = this._value[idx-1];
+            if (result !== undefined) return result;     // fast path
+            // Now investigate the cause of the problem:
+            checkBounds(this, var_n);›
+    }
+
+    method at(n) ifAbsent(action) {
+        native "js" code ‹var idx = var_n._value;
+            var result = this._value[idx-1];
+            if (result !== undefined) return result;     // fast path
+            return request(var_action, "apply", [0]);›
+    }
+
+    method at(n)put(x) {
+        mods := mods + 1
+        native "js" code ‹var  ix = var_n._value;
+            checkBounds(this, var_n, this._value.length + 1);
+                // we allow n to be one greater than the current size
+            this._value[ix-1] = var_x;
+            return this;›
+    }
+
+    method add(x:T) {
+        mods := mods + 1
+        native "js" code ‹this._value.push(var_x);
+            return this;›
+    }
+    method addAll(l) {
+        mods := mods + 1
+        l.do { each ->
+            native "js" code ‹this._value.push(var_each);›
+        }
+        self
+    }
+    method push(x) {        // backward compatibility
+        mods := mods + 1
+        native "js" code ‹this._value.push(var_x);
+            return this;›
+    }
+    method addLast(x) {
+        mods := mods + 1
+        native "js" code ‹this._value.push(var_x);
+            return this;›
+    }
+    method removeLast {
+        mods := mods + 1
+        if (size == 0) then {
+            BoundsError.raise "you can't remove an element from an empty list"
+        }
+        native "js" code ‹return this._value.pop();›
+    }
+    method addAllFirst(l) {
+        mods := mods + 1
+        var ix := l.size;
+        while {ix > 0} do {
+            def each = l.at(ix)
+            ix := ix - 1
+            native "js" code ‹this._value.unshift(var_each);›
+        }
+        self
+    }
+    method addFirst(elem) {
+        mods := mods + 1
+        native "js" code ‹this._value.unshift(var_elem);›
+        self
+    }
+    method clear {
+        mods := mods + 1
+        native "js" code ‹this._value = [];›
+        self
+    }
+
+    method removeFirst {
+        removeAt(1)
+    }
+    method removeAt(n) {
+        mods := mods + 1
+        def removed = self.at(n)    // does the bounds check
+        native "js" code ‹this._value.splice(var_n._value - 1, 1);›
+        return removed
+    }
+
+    method remove(elt:T) {
+        def ix = self.indexOf(elt) ifAbsent {
+            NoSuchObject.raise "list does not contain {elt}"
+        }
+        removeAt(ix)
+        self
+    }
+
+    method remove(elt:T) ifAbsent(action:Procedure0) {
+        def ix = self.indexOf(elt) ifAbsent {
+            action.apply
+            return self
+        }
+        removeAt(ix)
+        self
+    }
+
+    method removeAll(vs: Collection⟦T⟧) {
+        removeAll(vs) ifAbsent { NoSuchObject.raise "list does not contain object" }
+        self
+    }
+    method removeAll(vs: Collection⟦T⟧) ifAbsent(action:Procedure0)  {
+        vs.do { each ->
+            def ix = indexOf(each) ifAbsent { 0 }
+            if (ix ≠ 0) then {
+                removeAt(ix)
+            } else {
+                action.apply
+            }
+        }
+        self
+    }
+    method insert(elt:T) at(n) {
+        mods := mods + 1
+        native "js" code ‹checkBounds(this, var_n, this._value.length + 1);
+            this._value.splice(var_n._value - 1, 0, var_elt);›
+        self
+    }
+    method pop { removeLast }
+    method reversed {
+        def result = list.empty
+        do { each -> result.addFirst(each) }
+        result
+    }
+    method reverse {
+        mods := mods + 1
+        var hiIx := size
+        var loIx := 1
+        while {loIx < hiIx} do {
+            def hiVal = self.at(hiIx)
+            self.at(hiIx) put (self.at(loIx))
+            self.at(loIx) put (hiVal)
+            hiIx := hiIx - 1
+            loIx := loIx + 1
+        }
+        self
+    }
+    method ++ (o:Collection⟦T⟧) {
+        def l = list.withAll(self)
+        l.addAll(o)
+    }
+    method asString {
+        var s := "list ["
+        do { each -> s := s ++ each.asString }
+              separatedBy { s := s ++ ", " }
+        s ++ "]"
+    }
+    method asDebugString {
+        var s := "list ["
+        do { each -> s := s ++ each.asDebugString }
+              separatedBy { s := s ++ ", " }
+        s ++ "]"
+    }
+    method do(block1) {
+        def iMods = mods
+        var i := 1
+        while {i ≤ size} do {
+            if (iMods ≠ mods) then {
+                ConcurrentModification.raise (asDebugString)
+            }
+            block1.apply(self.at(i))
+            i := i + 1
+        }
+    }
+    method iterator {
+        object {
+            def iMods = mods
+            var idx := 1
+            method asDebugString { "{asString}⟪{idx}⟫" }
+            method asString { "aListIterator" }
+            method hasNext { idx <= size }
+            method next {
+                if (iMods != mods) then {
+                    ConcurrentModification.raise (asDebugString)
+                }
+                if (idx > size) then { IteratorExhausted.raise "on list" }
+                def ret = at(idx)
+                idx := idx + 1
+                ret
+            }
+        }
+    }
+    method values {
+        self
+    }
+    method keys {
+        self.indices
+    }
+    method sortBy(sortBlock:Function2) {
+        mods := mods + 1
+        native "js" code ‹var compareFun = function compareFun(a, b) {
+                var res = callmethod(var_sortBlock, "apply(2)", [2], a, b);
+                if (res.className == "number") return res._value;
+                throw new GraceExceptionPacket(TypeErrorObject,
+                       new GraceString("sort block in list.sortBy method did not return a number"));
+      };
+      this._value.sort(compareFun);›
+        self
+    }
+    method sort {
+        sortBy { l, r ->
+            if (l == r) then {0}
+                elseif {l < r} then {-1}
+                else {1}
+        }
+    }
+    method sortedBy(sortBlock:Function2) {
+        copy.sortBy(sortBlock)
+    }
+    method sorted {
+        copy.sort
+    }
+    method copy {
+        list⟦T⟧ (self)
+    }
+    method << (source) {
+        self.addAll(source)
+    }
+}   // end of list(_)
+
 def removed = object {
-    var removed := true
-    def key is public = self
-    def value is public = self
+    // Used as a tombstone to mark the location of a removed VALUE.
+    // The key, and the key-value binding object, remain in the dictionary
     method asString { "removed" }
     method == (other) { self.isMe(other) }
     method ≠ (other) { self.isMe(other).not }
     method hash { self.myIdentityHash }
 }
 
-class set⟦T⟧ {
+once class set⟦T⟧ -> CollectionFactory⟦T⟧ {
+    // A convenience object that provides conventional access to sets of Ts
 
-    method asString { "the set factory" }
+    method asString { "the set⟦{T}⟧ factory" }
+    method withAll(a: Collection⟦T⟧) { set⟦T⟧ (a) }
+    method with(x:T) { set⟦T⟧ [x] }
+    method empty { set⟦T⟧ [] }
+    method << (source) { set⟦T⟧ (source) }
+}
 
-    method withAll(a: Collection⟦T⟧) -> Set⟦T⟧ {
-        def cap = max (a.sizeIfUnknown{2} * 3 + 1, 8)
-        def result = ofCapacity (cap)
-        a.do { x -> result.add(x) }
+class set⟦T⟧ (initialContents: Collection⟦T⟧) -> Set⟦T⟧ {
+    // Answers a fresh set containing the elements in initialConetents
+
+    use collection⟦T⟧
+    var mods := 0
+    var table := emptyJSMap
+    var size is readable := 0
+
+    initialContents.do { x -> self.add(x) }
+
+    method isEmpty { size == 0 }
+
+    method addAll(elements) {
+        elements.do { each -> add(each) }
+        self    // for chaining
+    }
+
+    method add(x:T) {
+        native "js" code ‹var hc = request(var_x, "hash", [0])._value;
+            while (true) {
+                let entry = this.data.table.get(hc)
+                if (! entry) break;  // get answers undefined if hc is not present
+                if (var_removed === entry) {
+                    var recyclableHashCode = hc;
+                } else if (Grace_isTrue(request(entry, "==(1)", [1], var_x))) {
+                    return this;  // the element is already present
+                }
+                hc++;
+            }
+            if (recyclableHashCode) hc = recyclableHashCode;
+            this.data.table.set(hc, var_x);
+            this.data.mods = new GraceNum(this.data.mods._value + 1);
+            this.data.size = new GraceNum(this.data.size._value + 1);
+            return this;
+        ›
+    }
+
+    method rehash is confidential {
+        // makes a new map, without any of the removed entries
+        mods := mods + 1
+        size := 0;
+        native "js" code ‹
+        let oldT = this.data.table;
+        this.data.table = new Map();
+        for (let p of oldT.values()) {
+            if (var_removed !== p) {
+                request(this, 'add(1)', [1], p);
+            }
+        }
+        ›
+        self
+    }
+
+    method removeAll(elements) {
+        elements.do { x ->
+            remove (x) ifAbsent {
+                NoSuchObject.raise "set does not contain {x}"
+            }
+        }
+        self    // for chaining
+    }
+    method removeAll (elements) ifAbsent (action:Procedure0⟦T⟧) {
+        elements.do { x ->
+            remove(x) ifAbsent (action)
+        }
+        self    // for chaining
+    }
+    method clear {
+        mods := mods + 1
+        native "js" code ‹this.data.table.clear();›
+        size := 0
+        self
+    }
+
+    method remove (elt:T) ifAbsent (action:Procedure0⟦T⟧) {
+        native "js" code ‹
+        var hc = request(var_elt, "hash", [0])._value;
+        while (true) {
+            let entry = this.data.table.get(hc);
+            if (! entry) break;
+            if (Grace_isTrue(request(entry, "==(1)", [1], var_elt))) {
+                if (var_removed === entry) break;
+                this.data.table.set(hc, var_removed);
+                this.data.size = new GraceNum(this.data.size._value - 1);
+                this.data.mods = new GraceNum(this.data.mods._value + 1);
+                if (this.data.table.size > (2 * this.data.size._value))
+                    selfRequest(this, 'rehash');
+                return this;
+            }
+            hc++;
+        };›
+        action.apply
+    }
+    method remove(elt:T) {
+        remove (elt) ifAbsent {
+            NoSuchObject.raise "set does not contain {elt}"
+        }
+        self    // for chaining
+    }
+
+    method contains(x) {
+        native "js" code ‹
+        var hc = request(var_x, "hash", [0])._value;
+        while (true) {
+            let entry = this.data.table.get(hc);
+            if (! entry) break;
+            if (Grace_isTrue(request(entry, "==(1)", [1], var_x))) {
+                return GraceTrue;
+            }
+            hc++;
+        };
+        return GraceFalse;›
+    }
+    method find(booleanBlock) ifNone(notFoundBlock) {
+        self.do { each ->
+            if (booleanBlock.apply(each)) then { return each }
+        }
+        return notFoundBlock.apply
+    }
+    method anyone {
+        self.do { each -> return each }
+        NoSuchObject.raise "no element in set"
+    }
+    method asString {
+        var s := "set ["
+        do {each -> s := s ++ each.asString }
+            separatedBy { s := s ++ ", " }
+        s ++ "]"
+    }
+    method allocated is confidential {
+       native "js" code ‹return new GraceNum(this.data.table.size);›
+    }
+    method asDebugString {
+        var s := "mapSet {size}/{allocated}\{"
+        do {each -> s := s ++ each.asDebugString }
+            separatedBy { s := s ++ ", " }
+        s ++ "\}"
+    }
+    method asStringWithRemovals {
+        "mapSet {size}/{allocated} \{" ++ native "js" code ‹
+        let t = this.data.table;
+        result = "";
+        for (let h of t.keys()) {
+            result = result + h + "->" + request(t.get(h), "asString")._value + " ";
+        }
+        result = new GraceString(result + "}");
+        ›
+    }
+
+    method do(block1) {
+        native "js" code ‹
+        let t = this.data.table;
+        let iMods = this.data.mods._value;
+        for (let p of t.values()) {
+            if (var_removed != p) {
+                if (iMods !== this.data.mods._value)
+                    request(var_ConcurrentModification, "raise(1)", [1], request(this, "asDebugString", [0]));
+                request(var_block1, 'apply(1)', [1], p);
+            }
+        }
+        ›
+    }
+    class iterator {
+        def iMods = mods
+        var count := 1
+        def underlyingSet = outer;
+        native "js" code ‹this.data.allTheKeys = this.data.underlyingSet.data.table.keys();›
+        method hasNext { size >= count }
+        method next {
+            if (iMods != mods) then {
+                ConcurrentModification.raise (outer.asString)
+            }
+            if (size < count) then { IteratorExhausted.raise "over {outer.asString}" }
+            native "js" code ‹
+            while (true) {
+                let iResult = this.data.allTheKeys.next();
+                if (iResult.done) break;
+                let nextKey = iResult.value
+                let entry = this.data.underlyingSet.data.table.get(nextKey);
+                    if (var_removed !== entry) {
+                        this.data.count = new GraceNum(this.data.count._value + 1);
+                        return entry;
+                    }
+            }
+            console.warn("broke out of iterator while loop");
+            ›
+            IteratorExhausted.raise "(JSIterator) over {outer.asString}"
+        }
+    }
+
+    method ==(other) {
+        if (Collection.matches(other)) then {
+            if (other.size ≠ self.size) then { return false }
+            other.do { each ->
+                if (! self.contains(each)) then {
+                    return false
+                }
+            }
+            true
+        } else {
+            false
+        }
+    }
+    method hash {
+        // we have to sort our elements to obtain the same hash for two equal sets
+        list(self).sort.hash
+    }
+    method ≠ (other) { (self == other).not }
+    method copy {
+        set⟦T⟧ (self)
+    }
+    method ++ (other:Collection⟦T⟧) {
+    // set union
+        copy.addAll(other)
+    }
+    method -- (other:Collection⟦T⟧) {
+    // set difference
+        def result = set.empty
+        self.do {v->
+            if (!other.contains(v)) then {
+                result.add(v)
+            }
+        }
         result
     }
-    method with(x:T) -> Set⟦T⟧ {
-        empty.add(x)
+    method ** (other) {
+    // set intersection
+        set (filter {each -> other.contains(each)})
     }
-    method empty -> Set⟦T⟧ {
-        ofCapacity 8
+    method isSubset(s2: Set⟦T⟧) {
+        self.do{ each ->
+            if (s2.contains(each).not) then { return false }
+        }
+        return true
     }
 
-    method << (source) { self.withAll(source) }
-
-    class ofCapacity(cap) -> Set⟦T⟧ is confidential {
-        use collection⟦T⟧
-        var mods := 0
-        var inner := primitiveArray.new(cap)
-        var size is readable := 0
-        var removals := 0
-        (0..(cap - 1)).do { i ->
-            inner.at (i) put (unused)
+    method isSuperset(s2: Collection⟦T⟧) {
+        s2.do{ each ->
+            if (self.contains(each).not) then { return false }
         }
-
-        method isEmpty { size == 0 }
-
-        method addAll(elements) {
-            mods := mods + 1
-            for (elements) do { x ->
-                if (! contains(x)) then {
-                    def t = findPositionForAdd(x)
-                    inner.at(t)put(x)
-                    size := size + 1
-                    expandIfNecessary
-                }
-            }
-            self    // for chaining
-        }
-
-        method add(x:T) {
-            if (! contains(x)) then {
-                mods := mods + 1
-                def t = findPositionForAdd(x)
-                inner.at(t)put(x)
-                size := size + 1
-                expandIfNecessary
-            }
-            self    // for chaining
-        }
-
-        method removeAll(elements) {
-            for (elements) do { x ->
-                remove (x) ifAbsent {
-                    NoSuchObject.raise "set does not contain {x}"
-                }
-            }
-            self    // for chaining
-        }
-        method removeAll(elements)ifAbsent(block:Procedure1⟦T⟧) {
-            mods := mods + 1
-            for (elements) do { x ->
-                var t := findPosition(x)
-                if (inner.at(t) == x) then {
-                    inner.at(t) put (removed)
-                    removals := removals + 1
-                    size := size - 1
-                } else {
-                    block.apply(x)
-                }
-            }
-            expandIfNecessary
-            self    // for chaining
-        }
-        method clear {
-            mods := mods + 1
-            inner := primitiveArray.new(cap)
-            size := 0
-            self
-        }
-
-        method remove (elt:T) ifAbsent (block) {
-            var t := findPosition(elt)
-            if (inner.at(t) == elt) then {
-                inner.at(t) put (removed)
-                removals := removals + 1
-                mods := mods + 1
-                size := size - 1
-            } else {
-                block.apply
-            }
-            self    // for chaining
-        }
-
-        method remove(elt:T) {
-            remove (elt) ifAbsent {
-                NoSuchObject.raise "set does not contain {elt}"
-            }
-            self    // for chaining
-        }
-
-        method contains(x) {
-            var t := findPosition(x)
-            if (inner.at(t) == x) then {
-                return true
-            }
-            return false
-        }
-        method find(booleanBlock)ifNone(notFoundBlock) {
-            self.do { each ->
-                if (booleanBlock.apply(each)) then { return each }
-            }
-            return notFoundBlock.apply
-        }
-        method anyone {
-            self.do { each -> return each }
-            NoSuchObject.raise "no element in set"
-        }
-        method findPosition(x) is confidential {
-            def h = x.hash
-            def s = inner.size
-            var t := h % s
-            var jump := 5
-            var candidate
-            while {
-                candidate := inner.at(t)
-                unused ≠ candidate
-            } do {
-                if (candidate == x) then {
-                    return t
-                }
-                if (jump ≠ 0) then {
-                    t := (t * 3 + 1) % s
-                    jump := jump - 1
-                } else {
-                    t := (t + 1) % s
-                }
-            }
-            return t
-        }
-        method findPositionForAdd(x) is confidential {
-            def h = x.hash
-            def s = inner.size
-            var t := h % s
-            var jump := 5
-            var candidate
-            while {
-                candidate := inner.at(t)
-                (unused != candidate) && (removed != candidate)
-            } do {
-                if (candidate == x) then {
-                    return t
-                }
-                if (jump != 0) then {
-                    t := (t * 3 + 1) % s
-                    jump := jump - 1
-                } else {
-                    t := (t + 1) % s
-                }
-            }
-            return t
-        }
-
-        method asString {
-            var s := "set ["
-            do {each -> s := s ++ each.asString }
-                separatedBy { s := s ++ ", " }
-            s ++ "]"
-        }
-        method asDebugString {
-            var s := "set\{"
-            do {each -> s := s ++ each.asDebugString }
-                separatedBy { s := s ++ ", " }
-            s ++ "\}"
-        }
-        method extend(l) {
-            for (l) do {i->
-                add(i)
-            }
-        }
-        method do(block1) {
-            def iMods = mods
-            var i := 0
-            var found := 0
-            var candidate
-            while {found < size} do {
-                if (iMods != mods) then {
-                    ConcurrentModification.raise (outer.asDebugString)
-                }
-                candidate := inner.at(i)
-                if ((unused ≠ candidate) && (removed ≠ candidate)) then {
-                    found := found + 1
-                    block1.apply(candidate)
-                }
-                i := i + 1
-            }
-        }
-        method iterator {
-            object {
-                def iMods = mods
-                var count := 1
-                var idx := -1
-                method hasNext { size >= count }
-                method next {
-                    var candidate
-                    def innerSize = inner.size
-                    while {
-                        idx := idx + 1
-                        if (iMods != mods) then {
-                            ConcurrentModification.raise (outer.asDebugString)
-                        }
-                        if (idx >= innerSize) then {
-                            IteratorExhausted.raise "iterator over {outer.asString}"
-                        }
-                        candidate := inner.at(idx)
-                        (unused == candidate) || (removed == candidate)
-                    } do { }
-                    count := count + 1
-                    candidate
-                }
-            }
-        }
-
-        method expandIfNecessary is confidential {
-            // this might actually reduce the size of inner, if
-            // it contains many removals
-
-            if ((removals + size) > (inner.size / 2)) then {
-                def n = max(size * 2, 8)
-                def oldInner = inner
-                size := 0
-                removals := 0
-                inner := primitiveArray.new(n)
-                for (0..(inner.size-1)) do { i ->
-                    inner.at(i)put(unused)
-                }
-                oldInner.do { oldValue ->
-                    if ((unused ≠ oldValue) && (removed ≠ oldValue)) then {
-                        add(oldValue)
-                    }
-                }
-            }
-        }
-        method ==(other) {
-            if (Collection.matches(other)) then {
-                var otherSize := 0
-                other.do { each ->
-                    otherSize := otherSize + 1
-                    if (! self.contains(each)) then {
-                        return false
-                    }
-                }
-                otherSize == self.size
-            } else {
-                false
-            }
-        }
-        method hash {
-            // we have to sort our elements to obtain the same hash for two equal sets
-            list.withAll(self).sort.hash
-        }
-        method ≠ (other) { (self == other).not }
-        method copy {
-            outer.withAll(self)
-        }
-        method ++ (other:Collection⟦T⟧) {
-        // set union
-            copy.addAll(other)
-        }
-        method -- (other:Collection⟦T⟧) {
-        // set difference
-            def result = set.empty
-            for (self) do {v->
-                if (!other.contains(v)) then {
-                    result.add(v)
-                }
-            }
-            result
-        }
-        method ** (other) {
-        // set intersection
-            set.withAll((filter {each -> other.contains(each)}))
-        }
-        method isSubset(s2: Set⟦T⟧) {
-            self.do{ each ->
-                if (s2.contains(each).not) then { return false }
-            }
-            return true
-        }
-
-        method isSuperset(s2: Collection⟦T⟧) {
-            s2.do{ each ->
-                if (self.contains(each).not) then { return false }
-            }
-            return true
-        }
-        method << (source) {
-            self.addAll(source)
-        }
+        return true
+    }
+    method << (source) {
+        self.addAll(source)
     }
 }
 
@@ -986,413 +915,426 @@ type ComparableToDictionary⟦K,T⟧ = interface {
     at(_:K)ifAbsent(_) -> T
 }
 
-class dictionary⟦K,T⟧ {
-
+once class dictionary⟦K,T⟧ {
     method asString { "the dictionary factory" }
-
-    method with(aBinding) {
-        empty.add(aBinding)
-    }
-
-    method withAll(initialBindings: Collection⟦Binding⟦K,T⟧⟧) {
-        // we can't say -> Dictionary⟦K,T⟧, because checking that (dynamically)
-        // requires building a dictionary for the memo table in the Dictionary type
-
-        def result = empty
-        initialBindings.do { b:Binding -> result.add(b) }
-        result
-    }
-
+    method empty { dictionary⟦K,T⟧ [] }
+    method with(aBinding) { dictionary⟦K,T⟧ [aBinding] }
+    method withAll(initial: Collection⟦Binding⟦K,T⟧⟧) { dictionary⟦K,T⟧ (initial) }
     method << (source:Collection⟦Binding⟦K,T⟧⟧) { self.withAll(source) }
+}
 
-    class empty {
-        // we can't say -> Dictionary⟦K,T⟧, because checking that (dynamically)
-        // requires building a dictionary for the memo table in the Dictionary type
+class dictionary⟦K, T⟧ (initialBindings: Collection⟦Binding⟦K,T⟧⟧) {
 
-        use collection⟦T⟧
-        var mods := 0
-        var numBindings := 0
-        var removals := 0
-        var inner := primitiveArray.new(8)
-        for (0..(inner.size-1)) do { i ->
-            inner.at(i)put(unused)
-        }
-        method size { numBindings }
-        method at(key')put(value') {
-            mods := mods + 1
-            var t := findPositionForAdd(key')
-            if ((unused == inner.at(t)) || (removed == inner.at(t))) then {
-                numBindings := numBindings + 1
+    use collection⟦T⟧
+    var mods is readable := 0
+    var numBindings := 0
+    var table := emptyJSMap
+
+    initialBindings.do { b:Binding -> self.add(b) }
+
+    method size { numBindings }
+
+    method at (k) put (v) {
+        mods := mods + 1
+        native "js" code ‹var hc = request(var_k, "hash", [0])._value;
+            while (true) {
+                let b = this.data.table.get(hc)
+                if (! b) break;  // get answers undedined if the key is not present
+                if (Grace_isTrue(request(b.key, "==(1)", [1], var_k))) {
+                    if (var_removed === b.value) {
+                        this.data.numBindings = new GraceNum(this.data.numBindings._value + 1);
+                    }   // otherwise, we are overwriting an existing binding
+                    b.value = var_v;
+                    return this;
+                }
+                hc++;
             }
-            inner.at(t)put(binding.key(key')value(value'))
-            expandIfNecessary
-            self    // for chaining
-        }
-        method add(aBinding) {
-            mods := mods + 1
-            var t := findPositionForAdd (aBinding.key)
-            if ((unused == inner.at(t)) || (removed == inner.at(t))) then {
-                numBindings := numBindings + 1
+            this.data.table.set(hc, {key: var_k, value: var_v});
+            this.data.numBindings = new GraceNum(this.data.numBindings._value + 1);
+            return this;
+        ›
+    }
+    method add(aBinding) {
+        self.at (aBinding.key) put (aBinding.value)
+    }
+    method addAll(bindings) {
+        bindings.do{ each -> add(each) }
+        self    // for chaining
+    }
+    method rehash is confidential {
+        // makes a new map, without any of the removed entries
+        mods := mods + 1
+        numBindings := 0;
+        native "js" code ‹
+        let oldT = this.data.table;
+        this.data.table = new Map();
+        for (let p of oldT.values()) {
+            if (var_removed !== p.value) {
+                request(this, 'at(1)put(1)', [2], p.key, p.value);
             }
-            inner.at(t)put(aBinding)
-            expandIfNecessary
-            self    // for chaining
         }
-        method addAll(bindings) {
-            bindings.do{ each -> add(each) }
-            self    // for chaining
-        }
-        method at(k) {
-            var b := inner.at(findPosition(k))
-            if (b.key == k) then {
-                return b.value
+        ›
+        self
+    }
+    method at(k) {
+        native "js" code ‹
+        var hc = request(var_k, "hash", [0])._value;
+        while (true) {
+            let b = this.data.table.get(hc);
+            if (! b) break;
+            if (Grace_isTrue(request(b.key, "==(1)", [1], var_k))) {
+                if (var_removed === b.value) break;
+                return b.value;
             }
-            NoSuchObject.raise "dictionary does not contain entry with key {k}"
-        }
-        method at(k) ifAbsent(action) {
-            var b := inner.at(findPosition(k))
-            if (b.key == k) then {
-                return b.value
+            hc++;
+        }›
+        NoSuchObject.raise "dictionary does not contain entry with key {k}"
+    }
+    method at(k) ifAbsent(action) {
+        native "js" code ‹
+        var hc = request(var_k, "hash", [0])._value;
+        while (true) {
+            let b = this.data.table.get(hc);
+            if (! b) break;
+            if (Grace_isTrue(request(b.key, "==(1)", [1], var_k))) {
+                if (var_removed === b.value) break;
+                return b.value;
             }
+            hc++;
+        }›
+        action.apply
+    }
+    method containsKey(k) {
+        native "js" code ‹
+        var hc = request(var_k, "hash", [0])._value;
+        while (true) {
+            let b = this.data.table.get(hc);
+            if (! b) break;
+            if (Grace_isTrue(request(b.key, "==(1)", [1], var_k))) {
+                return (var_removed === b.value ? GraceFalse : GraceTrue);
+            }
+            hc++;
+        };
+        return GraceFalse;›
+    }
+    method removeAllKeys(keys) {
+        mods := mods + 1
+        keys.do { k → removeKey(k) }
+        self
+    }
+    method removeKey(k) {
+        mods := mods + 1
+        native "js" code ‹
+        var hc = request(var_k, "hash", [0])._value;
+        while (true) {
+            let b = this.data.table.get(hc);
+            if (! b) break;
+            if (Grace_isTrue(request(b.key, "==(1)", [1], var_k))) {
+                if (var_removed === b.value) break;
+                b.value = var_removed;
+                this.data.numBindings = new GraceNum(this.data.numBindings._value - 1);
+                return this;
+            }
+            hc++;
+        };›
+        NoSuchObject.raise "dictionary does not contain entry with key {k}"
+    }
+    method removeKey(k) ifAbsent (action) {
+        native "js" code ‹
+        var hc = request(var_k, "hash", [0])._value;
+        while (true) {
+            let b = this.data.table.get(hc);
+            if (! b) break;
+            if (Grace_isTrue(request(b.key, "==(1)", [1], var_k))) {
+                if (var_removed === b.value) break;
+                b.value = var_removed;
+                this.data.numBindings = new GraceNum(this.data.numBindings._value - 1);
+                this.data.mods = new GraceNum(this.data.mods._value + 1)
+                if (this.data.table.size > (2 * this.data.numBindings._value))
+                    selfRequest(this, 'rehash');
+                return this;
+            }
+            hc++;
+        };›
+        action.apply
+    }
+    method removeAllValues(removals) {
+        // remove all bindings with any of the values in removals
+        mods := mods + 1
+        native "js" code ‹
+        let t = this.data.table
+        for (let b of t.values()) {
+            if (Grace_isTrue(request(var_removals, 'contains(1)', [1], b.value))) {
+                b.value = var_removed;
+                this.data.numBindings = new GraceNum(this.data.numBindings._value - 1);
+            }
+        };
+        if (this.data.table.size > (2 * this.data.numBindings._value))
+            selfRequest(this, 'rehash');
+        ›
+        self
+    }
+    method removeValue(v) {
+        // remove all bindings with value v
+        mods := mods + 1
+        def initialNumBindings = numBindings
+        native "js" code ‹
+        let t = this.data.table
+        for (let b of t.values()) {
+            if (Grace_isTrue(request(var_v, '==(1)', [1], b.value))) {
+                b.value = var_removed;
+                this.data.numBindings = new GraceNum(this.data.numBindings._value - 1);
+            }
+        };›
+        if (numBindings == initialNumBindings) then {
+            NoSuchObject.raise "dictionary does not contain any entries with value {v}"
+        }
+        self
+    }
+    method removeValue(v) ifAbsent (action) {
+        // remove all bindings with value v
+        mods := mods + 1
+        def initialNumBindings = numBindings
+        native "js" code ‹
+        let t = this.data.table
+        for (let b of t.values()) {
+            if (Grace_isTrue(request(var_v, '==(1)', [1], b.value))) {
+                b.value = var_removed;
+                this.data.numBindings = new GraceNum(this.data.numBindings._value - 1);
+            }
+        };›
+        if (numBindings == initialNumBindings) then {
             action.apply
         }
-        method containsKey(k) {
-            var t := findPosition(k)
-            if (inner.at(t).key == k) then {
-                return true
-            }
-            false
+        self
+    }
+    method clear {
+        native "js" code ‹this.data.table.clear();›
+        numBindings := 0
+        mods := mods + 1
+        self
+    }
+    method containsValue(v) {
+        self.valuesDo{ each ->
+            if (v == each) then { return true }
         }
-        method removeAllKeys(keys) {
-            mods := mods + 1
-            for (keys) do { k ->
-                var t := findPosition(k)
-                if (inner.at(t).key == k) then {
-                    inner.at(t)put(removed)
-                    numBindings := numBindings - 1
-                } else {
-                    NoSuchObject.raise "dictionary does not contain entry with key {k}"
-                }
+        false
+    }
+    method contains(v) { containsValue(v) }
+    method asString {
+        // do()separatedBy won't work, because it iterates over values,
+        // and we need an iterator over bindings.
+        native "js" code ‹
+        var s = "dictionary [";
+        var first = true;
+        let t = this.data.table;
+        for (let p of t.values()) {
+            if (var_removed !== p.value) {
+                if (first)
+                    first = false;
+                else
+                    s += ", ";
+                s += request(p.key, "asString", [0])._value;
+                s += "::";
+                s += request(p.value, "asString", [0])._value;
             }
-            self
         }
-        method removeKey(k:K) {
-            mods := mods + 1
-            var t := findPosition(k)
-            if (inner.at(t).key == k) then {
-                inner.at(t)put(removed)
-                numBindings := numBindings - 1
-            } else {
-                NoSuchObject.raise "dictionary does not contain entry with key {k}"
-            }
-            self
+        s += "]";
+        return new GraceString(s);
+    ›
+    }
+    method asDebugString {
+        native "js" code ‹
+        const t = this.data.table;
+        const size = this.data.numBindings._value;
+        const cap = t.size;
+        var s = "dict " + size + "/" + cap + "⟬";
+        var first = true;
+        for (let p of t.values()) {
+            if (first)
+                first = false;
+            else
+                s += ", ";
+            s += request(p.key, "asDebugString", [0])._value;
+            s += "::";
+            s += request(p.value, "asDebugString", [0])._value;
         }
-        method removeKey(k:K) ifAbsent (action:Function0⟦Unknown⟧) {
-            mods := mods + 1
-            var t := findPosition(k)
-            if (inner.at(t).key == k) then {
-                inner.at(t)put(removed)
-                numBindings := numBindings - 1
-            } else {
-                action.apply
-            }
-            self
-        }
-        method removeAllValues(valuesToBeRemoved) {
-            mods := mods + 1
-            for (0..(inner.size-1)) do {i->
-                def a = inner.at(i)
-                if (valuesToBeRemoved.contains(a.value)) then {
-                    inner.at(i)put(removed)
-                    removals := removals + 1
-                    numBindings := numBindings - 1
-                }
-            }
-            self
-        }
-        method removeValue(v) {
-            // remove all bindings with value v
-            mods := mods + 1
-            def initialNumBindings = numBindings
-            for (0..(inner.size-1)) do {i->
-                def a = inner.at(i)
-                if (v == a.value) then {
-                    inner.at (i) put (removed)
-                    numBindings := numBindings - 1
-                }
-            }
-            if (numBindings == initialNumBindings) then {
-                NoSuchObject.raise "dictionary does not contain entry with value {v}"
-            }
-            self
-        }
-        method removeValue(v) ifAbsent (action:Function0⟦Unknown⟧) {
-            // remove all bindings with value v
-            mods := mods + 1
-            def initialNumBindings = numBindings
-            for (0..(inner.size-1)) do {i->
-                def a = inner.at(i)
-                if (v == a.value) then {
-                    inner.at (i) put (removed)
-                    numBindings := numBindings - 1
-                }
-            }
-            if (numBindings == initialNumBindings) then {
-                action.apply
-            }
-            self
-        }
-        method clear {
-            inner := primitiveArray.new(8)
-            numBindings := 0
-            mods := mods + 1
-            for (0..(inner.size-1)) do { i ->
-                inner.at(i)put(unused)
-            }
-            self
-        }
-        method containsValue(v) {
-            self.valuesDo{ each ->
-                if (v == each) then { return true }
-            }
-            false
-        }
-        method contains(v) { containsValue(v) }
-
-        method findPosition(x) is confidential {
-            def h = x.hash
-            def s = inner.size
-            var t := h % s
-            var jump := 5
-            while { unused ≠ inner.at(t) } do {
-                if (inner.at(t).key == x) then {
-                    return t
-                }
-                if (jump != 0) then {
-                    t := (t * 3 + 1) % s
-                    jump := jump - 1
-                } else {
-                    t := (t + 1) % s
-                }
-            }
-            return t
-        }
-        method findPositionForAdd(x) is confidential {
-            def h = x.hash
-            def s = inner.size
-            var t := h % s
-            var jump := 5
-            while { (unused ≠ inner.at(t)) && (removed ≠ inner.at(t)) } do {
-                if (inner.at(t).key == x) then {
-                    return t
-                }
-                if (jump != 0) then {
-                    t := (t * 3 + 1) % s
-                    jump := jump - 1
-                } else {
-                    t := (t + 1) % s
-                }
-            }
-            return t
-        }
-        method asString {
-            // do(_)separatedBy(_) won't work; it iterates over values,
-            // and we need an iterator over bindings.
-            var s := "dictionary ["
-            var firstElement := true
-            for (0..(inner.size-1)) do {i->
-                def a = inner.at(i)
-                if ((unused ≠ a) && (removed ≠ a)) then {
-                    if (! firstElement) then {
-                        s := s ++ ", "
-                    } else {
-                        firstElement := false
-                    }
-                    s := s ++ "{a.key}::{a.value}"
-                }
-            }
-            s ++ "]"
-        }
-        method asDebugString {
-            var s := "dict⟬"
-            for (0..(inner.size-1)) do {i->
-                if (i > 0) then { s := s ++ ", " }
-                def a = inner.at(i)
-                if ((unused ≠ a) && (removed ≠ a)) then {
-                    s := s ++ "{i}→{a.key}::{a.value}"
-                } else {
-                    s := s ++ "{i}→{a.asDebugString}"
-                }
-            }
-            s ++ "⟭"
-        }
-        class keys -> Enumerable⟦K⟧ {
+        s += "⟭";
+        return new GraceString(s);
+    ›
+    }
+    method keys  {
+        def sourceDictionary = self
+        object {
             use enumerable⟦K⟧
             class iterator {
-                def sourceIterator = outer.outer.bindingsIterator
+                def sourceIterator = sourceDictionary.bindingsIterator
                 method hasNext { sourceIterator.hasNext }
                 method next { sourceIterator.next.key }
                 method asString {
-                    "an iterator over keys of {outer.outer}"
+                    "an iterator over keys of {sourceDictionary}"
                 }
             }
-            def size is public = outer.size
-            method asDebugString {
-                "a lazy sequence over keys of {outer}"
+            def size is public = sourceDictionary.size
+            method asString {
+                "a lazy sequence over keys of {sourceDictionary}"
             }
         }
-        class values -> Enumerable⟦T⟧ {
+    }
+    method values {
+        def sourceDictionary = self
+        object {
             use enumerable⟦T⟧
             class iterator {
-                def sourceIterator = outer.outer.bindingsIterator
+                def sourceIterator = sourceDictionary.bindingsIterator
+                // should be request on outer
                 method hasNext { sourceIterator.hasNext }
                 method next { sourceIterator.next.value }
                 method asString {
-                    "an iterator over values of {outer.outer}"
+                    "an iterator over values of {sourceDictionary}"
                 }
             }
-            def size is public = outer.size
-            method asDebugString {
-                "a lazy sequence over values of {outer}"
+            def size is public = sourceDictionary.size
+            method asString {
+                "a lazy sequence over values of {sourceDictionary}"
             }
         }
-        class bindings -> Enumerable⟦T⟧ {
+    }
+    method bindings {
+        def sourceDictionary = self
+        object {
             use enumerable⟦T⟧
-            method iterator { outer.bindingsIterator }
-            def size is public = outer.size
-            method asDebugString {
-                "a lazy sequence over bindings of {outer}"
+            method iterator { sourceDictionary.bindingsIterator }
+            // should be request on outer
+            def size is public = sourceDictionary.size
+            method asString {
+                "a lazy sequence over bindings of {sourceDictionary}"
             }
         }
-        method iterator -> Iterator⟦T⟧ { values.iterator }
-        class bindingsIterator -> Iterator⟦Binding⟦K, T⟧⟧ is confidential {
-            def iMods = mods
-            var count := 1
-            var idx := 0
-            var elt
-            method hasNext { size >= count }
-            method next {
-                if (iMods != mods) then {
-                    ConcurrentModification.raise (outer.asString)
-                }
-                if (size < count) then { IteratorExhausted.raise "over {outer.asString}" }
-                while {
-                    elt := inner.at(idx)
-                    (unused == elt) || (removed == elt)
-                } do {
-                    idx := idx + 1
-                }
-                count := count + 1
-                idx := idx + 1
-                elt
+    }
+    method iterator { values.iterator }
+    class bindingsIterator {
+        // this should be confidential, but can't be until `outer` is fixed.
+        def iMods = mods
+        var count := 1
+        def subjectDictionary = outer;
+        native "js" code ‹this.data.allTheKeys = this.data.subjectDictionary.data.table.keys();
+        ›
+        method hasNext { size >= count }
+        method next {
+            if (iMods != mods) then {
+                ConcurrentModification.raise (outer.asString)
             }
-        }
-        method expandIfNecessary is confidential {
-            // the new inner array might actually be smaller than the old inner,
-            // if there are a lot of removed entries
-
-            if ((removals + size) > (inner.size / 2)) then {
-                def n = size * 2
-                def oldInner = inner
-                inner := primitiveArray.new(n)
-                for (0..(n - 1)) do {i->
-                    inner.at(i)put(unused)
-                }
-                numBindings := 0
-                removals := 0
-                oldInner.do { each ->
-                    if ((unused ≠ each) && (removed ≠ each)) then {
-                        self.add(each) // reuse the binding
+            if (size < count) then { IteratorExhausted.raise "over {outer.asString}" }
+            native "js" code ‹
+            let binding = request(var_$module, 'binding', [0]);
+            while (true) {
+                let iResult = this.data.allTheKeys.next();
+                if (iResult.done) break;
+                let nextKey = iResult.value
+                let b = this.data.subjectDictionary.data.table.get(nextKey);
+                    if (var_removed !== b.value) {
+                        this.data.count = new GraceNum(this.data.count._value + 1);
+                        return request(binding, 'key(1)value(1)',  [1,1], b.key, b.value);
                     }
-                }
+            }
+            ›
+            // This exception should never be raised, because the (size < count) guard
+            // before the native code means that iResult.done will never occur
+            IteratorExhausted.raise "(JSIterator) over {outer.asString}"
+        }
+    }
+    method keysAndValuesDo(block2) {
+        native "js" code ‹
+        let t = this.data.table;
+        let iMods = this.data.mods._value;
+        for (let p of t.values()) {
+            if (var_removed !== p.value) {
+                if (iMods !== this.data.mods._value)
+                    request(var_ConcurrentModification, "raise(1)", [1], request(this, "asDebugString", [0]));
+                request(var_block2, 'apply(2)', [2], p.key, p.value);
             }
         }
-        method keysAndValuesDo(block2) {
-            for (0..(inner.size-1)) do {i->
-                def a = inner.at(i)
-                if ((unused ≠ a) && (removed ≠ a)) then {
-                    block2.apply(a.key, a.value)
-                }
+        ›
+    }
+    method keysDo(block1) {
+        native "js" code ‹
+        let t = this.data.table;
+        let iMods = this.data.mods._value;
+        for (let p of t.values()) {
+            if (var_removed !== p.value) {
+                if (iMods !== this.data.mods._value)
+                    request(var_ConcurrentModification, "raise(1)", [1], request(this, "asDebugString", [0]));
+                request(var_block1, 'apply(1)', [1], p.key);
             }
         }
-        method keysDo(block1) {
-            def iMods = mods
-            for (0..(inner.size-1)) do { i ->
-                if (iMods ≠ mods) then {
-                    ConcurrentModification.raise (asDebugString)
-                }
-                def a = inner.at(i)
-                if ((unused ≠ a) && (removed ≠ a)) then {
-                    block1.apply(a.key)
-                }
+        ›
+    }
+    method valuesDo(block1) {
+        native "js" code ‹
+        let t = this.data.table;
+        let iMods = this.data.mods._value;
+        for (let p of t.values()) {
+            if (var_removed != p.value) {
+                if (iMods !== this.data.mods._value)
+                    request(var_ConcurrentModification, "raise(1)", [1], request(this, "asDebugString", [0]));
+                request(var_block1, 'apply(1)', [1], p.value);
             }
         }
-        method valuesDo(block1) {
-            def iMods = mods
-            for (0..(inner.size-1)) do { i ->
-                if (iMods ≠ mods) then {
-                    ConcurrentModification.raise (asDebugString)
-                }
-                def a = inner.at(i)
-                if ((unused ≠ a) && (removed ≠ a)) then {
-                    block1.apply(a.value)
-                }
-            }
-        }
-        method do(block1) { valuesDo(block1) }
+        ›
+    }
+    method do(block1) { valuesDo(block1) }
 
-        method ==(other) {
-            match (other)
-              case { o:ComparableToDictionary⟦K,T⟧ ->
-                if (self.size != o.size) then {return false}
-                self.keysAndValuesDo { k, v ->
-                    if (o.at(k)ifAbsent{return false} != v) then {
-                        return false
-                    }
+    method ==(other) {
+        match (other) case { o:ComparableToDictionary⟦K,T⟧ ->
+            if (self.size != o.size) then {return false}
+            self.keysAndValuesDo { k, v ->
+                if (o.at(k)ifAbsent{return false} != v) then {
+                    return false
                 }
-                return true
-            } else {
-                return false
             }
+            return true
+        } else {
+            return false
         }
-        method ≠ (other) { (self == other).not }
+    }
+    method ≠ (other) { (self == other).not }
 
-        method copy {
-            def newCopy = dictionary.empty
-            self.keysAndValuesDo{ k, v ->
-                newCopy.at(k)put(v)
-            }
-            newCopy
+    method copy {
+        def newCopy = dictionary⟦K,T⟧ []
+        self.keysAndValuesDo{ k, v ->
+            newCopy.at(k) put(v)
         }
+        newCopy
+    }
 
-        method ++ (other:Collection⟦T⟧) {
-            // answers a new dictionary containing all my keys and the keys of other;
-            // if other contains one of my keys, other's value overrides mine
-            def newDict = self.copy
-            other.keysAndValuesDo {k, v ->
+    method ++ (other:Collection⟦T⟧) {
+        // answers a new dictionary containing all my keys and the keys of other;
+        // if other contains one of my keys, other's value overrides mine
+        def newDict = self.copy
+        other.keysAndValuesDo {k, v ->
+            newDict.at(k) put(v)
+        }
+        newDict
+    }
+
+    method -- (other:Collection⟦T⟧) {
+        // answers a new dictionary like me but excluding the keys of other
+        def newDict = dictionary []
+        keysAndValuesDo { k, v ->
+            if (! other.containsKey(k)) then {
                 newDict.at(k) put(v)
             }
-            return newDict
         }
+        return newDict
+    }
 
-        method -- (other:Collection⟦T⟧) {
-            // answers a new dictionary like me but excluding the keys of other
-            def newDict = dictionary.empty
-            keysAndValuesDo { k, v ->
-                if (! other.containsKey(k)) then {
-                    newDict.at(k) put(v)
-                }
-            }
-            return newDict
-        }
+    method >>(target) is override {
+        target << self.bindings
+    }
 
-        method >>(target) is override {
-            target << self.bindings
-        }
-
-        method <<(source) is override {
-            self.addAll(source)
-        }
+    method <<(source) is override {
+        self.addAll(source)
     }
 }
 
