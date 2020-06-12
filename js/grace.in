@@ -252,6 +252,7 @@ MiniGrace.prototype.loadModule = function(moduleName, sourceSha, referencingDir,
         console.error("loadModule: requesting module " + moduleName +
               " with source sha " + sourceSha + ", but same module with sha " +
               global[graceModule].sha256 + " previously loaded");
+        raiseException(ExceptionObject, "version mismatch");
         process.exit(2);
     }
     var extn = ".js";
