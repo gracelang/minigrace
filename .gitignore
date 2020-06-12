@@ -97,3 +97,4 @@ utilities/
 *.xcworkspace
 *.xcworkspace/*
 .gitignore~
+.vscode/*
