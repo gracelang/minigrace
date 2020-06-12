@@ -9,7 +9,6 @@ import "errormessages" as errormessages
 import "identifierresolution" as identifierresolution
 import "identifierKinds" as k
 import "shasum" as shasum
-import "buildinfo" as buildinfo
 import "regularExpression" as regex
 
 def nodeTally = dictionary.empty
@@ -25,19 +24,19 @@ var constants := list []
 var output := list []
 var usedvars := list []
 var declaredvars := list []
-var initializedVars := set.empty
+var initializedVars := set  ["$dialect", "$module"]
 
 method saveInitializedVars {
     // returns the current set of initialized vars,
     // to be used in restoreInitializedVars
     def result = initializedVars
-    initializedVars := set.empty
+    initializedVars := set ["$dialect", "$module"]
     result
 }
 
 method restoreInitializedVars(savedState) {
     // restores the set of initialized vars to savedState,
-    // the result od saveInitializedVars
+    // the result of saveInitializedVars
     initializedVars := savedState
 }
 
@@ -204,22 +203,22 @@ method compileCheckThat(val) called (description)
     // message, and lineNumber the line on which the error occurred (or 0
     // if we don't want to emit a setLineNumber command).
 
-    if (emitTypeChecks) then {
-        if ((false ≠ expectedType) && ("never returns" ≠ val)) then {
-            if ((expectedType.value ≠ "Unknown") && (expectedType.value ≠ "Done")) then {
-                def nm_t = compilenode(expectedType)
-                if (lineNumber ≠ 0) then {
-                    noteLineNumber(lineNumber) comment "typecheck"
-                }
-                def typeDesc = removeTypeArgs(expectedType.toGrace 0.quoted)
-                out "assertTypeOrMsg({val}, {nm_t}, \"{description}\", \"{typeDesc}\");"
-            }
-        }
+    if (emitTypeChecks.not) then { return }
+    if (false == expectedType) then { return }
+    if ("never returns" == val) then { return }     // Charlie on the MTA?
+    if (expectedType.isUnknownType) then { return }
+    if ("Done" == expectedType.value) then { return }
+
+    def nm_t = compilenode(expectedType)
+    if (lineNumber ≠ 0) then {
+        noteLineNumber(lineNumber) comment "typecheck"
     }
+    def typeDesc = withoutTypeArgs(expectedType.toGrace 0.quoted)
+    out "assertTypeOrMsg({val}, {nm_t}, \"{description}\", \"{typeDesc}\");"
 }
-method removeTypeArgs(str) {
+method withoutTypeArgs(str) {
     def leftBracketIx = str.indexOf "⟦" ifAbsent { return str }
-    return str.substringFrom 1 to (leftBracketIx - 1)
+    str.substringFrom 1 to (leftBracketIx - 1)
 }
 method compileobjdefdec(o, selfr) {
     o.register := "GraceDone"
@@ -459,7 +458,7 @@ method compileblock(o) {
     for (o.params) do { each ->
         def dType = each.decType
         paramTypes.push(compilenode(dType))
-        if (dType != ast.unknownType) then {
+        if (dType.isUnknownType.not) then {
             paramsAreTyped := true
         }
         if (first) then {
@@ -525,10 +524,11 @@ method compiletypedec(o) in (obj) {
     def tName = o.nameString
     out "// Type decl {tName}"
     // declaredvars.push(escapeident(tName))
-    if (o.value.kind == "typeliteral") then {o.value.name := tName }
+    def rhs = o.value
+    if (rhs.isInterface) then { rhs.name := tName }
     def typeMethod = ast.methodNode.new(
             [ast.signaturePart.partName(o.nameString) scope(s)],
-            typeFunBody (o.value) named (tName), ast.unknownType) scope(s)
+            typeFunBody (rhs) named (tName), ast.unknownNode) scope(s)
             // Why unknownType, rather than typeType?  Because the latter will
             // compile a check that the return value is actually a type, which
             // causes a circularity when trying to import collections. The check
@@ -585,9 +585,7 @@ method hasTypedParams(o) {
     for (o.signature) do { part ->
         for (part.params) do { p->
             if (p.dtype != false) then {
-                if ((p.dtype.value != "Unknown")
-                    && ((p.dtype.kind == "identifier")
-                        || (p.dtype.kind == "typeliteral"))) then {
+                if ((p.dtype.isIdentifier) || (p.dtype.isInterface)) then {
                     return true
                 }
             }
@@ -689,7 +687,7 @@ method compileMethodBodyWithTypecheck(o) {
     def ret = compileMethodBody(o)
     def ln = if (o.body.isEmpty) then { o.end.line } else { o.resultExpression.line }
     compileCheckThat(ret) called "result of method {o.canonicalName}"
-        hasType (o.dtype) onLine (ln)
+        hasType (o.decType) onLine (ln)
     ret
 }
 
@@ -786,7 +784,7 @@ method isSimpleAccessor(o) {
     if (o.isOnceMethod) then { return false }
     if (o.hasTypeParams) then { return false }
     if (o.hasParams) then { return false }
-    if (ast.unknownType ≠ o.decType) then { return false }
+    if (o.decType.isUnknownType.not) then { return false }
         // to ensure that we compile a type check for the method's return type
     o.body.first.isIdentifier
 }
@@ -914,7 +912,8 @@ method compileDummyMethod(o, selfobj, kind) {
     noteLineNumber (o.line) comment "{kind} method"
     debugModePrefix
     out "throw new GraceExceptionPacket(ProgrammingErrorObject,"
-    out "          new GraceString(\"{kind} method {canonicalMethName} was not supplied\"));"
+    out "          new GraceString(\"{kind} method {canonicalMethName} \" +"
+    out "                          \"was not supplied for \" + safeJSString(this)));"
     debugModeSuffix
     compileMethodPostamble(o, funcName, canonicalMethName)
     out "{selfobj}.methods[\"{name}\"] = {funcName};"
@@ -993,7 +992,7 @@ method compileBuildMethodFor(methNode) withFreshCall (callExpr) inside (outerRef
     compileMetadata(methNode, funcName, name)
 }
 method compileCallToBuildMethod(callExpr) withArgs (args) {
-    util.setPosition(callExpr.line, callExpr.linePos)
+    util.setPosition(callExpr.line, callExpr.column)
     callExpr.parts.addLast(
         ast.requestPart.request "$build"
             withArgs [ast.nullNode, ast.nullNode, ast.nullNode]
@@ -1037,9 +1036,9 @@ method compilemethodtypes(func, o) {
         for (part.params) do {p->
             // We store information for static top-level types only:
             // absent information is treated as Unknown (and unchecked).
+            // TODO: figure out what to do about type that are not top-level
             if (false != p.dtype) then {
-                if (((p.dtype.kind == "identifier") && {p.dtype.value != "Unknown"})
-                    || (p.dtype.kind == "typeliteral")) then {
+                if ((p.dtype.isIdentifier) || (p.dtype.isInterface)) then {
                     def typeid = escapeident(p.dtype.value)
                     if (topLevelTypes.contains(typeid)) then {
                         out("{func}.paramTypes.push(["
@@ -1115,12 +1114,7 @@ method compilebind(o) {
         def nm = lhs.value
         usedvars.push(nm)
         out "{varf(nm)} = {val};"
-        if (o.scope.isInheritableScope) then {
-            // if this scope is inheritable (an object or class), then
-            // the fact that we have just assigned to nm is no guarantee
-            // that it is initialised!
-            initializedVars.add(nm)
-        }
+        initializedVars.add(nm)
         o.register := "GraceDone"
     } else {
         ProgrammingError.raise "bindNode {o} does not bind an identifer"
@@ -1253,13 +1247,29 @@ method assembleArguments(args) {
     }
     result
 }
+method scopeThatDefines(id) ifNone (action) {
+    var thisScope := id.scope
+    def name = id.nameString
+    while {
+        if (thisScope.isTheEmptyScope) then { return action.apply }
+        if (thisScope.variety == "fake") then {
+            util.log 30 verbose "found fake symbol table in {id} at {id.range}"
+            return action.apply
+        }
+        thisScope.definesLocallyOrReuses(name).not
+    } do {
+        thisScope := thisScope.outerScope
+    }
+    thisScope
+}
 method compileUninitializedCheck(id) {
     // id is an identiferNode.   If it is possible that this identifier is
     // undefined, emit a check.
     if (emitUndefinedChecks.not) then { return }
     def name = id.nameString
-    def definingScope = id.scope.thatDefines(name) ifNone {
-        // this happens for the "unknown" identifierNode
+    def definingScope = scopeThatDefines(id) ifNone {
+        // this used to happen for the "unknown" identifierNode
+        // TODO: remove this check?
         return
     }
     def scopeVariety = definingScope.variety
@@ -1267,9 +1277,10 @@ method compileUninitializedCheck(id) {
     if ("module | method | dialect | block".contains(definingScope.variety)) then {
         if (initializedVars.contains(name)) then { return }
     }
-    def idKind = definingScope.kind(name)
-    if ((idKind == k.defdec) || (idKind == k.vardec)) then {
+    def variable = definingScope.lookup(name)
+    if (variable.needsUndefinedCheck) then {
         out "if ({varf(name)} === undefined) raiseUninitializedVariable(\"{name}\");"
+        initializedVars.add(name)
     }
 }
 method partl(o) {
@@ -1320,8 +1331,6 @@ method compilecall(o) {
             o.register := "GraceTrue"
         } elseif { name == "false" } then {
             o.register := "GraceFalse"
-        } elseif { name == "Unknown" } then {
-            o.register := "type_Unknown"
         } else {
             noteLineNumber(o.line) comment "unrecognized builtIn"
             compileOuterRequest(o, compileArguments(o))
@@ -1371,7 +1380,7 @@ method compileimport(o) {
     def accessor = (ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(currentScope)],
         [o.value], o.dtype) scope(currentScope))
     accessor.line := o.line
-    accessor.linePos := o.linePos
+    accessor.column := o.column
     accessor.annotations.addAll(o.annotations)
     compilenode(accessor)
     out("{accessor.register}.debug = \"import\";")
@@ -1404,7 +1413,7 @@ method compileNativeCode(o) {
     def param1 = o.parts.first.args.first
     if (param1.kind != "string") then {
         errormessages.syntaxError "the first argument to native(_)code(_) must be a string literal"
-            atRange(param1.line, param1.linePos, param1.linePos)
+            atRange(param1.line, param1.column, param1.column)
     }
     if (param1.value != "js") then {
         o.register := "GraceDone"
@@ -1500,6 +1509,8 @@ method compilenode(o) {
             compiledialect(o)
         } elseif { oKind == "import" } then {
             compileimport(o)
+        } elseif { oKind == "unknown" } then {
+            compileUnknown(o)
         } elseif {o.isNull} then {
             compileNull(o)
         } else {
@@ -1566,7 +1577,6 @@ method initializeCodeGenerator(moduleObject) {
     topLevelTypes.add "Boolean"
     topLevelTypes.add "Done"
     topLevelTypes.add "Type"
-    topLevelTypes.add "Unknown"
     topLevelTypes.add "Object"
     if (util.extensions.containsKey "strict") then {
         util.outprint ";\"use strict\";"
@@ -1575,8 +1585,8 @@ method initializeCodeGenerator(moduleObject) {
     if (! inBrowser) then {
         util.outprint "let {fmtdModName}_sourceFile = \"{util.filename.quoted}\";"
         util.outprint "let {fmtdModName}_sha256 = \"{shasum.sha256OfFile(util.filename)}\";"
-        util.outprint "let {fmtdModName}_minigraceRevision = \"{buildinfo.gitrevision}\";"
-        util.outprint "let {fmtdModName}_minigraceGeneration = \"{buildinfo.gitgeneration}\";"
+        util.outprint "let {fmtdModName}_minigraceRevision = \"{util.buildinfo.gitrevision}\";"
+        util.outprint "let {fmtdModName}_minigraceGeneration = \"{util.buildinfo.gitgeneration}\";"
     }
     util.setline(1)
 }
@@ -1701,8 +1711,10 @@ method compile(moduleObject, of, bt, glPath) {
     initializeCodeGenerator(moduleObject)
     outputModuleDefinition(moduleObject)
     outputModuleMetadata(moduleObject)
+    util.log_verbose "writingGct"
     identifierresolution.writeGctForModule(moduleObject)
     outputGct
+    util.log_verbose "Gct written"
     if (! inBrowser) then { outputSource }
 
     emitBufferedOutput
@@ -1711,6 +1723,9 @@ method compile(moduleObject, of, bt, glPath) {
     if (buildtype == "run") then { runJsCode(of, glPath) }
 }
 
+method compileUnknown(uNode) {
+    uNode.register := "type_Unknown"
+}
 method compileInherit(inhNode) forClass(className) {
     // The object under construction is `this`.
     // Compile code to implement inheritance from inhNode

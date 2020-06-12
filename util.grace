@@ -12,7 +12,7 @@ var modnamev := "standardInput"
 var buildtypev := "run"
 var gracelibPathv := false
 var linenumv := 1
-var lineposv := 1
+var columnv := 1
 var vtagv := false
 var noexecv := false
 var targetv := defaultTarget
@@ -24,6 +24,7 @@ def lines is readable = list [ ]
 def nullFile = filePath.null        // don't modify this one
 var filename is readable := nullFile
 var commandLineExtensions is readable := ""
+var buildinfo is readable           // injected from compiler
 
 
 def targets = set.withAll [
@@ -32,7 +33,8 @@ def targets = set.withAll [
 
 var errno is readable := 0
 
-method parseargs(buildinfo) {
+method parseargs(bi) {
+    buildinfo := bi
     var argv := sys.argv
     var toStdout := false
     if (argv.size > 1) then {
@@ -108,9 +110,9 @@ method parseargs(buildinfo) {
                     targetv := argv.at(ai + 1)
 
                     if (targetv == "help") then {
-                        io.error.write "Valid targets:\n"
+                        io.error.write "Valid targets:"
                         list.withAll(targets).sort.do { t ->
-                            io.error.write "  {t}\n"
+                            io.error.write "  {t}"
                         }
                         sys.exit(0)
                     }
@@ -226,7 +228,7 @@ method log(level) verbose(s) {
         }
         def elapsed = (sys.elapsedTime * 100).rounded / 100
         io.error.write("minigrace{vtagw}: {modnamev}: "
-            ++ "{elapsed} (+{elapsed - previousElapsed}): {s}\n")
+            ++ "{elapsed} (+{elapsed - previousElapsed}): {s}")
         previousElapsed := elapsed
     }
 }
@@ -239,9 +241,7 @@ method outprint(s) {
 method startupFailure (message) {
     // Terminates the compilation because of an error in the commmand line
 
-    io.error.write "{sys.argv.at(1)}: "
-    io.error.write (message)
-    io.error.write "\n"
+    io.error.write "{sys.argv.at(1)}: {message}"
     sys.exit 1
 }
 
@@ -257,17 +257,17 @@ method generalError(message, errlinenum, position, arr, suggestions) {
     if (false ≠ vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
-    io.error.write("{modnamev}.grace[{errlinenum}:{position}]: {message}\n")
+    io.error.write("{modnamev}.grace[{errlinenum}:{position}]: {message}")
     if ((errlinenum > 1) && (lines.size >= (errlinenum - 1))) then {
-        io.error.write("{padl(errlinenum - 1)}: {lines.at(errlinenum - 1)}\n")
+        io.error.write("{padl(errlinenum - 1)}: {lines.at(errlinenum - 1)}")
     }
     if ((errlinenum > 0) && (lines.size >= errlinenum)) then {
-        io.error.write "{padl(errlinenum)}: {lines.at(errlinenum)}\n"
-        io.error.write "{leader}{arr}\n"
+        io.error.write "{padl(errlinenum)}: {lines.at(errlinenum)}"
+        io.error.write "{leader}{arr}"
     }
     if (suggestions.size > 0) then {
         for(suggestions) do { s ->
-            io.error.write "\nDid you mean:\n"
+            io.error.write "\nDid you mean:"
             s.print
         }
     }
@@ -286,39 +286,36 @@ method type_error(s) {
     if (false ≠ vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
-    io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: Type error: {s}")
-    io.error.write("\n")
-    io.error.write(lines.at(linenumv) ++ "\n")
+    io.error.write("{modnamev}.grace:{linenumv}:{columnv}: Type error: {s}")
+    io.error.write(lines.at(linenumv))
     sys.exit(2)
 }
 method semantic_error(s) {
     if (false ≠ vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
-    io.error.write "{modnamev}.grace:{linenumv}:{lineposv}: Semantic error"
+    io.error.write "{modnamev}.grace:{linenumv}:{columnv}: Semantic error"
     if (s == "") then {
-        io.error.write "\n"
         sys.exit(2)
     }
-    io.error.write ": {s}\n"
+    io.error.write ": {s}"
     if (linenumv > 1) then {
         if (lines.size > 0) then {
-            io.error.write("{padl(linenumv - 1)}: {lines.at(linenumv - 1)}\n")
+            io.error.write("{padl(linenumv - 1)}: {lines.at(linenumv - 1)}")
         }
     }
-    def arr = "-" * (lineNumberWidth + lineposv)
+    def arr = "-" * (lineNumberWidth + columnv)
 
     if (lines.size >= linenumv) then {
-        io.error.write("{padl(linenumv)}: {lines.at(linenumv)}\n{leader}{arr}^\n")
+        io.error.write("{padl(linenumv)}: {lines.at(linenumv)}\n{leader}{arr}^")
     }
     if (linenumv < lines.size) then {
-        io.error.write("{padl(linenumv + 1)}: {lines.at(linenumv + 1)}\n")
+        io.error.write("{padl(linenumv + 1)}: {lines.at(linenumv + 1)}")
     }
     sys.exit(2)
 }
 method warning(s) {
-    io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: warning: {s}")
-    io.error.write("\n")
+    io.error.write("{modnamev}.grace:{linenumv}:{columnv}: warning: {s}")
 }
 
 method outfile {
@@ -339,15 +336,15 @@ method gracelibPath {
 method setline(l) {
     linenumv := l
 }
-method setPosition(l, p) {
+method setPosition(l, c) {
     linenumv := l
-    lineposv := p
+    columnv := c
 }
 method linenum {
     linenumv
 }
-method linepos {
-    lineposv
+method column {
+    columnv
 }
 method vtag {
     vtagv

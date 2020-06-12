@@ -3,6 +3,9 @@ import "util" as util
 import "unicode" as unicode
 import "errormessages" as errormessages
 import "regularExpression" as re
+import "basic" as basic
+
+use basic.open
 
 def keywords = set
     [ "alias"
@@ -34,7 +37,7 @@ method lineSeemsToStartStatement -> Boolean {
     // of a blcok is omitted, and the indentation of the first statement in
     // the block is therefore taken to be a continuation of the prior line
 
-    def currentLine = inputLines.at (lineNumber).substringFrom(linePosition)
+    def currentLine = inputLines.at (lineNumber).substringFrom(columnNumber)
     keywordsStartingStatement.matches(currentLine)
 }
 
@@ -101,7 +104,7 @@ def noSuchLine = singleton "noSuchLine"
 
 method initialize {
     lineNumber := 1
-    startPosition := 1
+    startColumn := 1
     currentLineIndent := 0
     unmatchedLeftBraces := 0
     startLine := 1
@@ -122,9 +125,9 @@ method initialize {
 var tokens                  // a linked-list of output tokens
 var lastNonCommentToken     // the most recent token pushed that was not a comment
 var lineNumber              // the current input line number
-var linePosition            // the character position on the input line
+var columnNumber            // the current column position on the input line
 var startLine               // the line on which the current token starts
-var startPosition           // character position of the start of the current token
+var startColumn             // the column in which the current token starts
 var currentLineIndent       // indent of the current line, i.e, the number of leading spaces
 var stringStart             // the start position of the current string, if there is one
 var unichars                // the number of character remaining in a unicode escape
@@ -164,7 +167,7 @@ method rightBrace {
     currentLineBraceDepth := currentLineBraceDepth - 1
     if ((currentLineBraceDepth < 0)) then {
         errormessages.syntaxError "there is no opening brace corresponding to this closing brace"
-          atRange (lineNumber, startPosition, linePosition)
+          atRange (lineNumber, startColumn, columnNumber)
     }
 }
 
@@ -172,7 +175,7 @@ class token {
     use equality
     def line is public = lineNumber
     def indent is public = currentLineIndent
-    def linePos is public = startPosition
+    def column is public = startColumn
 
     def null = object {
         use identityEquality
@@ -188,16 +191,19 @@ class token {
         } elseif {false == other} then {
             false
         } else {
-            (line == other.line) && (linePos == other.linePos)
+            (line == other.line) && (column == other.column)
         }
     }
-    method hash { hashCombine(line.hash, linePos.hash) }
-    method asString { "({line}.{linePos}){self.kind} {self.value}" }
+    method range { start (start) end (end) }
+    method start { line (line) column (column) }
+    method end { line (endLine) column (endCol) }
+    method hash { hashCombine(line.hash, column.hash) }
+    method asString { "({line}.{column}){self.kind} {self.value}" }
     method value { abstract }
     method size { abstract }
     method kind { abstract }
     method endLine { line }
-    method endPos { linePos + size - 1 }
+    method endCol { column + size - 1 }
     method isHeader { false }
     method hasPrev { prev.isHeader.not }
     method hasNext { next.isHeader.not }
@@ -235,7 +241,7 @@ class stringToken(s) {
     inherit token
     def kind is public = "string"
     def value is public = s
-    def size is public = linePosition - startPosition + 1
+    def size is public = columnNumber - startColumn + 1
     method isString { true }
 }
 class multiLineStringToken(s) {
@@ -243,10 +249,10 @@ class multiLineStringToken(s) {
     def kind is public = "string"
     def value is public = s
     def size is public = s.size + 2
-    def linePos is public = stringStart
+    def column is public = stringStart
     def line is override, public = startLine
     def endLine is override, public = lineNumber
-    def endPos is override, public = linePosition
+    def endCol is override, public = columnNumber
     method isString { true }
 }
 class commentToken(s) {
@@ -324,7 +330,7 @@ class numToken(v, b) {
     def kind is public = "num"
     def value is public = v
     def base is public = b
-    def size is public = linePosition - startPosition + 1
+    def size is public = columnNumber - startColumn + 1
     method isNum { true }
 }
 class keywordToken(v) {
@@ -367,11 +373,11 @@ class separatorTokenAt(lineNum, pos) {
     def kind is public = "separator"
     def value is public = "\n"
     def size is public = 1
-    method asString { "({line}.{linePos}){self.kind} \\n" }
+    method asString { "({line}.{column}){self.kind} \\n" }
     def line is override, public = lineNum
-    def linePos is override, public = pos
+    def column is override, public = pos
     def endLine is override, public = lineNumber
-    def endPos is override, public = currentLineIndent
+    def endCol is override, public = currentLineIndent
     method isSeparator { true }
 }
 class lGenericToken {
@@ -415,7 +421,7 @@ method emitNewlineSeparator {
     // We want the newline's coordinates to be those of the end of the prior line.
     if (tokens.isEmpty) then { return }
     def lastToken = tokens.last
-    emit(separatorTokenAt(lineNumber - 1, lastToken.endPos + 1))
+    emit(separatorTokenAt(lineNumber - 1, lastToken.endCol + 1))
 }
 method store(c) { accum := accum ++ c }
 
@@ -435,14 +441,14 @@ def pragmaPrefixState = object {
         checkSeparator(c)
         if (c == "\n") then {
             errormessages.syntaxError "incomplete pragma definition"
-                atRange(lineNumber, startPosition, linePosition)
+                atRange(lineNumber, startColumn, columnNumber)
         } elseif {isSpaceChar(c)} then {
             if (accum == "pragma") then {
                 accum := ""
                 advanceTo(pragmaBodyState)
             } else {
                 errormessages.syntaxError "pragmas must start with #pragma"
-                    atRange(lineNumber, startPosition, linePosition)
+                    atRange(lineNumber, startColumn, columnNumber)
             }
         } else {
             store(c)
@@ -472,7 +478,7 @@ def pragmaTrailingWhitespaceState = object {
             advanceTo(startState)
         } elseif {!isSpaceChar(c)} then {
             errormessages.syntaxError "pragmas must be a single word"
-                atRange(lineNumber, startPosition, linePosition)
+                atRange(lineNumber, startColumn, columnNumber)
         }
     }
 }
@@ -481,28 +487,28 @@ def defaultState = object {
     method consume(c) {
         def ordval = c.ord
         checkSeparator(c)
-        startPosition := linePosition
+        startColumn := columnNumber
         startLine := lineNumber
         if (spaceChars.contains(c)) then {
             //do nothing
         } elseif {c == "\""} then {
             inStr := true
-            stringStart := linePosition
+            stringStart := columnNumber
             advanceTo(quotedStringState)
         } elseif {c == "‹"} then {
             inStr := true
-            stringStart := linePosition
+            stringStart := columnNumber
             advanceTo(extendedStringState)
         } elseif {isDigit(c)} then {
             if ((tokens.size > 0) && {tokens.last.kind == "num"}) then {
                 def suggestion = errormessages.suggestion.new
-                suggestion.deleteRange(tokens.last.linePos+tokens.last.size, linePosition - 1)
+                suggestion.deleteRange(tokens.last.column+tokens.last.size, columnNumber - 1)
                     onLine(lineNumber)
                 errormessages.syntaxError "consecutive numbers are not allowed"
-                    atRange(lineNumber, tokens.last.linePos, linePosition)
+                    atRange(lineNumber, tokens.last.column, columnNumber)
                     withSuggestion(suggestion)
             }
-            startPosition := linePosition
+            startColumn := columnNumber
             advanceTo(numberStartState)
             state.consume(c)
         } elseif {isIdentifierChar(c)} then {
@@ -531,7 +537,7 @@ def defaultState = object {
             if ((tokens.size > 0) && {tokens.last.kind == "lparen"}) then {
                 errormessages.syntaxError("empty parenthesis are not allowed; " ++
                     "remove them, or put something between them")
-                    atRange(lineNumber, tokens.last.linePos, linePosition)
+                    atRange(lineNumber, tokens.last.column, columnNumber)
             }
             emit(rParenToken)
         } elseif {c == "["} then {
@@ -556,7 +562,7 @@ def defaultState = object {
                     (ordval != 32)) then {
                 errormessages.syntaxError("{unicode.name(c)} (U+{hex4(ordval)}) "
                     ++ "is not a valid character")
-                    atPosition(lineNumber, linePosition)
+                    atPosition(lineNumber, columnNumber)
             }
         }
     }
@@ -659,7 +665,7 @@ def quotedStringState = object {
             unclosedStringError
         } elseif {c == "\{"} then {
             def strToken = stringToken(accum)
-            startPosition := linePosition
+            startColumn := columnNumber
             if (!stringContainsInterp) then {
                 emit(lParenToken)
                 stringContainsInterp := true
@@ -775,9 +781,9 @@ def numberStartState = object {
             advanceTo(numberExponentSignState)
         } elseif { isLetter(c) } then {
             def suggestion = errormessages.suggestion.new
-            suggestion.insert(".")atPosition(linePosition)onLine(lineNumber)
+            suggestion.insert(".")atPosition(columnNumber)onLine(lineNumber)
             errormessages.syntaxError("'{c}' is not a valid digit in base 10. Valid digits are 0..9.")atRange(
-                lineNumber, startPosition, linePosition)withSuggestion(suggestion)
+                lineNumber, startColumn, columnNumber)withSuggestion(suggestion)
         } elseif { c == "." } then {
             advanceTo(numberDotState)
         } else {
@@ -833,7 +839,7 @@ def numberFractionState = object {
             advanceTo(numberExponentSignState)
         } elseif {isLetter(c)} then {
             errormessages.syntaxError("the fractional part of a number must be in base 10.")atRange(
-                lineNumber, startPosition, linePosition)
+                lineNumber, startColumn, columnNumber)
         } else {
             emit(numToken(accum, 10))
             advanceTo(defaultState)
@@ -849,10 +855,10 @@ def numberExponentSignState = object {
             advanceTo(numberExponentState)
         } elseif {isLetter(c)} then {
             errormessages.syntaxError("{c} is not an allowed base-10 exponent character")atRange(
-                lineNumber, startPosition, linePosition)
+                lineNumber, startColumn, columnNumber)
         } else {
             errormessages.syntaxError("exponents must have at least one digit")atRange(
-                lineNumber, startPosition, linePosition)
+                lineNumber, startColumn, columnNumber)
         }
     }
 }
@@ -863,11 +869,11 @@ def numberExponentState = object {
             store(c)
         } elseif {isLetter(c)} then {
             errormessages.syntaxError("{c} is not an allowed base-10 exponent character")atRange(
-                lineNumber, startPosition, linePosition)
+                lineNumber, startColumn, columnNumber)
         } else {
             if (accum == "-") then {
                 errormessages.syntaxError("exponents must have at least one digit")atRange(
-                    lineNumber, startPosition, linePosition)
+                    lineNumber, startColumn, columnNumber)
             }
             def exponent = accum.asNumber
             var absExp := exponent
@@ -913,7 +919,7 @@ def operatorState = object {
 def indentationState = object {
     method consume (c) {
         if (spaceChars.contains(c)) then {
-            currentLineIndent := linePosition
+            currentLineIndent := columnNumber
         } else {
             newline(c)
             advanceTo(defaultState)
@@ -951,7 +957,7 @@ method newline(currentCharacter) {
     if (isLineEmpty(currentCharacter)) then { return }
     if (isIndentationChangeOne) then {
         errormessages.syntaxError "a change of indentation of 1 is not permitted"
-                        atRange (lineNumber, linePosition, linePosition)
+                        atRange (lineNumber, columnNumber, columnNumber)
     }
     terminateContinuationIfNecessary
     if (isContinuationLine) then {
@@ -973,13 +979,13 @@ method newline(currentCharacter) {
 }
 
 method reportEmptyStringInterpolation {
-    def lastPos = tokens.last.linePos
+    def lastPos = tokens.last.column
     def lineLength = inputLines.at(lineNumber).size
     def suggestions = list []
     if (lastPos < lineLength) then {
         def suggestion1 = errormessages.suggestion.new
 
-        suggestion1.deleteRange(lastPos, linePosition)
+        suggestion1.deleteRange(lastPos, columnNumber)
                         onLine(lineNumber)
         suggestions.add(suggestion1)
         def suggestion2 = errormessages.suggestion.new
@@ -989,7 +995,7 @@ method reportEmptyStringInterpolation {
         suggestions.add(suggestion2)
     }
     errormessages.syntaxError "a string interpolation cannot be empty"
-          atRange (lineNumber, lastPos, linePosition)
+          atRange (lineNumber, lastPos, columnNumber)
           withSuggestions (suggestions)
 }
 
@@ -1006,10 +1012,10 @@ method isLineEmpty(currentCharacter) {
 }
 method followingCharacter {
     def currentLine = inputLines.at (lineNumber)
-    if (currentLine.size == linePosition) then {
+    if (currentLine.size == columnNumber) then {
         "\n"
     } else {
-        currentLine.at (linePosition + 1)
+        currentLine.at (columnNumber + 1)
     }
 }
 method isIndentationChangeOne {
@@ -1101,7 +1107,7 @@ method checkIndentationReset {
 
         errormessages.
             syntaxError "there is no opening brace corresponding to this closing brace"
-            atPosition (lineNumber, linePosition)
+            atPosition (lineNumber, columnNumber)
     }
     repeat (- braceChange) times { indentStack.removeLast }
     if (currentLineIndent ≠ indentStack.last) then {
@@ -1145,17 +1151,17 @@ method checkConstantIndent {
 method lexicalError (message) {
     errormessages.
         syntaxError (message)
-        atRange (lineNumber, 1, linePosition - 1)
+        atRange (lineNumber, 1, columnNumber - 1)
 }
 method escapedNewlineError {
     errormessages.syntaxError "to include a newline in a string use '\\n'"
-          atPosition(lineNumber, linePosition - accum.size - 1)
+          atPosition(lineNumber, columnNumber - accum.size - 1)
 }
 
 method newlineInInterpolationError {
     errormessages.syntaxError("a string interpolation may not "
           ++ "contain a newline")
-          atPosition(lineNumber, linePosition)
+          atPosition(lineNumber, columnNumber)
 }
 
 method unclosedStringError {
@@ -1176,19 +1182,19 @@ method unclosedStringError {
         var suggestion := errormessages.suggestion.new
         suggestion.insert "\\" atPosition (ix) onLine (line)
         suggestions.push(suggestion)
-        if ((line == lineNumber) && (ix == (linePosition - 2))) then {
+        if ((line == lineNumber) && (ix == (columnNumber - 2))) then {
             errormessages.syntaxError("for a '\{' character in a string use '\\\{'.")
                 atPosition(line, ix)
                 withSuggestions(suggestions)
         } else {
             suggestion := errormessages.suggestion.new
             suggestion.insert("}")
-                  atPosition(linePosition - accum.size - 1)
+                  atPosition(columnNumber - accum.size - 1)
                   onLine(lineNumber)
             suggestions.push(suggestion)
             errormessages.syntaxError("a string interpolation must end with a '}';"
                 ++ "for a '\{' character in a string use '\\\{'.")
-                atPosition(lineNumber, linePosition - accum.size - 1)
+                atPosition(lineNumber, columnNumber - accum.size - 1)
                 withSuggestions(suggestions)
         }
     }
@@ -1231,14 +1237,14 @@ method unclosedStringError {
             ++ "the end of the line. To insert a newline in a string, use '\\n'. "
             ++ "To spread a string over multiple lines, use several strings "
             ++ "joined together with '++'")
-            atPosition(lineNumber, linePosition)
+            atPosition(lineNumber, columnNumber)
             withSuggestions(suggestions)
     } else {
         def suggestion = errormessages.suggestion.new
         suggestion.addLine(lineNumber, errorLine ++ "\"")
         errormessages.syntaxError("a string must be terminated " ++
             "by a \" before the end of the line.")
-            atPosition(lineNumber, linePosition)
+            atPosition(lineNumber, columnNumber)
             withSuggestion(suggestion)
     }
 }
@@ -1253,49 +1259,49 @@ method checkSeparatorString (c) {
         // Unicode NO-BREAK SPACE.  For example, a tab
 
         def suggestion = errormessages.suggestion.new
-        suggestion.replaceChar(linePosition)with(" ")onLine(lineNumber)
+        suggestion.replaceChar(columnNumber)with(" ")onLine(lineNumber)
         if (ordval == 9) then {
-            suggestion.replaceRange(linePosition, linePosition)
+            suggestion.replaceRange(columnNumber, columnNumber)
                 with("\\t")
                 onLine(lineNumber)
             errormessages.syntaxError("tabs cannot be "
                 ++ "written in the source code; "
                 ++ "use the string escape \\t instead")
-                atRange(lineNumber, linePosition, linePosition)
+                atRange(lineNumber, columnNumber, columnNumber)
                 withSuggestion(suggestion)
             errormessages.syntaxError("tabs are not allowed; use spaces instead.")
-                atPosition(lineNumber, linePosition) withSuggestion(suggestion)
+                atPosition(lineNumber, columnNumber) withSuggestion(suggestion)
         } else {
-            suggestion.replaceRange(linePosition, linePosition)
+            suggestion.replaceRange(columnNumber, columnNumber)
                 with("\\u{hex4(ordval)}")
                 onLine(lineNumber)
             errormessages.syntaxError("{unicode.name(c)} (U+{hex4(ordval)})"
                 ++ " is not a valid whitespace character"
                 ++ " and cannot be written in the source code;"
                 ++ " use the Unicode escape \\u{hex4(ordval)} instead")
-                atRange(lineNumber, linePosition, linePosition)
+                atRange(lineNumber, columnNumber, columnNumber)
                 withSuggestion(suggestion)
             errormessages.syntaxError("{unicode.name(c)} (U+{hex4(ordval)}) "
                 ++ "is not a valid whitespace character; use spaces instead.")
-                atPosition(lineNumber, linePosition) withSuggestion(suggestion)
+                atPosition(lineNumber, columnNumber) withSuggestion(suggestion)
         }
     } elseif {isBadControl(c)} then {
         // Character is a control character other than
         // carriage return or line feed.
         def suggestion = errormessages.suggestion.new
-        suggestion.replaceRange(linePosition, linePosition)
+        suggestion.replaceRange(columnNumber, columnNumber)
             with("\\u{hex4(ordval)}")
             onLine(lineNumber)
         errormessages.syntaxError("{unicode.name(c)} (U+{hex4(ordval)}) "
             ++ "is a control character and cannot be written in the source code; "
             ++ "use the Unicode escape \\u{hex4(ordval)} instead")
-            atRange(lineNumber, linePosition, linePosition)
+            atRange(lineNumber, columnNumber, columnNumber)
             withSuggestion(suggestion)
-        suggestion.deleteChar(linePosition)onLine(lineNumber)
+        suggestion.deleteChar(columnNumber)onLine(lineNumber)
         errormessages.syntaxError("{unicode.name(c)} (U+{hex4(ordval)}) "
             ++ "is a control character and cannot be written in the source code; "
             ++ "consider using spaces instead.")
-            atPosition(lineNumber, linePosition) withSuggestion(suggestion)
+            atPosition(lineNumber, columnNumber) withSuggestion(suggestion)
     }
 }
 
@@ -1306,24 +1312,24 @@ method checkSeparator (c){
         // Unicode NO-BREAK SPACE.  For example, a tab
 
         def suggestion = errormessages.suggestion.new
-        suggestion.replaceChar(linePosition)with(" ")onLine(lineNumber)
+        suggestion.replaceChar(columnNumber)with(" ")onLine(lineNumber)
         if (ordval == 9) then {
             errormessages.syntaxError("tabs are not allowed; use spaces instead.")
-                atPosition(lineNumber, linePosition) withSuggestion(suggestion)
+                atPosition(lineNumber, columnNumber) withSuggestion(suggestion)
         } else {
             errormessages.syntaxError("{unicode.name(c)} (U+{hex4(ordval)}) "
                 ++ "is not a valid whitespace character; use spaces instead.")
-                atPosition(lineNumber, linePosition) withSuggestion(suggestion)
+                atPosition(lineNumber, columnNumber) withSuggestion(suggestion)
         }
     } elseif {isBadControl(c)} then {
         // Character is a control character other than
         // carriage return or line feed.
         def suggestion = errormessages.suggestion.new
-        suggestion.deleteChar(linePosition)onLine(lineNumber)
+        suggestion.deleteChar(columnNumber)onLine(lineNumber)
         errormessages.syntaxError("{unicode.name(c)} (U+{hex4(ordval)}) "
             ++ "is a control character and cannot be written in the source "
             ++ "code; consider using spaces instead.")
-            atPosition(lineNumber, linePosition) withSuggestion(suggestion)
+            atPosition(lineNumber, columnNumber) withSuggestion(suggestion)
     }
 }
 
@@ -1345,17 +1351,17 @@ method fromBase(str, base) {
             if((str.first == "0") && (inc < 16)) then {
                 def suggestion = errormessages.suggestion.new
                 suggestion.insert("x")
-                    atPosition(linePosition - str.size + 1) onLine(lineNumber)
+                    atPosition(columnNumber - str.size + 1) onLine(lineNumber)
                 errormessages.syntaxError("a number in base 16 must start with '0x'.")
-                    atPosition(lineNumber, linePosition - str.size + 1)
+                    atPosition(lineNumber, columnNumber - str.size + 1)
                     withSuggestion(suggestion)
             } else {
                 def suggestion = errormessages.suggestion.new
                 if(str.size == 1) then {
-                    suggestion.deleteRange(linePosition - str.size - 1, linePosition - 1)
+                    suggestion.deleteRange(columnNumber - str.size - 1, columnNumber - 1)
                         onLine(lineNumber)
                 } else {
-                    suggestion.deleteChar(linePosition - str.size + i)
+                    suggestion.deleteChar(columnNumber - str.size + i)
                         onLine(lineNumber)
                 }
                 def validDigits = if(base <= 10) then {
@@ -1365,7 +1371,7 @@ method fromBase(str, base) {
                 }
                 errormessages.syntaxError("'{c}' is not a valid digit in base {base}. "
                     ++ "Valid digits are {validDigits}.")
-                    atRange(lineNumber, linePosition - str.size + i, linePosition - str.size + i)
+                    atRange(lineNumber, columnNumber - str.size + i, columnNumber - str.size + i)
                     withSuggestion(suggestion)
             }
         }
@@ -1389,7 +1395,7 @@ method hexdecchar(c) {
         cOrd - zeroOrd
     } else {
         errormessages.syntaxError("the character '{c}' must be a hexadecimal digit")
-            atPosition(lineNumber, linePosition)
+            atPosition(lineNumber, columnNumber)
     }
 }
 
@@ -1553,18 +1559,18 @@ method lexInputLines {
     }
 
 
-    linePosition := 0
+    columnNumber := 0
     util.log_verbose "lexing."
     state := startState
     for (inputLines) do { eachLine ->
         def charS = eachLine.iterator
         while {charS.hasNext} do {
             def ch = charS.next
-            linePosition := linePosition + 1
+            columnNumber := columnNumber + 1
             if (inStr.not && { "><![]-".contains(ch) } && charS.hasNext) then {
                 // map to unicode equavalents
                 def nextCh = charS.next
-                linePosition := linePosition + 1
+                columnNumber := columnNumber + 1
                 def bigraph = ch ++ nextCh
                 if (bigraph == ">=") then { state.consume "≥"
                 } elseif { bigraph == "<=" } then { state.consume "≤"
@@ -1573,9 +1579,9 @@ method lexInputLines {
                 } elseif { bigraph == "]]" } then { state.consume "⟧"
                 } elseif { bigraph == "->" } then { state.consume "→"
                 } else {
-                    linePosition := linePosition - 1
+                    columnNumber := columnNumber - 1
                     state.consume(ch)
-                    linePosition := linePosition + 1
+                    columnNumber := columnNumber + 1
                     state.consume(nextCh)
                 }
             } else {
@@ -1583,10 +1589,10 @@ method lexInputLines {
             }
         }
         state.consume("\n")
-        linePosition := 0
+        columnNumber := 0
         lineNumber := lineNumber + 1
     }
-    linePosition := linePosition + 1
+    columnNumber := columnNumber + 1
     if (inStr) then {
         errormessages.syntaxError("a multi-line string must end with a '›'.\n" ++
             "String opened on line {startLine} and unclosed at end of input.")

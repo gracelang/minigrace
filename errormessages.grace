@@ -2,6 +2,7 @@ dialect "standard"
 import "io" as io
 import "sys" as sys
 import "util" as util
+import "mirror" as mirror
 
 def suggestion is public = object {
     // Contains modified lines used as suggestions for error messages.
@@ -103,15 +104,15 @@ def suggestion is public = object {
     // characters.
 
     method getTokenStart(token)includeLeadingSpace(includeLeading) {
-        var start := token.linePos
+        var start := token.column
         // Include leading whitespace.
         if (true == includeLeading) then {
             if (token.hasPrev && {token.prev.line == token.line}) then {
-                start := token.prev.linePos + token.prev.size
+                start := token.prev.column + token.prev.size
             }
         }
         // Include indentation if this is the only token on the line.
-        if (token.linePos == (token.indent + 1)) then {
+        if (token.column == (token.indent + 1)) then {
             if (token.hasNext.not || {token.next.line ≠ token.line}) then {
                 start := 1
             }
@@ -120,11 +121,11 @@ def suggestion is public = object {
     }
 
     method getTokenEnd(token)includeTrailingSpace(includeTrailing) {
-        var end := token.linePos + token.size - 1
+        var end := token.column + token.size - 1
         // Include trailing space.
         if (true == includeTrailing) then {
             if (token.hasNext && {token.next.line == token.line}) then {
-                end := token.next.linePos - 1
+                end := token.next.column - 1
             } else {
                 end := getLine(token.line).size
             }
@@ -218,7 +219,7 @@ def suggestion is public = object {
     }
 
     method insert(s)beforeToken(token) {
-        insert(s)atPosition(token.linePos)onLine(token.line)
+        insert(s)atPosition(token.column)onLine(token.line)
     }
 
     // Insert a new line. This stores the line with the same number as the line it comes after.
@@ -331,15 +332,15 @@ method name (p:String) mightBeIntendedToBe (target:String) {
 }
 
 
-method name (p:String) matches (t:String) within (k:Number) {
+method name (p:String) matches (t:String) within (d:Number) {
     // This is algorithm EDP from Jokinen, Jorma, Tarhio and Ukkinen:
     // "A comparison of Approximate String Matching Algorithms"
     // Software—Practice and Experience Vol 1(1), January 1988, pp.1–19
     //
     // Implements the "Enhanced Dynamic Programming" (EDP) algorithm for
     // approximate string matching.  If pattern p matches text t within
-    // an edit distance ≤ k, this method returns j, the index of the highest
-    // character of t involved in the match.  Its time compelxity is O(k*|p|).
+    // an edit distance ≤ d, this method returns j, the index of the highest
+    // character of t involved in the match.  Its time compelxity is O(d*|p|).
     //
     // The algorithm builds a dynamic progarmming table D such that
     // D[i,j] is the minimum edit distance between p[1] p[2] ... p[i]
@@ -348,16 +349,16 @@ method name (p:String) matches (t:String) within (k:Number) {
     // D[i-1, j-1] and D[i, j-1], we can store only the current
     // column, which we do in h, and the value of D[i-1,j-1], which is
     // cached in c.  Moreover, since we are not interested in edit
-    // distances > k, it's necessary to evaluate only those elements
+    // distances > d, it's necessary to evaluate only those elements
     // of the table around the diagonal.
 
 
     def m = p.size
     def n = t.size
-    if ((m ≤ k)) then {
+    if ((m ≤ d)) then {
         return min(m, n)   // can match first min(m, n) chars of t
     }
-    var top := k + 1  // the location where the topmost diagonal under
+    var top := d + 1  // the location where the topmost diagonal under
                       // threshold intersects the current column
     var maxResult := 0
     def h = list.empty
@@ -374,7 +375,7 @@ method name (p:String) matches (t:String) within (k:Number) {
                 c := h.at(i+1)
                 h.at(i+1) put (e)
             }
-            while { h.at(top+1) > k } do { top := top - 1 }
+            while { h.at(top+1) > d } do { top := top - 1 }
             if (top == m) then {
                 maxResult := max(maxResult, j)       //  j is the index of
                     //  the last character of t that was used in the match
@@ -383,7 +384,7 @@ method name (p:String) matches (t:String) within (k:Number) {
             }
         }
     } catch { e:BoundsError ->
-        print "BoundsError in name({p})matches({t})within({k})"
+        print "BoundsError in name({p})matches({t})within({d})"
         e.printBacktrace
         return 0 }   // if the code is buggy, don't crash
     return maxResult
@@ -403,6 +404,7 @@ method min3(a, b, c) is confidential {
 def CompilationError is public = Exception.refine "CompilationError"
 def SyntaxError is public = CompilationError.refine "SyntaxError"
 def ReuseError is public = CompilationError.refine "ReuseError"
+def NamingError is public = CompilationError.refine "NamingError"
 
 method syntaxError(message:String, errLinenum:Number,
             errPosition:String, arr:String, suggestions:Collection) {
@@ -415,8 +417,8 @@ method syntaxError(message:String, errLinenum:Number,
     //   - suggestions: A (possibly empty) list of suggestions to correct the error.
 
     def errorObj = object {
-        def lineNum is public = errLinenum
-        def position is public = errPosition
+        def line is public = errLinenum
+        def column is public = errPosition
         def arrow is public = arr
         def sugg is public = suggestions
     }
@@ -474,6 +476,14 @@ method syntaxError (message)
     syntaxError(message, startline, "{loc}", arr, suggestions)
 }
 
+method namingError (message) atRange (r) {
+    NamingError.raise (message) with (r)
+}
+
+method namingError (message) {
+    NamingError.raise (message)
+}
+
 method error (message) atRange (r) {
     error (message)
         atRange (r.start.line, r.start.column, r.end.line, r.end.column)
@@ -492,8 +502,8 @@ method error (message)
     } else { "{startpos}-{endline}:{endpos}" }
     def arr = ("-" * (startpos-1)) ++ ("^" * (endpos - startpos + 1))
     def errorObj = object {
-        def lineNum is public = startline
-        def position is public = loc
+        def line is public = startline
+        def column is public = loc
         def arrow is public = arr
         def sugg is public = suggestions
     }
@@ -527,6 +537,35 @@ method syntaxError(message)atPosition(errLinenum, errpos)withSuggestions(suggest
     syntaxError(message, errLinenum, "{errpos}", arr, suggestions)
 }
 
+
+method ambiguityError (defs) node (node) → None {
+    // Signals an ambiguity error.  Does not return
+
+    var msg := "the name `{node.canonicalName}` is ambiguous; it might refer to either the "
+    defs.do { aVar →
+        msg := msg ++ aVar.resolutionString
+    } separatedBy {
+        msg := msg ++ ", or the "
+    }
+    syntaxError (msg) atRange (node.range)
+}
+
+method undeclaredIdentifier(node) {
+    def guesses = guessesForIdentifier(node)
+    def cn = node.canonicalName
+    def varBit = if (cn.endsWith ")") then { "" } else { " variable or" }
+    def guessBit = if (guesses.isEmpty) then {
+        ""
+    } else {
+        ". Did you mean {readableStringFrom(guesses) using "or"}?"
+    }
+    syntaxError("unknown{varBit} method '{cn}'; " ++
+          "this may be a spelling mistake, or an attempt to access a{varBit} " ++
+          "method in another scope{guessBit}")
+          atRange (node.range)
+}
+
+
 method error(message) atPosition(errLinenum, errPosition)
         withSuggestions(suggestions) {
     def arr = "^"
@@ -540,6 +579,81 @@ method error(message) atPosition(errLinenum, errPosition)
     CompilationError.raise (message) with (errorObj)
 }
 
+method guessesForIdentifier(node) {
+    def nm = node.nameString
+    def guesses = set.empty
+    def nodeScope = node.scope
+    def thresh = 4      // max number of guesses
+    nodeScope.withSurroundingScopesDo { s →
+        s.localAndReusedNamesAndValuesDo { n, _ →
+            if (name (nm) mightBeIntendedToBe(n)) then {
+                guesses.add(mirror.canonicalName(n))
+                if (guesses.size ≥ thresh) then { return guesses }
+            }
+        }
+    }
+    nodeScope.localAndReusedNamesAndValuesDo { n, v →
+        if (v.attributeScope.defines(nm)) then {
+            guesses.add "{n}.{mirror.canonicalName(nm)}"
+            if (guesses.size ≥ thresh) then { return guesses }
+        }
+    }
+    guesses
+}
+
+method badAssignmentTo(node) declaredInScope(scp) {
+    // Report a syntax error for an illegal assignment
+
+    def name = node.nameString
+    def variable = scp.lookupLocallyOrReused(name)
+    def lineInfo = if (variable.range.start.line == 0) then {
+        ""
+    } else {
+        " on {variable.lineRangeString}"
+    }
+    if (variable.kind == "pseudo-variable") then {
+        syntaxError("'{name}' cannot be re-bound; " ++
+            "it always refers to the current object.")
+            atRange(node.range)
+    } elseif { reserved.contains(name) } then {
+        syntaxError("'{name}' is a reserved name and " ++
+            "cannot be re-bound.")
+            atRange(node.range)
+    } elseif { variable.kind == "def" } then {
+        syntaxError("'{name}' cannot be changed " ++
+            "because it was declared with 'def'{lineInfo}. To make it " ++
+            "a variable, use 'var {name}' and ':=' in the declaration")
+            atRange(node.range)
+    } elseif { variable.kind == "import" } then {
+        syntaxError("'{name}' cannot be changed " ++
+            "because it was declared with 'import'{lineInfo}.")
+            atRange(node.range)
+    } elseif { variable.kind == "type" } then {
+        syntaxError("'{name}' cannot be re-bound " ++
+            "because it is declared as a type{lineInfo}.")
+            atRange(node.range)
+    } elseif { variable.isParameter } then {
+        syntaxError("'{name}' cannot be re-bound " ++
+            "because it is declared as a parameter{lineInfo}.")
+            atRange(node.range)
+    } elseif { variable.kind == "method" } then {
+        syntaxError("'{name}' cannot be re-bound " ++
+            "because it is declared as a method{lineInfo}.")
+            atRange(node.range)
+    }
+}
+
+def reserved = ["self", "outer", "Unknown", "Self"]
+// reserved names that cannot be re-assigned or re-declared
+
+method checkForReservedName(node) {
+    def ns = node.nameString
+    if (reserved.contains(ns)) then {
+        namingError "the name {ns} is reserved, and cannot be re-declared."
+            atRange(node.range)
+    }
+}
+
 method error(message) {
     error(message) atPosition(0, "") withSuggestions []
 }
@@ -551,8 +665,8 @@ method error(message) atLine(errLinenum) withSuggestions(suggestions) {
         "^"
     }
     def errorObj = object {
-        def lineNum is public = errLinenum
-        def position is public = ""
+        def line is public = errLinenum
+        def column is public = ""
         def arrow is public = arr
         def sugg is public = suggestions
     }

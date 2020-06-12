@@ -1,9 +1,0 @@
-#! /bin/sh -f
-# a hack to get around the non-composable nature of dialects.
-# Takes the name of a file and dumps an 'rt' version of it to stdout.
-
-N=`grep -n ^import "$1" | tail -n 1 | cut -f1 -d:`
-head -n $N $1
-echo 'import "requireTypes" as rt'
-echo 'def thisDialect is public = rt.thisDialect'
-tail -n +$(($N+1)) $1

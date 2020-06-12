@@ -23,10 +23,9 @@ JSINSPECTORS = grace-inspect minigrace-inspect
 JSRUNNERS_WITHOUT_COMPILER = $(JSRUNNERS_BASE) $(JSINSPECTORS)
 JSRUNNERS = $(JSRUNNERS_WITHOUT_COMPILER) compiler-js
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
-OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
-OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
+OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace objectdrawBundle.grace
 PRELUDESOURCEFILES = collections.grace standard.grace standardBundle.grace intrinsic.grace basicTypesBundle.grace pattern+typeBundle.grace equalityBundle.grace pointBundle.grace
-REALSOURCEFILES = ast.grace compiler.grace errormessages.grace genjs.grace identifierKinds.grace identifierresolution.grace io.grace lexer.grace mirror.grace parser.grace prefixTree.grace regularExpression.grace shasum.grace sys.grace unicode.grace unixFilePath.grace util.grace xmodule.grace
+REALSOURCEFILES = ast.grace compiler.grace constantScope.grace errormessages.grace genjs.grace identifierKinds.grace identifierresolution.grace io.grace lexer.grace mirror.grace parser.grace regularExpression.grace scope.grace shasum.grace basic.grace sys.grace unicode.grace unixFilePath.grace util.grace xmodule.grace
 
 SOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES)
 MGSOURCEFILES = buildinfo.grace $(SOURCEFILES)
@@ -61,7 +60,8 @@ alltest: test module.test self.test
 # clear out the default rules: produces far less --debug output
 .SUFFIXES:
 
-include ./Makefile.mgDependencies
+include Makefile.mgDependencies
+-include objectdraw/Makefile.odDepedencies
 
 # The rules that follow are in alphabetical order.  Keep them that way!
 
@@ -145,7 +145,6 @@ echo:
 	@echo WEBFILES_STATIC = $(sort $(WEBFILES_STATIC)) "\n"
 	@echo WEBFILES_DYNAMIC = $(sort $(WEBFILES_DYNAMIC)) "\n"
 	@echo JSONLY = $(JSONLY)
-	@echo OBJECTDRAW_REAL = $(OBJECTDRAW_REAL)
 	@echo OBJECTDRAW = $(OBJECTDRAW)
 	@echo ALL_LIBRARY_MODULES = $(ALL_LIBRARY_MODULES)
 	@echo OTHER_MODULES = $(OTHER_MODULES)
@@ -211,11 +210,6 @@ install: minigrace $(COMPILER_MODULES:%.grace=j2/%.js) js/grace js/grace-inspect
 	@./tools/warnAbout PATH $(PREFIX)/bin
 	@./tools/warnAbout GRACE_MODULE_PATH $(MODULE_PATH)
 
-$(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
-# The j1/*.js files are used to run the j1 compiler, and so need to be consistent
-# with the current source, and the code generated from the known-good compiler.
-	cp -pf $< $@
-
 j1-minigrace: $(J1-MINIGRACE) $(JSINSPECTORS:%=j1/%)
 
 j1/buildinfo.js: j1/buildinfo.grace
@@ -233,18 +227,16 @@ j1/minigrace-inspect: j1/minigrace-js ./tools/make-minigrace-inspect
 j2/buildinfo.grace: buildinfo.grace
 	cp -pf $< $@
 
-j2-minigrace: $(J2-MINIGRACE) $(JSINSPECTORS:%=j2/%)
+j2-minigrace: j1-minigrace $(J2-MINIGRACE) $(JSINSPECTORS:%=j2/%)
+
+$(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
+	cp -pf $< $@
 
 $(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
 	cp -pf $< $@
 
 $(JSONLY:%.grace=js/%.js): js/%.js: modules/%.grace minigrace
 	GRACE_MODULE_PATH=js:modules ./minigrace --dir js --make $(VERBOSITY) $<
-
-$(JSRUNNERS_BASE:%=j1/%): j1/%: $(JS-KG)/%
-# The j1/*.js files are created by the kg compiler, and so need
-# to be run with the kg runners and libraries.
-	rm -f $@ && cp -p $< $@
 
 $(JSRUNNERS:%=j2/%): j2/%: js/%
 	cp -pf $< $@
@@ -310,12 +302,6 @@ module.test: minigrace.env $(TYPE_DIALECTS:%=j2/%.js)
 	rm -f modules/tests/*.js
 	modules/tests/harness-js j2/minigrace-js modules/tests "" $(TESTS)
 
-modules/rtobjectdraw.grace: modules/objectdraw.grace ./tools/make-rt-version
-	./tools/make-rt-version $< > $@
-
-modules/stobjectdraw.grace: modules/objectdraw.grace ./tools/make-st-version
-	./tools/make-st-version $< > $@
-
 npm-get-kg: $(JS-KG)
 
 $(JS-KG):
@@ -359,7 +345,7 @@ npm-sha:
 	npm ls sha > /dev/null || npm install sha
 	touch npm-sha
 
-$(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: objectdraw/%.grace
+$(OBJECTDRAW:%.grace=modules/%.grace): modules/%.grace: objectdraw/%.grace
 	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
 
 $(OBJECTDRAW:%.grace=objectdraw/%.grace): objectdraw/%.grace: pull-objectdraw
@@ -375,8 +361,8 @@ pull-web-editor:
 
 pull-objectdraw:
 	@$(OFFLINE) || if [ -e objectdraw ] ; \
-       then printf "objectdraw: " ; cd objectdraw; git pull ; \
-       else git clone https://github.com/gracelang/objectdraw/ ; fi
+       then printf "objectdraw: " ; cd objectdraw; git pull ; git checkout bundled ; \
+       else git clone --branch bundled https://github.com/gracelang/objectdraw/ ; fi
 
 pull-brace: pull-web-editor
 	@$(OFFLINE) || if [ -e grace-web-editor/brace ] ; \

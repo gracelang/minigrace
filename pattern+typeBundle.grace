@@ -66,6 +66,8 @@ trait open {
         method setTypeName(nu) {
             self.setName(nu)
         }
+        method name:=(nu) is required
+        method name is required
         method matchHook(obj) is required   // does the actual matching
         method matches(obj) {
             // this caches the result of matchHook, under the assumption

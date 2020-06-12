@@ -1772,14 +1772,11 @@ function Grace_print(obj) {
 
 function Grace_errorPrint(obj) {
     try {
-        try {
-            var s = callmethod(obj, "asString", [0]);
-            minigrace.stderr_write(s._value);
-        } catch (ex) {
-            minigrace.stderr_write(describe(obj));
-        }
+        const s = callmethod(obj, "asString", [0]);
+        minigrace.stderr_write(s._value);
+    } catch (ex) {
+        minigrace.stderr_write(describe(obj));
     } finally {
-        if (! inBrowser) minigrace.stderr_write("\n");
         return GraceDone;
     }
 }
@@ -1985,6 +1982,7 @@ function badBlockArgs(...args) {
                 typeName = "required type";
             }
             var argDesc = (numArgs === 1) ? "argument" : "argument " + n ;
+            argDesc += " (" + safeJsString(args[ix]) + ")";
             if (typeSpec.className.startsWith("Type")) {
                 // startsWith("Type") catches TypeIntersection, TypeUnion,
                 // etc, as well as class "Type" itself.
@@ -1992,9 +1990,10 @@ function badBlockArgs(...args) {
                             " does not have " + typeName,
                             typeSpec, args[ix]);
             } else {
+                let typeDesc = safeJsString(typeSpec);
                 throw new GraceExceptionPacket(RequestErrorObject,
                    new GraceString(argDesc + " to block." +
-                       canonicalName + " does not match pattern"));
+                       canonicalName + " does not match " + typeDesc));
             }
 
         }
@@ -2338,13 +2337,13 @@ function gracecode_util() {
     this.methods.linenum = function util_linenum(argcv) {
         return this._linenum;
     };
-    this.methods.linepos = function util_linepos(argcv) {
-        return this._linepos;
+    this.methods.column = function util_column(argcv) {
+        return this._column;
     };
-    this.methods['setPosition(2)'] = function util_setPosition(argcv, l, p) {
+    this.methods['setPosition(2)'] = function util_setPosition(argcv, l, c) {
         lineNumber = l._value;
         this._linenum = l;
-        this._linepos = p;
+        this._column = c;
         return GraceDone;
     };
     this.methods.buildtype = function util_buildtype(argcv) {
@@ -2419,7 +2418,7 @@ function gracecode_util() {
     };
     this.methods['type_error(1)'] = function util_type_error(argcv, s) {
         minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
-            this._linepos._value + ": type error: " + s._value);
+            this._column._value + ": type error: " + s._value);
         throw "ErrorExit";
     };
     this.methods['generalError(5)'] = function util_generalError(argcv, message, errlinenum, position, arr, suggestions) {
@@ -2456,14 +2455,14 @@ function gracecode_util() {
     };
     this.methods['semantic_error(1)'] = function util_semantic_error(argcv, s) {
         minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
-            this._linepos._value + ": semantic error: " + s._value);
+            this._column._value + ": semantic error: " + s._value);
         if (this._linenum._value > 1)
             minigrace.stderr_write("  " + (this._linenum._value - 1) + ": " +
                 callmethod(this._lines, "at(1)", [1],
                     new GraceNum(this._linenum._value - 1))._value);
         var linenumsize = callmethod(callmethod(this._linenum, "asString", []), "size", []);
         var arr = "----";
-        for (var i=1; i<this._linepos._value+linenumsize._value; i++)
+        for (var i=1; i<this._column._value+linenumsize._value; i++)
             arr = arr + "-";
         minigrace.stderr_write("  " + this._linenum._value + ": " +
                 callmethod(this._lines, "at(1)", [1],
@@ -2478,7 +2477,7 @@ function gracecode_util() {
     };
     this.methods['warning(1)'] = function util_warning(argcv, s) {
         minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
-            this._linepos._value + ": warning: " + s._value);
+            this._column._value + ": warning: " + s._value);
     };
     this.methods['hex(1)'] = function util_hex(argcv, n) {
         var hexdigits = "0123456789abcdef";
@@ -2528,7 +2527,7 @@ function gracecode_util() {
         return this._suggestion;
     };
     this._linenum = new GraceNum(1);
-    this._linepos = new GraceNum(1);
+    this._column = new GraceNum(1);
     this._lines = new GraceList([]);
     this._cLines = new GraceList([]);
     this._suggestion = Grace_allocObject(GraceObject, "class suggestion");
@@ -2548,7 +2547,7 @@ function gracecode_util() {
 }
 
 if (typeof(process) === "undefined" && typeof gctCache !== "undefined")
-    gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=(1)\n dynamicModule\n dynamicModule:=(1)\n importDynamic\n importDynamic:=(1)\n jobs\n jobs:=(1)\n cLines\n cLines:=(1)\n lines\n lines:=(1)\n filename\n filename:=(1)\n errno\n errno:=(1)\n parseargs\n previousElapsed\n previousElapsed:=(1)\n log_verbose\n outprint\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath(1)\n file(1)on(1)orPath(1)otherwise(1)\n file(1)onPath(1)otherwise(1)\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n stringMap\n buildinfo\n sys\n io\n";
+    gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=(1)\n dynamicModule\n dynamicModule:=(1)\n importDynamic\n importDynamic:=(1)\n jobs\n jobs:=(1)\n cLines\n cLines:=(1)\n lines\n lines:=(1)\n filename\n filename:=(1)\n errno\n errno:=(1)\n parseargs\n previousElapsed\n previousElapsed:=(1)\n log_verbose\n outprint\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n column\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath(1)\n file(1)on(1)orPath(1)otherwise(1)\n file(1)onPath(1)otherwise(1)\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n stringMap\n buildinfo\n sys\n io\n";
 
 function loadDynamicModule (moduleName, directory) {
     // `directory` is optional; if omitted, we search GRACE_MODULE_PATH
@@ -2938,13 +2937,14 @@ function matchCase(obj, cases, elseCase) {
     if (trueCount === 0) {
         if (elseCase !== false) return callmethod(elseCase, "apply", [0]);
         raiseException(MatchErrorObject,
-                       "in match(_)case(_)…, no case matches",
+                       "in match(_)case(_)…, no case matches " + safeJsString(obj),
                        obj);
     }
     const matching = trueCases.map(i => "case " + (i+1) + " on line " + cases[i].definitionLine);
-    const matchingDesc = "(" + listWithAnd(matching) + ")";
+    const matchingDesc = " (" + listWithAnd(matching) + ")";
     raiseException(MatchErrorObject,
-                   "in match(_)case(_)…, " + trueCount + " cases match " + matchingDesc,
+                   "in match(_)case(_)…, " + trueCount + " cases match " +
+                       safeJsString(obj) + matchingDesc,
                    obj);
 }
 
@@ -3174,8 +3174,13 @@ function do_import(modname, moduleCodeFunc) {
 
 function requestModuleInitialization(moduleObject, modname, moduleInitializationFunction) {
     // execute moduleInitializationFunction with moduleObject as `this`
+    let oldLineNumber = lineNumber;
     lineNumber = 0;
-    return moduleInitializationFunction.call(moduleObject);  // makes moduleObject `this`
+    try {
+        return moduleInitializationFunction.call(moduleObject);  // makes moduleObject `this`
+    } finally {
+        lineNumber = oldLineNumber;
+    }
 }
 requestModuleInitialization.isGraceRequest = true;
 
