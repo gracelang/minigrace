@@ -1,6 +1,6 @@
 import "errormessages" as errormessages
-import "fastDict" as fastDict
 import "regularExpression" as regEx
+import "collections" as collections
 import "basic" as basic
 
 use basic.open
@@ -1504,11 +1504,9 @@ def ctrlStructureRegEx is public = regEx.fromString (
 def magicKey is public = "standardGraceExtendedControlStructures"
 
 class nameDictionary (initialBindings: Collection⟦Binding⟧) → Dictionary⟦String,Variable⟧ {
-    inherit fastDict.dictionary⟦String,Variable⟧.empty
+    inherit collections.dictionary⟦String,Variable⟧ (initialBindings)
         alias superAt(_)ifAbsent(_) = at(_)ifAbsent(_)
     // This is a dictionary with special logic for looking-up the names of Grace's control structures.
-
-    initialBindings.do { b:Binding → self.add(b) }  // TODO: can we remove "self" now?
 
     method isNameOfSpecialControlStructure (aName) {
         ctrlStructureRegEx.matches (aName)

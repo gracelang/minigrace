@@ -26,6 +26,7 @@ def keywords = set
     , "trait"
     , "type"
     , "use"
+    , "Unknown"
     , "var"
     , "where"
 ]

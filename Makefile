@@ -20,8 +20,7 @@ J2-MINIGRACE = $(sort $(filter-out $(JSINSPECTORS:%=j2/%), $(J1-MINIGRACE) $(JSR
 JSJSFILES = gracelib.js unicodedata.js
 JSRUNNERS_BASE = grace minigrace-js
 JSINSPECTORS = grace-inspect minigrace-inspect
-JSRUNNERS_WITHOUT_COMPILER = $(JSRUNNERS_BASE) $(JSINSPECTORS)
-JSRUNNERS = $(JSRUNNERS_WITHOUT_COMPILER) compiler-js
+JSRUNNERS = $(JSRUNNERS_BASE) $(JSINSPECTORS) compiler-js
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace objectdrawBundle.grace
 PRELUDESOURCEFILES = collections.grace standard.grace standardBundle.grace intrinsic.grace basicTypesBundle.grace pattern+typeBundle.grace equalityBundle.grace pointBundle.grace
@@ -215,15 +214,6 @@ j1-minigrace: $(J1-MINIGRACE) $(JSINSPECTORS:%=j1/%)
 j1/buildinfo.js: j1/buildinfo.grace
 	GRACE_MODULE_PATH=modules:. $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
 
-j1/compiler-js: js/compiler-js Makefile
-	cp -pf $< $@
-
-j1/grace-inspect: j1/grace.in ./tools/make-grace-inspect
-	tools/make-grace-inspect $(MODULE_PATH) $< $@
-
-j1/minigrace-inspect: j1/minigrace-js ./tools/make-minigrace-inspect
-	tools/make-minigrace-inspect $< $@
-
 j2/buildinfo.grace: buildinfo.grace
 	cp -pf $< $@
 
@@ -238,6 +228,9 @@ $(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
 $(JSONLY:%.grace=js/%.js): js/%.js: modules/%.grace minigrace
 	GRACE_MODULE_PATH=js:modules ./minigrace --dir js --make $(VERBOSITY) $<
 
+$(JSRUNNERS:%=j1/%): j1/%: js/%
+	cp -pf $< $@
+
 $(JSRUNNERS:%=j2/%): j2/%: js/%
 	cp -pf $< $@
 
@@ -249,7 +242,7 @@ js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' $< > $@
 
 js/grace: js/grace.in ./tools/make-grace
-	tools/make-grace $(MODULE_PATH) $< $@
+	./tools/make-grace $(MODULE_PATH) $< $@
 
 js/grace-inspect: js/grace.in ./tools/make-grace-inspect
 	tools/make-grace-inspect $(MODULE_PATH) $< $@
