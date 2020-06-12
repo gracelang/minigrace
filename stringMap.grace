@@ -16,6 +16,9 @@ once class dictionary⟦K,T⟧ {
 
 
 class dictionary⟦K, T⟧ (initialBindings: Collection⟦Binding⟦K,T⟧⟧) {
+    if (String ≠ K) then {
+        TypeError.raise "Keys to a stringMap must be Strings, not {K}"
+    }
     native "js" code ‹this.data.inner = { };›
     initialBindings.do { b:Binding ->
         self.at (b.key) put (b.value)
