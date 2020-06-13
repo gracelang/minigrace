@@ -2845,6 +2845,8 @@ function raiseUninitializedVariable(name) {
           new GraceString("attempt to read uninitialised variable " + name + "."));
 }
 
+var describeDepth = 0;      // to avoid infinite recursion
+
 function describe(obj) {
     // Generates a string describing obj, using its "class" and its
     // own asString method, if the latter works.  Avoid duplicating
@@ -2860,24 +2862,32 @@ function describe(obj) {
     var objString = classString + " (without working asString method, " + source + ")";
     const stringQuery = (obj.className === "string") ? "asDebugString" : "asString"
                        // to get a quoted string
-    try {
-        var origLineNumber = lineNumber;    // because the asString method will change it
-        var m = findMethod(obj, stringQuery);
-        objString = m.call(obj, [0])._value;
-    } catch (ex) {
-    } finally {
-        setLineNumber(origLineNumber);
+    describeDepth++;
+    if (describeDepth === 1) {
+        try {
+            var origLineNumber = lineNumber;    // because the asString method will change it
+            var m = findMethod(obj, stringQuery);
+            objString = m.call(obj, [0])._value;
+        } catch (ex) {
+        } finally {
+            setLineNumber(origLineNumber);
+        }
     }
+    describeDepth--;
     try {
         classString = obj.className;
         var dotIx = classString.lastIndexOf(".");
         shortClassString = (dotIx == -1) ? classString : classString.substring(dotIx+1);
     } catch (ex) {
     }
-    if ((classString == "object") || (objString.includes(shortClassString))) {
-        return objString + " (" + source + ")";
+    if (! objString.includes(source)) {
+        objString = objString + " (" + source + ")";
     }
-    return classString + " " + objString + " (" + source + ")";
+    if ((classString == "object") || (objString.includes(shortClassString))) {
+        return objString;
+    } else {
+        return classString + " " + objString;
+    }
 }
 
 function tryCatch(obj, cases, finallyblock) {
@@ -3422,9 +3432,10 @@ if (typeof global !== "undefined") {
     global.checkBounds = checkBounds;
     global.classType = classType;
     global.confidentialVersion = confidentialVersion;
-    global.dealWithNoMethod = dealWithNoMethod;
     global.dbg = dbg;
     global.dbgp = dbgp;
+    global.dealWithNoMethod = dealWithNoMethod;
+    global.describe = describe;
     global.do_import = do_import;
     global.emptyGraceObject = emptyGraceObject;
     global.EnvironmentExceptionObject = EnvironmentExceptionObject;
