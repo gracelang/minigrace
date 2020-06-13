@@ -1,0 +1,22 @@
+#! /usr/bin/env python3
+from pathlib import Path
+import sys
+
+if len(sys.argv) < 2:
+    lwb = 1
+else:
+    lwb = int(sys.argv[1])
+
+testdir = Path('./js/tests')
+tests = testdir.glob('t???_*.grace')
+testPrefixes = set(map(lambda f: f.name[0:4], tests))
+
+for n in range(lwb,1000):
+    tNumStr ='t%03d' % n
+    if (tNumStr not in testPrefixes):
+        print(tNumStr)
+        sys.exit(0)
+print(f"No unused test numbers between {lwb} and 999")
+sys.exit(1)
+
+
