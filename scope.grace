@@ -96,7 +96,7 @@ def graceEmptyScope:MinimalScope is public = object {
         self
     }
     method enclosingObjectScope {
-        self.outerScope.objectScope
+        ProgrammingError.raise "the empty scope has no enclosing scopes"
     }
     method defines (name) {
         false
@@ -392,6 +392,7 @@ class graceObjectScope {
     }
     method markReusedNamesAsCompleted {
         statusOfReusedNames := "completed"
+        self
     }
     method isObjectScope {
         true
@@ -400,14 +401,15 @@ class graceObjectScope {
     method clear {
         reusedNames.clear
         statusOfReusedNames := "undiscovered"
+        self
     }
 }
 
 class externalScope {
     // I describe a scope defined in some other module.
     //
-    // I've been made known to the module being compiled by a gct entry.
-    // and consequently have no parse node associated with me
+    // I've been made known to the module being compiled by a gct entry;
+    // consequently, there is no parse node associated with me.
 
     inherit graceObjectScope
     method node is override {
@@ -1431,7 +1433,11 @@ class abstractVariable {
     method isImplicit { false }
     method forUsers { true }
     method fromParent { false }
-    method forGct { true }
+    method forGct {
+        if (isPublic) then { return true }
+        if (definingParseNode.scope.isModuleScope) then { return false }
+        true
+    }
     method fromGraceObject { false }
     var isFresh is public := false
     method range { definingParseNode.range }
