@@ -433,6 +433,7 @@ class externalScope {
     var isTrait is public := false
     var isFresh is public := false
     method isExternal { true }
+    method initialize(aNode) is confidential { }
     method variety { "external" }
     method areReusedNamesCompleted { true }
     method species is confidential { externalScope }
