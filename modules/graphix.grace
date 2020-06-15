@@ -102,7 +102,7 @@ class shape {
 
     method draw {
         clear
-        visible := true
+        self.visible := true
         jsShapeObject.setLocation(location)
         if (fill) then {
             jsShapeObject.beginFill(color)

@@ -403,6 +403,21 @@ class graceObjectScope {
         statusOfReusedNames := "undiscovered"
         self
     }
+    method meet (anotherScope) {
+        // create and return a new scope that is the mathematical meet of self
+        // and anotherScope; it contains those names common to both scopes.
+        if (isMe(anotherScope)) then { return self }
+        if (anotherScope.isTheUniversalScope) then { return self }
+        def result = species
+        anotherScope.localAndReusedNamesAndValuesDo { nm, rightVar →
+            lookupLocallyOrReused (nm) ifAbsent {
+            } ifPresent { leftVar →
+                result.add (leftVar.meet (rightVar)) withName (nm)
+            }
+        }
+        result
+    }
+    method species is confidential { graceObjectScope }
 }
 
 class externalScope {
@@ -420,6 +435,7 @@ class externalScope {
     method isExternal { true }
     method variety { "external" }
     method areReusedNamesCompleted { true }
+    method species is confidential { externalScope }
 }
 
 class predefinedObjectScope(name) {
@@ -433,6 +449,7 @@ class predefinedObjectScope(name) {
     uidCache := "$scope_{name}"
     predefined.at(uidCache) put (self)
     method variety { "predefined" }
+    method species is confidential { graceObjectScope }
 }
 
 class graceParameterScope {
@@ -440,7 +457,6 @@ class graceParameterScope {
     // parameters of a method.  Type parameters of a type go in the type scope.
 
     inherit graceScope
-
     method variety { "parameter" }
 }
 class graceTypeScope {
@@ -456,7 +472,6 @@ class graceModuleScope {
     inherit graceObjectScope
 
     method isModuleScope { true }
-
     method lookup (name) ifAbsent (aBlock) {
         // Return the variable corresponding to name, which may or may not be
         // defined in this scope, or in the surroundng dialect scope, but no further.
@@ -485,6 +500,7 @@ class graceModuleScope {
         }
     }
     method variety { "module" }
+    method species is confidential { graceModuleScope }
 }
 class graceScope {
     // I represent a declaration scope in a Grace program.
