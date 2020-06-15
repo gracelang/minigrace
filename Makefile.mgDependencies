@@ -58,7 +58,7 @@ j2/util.js: j2/standard.js j2/io.js j2/sys.js j2/unixFilePath.js
 j2/xmodule.js: j2/standard.js j2/io.js j2/sys.js j2/util.js j2/basic.js j2/mirror.js j2/errormessages.js j2/unixFilePath.js j2/shasum.js j2/regularExpression.js j2/intrinsic.js j2/buildinfo.js
 
 j2/animation.js: j2/standard.js j2/timer.js
-j2/beginningStudent.js: j2/standard.js j2/ast.js j2/minispecBundle.js
+j2/beginningStudent.js: j2/standard.js j2/ast.js j2/minispecBundle.js j2/typeComparison.js
 j2/createJsGraphicsWrapper.js: j2/standard.js
 j2/date.js: j2/standard.js
 j2/dialect.js: j2/standardBundle.js j2/errormessages.js
