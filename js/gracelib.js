@@ -1166,92 +1166,96 @@ GracePredicatePattern.prototype = {
     classUid: "predicatePattern-built-in"
 }
 
-function GraceBoolean(b) {
-    this._value = b;
-}
-GraceBoolean.prototype = {
-    methods: {
-        "isMe(1)":          object_isMe,
-        "myIdentityHash":   object_identityHash,
-        "≠(1)":             object_notEquals,
-        "basicAsString":    object_basicAsString,
-        "debug$Iterator":   object_debugIterator,
-        "::(1)":            object_colonColon,
-        "ifTrue(1)": function(argcv, action) {
-            return (this._value) ? request(action, "apply") : GraceDone;
-        },
-        "ifFalse(1)": function(argcv, action) {
-            return (this._value) ? GraceDone : request(action, "apply");
-        },
-        "ifTrue(1)ifFalse(1)": function(argcv, trueAction, falseAction) {
-            return ((this._value) ? request(trueAction, "apply") : request(falseAction, "apply"));
-        },
-        "ifFalse(1)ifTrue(1)": function(argcv, falseAction, trueAction) {
-            return ((this._value) ? request(trueAction, "apply") : request(falseAction, "apply"));
-        },
-        "not": function(argcv) {
-            return ((this._value) ? GraceFalse : GraceTrue);
-        },
-        "prefix!": function(argcv) {
-            return ((this._value) ? GraceFalse : GraceTrue);
-        },
-        "&(1)": function(argcv, other) {
-            return graceAndPattern(this, other);
-        },
-        "|(1)": function(argcv, other) {
-            return graceOrPattern(this, other);
-        },
-        "prefix¬": function(argcv) {
-            return graceNotPattern(this);
-        },
-        "&&(1)": function(argcv, other) {
-            if (!this._value)
-                return this;
-            if ((this.className === other.className) ||
-                    other.methods['ifTrue(1)ifFalse(1)'])
-                return other;
-            return callmethod(other, "apply", [0]);
-        },
-        "||(1)": function(argcv, other) {
-            if (this._value)
-                return this;
-            if ((this.className === other.className) ||
-                    other.methods['ifTrue(1)ifFalse(1)'])
-                return other;
-            return callmethod(other, "apply", [0]);
-        },
-        "asString": function(argcv) {
-            return new GraceString("" + this._value);
-        },
-        "asDebugString": function(argcv) {
-            return new GraceString("" + this._value);
-        },
-        "==(1)": function(argcv, other) {
-            try {
-                if (this._value === Grace_isTrue(other)) return GraceTrue;
-                return GraceFalse;
-            } catch {
+var GraceTrue;
+var GraceFalse;
+
+(function () {
+    function GraceBoolean(b) {
+        this._value = b;
+    }
+    GraceBoolean.prototype = {
+        methods: {
+            "isMe(1)":          object_isMe,
+            "myIdentityHash":   object_identityHash,
+            "≠(1)":             object_notEquals,
+            "basicAsString":    object_basicAsString,
+            "debug$Iterator":   object_debugIterator,
+            "::(1)":            object_colonColon,
+            "ifTrue(1)": function(argcv, action) {
+                return (this._value) ? request(action, "apply") : GraceDone;
+            },
+            "ifFalse(1)": function(argcv, action) {
+                return (this._value) ? GraceDone : request(action, "apply");
+            },
+            "ifTrue(1)ifFalse(1)": function(argcv, trueAction, falseAction) {
+                return ((this._value) ? request(trueAction, "apply") : request(falseAction, "apply"));
+            },
+            "ifFalse(1)ifTrue(1)": function(argcv, falseAction, trueAction) {
+                return ((this._value) ? request(trueAction, "apply") : request(falseAction, "apply"));
+            },
+            "not": function(argcv) {
+                return ((this._value) ? GraceFalse : GraceTrue);
+            },
+            "prefix!": function(argcv) {
+                return ((this._value) ? GraceFalse : GraceTrue);
+            },
+            "&(1)": function(argcv, other) {
+                return graceAndPattern(this, other);
+            },
+            "|(1)": function(argcv, other) {
+                return graceOrPattern(this, other);
+            },
+            "prefix¬": function(argcv) {
+                return graceNotPattern(this);
+            },
+            "&&(1)": function(argcv, other) {
+                if (!this._value)
+                    return this;
+                if ((this.className === other.className) ||
+                        other.methods['ifTrue(1)ifFalse(1)'])
+                    return other;
+                return callmethod(other, "apply", [0]);
+            },
+            "||(1)": function(argcv, other) {
+                if (this._value)
+                    return this;
+                if ((this.className === other.className) ||
+                        other.methods['ifTrue(1)ifFalse(1)'])
+                    return other;
+                return callmethod(other, "apply", [0]);
+            },
+            "asString": function(argcv) {
+                return new GraceString("" + this._value);
+            },
+            "asDebugString": function(argcv) {
+                return new GraceString("" + this._value);
+            },
+            "==(1)": function(argcv, other) {
+                return Object.is(this, other) ? GraceTrue : GraceFalse;
+            },
+            "matches(1)": function(argcv, o) {
+                return (callmethod(this, "==(1)", [1], o));
+            },
+            "hash": function(argcv) {
+                return new GraceNum(this._value ? 3637 : 1741);
+            },
+            "isType": function(argcv) {
                 return GraceFalse;
             }
         },
-        "matches(1)": function(argcv, o) {
-            return (callmethod(this, "==(1)", [1], o));
-        },
-        "hash": function(argcv) {
-            return new GraceNum(this._value ? 3637 : 1741);
-        },
-        "isType": function(argcv) {
-            return GraceFalse;
-        }
-    },
-    className: "boolean",
-    definitionModule: "built-in library",
-    definitionLine: 0,
-    classUid: "boolean-built-in"
-};
+        className: "boolean",
+        definitionModule: "built-in library",
+        definitionLine: 0,
+        classUid: "boolean-built-in"
+    };
 
-var GraceTrue = new GraceBoolean(true);
-var GraceFalse = new GraceBoolean(false);
+    GraceTrue = new GraceBoolean(true);
+    GraceFalse = new GraceBoolean(false);
+}());   // apply this function now
+
+function GraceBoolean(b) {
+    return b ? GraceTrue : GraceFalse
+}
 
 function listObject() {
     if (! listObject.cache) {
@@ -2313,7 +2317,7 @@ function gracecode_util() {
         return new GraceString('the "util" module');
     };
     this.methods.vtag = function(argcv) {
-        return new GraceBoolean(false);
+        return GraceFalse;
     };
     this.methods.outfile = function util_outfile(argcv) {
         return request(this.io, 'output');
