@@ -1,7 +1,4 @@
 dialect "standard"
-// This is a transitional version of the compiler. There is now a dialect
-// scope in addition to a built-in scope. The predefined preludeScope has
-// been eliminated
 
 import "io" as io
 import "sys" as sys
@@ -144,6 +141,8 @@ method addAssignmentMethodsToSymbolTable {
 }
 
 method writeGctForModule(moduleObject) {
+    // requested by genjs to write the gct to the generated JS file
+
     xmodule.writeGCT(moduleObject.name, generateGctForModule(moduleObject))
 }
 
@@ -170,7 +169,7 @@ method generateGctForModule(module) {
     // -- types: the declarations of all named types.  The name is prefixed
     //              by the uid of the scope that defines that type name
     //
-    // The lines in a scope:<uid> entry be parsed by addGctLine(_)toScope(_).
+    // The lines in a scope:<uid> entry are parsed by addGctLine(_)toScope(_).
     // Each has one of two formats:
     //  - <typeName> type
     //      this is used for types
@@ -339,7 +338,7 @@ method processGct(gct, importedModuleScope) {
     def scopeKey = "scope:{moduleScopeId}"
     importedScopes.at (moduleScopeId) put (importedModuleScope)
     gct.at (scopeKey) ifAbsent {
-        ProgrammingError.raise "gct with keys {gct.keys} does not contain \"{scopeKey}\""
+        ProgrammingError.raise "gct for \"{moduleName}\" missing \"{scopeKey}\" for the module itself"
     }.do { gctLine →
         addGctLine (gctLine) toScope (importedModuleScope) for (gct)
     }
@@ -402,9 +401,12 @@ method scopeWithUid(str) for (gct) {
     def result = importedScopes.at(str) ifAbsent {
         sm.predefined.at(str) ifAbsent {
             def newScope = sm.externalScope
+            def scopeKey = "scope:{str}"
             importedScopes.at(str) put (newScope)
-            gct.at "scope:{str}" ifAbsent {
-                ProgrammingError.raise "gct with keys {gct.keys} does not contain \"scope:{str}\""
+            gct.at (scopeKey) ifAbsent {
+                def moduleName = (ast.withoutLeadingComponents (gct.at "path".first)).
+                        replace ".grace" with ""
+                ProgrammingError.raise "gct for module \"{moduleName}\" does not contain \"{scopeKey}\""
             }.do { gctLine →
                 addGctLine (gctLine) toScope (newScope) for (gct)
             }
@@ -566,10 +568,10 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.scope := anc.parent.scope
             xmodule.checkExternalModule(o)
             def gct = xmodule.gctDictionaryFor(o.moduleName)
-            def otherModule = sm.graceModuleScope.in(anc.parent.scope)
-            otherModule.node := o
-            processGct(gct, otherModule)
-            o.scope.add(sm.variableImportFrom(o).attributeScope(otherModule))
+            def importedScope = sm.externalScope
+            importedScope.node := o
+            processGct(gct, importedScope)
+            o.scope.add(sm.variableImportFrom(o).attributeScope(importedScope))
                     withName(o.nameString)
             o.name.isDeclaredByParent := true
             // to prevent redeclaration when we visit the identifier
@@ -1153,22 +1155,8 @@ method resolve(moduleNode) {
     util.log_verbose "symbol tables built."
 
     if (util.target == "symbols") then {
-        def additionalScopes = set.empty
-        util.outprint "====================================="
-        util.outprint "module with symbol tables"
-        util.outprint "====================================="
-        util.outprint "top-level"
-        util.outprint "Universal scope = {sm.graceUniversalScope.asDebugString}"
-        moduleNode.scope.withSurroundingScopesDo { each →
-            util.outprint (each.asString)
-            util.outprint (each.elementScopesAsString)
-            each.elementScopes.values >> additionalScopes
-        }
-        additionalScopes.do { each →
-            util.outprint (each.asString)
-            util.outprint (each.elementScopesAsString)
-            util.outprint "----------------"
-        }
+        util.extensions.at "gctfile" put true
+        writeGctForModule(moduleNode)
         util.outprint(moduleNode.pretty 0)
         util.log_verbose "done"
         util.outfile.close
