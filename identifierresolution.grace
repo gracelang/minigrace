@@ -210,9 +210,7 @@ method generateGctForModule(module) {
                     }
                 }
             }
-            if (entries.isEmpty.not) then {
-                gct.at "scope:{s.uid}" put (entries.sort)
-            }
+            gct.at "scope:{s.uid}" put (entries.sort)    // yes, this will store an empty scope
             if (s.methodTypes.isEmpty.not) then {
                 gct.at "methodTypes:{s.uid}" put (s.methodTypes.values.sorted)
             }
