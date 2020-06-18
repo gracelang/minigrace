@@ -22,7 +22,7 @@ def fn2Scope is public = sm.predefinedObjectScope "function 2"
 def fn3Scope is public = sm.predefinedObjectScope "function 3"
 def bindingScope is public = sm.predefinedObjectScope "binding"
 def exceptionScope is public = sm.predefinedObjectScope "exception"
-def unknownScope is public = sm.graceUniversalScope
+def universalScope is public = sm.graceUniversalScope
 def typeScope is public = sm.predefinedObjectScope "Type"
 
 
@@ -46,7 +46,7 @@ def typ = typeNode "Type"  params 1
 
 // The dictionaries below define the attributes of various built-in objects
 // It's ok that some methods are missing; they are treated as returning
-// Unknown objects, and given as attributeScope the universal scope "unknownScope"
+// Unknown objects, and given as attributeScope "universalScope"
 
 def graceObjectAttributes = dictionary [
     "def"::graceObjectScope,
@@ -172,7 +172,7 @@ method scopeFor(typePseudoNode) {
     // answers the scope for typePseudoNode, e.g., if typePseudoNode == bool, return booleanScope
 
     def attribDict = basicObjectAttributes.at(typePseudoNode) ifAbsent {
-        if (typePseudoNode == un) then { return unknownScope }
+        if (typePseudoNode == un) then { return universalScope }
         ProgrammingError.raise "no entry for {typePseudoNode} in the dictionary basicObjectAttributes"
     }
     attribDict.at "def"
@@ -260,13 +260,24 @@ class pseudoNode (name) typed (t) scope (s) {
     def decType is public = t
     def scope is public = s
 
+    var attrScope := false        // whereas a real node will find its attribute
+                                  // scope in the AST, a pseudoNode just remembers it
+    method attributeScope(scp) {
+        // a writer method that retrns self, for chaining
+        attrScope := scp
+        self
+    }
+    method attributeScope {
+        if (false == attrScope) then { attrScope := scopeFor(t) }
+            // delayed evaluation to allow for circularity
+        attrScope
+    }
     method range { emptyRange }
     method isMarkerDeclaration { false }
     method annotations { [] }
     method isIdentifier { false }
     method isDialect { name == "$dialect" }
     method isModule { (name == "$module") || isDialect }
-    once method attributeScope { scopeFor(t) }   // delayed evaluation to allow for circularity
     method isDeclaredByParent { false }
     var numberOfParameters is public := mirror.numberOfParameters(name)
     var numTypeParams is public := 0
@@ -274,13 +285,19 @@ class pseudoNode (name) typed (t) scope (s) {
     method column { 0 }
     method arrow { "" }
     method sugg { [] }
+
+}
+class pseudoNode (name) typed (t) {
+    inherit pseudoNode (name) typed (t) scope (builtInsScope)
+    // TODO: make this a method that just delegates to the above
+    // not currently recognized as fresh
 }
 
-once class typeType {
-    // the pseudoNode for type type
-    inherit pseudoNode "type" typed "type"
-
-    method decType { self }     // ties the recursive knot
+class typeNode (name) params (n) {
+    // a pseudoNode with the declared type of "Type"
+    inherit pseudoNode (name) typed false
+    def numTypeParams is public = n
+    method decType is override { typeType }   // delayed, to avoid an initialization loop
     method attributeScope { typeScope }
 }
 
@@ -288,15 +305,11 @@ method typeNode (name) {
     typeNode (name) params 0
 }
 
-class typeNode (name) params (n) {
-    inherit pseudoNode (name) typed (typeType)
-    def numTypeParams is public = n
+once class typeType {
+    // the pseudoNode for type type
+    inherit typeNode "type" params 1
+
+    method decType { self }     // ties the recursive knot
 }
 
-class pseudoNode (name) typed (t) {
-    inherit pseudoNode (name) typed (t) scope (builtInsScope)
-    // TODO: make this a method that just delegates to the above
-    // not currently recognized as fresh
-}
-
-sm.typeType := typeType
+sm.typeType := typeType         // inject into scope module

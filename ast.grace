@@ -507,7 +507,7 @@ def blockNode is public = object {
     var matchingPattern is public := false
     var extraRuntimeData is public := false
 
-    method attributeScope {
+    method attributeScope {     // TODO:  look for early returns
         if (isEmpty) then {
             constantScope.doneScope
         } else {
@@ -744,7 +744,7 @@ def matchCaseNode is public = object {
     method attributeScope {
         var result := cases.fold {acc, each ->
             acc.meet(each.attributeScope)
-        } startingWith ( constantScope.doneScope )
+        } startingWith ( constantScope.universalScope )
         if (false ≠ elsecase) then {
             result := result.meet(elsecase.attributeScope)
         }
@@ -836,6 +836,7 @@ class methodSignatureNode(parts', dtype') {
     var isBindingOccurrence is readable := true
             // the only exceptions are the oldMethodName in an alias clause,
             // and an excluded name
+    var isDeclaredByParent is public := false
     method nodeString { nameString }
     method childrenDo(anAction:Procedure1) {
         signatureParts.do(anAction)
@@ -927,6 +928,7 @@ class methodSignatureNode(parts', dtype') {
             cachedIdentifier.end := signatureParts.last.end
             cachedIdentifier.canonicalName := canonicalName
             cachedIdentifier.isBindingOccurrence := isBindingOccurrence
+            cachedIdentifier.isDeclaredByParent := isDeclaredByParent
         }
         cachedIdentifier
     }
@@ -999,101 +1001,102 @@ class methodSignatureNode(parts', dtype') {
     }
 }
 def typeLiteralNode is public = object {
-  class new(methods', types') {
-    inherit baseNode
-    method kind { "typeliteral" }
-    var methods is public := methods'
-    var types is public := types'
-    var nominal is public := false
-    var anonymous is public := true
-    var value is public := "‹anon›"
-    method isInterface { true }
+    class new(methods', types') {
+        inherit baseNode
+        method kind { "typeliteral" }
+        var methods is public := methods'
+        var types is public := types'
+        var nominal is public := false
+        var anonymous is public := true
+        var value is public := "‹anon›"
+        method isInterface { true }
 
-    method childrenDo(anAction:Procedure1) {
-        methods.do(anAction)
-        types.do(anAction)
-    }
-    method childrenMap(f:Function1) {
-        def result = list.empty
-        methods.map(f) >> result
-        types.map(f) >> result
-    }
-    method newAccept(aVisitor) {
-        aVisitor.preVisit(self)
-        aVisitor.postVisit(self) result(aVisitor.newVisitInterfaceLiteral(self))
-    }
+        method childrenDo(anAction:Procedure1) {
+            methods.do(anAction)
+            types.do(anAction)
+        }
+        method childrenMap(f:Function1) {
+            def result = list.empty
+            methods.map(f) >> result
+            types.map(f) >> result
+        }
+        method newAccept(aVisitor) {
+            aVisitor.preVisit(self)
+            aVisitor.postVisit(self) result(aVisitor.newVisitInterfaceLiteral(self))
+        }
 
-    method name { value }
-    method name:=(n) {
-        value := n
-        anonymous := false
-    }
-    method nameString { value }
-    method nodeString {
-        "(methods = {methods}, types = {types})"
-    }
-    method declarationKindWithAncestors(ac) { k.typedec }
-    method isExecutable { false }
+        method name { value }
+        method name:=(n) {
+            value := n
+            anonymous := false
+        }
+        method nameString { value }
+        method nodeString {
+            "(methods = {methods}, types = {types})"
+        }
+        method declarationKindWithAncestors(ac) { k.typedec }
+        method isExecutable { false }
 
-    method end -> Position {
-        def tEnd = if (types.isEmpty) then {noPosition} else {types.last.end}
-        def mEnd = if (methods.isEmpty) then {noPosition} else {methods.last.end}
-        positionOfNext "}" after (max(max(tEnd, mEnd), start))
-    }
+        method end -> Position {
+            def tEnd = if (types.isEmpty) then {noPosition} else {types.last.end}
+            def mEnd = if (methods.isEmpty) then {noPosition} else {methods.last.end}
+            positionOfNext "}" after (max(max(tEnd, mEnd), start))
+        }
 
-    method accept(visitor : AstVisitor) from(ac) {
-        if (visitor.visitTypeLiteral(self) up(ac)) then {
-            def newChain = ac.extend(self)
+        method accept(visitor : AstVisitor) from(ac) {
+            if (visitor.visitTypeLiteral(self) up(ac)) then {
+                def newChain = ac.extend(self)
+                for (self.methods) do { each ->
+                    each.accept(visitor) from(newChain)
+                }
+                for (self.types) do { each ->
+                    each.accept(visitor) from(newChain)
+                }
+            }
+        }
+        method map(blk) ancestors(ac) {
+            var n := shallowCopy
+            def newChain = ac.extend(n)
+            n.methods := listMap(methods, blk) ancestors (ac)
+            n.types := listMap(types, blk) ancestors (ac)
+            blk.apply(n, ac)
+        }
+        method pretty(depth) {
+            def spc = "  " * (depth+1)
+            var s := basePretty(depth) ++ "\n"
+            s := s ++ spc ++ "Types:"
+            for (types) do { each ->
+                s := s ++ "\n  "++ spc ++ each.pretty(depth+2)
+            }
+            s := s ++ "\n" ++ spc ++ "Methods:"
+            for (methods) do { each ->
+                s := s ++ "\n  "++ spc ++ each.pretty(depth+2)
+            }
+            s := s ++ "\n"
+            s
+        }
+        method toGrace(depth : Number) -> String {
+            def spc = "    " * depth
+            var s := "interface \{"
             for (self.methods) do { each ->
-                each.accept(visitor) from(newChain)
+                s := s ++ "\n" ++ spc ++ "    " ++ each.toGrace(depth + 1)
             }
             for (self.types) do { each ->
-                each.accept(visitor) from(newChain)
+                s := s ++ "\n" ++ spc ++ "    " ++ each.toGrace(depth + 1)
             }
+            s ++ "\}"
         }
-    }
-    method map(blk) ancestors(ac) {
-        var n := shallowCopy
-        def newChain = ac.extend(n)
-        n.methods := listMap(methods, blk) ancestors (ac)
-        n.types := listMap(types, blk) ancestors (ac)
-        blk.apply(n, ac)
-    }
-    method pretty(depth) {
-        def spc = "  " * (depth+1)
-        var s := basePretty(depth) ++ "\n"
-        s := s ++ spc ++ "Types:"
-        for (types) do { each ->
-            s := s ++ "\n  "++ spc ++ each.pretty(depth+2)
+        method shallowCopy {
+            typeLiteralNode.new(emptySeq, emptySeq).shallowCopyFieldsFrom(self)
         }
-        s := s ++ "\n" ++ spc ++ "Methods:"
-        for (methods) do { each ->
-            s := s ++ "\n  "++ spc ++ each.pretty(depth+2)
+        method postCopy(other) {
+            nominal := other.nominal
+            anonymous := other.anonymous
+            value := other.value
+            self
         }
-        s := s ++ "\n"
-        s
+        method attributeScope { constantScope.typeScope }
     }
-    method toGrace(depth : Number) -> String {
-        def spc = "    " * depth
-        var s := "interface \{"
-        for (self.methods) do { each ->
-            s := s ++ "\n" ++ spc ++ "    " ++ each.toGrace(depth + 1)
-        }
-        for (self.types) do { each ->
-            s := s ++ "\n" ++ spc ++ "    " ++ each.toGrace(depth + 1)
-        }
-        s ++ "\}"
-    }
-    method shallowCopy {
-        typeLiteralNode.new(emptySeq, emptySeq).shallowCopyFieldsFrom(self)
-    }
-    method postCopy(other) {
-        nominal := other.nominal
-        anonymous := other.anonymous
-        value := other.value
-        self
-    }
-  }
 }
 
 def typeDecNode is public = object {
@@ -1132,6 +1135,7 @@ def typeDecNode is public = object {
     method end -> Position { value.end }
     method isLegalInTrait { true }
     method isTypeDec { true }
+    method decType is override { typeType }
     method scope:=(st) {
         // sets up the 2-way conection between this node
         // and the synmol table that defines the scope that I open.
@@ -1194,6 +1198,7 @@ def typeDecNode is public = object {
         parentKind := other.parentKind
         self
     }
+    method attributeScope { constantScope.typeScope }
   }
 }
 
@@ -2463,6 +2468,9 @@ def identifierNode is public = object {
         }
 
         method attributeScope {
+            if (isBindingOccurrence) then {
+                ProgrammingError.raise "asking identifier {nameString} at {range} for its attributeScope"
+            }
             scope.attributeScopeOf(nameString)
         }
         method numTypeParams { 0 }
@@ -3896,6 +3904,8 @@ def commentNode is public = object {
         }
     }
 }
+
+def typeType = identifierNode.new ("Type", false)
 
 method wrap(str) to (l:Number) prefixedBy (margin) {
     def ind = margin.size

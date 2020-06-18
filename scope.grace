@@ -2,6 +2,7 @@ import "errormessages" as errormessages
 import "regularExpression" as regEx
 import "collections" as collections
 import "basic" as basic
+import "util" as util
 
 use basic.open
 
@@ -224,27 +225,16 @@ class graceInterfaceScope {
         }
     }
 
-    method meet (anotherScope) {
+    once method meet (anotherScope) {
         // create and return a new scope that is the mathematical meet of self
         // and anotherScope; it contains those names common to both scopes.
+        // But with what attributes?  Is this too hard? Do we just give up and
+        // return graceUniversalScope?
         def result = graceInterfaceScope
-        anotherScope.localNamesAndValuesDo { nm, rightVal →
+        anotherScope.localNamesAndValuesDo { nm, rightVar →
             lookupLocally (nm) ifAbsent {
-            } ifPresent { leftVal →
-                result.add (leftVal.meet (rightVal)) withName (nm)
-            }
-        }
-        result
-    }
-    method join (anotherScope) {
-        // create and return a new scope that is the mathematical join of self
-        // and anotherTypeScope; it contains the definitions from both scopes.
-        def result = self.copy
-        anotherScope.localNamesAndValuesDo { nm, val →
-            result.lookupLocally (nm) ifAbsent {
-                result.add (val) withName (nm)
-            } ifPresent { originalVal →
-                result.redefine (val.join (originalVal)) withName (nm)
+            } ifPresent { leftVar →
+                result.add (leftVar.meet (rightVar)) withName (nm)
             }
         }
         result
@@ -411,10 +401,10 @@ class graceObjectScope {
         statusOfReusedNames := "undiscovered"
         self
     }
-    method meet (anotherScope) {
+    once method meet (anotherScope) {
         // create and return a new scope that is the mathematical meet of self
         // and anotherScope; it contains those names common to both scopes.
-        if (isMe(anotherScope)) then { return self }
+        if (self.isMe(anotherScope)) then { return self }
         if (anotherScope.isTheUniversalScope) then { return self }
         def result = species
         anotherScope.localAndReusedNamesAndValuesDo { nm, rightVar →
@@ -447,18 +437,23 @@ class externalScope {
     method species is confidential { externalScope }
 }
 
-class predefinedObjectScope(name) {
+method predefinedObjectScope(name) {
     // I'm an object scope for predefined objects like String and Number.
     //
     // I differ from an ordinary externalScope because I don't need to be
     // written to the gct.  To support this, I have the same uid in every
     // compilation.  The dictionary `predefined` can be used to find me
 
-    inherit externalScope
-    uidCache := "$scope_{name}"
-    predefined.at(uidCache) put (self)
-    method variety { "predefined" }
-    method species is confidential { graceObjectScope }
+    def scpId = "$scope_{name}"
+    predefined.at(scpId) ifAbsent {
+        object {
+            inherit externalScope
+            uidCache := scpId
+            predefined.at(scpId) put (self)
+            method variety { "predefined" }
+            method species is confidential { graceObjectScope }
+        }
+    }
 }
 
 class graceParameterScope {
@@ -603,8 +598,7 @@ class graceScope {
     }
     method attributeScopeOf (aName) {
         lookup (aName) ifAbsent {
-            // this happens with, e.g., parameters and vars,
-            // where we don't know the attribute scope
+            util.log 20 verbose "`{aName}` not found in scope search — assuming universal scope"
             return graceUniversalScope
         }.attributeScope
     }
@@ -829,14 +823,6 @@ class graceScope {
     }
     method variety is abstract
     method clear { names.clear }
-    method at (name) putScope (attrScope) {
-        // changes the variable associated with name so that its attributeScope is attrScope
-        lookupLocally (name) ifAbsent {
-            ProgrammingError.raise "attempt to putScope for {name}, which is not present in {self}"
-        } ifPresent { variable →
-            variable.attributeScope := attrScope
-        }
-    }
 
     method withSurroundingScopesDo (b) {
         // do b in this scope and all surounding scopes.
@@ -1046,12 +1032,19 @@ class variableDefFrom (node) {
     method needsUndefinedCheck { true }
     method kind { "def" }
     def tagString = "def"
+
 }
 
 class variableImportFrom (node) {
     inherit abstractVariableFrom (node)
     // I describe the "nickname" variable defined in an import declaration.
 
+    var attributeScope is readable, override
+    method attributeScope(s) {
+        // a writer method that retrns self, for chaining
+        attributeScope := s
+        self
+    }
     method canBeOriginOfSuperExpression {
         true
     }
@@ -1072,6 +1065,7 @@ class variableImportFrom (node) {
     }
     method kind { "import" }
     def tagString = "impt"
+
 }
 
 class variableMethodFrom (node) {
@@ -1113,7 +1107,13 @@ class variableGraceObjectMethodFrom (node) {
     method forUsers { false }
     def tagString = "go"
 }
+class variableAliasMethodFrom (aliasNode) to (oldVariable) {
+    inherit variableMethodFrom(aliasNode.oldSignature)
 
+    definingParseNode := oldVariable.definingParseNode
+    method isPublicByDefault { false }
+    method asString { "alias " ++ name }
+}
 class variableParameterFrom (node) {
     // I describe the parameter to  a method or block.
     // node is the identifier, since parameters don't have real declaration nodes
@@ -1124,7 +1124,7 @@ class variableParameterFrom (node) {
     method asString { "param " ++ name }
     method isParameter { true }
     method kind { "parameter" }
-    attributeScope := graceUniversalScope
+    method attributeScope { graceEmptyScope }  // TODO graceUniversalScope ?
     def tagString = "par"
 }
 class variablePseudoFrom (node) {
@@ -1138,6 +1138,12 @@ class variablePseudoFrom (node) {
     def isModule is public = node.isModule
     def isDialect is public = node.isDialect
 
+    var attributeScope is readable, override
+    method attributeScope(s) {
+        // a writer method that retrns self, for chaining
+        attributeScope := s
+        self
+    }
     method isAvailableForReuse { false }
     method isImplicit { true }
     method forUsers { false }
@@ -1150,8 +1156,8 @@ class variablePseudoFrom (node) {
     method kind { "pseudo-variable" }
     def tagString = "pseudo"
 }
-class variableTypeFrom (node) {
-    inherit abstractVariableFrom (node)
+class variableTypeFrom (typeDecNode) {
+    inherit abstractVariableFrom (typeDecNode)
     // I describe the type name defined in a type declaration.
     // instance variables:
     // typeValue --- once type objects have been created, a type object representing me.
@@ -1290,7 +1296,6 @@ class variableVarFrom (node) {
     inherit abstractVariableFrom (node)
     // I describe the variable defined in a var declaration.
 
-    attributeScope := graceUniversalScope
     method isAssignable { true }
     method asString {
         "var " ++ name
@@ -1299,6 +1304,7 @@ class variableVarFrom (node) {
     method isWritable { isPublic || { isAnnotatedWritable } }
     method isConfidential { isReadable.not && { isWritable.not } }
     method kind { "var" }
+    method attributeScope { graceEmptyScope }
     def tagString = "var"
 
 }
@@ -1310,6 +1316,7 @@ class variableImplicitMethodFrom (node) {
     method asString { "implicitMeth " ++ name }
     method isImplicit { true }
     method kind { "method" }
+    method attributeScope { predefinedObjectScope "done" }
 }
 class variableRequiredMethodFrom (node) {
     inherit variableMethodFrom (node)
@@ -1321,6 +1328,7 @@ class variableRequiredMethodFrom (node) {
     method isPublic { false }
     method isConcrete { false }
     method kind { "required method" }
+    method attributeScope { graceUniversalScope }
     def tagString = "req"
 }
 class variableSpecialControlStructureFrom (node) withName (aMethodName) {
@@ -1406,16 +1414,13 @@ class abstractVariable {
     //   range — the source-code range of my declaration
     //   startPosition — the start of the range
     //   stopPosition  — the end of the range
-    //   attributeScope — characterizes the attributes of the object bound
-    //      to this variable.  For example, if I am a def bound to an object j,
-    //      then attributeScope describes the attibutes of j.
+    //   attributeScope — characterizes
     //      paramaters and vars have the emptyScope as attributeScope,
     //      because we don't know to what object they will be bound.
 
     var name is public
     var declaredType is public
     var definingScope is public
-    var attributeScope is public := graceEmptyScope  // TODO: graceUniversalScope?
     var isMarker is readable
     method annotationNames is required
     method isAnnotation { annotationNames.contains "annotation" }
@@ -1484,10 +1489,12 @@ class abstractVariable {
     method annotations { definingParseNode.annotations }
     method hasAnnotation(annName) { definingParseNode.hasAnnotation(annName) }
     method moduleName { definingParseNode.moduleName }
-    method attributeScope(s) {
-        // a writer method that retrns self, for chaining
-        attributeScope := s
-        self
+
+    once method attributeScope {
+        // the attributes of the object bound to this variable.  For example,
+        // if I am a def of a name that is bound to an object j,
+        // then attributeScope describes the attibutes of j.
+        definingParseNode.attributeScope
     }
 }
 

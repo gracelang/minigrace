@@ -110,8 +110,6 @@ trait open {
         isObjectScope → Boolean
         variety → String
         clear → Done
-        at (name) putScope (attrScope)
-            // mutates the variable associated with name so that its attributeScope is attrScope
         withSurroundingScopesDo (b) → Done
             // do b in this scope and all surrounding scopes.
     }
