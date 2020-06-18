@@ -212,7 +212,15 @@ class graceInterfaceScope {
 
     method initialize(aNode) is confidential {
         if (definesLocally "Self".not) then {
-            add (variableTypeFrom(aNode)) withName "Self"
+            def fakeNode = object {
+                method nameString { "Self" }
+                method declaredType { typeType }
+                method isMarkerDeclaration { false }
+                method annotations { [] }
+                method isDeclaredByParent { false }
+                method scope { outer }
+            }
+            add (variableTypeFrom(fakeNode)) withName "Self"
         }
     }
 
