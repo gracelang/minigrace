@@ -551,7 +551,8 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                         case { k.typedec → sm.variableTypeFrom(declaringNode) }
                         case { k.parameter → sm.variableParameterFrom(o) }
                         case { k.typeparam → sm.variableTypeParameterFrom(o) }
-                        case { k.aliasdec → sm.variableMethodFrom(o) }
+                        case { k.aliasdec → ProgrammingError.raise
+                                    "alias {o} should have been declared by parent" }
                     )
                 }
             } elseif {o.wildcard} then {
@@ -562,6 +563,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         }
         method visitAlias (o) up (ac) {
             o.scope := ac.parent.scope
+            o.newSignature.isDeclaredByParent := true
             o.newName.accept(self) from (ac.extend(o))
             false   // no need to visit the aliasNode's other components
         }
@@ -639,8 +641,10 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             def ident = o.asIdentifier
             errormessages.checkForReservedName(ident)
-            surroundingScope.add(sm.variableMethodFrom (o))
-            ident.isDeclaredByParent := true
+            if (ident.isDeclaredByParent.not) then {
+                surroundingScope.add(sm.variableMethodFrom (o))
+                ident.isDeclaredByParent := true
+            }
             o.scope := sm.graceParameterScope.in(anc.parent.scope)
             // the scope for the parameters (including the type parameters,
             // if any) of this method.
@@ -664,7 +668,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             def ident = o.name
             errormessages.checkForReservedName(ident)
-            enclosingScope.add(sm.variableTypeFrom(ident))
+            enclosingScope.add(sm.variableTypeFrom(o))
             enclosingScope.types.at(ident.nameString) put(o.toGrace 0)
             ident.isDeclaredByParent := true
             o.scope := sm.graceTypeScope.in(enclosingScope)
@@ -712,13 +716,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         // declaration is visited.
 
         inherit ast.baseVisitor
-        method visitDefDec (o) up (anc) {
-            def rhs = o.value
-            if (rhs.returnsObject) then {
-                o.scope.at(o.nameString) putScope(rhs.returnedObjectScope)
-            }
-            true
-        }
+
         method noEarlyReturn(methNode) {
             def erv = earlyReturnVis
             methNode.accept(erv)
@@ -728,12 +726,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             def myParent = anc.parent
             def surroundingScope = myParent.scope
             if (o.returnsObject) then {
-                def ros = o.returnedObjectScope
-                def methodName = o.nameString
-                myParent.scope.at(o.nameString) putScope(ros)
                 if (anc.forebears.forebears.isEmpty.not) then {
-                    // associates a dotted name with the returned object
-                    // omit this if I'm at the module-level
+                    // prefixes a dotted name to the name of the returned object
+                    // --- but not if I'm at the module-level
                     def factoryName = myParent.name
                     def tailNode = o.returnedObject
                     if ((factoryName != "object") && (tailNode.isObject)) then {
@@ -745,7 +740,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                         o.isFresh := true
                         def methodVariable = surroundingScope.lookup(o.nameString)
                         methodVariable.isFresh := true
-                        ros.isFresh := true
+                        o.returnedObjectScope.isFresh := true  // TODO — is this right?
                     }
                 }
             }
@@ -822,16 +817,14 @@ method gatherInheritedNames(node) is confidential {
         inhNode.aliases.do { a →
             def old = a.oldName.nameString
             def new = a.newName.nameString
-            if (superScope.defines(old)) then {
-                def defn = superScope.lookupLocallyOrReused(old) ifAbsent {
-                    ProgrammingError.raise "superscope is inconsistet"
-                }
-                objScope.addReused (defn) withName (new)
-            } else {
-                errormessages.syntaxError("can't define an alias for " ++ a.oldName.canonicalName ++
+            def defn = superScope.lookupLocallyOrReused(old) ifAbsent {
+                errormessages.syntaxError("can't define an alias for " ++
+                    a.oldName.canonicalName ++
                     " because it is not present in the inherited object")
                     atRange(a.oldName.range)
             }
+            objScope.add (sm.variableAliasMethodFrom(a) to (defn)) withName (new)
+            // An alias is added as a local method, not as a reused method
         }
         inhNode.exclusions.do { exMeth →
             if (superScope.contains(exMeth.nameString).not) then {
