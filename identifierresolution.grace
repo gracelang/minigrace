@@ -366,10 +366,13 @@ method addGctLine (gctLine:String) toScope (s) for (gct) {
         newVar := sm.variableTypeFrom (
             constantScope.typeNode (typeName) params (numTypeParams(typeName)))
     } elseif { split.size ≥ 4 } then {
-        newVar := sm.variable (split.third) from (
-              constantScope.pseudoNode (split.first)
-                  typed (split.second) scope (s) )
-        newVar.attributeScope := scopeWithUid(split.fourth) for (gct)
+        def name = split.first
+        def typeName = split.second
+        def tag = split.third
+        def scpdId = split.fourth
+        newVar := sm.variable (tag) from (
+              constantScope.pseudoNode (name) typed (typeName) scope (s).
+                attributeScope (scopeWithUid(scpdId) for (gct)))
         if (split.size ≥ 5) then {
             def annNames = split.fifth
             newVar.annotationNames := annNames.split ","
