@@ -2679,7 +2679,7 @@ function request(obj, methname, ...args) {
         if (meth.confidential) {
             raiseConfidentialMethod(methname, obj);
         }
-        var ret = meth.apply(obj, args);
+        var ret = meth.apply(obj, args); // in request (...)
     } catch(ex) {
         if (ex.exctype === 'return') {
             if (ex.target == returnTarget) {
@@ -2705,7 +2705,7 @@ function selfRequest(obj, methname, ...args) {
     var meth
     try {
         meth = obj.methods[methname];
-        var ret = meth.apply(obj, args);
+        var ret = meth.apply(obj, args); // in selfRequest (...)
     } catch(ex) {
         if (ex.exctype === 'return') {
             if (ex.target == returnTarget) {
