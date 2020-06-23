@@ -247,7 +247,6 @@ trait collection⟦T⟧ {
             }
             block1.apply(each)
         }
-        return self
     }
     method fold(blk)startingWith(initial) {
         var result := initial
