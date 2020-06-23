@@ -132,7 +132,7 @@ trait open {
         isImport → Boolean
         isMatchCase → Boolean
         isMethod → Boolean
-        isMethodOrParameterizedType → Boolean
+        isMethodOrType → Boolean
         isOnceMethod → Boolean
         isPublic → Boolean
         isPublicByDefault → Boolean
