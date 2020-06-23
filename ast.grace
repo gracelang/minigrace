@@ -2475,7 +2475,8 @@ def identifierNode is public = object {
 
         method attributeScope {
             if (isBindingOccurrence) then {
-                ProgrammingError.raise "asking identifier {nameString} at {range} for its attributeScope"
+                ProgrammingError.raise "asking identifier {nameString} at {self.range} for its attributeScope"
+                // disambiguating with range in standard dialect
             }
             scope.attributeScopeOf(nameString)
         }
