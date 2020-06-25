@@ -35,6 +35,7 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
     // or dialect, then it should be left as a variable.  However, if it refers to
     // a field in an object that might be reused, then it must be tranformed into
     // a method request.
+    if (anIdentifier.isSelf) then { return anIdentifier }
     def defs = sm.variableResolver.definitionsOf (anIdentifier.name) visibleIn (anIdentifier.scope)
     if (defs.isEmpty) then {
         errormessages.undeclaredIdentifier (anIdentifier)
@@ -49,7 +50,7 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
     } elseif { variable.definingScope.isFresh } then {
         // Anything defined in a fresh scope, including a var, can be overridden,
         // so we need to access it via a request.  If the var is on the lhs of an
-        // assigment, we don't re-write it here; this will happen in transfromBind
+        // assignment, we don't re-write it here; this will happen in transfromBind
         if (anIdentifier.isAssigned) then {
             if (variable.isAssignable.not) then {
                 errormessages.badAssignmentTo(anIdentifier) declaredInScope(variable.definingScope)
@@ -72,7 +73,7 @@ method generateOneselfRequestFrom (aSourceNode) using (aResolvedVariable) {
     def nodeScope = aSourceNode.scope
     def receiver = valueOf {
         def outerChain = list.empty
-        var s := aSourceNode.scope.enclosingObjectScope
+        var s := aSourceNode.scope.objectScope
         repeat (objectsUp) times {
             outerChain.addLast(s.node)
             s := s.enclosingObjectScope
@@ -1071,6 +1072,7 @@ method transformReuse (ruNode) ancestors(anc) {
               atRange(ruNode.range)
     }
     if (reuseExpr.isAppliedOccurrence) then {
+        // TODO: omit this sequence — the reuseExpr was transformed before the reuse stmt
         ruNode.value := transformIdentifier (reuseExpr) ancestors (anc)
     } elseif {reuseExpr.isCall} then {
         ruNode.value := transformCall (reuseExpr)
@@ -1105,13 +1107,15 @@ method transformCall(cNode) → ast.AstNode {
             errormessages.ambiguityError (defs) node (cNode)
         }
         generateOneselfRequestFrom (cNode) using (defs.first)
-    } elseif { nominalRcvr.isOuter } then {  // TODO: this is wrong in the case of $module or $dialect
-        if (nominalRcvr.isIdentifier) then {
-            nominalRcvr := (ast.outerNode [s.objectScope.outerScope.node]).
-                  setPositionFrom(nominalRcvr).setScope(s)
-            cNode.receiver := nominalRcvr
-        }
-        if (cNode.nameString == "outer") then {
+    } elseif {
+        nominalRcvr.isIdentifier && {
+            nominalRcvr.nameString == "outer" }
+    } then {
+        cNode.receiver := (ast.outerNode [s.objectScope.outerScope.node]).
+            setPositionFrom(nominalRcvr).setScope(s)
+        cNode
+    } elseif { cNode.nameString == "outer" } then {
+        if (nominalRcvr.kind == "outer") then {
             // deal with outer.outer ..., which has been (incorrectly) parsed into a
             // a request of `outer` with an outernode as receiver.
             // Here we add another object to that outerNode's object list.
@@ -1121,6 +1125,11 @@ method transformCall(cNode) → ast.AstNode {
             nominalRcvr.theObjects.addLast(newOuter)
             nominalRcvr
         } else {
+            // nominalRcvr is a member node `self.outer`
+            // TODO: This was created erroeoulsy because "outer"
+            // is defined in object scopes
+            cNode.receiver := (ast.outerNode [s.objectScope.outerScope.node]).
+                setPositionFrom(nominalRcvr).setScope(s)
             cNode
         }
     } else {
