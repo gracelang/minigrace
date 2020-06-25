@@ -355,7 +355,7 @@ def implicit is public = object {
 
     method range { emptyRange }
     method isImplicit { true }
-    method toGrace(depth) { "implicit" }
+    method toGrace(depth) { "" }
     method nodeString { "" }
     method map(blk) ancestors(ac) { self }
     method accept(visitor) from (ac) {
@@ -2255,10 +2255,8 @@ def memberNode is public = object {
             s
         }
         method toGrace(depth : Number) -> String {
-            var s := ""
-            if ((receiver.isImplicit || receiver.isSelfOrOuter).not) then {
-                s := receiver.toGrace(depth) ++ "."
-            }
+            var s := receiver.toGrace 0
+            if ("" ≠ s) then { s := s ++ "." }
             s := s ++ self.value
             if (false != generics) then {
                 s := s ++ "⟦"
@@ -3805,12 +3803,12 @@ def requestPart is public = object {
             if (hasTypeArgs) then {
                 s := "{s}\n{spc}TypeArgs:"
                 typeArgs.do { tArg ->
-                    s := s ++ tArg.pretty(depth + 3)
+                    s := "{s}    {spc}{tArg.pretty(depth + 2)}"
                 }
             }
             s := "{s}\n{spc}Args:"
             for (args) do { a ->
-                s := "{s}\n  {spc}{a.pretty(depth + 3)}"
+                s := "{s}\n      {spc}{a.pretty(depth + 2)}"
             }
             s
         }
