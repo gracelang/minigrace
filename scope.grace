@@ -279,6 +279,7 @@ class graceObjectScope {
     def methodTypes is public = dictionary.empty
     def types is public = dictionary.empty
 
+    method isEmpty { names.isEmpty && reusedNames.isEmpty }
     var isFresh is public := false  // changed in objectScopesVis in identifierResolution
 
     method initialize(aNode) is confidential {
@@ -405,6 +406,7 @@ class graceObjectScope {
         // create and return a new scope that is the mathematical meet of self
         // and anotherScope; it contains those names common to both scopes.
         if (self.isMe(anotherScope)) then { return self }
+            // disambiguating with isMe in standard dialect
         if (anotherScope.isTheUniversalScope) then { return self }
         def result = species
         anotherScope.localAndReusedNamesAndValuesDo { nm, rightVar →
@@ -535,6 +537,7 @@ class graceScope {
         uidCache
     }
     method allNames { names.keys >> sequence }
+    method isEmpty { names.isEmpty }
 
     method in(anotherScope) {
         // sets the outerScope for this scope, and returns self
@@ -602,9 +605,13 @@ class graceScope {
             return graceUniversalScope
         }.attributeScope
     }
+    method asDebugString {
+        "{variety} scope {uid}"
+    }
     method asString {
         "{variety} scope {uid} containing " ++ (names.keys.sorted >> sequence)
     }
+    method asStringWithParents { "{asString} ⇒ {outerScope.uid}" }
     method lookupLocallyOrReused (name) ifAbsent (aBlock) {
         // Return the variable corresponding to name, which may or may not be defined in this scope,
         // or in one of the scopes that it reuses.
