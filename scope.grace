@@ -1078,7 +1078,7 @@ class variableMethodFrom (node) {
     method substitute (bindings) {
         self.shouldBeImplemented
     }
-    method isMethodOrParameterizedType {
+    method isMethodOrType {
         true
     }
     method asString {
@@ -1175,9 +1175,7 @@ class variableTypeFrom (typeDecNode) {
 //    method substitute (bindings) {
 //        return self
 //    }
-    method isMethodOrParameterizedType {
-        return (numberOfParameters > 0)
-    }
+    method isMethodOrType { true }
 //    method methodNamesAndSignaturesDo (a2ArgBlock) {
 //        attributeScope.localNamesAndValuesDo { n, v →
 //            def sig = graceSignatureOfMethod (v)
@@ -1440,7 +1438,7 @@ class abstractVariable {
     }
     method isType { false }
     method isConcrete { true }
-    method isMethodOrParameterizedType { false }
+    method isMethodOrType { false }
     method kind is abstract
     method isAnnotatedConfidential {
         return isAnnotatedWith "confidential"

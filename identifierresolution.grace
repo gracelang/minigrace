@@ -44,7 +44,7 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
     }
     def resolution = defs.first
     def variable = resolution.definition
-    if (variable.isMethodOrParameterizedType) then {
+    if (variable.isMethodOrType) then {
         generateOneselfRequestFrom (anIdentifier) using (resolution)
     } elseif { variable.definingScope.isFresh } then {
         // Anything defined in a fresh scope, including a var, can be overridden,

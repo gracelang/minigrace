@@ -499,7 +499,7 @@ def nodeRewriter = object {
         return newNode
     }
     method updateImplicitRequest (anImplicitRequestNode) using (aResolvedVariable) {
-        if (aResolvedVariable.definition.isMethodOrParameterizedType.not) then {
+        if (aResolvedVariable.definition.isMethodOrType.not) then {
             return anImplicitRequestNode
         }
         def request = anImplicitRequestNode.request.copy
