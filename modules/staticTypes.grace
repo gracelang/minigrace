@@ -353,7 +353,7 @@ def objectType = object {
                 return if (false ≠ lit.value) then {
                     object {
 //                        inherit oType & fromDType (intersection.last)
-                        inherit TypeIntersection(oType, fromDType (intersection.last))
+                        inherit AndType(oType, fromDType (intersection.last))
 
                         method asString is override { lit.value }
                     }
@@ -373,7 +373,7 @@ def objectType = object {
                 return if (false ≠ lit.value) then {
                     object {
 //                        inherit oType | fromDType (union.last)
-                        inherit TypeUnion(oType, fromDType (union.last))
+                        inherit PlusType(oType, fromDType (union.last))
                         def asString: String is public, override = lit.value
                     }
                 } else {
