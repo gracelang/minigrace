@@ -331,6 +331,7 @@ trait open {
             ProgrammingError.raise "fakeSymbolTable(on node {node}).addNode({n}) ac \"{kind}\""
         }
         method isFresh { false }
+        method varsAreMethods { true }
         method variety { "fake" }
         method areReusedNamesCompleted { true }
     }

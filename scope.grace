@@ -281,7 +281,7 @@ class graceObjectScope {
 
     method isEmpty { names.isEmpty && reusedNames.isEmpty }
     var isFresh is public := false  // changed in objectScopesVis in identifierResolution
-
+    method varsAreMethods { true }   // TODO: false when not fresh
     method initialize(aNode) is confidential {
         if (definesLocally "self".not) then {
             add (variablePseudoFrom(aNode).attributeScope (self)) withName "self"
@@ -427,6 +427,7 @@ class externalScope {
     // consequently, there is no parse node associated with me.
 
     inherit graceObjectScope
+    method varsAreMethods { true }
     method node is override {
         ProgrammingError.raise "an external variable has no associated node"
     }
@@ -477,6 +478,7 @@ class graceTypeScope {
 class graceModuleScope {
     inherit graceObjectScope
 
+    method varsAreMethods { false }
     method isModuleScope { true }
     method lookup (name) ifAbsent (aBlock) {
         // Return the variable corresponding to name, which may or may not be
@@ -536,6 +538,7 @@ class graceScope {
         }
         uidCache
     }
+    method varsAreMethods { false }
     method allNames { names.keys >> sequence }
     method isEmpty { names.isEmpty }
 

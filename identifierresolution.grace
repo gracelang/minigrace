@@ -47,7 +47,7 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
     def variable = resolution.definition
     if (variable.isMethodOrType) then {
         generateOneselfRequestFrom (anIdentifier) using (resolution)
-    } elseif { variable.definingScope.isFresh } then {
+    } elseif { variable.definingScope.varsAreMethods } then {
         // Anything defined in a fresh scope, including a var, can be overridden,
         // so we need to access it via a request.  If the var is on the lhs of an
         // assignment, we don't re-write it here; this will happen in transfromBind
