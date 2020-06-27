@@ -1090,10 +1090,8 @@ method compileif(o) {
     o.register := ifId
 }
 method compileidentifier(o) {
-    var name := o.value
-    if (name == "self") then {
-        o.register := "this"
-    } elseif { name == "..." } then {
+    def name = o.value
+    if ( name == "..." ) then {
         o.register := "ellipsis"
     } elseif { name == "$module" } then {
         o.register := thisModule
@@ -1344,7 +1342,7 @@ method compilecall(o) {
     }
     o.register
 }
-method compileOuter(o) {
+method compileYourself(o) {
     o.register := o.theObjects.fold { a, obj -> "{a}.{outerProp(obj)}" }
                                     startingWith "this"
 }
@@ -1503,14 +1501,16 @@ method compilenode(o) {
             compiletypeliteral(o) in "this"
         } elseif { oKind == "inherit" } then {
             compileInherit(o) forClass "irrelevant"
-        } elseif { oKind == "outer" } then {
-            compileOuter(o)
+        } elseif { oKind == "yourself" } then {
+            compileYourself(o)
         } elseif { oKind == "dialect" } then {
             compiledialect(o)
         } elseif { oKind == "import" } then {
             compileimport(o)
         } elseif { oKind == "unknown" } then {
             compileUnknown(o)
+        } elseif { oKind == "selftype" } then {
+            compileSelfType(o)
         } elseif {o.isNull} then {
             compileNull(o)
         } else {
@@ -1725,6 +1725,11 @@ method compile(moduleObject, of, bt, glPath) {
 
 method compileUnknown(uNode) {
     uNode.register := "type_Unknown"
+}
+method compileSelfType(stNode) {
+    def newType = varf(uidWithPrefix "selfType")
+    stNode.register := newType
+    out "const {newType} = new GraceSelfType();"
 }
 method compileInherit(inhNode) forClass(className) {
     // The object under construction is `this`.

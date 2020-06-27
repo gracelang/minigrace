@@ -2095,17 +2095,26 @@ def arrayNode is public = object {
     }
   }
 }
-class outerNode(nodes) {
-    // references an object outside the current object.
-    // nodes, a sequence of objectNodes, tells us which one.
-    // The object that we refer to is the one OUTSIDE nodes.last
+class yourselfNode(levels) {
+    // levels is a number; I represent `self` when levels == 0,
+    // otherwise an outer sequence of length levels
+
     inherit baseNode
-    method kind { "outer" }
-    def theObjects is public = list.withAll(nodes)
+
+    method kind { "yourself" }
+    var theObjects is public := uninitialized
+    def numberOfLevels is public = levels
+    var end is public := if (line == 0) then { noPosition } else {
+        line (line) column (column - 2 + (6 * numberOfLevels))
+    }
 
     method attributeScope {
+        if (levels == 0) then {
+            scope.objectScope
+        } else {
             theObjects.last.scope.outerScope.objectScope
         }
+    }
 
     method childrenDo(anAction:Procedure1) {
         // don't iterate over theObjects, since this would introduce a cycle
@@ -2113,40 +2122,51 @@ class outerNode(nodes) {
     }
     method childrenMap(f:Function1) {
         // don't map theObjects, since this would introduce a cycle
-        // heObjects.map(f) >> sequence
+        // theObjects.map(f) >> sequence
     }
     method newAccept(aVisitor) {
         aVisitor.preVisit(self)
-        aVisitor.postVisit(self) result(aVisitor.newVisitOuter(self))
+        aVisitor.postVisit(self) result(aVisitor.newvisitYourself(self))
     }
 
-    method numberOfLevels { theObjects.size }
-    method nodeString { "‹object outside that at line {theObjects.last.line}›" }
+    method nodeString {
+        if (isSelf) then { return "self" }
+        if (uninitialized == theObjects) then { return "outer^{numberOfLevels}" }
+        "‹object outside that at line {theObjects.last.line}›"
+    }
     method pretty(depth) {
         var s := basePretty(depth)
+        if (isSelf) then { return s ++ "self" }
+        if (uninitialized == theObjects) then { return s ++ "outer^{numberOfLevels}" }
         theObjects.do { each ->
             s := s ++ "‹object outside that at line {each.line}›"
         } separatedBy { s := s ++ "." }
         s
     }
     method accept(visitor) from (ac) {
-        visitor.visitOuter(self) up (ac)
+        visitor.visitYourself(self) up (ac)
         // don't visit theObjects, since this would introduce a cycle
     }
     method toGrace(depth) {
-        "outer" ++ (".outer" * (theObjects.size - 1))
+        if (numberOfLevels == 0) then {
+            "self"
+        } else {
+            "outer" ++ (".outer" * (numberOfLevels - 1))
+        }
     }
-    method isOuter { true }
+    method isOuter { numberOfLevels > 0 }
+    method isSelf { numberOfLevels == 0 }
     method isSelfOrOuter { true }
     method shallowCopy {
-        outerNode(theObjects).shallowCopyFieldsFrom(self)
+        yourselfNode(numberOfLevels).shallowCopyFieldsFrom(self)
     }
     method map (blk) ancestors (ac) {
-        var nd := shallowCopy
+        def nd = shallowCopy
         blk.apply(nd, ac)
     }
-    def end is public = if (line == 0) then { noPosition } else {
-        line (line) column (column + 4)
+    method postCopy(other) {
+        theObjects := other.theObjects
+        end := other.end
     }
 }
 def memberNode is public = object {
@@ -2663,6 +2683,28 @@ class unknownNode {
     method map(blk) ancestors(ac) { blk.apply(self, ac) }
     method statementName { "type" }
     method end { line (line) column (column + 6) }
+}
+
+class selfTypeNode {
+    inherit baseNode
+    method isUnknownType { false }
+    method kind { "selftype" }
+    method nameString { "Self" }
+    method toGrace(_) { nameString }
+    method nodeString { nameString }
+    method pretty { nameString }
+    method childrenDo(anAction:Procedure1) { done }
+    method childrenMap(f:Function1) { [] }
+    method newAccept(aVisitor) {
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitSelfType(self))
+    }
+    method accept(visitor : AstVisitor) from(ac) {
+        visitor.visitSelfType(self) up(ac)
+    }
+    method map(blk) ancestors(ac) { blk.apply(self, ac) }
+    method statementName { "type" }
+    method end { line (line) column (column + 3) }
 }
 
 def stringNode is public = object {
@@ -3979,7 +4021,9 @@ type AstVisitor = {
     visitDialect(o) up(ac) -> Boolean
     visitComment(o) up(ac) -> Boolean
     visitImplicit(o) up(ac) -> Boolean
-    visitOuter(o) up(ac) -> Boolean
+    visitYourself(o) up(ac) -> Boolean
+    visitSelfType(o) up(ac) -> Boolean
+    visitAlias(o) up(ac) -> Boolean
 }
 
 class baseVisitor -> AstVisitor {
@@ -4013,7 +4057,8 @@ class baseVisitor -> AstVisitor {
     method visitDialect(o) up(ac) { visitDialect(o) }
     method visitComment(o) up(ac) { visitComment(o) }
     method visitImplicit(o) up(ac) { visitImplicit(o) }
-    method visitOuter(o) up(ac) -> Boolean { visitOuter(o) }
+    method visitYourself(o) up(ac) -> Boolean { visitYourself(o) }
+    method visitSelfType(o) up(ac) -> Boolean { visitSelfType(o) }
     method visitAlias(o) up(ac) -> Boolean { visitAlias(o) }
 
     method visitIf(o) -> Boolean { true }
@@ -4046,7 +4091,8 @@ class baseVisitor -> AstVisitor {
     method visitDialect(o) -> Boolean { true }
     method visitComment(o) -> Boolean { true }
     method visitImplicit(o) -> Boolean { true }
-    method visitOuter(o) -> Boolean { true }
+    method visitYourself(o) -> Boolean { true }
+    method visitSelfType(o) -> Boolean { true }
     method visitAlias(o) -> Boolean { true }
 
     method asString { "an AST visitor" }
@@ -4055,7 +4101,7 @@ class baseVisitor -> AstVisitor {
 class pluggableVisitor(visitation:Predicate2⟦AstNode, Object⟧) -> AstVisitor {
     // Manufactures a default visitor, given a 2-parameter block.
     // Typically, some of the methods will be overridden.
-    // The visitation predicate will be applied with the AST node ac the first argument
+    // The visitation predicate will be applied with the AST node as the first argument
     // and the ancestor chain ac the second, and should answer true if
     // the visitation is to continue and false if it is to go no deeper.
 
@@ -4088,7 +4134,8 @@ class pluggableVisitor(visitation:Predicate2⟦AstNode, Object⟧) -> AstVisitor
     method visitDialect(o) up(ac) { visitation.apply (o, ac) }
     method visitComment(o) up(ac) { visitation.apply (o, ac) }
     method visitImplicit(o) up(ac) { visitation.apply (o, ac) }
-    method visitOuter(o) up(ac) { visitation.apply (o, ac) }
+    method visitYourself(o) up(ac) { visitation.apply (o, ac) }
+    method visitSelfType(o) up(ac) { visitation.apply (o, ac) }
     method visitAlias(o) up(ac) { visitation.apply (o, ac) }
 
     method asString { "a pluggable AST visitor" }
@@ -4110,7 +4157,8 @@ type Visitor = interface {  // the new ast visitor
     newVisitModule(aNode) -> Object
     newVisitObject(aNode) -> Object
     newVisitArray(aNode) -> Object
-    newVisitOuter(aNode) -> Object
+    newVisitYourself(aNode) -> Object
+    newVisitSelfType(aNode) -> Object
     newVisitMember(aNode) -> Object
     newVisitGeneric(aNode) -> Object
     newVisitTypeParameters(aNode) -> Object
@@ -4183,7 +4231,10 @@ class rootVisitor {
     method newVisitArray(aNode) -> Done {
         newVisitRoot(aNode)
     }
-    method newVisitOuter(aNode) -> Done {
+    method newVisitYourself(aNode) -> Done {
+        newVisitRoot(aNode)
+    }
+    method newVisitSelfType(aNode) -> Done {
         newVisitRoot(aNode)
     }
     method newVisitMember(aNode) -> Done {
@@ -4211,7 +4262,7 @@ class rootVisitor {
         newVisitRoot(aNode)
     }
     method newVisitBind(aNode) -> Done {
-        newVisitDeclaration(aNode)
+        newVisitRoot(aNode)
     }
     method newVisitDefDec(aNode) -> Done {
         newVisitDeclaration(aNode)

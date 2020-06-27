@@ -360,15 +360,34 @@ method errorMissingAnnotation {
         withSuggestions(suggestions)
 }
 
-method dotypeterm {
+method typeterm {
     if (sym.isIdentifier) then {
         pushIdentifier
         generic
         dotrest(noBlocks)
+    } elseif {acceptKeyword "outer"} then {
+        doouter
+        if (! sym.isDot) then {
+            values.pop
+            // `outer` without a following `.method` is not a valid type
+        } else {
+            dotrest(noBlocks)
+        }
+    } elseif {acceptKeyword "self"} then {
+        doself
+        if (! sym.isDot) then {
+            values.pop
+            // `outer` without a following `.method` is not a valid type
+        } else {
+            dotrest(noBlocks)
+        }
     } elseif {acceptKeyword "interface"} then {
         interfaceLiteral
     } elseif {acceptKeyword "Unknown"} then {
         values.push(ast.unknownNode)
+        next
+    } elseif {acceptKeyword "Self"} then {
+        values.push(ast.selfTypeNode)
         next
     }
 }
@@ -402,13 +421,13 @@ method typeexpression {
         statementToken := prevStatementToken
         next
     } else {
-        dotypeterm
+        typeterm
     }
     if (values.size > sz) then {
         dotrest(noBlocks)
         typeexpressionrest
     }
-    // TODO: check that the expression doesn't contain requests or var references.
+    // TODO: check that the expression doesn't contain arbitrary requests or var references.
     // This has to happen in the identifier resolution phase.
 }
 
@@ -1389,9 +1408,10 @@ method matchcase {
     util.setPosition(matchTok.line, matchTok.column)
     values.push(ast.matchCaseNode.new(matchee, cases, elsecase))
 }
-// Accept a term. Terms consist only of single syntactic units and
-// do not contain any operators or parentheses, unlike expression.
 method term {
+    // Accept a term, and push onto values stack.  Terms are single syntactic
+    // units that do not contain operators or parentheses, unlike expression.
+
     util.setPosition(sym.line, sym.column)
     if (sym.isNum) then {
         pushNum
@@ -1403,6 +1423,10 @@ method term {
         trycatch
     } elseif { sym.isIdentifier } then {
         identifier
+    } elseif { acceptKeyword "self" } then {
+        doself
+    } elseif { acceptKeyword "outer" } then {
+        doouter
     } elseif { acceptKeyword "object" } then {
         doobject
     } elseif { acceptKeyword "interface" } then {
@@ -1415,6 +1439,36 @@ method term {
         // Prefix operator
         prefixop
     }
+}
+
+method doself {
+    def o = ast.yourselfNode 0
+    values.push(o)
+    next
+    o
+}
+
+method doouter {
+    var n := 1
+    while {
+        next    // skip the keyword "outer"
+        acceptDotOuter
+    } do {
+        next    // skip the dot
+        n := n + 1
+    }
+    def o = ast.yourselfNode(n)
+    values.push(o)
+    o
+}
+
+method acceptDotOuter {
+    // look ahead to see if there is a following `.outer`
+    if (sym.isDot.not) then { return false }
+    def nextSym = sym.next
+    if (nextSym.isKeyword.not) then { return false }
+    if (nextSym.value ≠ "outer") then { return false }
+    true
 }
 
 method expression(acceptBlocks) {
@@ -1700,7 +1754,7 @@ method callrest(acceptBlocks) {
 
     // The top of the values stack may be an identifierNode, which will become
     // the method name of an implicit request, or a memberNode, whose receiver
-    // will become the receiver of the parsed call, and whose and nameString
+    // will become the receiver of the parsed call, and whose nameString
     // will become the first part-name of the method name.  It may also
     // be some other expression (such as a literal), in which case there
     // can be no arguments, and there is nothing to do.
@@ -1710,8 +1764,9 @@ method callrest(acceptBlocks) {
         return
     }
     var meth := values.pop
-    if (meth.kind != "identifier") then {
-        if (meth.kind != "member") then {
+    def kind = meth.kind
+    if (kind ≠ "identifier") then {
+        if (kind ≠ "member") then {
             values.push(meth)
             return
         }
@@ -1728,7 +1783,7 @@ method callrest(acceptBlocks) {
     def g = meth.generics
         // when used to parse a value expression, generic arguments have already
         // been parse and are in `meth`.  When used to parse a type expression,
-        // they are in the unparsed input.  This is probably a bug!
+        // they are in the unparsed input.  TODO: this is probably a bug!
     if (false == g) then {
         if (sym.isLGeneric) then {
             genericIdents := typeArgs
@@ -2543,7 +2598,7 @@ method optionalTypeAnnotation {
             suggestion := errormessages.suggestion.new
             suggestion.deleteToken(lastToken)leading(true)trailing(false)
             suggestions.push(suggestion)
-            errormessages.syntaxError("a type name or type expression must follow ':'.")atPosition(
+            errormessages.syntaxError("a type expression must follow ':'.")atPosition(
                 sym.line, sym.column)withSuggestions(suggestions)
         }
     } else {
@@ -2956,6 +3011,12 @@ method typedec {
     }
 }
 
+method startsStatement {
+    if (sym.isKeyword.not) then { return false }
+    if ("interface|self|outer".contains(sym.value)) then { return false }
+    true
+}
+
 method statement {
     // Accept a statement.
     //
@@ -2974,7 +3035,7 @@ method statement {
     statementToken := sym
     def btok = sym
     pushComments
-    if (sym.isKeyword) then {
+    if (startsStatement) then {
         def symValue = sym.value
         if (symValue == "var") then {
             vardec
@@ -2988,10 +3049,8 @@ method statement {
             typedec
         } elseif { symValue == "return" } then {
             doreturn
-        } elseif { acceptKeyword "object" } then {
+        } elseif { symValue == "object" } then {
             doobject
-        } elseif { acceptKeyword "interface" } then {
-            interfaceLiteral
         } else {
             methodClassOrTrait
         }

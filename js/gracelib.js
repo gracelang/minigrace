@@ -1906,6 +1906,12 @@ GraceType.prototype = {
 
 GraceType.prototype.methods["setName(1)"].confidential = true;
 
+function GraceSelfType() {
+    this.name = "Self";
+    this.typeMethods = [];
+    this.matchCache = [];
+}
+GraceSelfType.prototype = GraceType.prototype;
 
 function GraceBlock(recvr, lineNum, numParams) {
     this.definitionModule = recvr.definitionModule;
@@ -3475,6 +3481,7 @@ if (typeof global !== "undefined") {
     global.GraceNum = GraceNum;
     global.GraceObject = GraceObject;
     global.GracePrimitiveArray = GracePrimitiveArray;
+    global.GraceSelfType = GraceSelfType;
     global.GraceSequence = GraceSequence;
     global.GraceSequenceIterator = GraceSequenceIterator;
     global.GraceString = GraceString;

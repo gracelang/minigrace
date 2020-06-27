@@ -28,14 +28,14 @@ def varFieldDecls = list []   // a list of nodes that declare var fields
 util.setPosition(0, 0)
 
 method transformIdentifier(anIdentifier) ancestors(anc) {
-    // anIdentifier is a (copy of an) ast node that represents an applied occurrence of
-    // an identifer id.
+    // anIdentifier is a (copy of an) ast node that represents an applied
+    // occurrence of an identifer id.
     // This method may or may not transform anIdentifier into another ast node.
-    // If anIdentifier refers to a variable in a block or method, or in a module
-    // or dialect, then it should be left as a variable.  However, if it refers to
-    // a field in an object that might be reused, then it must be tranformed into
-    // a method request.
-    if (anIdentifier.isSelf) then { return anIdentifier }
+    // If anIdentifier refers to a variable in a block or method, or in a module,
+    // then it should be left as a variable.  However, if it refers to
+    // a field of a dialect, or of an object that might be reused, then it must
+    // be tranformed into a method request.
+    
     def defs = sm.variableResolver.definitionsOf (anIdentifier.name) visibleIn (anIdentifier.scope)
     if (defs.isEmpty) then {
         errormessages.undeclaredIdentifier (anIdentifier)
@@ -66,26 +66,25 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
 
 method generateOneselfRequestFrom (aSourceNode) using (aResolvedVariable) {
     // generates and returns some form of "self request" based on aSourceNode.
-    // The receiver may be a literal self, an outerNode, a bind node,
-    // or a direct reference to the module or dialect.
+    // The receiver of the generated request may be a yourselfNode, a bind node,
+    // or the identifier for the module or dialect.
 
     def objectsUp = aResolvedVariable.objectsUp
     def nodeScope = aSourceNode.scope
-    def receiver = valueOf {
     def outerChain = list.empty
-        var s := aSourceNode.scope.objectScope
+    var s := nodeScope.objectScope
     repeat (objectsUp) times {
         outerChain.addLast(s.node)
         s := s.enclosingObjectScope
     }
     def v = s.variety
-        if ("dialect | builtIn | module".contains(v)) then {
+    def receiver = if ("dialect | builtIn | module".contains(v)) then {
         ast.identifierNode.new("$" ++ v, false) scope(nodeScope)
-        } elseif {outerChain.isEmpty} then {
-            ast.identifierNode.new("self", false) scope(nodeScope)
     } else {
-            ast.outerNode(outerChain).setPositionFrom(aSourceNode).setScope(nodeScope)
-        }
+        def ynd = ast.yourselfNode(outerChain.size).setScope(nodeScope)
+        ynd.line := aSourceNode.line
+        ynd.theObjects := outerChain
+        ynd
     }
     def result = if (aSourceNode.numArgs == 0) then {
         ast.memberNode.new (aSourceNode.nameString, receiver)
@@ -690,6 +689,18 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.dtype := enclosingMethodNode.dtype
             true
         }
+        method visitYourself(o) up (anc) {
+            def currentScope = anc.parent.scope
+            o.scope := currentScope
+            def nodeObjects = list []
+            o.theObjects := nodeObjects
+            var objectScope := currentScope.objectScope
+            repeat (o.numberOfLevels) times {
+                nodeObjects.addLast(objectScope.node)
+                objectScope := objectScope.enclosingObjectScope
+            }
+            true
+        }
         method visitTypeParameters(o) up (anc) { o.scope := anc.parent.scope ; true }
         method visitIf(o) up (anc) { o.scope := anc.parent.scope ; true }
         method visitMatchCase(o) up (anc) { o.scope := anc.parent.scope ; true }
@@ -1107,31 +1118,6 @@ method transformCall(cNode) → ast.AstNode {
             errormessages.ambiguityError (defs) node (cNode)
         }
         generateOneselfRequestFrom (cNode) using (defs.first)
-    } elseif {
-        nominalRcvr.isIdentifier && {
-            nominalRcvr.nameString == "outer" }
-    } then {
-        cNode.receiver := (ast.outerNode [s.objectScope.outerScope.node]).
-            setPositionFrom(nominalRcvr).setScope(s)
-        cNode
-    } elseif { cNode.nameString == "outer" } then {
-        if (nominalRcvr.kind == "outer") then {
-            // deal with outer.outer ..., which has been (incorrectly) parsed into a
-            // a request of `outer` with an outernode as receiver.
-            // Here we add another object to that outerNode's object list.
-
-            def priorOuter = nominalRcvr.theObjects.last
-            def newOuter = priorOuter.objectScope.outerScope.objectScope.node
-            nominalRcvr.theObjects.addLast(newOuter)
-            nominalRcvr
-        } else {
-            // nominalRcvr is a member node `self.outer`
-            // TODO: This was created erroeoulsy because "outer"
-            // is defined in object scopes
-            cNode.receiver := (ast.outerNode [s.objectScope.outerScope.node]).
-                setPositionFrom(nominalRcvr).setScope(s)
-            cNode
-        }
     } else {
         cNode
     }
