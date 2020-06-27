@@ -213,8 +213,15 @@ method compileCheckThat(val) called (description)
     if (lineNumber ≠ 0) then {
         noteLineNumber(lineNumber) comment "typecheck"
     }
-    def typeDesc = withoutTypeArgs(expectedType.toGrace 0.quoted)
+    def typeDesc = withoutDollarPrefix(withoutTypeArgs(expectedType.toGrace 0.quoted))
     out "assertTypeOrMsg({val}, {nm_t}, \"{description}\", \"{typeDesc}\");"
+}
+method withoutDollarPrefix(str) {
+    if (str.first == "$") then {
+        def dotIx = str.indexOf "." ifAbsent { 0 }
+        return str.substringFrom (dotIx + 1)
+    }
+    str
 }
 method withoutTypeArgs(str) {
     def leftBracketIx = str.indexOf "⟦" ifAbsent { return str }
