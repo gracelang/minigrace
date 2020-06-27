@@ -977,10 +977,10 @@ class methodSignatureNode(parts', dtype') {
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
-        var s := basePretty(depth) ++ "\n"
-        s := "{s}{spc}Name: {asIdentifier}\n"
+        var s := basePretty(depth)
+        s := "{s}\n{spc}Name: {nameString}"
         if (false != dtype) then {
-            s := "{s}{spc}Returns:\n  {spc}{dtype.pretty(depth + 2)}"
+            s := "{s}\n{spc}Returns: {dtype.pretty(depth + 2)}"
         }
         s := "{s}\n{spc}Signature Parts:"
         for (signatureParts) do { part ->
@@ -2770,7 +2770,7 @@ def opNode is public = object {
     var left is public := l
     var right is public := r
     var generics is public := false
-    var isTailCall is public := false      // is possibly the result of a method
+    var isTailCall is public := false      // is possibly the final value of a method
     var isSelfRequest is public := false
 
 
@@ -3803,12 +3803,12 @@ def requestPart is public = object {
             if (hasTypeArgs) then {
                 s := "{s}\n{spc}TypeArgs:"
                 typeArgs.do { tArg ->
-                    s := "{s}    {spc}{tArg.pretty(depth + 2)}"
+                    s := "{s}\n    {spc}{tArg.pretty(depth + 2)}"
                 }
             }
             s := "{s}\n{spc}Args:"
             for (args) do { a ->
-                s := "{s}\n      {spc}{a.pretty(depth + 2)}"
+                s := "{s}\n    {spc}{a.pretty(depth + 2)}"
             }
             s
         }
