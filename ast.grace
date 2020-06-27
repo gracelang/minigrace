@@ -2171,7 +2171,7 @@ def memberNode is public = object {
                                                // the scope of the generated fresh object
 
         method attributeScope {
-           receiver.attributeScope.attributeScopeOf(request)
+           receiver.attributeScope.attributeScopeOf(request) in (self)
         }
         method childrenDo(anAction:Procedure1) {
             receiver.do(anAction)
@@ -2476,7 +2476,7 @@ def identifierNode is public = object {
                 ProgrammingError.raise "asking identifier {nameString} at {self.range} for its attributeScope"
                 // disambiguating with range in standard dialect
             }
-            scope.attributeScopeOf(nameString)
+            scope.attributeScopeOf(nameString) in (self)
         }
         method numTypeParams { 0 }
 
@@ -2775,7 +2775,7 @@ def opNode is public = object {
 
 
     method attributeScope {
-        left.attributeScope.attributeScopeOf(nameString)
+        left.attributeScope.attributeScopeOf(nameString) in (self)
     }
 
     method childrenDo(anAction:Procedure1) {

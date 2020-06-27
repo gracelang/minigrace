@@ -72,18 +72,18 @@ method generateOneselfRequestFrom (aSourceNode) using (aResolvedVariable) {
     def objectsUp = aResolvedVariable.objectsUp
     def nodeScope = aSourceNode.scope
     def receiver = valueOf {
-        def outerChain = list.empty
+    def outerChain = list.empty
         var s := aSourceNode.scope.objectScope
-        repeat (objectsUp) times {
-            outerChain.addLast(s.node)
-            s := s.enclosingObjectScope
-        }
-        def v = s.variety
+    repeat (objectsUp) times {
+        outerChain.addLast(s.node)
+        s := s.enclosingObjectScope
+    }
+    def v = s.variety
         if ("dialect | builtIn | module".contains(v)) then {
-            ast.identifierNode.new("$" ++ v, false) scope(nodeScope)
+        ast.identifierNode.new("$" ++ v, false) scope(nodeScope)
         } elseif {outerChain.isEmpty} then {
             ast.identifierNode.new("self", false) scope(nodeScope)
-        } else {
+    } else {
             ast.outerNode(outerChain).setPositionFrom(aSourceNode).setScope(nodeScope)
         }
     }
@@ -983,7 +983,7 @@ method scopeReferencedByReuseExpr(nd) {
             defs.first.definition.attributeScope
         } else {
             scopeReferencedByReuseExpr(nd.receiver)
-                .attributeScopeOf(nd.nameString)
+                .attributeScopeOf(nd.nameString) in (nd)
         }
     } elseif { nd.isObject } then {
         // inheriting from a literal object expression — weird, but legal

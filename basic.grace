@@ -55,7 +55,7 @@ trait open {
             // aBlock; otherwise, return the result of applying pBlock to the variable.
         isFresh → Boolean
             // answer true if this scope is one that can be used or inherited
-        attributeScopeOf (aName) → Scope
+        attributeScopeOf (aName:String) in (nd:AstNode) → Scope
         asString → String
         lookupLocallyOrReused (name) ifAbsent (aBlock)
             // Return the variable corresponding to name, which may or may not be defined in this scope,

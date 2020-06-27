@@ -59,7 +59,7 @@ def graceEmptyScope:MinimalScope is public = object {
     method lookup (name) ifAbsent (aBlock) {
         aBlock.apply
     }
-    method attributeScopeOf(name) {
+    method attributeScopeOf(name) in (nd) {
         self
     }
     method lookup(name) {
@@ -184,7 +184,7 @@ def graceUniversalScope:Scope is public = object {
     method localNamesAndValuesDo (aBlock) {
         iterationError
     }
-    method attributeScopeOf (aName) { self }
+    method attributeScopeOf (aName) in (nd) { self }
     method isObjectScope {
         // I'm treated as an object scope so that every non-empty scope has
         // an enclosing objectScope
@@ -602,9 +602,9 @@ class graceScope {
         }
         pBlock.apply (variable)
     }
-    method attributeScopeOf (aName) {
+    method attributeScopeOf (aName) in (nd) {
         lookup (aName) ifAbsent {
-            util.log 20 verbose "`{aName}` not found in scope search — assuming universal scope"
+            util.log 20 verbose "`{aName}` ({nd.range}) not found in scope search — assuming universal scope"
             return graceUniversalScope
         }.attributeScope
     }
