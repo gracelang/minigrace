@@ -150,7 +150,7 @@ trait typeArguments {
         generics.do(action)
     }
     method hasTypeArgs {
-        if (false == generics) then { false } else { generics.isEmpty }
+        if (false == generics) then { false } else { generics.isEmpty.not }
     }
     method withGenericArgs(gens) {
         generics := gens
@@ -2103,8 +2103,8 @@ class outerNode(nodes) {
     def theObjects is public = list.withAll(nodes)
 
     method attributeScope {
-        theObjects.last.scope.outerScope.objectScope
-    }
+            theObjects.last.scope.outerScope.objectScope
+        }
 
     method childrenDo(anAction:Procedure1) {
         // don't iterate over theObjects, since this would introduce a cycle
