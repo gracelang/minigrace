@@ -1446,6 +1446,7 @@ def methodNode is public = object {
         method map(blk) ancestors(ac){
             var n := shallowCopy
             def newChain = ac.extend(n)
+            n.signature := listMap(signature, blk) ancestors(newChain)
             n.body := listMap(body, blk) ancestors(newChain)
             n.signature := listMap(signature, blk) ancestors(newChain)
             n.annotations := listMap(annotations, blk) ancestors(newChain)
