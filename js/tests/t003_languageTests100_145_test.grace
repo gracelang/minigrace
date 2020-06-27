@@ -381,55 +381,6 @@ def aGraceLangTest = object {
             }
         }
 
-        method test_114_inheritboolean {
-            
-            def x = object {
-                inherit true
-                method isAnX {
-                    self
-                }
-            }
-            
-            def y = object {
-                inherit false
-                method isAnX {
-                    false
-                }
-            }
-            
-            if (x) then {
-                out "OK"
-            } else {
-                out "Not OK; x inherit true and should be true."
-            }
-            if (y) then {
-                out "Not OK; y inherit false and should be false."
-            } else {
-                out "OK"
-            }
-            if (x.isAnX) then {
-                out "OK"
-            } else {
-                out "Not OK; x.isAnX should return a true value."
-            }
-            if (x == true) then {
-                out "OK"
-            } else {
-                out "Not OK; two booleanish object are equal if they share the same prototype and underlying value"
-            }
-            if (true == !y) then {
-                out "OK"
-            } else {
-                out "Not OK; !y should be true."
-            }
-            if (false == !x) then {
-                out "OK"
-            } else {
-                out "Not OK; !x should be false."
-            }
-            
-            assert(str)shouldBe("OK\nOK\nOK\nOK\nOK\nOK\n")
-        }
         type Foo = {
             bar
             baz
@@ -456,7 +407,6 @@ def aGraceLangTest = object {
             
             assert(str)shouldBe("OK\nOK\n")
         }
-        
 
         method test_116_builtintypematch {
             
@@ -723,5 +673,4 @@ def aGraceLangTest = object {
 
 def graceLangTest = gU.testSuite.fromTestMethodsIn(aGraceLangTest) named "t003"
 graceLangTest.runAndPrintResults
-
-
+gU.exit
