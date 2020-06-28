@@ -1995,7 +1995,6 @@ function badBlockArgs(...args) {
                 typeName = "required type";
             }
             var argDesc = (numArgs === 1) ? "argument" : "argument " + n ;
-            argDesc += " (" + safeJsString(args[ix]) + ")";
             if (typeSpec.className.startsWith("Type")) {
                 // startsWith("Type") catches TypeIntersection, TypeUnion,
                 // etc, as well as class "Type" itself.
@@ -2003,10 +2002,11 @@ function badBlockArgs(...args) {
                             " does not have " + typeName,
                             typeSpec, args[ix]);
             } else {
-                let typeDesc = safeJsString(typeSpec);
+                argDesc += " (" + safeJsString(args[ix]) + ")";
+                let patternDesc = safeJsString(typeSpec);
                 throw new GraceExceptionPacket(RequestErrorObject,
                    new GraceString(argDesc + " to block." +
-                       canonicalName + " does not match " + typeDesc));
+                       canonicalName + " does not match " + patternDesc));
             }
 
         }
@@ -2031,19 +2031,19 @@ function assertTypeOrMsg(obj, type, objDesc, typeDesc) {
 }
 
 function raiseTypeError(msg, type, value) {
-    var diff;
+    var diff = "";
     if (GraceDone === value) {
         diff = " — it is `done`.";
     } else {
         try {
+             diff = ".\nIt is " + describe(value)
              var tc = loadDynamicModule("typeComparison");
              var missing = callmethod(tc, "methodsIn(1)missingFrom(1)", [1, 1], type, value)._value;
-             var s = (missing.includes(" ")) ? "s " : " ";
-             diff = ".\nIt is " + describe(value) +  ", which is missing method" + s + missing + ".";
+             var s = missing.includes(" ") ? "s " : " ";
+             diff = diff +  ", which is missing method" + s + missing + ".";
         } catch (ex) {
              // if something goes wrong while generating the message, just give up
         }
-        if (! diff) { diff = ""; }
     }
     var ex = new GraceExceptionPacket(TypeErrorObject,
                                       new GraceString(msg + diff));
