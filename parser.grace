@@ -1431,6 +1431,12 @@ method term {
         doobject
     } elseif { acceptKeyword "interface" } then {
         interfaceLiteral
+    } elseif {acceptKeyword "Unknown"} then {
+        values.push(ast.unknownNode)
+        next
+    } elseif {acceptKeyword "Self"} then {
+        values.push(ast.selfTypeNode)
+        next
     } elseif { sym.isLBrace } then {
         block
     } elseif { sym.isLSquare } then {
