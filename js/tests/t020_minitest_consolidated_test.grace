@@ -334,7 +334,7 @@ testSuiteNamed "singleton" with {
     
     test "argument does not match pattern" by {
         assert {block1.apply "hello"} shouldRaise (RequestError)
-            mentioning "argument to block.apply(_)" and "not match pattern"
+            mentioning "argument (hello) to block.apply(_)" and "does not match"
     }
     
     test "3 arguments good" by {
