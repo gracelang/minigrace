@@ -885,7 +885,7 @@ method checkForConflicts(objNode, traitMethods) {
     traitMethods.keysDo { methName →
         def sources = traitMethods.at(methName)
         if (sources.size > 1) then {    // a method has more than one source trait
-            if (objNode.localNames.containsKey(methName).not) then {
+            if (objNode.localNames.contains(methName).not) then {
                 conflicts.addLast (conflictForMethodName(methName) from(sources))
             }
         }
