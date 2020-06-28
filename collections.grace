@@ -1370,7 +1370,8 @@ def range is public = object {
     method uncheckedFrom (lower) to (upper) {
         //  returns Sequence⟦Number⟧
         object {
-            use indexable⟦Number⟧
+            use indexable⟦Number⟧ exclude ≠(_)
+            use equality
             def start = lower
             def stop = upper
             def size is public =
@@ -1440,7 +1441,7 @@ def range is public = object {
             method ==(other) {
                 isEqual (self) toCollection (other)
             }
-            method hash {
+            once method hash {
                 // must be compatable with hash on sequences
                 var result := 0x5E0EACE;     // sort of like SEQENCE
                 do { each ->
@@ -1448,8 +1449,7 @@ def range is public = object {
                 }
                 result
             }
-            method :: (obj) { binding.key (self) value (obj) }
-            method ≠ (other) { (self == other).not }
+
             method sorted { self }
 
             method sortedBy(c) { list.withAll(self).sortBy(c) }
@@ -1465,7 +1465,8 @@ def range is public = object {
     }
     method from(upper)downTo(lower) -> Sequence⟦Number⟧ {
         object {
-            use indexable⟦Number⟧
+            use indexable⟦Number⟧ exclude ≠(_)
+            use equality
             match (upper)
               case {_:Number ->
             } else {
@@ -1551,7 +1552,7 @@ def range is public = object {
             method ==(other) {
                 isEqual (self) toCollection (other)
             }
-            method hash {
+            once method hash {
                 // must be compatable with hash on sequences
                 var result := 0x5E0EACE;     // sort of like SEQENCE
                 do { each ->
@@ -1559,8 +1560,7 @@ def range is public = object {
                 }
                 result
             }
-            method :: (obj) { binding.key (self) value (obj) }
-            method ≠ (other) { (self == other).not }
+
             method sorted { self.reversed }
 
             method sortedBy(c) { list.withAll(self).sortBy(c) }
