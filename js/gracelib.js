@@ -1170,10 +1170,10 @@ var GraceTrue;
 var GraceFalse;
 
 (function () {
-    function GraceBoolean(b) {
+    function Boolean(b) {
         this._value = b;
     }
-    GraceBoolean.prototype = {
+    Boolean.prototype = {
         methods: {
             "isMe(1)":          object_isMe,
             "myIdentityHash":   object_identityHash,
@@ -1194,10 +1194,10 @@ var GraceFalse;
                 return ((this._value) ? request(trueAction, "apply") : request(falseAction, "apply"));
             },
             "not": function(argcv) {
-                return ((this._value) ? GraceFalse : GraceTrue);
+                return this.negated;
             },
             "prefix!": function(argcv) {
-                return ((this._value) ? GraceFalse : GraceTrue);
+                return this.negated;
             },
             "&(1)": function(argcv, other) {
                 return graceAndPattern(this, other);
@@ -1214,7 +1214,7 @@ var GraceFalse;
                 if ((this.className === other.className) ||
                         other.methods['ifTrue(1)ifFalse(1)'])
                     return other;
-                return callmethod(other, "apply", [0]);
+                return request(other, "apply", [0]);
             },
             "||(1)": function(argcv, other) {
                 if (this._value)
@@ -1222,7 +1222,7 @@ var GraceFalse;
                 if ((this.className === other.className) ||
                         other.methods['ifTrue(1)ifFalse(1)'])
                     return other;
-                return callmethod(other, "apply", [0]);
+                return request(other, "apply", [0]);
             },
             "asString": function(argcv) {
                 return new GraceString("" + this._value);
@@ -1231,10 +1231,15 @@ var GraceFalse;
                 return new GraceString("" + this._value);
             },
             "==(1)": function(argcv, other) {
-                return Object.is(this, other) ? GraceTrue : GraceFalse;
+                if (this === other) return GraceTrue;
+                if (this.negated === other) return GraceFalse;
+                const it = other.methods['ifTrue(1)ifFalse(1)']
+                if (! it) return GraceFalse;
+                const otherBool = it.call(other, [1], jsTrueBlock, jsFalseBlock);
+                return (this._value === otherBool) ? GraceTrue : GraceFalse;
             },
             "matches(1)": function(argcv, o) {
-                return (callmethod(this, "==(1)", [1], o));
+                return this.methods["==(1)"].call(this, [1], o);
             },
             "hash": function(argcv) {
                 return new GraceNum(this._value ? 3637 : 1741);
@@ -1249,8 +1254,10 @@ var GraceFalse;
         classUid: "boolean-built-in"
     };
 
-    GraceTrue = new GraceBoolean(true);
-    GraceFalse = new GraceBoolean(false);
+    GraceTrue = new Boolean(true);
+    GraceFalse = new Boolean(false);
+    GraceTrue.negated = GraceFalse;
+    GraceFalse.negated = GraceTrue;
 }());   // apply this function now
 
 function GraceBoolean(b) {
