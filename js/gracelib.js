@@ -1467,6 +1467,9 @@ GraceSequence.prototype = {
             return selfRequest(collections,
                         "isEqual(1)toCollection(1)", [1, 1], this, other);
         },
+        "matches(1)": function(argcv, other) {
+            return selfRequest(this, "==(1)", [1], other)
+        },
         "hash": function(argcv) {
             var result = 0x5E0EACE;     // sort of like SEQENCE
             for (var i=0; i<this._value.length; i++) {
