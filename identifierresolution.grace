@@ -812,7 +812,7 @@ method gatherInheritedNames(node) is confidential {
             // An alias is added as a local method, not as a reused method
         }
         inhNode.exclusions.do { exMeth →
-            if (superScope.contains(exMeth.nameString).not) then {
+            if (superScope.definesLocallyOrReuses(exMeth.nameString).not) then {
                 errormessages.syntaxError("can't exclude {exMeth.canonicalName} " ++
                     "because it is not present in the inherited object")
                     atRange(exMeth.range)
