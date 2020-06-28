@@ -159,7 +159,6 @@ method generateGctForModule(module) {
     //      used for everything else.
     // <attributes> is optional, and consists of a comma-separated list of strings
 
-    util.log_verbose "generating gct"
     def gct = dictionary.empty
     def theDialect = module.theDialect.moduleName
     def methodList = list.empty
