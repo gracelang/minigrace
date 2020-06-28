@@ -2948,8 +2948,11 @@ def bindNode is public = object {
         aVisitor.preVisit(self)
         aVisitor.postVisit(self) result(aVisitor.newVisitBind(self))
     }
-
-    method parts { [ requestPart.request(nameString).setPositionFrom(self).setScope(scope) ] }
+    method parts {
+        def part = requestPart.request "{dest.value}:=" withArgs [value] scope(scope)
+        part.setPositionFrom(self)
+        [ part ]
+    }
     method end -> Position { value.end }
     method nameString { dest.nameString ++ ":=(1)" }
     method canonicalName { dest.nameString ++ ":=(_)" }
