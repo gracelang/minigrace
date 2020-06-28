@@ -213,6 +213,7 @@ class baseNode {
     method isMarkerDeclaration { false }
     method isMatchingBlock { false }
     method isFieldDec { false }
+    method isVarDec { false }
     method isInherits { false }
     method isLegalInTrait { false }
     method isMember { false }
@@ -1901,8 +1902,11 @@ def objectNode is public = object {
             if (false == myLocalNames) then {
                 myLocalNames := set.empty
                 value.do { node ->
-                    if (node.isFieldDec || node.isMethod) then {
+                    if (node.isConcrete) then {
                         myLocalNames.add(node.nameString)
+                    }
+                    if (node.isVarDec) then {
+                        myLocalNames.add(node.nameString ++ ":=(1)")
                     }
                 }
             }
@@ -3156,6 +3160,7 @@ def varDecNode is public = object {
             aVisitor.postVisit(self) result(aVisitor.newVisitVarDec(self))
         }
 
+        method isVarDec { true }
         method isPublic {
             // vars are confidential by default
             hasAnnotation "public"
