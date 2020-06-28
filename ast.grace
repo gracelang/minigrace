@@ -3796,6 +3796,7 @@ def requestPart is public = object {
             var n := shallowCopy
             def newChain = ac.extend(n)
             n.args := listMap(args, blk) ancestors(newChain)
+            n.generics := maybeListMap(generics, blk) ancestors(newChain)
             blk.apply(n, ac)
         }
         method pretty(depth) {
