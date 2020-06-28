@@ -31,10 +31,13 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
     // anIdentifier is a (copy of an) ast node that represents an applied
     // occurrence of an identifer id.
     // This method may or may not transform anIdentifier into another ast node.
-    // If anIdentifier refers to a variable in a block or method, or in a module,
+    // If anIdentifier refers to a variable in a block or method,
     // then it should be left as a variable.  However, if it refers to
-    // a field of a dialect, or of an object that might be reused, then it must
-    // be tranformed into a method request.
+    // a field of an object, then it is tranformed into a method request.
+    // Note that it would be possible for confidential fields of stale objects to
+    // be compiled as identifiers. We do not do so, because distinguishing
+    // this case seems like a lot of work, and V8 will probably inline the
+    // accessors for us anyway
     
     def defs = sm.variableResolver.definitionsOf (anIdentifier.name) visibleIn (anIdentifier.scope)
     if (defs.isEmpty) then {
@@ -50,7 +53,7 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
     } elseif { variable.definingScope.varsAreMethods } then {
         // Anything defined in a fresh scope, including a var, can be overridden,
         // so we need to access it via a request.  If the var is on the lhs of an
-        // assignment, we don't re-write it here; this will happen in transfromBind
+        // assignment, we don't re-write it here; this will happen in transformBind
         if (anIdentifier.isAssigned) then {
             if (variable.isAssignable.not) then {
                 errormessages.badAssignmentTo(anIdentifier) declaredInScope(variable.definingScope)
@@ -116,28 +119,7 @@ method resolveIdentifiers(topNode) {
             node
         }
     } ancestors (ast.ancestorChain.empty)
-    addAssignmentMethodsToSymbolTable
     newModule
-}
-
-method addAssignmentMethodsToSymbolTable {
-    // Adds the ‹var›(1):= methods for var fields to the symbol table, so that
-    // they will be inserted into the gct file.  This is delayed until after
-    // identifiers have been resolved, so that assignments to module-level
-    // var fields are _not_ resolved into requests on the ‹var›(1):= method,
-    // but are compiled as simple assignments (which are more efficient). Note
-    // that module-level var fields that are not public don't get (1):= methods;
-    // because module can't be re-used, such methods are never needed.
-
-    varFieldDecls.do { declNode →
-        def dScope = declNode.scope
-        def nameGets = declNode.nameString ++ ":=(1)"
-        if (dScope.isModuleScope.not || declNode.isPublic) then {
-            dScope.add(sm.variableVarFrom(declNode)) withName (nameGets)
-            // will complain if already declared
-            // is it necessary to construct a fake method node? The old symbol table did
-        }
-    }
 }
 
 method writeGctForModule(moduleObject) {
@@ -500,10 +482,11 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.scope := s
             o.parentKind := myParent.kind
             def rhs = o.value
-            if (rhs.isObject) then { rhs.name := o.nameString }
-            if (myParent.isObject && o.isReadable) then {
+            def nameString = o.nameString
+            if (rhs.isObject) then { rhs.name := nameString }
+            if (myParent.isObject) then {
                 if (o.isTyped) then {
-                    s.methodTypes.at(o.nameString) put(readerSignature(o))
+                    s.methodTypes.at(nameString) put(readerSignature(o))
                 }
             }
             true
@@ -515,12 +498,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.parentKind := myParent.kind
             if (myParent.isObject) then {
                 if (o.isTyped) then {
-                    if (o.isReadable) then {
-                        s.methodTypes.at(o.nameString) put(readerSignature(o))
-                    }
-                    if (o.isWritable) then {
-                        s.methodTypes.at(o.nameString) put(writerSignature(o))
-                    }
+                    def nameString = o.nameString
+                    s.methodTypes.at(nameString) put(readerSignature(o))
+                    s.methodTypes.at(nameString) put(writerSignature(o))
                 }
             }
             true
@@ -534,16 +514,10 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                     errormessages.checkForReservedName(o)
                     def kind = o.declarationKindWithAncestors(anc)
                     if (scope.isObjectScope && (kind == k.vardec)) then {
-                        varFieldDecls.add(anc.parent)
-                        // Why not just add the :=(_) now?
-                        // Because we want some field assignments to be compiled as
-                        // direct assignments, and hence have to distinguish
-                        // programmer-writen :=(_) methods from synthetic ones.
-                        // TODO: isn't this comment just WRONG?
-                        // If any field assignments are compiled directly, then they
-                        // won't be overridden when a <field>:=(_) method is defined!
-                        // The only place where we can compile them directly is in an
-                        // object that is not fresh — which we can check for
+                        def nameGets = o.nameString ++ ":=(1)"
+                        scope.add(sm.variableVarFrom(declaringNode)) withName (nameGets)
+                        // will complain if already declared
+                        // TODO: should this be variableMethodFrom(_) ?
                     }
                     scope.add(match (kind)
                         case { k.vardec → sm.variableVarFrom(declaringNode) }
@@ -1034,7 +1008,7 @@ method selfReuseError (aReuseNode) {
 
 method transformBind(bindNode) ancestors(anc) {
     // bindNode is (a shallow copy of) a bindNode.  If it is binding a
-    // "member" or an identifier, transform it into a request on a setter
+    // "member" or field of an object, transform it into a request on a setter
 
     def lhs = bindNode.lhs
     def nm = lhs.nameString
@@ -1060,12 +1034,9 @@ method transformBind(bindNode) ancestors(anc) {
     } elseif { defs.size > 1 } then {
         errormessages.ambiguityError (defs) node (lhs)
     } else {    // exactly one definition
-        def aResolvedVariable = defs.first
-        if (aResolvedVariable.definition.isMethod) then {
-            generateOneselfRequestFrom (bindNode) using (aResolvedVariable)
-        } else {
-            bindNode
-        }
+        def newCall = generateOneselfRequestFrom (bindNode) using (defs.first)
+        newCall.end := bindNode.value.end
+        newCall
     }
 }
 
