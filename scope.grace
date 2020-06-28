@@ -604,7 +604,7 @@ class graceScope {
     }
     method attributeScopeOf (aName) in (nd) {
         lookup (aName) ifAbsent {
-            util.log 20 verbose "`{aName}` ({nd.range}) not found in scope search — assuming universal scope"
+            util.log 50 verbose "`{aName}` ({nd.range}) not found in scope search — assuming universal scope"
             return graceUniversalScope
         }.attributeScope
     }
