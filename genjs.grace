@@ -920,7 +920,7 @@ method compileDummyMethod(o, selfobj, kind) {
     debugModePrefix
     out "throw new GraceExceptionPacket(ProgrammingErrorObject,"
     out "          new GraceString(\"{kind} method {canonicalMethName} \" +"
-    out "                          \"was not supplied for \" + safeJSString(this)));"
+    out "                          \"was not supplied for \" + safeJsString(this)));"
     debugModeSuffix
     compileMethodPostamble(o, funcName, canonicalMethName)
     out "{selfobj}.methods[\"{name}\"] = {funcName};"
