@@ -804,7 +804,7 @@ method compileSimpleAccessor(o) {
     def name = escapestring(o.nameString)
     def ident = o.body.first
     def p = paramlist(o) ++ typeParamlist(o)
-    out "var {funcName} = function(argcv{p}) \{     // accessor method {canonicalMethName}"
+    out "var {funcName} = function(argcv{p}) \{     // accessor method {canonicalMethName}, line {o.line}"
     increaseindent
     if (emitArgChecks) then {
         out "const numArgs = arguments.length - 1;"
