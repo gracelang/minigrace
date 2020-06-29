@@ -1,7 +1,9 @@
 dialect "minitest"
 import "scope" as scope
 import "ast" as ast
-import "sourcePosition" as pos
+import "basic" as basic
+
+inherit basic.open
 
 testSuite "scope" with {
     test "empty scope construction" by {
@@ -64,7 +66,7 @@ testSuite "scope" with {
 
 method objectNode {
     def result = ast.objectNode.body [] named "wombat"
-    result.setStart(pos.line 2 column 12)
+    result.setStart(line 2 column 12)
     result
 }
 
@@ -73,7 +75,7 @@ method defNode {
           ast.identifierNode.new("wombat", false),
           objectNode,
           ast.unknownNode)
-    result.setStart(pos.line 2 column 5)
+    result.setStart(line 2 column 5)
     result
 }
 
@@ -85,14 +87,14 @@ method methNode {
     sig.add(ast.signaturePart.partName "foo" params [a])
     sig.add(ast.signaturePart.partName "bar" params [b])
     def result = ast.methodNode.new(sig, [], ast.unknownNode)
-    result.setStart(pos.line 3 column 5)
+    result.setStart(line 3 column 5)
     result
 }
 
 method magicMethNode {
     def sig = [ ast.signaturePart.partName(scope.magicKey) ]
     def result = ast.methodNode.new(sig, [], ast.unknownNode)
-    result.setStart(pos.line 1 column 5)
+    result.setStart(line 1 column 5)
     result
 }
 
