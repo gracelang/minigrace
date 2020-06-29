@@ -222,6 +222,7 @@ class baseNode {
     method isExecutable { true }
     method isCall { false }
     method isComment { false }
+    method isConcrete { false } // is a concrete method declaration
     method isClass { false }    // is a method that returns a fresh object
     method inClass { false }    // object in a syntactic class definiton
     method isTrait { false }    // is a method that returns a trait object
