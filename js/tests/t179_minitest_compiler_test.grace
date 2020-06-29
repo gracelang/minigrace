@@ -103,13 +103,13 @@ testSuite "Unknown is reserved #290" with {
         assert{ compiler.astFromString ‹dialect "none"
 type Unknown = interface{}› }
               shouldRaise (SyntaxError)
-              mentioning "Unknown is a reserved name"
+              mentioning "'Unknown' is a reserved word"
     }
     test "Can't def Unknown" by {
         assert{ compiler.astFromString ‹dialect "none"
 def Unknown = object{}› }
               shouldRaise (SyntaxError)
-              mentioning "Unknown is a reserved name"
+              mentioning "'Unknown' is a reserved word"
     }
 }
 

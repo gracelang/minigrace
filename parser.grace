@@ -1948,9 +1948,14 @@ method errorDefNoName {
         suggestion.replaceTokenRange(sym, nextTok.prev)
               leading(false)trailing(true)with("«name» ")
     }
-    errormessages.syntaxError("a definition must have a name, '=', " ++
-          "and a value after the 'def'.") atPosition(sym.line, sym.column)
-          withSuggestion(suggestion)
+    var msg := "a definition must have a name, '=', and a value after the 'def'"
+    if (sym.isKeyword) then {
+        msg := msg ++ "; '{sym.value}' is a reserved word"
+        errormessages.syntaxError(msg) atRange(sym)
+    } else {
+        errormessages.syntaxError(msg) atPosition(sym.line, sym.column)
+                withSuggestion(suggestion)
+    }
 }
 
 method errorDefNoExpression {
@@ -2036,18 +2041,16 @@ method vardec {
         def varTok = sym
         next
         if (sym.isIdentifier.not) then {
-            def suggestion = errormessages.suggestion.new
             def nextTok = findNextToken { t ->
                   (t.isBind) && (t.line == sym.line)
             }
-            if ((false == nextTok) || {nextTok == sym}) then {
-                suggestion.insert(" «name»")afterToken(lastToken)
+            var msg := "a variable declaration must have a name after the 'var'"
+            if (sym.isKeyword) then {
+                msg := msg ++ "; '{sym.value}' is a reserved word"
+                errormessages.syntaxError (msg) atRange(sym)
             } else {
-                suggestion.replaceTokenRange(sym, nextTok.prev)
-                      leading(false)trailing(true)with("«name» ")
+                errormessages.syntaxError (msg) atPosition(sym.line, sym.column)
             }
-            errormessages.syntaxError "a variable declaration must have a name after the 'var'."
-                  atPosition(sym.line, sym.column) withSuggestion(suggestion)
         }
         pushIdentifier
         var val := false
@@ -2403,9 +2406,15 @@ method classOrTrait(btok) {
             suggestion.insert(" «{myKind} name» \{}")afterToken(lastToken)
             suggestions.push(suggestion)
         }
-        errormessages.syntaxError "a {myKind} must have a name after the keyword '{myKind}'."
-            atPosition(lastToken.line, lastToken.column + lastToken.size + 1)
-            withSuggestions(suggestions)
+        var msg := "a {myKind} declaration must have a name after the '{myKind}'"
+        if (sym.isKeyword) then {
+            msg := msg ++ "; '{sym.value}' is a reserved word"
+            errormessages.syntaxError(msg)atRange(sym)
+        } else {
+            errormessages.syntaxError(msg)
+                  atPosition(sym.line, sym.column)
+                  withSuggestions(suggestions)
+        }
     }
     if (tokens.first.isDot) then {
         errormessages.syntaxError("dotted classes are no longer supported. " ++
@@ -2964,16 +2973,19 @@ method typedec(toks) {
 }
 
 method typedec {
-    // Accept a declaration: 'type = <type expression>'
+    // Accept a declaration: 'type <name> = <type expression>'
     if (acceptKeyword "type") then {
         def line = sym.line
         def pos = sym.column
         next
-        if (sym.kind != "identifier") then {
-            def suggestion = errormessages.suggestion.new
-            suggestion.insert(" «type name»")afterToken(lastToken)
-            errormessages.syntaxError("a type declaration must have a name after the 'type'.")atPosition(
-                lastToken.line, lastToken.column + lastToken.size + 1)withSuggestion(suggestion)
+        if (sym.isIdentifier.not) then {
+            var msg := "a type declaration must have a name after the 'type'"
+            if (sym.isKeyword) then {
+                msg := msg ++ "; '{sym.value}' is a reserved word"
+                errormessages.syntaxError(msg) atRange(sym)
+            } else {
+                errormessages.syntaxError(msg) atPosition(line, pos + 1)
+            }
         }
         pushIdentifier
         util.setPosition(line, pos)
