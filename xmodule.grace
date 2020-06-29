@@ -9,6 +9,7 @@ import "shasum" as shasum
 import "regularExpression" as regex
 import "intrinsic" as intrinsic
 import "basic" as basic
+import "buildinfo" as buildinfo
 
 use basic.open
 
@@ -209,7 +210,7 @@ method findOrBuildCompiledModule(moduleName, modulePath, sourceRange) -> ModuleR
                   atRange (sourceRange)
         }
         def sourceSHA = shasum.sha256OfFile(graceFile)
-        def thisCompiler = util.buildinfo.gitgeneration
+        def thisCompiler = buildinfo.gitgeneration
         def jsFileName = filePath.withBase(graceFile.base).setExtension ".js"
         def jsFile = findJsFile(jsFileName) suchThat { f ->
             file(f) createdBy(thisCompiler) withSHA(sourceSHA)
