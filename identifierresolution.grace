@@ -902,7 +902,7 @@ method checkForConflicts(objNode, traitMethods) {
         def sourceList = each.sources.map { s → s.nameString }
         maxSourceLine := each.sources.fold {a, s → max(a, s.line) }
               startingWith(maxSourceLine)
-        message := message ++ "Method `{each.methodName}` is defined in " ++
+        message := message ++ "Method `{each.canonicalName}` is defined in " ++
               errormessages.readableStringFrom(sourceList) ++ ".\n    "
     }
     if (maxSourceLine == 0) then {
@@ -915,6 +915,7 @@ method checkForConflicts(objNode, traitMethods) {
 class conflictForMethodName(nm) from(srcs) {
     def methodName is public = nm
     def sources is public = srcs
+    method canonicalName { mirror.canonicalName(methodName) }
 }
 
 method scopeReferencedByReuseExpr(nd) {
