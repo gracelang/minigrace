@@ -137,7 +137,7 @@ do
                 fi)
             then
                 NUM_PASS=$((NUM_PASS + 1))
-#                echo "${NUM_TESTS} PASS: $tcase"
+#                printf "\nPASS: $tcase"
                 printf %s .
                 pass ${tcase}
                 rm -f test-$$.out
@@ -146,17 +146,17 @@ do
                 echo ""
                 if [ $exitCode -ne 0 ]
                 then
-                    echo "${NUM_TESTS} ERROR: $tcase exited with code $exitCode"
+                    printf "\nERROR: $tcase exited with code $exitCode\n"
                     fail "${tcase}: exit $exitCode"
                 else
-                    echo "${NUM_TESTS} ERROR: $tcase produced wrong output"
+                    printf "\nERROR: $tcase produced wrong output\n"
                     fail "${tcase}: wrong output"
                 fi
             fi
         else
             NUM_COMPILE_ERROR=$((NUM_COMPILE_ERROR + 1))
             echo ""
-            echo "${NUM_TESTS} ERROR: $tcase failed to compile"
+            printf "\nERROR: $tcase failed to compile\n"
             fail "${tcase}: compile error"
         fi
     else
@@ -165,12 +165,12 @@ do
         echo compiling failing test $tcase ... > test-$$.log
         if eval "$COMMAND" >> test-$$.log 2>&1
         then
-            echo "${NUM_TESTS} ERROR: $tcase should have failed to compile"
+            printf "\nERROR: $tcase should have failed to compile\n"
             NUM_UNEXPECTED_SUCCESS=$((NUM_UNEXPECTED_SUCCESS + 1))
             fail "${tcase} compiled"
         else
             NUM_PASS=$((NUM_PASS + 1))
-#            echo "${NUM_TESTS} PASS: $tcase"
+#            printf "\nPASS: $tcase\n"
             printf %s .
             pass ${tcase}
         fi
