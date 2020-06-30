@@ -7,6 +7,7 @@ dialect "standard"
 import "collections" as collections
 import "mirror" as mirror
 import "sys" as sys
+import "regularExpression" as regularExpression
 
 type Assertion = { 
     assert(bb:Boolean) description(str:String) -> Done
@@ -103,10 +104,8 @@ trait assertion {
     method assert(block0) shouldRaise (desiredException) {
         assert(block0) shouldRaise (desiredException) mentioning "" and ""
     }
-    method assert(block0) shouldRaise (desiredException)
-              mentioning (error) {
-        assert(block0) shouldRaise (desiredException)
-              mentioning (error) and ""
+    method assert(block0) shouldRaise (desiredException) mentioning (error) {
+        assert(block0) shouldRaise (desiredException) mentioning (error) and ""
     }
     method assert(block0:Procedure0) shouldRaise (desiredException:Pattern)
               mentioning (error1:String) and (error2:String) {
@@ -136,6 +135,30 @@ trait assertion {
             }
         }
     }
+    method assert(block0:Procedure0) shouldRaise (desiredException:Pattern)
+              matchedBy (regexStr) {
+        var completedNormally := true
+        countOneAssertion
+        try {
+            block0.apply
+        } catch { raisedException:desiredException ->
+            completedNormally := false
+            if (regularExpression.fromString(regexStr).matches(raisedException.message).not) then {
+                failBecause("code raised exception {raisedException.exception} as expected,"
+                    ++ " but the message was\n\"{raisedException.message}\","
+                    ++ " which is not matched by \"{regexStr}\"")
+            }
+        } catch { raisedException ->
+            completedNormally := false
+            failBecause("code raised exception {raisedException.exception}" ++
+                ": \"{raisedException.message}\" instead of {desiredException}")
+        } finally {
+            if (completedNormally) then {
+                failBecause "code did not raise an exception"
+            }
+        }
+    }
+
     method assert(block0) shouldntRaise (undesiredException) {
         countOneAssertion
         try {

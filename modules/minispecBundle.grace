@@ -58,16 +58,20 @@ trait open {
         assert(n1) shouldEqual (n2) within (epsilon)
     }
 
-    method expect(b:Procedure0) toRaise (desired:ExceptionKind) {
+    method expect(b:Procedure0) toRaise (desired) {
         assert(b) shouldRaise (desired)
     }
 
-    method expect(b:Procedure0) toRaise (desired:ExceptionKind) mentioning (error) {
+    method expect(b:Procedure0) toRaise (desired) mentioning (error) {
         assert(b) shouldRaise (desired) mentioning (error)
     }
 
-    method expect(b:Procedure0) toRaise (desired:ExceptionKind) mentioning (err1) and (err2) {
+    method expect(b:Procedure0) toRaise (desired) mentioning (err1) and (err2) {
         assert(b) shouldRaise (desired) mentioning (err1) and (err2)
+    }
+
+    method expect(b:Procedure0) toRaise (desired) matchedBy (regexStr) {
+        assert(b) shouldRaise (desired) matchedBy (regexStr)
     }
 
     method expect(b:Procedure0) notToRaise (undesired:ExceptionKind) {
