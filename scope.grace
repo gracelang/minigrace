@@ -211,20 +211,6 @@ class graceInterfaceScope {
     // I represent an iterface scope, that is, a set of methods.  Thus, I also
     // represent the methods in an interface type.
 
-    method initialize(aNode) is confidential {
-        if (definesLocally "Self".not) then {
-            def fakeNode = object {
-                method nameString { "Self" }
-                method declaredType { typeType }
-                method isMarkerDeclaration { false }
-                method annotations { [] }
-                method isDeclaredByParent { false }
-                method scope { outer }
-            }
-            add (variableTypeFrom(fakeNode)) withName "Self"
-        }
-    }
-
     once method meet (anotherScope) {
         // create and return a new scope that is the mathematical meet of self
         // and anotherScope; it contains those names common to both scopes.
@@ -282,16 +268,6 @@ class graceObjectScope {
     method isEmpty { names.isEmpty && reusedNames.isEmpty }
     var isFresh is public := false  // changed in objectScopesVis in identifierResolution
     method varsAreMethods { true }   // TODO: false when not fresh
-    method initialize(aNode) is confidential {
-        if (definesLocally "self".not) then {
-            add (variablePseudoFrom(aNode).attributeScope (self)) withName "self"
-            def enclosingObjectScope = outerScope.objectScope
-            def enclosingObjectVariable =
-                variablePseudoFrom(enclosingObjectScope.node).
-                    attributeScope (enclosingObjectScope)
-            add (enclosingObjectVariable) withName "outer"
-        }
-    }
     method allNames {
         (names.keys ++ reusedNames.keys) >> sequence
     }
@@ -435,7 +411,6 @@ class externalScope {
     var isTrait is public := false
     var isFresh is public := false
     method isExternal { true }
-    method initialize(aNode) is confidential { }
     method variety { "external" }
     method areReusedNamesCompleted { true }
     method species is confidential { externalScope }
