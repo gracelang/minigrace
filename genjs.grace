@@ -708,6 +708,7 @@ method compileFreshMethod(o, outerRef) {
     //   (1) an object constructor,
     //   (2) a request on another fresh method (which will return its init function),
     //   (3) a request of a clone or a copy (which returns a null init function).
+    //   TODO: eliminate case 3
 
     def resultExpr = o.resultExpression
     if (resultExpr.isObject) then {     // case (1)
@@ -1773,8 +1774,7 @@ method compileReuseCall(callNode) forClass (className) aliases (aStr) exclusions
         }
     }
     def numArgs = callNode.numArgs + callNode.numTypeArgs + 3
-    // why +3?  Becuase of the 3 args to $build(3).  In fact, it should
-    // be +2, because of the $object(1) suffix that is replaced by $build(3)
+    // why +3?  Becuase of the 3 args to $build(3).
     def req = if (callNode.isSelfRequest) then { "selfRequest" } else { "request" }
     def initFun = uidWithPrefix "initFun"
     out("var {initFun} = {req}({target}, \"{escapestring(buildMethodName)}\"" ++
