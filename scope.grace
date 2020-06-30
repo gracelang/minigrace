@@ -667,8 +667,15 @@ class graceScope {
             names.at (aName) put (aVariable)
             return aVariable
         }
-        errormessages.namingError ("sorry, you can't declare `{aName}` as a " ++
-              "{aVariable.kind}, because it's already declared as a "++
+        def kind = aVariable.kind
+        def cName = canonicalName(aName)
+        def nm = if ((kind == "var") && cName.endsWith ":=(_)") then {
+            cName.replace ":=(_)" with ""
+        } else {
+            cName
+        }
+        errormessages.namingError ("sorry, you can't declare '{nm}' " ++
+              "as a {kind}, because {cName} is already declared as a " ++
               "{priorDeclaration.kind} on {priorDeclaration.rangeLongString}, " ++
               "which is in the same scope; use a different name")
               atRange (aVariable.definingParseNode)
