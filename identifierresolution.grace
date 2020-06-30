@@ -910,7 +910,7 @@ method checkForConflicts(objNode, traitMethods) {
 
     if (conflicts.isEmpty) then { return }
 
-    var maxSourceLine := 0
+    var maxSourceRange:Range := emptyRange
     var message := if (conflicts.size > 1) then {
         "trait conflicts found.\n    "
     } else {
@@ -918,15 +918,15 @@ method checkForConflicts(objNode, traitMethods) {
     }
     conflicts.do { each →
         def sourceList = each.sources.map { s → s.nameString }
-        maxSourceLine := each.sources.fold {a, s → max(a, s.line) }
-              startingWith(maxSourceLine)
+        maxSourceRange := each.sources.fold {a, s → max(a, s.range) }
+              startingWith(maxSourceRange)
         message := message ++ "Method `{each.canonicalName}` is defined in " ++
               errormessages.readableStringFrom(sourceList) ++ ".\n    "
     }
-    if (maxSourceLine == 0) then {
-        errormessages.error(message)
+    if (maxSourceRange == emptyRange) then {
+        errormessages.reuseError(message)
     } else {
-        errormessages.error(message) atLine (maxSourceLine)
+        errormessages.reuseError(message) atRange (maxSourceRange)
     }
 }
 

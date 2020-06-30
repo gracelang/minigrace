@@ -19,20 +19,25 @@ trait open {
     // defines positions, and ranges, in the source
 
     type Position = interface {
-        line -> Number
-        column -> Number
-        > (other) -> Boolean
-        ≥ (other) -> Boolean
-        == (other) -> Boolean
-        < (other) -> Boolean
-        ≤ (other) -> Boolean
+        line → Number
+        column → Number
+        > (other) → Boolean
+        ≥ (other) → Boolean
+        == (other) → Boolean
+        < (other) → Boolean
+        ≤ (other) → Boolean
     }
     type Range = interface {
-        start -> Position
-        end -> Position
-        rangeString -> String
-        rangeLongString -> String
-        lineRangeString -> String
+        start → Position
+        end → Position
+        > (other) → Boolean
+        ≥ (other) → Boolean
+        == (other) → Boolean
+        < (other) → Boolean
+        ≤ (other) → Boolean
+        rangeString → String
+        rangeLongString → String
+        lineRangeString → String
     }
     type Scope = Object & interface {
         outerScope → Scope
@@ -153,47 +158,47 @@ trait open {
         startPosition → Position
         stopPosition → Position
     }
-    class line (l:Number) column (c:Number) -> Position {
+    class line (l:Number) column (c:Number) → Position {
         use equality
         def line is public = l
         def column is public = c
-        method > (other:Position) -> Boolean {
+        method > (other:Position) → Boolean {
             if (line > other.line) then { return true }
             if (line < other.line) then { return false }
             (column > other.column)
         }
-        method ≥ (other:Position) -> Boolean {
+        method ≥ (other:Position) → Boolean {
             if (line > other.line) then { return true }
             if (line < other.line) then { return false }
             (column ≥ other.column)
         }
-        method == (other:Position) -> Boolean {
+        method == (other:Position) → Boolean {
             (line == other.line) && (column == other.column)
         }
-        method hash -> Number {
+        method hash → Number {
             hashCombine(line.hash, column.hash)
         }
-        method ≤ (other:Position) -> Boolean {
+        method ≤ (other:Position) → Boolean {
             (other > self).not
         }
-        method < (other:Position) -> Boolean {
+        method < (other:Position) → Boolean {
             (other ≥ self).not
         }
         method asString { "{line}:{column}" }
         method addColumn(n) { line  (line) column (column+n) }
         method addLine(n) { line (line+n) column (column) }
     }
-    class start (s:Position) end (e:Position) -> Range {
+    class start (s:Position) end (e:Position) → Range {
         use equality
         def start is public = s
         def end is public = e
         method asString { rangeString }
-        method == (other) {
-            (start == other.start) && (end == other.end)
-        }
-        method hash -> Number {
-            hashCombine(start.hash, end.hash)
-        }
+        method == (other) { (start == other.start) && (end == other.end) }
+        method < (other) { (start < other.start) }
+        method ≤ (other) { (start ≤ other.start) }
+        method > (other) { (start > other.start) }
+        method ≥ (other) { (start ≥ other.start) }
+        method hash → Number { hashCombine(start.hash, end.hash) }
         method rangeLongString {
             // returns a range string such as "line 17 column 5" ,
             // "line 17 columns 5 to 25", or "line 17 column 5 to line 22 column 10"
@@ -229,34 +234,34 @@ trait open {
     once method emptyRange { start (noPosition) end (noPosition) }
 
     type AstNode = interface {
-        isDeclaredByParent -> Boolean
+        isDeclaredByParent → Boolean
             // for a declaration node or identifier, true when the thing being
             // declared is decared in the outerscope, rather than in scope
-        kind -> String
+        kind → String
             // Used for pseudo-instanceof tests, and for printing
-        register -> String
+        register → String
             // Used in the code generator to name the resulting object
-        line -> Number
+        line → Number
             // The source line the node came from; the first line is 1
         line:=(ln:Number)
-        column -> Number
+        column → Number
             // the first column is 1
         column:=(lp:Number)
-        scope -> Scope
+        scope → Scope
             // The symbol table for names defined in this node and its sub-nodes
-        pretty(n:Number) -> String
+        pretty(n:Number) → String
             // Pretty-print-string of node at depth n
-        comments -> AstNode
+        comments → AstNode
             // Comments associated with this node
-        range -> Range
+        range → Range
             // The source range represented by this node
-        start -> Position
+        start → Position
             // The start of the source range represented by this node
-        end -> Position
+        end → Position
             // The end of the source range represented by this node
     }
 
-    once class nullNode -> AstNode {
+    once class nullNode → AstNode {
         use identityEquality
         def kind is public = "null"
         def register is public = "null"
@@ -310,7 +315,7 @@ trait open {
         method range { emptyRange }
         method endCol { 0 }
         method annotations { [] }
-        method end -> Position { line (0) column (0) }
+        method end → Position { line (0) column (0) }
         method asString { "the nullNode" }
         method isNull { true }
         method accept(visitor) from (ac) { }
