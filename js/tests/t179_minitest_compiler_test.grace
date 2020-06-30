@@ -6,8 +6,9 @@ import "errormessages" as errormessages
 
 def MatchError = ProgrammingError.refine "MatchError"
 def SyntaxError = errormessages.SyntaxError
+def ReuseError = errormessages.ReuseError
 
-def input = ‹dialect "standard"
+def twoDefsOfW = ‹dialect "standard"
 trait t1 {
     method x(size:Number) { "method x" }
     method y(name:String) { "method y arg {name}" }
@@ -20,12 +21,35 @@ class c1 {
 }
 ›
 
-def module = compiler.parseString (input)
+def twoMethodsNe = ‹
+trait ne {
+    method ≠(other) { (self == other ).not }
+    method ==(other) is required
+}
 
-testSuite "alias and method with same name" with {
+trait id {
+    method ≠(o) { self.isMe(o).not }
+}
+
+class twoNeMethods {
+    use ne
+    use id
+}
+›
+
+
+
+testSuite "reuse of methods" with {
     test "alias w and method w clash" by {
-        assert {identifierresolution.resolve(module)} shouldRaise (SyntaxError)
-            mentioning "'w(_)' cannot be redeclared"
+        def module = compiler.parseString (twoDefsOfW)
+        assert {identifierresolution.resolve(module)} shouldRaise (ReuseError)
+              mentioning "can't declare 'w(_)' as an alias"
+              and "also declared as a method"
+    }
+    test "two definitions of ≠" by {
+        def tree = compiler.parseString(twoMethodsNe)
+        assert {identifierresolution.resolve(tree)} shouldRaise(ReuseError)
+              matchedBy ‹trait conflict.*≠\(_\).* defined in ne and id›
     }
 }
 
