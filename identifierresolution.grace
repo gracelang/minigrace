@@ -1068,14 +1068,6 @@ method transformReuse (ruNode) ancestors(anc) {
               "'{ruNode.statementName}' statements must be directly inside an object."
               atRange(ruNode.range)
     }
-    if (reuseExpr.isAppliedOccurrence) then {
-        // TODO: omit this sequence — the reuseExpr was transformed before the reuse stmt
-        ruNode.value := transformIdentifier (reuseExpr) ancestors (anc)
-    } elseif {reuseExpr.isCall} then {
-        ruNode.value := transformCall (reuseExpr)
-    } else {
-        errormessages.CompilationError.raise "unknown reuse expression {reuseExpr.toGrace 0}"
-    }
     def reusedScope = ruNode.reusedScope
     if (reusedScope.isFresh.not) then {
         errormessages.syntaxError "to '{ruNode.statementName}' an object, it must be freshly-created"
