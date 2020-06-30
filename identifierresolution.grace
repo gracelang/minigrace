@@ -517,8 +517,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                     if (scope.isObjectScope && (kind == k.vardec)) then {
                         def nameGets = o.nameString ++ ":=(1)"
                         scope.add(sm.variableVarFrom(declaringNode)) withName (nameGets)
-                        // will complain if already declared
-                        // TODO: should this be variableMethodFrom(_) ?
+                        // will complain if {nameGets} is already declared
+                        // We use a variableVar and not a variableMethod to
+                        // distinguish this from a hand-written assignment method
                     }
                     scope.add(match (kind)
                         case { k.vardec → sm.variableVarFrom(declaringNode) }
@@ -591,7 +592,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 // aliased and excluded names are appliedOccurrences
                 o.scope := sm.graceMethodScope.in(surroundingScope)
                 def variable = if (o.isRequired || o.isAbstract) then {
-                    // TODO: do we need to distinguish abstract and required methods?
+                    // TODO: do we need to distinguish between abstract and required?
                     sm.variableRequiredMethodFrom(o)
                 } else {
                     sm.variableMethodFrom(o)
