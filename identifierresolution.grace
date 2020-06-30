@@ -512,7 +512,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             if (o.isBindingOccurrence) then {
                 def declaringNode = o.declaringNodeWithAncestors(anc)
                 if ((o.isDeclaredByParent.not) && {o.wildcard.not}) then {
-                    errormessages.checkForReservedName(o)
                     def kind = o.declarationKindWithAncestors(anc)
                     if (scope.isObjectScope && (kind == k.vardec)) then {
                         def nameGets = o.nameString ++ ":=(1)"
@@ -582,11 +581,10 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 // This produces better diagnostics than rejecting them in
                 // the parser, as well as simplifying the parser.
 
-                errormessages.syntaxError("{o.description} declarations are permitted only" ++
-                    " inside an object") atRange(o.range)
+                errormessages.syntaxError("{o.description} declarations are " ++
+                    "permitted only inside an object") atRange(o.range)
             }
             def ident = o.asIdentifier
-            errormessages.checkForReservedName(ident)
             if (ident.isBindingOccurrence) then {
                 ident.isDeclaredByParent := true
                 // aliased and excluded names are appliedOccurrences
@@ -616,7 +614,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 return true
             }
             def ident = o.asIdentifier
-            errormessages.checkForReservedName(ident)
             if (ident.isDeclaredByParent.not) then {
                 surroundingScope.add(sm.variableMethodFrom (o))
                 ident.isDeclaredByParent := true
@@ -643,7 +640,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                     " inside an object") atRange(o.range)
             }
             def ident = o.name
-            errormessages.checkForReservedName(ident)
             enclosingScope.add(sm.variableTypeFrom(o))
             enclosingScope.types.at(ident.nameString) put(o.toGrace 0)
             ident.isDeclaredByParent := true

@@ -625,10 +625,6 @@ method badAssignmentTo(node) declaredInScope(scp) {
         syntaxError("'{name}' cannot be re-bound; " ++
             "it always refers to the current object.")
             atRange(node.range)
-    } elseif { reserved.contains(name) } then {
-        syntaxError("'{name}' is a reserved name and " ++
-            "cannot be re-bound.")
-            atRange(node.range)
     } elseif { variable.kind == "def" } then {
         syntaxError("'{name}' cannot be changed " ++
             "because it was declared with 'def'{lineInfo}. To make it " ++
@@ -649,17 +645,6 @@ method badAssignmentTo(node) declaredInScope(scp) {
     } elseif { variable.kind == "method" } then {
         syntaxError("'{name}' cannot be re-bound " ++
             "because it is declared as a method{lineInfo}.")
-            atRange(node.range)
-    }
-}
-
-def reserved = ["self", "outer", "Unknown", "Self"]
-// reserved names that cannot be re-assigned or re-declared
-
-method checkForReservedName(node) {
-    def ns = node.nameString
-    if (reserved.contains(ns)) then {
-        namingError "the name {ns} is reserved, and cannot be re-declared."
             atRange(node.range)
     }
 }
