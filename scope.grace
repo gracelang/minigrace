@@ -398,6 +398,7 @@ class graceObjectScope {
     }
     method variety { "object" }
     method clear {
+        superClear
         reusedNames.clear
         statusOfReusedNames := "undiscovered"
         self
