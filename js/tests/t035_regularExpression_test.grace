@@ -1,6 +1,18 @@
 dialect "minitest"
 import "regularExpression" as re
 
+testSuite "regex syntax errors" with {
+
+    test "mismatched paren" by {
+        assert {re.fromString "text ("} shouldRaise (re.SyntaxError)
+              mentioning "Invalid regular expression" and "Unterminated group"
+    }
+    test "bad modifiers" by {
+        assert {re.fromString "abc" modifiers "wx"} shouldRaise (re.SyntaxError)
+              mentioning "Invalid flags"
+    }
+}
+
 testSuiteNamed "single matches" with {
     
     test "matches succeeds" by {
@@ -130,3 +142,5 @@ testSuiteNamed "global matches" with {
         assert (pat.allMatches "armadillo".isEmpty)
     }    
 }
+
+exit

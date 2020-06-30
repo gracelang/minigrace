@@ -6,8 +6,19 @@ method fromString(regExString) {
     fromString(regExString) modifiers ""
 }
 
+def RegExError is public = ProgrammingError.refine "RegExError"
+
+def SyntaxError is public = RegExError.refine "SyntaxError"
+
 class fromString(regExString:String) modifiers(modifiers:String) {
-    native "js" code ‹this._value = new RegExp(var_regExString._value, var_modifiers._value);›
+    native "js" code ‹
+      try {
+        this._value = new RegExp(var_regExString._value, var_modifiers._value);
+      } catch (ex) {
+        if (ex.name == "SyntaxError") raiseException(var_SyntaxError, ex.message);
+            else raiseException(var_RegExError, ex.toString());
+      }
+    ›
     def asString is public = "regular expression {regExString}"
     
     method matches(text:String) {
