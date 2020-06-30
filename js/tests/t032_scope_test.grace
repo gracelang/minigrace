@@ -22,39 +22,37 @@ testSuite "scope" with {
     }
 
     test "can't add to empty scope" by {
-        assert {scope.graceEmptyScope.add (defNode) withName "wombat"}
-            shouldRaise(ProgrammingError) mentioning "a non-existant scope"
+        def dv = scope.variableDefFrom(defWombatNode)
+        assert {scope.graceEmptyScope.add (dv) withName "wombat"}
+            shouldRaise(ProgrammingError) matchedBy ‹add.*wombat.*to the empty scope›
     }
 
     test "object scope with definition" by {
         def s = scope.graceObjectScope
-        s.outerScope := scope.graceEmptyScope
         s.node := objectNode
-        def d = varDefWombat
-        assert (d.declaredName) shouldBe "wombat"
-        s.add(d)
+        def dv = scope.variableDefFrom(defWombatNode)
+        assert (dv.declaredName) shouldBe "wombat"
+        s.add(dv)
         assert(s.definesLocally "wombat")
               description "{s} does not define `wombat`"
     }
 
     test "object scope with method" by {
         def s = scope.graceObjectScope
-        s.outerScope := scope.graceEmptyScope
         s.node := objectNode
-        def m = varMethFooBar
-        assert (m.declaredName) shouldBe "foo(1)bar(1)"
-        s.add(m)
+        def mv = scope.variableMethodFrom(methFooBarNode)
+        assert (mv.declaredName) shouldBe "foo(1)bar(1)"
+        s.add(mv)
         assert(s.definesLocally "foo(1)bar(1)")
               description "{s} does not define `foo(1)bar(1)`"
     }
 
     test "if(_)then(_)else(_) defined by magic" by {
         def s = scope.graceModuleScope
-        s.outerScope := scope.graceEmptyScope
         s.node := objectNode
-        def m = scope.variableMethodFrom(magicMethNode)
-        assert (m.declaredName) shouldBe(scope.magicKey)
-        s.add(m)
+        def mv = scope.variableMethodFrom(magicMethNode)
+        assert (mv.declaredName) shouldBe(scope.magicKey)
+        s.add(mv)
         assert(s.definesLocally "if(1)then(1)")
               description "{s} does not define `if(1)then(1)`"
         assert(s.lookup "if(1)then(1)".isSpecialControlStructure)
@@ -70,7 +68,7 @@ method objectNode {
     result
 }
 
-method defNode {
+method defWombatNode {
     def result = ast.defDecNode.new(
           ast.identifierNode.new("wombat", false),
           objectNode,
@@ -82,32 +80,22 @@ method defNode {
 method a { ast.identifierNode.new("a", false) }
 method b { ast.identifierNode.new("b", false) }
 
-method methNode {
+method methFooBarNode {
     def sig = list []
     sig.add(ast.signaturePart.partName "foo" params [a])
     sig.add(ast.signaturePart.partName "bar" params [b])
     def result = ast.methodNode.new(sig, [], ast.unknownNode)
-    result.setStart(line 3 column 5)
+    result.setStart(line 3 column 5).
+        setScope(scope.graceMethodScope.in(scope.graceEmptyScope))
     result
 }
 
 method magicMethNode {
     def sig = [ ast.signaturePart.partName(scope.magicKey) ]
     def result = ast.methodNode.new(sig, [], ast.unknownNode)
-    result.setStart(line 1 column 5)
+    result.setStart(line 1 column 5).
+        setScope(scope.graceMethodScope.in(scope.graceEmptyScope))
     result
-}
-
-method varDefWombat -> scope.Variable {
-    vars.graceDefFrom(defNode)
-}
-
-method varMethFooBar -> vars.Variable {
-    vars.graceMethodFrom(methNode)
-}
-
-method varSpecialControl -> vars.Variable {
-    vars.graceSpecialControlStructureFrom(magicMethNode)
 }
 
 exit
