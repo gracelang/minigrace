@@ -486,6 +486,14 @@ method namingError (message) {
     NamingError.raise (message)
 }
 
+method reuseError (message) atRange (r) {
+    ReuseError.raise (message) with (r)
+}
+
+method reuseError (message) {
+    ReuseError.raise (message)
+}
+
 method error (message) atRange (r) {
     error (message)
         atRange (r.start.line, r.start.column, r.end.line, r.end.column)

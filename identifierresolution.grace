@@ -859,11 +859,27 @@ method gatherUsedNames(objNode) is confidential {
             def old = a.oldName.nameString
             def new = a.newName.nameString
             traitScope.lookupLocallyOrReused(old) ifAbsent {
-                errormessages.syntaxError("can't define an alias for " ++
+                errormessages.reuseError("sorry, you can't define an alias for " ++
                     "{a.oldName.canonicalName} because it is not present in the trait")
                     atRange(a.oldName.range)
             } ifPresent { defn →
-                objScope.addReused (defn) withName (new)
+                try {
+                    objScope.add (defn) withName (new)
+                    // the spec says: Attributes introduced by an alias clause are
+                    // treated as being introduced by the object under construction,
+                    // and thus do not conflict with (and may therefore override)
+                    // attributes obtained by reuse. They do conflict with attributes
+                    // declared in the object under construction.
+                } catch {re:errormessages.NamingError →
+                    def priorDecl = objScope.lookupLocally (new)
+                        ifAbsent { ProgrammingError.raise "impossible" }
+                    errormessages.reuseError(
+                        "sorry, you can't declare '{canonicalName(new)}' " ++
+                        "as an alias, because it's also declared as a " ++
+                        "{priorDecl.kind} on {priorDecl.rangeLongString}, " ++
+                        "which is in the same object; use a different name")
+                        atRange (defn.definingParseNode)
+                }
             }
         }
         t.exclusions.do { exMeth →
@@ -976,8 +992,8 @@ method scopeReferencedByReuseExpr(nd) {
         // inheriting from a literal object expression — weird, but legal
         nd.scope
     } else {
-        errormessages.ReuseError.raise ("you can't reuse {nd.pretty 0}; " ++
-              "it does not return a fresh object") with (nd)
+        errormessages.reuseError ("you can't reuse {nd.pretty 0}; " ++
+              "it does not return a fresh object") atRange (nd)
     }
 }
 
@@ -995,17 +1011,13 @@ method reusedScope (aReuseStatement) {
     // answers the scope referenced by the super expression in aReuseStatement
     def expr = aReuseStatement.reuseExpr
     if (expr.receiver.isSelf) then {
-        selfReuseError (aReuseStatement)
+        def reuseKind = aReuseStatement.statementName
+        errormessages.reuseError(
+              "sorry, it's not possible to {reuseKind} 'self', because 'self' " ++
+              "does not yet exist when the {reuseKind} statement is executed"
+        ) atRange (aReuseStatement.reuseExpr.range)
     }
     expr.objectScopeFor (aReuseStatement)
-}
-
-method selfReuseError (aReuseNode) {
-    errormessages.SyntaxError(
-          "it's not possible to {aReuseNode.statementName} `self`, because " ++
-          "`self` does not yet exist when the {aReuseNode.statementName} " ++
-          "statement is executed"
-    ) atRange (aReuseNode.reuseExpr.range)
 }
 
 method transformBind(bindNode) ancestors(anc) {
