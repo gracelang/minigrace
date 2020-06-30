@@ -7,9 +7,11 @@ import "util" as util
 import "xmodule" as xmodule
 import "errormessages" as errormessages
 import "identifierKinds" as k
-import "mirror" as mirror
 import "scope" as sm
 import "constantScope" as constantScope
+import "basic" as basic
+
+use basic.open
 
 def completed = singleton "completed"
 def inProgress = singleton "inProgress"
@@ -915,7 +917,7 @@ method checkForConflicts(objNode, traitMethods) {
 class conflictForMethodName(nm) from(srcs) {
     def methodName is public = nm
     def sources is public = srcs
-    method canonicalName { mirror.canonicalName(methodName) }
+    method canonicalName { canonicalName(methodName) }
 }
 
 method scopeReferencedByReuseExpr(nd) {

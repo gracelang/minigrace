@@ -11,6 +11,8 @@ dialect "standard"
 // emptyRange — an empty source code range
 // nullNode:AstNode — a "null" for AST nodes
 // class fakeSymbolTable — generates a new placeholder symbol table
+// method canonicalName(n) — converts a neumeric name to canonical form
+// method numericName(c) — converts a canonical name to numeric form
 
 trait open {
 
@@ -334,5 +336,15 @@ trait open {
         method varsAreMethods { true }
         method variety { "fake" }
         method areReusedNamesCompleted { true }
+    }
+
+    method canonicalName(n) {
+        // converts n, a minigrace numeric method name, to the canonical name
+        native "js" code ‹return new GraceString(canonicalMethodName(var_n._value));›
+    }
+
+    method numericName(c) {
+        // converts c, a Grace canonical method name, to minigrace's numeric name
+        native "js" code ‹return new GraceString(numericMethodName(var_c._value));›
     }
 }

@@ -2,7 +2,9 @@ dialect "standard"
 import "io" as io
 import "sys" as sys
 import "util" as util
-import "mirror" as mirror
+import "basic" as basic
+
+use basic.open
 
 def suggestion is public = object {
     // Contains modified lines used as suggestions for error messages.
@@ -587,14 +589,14 @@ method guessesForIdentifier(node) {
     nodeScope.withSurroundingScopesDo { s →
         s.localAndReusedNamesAndValuesDo { n, _ →
             if (name (nm) mightBeIntendedToBe(n)) then {
-                guesses.add(mirror.canonicalName(n))
+                guesses.add(canonicalName(n))
                 if (guesses.size ≥ thresh) then { return guesses }
             }
         }
     }
     nodeScope.localAndReusedNamesAndValuesDo { n, v →
         if (v.attributeScope.defines(nm)) then {
-            guesses.add "{n}.{mirror.canonicalName(nm)}"
+            guesses.add "{n}.{canonicalName(nm)}"
             if (guesses.size ≥ thresh) then { return guesses }
         }
     }
@@ -604,7 +606,7 @@ method guessesForIdentifier(node) {
 method badAssignmentTo(node) declaredInScope(scp) {
     // Report a syntax error for an illegal assignment
 
-    def name = node.nameString
+    def name = node.canonicalName
     def variable = scp.lookupLocallyOrReused(name)
     def lineInfo = if (variable.range.start.line == 0) then {
         ""

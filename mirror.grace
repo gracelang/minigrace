@@ -138,16 +138,6 @@ class reflect(subj) {
     }
 }
 
-method canonicalName(n) {
-    // converts n, a minigrace numeric method name, to the canonical name
-    native "js" code ‹return new GraceString(canonicalMethodName(var_n._value));›
-}
-
-method numericName(c) {
-    // converts c, a Grace canonical method name, to minigrace's numeric name
-    native "js" code ‹return new GraceString(numericMethodName(var_c._value));›
-}
-
 method numberOfParameters(numericName) → Number {
     def parts = numericName.split "("
     var result := 0

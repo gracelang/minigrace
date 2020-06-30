@@ -185,52 +185,52 @@ method initializeConstantScopes {
 
     mirror.reflect(object{}).allMethodNames.do { each ->
         graceObjectScope.add(sm.variableGraceObjectMethodFrom (
-            pseudoNode (mirror.numericName(each))
+            pseudoNode (numericName(each))
             typed (graceObjectAttributes.at(each) ifAbsent{ un })))
     }
     mirror.reflect(true).allMethodNames.do { each ->
         booleanScope.add(sm.variableMethodFrom (
-            pseudoNode (mirror.numericName(each))
+            pseudoNode (numericName(each))
             typed (booleanAttributes.at(each) ifAbsent{ un })))
     }
     mirror.reflect(1).allMethodNames.do { each ->
         numberScope.add(sm.variableMethodFrom (
-            pseudoNode (mirror.numericName(each))
+            pseudoNode (numericName(each))
             typed (numberAttributes.at(each) ifAbsent{ un })))
     }
     mirror.reflect "a".allMethodNames.do { each ->
         stringScope.add(sm.variableMethodFrom (
-            pseudoNode (mirror.numericName(each))
+            pseudoNode (numericName(each))
             typed (stringAttributes.at(each) ifAbsent{ un })))
     }
     mirror.reflect [].allMethodNames.do { each ->
         sequenceScope.add(sm.variableMethodFrom (
-            pseudoNode (mirror.numericName(each))
+            pseudoNode (numericName(each))
             typed (sequenceAttributes.at(each) ifAbsent{ un })))
     }
     mirror.reflect ([].iterator).allMethodNames.do { each ->
         iterScope.add(sm.variableMethodFrom (
-            pseudoNode (mirror.numericName(each))
+            pseudoNode (numericName(each))
             typed (iterAttributes.at(each) ifAbsent{ un })))
     }
     mirror.reflect {}.allMethodNames.do { each ->
         fn0Scope.add(sm.variableMethodFrom (
-            pseudoNode (mirror.numericName(each))
+            pseudoNode (numericName(each))
             typed (fn0Attributes.at(each) ifAbsent { un })))
     }
     mirror.reflect {_ -> }.allMethodNames.do { each ->
         fn1Scope.add(sm.variableMethodFrom (
-            pseudoNode (mirror.numericName(each))
+            pseudoNode (numericName(each))
             typed (fn0Attributes.at(each) ifAbsent { un })))
     }
     mirror.reflect {_, _ -> }.allMethodNames.do { each ->
         fn2Scope.add(sm.variableMethodFrom (
-            pseudoNode (mirror.numericName(each))
+            pseudoNode (numericName(each))
             typed (fn0Attributes.at(each) ifAbsent { un })))
     }
     mirror.reflect {_, _, _ -> }.allMethodNames.do { each ->
         fn3Scope.add(sm.variableMethodFrom (
-            pseudoNode (mirror.numericName(each))
+            pseudoNode (numericName(each))
             typed (fn3Attributes.at(each) ifAbsent { un })))
     }
 
