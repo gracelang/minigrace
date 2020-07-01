@@ -405,14 +405,6 @@ method setupContext(moduleNode) {
     moduleScope.clear
     varFieldDecls.clear
 
-    moduleScope.add(sm.variablePseudoFrom(
-        constantScope.pseudoNode "$module"
-        typed (constantScope.un) scope (moduleScope)).attributeScope (moduleScope))
-
-    moduleScope.add(sm.variablePseudoFrom(
-        constantScope.pseudoNode "$dialect"
-        typed (constantScope.un) scope (moduleScope)).attributeScope (dialectScope))
-
     def dialectNode = moduleNode.theDialect
     def dialectName:String = dialectNode.value
     if (dialectName ≠ "none") then {

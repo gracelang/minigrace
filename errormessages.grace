@@ -621,11 +621,7 @@ method badAssignmentTo(node) declaredInScope(scp) {
     } else {
         " on {variable.lineRangeString}"
     }
-    if (variable.kind == "pseudo-variable") then {
-        syntaxError("'{name}' cannot be re-bound; " ++
-            "it always refers to the current object.")
-            atRange(node.range)
-    } elseif { variable.kind == "def" } then {
+    if ( variable.kind == "def" ) then {
         syntaxError("'{name}' cannot be changed " ++
             "because it was declared with 'def'{lineInfo}. To make it " ++
             "a variable, use 'var {name}' and ':=' in the declaration")

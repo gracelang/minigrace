@@ -1123,35 +1123,7 @@ class variableParameterFrom (node) {
     method attributeScope { graceEmptyScope }  // TODO graceUniversalScope ?
     def tagString = "par"
 }
-class variablePseudoFrom (node) {
-    inherit abstractVariableFrom (node)
-    // I represent the pseudoVariable self, or the pseudovariable outer, or
-    // outer.outer, or outer.outer.outer ...
-    //
-    // isModule:  true if the object that I refer to is a module object
-    // isDialect: true if the object that I refer to is a dialect object
 
-    def isModule is public = node.isModule
-    def isDialect is public = node.isDialect
-
-    var attributeScope is readable, override
-    method attributeScope(s) {
-        // a writer method that retrns self, for chaining
-        attributeScope := s
-        self
-    }
-    method isAvailableForReuse { false }
-    method isImplicit { true }
-    method forUsers { false }
-    method forGct { false }
-    method canBeOverridden {
-        // the object associated with self or outer... is not subject to overriding
-        return false
-    }
-    method asString { "psdVar for " ++ name }
-    method kind { "pseudo-variable" }
-    def tagString = "pseudo"
-}
 class variableTypeFrom (typeDecNode) {
     inherit abstractVariableFrom (typeDecNode)
     // I describe the type name defined in a type declaration.
@@ -1512,7 +1484,6 @@ method variable(tag) from(node) {
     } case {"(mth)" -> variableMethodFrom (node)
     } case {"(go)" -> variableGraceObjectMethodFrom (node)
     } case {"(par)" -> variableParameterFrom (node)
-    } case {"(pseudo)" -> variablePseudoFrom (node)
     } case {"(type)" -> variableTypeFrom (node)
     } case {"(tpar)" -> variableTypeParameterFrom (node)
     } case {"(var)" -> variableVarFrom (node)
