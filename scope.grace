@@ -938,9 +938,8 @@ class variableResolver {
     method outerDefinitionOf (aName) in (aScope) atObject (o) addTo (aCollection) is confidential {
         // Looks for the first direct definition of aName in the scopes
         // _surrounding_ aScope, and adds it to aCollection, along with its
-        // depth from our start point.  Ignores reused definitions. Although the
-        // language spec says that we stop searching in the dialect scope, we need
-        // to also look in the builtIn scope, which surrounds the dialect
+        // depth from our start point.  Ignores reused definitions, and stops
+        // when it reaches the dialect scope
 
         var currentScope := aScope
         var objectLevel := o
@@ -956,21 +955,8 @@ class variableResolver {
                 return aCollection.add (definition (defn) atObject (objectLevel))
             }
         }
-        if { currentScope.isDialectScope.not } then { ProgrammingError.raise "currentScope not dialect scope" }
-        currentScope.lookupLocally (aName) ifAbsent {
-        } ifPresent { dialectDef →
-            if (dialectDef.isPublic) then {
-                // confidential defs in the dialect are hidden
-                return aCollection.add (definition (dialectDef) atObject (objectLevel))
-            }
-        }
-        // no public dialect definition
-        currentScope := currentScope.outerScope // the builtIn scope
-        currentScope.lookupLocally (aName) ifAbsent {
+        // assert currentScope.isDialectScope
         aCollection
-        } ifPresent { builtInDef →
-            aCollection.add (definition (builtInDef) atObject (objectLevel+1))
-        }
     }
     method reusedDefinitionOf (aName) in (aScope) atObject (o) addTo (aCollection) is confidential {
         if (aScope.areReusedNamesCompleted.not) then {
