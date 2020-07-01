@@ -1,3 +1,3 @@
 dialect "standard"
-class A.x {}
-class A.y {}
+class x {}
+class x {}
