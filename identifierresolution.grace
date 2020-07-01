@@ -54,13 +54,9 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
         generateOneselfRequestFrom (anIdentifier) using (resolution)
     } elseif { variable.definingScope.varsAreMethods } then {
         // Anything defined in a fresh scope, including a var, can be overridden,
-        // so we need to access it via a request.  If the var is on the lhs of an
-        // assignment, we don't re-write it here; this will happen in transformBind
+        // so we need to access it via a request.
         if (anIdentifier.isAssigned) then {
-            if (variable.isAssignable.not) then {
-                errormessages.badAssignmentTo(anIdentifier) declaredInScope(variable.definingScope)
-            }
-            anIdentifier
+            anIdentifier    // will be transformed to a request by transformBind
         } else {
             generateOneselfRequestFrom (anIdentifier) using (resolution)
         }
@@ -450,7 +446,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitBind (o) up (anc) {
             o.scope := anc.parent.scope
             def lValue = o.dest
-            if (lValue.kind == "identifier") then {
+            if (lValue.isIdentifier) then {
                 lValue.isAssigned := true
             }
             return true
@@ -509,9 +505,10 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitIdentifier (o) up (anc) {
             var scope := anc.parent.scope
             o.scope := scope
+            def isWild = o.wildcard
             if (o.isBindingOccurrence) then {
-                def declaringNode = o.declaringNodeWithAncestors(anc)
-                if ((o.isDeclaredByParent.not) && {o.wildcard.not}) then {
+                if (o.isDeclaredByParent.not && isWild.not) then {
+                    def declaringNode = o.declaringNodeWithAncestors(anc)
                     def kind = o.declarationKindWithAncestors(anc)
                     if (scope.isObjectScope && (kind == k.vardec)) then {
                         def nameGets = o.nameString ++ ":=(1)"
@@ -530,7 +527,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                                     "alias {o} should have been declared by parent" }
                     )
                 }
-            } elseif {o.wildcard} then {
+            } elseif {isWild} then {
                 errormessages.syntaxError("'_' cannot be used in an expression")
                     atRange(o.range)
             }
@@ -1034,20 +1031,22 @@ method transformBind(bindNode) ancestors(anc) {
         if (lhs.receiver.isSelfOrOuter) then { newCall.onSelf }
         return newCall
     }
-    def nmGets = nm ++ ":=(1)"
-    def defs = sm.variableResolver.definitionsOf (nmGets) visibleIn (s)
+    def defs = sm.variableResolver.definitionsOf "{nm}:=(1)" visibleIn (s)
     if (defs.isEmpty) then {
-        if (s.defines (nm)) then {
-            bindNode      // no definition for <name>:=(_), so we do not transform
-        } else {
+        def variable = s.lookup (nm) ifAbsent {
+            // no def for "{nm}" or "{nm}:=(1)"
             errormessages.undeclaredIdentifier (lhs)
         }
-    } elseif { defs.size > 1 } then {
-        errormessages.ambiguityError (defs) node (lhs)
-    } else {    // exactly one definition
+        if (variable.isAssignable.not) then {
+            errormessages.badAssignmentTo(lhs) declaredInScope(variable.definingScope)
+        }
+        bindNode      // no definition for "{nm}:=(1)", so we do not transform
+    } elseif { defs.size == 1 } then {
         def newCall = generateOneselfRequestFrom (bindNode) using (defs.first)
         newCall.end := bindNode.value.end
         newCall
+    } else {
+        errormessages.ambiguityError (defs) node (lhs)
     }
 }
 
