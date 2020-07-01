@@ -122,6 +122,7 @@ trait open {
     }
     type Variable = interface {
         canBeOriginOfSuperExpression → Boolean
+        canonicalName → String
         declaredName → String
         definingParseNode → AstNode
         definingScope → Scope

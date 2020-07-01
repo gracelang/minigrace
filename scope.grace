@@ -226,6 +226,7 @@ class graceInterfaceScope {
         result
     }
     method variety { "interface" }
+    method allowsShadowing { true }
 }
 class graceMethodScope {
     inherit graceScope
@@ -369,9 +370,7 @@ class graceObjectScope {
         statusOfReusedNames := "completed"
         self
     }
-    method isObjectScope {
-        true
-    }
+    method isObjectScope { true }
     method variety { "object" }
     method clear {
         superClear
@@ -395,6 +394,7 @@ class graceObjectScope {
         result
     }
     method species is confidential { graceObjectScope }
+    method allowsShadowing { true }
 }
 
 class externalScope {
@@ -643,10 +643,12 @@ class graceScope {
         } ifPresent (pBlock)
     }
     method error (innerDefn) shadows (outerDefn) is confidential {
-        errormessages.namingError ("You can't use `{innerDefn.declaredName}` as the name " ++
-              "of a {innerDefn.kind}, because `{innerDefn.declaredName}` " ++
+        def cName = canonicalName(innerDefn.declaredName)
+        def v = outerDefn.definingScope.variety
+        errormessages.namingError ("You can't use '{cName}' as the name " ++
+              "of a {innerDefn.kind}, because '{cName}' " ++
               "is declared as a {outerDefn.kind} on {outerDefn.lineRangeString} " ++
-              "in a surrounding scope; use a different name")
+              "in a surrounding {v} scope; use a different name")
               atRange (innerDefn.definingParseNode)
     }
     method lookupLexically (name) {
@@ -664,6 +666,7 @@ class graceScope {
     }
     method add (aVariable:Variable) withName (aName) {
         def priorDeclaration = names.at (aName) ifAbsent {
+            checkForShadowing (aVariable)
             names.at (aName) put (aVariable)
             return aVariable
         }
@@ -680,8 +683,21 @@ class graceScope {
               "which is in the same scope; use a different name")
               atRange (aVariable.definingParseNode)
     }
+    method checkForShadowing (aVar) is confidential {
+        // is it ok to declare aVar in this scope, or will it shadow an
+        // enclosing definition?
+        def priorVar = lookupLexically (aVar.name) ifAbsent { return }
+        def priorScope = priorVar.definingScope
+        if (self.allowsShadowing && priorScope.allowsShadowing) then { return }
+        error (aVar) shadows (priorVar)
+        // TODO: delete the following, which is never executed
+        errormessages.syntaxError("'{aVar.canonicalName}' cannot be "
+            ++ "redeclared in this {self.variety} scope because it is already declared in "
+            ++ "an enclosing {priorScope.variety} scope on line {priorVar.node.line}. Use a different name.")
+            atRange(aVar.range)
+    }
     method structuralError (aMessage) variable (aVariable) {
-        errormessages.namingError (aMessage) atRange (aVariable.definingParseNode)
+        errormessages.namingError (aMessage) atRange (aVariable.range)
     }
     method allNamesAndValuesDo (aBlock) {
         allNamesAndValuesDo (aBlock) filteringOut (Set.new)
@@ -826,7 +842,8 @@ class graceScope {
             cur.isTheEmptyScope.not
         } do { }
     }
-}
+    method allowsShadowing { false }
+} // end of graceScope
 
 class resolvedVariable(aVariable) {
     // My instances represent the defining occurence of a name, as seen from
@@ -859,7 +876,7 @@ class resolvedVariable(aVariable) {
                 s := s ++ "."
             }
         }
-        s ++ " object"
+        s ++ " " ++ definition.definingScope.variety
     }
     method reuseString {
         // Answers a string, suitable for printing, that describes my reuse.
@@ -950,7 +967,7 @@ class variableResolver {
         // no public dialect definition
         currentScope := currentScope.outerScope // the builtIn scope
         currentScope.lookupLocally (aName) ifAbsent {
-            aCollection
+        aCollection
         } ifPresent { builtInDef →
             aCollection.add (definition (builtInDef) atObject (objectLevel+1))
         }
@@ -1252,6 +1269,7 @@ class variableTypeFrom (typeDecNode) {
     method kind { "type" }
     def tagString = "type"
 }
+
 class variableTypeParameterFrom (node) {
     inherit abstractVariableFrom (node)
     use identityEquality
@@ -1420,22 +1438,18 @@ class abstractVariable {
     var isDialect is readable := false
 
     method tagString is abstract, confidential
-
+    once method canonicalName { canonicalName(name) }
     method tag { "({tagString})" }
     method stopPosition { definingParseNode.stopPosition }
     method canBeOriginOfSuperExpression { false }
     method isPublicByDefault { false }
     method isAvailableForReuse { true }
-    method isAnnotatedReadable {
-        isAnnotatedWith "readable"
-    }
+    method isAnnotatedReadable { isAnnotatedWith "readable" }
     method isType { false }
     method isConcrete { true }
     method isMethodOrType { false }
     method kind is abstract
-    method isAnnotatedConfidential {
-        return isAnnotatedWith "confidential"
-    }
+    method isAnnotatedConfidential { isAnnotatedWith "confidential" }
     method isWritable { false }
     method isExplicitMethod { false }
     method isImport { false }
