@@ -239,8 +239,14 @@ testSuiteNamed "lexLines" with {
         assert (first.kind) shouldBe "keyword"
         assert (first.value) shouldBe "interface"
     }
+    test "missing separators" by {
+        def s = ‹dialect "standard"
+def a = 1  def b = 2  print "ok"›
+        assert { parser.parse(lexer.lexString(s)) }
+              shouldRaise (errormessages.SyntaxError)
+              mentioning "statements must be separated by newlines"
+    }
 }
-
 testSuiteNamed "lexString" with {
     test "interface on one line" by {
         def s = ‹interface { w -> Boolean ; y(arg:String) -> Done }›
