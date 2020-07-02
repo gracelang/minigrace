@@ -40,7 +40,10 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
     // be compiled as identifiers. We do not do so, because distinguishing
     // this case seems like a lot of work, and V8 will probably inline the
     // accessors for us anyway
-    
+
+    if (anIdentifier.isAssigned) then {
+        return anIdentifier    // will be transformed to a request by transformBind
+    }
     def defs = sm.variableResolver.definitionsOf (anIdentifier.name) visibleIn (anIdentifier.scope)
     if (defs.isEmpty) then {
         errormessages.undeclaredIdentifier (anIdentifier)
@@ -55,11 +58,7 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
     } elseif { variable.definingScope.varsAreMethods } then {
         // Anything defined in a fresh scope, including a var, can be overridden,
         // so we need to access it via a request.
-        if (anIdentifier.isAssigned) then {
-            anIdentifier    // will be transformed to a request by transformBind
-        } else {
-            generateOneselfRequestFrom (anIdentifier) using (resolution)
-        }
+        generateOneselfRequestFrom (anIdentifier) using (resolution)
     } else {
         anIdentifier
     }
