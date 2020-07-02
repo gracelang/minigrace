@@ -183,10 +183,6 @@ method compilearray(o) {
     out "var {reg} = new GraceSequence({literalList(vals)});"
     o.register := reg
 }
-method compilemember(o) {
-    // member nodes are just method requests without arguments.
-    compilecall(o)
-}
 method compileobjouter(o, outerRef) is confidential {
     def outerPropName = outerProp(o)
     out "this.closureKeys = this.closureKeys || [];"
@@ -1099,19 +1095,9 @@ method compileif(o) {
 }
 method compileidentifier(o) {
     def name = o.value
-    if ( name == "..." ) then {
-        o.register := "ellipsis"
-    } elseif { name == "$module" } then {
-        o.register := thisModule
-    } elseif { name == "true" } then {
-        o.register := "GraceTrue"
-    } elseif { name == "false" } then {
-        o.register := "GraceFalse"
-    } else {
-        compileUninitializedCheck(o)
-        usedvars.push(name)
-        o.register := varf(name)
-    }
+    compileUninitializedCheck(o)
+    usedvars.push(name)
+    o.register := varf(name)
 }
 method compilebind(o) {
     def lhs = o.dest
@@ -1324,19 +1310,20 @@ method compileOtherRequest(o, args) {
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
 method compilecall(o) {
-    def calltemp = uidWithPrefix "call"
-    o.register := calltemp
+    o.register := uidWithPrefix "call"
     def receiver = o.receiver
     if (receiver.isBuiltIn) then {
         def name = o.nameString
         if (name == "print(1)") then {
             compilePrint(o)
-        } elseif {name == "native(1)code(1)"} then {
-            compileNativeCode(o)
         } elseif { name == "true" } then {
             o.register := "GraceTrue"
         } elseif { name == "false" } then {
             o.register := "GraceFalse"
+        } elseif {name == "native(1)code(1)"} then {
+            compileNativeCode(o)
+        } elseif { name == "..." } then {
+            o.register := "ellipsis"
         } else {
             noteLineNumber(o.line) comment "unrecognized builtIn"
             compileOuterRequest(o, compileArguments(o))
@@ -1469,7 +1456,8 @@ method compilenode(o) {
         noteLineNumber(o.line)comment "compilenode {oKind}"
         // no point in setting the line number for the above kinds
         if { oKind == "member" } then {
-            compilemember(o)
+            // member nodes are just method requests without arguments.
+            compilecall(o)
         } elseif { oKind == "call" } then {
             compilecall(o)
         } elseif { oKind == "op" } then {
