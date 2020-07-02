@@ -217,7 +217,7 @@ j1/buildinfo.js: j1/buildinfo.grace
 j2/buildinfo.grace: buildinfo.grace
 	cp -pf $< $@
 
-j2-minigrace: j1-minigrace $(J2-MINIGRACE) $(JSINSPECTORS:%=j2/%)
+j2-minigrace: j1-minigrace $(J2-MINIGRACE) $(JSINSPECTORS:%=j2/%) j1/buildinfo.grace
 
 $(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
 	cp -pf $< $@
