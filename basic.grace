@@ -335,13 +335,11 @@ trait open {
           // Can't make it nullNode now, because nullNode
           // initializes its scope to fakeSymbolTable
         method asString { "the fakeSymbolTable" }
-        method addNode (n) ac (kind) {
-            ProgrammingError.raise "fakeSymbolTable(on node {node}).addNode({n}) ac \"{kind}\""
-        }
         method isFresh { false }
         method varsAreMethods { true }
         method variety { "fake" }
         method areReusedNamesCompleted { true }
+        method localNames { [] }
     }
 
     method canonicalName(n) {
