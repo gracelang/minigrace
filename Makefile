@@ -15,8 +15,8 @@ DIALECTS_NEED = modules/dialect util ast modules/gUnit
 WEB_DIRECTORY ?= public_html/ide/
 DEV_WEB_DIRECTORY = public_html/dev/ide/
 JSONLY = $(OBJECTDRAW) turtle.grace logo.grace
-J1-MINIGRACE = $(sort $(filter-out $(JSINSPECTORS:%=j1/%), $(JS-KG) npm-sha $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js)))
-J2-MINIGRACE = $(sort $(filter-out $(JSINSPECTORS:%=j2/%), $(J1-MINIGRACE) $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) genjs.grace))
+J1-MINIGRACE = $(sort $(JS-KG) npm-sha $(JSRUNNERS:%=j1/%) $(JSJSFILES:%.js=j1/%.js) $(MGSOURCEFILES:%.grace=j1/%.js))
+J2-MINIGRACE = $(sort $(J1-MINIGRACE) $(JSRUNNERS:%=j2/%) $(JSJSFILES:%.js=j2/%.js) $(MGSOURCEFILES:%.grace=j2/%.js) genjs.grace)
 JSJSFILES = gracelib.js unicodedata.js
 JSRUNNERS_BASE = grace minigrace-js
 JSINSPECTORS = grace-inspect minigrace-inspect
@@ -78,13 +78,13 @@ clean:
 	rm -f gracelib.o gracelib-basic.o standardInput{.grace,.gct,.gcn,.gso,.o,}
 	rm -fr unicode.gco unicode.gcn unicode.gso unicode.gso.dSYM
 	cd modules && rm -fr *.gct *.gcn *.gso *.gso.dSYM *.js
-	cd modules/tests && rm -fr *.gct *.gcn *.gso *.gso.dSYM *.js
+	cd modules/tests && rm -fr *.gct *.ast *.parse *.symbols *.js standardInput.*
 	cd js && rm -f $(SOURCEFILES:%.grace=%.js)
 	rm -f debugger.o
 	rm -f standardGrace.{c,gcn,gct} js/standardGrace.js collectionsPrelude.{c,gcn,gct} js/collectionsPrelude.js
 	rm -rf l1 l2 j1 j2 stubs/l1 buildinfo.grace
 	rm -f $(SOURCEFILES:.grace=.c) minigrace.c
-	rm -f *.gcn *.gct
+	rm -f *.gcn *.gct *.js
 	rm -rf *.gso *.gso.dSYM */*.gso.dSYM */*/*.gso.dSYM
 	rm -f stdin_minigrace.c
 	rm -f js/minigrace-inspect js/grace-debug js/grace-inspect
@@ -95,11 +95,11 @@ clean:
 	( cd js && for sf in $(MGSOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
 	( cd js && for sf in $(MGSOURCEFILES) ; do rm -f $$sf ; done )
 	cd js && rm -rf $(ALL_LIBRARY_MODULES:%.grace=%.js) standardInput.* *.gct util.*
-	cd js/tests && rm -rf $(ALL_LIBRARY_MODULES:%.grace=%.js) $(MGSOURCEFILES:.grace=.js) standardInput.* *.gct util.*
+	cd js/tests && rm -rf *.gct *.ast *.parse *.symbols *.js standardInput.* util.* subtest/*.js
 	rm -f js/minigrace.js
 	rm -fr c
 	rm -f minigrace *.js
-	if [ -e grace-web-editor ] ; then if ( cd grace-web-editor; git diff-index --quiet HEAD ) ; then rm -fr grace-web-editor ; fi ; fi
+	if [ -e grace-web-editor ] ; then if ( cd grace-web-editor && git diff-index --quiet HEAD ) ; then rm -fr grace-web-editor ; fi ; fi
 #       remove the grace-web-editor directory only if it exists and is clean
 	rm -fr selftest
 	rm -fr tests/test*.log tests/*{.c,.gct,.gso,.gcn,.js}
