@@ -24,10 +24,9 @@ class graceBlockScope {
 class graceBuiltInScope {
     inherit graceModuleScope
     method variety { "builtIn" }
-    method areReusedNamesCompleted {
-        true
-    }
+    method areReusedNamesCompleted { true }
     method isBuiltInScope { true }
+    method varsAreMethods { true }  // we want to treat references to them as requests
 }
 class graceDialectScope {
     inherit graceModuleScope
@@ -268,7 +267,7 @@ class graceObjectScope {
 
     method isEmpty { names.isEmpty && reusedNames.isEmpty }
     var isFresh is public := false  // changed in objectScopesVis in identifierResolution
-    method varsAreMethods { true }   // TODO: false when not fresh
+    method varsAreMethods { true }  // TODO: maybe false when not fresh?
     method allNames {
         (names.keys ++ reusedNames.keys) >> sequence
     }
