@@ -107,4 +107,18 @@ describe "alternative truth values" with {
     }
 }
 
+describe "not reserved" with {
+    def tf = object {
+        method true { "true is a method" }
+        method false { "false is a method" }
+    }
+    specify "true is not reserved" by {
+        def true = tf.true
+        expect true toBe "true is a method"
+    }
+    specify "false is not reserved" by {
+        def false = tf.false
+        expect false toBe "false is a method"
+    }
+}
 exit
