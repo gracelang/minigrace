@@ -307,11 +307,11 @@ class baseNode {
     method prettyPrefix(depth) {
         def spc = "  " * (depth+1)
         if ((scope.node == self) && {util.target == "symbols"}) then {
-            "{range} {description}\n{spc}Symbols({scope.variety}): {scope}{scope.elementScopesAsString}"
+            "{range} {description} (opening {scope.asDebugString} defining {scope.localNames.keys.sorted})\n"
         } elseif {scope.variety == "fake"} then {
             "{range} {description}"
         } else {
-            "{range} {description} {scope.asDebugString}"
+            "{range} {description} ({scope.asDebugString})"
         }
     }
     method basePretty(depth) { prettyPrefix(depth) }
