@@ -244,8 +244,6 @@ method initializeConstantScopes {
         sm.variableMethodFrom (pseudoNode "print(1)" typed (dn)))
     builtInsScope.add(
         sm.variableMethodFrom (pseudoNode "native(1)code(1)" typed (un)))
-    builtInsScope.add(
-        sm.variableMethodFrom (pseudoNode "native(1)header(1)" typed (un)))
 }
 
 class pseudoNode (name) typed (t) scope (s) {
