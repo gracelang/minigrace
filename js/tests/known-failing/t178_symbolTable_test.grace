@@ -123,7 +123,7 @@ describe "gct external representation" with {
     }
 }
 
-def bundleScope = idRes.newScopeKind "module"
+def bundleScope = scope.graceModuleScope
 xmodule.checkExternalModule ( ast.dialectNode.new "subtest/t178_gctTestBundle" )
     // finds the .js file
 def bundleGct = xmodule.gctDictionaryFor "t178_gctTestBundle"
