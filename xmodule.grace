@@ -62,13 +62,15 @@ method checkDialect(moduleObject) {
     def dmn = dialectNode.moduleName
     currentDialect.name := dmn
     if (dmn == "none") then { return }
-    util.log 50 verbose "checking dialect {dmn} used by module {moduleObject.name}"
+    util.log 50 verbose "checking dialect \"{dmn}\" used by module {moduleObject.name}"
     checkExternalModule(dialectNode)
     def dialectGct = gctDictionaryFor(dialectNode.moduleName)
-    if (dialectGct.at "methods" ifAbsent { [] }.anySatisfy { each ->
-          each.startsWith "thisDialect"
-    }) then {
-        util.log 50 verbose "loading dialect \"{dmn}\" for checkers."
+    def dialectScope = dialectGct.at "self" ifAbsent {
+        EnvironmentException.raise "dialect \"{dmn}\"'s gct does not have a 'self' entry"
+    }.first
+    def dAttributes = dialectGct.at "scope:{dialectScope}"
+    if (dAttributes.anySatisfy { each -> each.startsWith "thisDialect" }) then {
+        util.log 45 verbose "loading dialect \"{dmn}\" for checkers."
         try {
             def dobj = mirror.loadModule(dialectNode.path)
             currentDialect.moduleObject := dobj
@@ -93,10 +95,10 @@ method checkDialect(moduleObject) {
             util.setPosition(dialectNode.line, 1)
             e.printBacktrace
             errormessages.error "Dialect error: dialect \"{dmn}\" failed to load.\n{e}."
-                atLine(dialectNode.line)
+                atRange(dialectNode)
         }
     } else {
-        util.log 50 verbose "no need to load dialect \"{dmn}\": it does not define `thisDialect`"
+        util.log 45 verbose "not loading dialect \"{dmn}\" because it does not define 'thisDialect'"
     }
 }
 
