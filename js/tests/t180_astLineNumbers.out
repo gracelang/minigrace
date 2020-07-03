@@ -29,11 +29,11 @@
     Body:
       6:1-12:1 object (in class)
         Name: person(_,_)
-        7:3-28 defdec
+        7:3-28 def
           7:7-10 identifierBinding‹name›
           Value: 7:24-28 identifier‹name'›
           Annotations: 7:15-20 identifier‹public›
-        8:3-26 defdec
+        8:3-26 def
           8:7-9 identifierBinding‹age›
           Value: 8:23-26 identifier‹age'›
           Annotations: 8:14-19 identifier‹public›
