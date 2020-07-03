@@ -11,7 +11,7 @@ OBJECT_PATH=$4
 REV=$([ -e .git ] && git rev-parse HEAD || echo unknown )
 GEN=$([ -e .git ] && tools/git-calculate-generation || echo unknown )
 
-echo "dialect \"standard\"" > buildinfo_tmp.grace.$$
+echo "dialect \"none\"" > buildinfo_tmp.grace.$$
 echo "method gitrevision { \"$REV\" }" >> buildinfo_tmp.grace.$$
 echo "method gitgeneration { \"$GEN\" }" >> buildinfo_tmp.grace.$$
 echo "method pathPrefix { \"$PREFIX\" }" >> buildinfo_tmp.grace.$$
