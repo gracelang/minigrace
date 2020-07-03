@@ -7,7 +7,99 @@ import "errormessages" as errormessages
 def MatchError = ProgrammingError.refine "MatchError"
 def SyntaxError = errormessages.SyntaxError
 def ReuseError = errormessages.ReuseError
+def NamingError = errormessages.NamingError
 
+def constReassign053 = ‹dialect "standard"
+def x = 5
+x := 3
+print(x)
+›
+
+def multipleDecls055 = ‹dialect "standard"
+var x := 1
+var x := 2
+›
+
+def methodParameterShadowsVar056 = ‹dialect "standard"
+var x := 1
+method test(x) {
+
+}
+›
+
+def blockParameterShadowsVar066 = ‹dialect "standard"
+var x := 1
+
+for (1..5) do { x -> print(x) }
+›
+
+def typeParameterShadowsDef067 = ‹dialect "standard"
+def X = 1
+
+method test⟦X⟧ {}
+›
+
+def multipleClasses068 = ‹dialect "standard"
+class x {}
+class x {}
+›
+def paramShadowsParam069 = ‹dialect "standard"
+method test(x) {
+    for (1..5) do {x->
+        print(x)
+    }
+}
+›
+def dupicateDefInObject070 = ‹dialect "standard"
+def testObj = object {
+    def a is public = "OK"
+    def b is public = true
+    def a is public = "nok OK"     // should be an error
+}
+›
+testSuite "identifier resolution errors" with {
+    test "def x can't be assigned" by {
+        def module = compiler.parseString (constReassign053)
+        assert {identifierresolution.resolve(module)} shouldRaise (SyntaxError)
+              mentioning "'x' cannot be changed"
+              and "declared with 'def' on line 2"
+    }
+    test "var x can't be declared twice" by {
+        def module = compiler.parseString (multipleDecls055)
+        assert {identifierresolution.resolve(module)} shouldRaise (NamingError)
+              matchedBy ‹can't declare 'x' as .* var.* 'x' .* declared as a var on line 2›
+    }
+    test "var x can't be shadowed by a method parameter" by {
+        def module = compiler.parseString (methodParameterShadowsVar056)
+        assert {identifierresolution.resolve(module)} shouldRaise (NamingError)
+              matchedBy ‹can't use 'x' as .* parameter.* 'x' .* declared as a var on line 2›
+    }
+    test "var x can't be shadowed by a block parameter" by {
+        def module = compiler.parseString (blockParameterShadowsVar066)
+        assert {identifierresolution.resolve(module)} shouldRaise (NamingError)
+              matchedBy ‹can't use 'x' .* parameter,.* declared .* var .* line 2.* surrounding module›
+    }
+    test "var X can't be shadowed by a type parameter" by {
+        def module = compiler.parseString (typeParameterShadowsDef067)
+        assert {identifierresolution.resolve(module)} shouldRaise (NamingError)
+              matchedBy ‹can't use 'X' as .* a type parameter, .* 'X' .* declared as a def .* line 2 in a surrounding module scope›
+    }
+    test "class x can't be declared twice" by {
+        def module = compiler.parseString (multipleClasses068)
+        assert {identifierresolution.resolve(module)} shouldRaise (NamingError)
+              matchedBy ‹can't declare 'x' as a class.* 'x' .* declared as a class on line 2, columns 1-10›
+    }
+    test "block parameter shadows method parameter" by {
+        def module = compiler.parseString (paramShadowsParam069)
+        assert {identifierresolution.resolve(module)} shouldRaise (NamingError)
+              matchedBy ‹can't use 'x' as .* a parameter, because 'x' .* declared .* line 2 .* surrounding .* scope›
+    }
+    test "multiple fields with same name" by {
+        def module = compiler.parseString (dupicateDefInObject070)
+        assert {identifierresolution.resolve(module)} shouldRaise (NamingError)
+              matchedBy ‹can't declare 'a' as a def.* 'a' .* declared as a def on line 3, columns 5-26.* same scope›
+    }
+}
 def twoDefsOfW = ‹dialect "standard"
 trait t1 {
     method x(size:Number) { "method x" }

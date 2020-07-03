@@ -644,7 +644,7 @@ class graceScope {
     method error (innerDefn) shadows (outerDefn) is confidential {
         def cName = canonicalName(innerDefn.declaredName)
         def v = outerDefn.definingScope.variety
-        errormessages.namingError ("You can't use '{cName}' as the name " ++
+        errormessages.namingError ("Sorry, you can't use '{cName}' as the name " ++
               "of a {innerDefn.kind}, because '{cName}' " ++
               "is declared as a {outerDefn.kind} on {outerDefn.lineRangeString} " ++
               "in a surrounding {v} scope; use a different name")
@@ -671,14 +671,21 @@ class graceScope {
         }
         def kind = aVariable.kind
         def cName = canonicalName(aName)
-        def nm = if ((kind == "var") && cName.endsWith ":=(_)") then {
+        def nm1 = if ((kind == "var") && cName.endsWith ":=(_)") then {
             cName.replace ":=(_)" with ""
         } else {
             cName
         }
-        errormessages.namingError ("sorry, you can't declare '{nm}' " ++
-              "as a {kind}, because {cName} is already declared as a " ++
-              "{priorDeclaration.kind} on {priorDeclaration.rangeLongString}, " ++
+        def pCName = priorDeclaration.canonicalName
+        def nm2 = if ((priorDeclaration.kind == "var") &&  {
+              pCName.endsWith ":=(_)" }) then {
+            pCName.replace ":=(_)" with ""
+        } else {
+            pCName
+        }
+        errormessages.namingError ("Sorry, you can't declare '{nm1}' " ++
+              "as a {aVariable.description}, because '{nm2}' is already declared as " ++
+              "a {priorDeclaration.description} on {priorDeclaration.rangeLongString}, " ++
               "which is in the same scope; use a different name")
               atRange (aVariable.definingParseNode)
     }
@@ -689,11 +696,6 @@ class graceScope {
         def priorScope = priorVar.definingScope
         if (self.allowsShadowing && priorScope.allowsShadowing) then { return }
         error (aVar) shadows (priorVar)
-        // TODO: delete the following, which is never executed
-        errormessages.syntaxError("'{aVar.canonicalName}' cannot be "
-            ++ "redeclared in this {self.variety} scope because it is already declared in "
-            ++ "an enclosing {priorScope.variety} scope on line {priorVar.node.line}. Use a different name.")
-            atRange(aVar.range)
     }
     method structuralError (aMessage) variable (aVariable) {
         errormessages.namingError (aMessage) atRange (aVariable.range)
@@ -1396,6 +1398,7 @@ class abstractVariable {
 
     method tagString is abstract, confidential
     once method canonicalName { canonicalName(name) }
+    method description { definingParseNode.description }
     method tag { "({tagString})" }
     method stopPosition { definingParseNode.stopPosition }
     method canBeOriginOfSuperExpression { false }

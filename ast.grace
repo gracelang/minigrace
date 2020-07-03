@@ -3054,7 +3054,7 @@ def defDecNode is public = object {
         inherit declarationNode(name', val, dtype')
 
         method kind { "defdec" }
-
+        method description { "def" }
         method newAccept(aVisitor) {
             aVisitor.preVisit(self)
             aVisitor.postVisit(self) result(aVisitor.newVisitDefDec(self))
@@ -3162,6 +3162,7 @@ def varDecNode is public = object {
         }
 
         method isVarDec { true }
+        method description { "var" }
         method isPublic {
             // vars are confidential by default
             hasAnnotation "public"
