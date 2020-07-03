@@ -34,7 +34,7 @@ inherit list[1]
 inherit set[2]
 print "initialized"
 ›
-testSuiteNamed "double inheritance" with {
+testSuite "double inheritance" with {
     test "two inherits in a class" by {
         assert {parser.parse(lexer.lexString(classInheritsTwice))}
               shouldRaise(errormessages.SyntaxError)
@@ -53,7 +53,7 @@ once class feather(n) {
     method value { n }
 }
 
-testSuiteNamed "once class" with {
+testSuite "once class" with {
     test "creation" by {
         def f1 = feather 1
         def f2 = feather 2
@@ -72,7 +72,7 @@ testSuiteNamed "once class" with {
     }
 }
 
-testSuiteNamed "point tests" with {
+testSuite "point tests" with {
     def p = 11@13
     def q = 4@3
 
@@ -151,7 +151,7 @@ method currentHand → List⟦String⟧ {
     return currentHand 
 }
 
-testSuiteNamed "stack overflow" with {
+testSuite "stack overflow" with {
     test "stack overflow" by {
         assert {currentHand} shouldRaise (TooMuchRecursion)
     }
@@ -216,7 +216,7 @@ var j := object {
     method asString { "j" }
 }
 
-testSuiteNamed "equality and identity" with {
+testSuite "equality and identity" with {
     test "identical" by { assert(a == a) }
     test "has x" by { assert(a == c) }
     test "c different a" by { assert(c != a) }
@@ -249,7 +249,7 @@ method tryUnaryNumericPatterns(x) {
           case {<20 & ¬ ≤18 -> "less than a score"}
 }
 
-testSuiteNamed "unary comparison patterns" with {
+testSuite "unary comparison patterns" with {
     test ">Number asString method" by {
         assert ((> 40).asString) shouldBe "a predicate pattern"
     }
@@ -276,7 +276,7 @@ testSuiteNamed "unary comparison patterns" with {
     }
 }
 
-testSuiteNamed "multi-parameter blocks" with {
+testSuite "multi-parameter blocks" with {
     test "one parameter match" by {
         def blk = { (Number) -> "found a Number" }
         assert (blk.apply 2) shouldBe "found a Number"
@@ -289,7 +289,6 @@ testSuiteNamed "multi-parameter blocks" with {
         def blk = { _:Number -> "found a Number" }
         assert {blk.apply "Hello"} shouldRaise (TypeError)
     }
-
     test "two parameters match" by {
         def blk = { (Number), s:String -> "found a Number and the string {s}" }
         assert (blk.apply(2, "Hi")) shouldBe "found a Number and the string Hi"
@@ -308,7 +307,7 @@ testSuiteNamed "multi-parameter blocks" with {
     }
 }
 
-testSuiteNamed "once methods with type params" with {
+testSuite "once methods with type params" with {
     def t =  object {
         method x { ... }
         method typeDependent[[K]] {

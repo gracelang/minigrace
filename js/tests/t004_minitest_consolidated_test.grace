@@ -47,7 +47,7 @@ class pointX(xcoord) y(ycoord) colored(initialC) {
     method asString { pointAsString ++ " " ++ colorAsString }
 }
 
-testSuiteNamed "parameterized traits" with {
+testSuite "parameterized traits" with {
     test "red origin" by {
         def origin = pointX 0 y 0 colored "red"
         assert (origin.asString) shouldBe "point(0, 0) color red"
@@ -91,7 +91,7 @@ method token (t1) isSameAs (t2) {
     (t1.value == t2.value) && (t1.kind == t2.kind)
 }
 
-testSuiteNamed "indentation" with {
+testSuite "indentation" with {
     // These tests are for the version of the lexer that
     // checks indentation
 
@@ -194,7 +194,7 @@ def good = "this line is not indented"
 }
 
 
-testSuiteNamed "string lexing" with {
+testSuite "string lexing" with {
     // These tests are for malformed strings
 
     test "unclosed string interpolation" by {
@@ -221,7 +221,7 @@ def goodString = "and here is another"›
     }
 }
 
-testSuiteNamed "lexLines" with {
+testSuite "lexLines" with {
     test "interface on one line" by {
         def s = ‹interface { w -> Boolean ; y(arg:String) -> Done }›
         def toks = lexer.lexLines [s]
@@ -247,7 +247,7 @@ def a = 1  def b = 2  print "ok"›
               mentioning "statements must be separated by newlines"
     }
 }
-testSuiteNamed "lexString" with {
+testSuite "lexString" with {
     test "interface on one line" by {
         def s = ‹interface { w -> Boolean ; y(arg:String) -> Done }›
         def toks = lexer.lexString(s)
@@ -267,7 +267,7 @@ testSuiteNamed "lexString" with {
     }
 }
 
-testSuiteNamed "continuation lines" with {
+testSuite "continuation lines" with {
     test "confuse continuation with block start 1" by {
         def l1 = lexer.lexString ‹if ((ann.kind == "identifier") && {
     ann.value == annName }) then {
@@ -380,7 +380,7 @@ def firstMethod = module.body.first
 def secondMethod = module.body.second
 def thirdMethod = module.body.third
 
-testSuiteNamed "once methods" with {
+testSuite "once methods" with {
     test "found first once method" by {
         assert (firstMethod.isMethod) description "firstMethod is a {firstMethod.kind}"
         assert (firstMethod.isOnceMethod) description "method {firstMethod.nameString} is not a once method"
@@ -449,7 +449,7 @@ method betterFoo -> T {
     }
 }
 
-testSuiteNamed "types in interfaces" with {
+testSuite "types in interfaces" with {
     test "type T has U method" by {
         assert (T.methodNames) shouldBe ["U", "x", "y"]
     }
@@ -473,7 +473,7 @@ testSuiteNamed "types in interfaces" with {
     }
 }
 
-testSuiteNamed "numeric ordering" with {
+testSuite "numeric ordering" with {
     test "equality of numbers" by { assert (17 == 17) }
     test "equality of number and string"  by { deny (17 == "17") }
     test "< on numbers true" by { assert (17 < 18) }
@@ -514,7 +514,7 @@ testSuiteNamed "numeric ordering" with {
     }
 }
 
-testSuiteNamed "file paths" with {
+testSuite "file paths" with {
     test "split two colon" by {
         def p = "abd:def"
         assert (fp.split(p)) shouldBe [ "abd/", "def/" ]
@@ -721,7 +721,7 @@ def a = object {
     method asString { "a" }
 }
 
-testSuiteNamed "initialization" with  {
+testSuite "initialization" with  {
 
     test "initialized exactly once" by {
         s := ""
@@ -739,7 +739,7 @@ testSuiteNamed "initialization" with  {
     }
 }
 
-testSuiteNamed "many arguments are passed" with {
+testSuite "many arguments are passed" with {
     def obj = object {
         method sum(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) {
             a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8 + a9 + a10 + a11
