@@ -7,9 +7,9 @@ import "typeComparison" as tc
 import "collections" as collections
 import "standardBundle" as standardBundle
 import "minispecBundle" as minispecBundle
+import "regularExpression" as regex
 
 use minispecBundle.open
-
 use standardBundle.open
     exclude list(_)
     exclude dictionary(_)
@@ -28,6 +28,24 @@ method list⟦T⟧(a, b, c) {
 method list⟦T⟧(a, b, c, d) {
     collections.list⟦T⟧.withAll [a, b, c, d]
 }
+method list⟦T⟧(a, b, c, d, e) {
+    collections.list⟦T⟧.withAll [a, b, c, d, e]
+}
+method list⟦T⟧(a, b, c, d, e, f) {
+    collections.list⟦T⟧.withAll [a, b, c, d, e, f]
+}
+method list⟦T⟧(a, b, c, d, e, f, g) {
+    collections.list⟦T⟧.withAll [a, b, c, d, e, f, g]
+}
+method list⟦T⟧(a, b, c, d, e, f, g, h) {
+    collections.list⟦T⟧.withAll [a, b, c, d, e, f, g, h]
+}
+method list⟦T⟧(a, b, c, d, e, f, g, h, i) {
+    collections.list⟦T⟧.withAll [a, b, c, d, e, f, g, h, i]
+}
+method list⟦T⟧(a, b, c, d, e, f, g, h, i, j) {
+    collections.list⟦T⟧.withAll [a, b, c, d, e, f, g, h, i, j]
+}
 
 method sequence⟦T⟧(a) {
     collections.sequence⟦T⟧.withAll [a]
@@ -40,6 +58,24 @@ method sequence⟦T⟧(a, b, c) {
 }
 method sequence⟦T⟧(a, b, c, d) {
     collections.sequence⟦T⟧.withAll [a, b, c, d]
+}
+method sequence⟦T⟧(a, b, c, d, e) {
+    collections.sequence⟦T⟧.withAll [a, b, c, d, e]
+}
+method sequence⟦T⟧(a, b, c, d, e, f) {
+    collections.sequence⟦T⟧.withAll [a, b, c, d, e, f]
+}
+method sequence⟦T⟧(a, b, c, d, e, f, g) {
+    collections.sequence⟦T⟧.withAll [a, b, c, d, e, f, g]
+}
+method sequence⟦T⟧(a, b, c, d, e, f, g, h) {
+    collections.sequence⟦T⟧.withAll [a, b, c, d, e, f, g, h]
+}
+method sequence⟦T⟧(a, b, c, d, e, f, g, h, i) {
+    collections.sequence⟦T⟧.withAll [a, b, c, d, e, f, g, h, i]
+}
+method sequence⟦T⟧(a, b, c, d, e, f, g, h, i, j) {
+    collections.sequence⟦T⟧.withAll [a, b, c, d, e, f, g, h, i, j]
 }
 
 method set⟦T⟧(a) {
@@ -54,18 +90,54 @@ method set⟦T⟧(a, b, c) {
 method set⟦T⟧(a, b, c, d) {
     collections.set⟦T⟧.withAll [a, b, c, d]
 }
+method set⟦T⟧(a, b, c, d, e) {
+    collections.set⟦T⟧.withAll [a, b, c, d, e]
+}
+method set⟦T⟧(a, b, c, d, e, f) {
+    collections.set⟦T⟧.withAll [a, b, c, d, e, f]
+}
+method set⟦T⟧(a, b, c, d, e, f, g) {
+    collections.set⟦T⟧.withAll [a, b, c, d, e, f, g]
+}
+method set⟦T⟧(a, b, c, d, e, f, g, h) {
+    collections.set⟦T⟧.withAll [a, b, c, d, e, f, g, h]
+}
+method set⟦T⟧(a, b, c, d, e, f, g, h, i) {
+    collections.set⟦T⟧.withAll [a, b, c, d, e, f, g, h, i]
+}
+method set⟦T⟧(a, b, c, d, e, f, g, h, i, j) {
+    collections.set⟦T⟧.withAll [a, b, c, d, e, f, g, h, i, j]
+}
 
-method dictionary⟦K,T⟧(a) {
-    collections.dictionary⟦K,T⟧.withAll [a]
+method dictionary⟦T⟧(a) {
+    collections.dictionary⟦T⟧.withAll [a]
 }
-method dictionary⟦K,T⟧(a, b) {
-    collections.dictionary⟦K,T⟧.withAll [a, b]
+method dictionary⟦T⟧(a, b) {
+    collections.dictionary⟦T⟧.withAll [a, b]
 }
-method dictionary⟦K,T⟧(a, b, c) {
-    collections.dictionary⟦K,T⟧.withAll [a, b, c]
+method dictionary⟦T⟧(a, b, c) {
+    collections.dictionary⟦T⟧.withAll [a, b, c]
 }
-method dictionary⟦K,T⟧(a, b, c, d) {
-    collections.dictionary⟦K,T⟧.withAll [a, b, c, d]
+method dictionary⟦T⟧(a, b, c, d) {
+    collections.dictionary⟦T⟧.withAll [a, b, c, d]
+}
+method dictionary⟦T⟧(a, b, c, d, e) {
+    collections.dictionary⟦T⟧.withAll [a, b, c, d, e]
+}
+method dictionary⟦T⟧(a, b, c, d, e, f) {
+    collections.dictionary⟦T⟧.withAll [a, b, c, d, e, f]
+}
+method dictionary⟦T⟧(a, b, c, d, e, f, g) {
+    collections.dictionary⟦T⟧.withAll [a, b, c, d, e, f, g]
+}
+method dictionary⟦T⟧(a, b, c, d, e, f, g, h) {
+    collections.dictionary⟦T⟧.withAll [a, b, c, d, e, f, g, h]
+}
+method dictionary⟦T⟧(a, b, c, d, e, f, g, h, i) {
+    collections.dictionary⟦T⟧.withAll [a, b, c, d, e, f, g, h, i]
+}
+method dictionary⟦T⟧(a, b, c, d, e, f, g, h, i, j) {
+    collections.dictionary⟦T⟧.withAll [a, b, c, d, e, f, g, h, i, j]
 }
 
 def selfImage = mirror.reflect(self)
@@ -86,14 +158,8 @@ selfImage.whenNoMethodDo { name, args, receiver ->
 
 method isName (canonicalName) requesting (soughtName) is confidential {
     if (canonicalName.startsWith(soughtName).not) then { return false }
-    def numericName = mirror.numericName(canonicalName);
-    var ix := soughtName.size + 1
-    if ( numericName.at(ix) ≠ "(" ) then { return false }
-    while {
-        ix := ix + 1
-        numericName.at(ix).startsWithDigit
-    } do { }
-    ix == numericName.size
+    def re = regex.fromString (soughtName ++ ‹\(_(,_)*\)$›)
+    re.matches(canonicalName)
 }
 
 def bsVisitor = object {
