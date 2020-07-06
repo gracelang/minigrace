@@ -44,7 +44,7 @@ WEBFILES_SIMPLE = $(filter-out js-simple/sample,$(sort js-simple/index.html js-s
 WEB_GRAPHICS_MODULES = modules/turtle.grace modules/logo.grace
 
 # The next few rules are here for their side effects: updating
-# j[12]/buildinfo.grace if necessary, and creating directories.
+# buildinfo.grace if necessary, and creating directories.
 
 CREATE_J1 := $(shell if [ ! -e j1 ] ; then mkdir -p j1 ; fi)
 CREATE_J2 := $(shell if [ ! -e j2 ] ; then mkdir -p j2 ; fi)
@@ -211,13 +211,7 @@ install: minigrace $(COMPILER_MODULES:%.grace=j2/%.js) js/grace js/grace-inspect
 
 j1-minigrace: $(J1-MINIGRACE) $(JSINSPECTORS:%=j1/%)
 
-j1/buildinfo.js: j1/buildinfo.grace
-	GRACE_MODULE_PATH=modules:. $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
-
-j2/buildinfo.grace: buildinfo.grace
-	cp -pf $< $@
-
-j2-minigrace: j1-minigrace $(J2-MINIGRACE) $(JSINSPECTORS:%=j2/%) j1/buildinfo.grace
+j2-minigrace: j1-minigrace $(J2-MINIGRACE) $(JSINSPECTORS:%=j2/%)
 
 $(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
 	cp -pf $< $@
@@ -281,8 +275,11 @@ libraries: $(OBJECTDRAW:%.grace=modules/%.grace) $(ALL_LIBRARY_MODULES:%.grace=j
 Makefile.conf: configure modules
 	./configure
 
+$(MGSOURCEFILES:%.grace=j1/%.js): j1/%.js: %.grace $(JS-KG)/minigrace-js
+	GRACE_MODULE_PATH=j1:modules:. $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
+
 $(MGSOURCEFILES:%.grace=j2/%.js): j2/%.js: %.grace $(J1-MINIGRACE)
-	GRACE_MODULE_PATH=modules:j1:. j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
+	GRACE_MODULE_PATH=j1:modules:. j1/minigrace-js $(VERBOSITY) --make --dir j2 $<
 
 $(MGSOURCEFILES:%.grace=$(JS-KG)/%.js): $(JS-KG)
 
@@ -380,12 +377,6 @@ self.test: minigrace.env $(JSINSPECTORS:%=js/%)
 	GRACE_MODULE_PATH=.:modules:js $(PREAMBLE)selftest/mgc $(VERB) --make --dir selftest compiler.grace && \
 	cp js/compiler-js js/minigrace-js js/minigrace-inspect js/gracelib.js js/tests/harness-js  $(PRELUDESOURCEFILES:%.grace=j2/%.js) selftest
 	$(PREAMBLE)selftest/harness-js selftest/minigrace-js js/tests ""
-
-$(SOURCEFILES:%.grace=j1/%.js): j1/%.js: %.grace $(JS-KG)/minigrace-js
-	GRACE_MODULE_PATH=modules:. $(JS-KG)/minigrace-js $(VERBOSITY) --make --dir j1 $<
-
-$(SOURCEFILES:%.grace=js/tests/%.js): js/tests/%.js: js/%.js
-	cd js/tests; ln -sf ../$(<F) .
 
 tarWeb: js
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
