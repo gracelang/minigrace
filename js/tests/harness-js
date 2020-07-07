@@ -185,11 +185,11 @@ do
         fi
         if [ -e test-$$.out ]
         then
-            echo "Got output:" >> test.log
+            pfrintf "\nGot output:\n" >> test.log
             cat test-$$.out >> test.log
             if [ -e ${tcase%_test.grace}.out ]
             then
-                echo "Expected output:" >> test.log
+                printf "\nExpected output:\n" >> test.log
                 cat ${tcase%_test.grace}.out >> test.log
             fi
             grep -v "0 failed, 0 errors" test-$$.out
