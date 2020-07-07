@@ -181,7 +181,7 @@ testSuite "readable lists" with {
     }
 }
 
-type A = {
+type A = interface {
     m (n:Number) → Number
     B → Type[[Number]]
 }

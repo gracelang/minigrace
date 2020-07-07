@@ -1,11 +1,11 @@
 dialect "standard"
 import "mirror" as m
 
-type A = {a(n:Number) -> Number}
+type A = interface {a(n:Number) -> Number}
 type B = interface {b(s:String) -> String}
 type A' = A
 type B' = B
-type C = {c -> Done }
+type C = interface {c -> Done }
 type AB = A & B
 type ABC = A & B & C
 type ABC' = A | B | C

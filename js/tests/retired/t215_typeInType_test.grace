@@ -1,6 +1,6 @@
 dialect "minitest"
 
-type A = {
+type A = interface {
     m (n:Number) → Number
     B → Type[[Number]]
 }

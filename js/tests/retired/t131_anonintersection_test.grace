@@ -1,4 +1,4 @@
-type A = {
+type A = interface {
     bar -> String
 }
 

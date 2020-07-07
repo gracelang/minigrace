@@ -1,4 +1,4 @@
-type X = {
+type X = interface {
     foo(s : String) -> String
 }
 

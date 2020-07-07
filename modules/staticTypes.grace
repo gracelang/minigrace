@@ -6,7 +6,7 @@ import "intrinsic" as intrinsic
 
 def TypeError = DialectError.refine "TypeError"
 
-type MethodType = {
+type MethodType = interface {
     // Method signature information consisting of the name, list of MixParts,
     // return type and info on what types it specializes.
     name -> String
@@ -15,7 +15,7 @@ type MethodType = {
     isSpecialisationOf (other: MethodType) -> Boolean
 }
 
-type Param = {
+type Param = interface {
     name -> String
     typeAnnotation -> ObjectType
 }
@@ -35,7 +35,7 @@ def aParam = object {
     }
 }
 
-type MixPart = {
+type MixPart = interface {
     name -> String
     parameters -> List⟦Param⟧
 }
@@ -165,7 +165,7 @@ def aMethodType = object {
 
 def noSuchMethod = singleton "noSuchMethod"
 
-type ObjectType = {
+type ObjectType = interface {
     // return list of methods
     methods -> List⟦MethodType⟧
     // return method type matching name, if it exists

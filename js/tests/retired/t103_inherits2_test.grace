@@ -25,7 +25,7 @@ object {
 
 def x = B.new
 x.bar
-type T = {
+type T = interface {
     foo
     quux
 }

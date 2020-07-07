@@ -194,7 +194,7 @@ testSuiteNamed "required methods" with {
     }
 }
 
-type A⟦T⟧ = {
+type A⟦T⟧ = interface {
    m(x:T) → Done
    theTypeArg → Type
 }

@@ -9,7 +9,7 @@ import "mirror" as mirror
 import "sys" as sys
 import "regularExpression" as regularExpression
 
-type Assertion = { 
+type Assertion = interface { 
     assert(bb:Boolean) description(str:String) -> Done
     deny(bb:Boolean) description (str:String)  -> Done
     assert(bb:Boolean) -> Done
@@ -32,12 +32,12 @@ type TestCase = Assertion & interface {
     name -> String
 }
 
-type TestRecord = {
+type TestRecord = interface {
     name -> String
     message -> String
 }
 
-type TestResult =  {
+type TestResult = interface {
     testStarted(name:String) -> Done
     testFailed(name:String) -> Done
     testErrored(name:String) -> Done

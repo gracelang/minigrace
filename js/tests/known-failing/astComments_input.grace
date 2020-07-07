@@ -13,7 +13,7 @@ var q
 
 //Pre-comment one type Person after blank
 //Pre-comment two type Person
-type Person = {
+type Person = interface {
 //Post-comment type Person
 
     //pre-comment for methodtype name

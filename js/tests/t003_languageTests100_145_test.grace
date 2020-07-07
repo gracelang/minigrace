@@ -39,7 +39,7 @@ method t117_tryNoMatch(pattern, value) {
         out "OK"
     }
 }
-type Pair = {
+type Pair = interface {
     left -> Number
     right -> Number
 }
@@ -244,7 +244,7 @@ def aGraceLangTest = object {
             method foo is override { "Nyssa" }
         }
 
-        type T_103 = {
+        type T_103 = interface {
             foo -> String
             quux -> String
         }
@@ -381,7 +381,7 @@ def aGraceLangTest = object {
             }
         }
 
-        type Foo = {
+        type Foo = interface {
             bar
             baz
         }
@@ -480,7 +480,7 @@ def aGraceLangTest = object {
             assert {t129_foo(y)} shouldRaise (NoSuchMethod)
             // because y.bar is confidential
         }
-        type A = {
+        type A = interface {
             bar -> String
         }
         

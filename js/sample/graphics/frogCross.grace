@@ -2,7 +2,7 @@ dialect "objectdraw"
 import "animation" as animator
 import "random" as random
 
-type Frog = {
+type Frog = interface {
     overlaps(other:Graphic2D)->Boolean
     kill->Done
     reincarnate->Done
@@ -11,7 +11,7 @@ type Frog = {
 }
 
 
-type Animated = {
+type Animated = interface {
   start -> Done
 }
 

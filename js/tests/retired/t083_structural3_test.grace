@@ -1,4 +1,4 @@
-type A = {
+type A = interface {
     +(other : Number) -> A
     asString -> String
 }

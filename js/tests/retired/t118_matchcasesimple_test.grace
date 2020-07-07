@@ -1,4 +1,4 @@
-type Pair = {
+type Pair = interface {
     left -> Number
     right -> Number
 }

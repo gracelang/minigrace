@@ -1,6 +1,6 @@
 import "random" as random
 
-type Vector = {
+type Vector = interface {
     data -> Collection
     <-(v) -> Vector
     +(v) -> Vector

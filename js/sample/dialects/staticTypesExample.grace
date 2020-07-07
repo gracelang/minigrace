@@ -1,6 +1,6 @@
 dialect "staticTypes"
 
-type Foo = {
+type Foo = interface {
     bar(a : Number) -> String
 }
 

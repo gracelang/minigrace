@@ -1,8 +1,8 @@
-type A = {
+type A = interface {
     foo(arg:String) -> String
 }
 
-type B = {
+type B = interface {
     bar(arg : Number) -> Number
 }
 

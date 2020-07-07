@@ -1,5 +1,5 @@
 dialect "standard"
-type NumberSet = {
+type NumberSet = interface {
     contains(n:Number) -> Boolean
     add(n:Number) -> Done
     union(s:NumberSet) -> Done

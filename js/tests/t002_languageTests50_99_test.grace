@@ -183,7 +183,7 @@ def aGraceLangTest = object {
             
             assert(str)shouldBe("Hello world\n25\nfalse\n")
         }
-        type X = {
+        type X = interface {
             foo(s : String) -> String
         }
 
@@ -226,7 +226,7 @@ def aGraceLangTest = object {
             
             assert(str)shouldBe("Hello\n")
         }
-        type A83 = {
+        type A83 = interface {
             +(other : Number) -> A83
             asString -> String
         }
@@ -239,10 +239,10 @@ def aGraceLangTest = object {
             assert(str)shouldBe("8\n")
         }
             
-        type A84 = {
+        type A84 = interface {
             test(a:A84) -> A84
         }
-        type B84 = {
+        type B84 = interface {
             test(b:B84) -> B84
         }
 
@@ -264,11 +264,11 @@ def aGraceLangTest = object {
             
             assert(str)shouldBe("OK\n")
         }
-        type A86 = {
+        type A86 = interface {
             foo(arg:String) -> String
         }
         
-        type B86 = {
+        type B86 = interface {
             bar(arg : Number) -> Number
         }
 
@@ -291,7 +291,7 @@ def aGraceLangTest = object {
             
             assert(str)shouldBe("Hello\nWorld\n73\n")
         }
-        type A89⟦T⟧ = {
+        type A89⟦T⟧ = interface {
             foo(_ : T) -> Number
             bar(_ : Number) -> T
         }

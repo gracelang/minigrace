@@ -1,4 +1,4 @@
-type Foo = {
+type Foo = interface {
     bar
     baz
 }

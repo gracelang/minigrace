@@ -3599,7 +3599,7 @@ def inheritNode is public = object {
         }
     }
 }
-type AliasPair = {
+type AliasPair = interface {
     newName
     oldName
     newSignature
@@ -4000,7 +4000,7 @@ method wrap(str) to (l:Number) prefixedBy (margin) {
 }
 
 
-type AstVisitor = {
+type AstVisitor = interface {
     visitIf(o) up(ac) -> Boolean
     visitBlock(o) up(ac) -> Boolean
     visitMatchCase(o) up(ac) -> Boolean

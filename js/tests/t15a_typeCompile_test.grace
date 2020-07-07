@@ -1,6 +1,6 @@
 dialect "standard"
 def a = 7
-type A = { a -> String
+type A = interface { a -> String
     b -> Number }
 
 def obj1 = object {

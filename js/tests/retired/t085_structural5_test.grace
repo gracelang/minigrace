@@ -1,12 +1,12 @@
 
-type Finished = {
+type Finished = interface {
     isFinished -> Boolean
 }
-type InnerList = {
+type InnerList = interface {
     data -> Number
     next -> OuterList | Finished
 }
-type OuterList = {
+type OuterList = interface {
     data -> Number
     next -> InnerList | Finished
 }

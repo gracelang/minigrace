@@ -1,8 +1,8 @@
 
-type A = {
+type A = interface {
     test(a:A) -> A
 }
-type B = {
+type B = interface {
     test(b:B) -> B
 }
 

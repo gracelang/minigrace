@@ -2921,7 +2921,7 @@ method checkForSeparatorInInterface {
 }
 
 method interfaceLiteral {
-    // parses an interface literal between braces, with optional
+    // parses an interface literal between braces, with
     // leading 'interface' keyword.
     def startToken = sym
     if (acceptKeyword "interface") then {
@@ -2933,13 +2933,9 @@ method interfaceLiteral {
                 atPosition(sym.line, sym.column) withSuggestion(suggestion)
             return
         }
-    }
-    if (sym.isLBrace) then {
+        next
         def meths = list []
         def types = list []
-        def mc = auto_count
-        auto_count := auto_count + 1
-        next
         skipSeparators
         while { sym.isRBrace.not } do {
             if (acceptKeyword "type") then {
@@ -3008,9 +3004,9 @@ method typedec {
                   withSuggestion(suggestion)
         }
         next
-        // Special case for interface Literals without leading 'interface' keyword.
         if (sym.isLBrace) then {
-            interfaceLiteral
+            errormessages.syntaxError "an interface literal must start with the reserved word 'interface'"
+                  atRange(sym.line, sym.column, sym.endCol)
         } elseif {acceptKeyword "type"} then {
             errormessages.syntaxError "an interface literal must start with 'interface', not 'type'"
                   atRange(sym.line, sym.column, sym.endCol)

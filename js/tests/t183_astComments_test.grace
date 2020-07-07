@@ -23,7 +23,7 @@ def input = sequence [
     "",
     "//Pre-comment one type Person after blank",        
     "//Pre-comment two type Person, which is quite long and may cause the printout to wrap the line if we go on for long enough",                    
-    "type Person = \{",
+    "type Person = interface \{",
     "//Post-comment type Person",
     "",
     "    //pre-comment for methodtype name",

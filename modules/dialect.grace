@@ -260,7 +260,7 @@ method check(module) -> Done {
     module.accept(astVisitor)
 }
 
-type AstNode = { kind -> String }
+type AstNode = interface { kind -> String }
 
 class aPatternMatchingNode(kind:String) -> Pattern {
     use BasePattern
