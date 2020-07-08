@@ -14,7 +14,7 @@ importScripts("minigrace.js");
 
 var stderr_output = "";
 minigrace.stderr_write = function(value) {
-    stderr_output += value;
+    stderr_output += value + "\n";
 }
 onmessage = function(ev) {
     var cmd = ev.data;
