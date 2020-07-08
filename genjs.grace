@@ -1148,7 +1148,7 @@ method compilevardec(o) {
         compileCheckThat(val) called "initial value of var {nm}"
               hasType(o.dtype) onLine (o.line)
         out "var {var_nm} = {val};"
-        if ("module | method | dialect".contains(parentNodeKind)) then {
+        if ("module | method | dialect | block".contains(parentNodeKind)) then {
             initializedVars.add(nm)
         }
     } else {
