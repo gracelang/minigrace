@@ -1,7 +1,14 @@
 dialect "minitest"
 
-method unfinished { 
+method unfinished {
     // declaring this method should be fine
+    ...
+}
+type I_don't_know_yet = ...
+
+type PartiallyKnown = interface {
+    asString -> String
+    asNumber -> Number
     ...
 }
 
@@ -12,9 +19,23 @@ testSuite "gracelib tests" with {
     test "double dispatch number *" by {
         assert (3 * " world") shouldBe " world world world"
     }
-    test "ellipsis" by {
-        assert {unfinished} shouldRaise (ProgrammingError)
-        assert {...} shouldRaise (ProgrammingError)
+}
+
+testSuite "ellipsis tests" with  {
+    test "ellipsis as statement" by {
+        assert {unfinished} shouldRaise (ProgrammingError) mentioning "ellipsis"
+        assert {...} shouldRaise (ProgrammingError) mentioning "ellipsis"
+    }
+    test "elipsis as expression" by {
+        assert {def x = ...} shouldRaise (ProgrammingError) mentioning "ellipsis"
+    }
+    test "ellipsis as type" by {
+        var v:I_don't_know_yet
+        assert {v := 5}  shouldRaise (ProgrammingError) mentioning "ellipsis"
+    }
+    test "ellipsis as signature" by {
+        var v:PartiallyKnown
+        assert {v := 5}  shouldRaise (ProgrammingError) mentioning "ellipsis"
     }
 }
 
