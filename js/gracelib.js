@@ -3457,6 +3457,7 @@ if (typeof global !== "undefined") {
     global.dealWithNoMethod = dealWithNoMethod;
     global.describe = describe;
     global.do_import = do_import;
+    global.ellipsisFun = ellipsisFun;
     global.emptyGraceObject = emptyGraceObject;
     global.EnvironmentExceptionObject = EnvironmentExceptionObject;
     global.escapeident = escapeident;

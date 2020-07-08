@@ -2499,7 +2499,7 @@ def identifierNode is public = object {
 
         method attributeScope {
             if (isBindingOccurrence) then {
-                ProgrammingError.raise "asking identifier {nameString} at {self.range} for its attributeScope"
+                ProgrammingError.raise "asking {kind} {nameString} at {self.range} for its attributeScope"
                 // disambiguating with range in standard dialect
             }
             scope.attributeScopeOf(nameString) in (self)
@@ -2543,10 +2543,9 @@ def identifierNode is public = object {
         method quoted { value.quoted }
         method isIdentifier { true }
 
-        method isSelf { "self" == value }
+        method isSelf { "self" == value }       // TODO: return false
         method isBuiltIn { "$builtIn" == value }
         method isOuter {
-            if ("outer" == value) then { return true }
             if ("$module" == value) then { return true }
             if ("$dialect" == value) then { return true }
             return false
@@ -2665,6 +2664,30 @@ def identifierNode is public = object {
             self
         }
         method statementName { "expression" }
+    }
+}
+
+class ellipsisNode {
+    inherit identifierNode.new("...", false)
+    method kind { "ellipsis" }
+
+    method childrenDo(anAction:Procedure1) { }
+    method childrenMap(f:Function1) { [] }
+    method newAccept(aVisitor) {
+        aVisitor.preVisit(self)
+        aVisitor.postVisit(self) result(aVisitor.newVisitEllipsis(self))
+    }
+    method isAppliedOccurrence { false }     // so that I'm not transformed as an identifier
+    method accept(visitor : AstVisitor) from(ac) {
+        visitor.visitEllipsis(self) up(ac)
+    }
+    method shallowCopy {
+        ellipsisNode.shallowCopyFieldsFrom(self)
+    }
+    method map(blk) ancestors(ac) {
+        var n := shallowCopy
+        def newChain = ac.extend(n)
+        blk.apply(n, ac)
     }
 }
 
@@ -4019,6 +4042,7 @@ type AstVisitor = interface {
     visitMember(o) up(ac) -> Boolean
     visitGeneric(o) up(ac) -> Boolean
     visitIdentifier(o) up(ac) -> Boolean
+    visitEllipsis(o) up(ac) -> Boolean
     visitString(o) up(ac) -> Boolean
     visitNum(o) up(ac) -> Boolean
     visitOp(o) up(ac) -> Boolean
@@ -4055,6 +4079,7 @@ class baseVisitor -> AstVisitor {
     method visitMember(o) up(ac) { visitMember(o) }
     method visitGeneric(o) up(ac) { visitGeneric(o) }
     method visitIdentifier(o) up(ac) { visitIdentifier(o) }
+    method visitEllipsis(o) up(ac) { visitEllipsis(o) }
     method visitString(o) up(ac) { visitString(o) }
     method visitNum(o) up(ac) { visitNum(o) }
     method visitOp(o) up(ac) { visitOp(o) }
@@ -4089,6 +4114,7 @@ class baseVisitor -> AstVisitor {
     method visitMember(o) -> Boolean { true }
     method visitGeneric(o) -> Boolean { true }
     method visitIdentifier(o) -> Boolean { true }
+    method visitEllipsis(o) -> Boolean { true }
     method visitString(o) -> Boolean { true }
     method visitNum(o) -> Boolean { true }
     method visitOp(o) -> Boolean { true }
@@ -4112,7 +4138,7 @@ class pluggableVisitor(visitation:Predicate2⟦AstNode, Object⟧) -> AstVisitor
     // Manufactures a default visitor, given a 2-parameter block.
     // Typically, some of the methods will be overridden.
     // The visitation predicate will be applied with the AST node as the first argument
-    // and the ancestor chain ac the second, and should answer true if
+    // and the ancestor chain as the second, and should answer true if
     // the visitation is to continue and false if it is to go no deeper.
 
     method visitIf(o) up(ac) { visitation.apply (o, ac) }
@@ -4132,6 +4158,7 @@ class pluggableVisitor(visitation:Predicate2⟦AstNode, Object⟧) -> AstVisitor
     method visitMember(o) up(ac) { visitation.apply (o, ac) }
     method visitGeneric(o) up(ac) { visitation.apply (o, ac) }
     method visitIdentifier(o) up(ac) { visitation.apply (o, ac) }
+    method visitEllipsis(o) up(ac) { visitation.apply (o, ac) }
     method visitString(o) up(ac) { visitation.apply (o, ac) }
     method visitNum(o) up(ac) { visitation.apply (o, ac) }
     method visitOp(o) up(ac) { visitation.apply (o, ac) }
@@ -4173,6 +4200,7 @@ type Visitor = interface {  // the new ast visitor
     newVisitGeneric(aNode) -> Object
     newVisitTypeParameters(aNode) -> Object
     newVisitIdentifier(aNode) -> Object
+    newVisitEllipsis(aNode) -> Object
     newVisitAnnotations(aNode) -> Object
     newVisitString(aNode) -> Object
     newVisitNum(aNode) -> Object
@@ -4258,6 +4286,9 @@ class rootVisitor {
     }
     method newVisitIdentifier(aNode) -> Done {
         newVisitRoot(aNode)
+    }
+    method newVisitEllipsis(aNode) -> Done {
+        newVisitIdentifier(aNode)
     }
     method newVisitAnnotations(aNode) -> Done {
         newVisitRoot(aNode)

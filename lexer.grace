@@ -32,6 +32,7 @@ def keywords = set
     , "Unknown"
     , "var"
     , "where"
+    , "..."
 ]
 
 def keywordsStartingStatement = re.fromString ‹^(class|def|inherit|method|once|trait|type|use|var)\b›

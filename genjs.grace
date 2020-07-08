@@ -560,9 +560,10 @@ method compiletypeliteral(o) in (obj) {
     def escName = escapestring(o.name)
     out "//   Type literal "
     out "var {reg} = new GraceType(\"{escName}\");"
-    for (o.methods) do { meth ->
-        def mnm = escapestring(meth.nameString)
-        out "{reg}.typeMethods.push(\"{mnm}\");"
+    if (o.methods.anySatisfy { each -> each.kind == "ellipsis" }) then {
+        out "Object.defineProperty({reg}, 'typeMethods', \{ get: ellipsisFun \});"
+    } else {
+        out "{reg}.typeMethods = {stringList(o.methods.map { meth -> meth.nameString })};"
     }
     o.register := reg
     reg
@@ -1324,8 +1325,6 @@ method compilecall(o) {
             o.register := "GraceFalse"
         } elseif {name == "native(1)code(1)"} then {
             compileNativeCode(o)
-        } elseif { name == "..." } then {
-            o.register := "ellipsis"
         } else {
             noteLineNumber(o.line) comment "unrecognized builtIn"
             compileOuterRequest(o, compileArguments(o))
@@ -1427,6 +1426,10 @@ method compileNativeCode(o) {
 method compileNull(o) {
     out "nullDefinition();"
 }
+method compileEllipsis(o) {
+    o.register := "ellipsis"
+    out "var {uidWithPrefix "ellipsis"} = ellipsis;"
+}
 method stripLeadingZeros(str) {
     // returns str without ang leading zeros
     if (str.first ≠ "0") then { return str }
@@ -1511,6 +1514,8 @@ method compilenode(o) {
             compileSelfType(o)
         } elseif {o.isNull} then {
             compileNull(o)
+        } elseif {oKind == "ellipsis"} then {
+            compileEllipsis(o)
         } else {
             ProgrammingError.raise "unrecognized ast node \"{oKind}\"."
         }

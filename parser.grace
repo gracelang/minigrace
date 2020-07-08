@@ -389,6 +389,9 @@ method typeterm {
     } elseif {acceptKeyword "Self"} then {
         values.push(ast.selfTypeNode)
         next
+    } elseif {acceptKeyword "..."} then {
+        values.push(ast.ellipsisNode)
+        next
     }
 }
 
@@ -1444,6 +1447,9 @@ method term {
     } elseif { sym.isOp } then {
         // Prefix operator
         prefixop
+    } elseif { acceptKeyword "..." } then {
+        values.push(ast.ellipsisNode)
+        next
     }
 }
 
@@ -2896,6 +2902,11 @@ method methodInInterface {
 
 method methodSignature {
     // parses a method signature, and returns a methodSignatureNode
+    if (acceptKeyword "...") then {
+        def result = ast.ellipsisNode
+        next
+        return result
+    }
     def firstTok = sym
     def m = methodHeader
     var rt := m.dtype
@@ -3027,7 +3038,7 @@ method typedec {
 
 method startsStatement {
     if (sym.isKeyword.not) then { return false }
-    if ("interface|self|outer".contains(sym.value)) then { return false }
+    if ("interface|self|outer|...".contains(sym.value)) then { return false }
     true
 }
 
@@ -3184,7 +3195,7 @@ method checkBadInterfaceLiteral {
     if (sym.isLBrace) then {
         def sugg = errormessages.suggestion.new
         sugg.insert "interface " beforeToken(sym)
-        errormessages.syntaxError "interface literals must start with the keyword 'interface'"
+        errormessages.syntaxError "interface literals must start with the reserved word 'interface'"
             atRange(sym.line, sym.column, sym.column)
             withSuggestion(sugg)
     }

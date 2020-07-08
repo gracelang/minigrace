@@ -676,6 +676,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitOp(o) up (anc) { o.scope := anc.parent.scope ; true }
         method visitDialect(o) up (anc) { o.scope := anc.parent.scope ; true }
         method visitCommentNode(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitEllipsis(o) up (anc) { o.scope := anc.parent.scope ; true }
     }   // end of symbolTableVis
 
     def objectScopesVis = object {
