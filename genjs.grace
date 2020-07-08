@@ -1103,6 +1103,8 @@ method compilebind(o) {
     def lhs = o.dest
     if (lhs.isIdentifier) then {
         def val = compilenode(o.value)
+        compileCheckThat(val) called "new value for var {lhs.nameString}"
+            hasType(lhs.dtype) onLine (o.line)
         def nm = lhs.value
         usedvars.push(nm)
         out "{varf(nm)} = {val};"

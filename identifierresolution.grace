@@ -1031,6 +1031,10 @@ method transformBind(bindNode) ancestors(anc) {
         if (variable.isAssignable.not) then {
             errormessages.badAssignmentTo(lhs) declaredInScope(variable.definingScope)
         }
+        def declaredType = variable.definingParseNode.dtype
+        if (false ≠ declaredType) then {
+            lhs.dtype := resolveIdentifiers(declaredType)
+        }
         bindNode      // no definition for "{nm}:=(1)", so we do not transform
     } elseif { defs.size == 1 } then {
         def newCall = generateOneselfRequestFrom (bindNode) using (defs.first)
