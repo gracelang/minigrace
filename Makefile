@@ -24,12 +24,12 @@ JSRUNNERS = $(JSRUNNERS_BASE) $(JSINSPECTORS) compiler-js
 JS-KG = js-kg/$(NPM_STABLE_VERSION)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace objectdrawBundle.grace
 PRELUDESOURCEFILES = collections.grace standard.grace standardBundle.grace intrinsic.grace basicTypesBundle.grace pattern+typeBundle.grace equalityBundle.grace pointBundle.grace
-REALSOURCEFILES = ast.grace compiler.grace constantScope.grace errormessages.grace genjs.grace identifierKinds.grace identifierresolution.grace io.grace lexer.grace mirror.grace parser.grace regularExpression.grace scope.grace shasum.grace basic.grace sys.grace unicode.grace unixFilePath.grace util.grace xmodule.grace
+REALSOURCEFILES = ast.grace compiler.grace constantScope.grace errormessages.grace genjs.grace identifierresolution.grace io.grace lexer.grace mirror.grace parser.grace regularExpression.grace scope.grace shasum.grace basic.grace sys.grace unicode.grace unixFilePath.grace util.grace xmodule.grace
 
 SOURCEFILES = $(REALSOURCEFILES) $(PRELUDESOURCEFILES)
 MGSOURCEFILES = buildinfo.grace $(SOURCEFILES)
 TYPE_DIALECTS = staticTypes requireTypes
-TEST_DEPENDENCIES = ast lexer collections parser xmodule errormessages standard identifierKinds
+TEST_DEPENDENCIES = ast lexer collections parser xmodule errormessages standard
 #   these are modules used in running the full test suite
 NPM_VERSION_PREFIX=1.0
 VERSION := $(NPM_VERSION_PREFIX).$(shell ./tools/git-calculate-generation)$(ALPHA-BETA)

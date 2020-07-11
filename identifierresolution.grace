@@ -6,7 +6,6 @@ import "ast" as ast
 import "util" as util
 import "xmodule" as xmodule
 import "errormessages" as errormessages
-import "identifierKinds" as k
 import "scope" as sm
 import "constantScope" as constantScope
 import "basic" as basic
@@ -499,23 +498,14 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             if (o.isBindingOccurrence) then {
                 if (o.isDeclaredByParent.not && isWild.not) then {
                     def declaringNode = o.declaringNodeWithAncestors(anc)
-                    def kind = o.declarationKindWithAncestors(anc)
-                    if (scope.isObjectScope && (kind == k.vardec)) then {
+                    if (scope.isObjectScope && declaringNode.isVarDec) then {
                         def nameGets = o.nameString ++ ":=(1)"
                         scope.add(sm.variableVarFrom(declaringNode)) withName (nameGets)
-                        // will complain if {nameGets} is already declared
+                        // scope.add will complain if {nameGets} is already declared.
                         // We use a variableVar and not a variableMethod to
                         // distinguish this from a hand-written assignment method
                     }
-                    scope.add(match (kind)
-                        case { k.vardec → sm.variableVarFrom(declaringNode) }
-                        case { k.defdec → sm.variableDefFrom(declaringNode) }
-                        case { k.typedec → sm.variableTypeFrom(declaringNode) }
-                        case { k.parameter → sm.variableParameterFrom(o) }
-                        case { k.typeparam → sm.variableTypeParameterFrom(o) }
-                        case { k.aliasdec → ProgrammingError.raise
-                                    "alias {o} should have been declared by parent" }
-                    )
+                    scope.add(declaringNode.createVariableFor(o))
                 }
             } elseif {isWild} then {
                 errormessages.syntaxError("'_' cannot be used in an expression")
@@ -576,13 +566,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 ident.isDeclaredByParent := true
                 // aliased and excluded names are appliedOccurrences
                 o.scope := sm.graceMethodScope.in(surroundingScope)
-                def variable = if (o.isRequired || o.isAbstract) then {
-                    // TODO: do we need to distinguish between abstract and required?
-                    sm.variableRequiredMethodFrom(o)
-                } else {
-                    sm.variableMethodFrom(o)
-                }
-                surroundingScope.add(variable)
+                surroundingScope.add(o.createVariableFor(ident))
                 if (o.isPublic) then {
                     if (o.isTyped) then {
                         surroundingScope.methodTypes.at(ident.nameString) put(methodSignature(o))

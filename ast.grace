@@ -1,6 +1,6 @@
 dialect "standard"
 import "util" as util
-import "identifierKinds" as k
+import "scope" as sm
 import "basic" as basic
 import "constantScope" as constantScope
 
@@ -541,7 +541,7 @@ def blockNode is public = object {
         symbolTable := st
         st.node := self
     }
-    method declarationKindWithAncestors(ac) { k.parameter }
+    method createVariableFor(id) { sm.variableParameterFrom(id) }
     method isMatchingBlock { params.size == 1 }
     method returnsObject {
         (body.size > 0) && { body.last.returnsObject }
@@ -1036,7 +1036,8 @@ def typeLiteralNode is public = object {
         method nodeString {
             "(methods = {methods}, types = {types})"
         }
-        method declarationKindWithAncestors(ac) { k.typedec }
+        method createVariableFor(id) { sm.variableTypeFrom(self) }
+
         method isExecutable { false }
 
         method end -> Position {
@@ -1146,8 +1147,8 @@ def typeDecNode is public = object {
     }
 
     method isExecutable { false }
-    method declarationKindWithAncestors(ac) { k.typeparam }
     method declaringNodeWithAncestors(ac) { self }
+    method createVariableFor(id) { sm.variableTypeFrom(self) }
     method isConfidential { hasAnnotation  "confidential" }
     method isPublic { isConfidential.not }
     method isWritable { false }
@@ -1388,8 +1389,21 @@ def methodNode is public = object {
             symbolTable := st
             st.node := self
         }
-        method declarationKindWithAncestors(ac) { k.parameter }
         method declaringNodeWithAncestors(ac) { self }
+        method createVariableFor(id) {
+            if (asIdentifier == id) then {
+                // declaration is for this method
+                if (isConcrete) then {
+                    sm.variableMethodFrom(self)
+                } else {
+                    // TODO: do we need to distinguish between abstract and required?
+                    sm.variableRequiredMethodFrom(self)
+                }
+            } else {
+                // declaration is for a parameter of this method
+                sm.variableParameterFrom(id)
+            }
+        }
         method isConfidential { hasAnnotation  "confidential" }
         method isPublic { isConfidential.not }
         method isWritable { false }
@@ -2388,7 +2402,7 @@ class typeParametersNode(params') whereClauses (conditions) {
     var params is public := params'
     var whereClauses is public := conditions
     method nodeString { toGrace 0 }
-    method declarationKindWithAncestors(ac) { k.typeparam }
+    method createVariableFor(id) { sm.variableTypeParameterFrom(id) }
 
     method childrenDo(anAction:Procedure1) {
         params.do(anAction)
@@ -3092,8 +3106,8 @@ def defDecNode is public = object {
         }
         method isWritable { false }
         method isReadable { isPublic }
-        method declarationKindWithAncestors(ac) { k.defdec }
         method declaringNodeWithAncestors(ac) { self }
+        method createVariableFor(id) { sm.variableDefFrom(self) }
         method returnsObject { value.returnsObject }    // a call to a fresh method, or an object constructor
         method returnedObject {
             // precondition: returnsObject
@@ -3202,8 +3216,8 @@ def varDecNode is public = object {
             if (hasAnnotation "readable") then { return true }
             false
         }
-        method declarationKindWithAncestors(ac) { k.vardec }
         method declaringNodeWithAncestors(ac) { self }
+        method createVariableFor(id) { sm.variableVarFrom(self) }
 
         method accept(visitor : AstVisitor) from(ac) {
             if (visitor.visitVarDec(self) up(ac)) then {
@@ -3317,7 +3331,6 @@ def importNode is public = object {
     once method moduleName { withoutLeadingComponents(path) }
     method isWritable { false }
     method isReadable { isPublic }
-    method declarationKindWithAncestors(ac) { k.importdec }
     method declaringNodeWithAncestors(ac) { self }
     method usesAsType(aNode) {
         aNode == dtype
@@ -3551,12 +3564,7 @@ def inheritNode is public = object {
                 exclusions.do { e -> e.accept(visitor) from(newChain) }
             }
         }
-        method declarationKindWithAncestors(ac) {
-            // identifiers declared in an inherit statement are aliases for
-            // methods.  We treat them as methods, because (unlike inherited names)
-            // they can't be overridden by local methods.
-            k.methdec
-        }
+        method createVariableFor(id) { sm.variableMethodFrom(self) }
         method map(blk) ancestors(ac) {
             var n := shallowCopy
             def newChain = ac.extend(n)
@@ -3668,9 +3676,6 @@ class aliasNew(n) old(o) {
             oldSignature.accept(visitor) from (newChain)
         }
     }
-    method declarationKindWithAncestors(ac) {
-        k.aliasdec
-    }
     method hash { (newSignature.hash * 1171) + oldSignature.hash }
     method isExecutable { false }
     method == (other) {
@@ -3757,10 +3762,10 @@ def signaturePart is public = object {
 
             }
         }
-        method declarationKindWithAncestors(ac) { k.parameter }
         method declaringNodeWithAncestors(ac) {
             ac.parent.declaringNodeWithAncestors(ac.forebears)
         }
+        method createVariableFor(id) { sm.variableParameterFrom(id) }
         method map(blk) ancestors(ac) {
             var nd := shallowCopy
             def newChain = ac.extend(nd)
@@ -3844,8 +3849,8 @@ def requestPart is public = object {
             aVisitor.postVisit(self) result(aVisitor.newVisitRequestPart(self))
         }
 
-        method declarationKindWithAncestors(ac) { k.parameter }
         method declaringNodeWithAncestors(ac) { self }
+        method createVariableFor(id) { sm.variableParameterFrom(id) }
         
         method end -> Position {
             if (args.isEmpty.not) then {

@@ -7,7 +7,6 @@ import "unixFilePath" as filePath
 import "xmodule" as xmodule
 import "errormessages" as errormessages
 import "identifierresolution" as identifierresolution
-import "identifierKinds" as k
 import "shasum" as shasum
 import "regularExpression" as regex
 
