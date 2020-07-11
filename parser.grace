@@ -367,6 +367,7 @@ method typeterm {
         dotrest(noBlocks)
     } elseif {acceptKeyword "outer"} then {
         doouter
+        skipSeparators
         if (! sym.isDot) then {
             values.pop
             // `outer` without a following `.method` is not a valid type
