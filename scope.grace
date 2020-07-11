@@ -31,6 +31,7 @@ class graceBuiltInScope {
 class graceDialectScope {
     inherit graceModuleScope
     method variety { "dialect" }
+    method varsAreMethods { true }
     method areReusedNamesCompleted {
         true    // because any reuse in the dialect
                 // happended before it became our dialect
