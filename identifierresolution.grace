@@ -395,8 +395,6 @@ method scopeWithUid(str) for (gct) {
     result
 }
 
-var isInBeginningStudentDialect := false
-
 method setupContext(moduleNode) {
     util.setPosition(0, 0)
 
@@ -409,7 +407,6 @@ method setupContext(moduleNode) {
         xmodule.checkDialect(moduleNode)
         processGct(xmodule.gctDictionaryFor(dialectName), dialectScope)
     }
-    isInBeginningStudentDialect := (dialectName == "beginningStudent")
 }
 
 method checkTraitBody(traitObjNode) {
