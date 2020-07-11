@@ -185,7 +185,7 @@ do
         fi
         if [ -e test-$$.out ]
         then
-            pfrintf "\nGot output:\n" >> test.log
+            printf "\nGot output:\n" >> test.log
             cat test-$$.out >> test.log
             if [ -e ${tcase%_test.grace}.out ]
             then
