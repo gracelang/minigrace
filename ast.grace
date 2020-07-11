@@ -1752,6 +1752,8 @@ def moduleNode is public = object {
         var imports is public := list.empty
         var directImports is public := list.empty
 
+        method dialectName { theDialect.moduleName }
+
         method childrenDo(anAction:Procedure1) {
             theDialect.do(anAction)
             objChildrenDo(anAction)

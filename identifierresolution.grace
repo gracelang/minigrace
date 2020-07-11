@@ -404,8 +404,7 @@ method setupContext(moduleNode) {
     moduleScope.clear
     varFieldDecls.clear
 
-    def dialectNode = moduleNode.theDialect
-    def dialectName:String = dialectNode.value
+    def dialectName:String = moduleNode.dialectName
     if (dialectName ≠ "none") then {
         xmodule.checkDialect(moduleNode)
         processGct(xmodule.gctDictionaryFor(dialectName), dialectScope)
