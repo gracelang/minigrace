@@ -41,7 +41,8 @@ method transformIdentifier(anIdentifier) ancestors(anc) {
     // accessors for us anyway
 
     if (anIdentifier.isAssigned) then {
-        return anIdentifier    // will be transformed to a request by transformBind
+        return anIdentifier     // will be transformed to a request by transformBind.
+                                // Transformation is bottom-up, so this has yet to happen
     }
     def defs = sm.variableResolver.definitionsOf (anIdentifier.name) visibleIn (anIdentifier.scope)
     if (defs.isEmpty) then {
