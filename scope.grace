@@ -4,6 +4,11 @@ import "collections" as collections
 import "basic" as basic
 import "util" as util
 
+// This module defines:
+// — scope: a mapping from defined names (of methods, vars, defs, types, etc) to variables
+// – variable: an object that describes a defined name, and
+// – nameDictionary: a dictionary that provides special treatment for Grace's special
+//                   control structures (if–then–elseif—else, try–catch–finally, and match–case–else)
 use basic.open
 
 def predefined is public = dictionary.empty
@@ -487,7 +492,7 @@ class graceModuleScope {
     method species is confidential { graceModuleScope }
 }
 class graceScope {
-    // I represent a declaration scope in a Grace program.
+    // I'm an abstract class representing a declaration scope in a Grace program.
     //
     // My fields are:
     //   names — a dictionary containing as keys all of the names declared in my scope.
@@ -1496,7 +1501,7 @@ method variable(tag) from(node) {
 }
 
 // nameDictionaries are a dictionaries with special logic for finding the names of
-// Grace's "special" control structures, such as if .. then .. elseif .. .
+// Grace's "special" control structures, such as if–then–elseif.
 // These names are found in any dictionary that contains the magicKey.
 
 def ctrlStructureRegEx is public = regEx.fromString (
@@ -1505,11 +1510,14 @@ def ctrlStructureRegEx is public = regEx.fromString (
     ‹(try\(1\)(catch\(1\))*(finally\(1\))?))$› )
 
 def magicKey is public = "standardGraceExtendedControlStructures"
+    // if this key is defined in a nameDictionary, the names if the special control
+    // structures will be treated as if they were all defined there too.
 
 class nameDictionary (initialBindings: Collection⟦Binding⟧) → Dictionary⟦String,Variable⟧ {
     inherit collections.dictionary⟦String,Variable⟧ (initialBindings)
         alias superAt(_)ifAbsent(_) = at(_)ifAbsent(_)
-    // This is a dictionary with special logic for looking-up the names of Grace's control structures.
+    // This is a dictionary with special logic for looking-up the names of Grace's
+    // control structures.
 
     method isNameOfSpecialControlStructure (aName) {
         ctrlStructureRegEx.matches (aName)
