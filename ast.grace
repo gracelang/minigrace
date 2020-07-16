@@ -320,7 +320,7 @@ class baseNode {
         self.map { each -> each } ancestors(ancestorChain.empty)
     }
     method enclosingObject {
-        scope.outerScope.objectScope.node
+        scope.outerScope.currentObjectScope.node
     }
     method addComment(cmtNode) {
         if (false == comments) then {
@@ -541,7 +541,7 @@ def blockNode is public = object {
         symbolTable := st
         st.node := self
     }
-    method createVariableFor(id) { sm.variableParameterFrom(id) }
+    method createVariableFor(id) { sm.parameterVariableFrom(id) }
     method isMatchingBlock { params.size == 1 }
     method returnsObject {
         (body.size > 0) && { body.last.returnsObject }
@@ -1036,7 +1036,7 @@ def typeLiteralNode is public = object {
         method nodeString {
             "(methods = {methods}, types = {types})"
         }
-        method createVariableFor(id) { sm.variableTypeFrom(self) }
+        method createVariableFor(id) { sm.typeVariableFrom(self) }
 
         method isExecutable { false }
 
@@ -1148,7 +1148,7 @@ def typeDecNode is public = object {
 
     method isExecutable { false }
     method declaringNodeWithAncestors(ac) { self }
-    method createVariableFor(id) { sm.variableTypeFrom(self) }
+    method createVariableFor(id) { sm.typeVariableFrom(self) }
     method isConfidential { hasAnnotation  "confidential" }
     method isPublic { isConfidential.not }
     method isWritable { false }
@@ -1394,14 +1394,14 @@ def methodNode is public = object {
             if (asIdentifier == id) then {
                 // declaration is for this method
                 if (isConcrete) then {
-                    sm.variableMethodFrom(self)
+                    sm.methodVariableFrom(self)
                 } else {
                     // TODO: do we need to distinguish between abstract and required?
-                    sm.variableRequiredMethodFrom(self)
+                    sm.requiredMethodVariableFrom(self)
                 }
             } else {
                 // declaration is for a parameter of this method
-                sm.variableParameterFrom(id)
+                sm.parameterVariableFrom(id)
             }
         }
         method isConfidential { hasAnnotation  "confidential" }
@@ -2131,9 +2131,9 @@ class yourselfNode(levels) {
 
     method attributeScope {
         if (levels == 0) then {
-            scope.objectScope
+            scope.currentObjectScope
         } else {
-            theObjects.last.scope.outerScope.objectScope
+            theObjects.last.scope.outerScope.currentObjectScope
         }
     }
 
@@ -3107,7 +3107,7 @@ def defDecNode is public = object {
         method isWritable { false }
         method isReadable { isPublic }
         method declaringNodeWithAncestors(ac) { self }
-        method createVariableFor(id) { sm.variableDefFrom(self) }
+        method createVariableFor(id) { sm.defVariableFrom(self) }
         method returnsObject { value.returnsObject }    // a call to a fresh method, or an object constructor
         method returnedObject {
             // precondition: returnsObject
@@ -3217,7 +3217,7 @@ def varDecNode is public = object {
             false
         }
         method declaringNodeWithAncestors(ac) { self }
-        method createVariableFor(id) { sm.variableVarFrom(self) }
+        method createVariableFor(id) { sm.varVariableFrom(self) }
 
         method accept(visitor : AstVisitor) from(ac) {
             if (visitor.visitVarDec(self) up(ac)) then {
@@ -3564,7 +3564,7 @@ def inheritNode is public = object {
                 exclusions.do { e -> e.accept(visitor) from(newChain) }
             }
         }
-        method createVariableFor(id) { sm.variableMethodFrom(self) }
+        method createVariableFor(id) { sm.methodVariableFrom(self) }
         method map(blk) ancestors(ac) {
             var n := shallowCopy
             def newChain = ac.extend(n)
@@ -3765,7 +3765,7 @@ def signaturePart is public = object {
         method declaringNodeWithAncestors(ac) {
             ac.parent.declaringNodeWithAncestors(ac.forebears)
         }
-        method createVariableFor(id) { sm.variableParameterFrom(id) }
+        method createVariableFor(id) { sm.parameterVariableFrom(id) }
         method map(blk) ancestors(ac) {
             var nd := shallowCopy
             def newChain = ac.extend(nd)
@@ -3850,7 +3850,7 @@ def requestPart is public = object {
         }
 
         method declaringNodeWithAncestors(ac) { self }
-        method createVariableFor(id) { sm.variableParameterFrom(id) }
+        method createVariableFor(id) { sm.parameterVariableFrom(id) }
         
         method end -> Position {
             if (args.isEmpty.not) then {

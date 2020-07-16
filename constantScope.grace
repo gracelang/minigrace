@@ -6,9 +6,9 @@ import "basic" as basic
 
 use basic.open
 
-def emptyScope is public = sm.graceEmptyScope
-def builtInsScope is public = sm.graceBuiltInScope.in(emptyScope)
-def graceObjectScope is public = sm.predefinedObjectScope "graceObject"
+def emptyScope is public = sm.emptyScope
+def builtInsScope is public = sm.builtInScope.in(emptyScope)
+def objectScope is public = sm.predefinedObjectScope "graceObject"
 def booleanScope is public = sm.predefinedObjectScope "boolean"
 def numberScope is public = sm.predefinedObjectScope "number"
 def stringScope is public = sm.predefinedObjectScope "string"
@@ -22,7 +22,7 @@ def fn2Scope is public = sm.predefinedObjectScope "function 2"
 def fn3Scope is public = sm.predefinedObjectScope "function 3"
 def bindingScope is public = sm.predefinedObjectScope "binding"
 def exceptionScope is public = sm.predefinedObjectScope "exception"
-def universalScope is public = sm.graceUniversalScope
+def universalScope is public = sm.universalScope
 def typeScope is public = sm.predefinedObjectScope "Type"
 
 
@@ -49,7 +49,7 @@ def typ = typeNode "Type"  params 1
 // Unknown objects, and given as attributeScope "universalScope"
 
 def graceObjectAttributes = dictionary [
-    "def"::graceObjectScope,
+    "def"::objectScope,
     "asString"::str, "asDebugString"::str, "basicAsString"::str,
     "isMe(_)"::bool, "myIdentityHash"::num
 ]
@@ -184,64 +184,64 @@ method initializeConstantScopes {
     // so that we include the confidential method names
 
     mirror.reflect(object{}).allMethodNames.do { each ->
-        graceObjectScope.add(sm.variableGraceObjectMethodFrom (
+        objectScope.add(sm.graceObjectMethodFrom (
             pseudoNode (numericName(each))
             typed (graceObjectAttributes.at(each) ifAbsent{ un })))
     }
     mirror.reflect(true).allMethodNames.do { each ->
-        booleanScope.add(sm.variableMethodFrom (
+        booleanScope.add(sm.methodVariableFrom (
             pseudoNode (numericName(each))
             typed (booleanAttributes.at(each) ifAbsent{ un })))
     }
     mirror.reflect(1).allMethodNames.do { each ->
-        numberScope.add(sm.variableMethodFrom (
+        numberScope.add(sm.methodVariableFrom (
             pseudoNode (numericName(each))
             typed (numberAttributes.at(each) ifAbsent{ un })))
     }
     mirror.reflect "a".allMethodNames.do { each ->
-        stringScope.add(sm.variableMethodFrom (
+        stringScope.add(sm.methodVariableFrom (
             pseudoNode (numericName(each))
             typed (stringAttributes.at(each) ifAbsent{ un })))
     }
     mirror.reflect [].allMethodNames.do { each ->
-        sequenceScope.add(sm.variableMethodFrom (
+        sequenceScope.add(sm.methodVariableFrom (
             pseudoNode (numericName(each))
             typed (sequenceAttributes.at(each) ifAbsent{ un })))
     }
     mirror.reflect ([].iterator).allMethodNames.do { each ->
-        iterScope.add(sm.variableMethodFrom (
+        iterScope.add(sm.methodVariableFrom (
             pseudoNode (numericName(each))
             typed (iterAttributes.at(each) ifAbsent{ un })))
     }
     mirror.reflect {}.allMethodNames.do { each ->
-        fn0Scope.add(sm.variableMethodFrom (
+        fn0Scope.add(sm.methodVariableFrom (
             pseudoNode (numericName(each))
             typed (fn0Attributes.at(each) ifAbsent { un })))
     }
     mirror.reflect {_ -> }.allMethodNames.do { each ->
-        fn1Scope.add(sm.variableMethodFrom (
+        fn1Scope.add(sm.methodVariableFrom (
             pseudoNode (numericName(each))
             typed (fn0Attributes.at(each) ifAbsent { un })))
     }
     mirror.reflect {_, _ -> }.allMethodNames.do { each ->
-        fn2Scope.add(sm.variableMethodFrom (
+        fn2Scope.add(sm.methodVariableFrom (
             pseudoNode (numericName(each))
             typed (fn0Attributes.at(each) ifAbsent { un })))
     }
     mirror.reflect {_, _, _ -> }.allMethodNames.do { each ->
-        fn3Scope.add(sm.variableMethodFrom (
+        fn3Scope.add(sm.methodVariableFrom (
             pseudoNode (numericName(each))
             typed (fn3Attributes.at(each) ifAbsent { un })))
     }
 
     builtInsScope.add(
-        sm.variableDefFrom (pseudoNode "true" typed (bool)))
+        sm.defVariableFrom (pseudoNode "true" typed (bool)))
     builtInsScope.add(
-        sm.variableDefFrom (pseudoNode "false" typed (bool)))
+        sm.defVariableFrom (pseudoNode "false" typed (bool)))
     builtInsScope.add(
-        sm.variableMethodFrom (pseudoNode "print(1)" typed (dn)))
+        sm.methodVariableFrom (pseudoNode "print(1)" typed (dn)))
     builtInsScope.add(
-        sm.variableMethodFrom (pseudoNode "native(1)code(1)" typed (un)))
+        sm.methodVariableFrom (pseudoNode "native(1)code(1)" typed (un)))
 }
 
 class pseudoNode (name) typed (t) scope (s) {

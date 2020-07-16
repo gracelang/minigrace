@@ -1,0 +1,30 @@
+#! /usr/bin/env bash
+for f in "$@"
+do
+    sed -e "s/graceBlockScope/blockScope/g" \
+        -e "s/graceBuiltInScope/builtInScope/g" \
+        -e "s/graceEmptyScope/emptyScope/g" \
+        -e "s/graceUniversalScope/universalScope/g" \
+        -e "s/graceInterfaceScope/interfaceScope/g" \
+        -e "s/graceMethodScope/methodScope/g" \
+        -e "s/objectScope/currentObjectScope/g" \
+        -e "s/graceObjectScope/objectScope/g" \
+        -e "s/graceParameterScope/parameterScope/g" \
+        -e "s/graceTypeScope/typeScope/g" \
+        -e "s/graceParameterScope/parameterScope/g" \
+        -e "s/graceModuleScope/moduleScope/g" \
+        -e "s/variableDefFrom/defVariableFrom/g" \
+        -e "s/variableImportFrom/importVariableFrom/g" \
+        -e "s/variableMethodFrom/methodVariableFrom/g" \
+        -e "s/variableGraceObjectMethodFrom/graceObjectMethodFrom/g" \
+        -e "s/variableAliasMethodFrom/aliasMethodVariableFrom/g" \
+        -e "s/variableParameterFrom/parameterVariableFrom/g" \
+        -e "s/variableTypeFrom/typeVariableFrom/g" \
+        -e "s/variableVarFrom/varVariableFrom/g" \
+        -e "s/variableImplicitMethodFrom/implicitMethodVariableFrom/g" \
+        -e "s/variableRequiredMethodFrom/requiredMethodVariableFrom/g" \
+        -e "s/variableRequiredMethodFrom/requiredMethodVariableFrom/g" \
+        -e "s/variableRequiredMethodFrom/requiredMethodVariableFrom/g" \
+        -e "s/variableRequiredMethodFrom/requiredMethodVariableFrom/g" \
+        $f > $f.$$ && mv $f.$$ $f
+done

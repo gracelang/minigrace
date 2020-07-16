@@ -22,7 +22,7 @@ var stSerial := 100
 def keyOrdering = { a, b → a.key.compare(b.key) }
 
 def dialectScope = sm.graceDialectScope.in(constantScope.builtInsScope)
-def moduleScope = sm.graceModuleScope.in(dialectScope)
+def moduleScope = sm.moduleScope.in(dialectScope)
 
 def varFieldDecls = list []   // a list of nodes that declare var fields
 
@@ -72,7 +72,7 @@ method generateOneselfRequestFrom (aSourceNode) using (aResolvedVariable) {
     def objectsUp = aResolvedVariable.objectsUp
     def nodeScope = aSourceNode.scope
     def outerChain = list.empty
-    var s := nodeScope.objectScope
+    var s := nodeScope.currentObjectScope
     repeat (objectsUp) times {
         outerChain.addLast(s.node)
         s := s.enclosingObjectScope
@@ -339,7 +339,7 @@ method addGctLine (gctLine:String) toScope (s) for (gct) {
     var newVar
     if (split.size == 2) then {
         def typeName = split.first
-        newVar := sm.variableTypeFrom (
+        newVar := sm.typeVariableFrom (
             constantScope.typeNode (typeName) params (numTypeParams(typeName)))
     } elseif { split.size ≥ 4 } then {
         def name = split.first
@@ -457,7 +457,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             return true
         }
         method visitBlock (o) up (anc) {
-            o.scope := sm.graceBlockScope.in(anc.parent.scope)
+            o.scope := sm.blockScope.in(anc.parent.scope)
             true
         }
         method visitDefDec (o) up (anc) {
@@ -498,7 +498,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                     def declaringNode = o.declaringNodeWithAncestors(anc)
                     if (scope.isObjectScope && declaringNode.isVarDec) then {
                         def nameGets = o.nameString ++ ":=(1)"
-                        scope.add(sm.variableVarFrom(declaringNode)) withName (nameGets)
+                        scope.add(sm.varVariableFrom(declaringNode)) withName (nameGets)
                         // scope.add will complain if {nameGets} is already declared.
                         // We use a variableVar and not a variableMethod to
                         // distinguish this from a hand-written assignment method
@@ -524,7 +524,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             def importedScope = sm.externalScope
             importedScope.node := o
             processGct(gct, importedScope)
-            o.scope.add(sm.variableImportFrom(o).attributeScope(importedScope))
+            o.scope.add(sm.importVariableFrom(o).attributeScope(importedScope))
                     withName(o.nameString)
             o.name.isDeclaredByParent := true
             // to prevent redeclaration when we visit the identifier
@@ -563,7 +563,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             if (ident.isBindingOccurrence) then {
                 ident.isDeclaredByParent := true
                 // aliased and excluded names are appliedOccurrences
-                o.scope := sm.graceMethodScope.in(surroundingScope)
+                o.scope := sm.methodScope.in(surroundingScope)
                 surroundingScope.add(o.createVariableFor(ident))
                 if (o.isPublic) then {
                     if (o.isTyped) then {
@@ -584,17 +584,17 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             def ident = o.asIdentifier
             if (ident.isDeclaredByParent.not) then {
-                surroundingScope.add(sm.variableMethodFrom (o))
+                surroundingScope.add(sm.methodVariableFrom (o))
                 ident.isDeclaredByParent := true
             }
-            o.scope := sm.graceParameterScope.in(anc.parent.scope)
+            o.scope := sm.parameterScope.in(anc.parent.scope)
             // the scope for the parameters (including the type parameters,
             // if any) of this method.
             true
         }
         method visitObject (o) up (anc) {
             def myParent = anc.parent
-            o.scope := sm.graceObjectScope.in(myParent.scope)
+            o.scope := sm.objectScope.in(myParent.scope)
             if (o.inTrait) then { checkTraitBody(o) }
             true
         }
@@ -609,16 +609,16 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                     " inside an object") atRange(o.range)
             }
             def ident = o.name
-            enclosingScope.add(sm.variableTypeFrom(o))
+            enclosingScope.add(sm.typeVariableFrom(o))
             enclosingScope.types.at(ident.nameString) put(o.toGrace 0)
             ident.isDeclaredByParent := true
-            o.scope := sm.graceTypeScope.in(enclosingScope)
+            o.scope := sm.typeScope.in(enclosingScope)
             // this scope will be the home for any type parameters.
             // If there are no parameters, it won't be used.
             true
         }
         method visitTypeLiteral (o) up (anc) {
-            o.scope := sm.graceInterfaceScope.in(anc.parent.scope)
+            o.scope := sm.interfaceScope.in(anc.parent.scope)
             true
         }
         method visitReturn(o) up (anc) {
@@ -635,10 +635,10 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.scope := currentScope
             def nodeObjects = list []
             o.theObjects := nodeObjects
-            var objectScope := currentScope.objectScope
+            var currentObjectScope := currentScope.currentObjectScope
             repeat (o.numberOfLevels) times {
-                nodeObjects.addLast(objectScope.node)
-                objectScope := objectScope.enclosingObjectScope
+                nodeObjects.addLast(currentObjectScope.node)
+                currentObjectScope := currentObjectScope.enclosingObjectScope
             }
             true
         }
@@ -660,7 +660,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitEllipsis(o) up (anc) { o.scope := anc.parent.scope ; true }
     }   // end of symbolTableVis
 
-    def objectScopesVis = object {
+    def currentObjectScopesVis = object {
         // Puts the scope of returned objects into the symbol table and
         // marks variables as being Fresh
 
@@ -715,7 +715,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
     }
 
     topNode.accept(symbolTableVis) from(topChain)
-    topNode.accept(objectScopesVis) from(topChain)
+    topNode.accept(currentObjectScopesVis) from(topChain)
     topNode.accept(inheritanceVis) from(topChain)
 }
 
@@ -756,7 +756,7 @@ method gatherInheritedNames(node) is confidential {
         if (false == inhNode) then {
             def gO = ast.identifierNode.new("graceObject", false) scope(objScope)
             inhNode := ast.inheritNode.new(gO) scope(objScope)
-            superScope := constantScope.graceObjectScope
+            superScope := constantScope.objectScope
         } else {
             superScope := scopeReferencedByReuseExpr(inhNode.value)
             inhNode.reusedScope := superScope
@@ -777,7 +777,7 @@ method gatherInheritedNames(node) is confidential {
                     " because it is not present in the inherited object")
                     atRange(a.oldName.range)
             }
-            objScope.add (sm.variableAliasMethodFrom(a) to (defn)) withName (new)
+            objScope.add (sm.aliasMethodVariableFrom(a) to (defn)) withName (new)
             // An alias is added as a local method, not as a reused method
         }
         inhNode.exclusions.do { exMeth →
@@ -967,10 +967,10 @@ method scopeReferencedByReuseExpr(nd) {
 method ensureOuterScopesCollected(s) {
     // look at all the scopes surrounding s, and make sure that their
     // reused names have been collected.
-    var scp := s.outerScope.objectScope
+    var scp := s.outerScope.currentObjectScope
     while {scp.isDialectScope.not} do {
         collectReusedNames(scp.node)
-        scp := scp.outerScope.objectScope
+        scp := scp.outerScope.currentObjectScope
     }
 }
 
@@ -984,7 +984,7 @@ method reusedScope (aReuseStatement) {
               "does not yet exist when the {reuseKind} statement is executed"
         ) atRange (aReuseStatement.reuseExpr.range)
     }
-    expr.objectScopeFor (aReuseStatement)
+    expr.currentObjectScopeFor (aReuseStatement)
 }
 
 method transformBind(bindNode) ancestors(anc) {

@@ -22,19 +22,19 @@ type MinimalScope = interface {
 
 var id := 100       // for generating unique ids for scopes
 
-class graceBlockScope {
+class blockScope {
     inherit graceScope
     method variety { "block" }
 }
-class graceBuiltInScope {
-    inherit graceModuleScope
+class builtInScope {
+    inherit moduleScope
     method variety { "builtIn" }
     method areReusedNamesCompleted { true }
     method isBuiltInScope { true }
     method varsAreMethods { true }  // we want to treat references to them as requests
 }
 class graceDialectScope {
-    inherit graceModuleScope
+    inherit moduleScope
     method variety { "dialect" }
     method varsAreMethods { true }
     method areReusedNamesCompleted {
@@ -43,7 +43,7 @@ class graceDialectScope {
     }
     method isDialectScope { true }
 }
-def graceEmptyScope:MinimalScope is public = object {
+def emptyScope:MinimalScope is public = object {
     // I represent the empty scope, with no definitions, and to which no definitions can be added.
     use identityEquality
 
@@ -98,7 +98,7 @@ def graceEmptyScope:MinimalScope is public = object {
     method lookupLexically (name) ifAbsent (aBlock) {
         aBlock.apply
     }
-    method objectScope {
+    method currentObjectScope {
         self
     }
     method enclosingObjectScope {
@@ -134,7 +134,7 @@ def graceEmptyScope:MinimalScope is public = object {
     method clear { }
 }
 
-def graceUniversalScope:Scope is public = object {
+def universalScope:Scope is public = object {
     inherit graceScope
     // I represent the universal scope, which defines all names
     // I'm used when no more specific scope information is available.
@@ -175,9 +175,9 @@ def graceUniversalScope:Scope is public = object {
     method lookupLocallyOrReused (name) ifAbsent (aBlock) { universalVariable }
     method allNamesAndValuesDo (aBlock) { iterationError }
     method lookupLexically (name) ifAbsent (aBlock) { universalVariable }
-    method objectScope { self }
+    method currentObjectScope { self }
     method enclosingObjectScope {
-        self.outerScope.objectScope
+        self.outerScope.currentObjectScope
     }
     method defines (name) { true }
     method allNamesAndValuesDo (aBlock) filteringOut (closerDefinitions) {
@@ -211,7 +211,7 @@ def graceUniversalScope:Scope is public = object {
     method types { dictionary.empty }
 
 }
-class graceInterfaceScope {
+class interfaceScope {
     inherit graceScope
     // I represent an iterface scope, that is, a set of methods.  Thus, I also
     // represent the methods in an interface type.
@@ -220,8 +220,8 @@ class graceInterfaceScope {
         // create and return a new scope that is the mathematical meet of self
         // and anotherScope; it contains those names common to both scopes.
         // But with what attributes?  Is this too hard? Do we just give up and
-        // return graceUniversalScope?
-        def result = graceInterfaceScope
+        // return universalScope?
+        def result = interfaceScope
         anotherScope.localNamesAndValuesDo { nm, rightVar →
             lookupLocally (nm) ifAbsent {
             } ifPresent { leftVar →
@@ -233,7 +233,7 @@ class graceInterfaceScope {
     method variety { "interface" }
     method allowsShadowing { true }
 }
-class graceMethodScope {
+class methodScope {
     inherit graceScope
         alias superAdd(_)withName(_) = add(_)withName(_)
 
@@ -246,7 +246,7 @@ class graceMethodScope {
     }
     method variety { "method" }
 }
-class graceObjectScope {
+class objectScope {
     // I represent an object scope in a Grace program.  I support reuse via
     // inheritance of objects and use of traits, and hence have an additional
     // dictionary for reused names.
@@ -272,7 +272,7 @@ class graceObjectScope {
     def types is public = dictionary.empty
 
     method isEmpty { names.isEmpty && reusedNames.isEmpty }
-    var isFresh is public := false  // changed in objectScopesVis in identifierResolution
+    var isFresh is public := false  // changed in currentObjectScopesVis in identifierResolution
     method varsAreMethods { true }  // TODO: maybe false when not fresh?
     method allNames {
         (names.keys ++ reusedNames.keys) >> sequence
@@ -288,12 +288,12 @@ class graceObjectScope {
         }
         true
     }
-    method objectScope {
+    method currentObjectScope {
         // this scope, since it is an object scope
         self
     }
     method enclosingObjectScope {
-        self.outerScope.objectScope
+        self.outerScope.currentObjectScope
     }
     method addLocalAndReusedFrom (anotherScope) {
         anotherScope.localAndReusedNamesAndValuesDo { nm, defn →
@@ -398,7 +398,7 @@ class graceObjectScope {
         }
         result
     }
-    method species is confidential { graceObjectScope }
+    method species is confidential { objectScope }
     method allowsShadowing { true }
 }
 
@@ -408,7 +408,7 @@ class externalScope {
     // I've been made known to the module being compiled by a gct entry;
     // consequently, there is no parse node associated with me.
 
-    inherit graceObjectScope
+    inherit objectScope
     method varsAreMethods { true }
     method node is override {
         ProgrammingError.raise "an external variable has no associated node"
@@ -435,19 +435,19 @@ method predefinedObjectScope(name) {
             uidCache := scpId
             predefined.at(scpId) put (self)
             method variety { "predefined" }
-            method species is confidential { graceObjectScope }
+            method species is confidential { objectScope }
         }
     }
 }
 
-class graceParameterScope {
+class parameterScope {
     // A parameter scope is used to declare the type parameters and the value
     // parameters of a method.  Type parameters of a type go in the type scope.
 
     inherit graceScope
     method variety { "parameter" }
 }
-class graceTypeScope {
+class typeScope {
     // I record the names introduced by a type declaration.  These are the
     // parameters to the type, if any.
     // Nothing else goes in the type scope; the methods of an interface go in
@@ -456,8 +456,8 @@ class graceTypeScope {
     inherit graceScope
     method variety { "type" }
 }
-class graceModuleScope {
-    inherit graceObjectScope
+class moduleScope {
+    inherit objectScope
 
     method varsAreMethods { false }
     method isModuleScope { true }
@@ -489,7 +489,7 @@ class graceModuleScope {
         }
     }
     method variety { "module" }
-    method species is confidential { graceModuleScope }
+    method species is confidential { moduleScope }
 }
 class graceScope {
     // I'm an abstract class representing a declaration scope in a Grace program.
@@ -507,7 +507,7 @@ class graceScope {
 
     method <(other) { uid < other.uid }
     def names = nameDictionary []
-    var outerScope is public := graceEmptyScope
+    var outerScope is public := emptyScope
     var openingNode := nullNode
     var uidCache := ""
 
@@ -586,7 +586,7 @@ class graceScope {
     method attributeScopeOf (aName) in (nd) {
         lookup (aName) ifAbsent {
             util.log 50 verbose "`{aName}` ({nd.range}) not found in scope search — assuming universal scope"
-            return graceUniversalScope
+            return universalScope
         }.attributeScope
     }
     method asDebugString {
@@ -614,14 +614,14 @@ class graceScope {
         other.names.keysAndValuesDo { name, variable →
             result.add(variable) withName (name)
         }
-        result.outerScope := graceEmptyScope
+        result.outerScope := emptyScope
         result
     }
     method areReusedNamesCompleted {
-        // Overriden in graceObjectScope
+        // Overriden in objectScope
         true
     }
-    method objectScope {
+    method currentObjectScope {
         // the enclosing object scope, since this scope is not an object scope
         var s := self.outerScope
         while { s.isObjectScope.not } do {
@@ -630,8 +630,8 @@ class graceScope {
         s
     }
     method enclosingObjectScope {
-        // because I am not an objectscope, this is the same as objectScope
-        objectScope
+        // because I am not an object scope, this is the same as currentObjectScope
+        currentObjectScope
     }
     method reusedNames { dictionary.empty }
     method reuses (name) {
@@ -928,16 +928,16 @@ class variableResolver {
         lexicalOrLocalDefinitionOf (aName) in (aScope) atObject (n) ifPresent { defn →
             list.with(defn)
         } ifAbsent {
-            def objectScope = aScope.objectScope  //  may be aScope itself
-            def result = reusedDefinitionOf (aName) in (objectScope) atObject (n) addTo (list.empty)
+            def currentObjectScope = aScope.currentObjectScope  //  may be aScope itself
+            def result = reusedDefinitionOf (aName) in (currentObjectScope) atObject (n) addTo (list.empty)
             if (result.isEmpty) then {
-                def outerScope = objectScope.outerScope
+                def outerScope = currentObjectScope.outerScope
                 if (outerScope.isTheEmptyScope) then { return result }
                 definitionsOf (aName) visibleIn (outerScope) atObject (n+1) // simple recursion
             } else {
                 // we have found a reused definition, so we look for a conflicting
                 // _direct_ definition.
-                outerDefinitionOf (aName) in (objectScope) atObject (n) addTo (result)
+                outerDefinitionOf (aName) in (currentObjectScope) atObject (n) addTo (result)
             }
         }
     }
@@ -1016,7 +1016,7 @@ class variableResolver {
 
 var moduleRegistry
 
-class variableDefFrom (node) {
+class defVariableFrom (node) {
     inherit abstractVariableFrom (node)
     // I describe the variable defined in a def declaration.
 
@@ -1038,7 +1038,7 @@ class variableDefFrom (node) {
 
 }
 
-class variableImportFrom (node) {
+class importVariableFrom (node) {
     inherit abstractVariableFrom (node)
     // I describe the "nickname" variable defined in an import declaration.
 
@@ -1071,7 +1071,7 @@ class variableImportFrom (node) {
 
 }
 
-class variableMethodFrom (node) {
+class methodVariableFrom (node) {
     // I describe a method defined in the method declaration `node`.
     inherit abstractVariableFrom (node)
 
@@ -1104,20 +1104,20 @@ class variableMethodFrom (node) {
     method kind { "method" }
     def tagString = "mth"
 }
-class variableGraceObjectMethodFrom (node) {
-    inherit variableMethodFrom (node)
+class graceObjectMethodFrom (node) {
+    inherit methodVariableFrom (node)
     method fromGraceObject { true }
     method forUsers { false }
     def tagString = "go"
 }
-class variableAliasMethodFrom (aliasNode) to (oldVariable) {
-    inherit variableMethodFrom(aliasNode.oldSignature)
+class aliasMethodVariableFrom (aliasNode) to (oldVariable) {
+    inherit methodVariableFrom(aliasNode.oldSignature)
 
     definingParseNode := oldVariable.definingParseNode
     method isPublicByDefault { false }
     method asString { "alias " ++ name }
 }
-class variableParameterFrom (node) {
+class parameterVariableFrom (node) {
     // I describe the parameter to  a method or block.
     // node is the identifier, since parameters don't have real declaration nodes
 
@@ -1127,11 +1127,11 @@ class variableParameterFrom (node) {
     method asString { "param " ++ name }
     method isParameter { true }
     method kind { "parameter" }
-    method attributeScope { graceEmptyScope }  // TODO graceUniversalScope ?
+    method attributeScope { emptyScope }  // TODO universalScope ?
     def tagString = "par"
 }
 
-class variableTypeFrom (typeDecNode) {
+class typeVariableFrom (typeDecNode) {
     inherit abstractVariableFrom (typeDecNode)
     // I describe the type name defined in a type declaration.
     // instance variables:
@@ -1266,7 +1266,7 @@ class variableTypeParameterFrom (node) {
     def tagString = "tpar"
 
 }
-class variableVarFrom (node) {
+class varVariableFrom (node) {
     inherit abstractVariableFrom (node)
     // I describe the variable defined in a var declaration.
 
@@ -1278,12 +1278,12 @@ class variableVarFrom (node) {
     method isWritable { isPublic || { isAnnotatedWritable } }
     method isConfidential { isReadable.not && { isWritable.not } }
     method kind { "var" }
-    method attributeScope { graceEmptyScope }
+    method attributeScope { emptyScope }
     def tagString = "var"
 
 }
-class variableImplicitMethodFrom (node) {
-    inherit variableMethodFrom (node)
+class implicitMethodVariableFrom (node) {
+    inherit methodVariableFrom (node)
     // I represent a writer method implicitly declared by a var declaration
 
     method isPublic { false }
@@ -1292,8 +1292,8 @@ class variableImplicitMethodFrom (node) {
     method kind { "method" }
     method attributeScope { predefinedObjectScope "done" }
 }
-class variableRequiredMethodFrom (node) {
-    inherit variableMethodFrom (node)
+class requiredMethodVariableFrom (node) {
+    inherit methodVariableFrom (node)
     // A required method is one that has no body, but serves as a marker that the
     // programmer should provide a real method.   Required methods never override
     // real methods, even if the required method comes from a trait and the real
@@ -1302,11 +1302,11 @@ class variableRequiredMethodFrom (node) {
     method isPublic { false }
     method isConcrete { false }
     method kind { "required method" }
-    method attributeScope { graceUniversalScope }
+    method attributeScope { universalScope }
     def tagString = "req"
 }
 class variableSpecialControlStructureFrom (node) withName (aMethodName) {
-    inherit variableMethodFrom (node)
+    inherit methodVariableFrom (node)
     // I represent a method implicitly declared for one of the special control structures.
     // These are (using regular expression notation and omitting argument lists):
     // - if then ( elseif then )* else?
@@ -1324,7 +1324,7 @@ class variableSpecialControlStructureFrom (node) withName (aMethodName) {
     def tagString = "ctrl"
 }
 //class implicitSignatureFrom (node) {
-//    inherit variableMethodFrom (node)
+//    inherit methodVariableFrom (node)
 //    // I represent a signature created implicitly while calculating the meet and join of other signatures.
 //
 //    method initializeAsJoinOf (methA) and (methB) {
@@ -1336,7 +1336,7 @@ class variableSpecialControlStructureFrom (node) withName (aMethodName) {
 //    }
 //}
 //class graceTypeInstanceFrom (aGraceType) withArguments (typeArgs) {
-//    inherit variableTypeFrom (aGraceType.definingParseNode)
+//    inherit typeVariableFrom (aGraceType.definingParseNode)
 //    // I represent a graceType that has been instantiated with type arguments.
 //    // Instance variables:
 //    // arguments – a list of type arguments, with size self.numberOfParameters.
@@ -1487,15 +1487,15 @@ class abstractVariableFrom (aDeclarationNode) {
 
 method variable(tag) from(node) {
     match (tag)
-      case {"(def)" -> variableDefFrom (node)
-    } case {"(impt)" -> variableImportFrom (node)
-    } case {"(mth)" -> variableMethodFrom (node)
-    } case {"(go)" -> variableGraceObjectMethodFrom (node)
-    } case {"(par)" -> variableParameterFrom (node)
-    } case {"(type)" -> variableTypeFrom (node)
+      case {"(def)" -> defVariableFrom (node)
+    } case {"(impt)" -> importVariableFrom (node)
+    } case {"(mth)" -> methodVariableFrom (node)
+    } case {"(go)" -> graceObjectMethodFrom (node)
+    } case {"(par)" -> parameterVariableFrom (node)
+    } case {"(type)" -> typeVariableFrom (node)
     } case {"(tpar)" -> variableTypeParameterFrom (node)
-    } case {"(var)" -> variableVarFrom (node)
-    } case {"(req)" -> variableRequiredMethodFrom (node)
+    } case {"(var)" -> varVariableFrom (node)
+    } case {"(req)" -> requiredMethodVariableFrom (node)
     } case {"(ctrl)" -> variableSpecialControlStructureFrom (node) withName (node.nameString)
     }
 }

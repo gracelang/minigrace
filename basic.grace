@@ -71,7 +71,7 @@ trait open {
         lookupLocallyOrReused (name)
         copy(other)
         areReusedNamesCompleted → Boolean
-        objectScope → SelfType
+        currentObjectScope → SelfType
         reusedNames → Dictionary
         isModuleScope → Boolean
         reuses (name) → Boolean

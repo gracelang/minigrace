@@ -219,7 +219,7 @@ class definitionGatherer {
         // intrinsic.graceObject
 
         if (node.isInIntrinsicModule) then {
-            scope.graceEmptyScope
+            scope.emptyScope
         } else {
             moduleRegistry.attributeScopeOf "intrinsic".attributeScopeOf "graceObject"
         }
@@ -256,7 +256,7 @@ class definitionGatherer {
         if (expr.startsWithSelf) then {
             reuseError.selfReuse (aGraceReuseStatement)
         }
-        return expr.objectScopeFor (aGraceReuseStatement)
+        return expr.currentObjectScopeFor (aGraceReuseStatement)
     }
     method applyInheritanceModifiersOf (anInheritStatement) {
         // answer a new scope that contains the names provided by this `use` or
@@ -267,14 +267,14 @@ class definitionGatherer {
             return reuseError.notGenerative (anInheritStatement)
         }
         definitionGatherer.for (reusedScope.node).collectReusedNames
-        def result = scope.graceObjectScope.node (anInheritStatement)
+        def result = scope.objectScope.node (anInheritStatement)
         def excludedNames = namesFrom (reusedScope) excludedBy (anInheritStatement)
         addInheritedNamesFrom (reusedScope) to (result) excluding (excludedNames)
         addAliasesFrom (anInheritStatement) to (result) from (reusedScope)
         return result
     }
     method combineTraits (traitScopes) {
-        def tempScope = scope.graceObjectScope
+        def tempScope = scope.objectScope
         traitScopes.do { s →
             s.localAndReusedNamesAndValuesDo { nm, vl →
                 if (vl.isAvailableForReuse && { nodeScope.definesLocally(nm).not }) then {
@@ -322,7 +322,7 @@ class definitionGatherer {
         if (reusedScope.isTrait.not) then {
             return reuseError.notLegalTrait (aUseStatement)
         }
-        def result = scope.graceObjectScope.node (aUseStatement)
+        def result = scope.objectScope.node (aUseStatement)
         def excludedNames = namesFrom (reusedScope) excludedBy (aUseStatement)
         addUsedNamesFrom (reusedScope) to (result) excluding (excludedNames)
         addAliasesFrom (aUseStatement) to (result) from (reusedScope)
@@ -1041,9 +1041,9 @@ def variableResolver = object {
         lexicalOrLocalDefinitionOf (aName) in (aScope) ifPresent { defn →
             return list.with (defn)
         }
-        def objectScope = aScope.objectScope
-        result := reusedDefinitionOf (aName) in (objectScope) addTo (list.empty)
-        result := outerDefinitionOf (aName) in (objectScope) addTo (result)
+        def currentObjectScope = aScope.currentObjectScope
+        result := reusedDefinitionOf (aName) in (currentObjectScope) addTo (list.empty)
+        result := outerDefinitionOf (aName) in (currentObjectScope) addTo (result)
         return result
     }
 }
