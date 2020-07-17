@@ -638,7 +638,7 @@ method badAssignmentTo(node) declaredInScope(scp) {
         syntaxError("'{name}' cannot be re-bound " ++
             "because it is declared as a parameter{lineInfo}.")
             atRange(node.range)
-    } elseif { variable.kind == "method" } then {
+    } elseif { variable.kind == "methodDec" } then {
         syntaxError("'{name}' cannot be re-bound " ++
             "because it is declared as a method{lineInfo}.")
             atRange(node.range)

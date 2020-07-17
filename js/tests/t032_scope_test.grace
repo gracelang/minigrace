@@ -63,36 +63,37 @@ testSuite "scope" with {
 }
 
 method objectNode {
-    def result = ast.objectNode.body [] named "wombat"
+    def result = ast.objectWithBody []
+    result.name := "wombat"
     result.setStart(line 2 column 12)
     result
 }
 
 method defWombatNode {
-    def result = ast.defDecNode.new(
-          ast.identifierNode.new("wombat", false),
+    def result = ast.defDec(
+          ast.identifier("wombat", false),
           objectNode,
-          ast.unknownNode)
+          ast.unknownLiteral)
     result.setStart(line 2 column 5)
     result
 }
 
-method a { ast.identifierNode.new("a", false) }
-method b { ast.identifierNode.new("b", false) }
+method a { ast.identifier("a", false) }
+method b { ast.identifier("b", false) }
 
 method methFooBarNode {
     def sig = list []
-    sig.add(ast.signaturePart.partName "foo" params [a])
-    sig.add(ast.signaturePart.partName "bar" params [b])
-    def result = ast.methodNode.new(sig, [], ast.unknownNode)
+    sig.add(ast.signaturePart "foo" params [a])
+    sig.add(ast.signaturePart "bar" params [b])
+    def result = ast.methodDec(sig, [], ast.unknownLiteral)
     result.setStart(line 3 column 5).
         setScope(scope.methodScope.in(scope.emptyScope))
     result
 }
 
 method magicMethNode {
-    def sig = [ ast.signaturePart.partName(scope.magicKey) ]
-    def result = ast.methodNode.new(sig, [], ast.unknownNode)
+    def sig = [ ast.signaturePart(scope.magicKey) params [] ]
+    def result = ast.methodDec(sig, [], ast.unknownLiteral)
     result.setStart(line 1 column 5).
         setScope(scope.methodScope.in(scope.emptyScope))
     result

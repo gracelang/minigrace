@@ -228,7 +228,7 @@ class token {
     method isKeyword { false }
     method isOp { false }
     method isArrow { false }
-    method isBind { false }
+    method isAssignment { false }
     method isSeparator { false }
     method isLGeneric { false }
     method isRGeneric { false }
@@ -359,12 +359,12 @@ class arrowToken {
     def size is public = 1
     method isArrow { true }
 }
-class bindToken {
+class assignmentToken {
     inherit token
-    def kind is public = "bind"
+    def kind is public = "assignment"
     def value is public = ":="
     def size is public = 2
-    method isBind { true }
+    method isAssignment { true }
 }
 class semicolonToken {
     inherit token
@@ -909,7 +909,7 @@ def operatorState = object {
             if (accum == "→") then {
                 emit(arrowToken)
             } elseif { accum == ":=" } then {
-                emit(bindToken)
+                emit(assignmentToken)
             } elseif { accum == ":" } then {
                 emit(colonToken)
             } else {

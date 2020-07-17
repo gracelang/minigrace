@@ -287,7 +287,7 @@ trait open {
         method inClass { false }    // object in a syntactic class definiton
         method isTrait { false }    // is a method that returns a trait object
         method inTrait { false }    // object in a syntactic trait definition
-        method isBind { false }
+        method isAssignment { false }
         method isReturn { false }
         method isSelf { false }
         method isSuper { false }

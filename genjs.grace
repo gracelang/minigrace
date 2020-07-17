@@ -176,7 +176,7 @@ method uidWithPrefix(str) {
 /////////////////////////////////////////////////////////////
 
 method compilearray(o) {
-    def reg = uidWithPrefix "array"
+    def reg = uidWithPrefix "seq"
     var vals := list []
     for (o.value) do { a -> vals.push(compilenode(a)) }
     out "var {reg} = new GraceSequence({literalList(vals)});"
@@ -528,13 +528,13 @@ method compiletypedec(o) in (obj) {
     // declaredvars.push(escapeident(tName))
     def rhs = o.value
     if (rhs.isInterface) then { rhs.name := tName }
-    def typeMethod = ast.methodNode.new(
-            [ast.signaturePart.partName(o.nameString) scope(s)],
-            typeFunBody (rhs) named (tName), ast.unknownNode) scope(s)
-            // Why unknownType, rather than typeType?  Because the latter will
-            // compile a check that the return value is actually a type, which
-            // causes a circularity when trying to import collections. The check
-            // is subsumed by a call to `isType` in the body of `setTypeName`
+    def typeMethod = ast.methodDec(
+            [ast.signaturePart(o.nameString) params [].setScope(s)],
+            typeFunBody (rhs) named (tName), ast.unknownLiteral).setScope(s)
+            // Why do we make the type Unknown, rather than Type?  Because the
+            // latter will compile a check that the return value is indeed a type,
+            // which causes a circularity when trying to import collections. The
+            // check is subsumed by a call to `isType` in the body of `setTypeName`
     typeMethod.isOnceMethod := true
     typeMethod.withTypeParams(o.typeParams)
     s.node := originalNode       // gct generation will scan the ast after code is generated
@@ -545,10 +545,10 @@ method compiletypedec(o) in (obj) {
 method typeFunBody(typeExpr) named (tName) {
     if (typeExpr.kind == "op") then {
         // this guard prevents us from renaming the rhs in decls like type A⟦T⟧ = B⟦T⟧
-        [ ast.callNode.new(
+        [ ast.request(
                 typeExpr,
-                [ast.requestPart.request "setTypeName"
-                     withArgs[ ast.stringNode.new(tName) ] ]
+                [ast.requestPart "setTypeName"
+                     withArgs[ ast.stringLiteral(tName) ] ]
         ).onSelf ]
     } else {
         [ typeExpr ]
@@ -998,7 +998,7 @@ method compileBuildMethodFor(methNode) withFreshCall (callExpr) inside (outerRef
 method compileCallToBuildMethod(callExpr) withArgs (args) {
     util.setPosition(callExpr.line, callExpr.column)
     callExpr.parts.addLast(
-        ast.requestPart.request "$build"
+        ast.requestPart "$build"
             withArgs [ast.nullNode, ast.nullNode, ast.nullNode]
     )
     def receiver = callExpr.receiver
@@ -1131,7 +1131,7 @@ method compiledefdec(o) {
     def parentNodeKind = o.parentKind
     if (parentNodeKind == "module") then {
         create "def" field (o) in "this"
-    } elseif {parentNodeKind == "method"} then {
+    } elseif {parentNodeKind == "methodDec"} then {
         initializedVars.add(nm)
     }
     compileCheckThat(var_nm) called "value of def {nm}"
@@ -1370,8 +1370,8 @@ method compileimport(o) {
     out "    new GraceString(\"could not find module {o.path}\"));"
     out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", {formatModname(o.path)});")
     initializedVars.add(nm)
-    def accessor = (ast.methodNode.new([ast.signaturePart.partName(o.nameString) scope(currentScope)],
-        [o.value], o.dtype) scope(currentScope))
+    def part = ast.signaturePart(o.nameString) params [].setScope(currentScope)
+    def accessor = ast.methodDec([part], [o.value], o.dtype).setScope(currentScope)
     accessor.line := o.line
     accessor.column := o.column
     accessor.annotations.addAll(o.annotations)
@@ -1452,9 +1452,9 @@ method compilenode(o) {
     tallyNode(oKind)
     if { oKind == "identifier" } then {
         compileidentifier(o)
-    } elseif { oKind == "method" } then {
+    } elseif { oKind == "methodDec" } then {
         compilemethodnode(o) in "this"
-    } elseif { oKind == "generic" } then {
+    } elseif { oKind == "typeapp" } then {
         o.register := compilenode(o.value)
     } else {
         noteLineNumber(o.line)comment "compilenode {oKind}"
@@ -1475,7 +1475,7 @@ method compilenode(o) {
                 ++ os ++ "\");")
             o.register := "string" ++ auto_count
             auto_count := auto_count + 1
-        } elseif { oKind == "bind" } then {
+        } elseif { oKind == "assignment" } then {
             compilebind(o)
         } elseif { oKind == "return" } then {
             compilereturn(o)
@@ -1485,7 +1485,7 @@ method compilenode(o) {
             compilevardec(o)
         } elseif { oKind == "block" } then {
             compileblock(o)
-        } elseif { oKind == "array" } then {
+        } elseif { oKind == "sequence" } then {
             compilearray(o)
         } elseif { oKind == "if" } then {
             compileif(o)
@@ -1497,7 +1497,7 @@ method compilenode(o) {
             compileobject(o, "this")
         } elseif { oKind == "typedec" } then {
             compiletypedec(o) in "this"
-        } elseif { oKind == "typeliteral" } then {
+        } elseif { oKind == "interfaceliteral" } then {
             compiletypeliteral(o) in "this"
         } elseif { oKind == "inherit" } then {
             compileInherit(o) forClass "irrelevant"

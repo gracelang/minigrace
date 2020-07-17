@@ -132,7 +132,7 @@ testSuiteNamed "comment tests" with {
     
     test "method m" by {
         def methodMNode = nodes.filter { each ->
-            (each.kind == "method") && {each.nameString == "m"}
+            (each.kind == "methodDec") && {each.nameString == "m"}
         }.first
         def mComments = methodMNode.comments.value
         assert (mComments.contains "post-comment (sameline) method m") 

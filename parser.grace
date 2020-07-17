@@ -151,7 +151,7 @@ method findNextValidToken(validFollowTokens) {
     // that could start an expression, or eof
 
     def invalidTokens = set.withAll ["dot", "comma", "colon", "rparen", "rbrace",
-            "rsquare", "arrow", "bind"];  // Tokens that cannot start an expression
+            "rsquare", "arrow", "assignment"];  // Tokens that cannot start an expression
 
     var candidate := sym
     while {candidate.isEof.not} do {
@@ -274,7 +274,7 @@ method unsuccessfulParse (aParsingBlock) {
 }
 method pushNum {
     // Push the current token onto the output stack as a number
-    var o := ast.numNode.new(sym.value)
+    var o := ast.numeral(sym.value)
     values.push(o)
     next
     return o
@@ -282,7 +282,7 @@ method pushNum {
 
 method pushString {
     // Push the current token onto the output stack as a string
-    var o := ast.stringNode.new(sym.value)
+    var o := ast.stringLiteral(sym.value)
     o.end := line (sym.line) column (sym.endCol)
     values.push(o)
     next
@@ -294,9 +294,9 @@ method pushIdentifier {
     // false means that this identifier has not yet been annotated with a dtype.
     util.setPosition(sym.line, sym.column)
     def o = if (sym.value == "_") then {
-        ast.identifierNode.wildcard(false)
+        ast.wildcardIdentifier(false)
     } else {
-        ast.identifierNode.new(sym.value, false)
+        ast.identifier(sym.value, false)
     }
     values.push(o)
     next
@@ -327,7 +327,7 @@ method doannotation {
         return false
     }
     next
-    def anns = ast.annotationsNode
+    def anns = ast.noAnnotations
     if (unsuccessfulParse {expression(noBlocks)}) then {
         errorMissingAnnotation
     }
@@ -345,7 +345,7 @@ method doannotation {
 method errorMissingAnnotation {
     def suggestions = list [ ]
     var suggestion := errormessages.suggestion.new
-    def nextTok = findNextValidToken ["bind"]
+    def nextTok = findNextValidToken ["assignment"]
     if (nextTok == sym) then {
         suggestion.insert(" «annotation»")afterToken(lastToken)
     } else {
@@ -385,13 +385,13 @@ method typeterm {
     } elseif {acceptKeyword "interface"} then {
         interfaceLiteral
     } elseif {acceptKeyword "Unknown"} then {
-        values.push(ast.unknownNode)
+        values.push(ast.unknownLiteral)
         next
     } elseif {acceptKeyword "Self"} then {
-        values.push(ast.selfTypeNode)
+        values.push(ast.selfTypeLiteral)
         next
     } elseif {acceptKeyword "..."} then {
-        values.push(ast.ellipsisNode)
+        values.push(ast.ellipsis)
         next
     }
 }
@@ -436,9 +436,9 @@ method typeexpression {
 }
 
 method newIf(cond, thenList, elseList) {
-    def thenBlock = ast.blockNode.new(sequence.empty, thenList)
-    def elseBlock = ast.blockNode.new(sequence.empty, elseList)
-    ast.ifNode.new(cond, thenBlock, elseBlock)
+    def thenBlock = ast.block(sequence.empty, thenList)
+    def elseBlock = ast.block(sequence.empty, elseList)
+    ast.ifExpr(cond, thenBlock, elseBlock)
 }
 
 method reportSyntaxError(message) before (expectedTokens) {
@@ -461,7 +461,7 @@ method reportSyntaxError(message) before (expectedTokens) {
 
 method reportMissingArrow {
     def suggestion = errormessages.suggestion.new
-    if ((sym.isBind) || (sym.value == "=")) then {
+    if ((sym.isAssignment) || (sym.value == "=")) then {
         suggestion.replaceToken(sym)with("->")
     } else {
         suggestion.insert(" ->")afterToken(lastToken)
@@ -550,7 +550,7 @@ method blockParameter(params) -> Boolean {
             var thisParam := values.pop
             if (paramIsPattern || thisParam.isIdentifier.not) then {
                 paramIsPattern := true
-                thisParam := ast.identifierNode.wildcard(thisParam)
+                thisParam := ast.wildcardIdentifier(thisParam)
                     // put the pattern in the type field
             }
             thisParam.isBindingOccurrence := true
@@ -603,7 +603,7 @@ method blockBody(params) beginningWith (btok) {
     next
     def body = values
     values := originalValues
-    return ast.blockNode.new(params, body).setPositionFrom(btok)
+    return ast.block(params, body).setPositionFrom(btok)
 }
 
 
@@ -1048,7 +1048,7 @@ method prefixop {
                           trailing(false) with "«expression»"
                 }
                 suggestions.push(suggestion)
-                if (lastToken.prev.isBind) then {
+                if (lastToken.prev.isAssignment) then {
                     suggestion := errormessages.suggestion.new
                     suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
                     suggestion.deleteToken(lastToken.prev)leading(true)trailing(false)
@@ -1061,8 +1061,8 @@ method prefixop {
         dotrest(blocksOK)
         callrest(blocksOK)
         def rcvr = values.pop
-        def call = ast.callNode.new(rcvr,
-            [ ast.requestPart.request "prefix{op}" withArgs [] ] )
+        def call = ast.request(rcvr,
+            [ ast.requestPart "prefix{op}" withArgs [] ] )
         call.end := line (lastToken.line) column (lastToken.endCol)
         values.push(call)
     }
@@ -1070,7 +1070,7 @@ method prefixop {
 
 method generic {
     if (sym.isLGeneric) then {
-        values.push(ast.genericNode.new(values.pop, typeArgs))
+        values.push(ast.typeApplication(values.pop, typeArgs))
     }
 }
 method trycatch {
@@ -1246,7 +1246,7 @@ method trycatch {
         finally := values.pop
     }
     util.setPosition(tryTok.line, tryTok.column)
-    values.push(ast.tryCatchNode.new(mainblock, cases, finally))
+    values.push(ast.tryCatch(mainblock, cases, finally))
 }
 method matchcase {
     if (!(sym.isIdentifier && (sym.value == "match"))) then {
@@ -1410,7 +1410,7 @@ method matchcase {
         elsecase := values.pop
     }
     util.setPosition(matchTok.line, matchTok.column)
-    values.push(ast.matchCaseNode.new(matchee, cases, elsecase))
+    values.push(ast.matchCase(matchee, cases, elsecase))
 }
 method term {
     // Accept a term, and push onto values stack.  Terms are single syntactic
@@ -1436,10 +1436,10 @@ method term {
     } elseif { acceptKeyword "interface" } then {
         interfaceLiteral
     } elseif {acceptKeyword "Unknown"} then {
-        values.push(ast.unknownNode)
+        values.push(ast.unknownLiteral)
         next
     } elseif {acceptKeyword "Self"} then {
-        values.push(ast.selfTypeNode)
+        values.push(ast.selfTypeLiteral)
         next
     } elseif { sym.isLBrace } then {
         block
@@ -1449,7 +1449,7 @@ method term {
         // Prefix operator
         prefixop
     } elseif { acceptKeyword "..." } then {
-        values.push(ast.ellipsisNode)
+        values.push(ast.ellipsis)
         next
     }
 }
@@ -1632,7 +1632,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
             tmp2 := terms.pop
             tmp := terms.pop
             util.setPosition(tmp.line, tmp.column)
-            tmp := ast.opNode.new(o2, tmp, tmp2)
+            tmp := ast.opRequest(o2, tmp, tmp2)
             terms.push(tmp)
         }
         ops.push(o)
@@ -1712,7 +1712,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
         tmp2 := terms.pop
         tmp := terms.pop
         util.setPosition(tmp.line, tmp.column)
-        tmp := ast.opNode.new(o, tmp, tmp2)
+        tmp := ast.opRequest(o, tmp, tmp2)
         terms.push(tmp)
     }
     tmp := terms.pop
@@ -1734,7 +1734,7 @@ method dotrest(acceptBlocks) {
         var receiver := values.pop
         next
         if (sym.isIdentifier) then {
-            def dro = ast.memberNode.new(sym.value, receiver)
+            def dro = ast.requestWithoutArgs(sym.value, receiver)
                   .setPositionFrom(receiver)
             values.push(dro)
             next
@@ -1788,7 +1788,7 @@ method callrest(acceptBlocks) {
     def lpos = meth.column
     var methn := meth.nameString
     def argumentParts = list []
-    def part = ast.requestPart.request(methn) withArgs(list []).setPositionFrom(meth)
+    def part = ast.requestPart(methn) withArgs(list []).setPositionFrom(meth)
     argumentParts.push(part)
     var foundArgs := false
     var tok := lastToken
@@ -1812,12 +1812,12 @@ method callrest(acceptBlocks) {
         } else {
             meth.receiver
         }
-        meth := ast.callNode.new(realRcvr, argumentParts).setPositionFrom(realRcvr)
+        meth := ast.request(realRcvr, argumentParts).setPositionFrom(realRcvr)
 
         while {sym.isIdentifier} do {
             // parse more parts of a multi-part request
             def argList = list [ ]      // will be modified by parseArgumentsFor(_)into(_)
-            def namePart = ast.requestPart.request(sym.value) withArgs(argList).setPositionFrom(sym)
+            def namePart = ast.requestPart(sym.value) withArgs(argList).setPositionFrom(sym)
             next
             def argsFound = parseArgumentsFor(meth) into (namePart) acceptBlocks (acceptBlocks)
             if (argsFound.not) then {
@@ -2021,7 +2021,7 @@ method defdec {
         name.isBindingOccurrence := true
         def dtype = optionalTypeAnnotation
         def anns = doannotation
-        def o = ast.defDecNode.new(name, ast.nullNode, dtype).setPositionFrom(defTok)
+        def o = ast.defDec(name, ast.nullNode, dtype).setPositionFrom(defTok)
         if (false != anns) then { o.annotations.addAll(anns) }
         if (sym.isOp && (sym.value == "=")) then {
             next
@@ -2029,7 +2029,7 @@ method defdec {
                 errorDefNoExpression
             }
             o.value := values.pop       // overwrite nullNode with initializer
-        } elseif { sym.isBind } then {
+        } elseif { sym.isAssignment } then {
             errorDefUsesAssign(defTok)
         } elseif { o.isAnnotationDecl.not } then {
             errorDefMissingRhs(defTok)
@@ -2049,7 +2049,7 @@ method vardec {
         next
         if (sym.isIdentifier.not) then {
             def nextTok = findNextToken { t ->
-                  (t.isBind) && (t.line == sym.line)
+                  (t.isAssignment) && (t.line == sym.line)
             }
             var msg := "a variable declaration must have a name after the 'var'"
             if (sym.isKeyword) then {
@@ -2065,7 +2065,7 @@ method vardec {
         name.isBindingOccurrence := true
         def dtype = optionalTypeAnnotation
         def anns = doannotation
-        if (sym.isBind) then {
+        if (sym.isAssignment) then {
             next
             if (unsuccessfulParse {expression(blocksOK)}) then {
                 def suggestions = list [ ]
@@ -2101,7 +2101,7 @@ method vardec {
             }
         }
         util.setPosition(line, pos)
-        def o = ast.varDecNode.new(name, val, dtype)
+        def o = ast.varDec(name, val, dtype)
         if (false != anns) then { o.annotations.addAll(anns) }
         values.push(o)
         reconcileComments
@@ -2147,7 +2147,7 @@ method sequenceConstructor {
             errormessages.syntaxError("a sequence beginning with a '[' must end with a ']'.")atPosition(
                 lastToken.line, lastToken.column + lastToken.size)withSuggestion(suggestion)
         }
-        def o = ast.arrayNode.new(params).setPositionFrom(lSq)
+        def o = ast.sequenceConstructor(params).setPositionFrom(lSq)
         values.push(o)
         next
     }
@@ -2175,7 +2175,7 @@ method dodialect {
         }
         pushString
         def p = values.pop
-        def dn = ast.dialectNode.fromStringNode(p).setPositionFrom(dialectToken)
+        def dn = ast.dialectFromStringLiteral(p).setPositionFrom(dialectToken)
         if (dn.value.endsWith ".grace") then {
             errormessages.syntaxError "the name of the dialect must not end with \".grace\""
                   atRange(p)
@@ -2225,7 +2225,7 @@ method inheritOrUse {
                 withSuggestions(suggestions)
         }
         util.setPosition(btok.line, btok.column)
-        def inhNode = ast.inheritNode.new(values.pop)
+        def inhNode = ast.inheritStatement(values.pop)
         if (btok.value == "use") then {
             inhNode.isUse := true
         }
@@ -2353,9 +2353,9 @@ method parseObjectConstructorBody (constructName) startingWith (btok) after (pre
     def body = values
     values := originalValues
     next
-    def objNode = ast.objectNode.new(body, superObject).setPositionFrom(btok)
+    def objNode = ast.objectWithBody(body) inheriting (superObject) using(usedTraits)
+    objNode.setPositionFrom(btok)
     if (false != anns) then { objNode.annotations.addAll(anns) }
-    objNode.usedTraits := usedTraits
     values.push(objNode)
 }
 
@@ -2564,7 +2564,7 @@ method methodDecRest(tm) {
     var signature := tm.signature
     while {sym.isIdentifier} do {
         pushIdentifier
-        def part = ast.signaturePart.partName(values.pop.nameString)
+        def part = ast.signaturePart(values.pop.nameString) params (list [])
         if (sym.isLParen.not) then {
             def suggestion = errormessages.suggestion.new
             suggestion.insert "(" afterToken(lastToken)
@@ -2639,15 +2639,15 @@ method methodHeader {
                 withSuggestion(suggestion)
     }
     def startToken = sym
-    def part = ast.signaturePart.partName(startToken.value)
+    def part = ast.signaturePart(startToken.value) params (list [])
     next
-    def result = ast.methodNode.new( list [ part ], list [], false)
+    def result = ast.methodDec( list [ part ], list [], false)
     if ((startToken.value == "[") && {sym.isRSquare}) then {
         errormessages.syntaxError("methods named '[]' and '[]:=' are no longer part of Grace.")
             atRange(lastToken.line, lastToken.column, sym.column)
     }
     if (sym.isLGeneric) then { part.typeParams := typeparameters }
-    if (sym.isBind) then {
+    if (sym.isAssignment) then {
         part.name := part.name ++ ":="
         next
     } elseif { sym.isOp  && (startToken.value == "prefix") } then {
@@ -2766,7 +2766,7 @@ method typeparameters {
               atRange(lastToken.line, lastToken.column, lastToken.endCol) withSuggestion (suggestion)
     }
     next
-    ast.typeParametersNode(typeIds) whereClauses(whereConditions).setPositionFrom(openBracket)
+    ast.typeParameters(typeIds) whereClauses(whereConditions).setPositionFrom(openBracket)
 }
 
 def typeRelations = ["<:", "<*", ":>", "*>"]
@@ -2836,7 +2836,7 @@ method doimport {
         def name = values.pop
         name.isBindingOccurrence := true
         def dtype = optionalTypeAnnotation
-        def o = ast.importNode.new(p.value, name, dtype).setPositionFrom(importSym)
+        def o = ast.importStatement(p.value, name, dtype).setPositionFrom(importSym)
         def anns = doannotation
         if (false != anns) then { o.annotations.addAll(anns) }
         values.push(o)
@@ -2877,11 +2877,11 @@ method doreturn {
             }
             retval := values.pop
         } else {
-            retval := ast.identifierNode.new("done", false).setStart(ast.noPosition)
+            retval := ast.identifier("done", false).setStart(ast.noPosition)
             retval.end := ast.noPosition
         }
         util.setPosition(retTok.line, retTok.column)
-        var o := ast.returnNode.new(retval)
+        var o := ast.returnStatement(retval)
         values.push(o)
     }
 }
@@ -2902,16 +2902,16 @@ method methodInInterface {
 }
 
 method methodSignature {
-    // parses a method signature, and returns a methodSignatureNode
+    // parses a method signature, and returns a methodSignature
     if (acceptKeyword "...") then {
-        def result = ast.ellipsisNode
+        def result = ast.ellipsis
         next
         return result
     }
     def firstTok = sym
     def m = methodHeader
     var rt := m.dtype
-    ast.methodSignatureNode(m.signature, rt).setPositionFrom(firstTok)
+    ast.methodSignature(m.signature, rt).setPositionFrom(firstTok)
 }
 
 method checkForSeparatorInInterface {
@@ -2961,7 +2961,7 @@ method interfaceLiteral {
         }
         next
         util.setPosition(startToken.line, startToken.column)
-        def t = ast.typeLiteralNode.new(meths, types)
+        def t = ast.interfaceLiteral(meths, types)
         values.push(t)
     }
 }
@@ -2997,7 +2997,7 @@ method typedec {
         }
         pushIdentifier
         util.setPosition(line, pos)
-        def nt = ast.typeDecNode.new(values.pop, false)
+        def nt = ast.typeDec(values.pop, false)
         if (sym.isLGeneric) then { nt.typeParams := typeparameters }
         nt.name.isBindingOccurrence := true
         def anns = doannotation
@@ -3082,7 +3082,7 @@ method statement {
         }
     } else {
         if (successfulParse {expression(blocksOK)}) then {
-            if (( values.last.isIdentifier || values.last.isMember ) && {sym.isBind}) then {
+            if (( values.last.isIdentifier || values.last.isMember ) && {sym.isAssignment}) then {
                 var dest := values.pop
                 if (dest.kind == "lbrace") then {
                     print "sym = {sym}, sym.line = {sym.line}"
@@ -3094,7 +3094,7 @@ method statement {
                 }
                 var val := values.pop
                 util.setPosition(btok.line, btok.column)
-                var o := ast.bindNode.new(dest, val)
+                var o := ast.assignment(dest, val)
                 values.push(o)
             }
         }
@@ -3113,7 +3113,7 @@ method pushComments {
 
     if ( sym.isComment.not ) then { return }
     util.setPosition(sym.line, sym.column)
-    var o := ast.commentNode.new(sym.value)
+    var o := ast.comment(sym.value)
     if ((lastToken.line == sym.line) && (lastToken.kind != "comment")) then {
         o.isPartialLine := true
     } elseif { lastToken.line < (sym.line - 1) } then {
@@ -3124,7 +3124,7 @@ method pushComments {
         nextToken
         sym.isComment
     } do {
-        o := ast.commentNode.new(sym.value)
+        o := ast.comment(sym.value)
         if ( comments.last.endLine == (sym.line - 1) ) then {
             comments.last.extendCommentUsing(o)
         } else {
@@ -3266,7 +3266,7 @@ method parse(toks) {
 
     util.log_verbose "parsing."
     values.clear        //  <thismodule>.parse(_) can be requested multiple times
-    moduleObject := ast.moduleNode.body(values) named (util.modname)
+    moduleObject := ast.module(values) named (util.modname)
 
     if (toks.size == 0) then {
         return moduleObject

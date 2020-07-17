@@ -79,7 +79,7 @@ method generateOneselfRequestFrom (aSourceNode) using (aResolvedVariable) {
     }
     def v = s.variety
     def receiver = if ("dialect | builtIn | module".contains(v)) then {
-        ast.identifierNode.new("$" ++ v, false) scope(nodeScope)
+        ast.identifier("$" ++ v, false).setScope (nodeScope)
     } else {
         def ynd = ast.yourselfNode(outerChain.size).setScope(nodeScope)
         ynd.line := aSourceNode.line
@@ -87,9 +87,9 @@ method generateOneselfRequestFrom (aSourceNode) using (aResolvedVariable) {
         ynd
     }
     def result = if (aSourceNode.numArgs == 0) then {
-        ast.memberNode.new (aSourceNode.nameString, receiver)
+        ast.requestWithoutArgs (aSourceNode.nameString, receiver)
     } else {
-        ast.callNode.new (receiver, aSourceNode.parts)
+        ast.request (receiver, aSourceNode.parts)
     }
     result.setScope(nodeScope).
           onSelf.
@@ -110,7 +110,7 @@ method resolveIdentifiers(topNode) {
             transformCall(node)
         } elseif { node.isInherits } then {
             transformReuse(node) ancestors(anc)
-        } elseif { node.isBind } then {
+        } elseif { node.isAssignment } then {
             transformBind(node) ancestors(anc)
         } else {
             node
@@ -430,7 +430,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
     def symbolTableVis = object {
         inherit ast.baseVisitor
 
-        method visitBind (o) up (anc) {
+        method visitAssignment (o) up (anc) {
             o.scope := anc.parent.scope
             def lValue = o.dest
             if (lValue.isIdentifier) then {
@@ -438,7 +438,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             return true
         }
-        method visitCall (o) up (anc) {
+        method visitRequest (o) up (anc) {
             def enclosingNode = anc.parent
             def scope = enclosingNode.scope
             o.scope := scope
@@ -530,7 +530,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             // to prevent redeclaration when we visit the identifier
             true
         }
-        method visitInherits (o) up (anc) {
+        method visitInherit (o) up (anc) {
             o.scope := anc.parent.scope
             if (o.isUse) then {
                 if (anc.parent.canUse.not) then {
@@ -547,7 +547,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             true
         }
-        method visitMethod (o) up (anc) {
+        method visitMethodDec (o) up (anc) {
             def surroundingScope = anc.parent.scope
             if (surroundingScope.isObjectScope.not) then {
                 // The parser accepts method declarations as statments, and thus
@@ -576,7 +576,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             true
         }
-        method visitMethodType (o) up (anc) {       // used to visit a methodSignatureNode
+        method visitMethodSignature (o) up (anc) {
             def surroundingScope = anc.parent.scope
             if (o.isAppliedOccurrence) then {       // on rhs of an alias, or in an exclude
                 o.scope := surroundingScope
@@ -617,7 +617,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             // If there are no parameters, it won't be used.
             true
         }
-        method visitTypeLiteral (o) up (anc) {
+        method visitInterfaceLiteral (o) up (anc) {
             o.scope := sm.interfaceScope.in(anc.parent.scope)
             true
         }
@@ -647,13 +647,13 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitMatchCase(o) up (anc) { o.scope := anc.parent.scope ; true }
         method visitTryCatch(o) up (anc) { o.scope := anc.parent.scope ; true }
         method visitSignaturePart(o) up (anc) { o.scope := anc.parent.scope ; true }
-        method visitArray(o) up (anc) { o.scope := anc.parent.scope ; true }
-        method visitMember(o) up (anc) {
-            visitCall(o) up (anc)
+        method visitSequence(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitRequestWithoutArgs(o) up (anc) {
+            visitRequest(o) up (anc)
         }
-        method visitGeneric(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method vtypeApplication(o) up (anc) { o.scope := anc.parent.scope ; true }
         method visitString(o) up (anc) { o.scope := anc.parent.scope ; true }
-        method visitNum(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitNumeral(o) up (anc) { o.scope := anc.parent.scope ; true }
         method visitOp(o) up (anc) { o.scope := anc.parent.scope ; true }
         method visitDialect(o) up (anc) { o.scope := anc.parent.scope ; true }
         method visitCommentNode(o) up (anc) { o.scope := anc.parent.scope ; true }
@@ -676,7 +676,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             methNode.accept(erv)
             erv.containsEarlyReturn.not
         }
-        method visitMethod (o) up (anc) {
+        method visitMethodDec (o) up (anc) {
             def myParent = anc.parent
             def surroundingScope = myParent.scope
             if (o.returnsObject) then {
@@ -754,8 +754,8 @@ method gatherInheritedNames(node) is confidential {
         def objScope = node.scope
         var superScope
         if (false == inhNode) then {
-            def gO = ast.identifierNode.new("graceObject", false) scope(objScope)
-            inhNode := ast.inheritNode.new(gO) scope(objScope)
+            def gO = ast.identifier("graceObject", false).setScope (objScope)
+            inhNode := ast.inheritStatement(gO).setScope (objScope)
             superScope := constantScope.objectScope
         } else {
             superScope := scopeReferencedByReuseExpr(inhNode.value)
@@ -996,10 +996,10 @@ method transformBind(bindNode) ancestors(anc) {
     def s = bindNode.scope
     if (lhs.isMember) then {
         // we know that this must be a request, and not a normal assignment
-        def part = ast.requestPart.request(nm ++ ":=") withArgs [bindNode.rhs] scope(s)
+        def part = ast.requestPart(nm ++ ":=") withArgs [bindNode.rhs].setScope (s)
               .setStart(lhs.receiver.end.addColumn 2)
-        def newCall = ast.callNode.new(lhs.receiver, [part])
-              scope(s).setPositionFrom(bindNode)
+        def newCall = ast.request(lhs.receiver, [part])
+              .setScope (s).setPositionFrom(bindNode)
         newCall.end := bindNode.end
         if (lhs.receiver.isSelfOrOuter) then { newCall.onSelf }
         return newCall
@@ -1086,8 +1086,8 @@ method resolve(moduleNode) {
     xmodule.doParseCheck(moduleNode)
     util.setPosition(0, 0)
     moduleNode.scope := moduleScope
-    def dialectObject = ast.moduleNode.body [moduleNode.theDialect]
-        named "$dialect" scope (dialectScope)
+    def dialectObject = ast.module [moduleNode.theDialect] named "$dialect"
+          .setScope (dialectScope)
     def dialectChain = ast.ancestorChain.with(dialectObject)
 
     buildSymbolTableFor(moduleNode) ancestors(dialectChain)

@@ -178,7 +178,7 @@ def good = "this line is not indented"
     }
 
     test "missing brace causes indentation error" by {
-        def s = ‹class annotationsNode(annotations)
+        def s = ‹class annotations(someAnnotations)
             inherit baseNode
             def kind is public = "annonations"
             var anns is public = annotations

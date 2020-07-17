@@ -405,8 +405,8 @@ class disambiguationVisitor {
     inherit ast.rootVisitor
         alias superVisitAnnotations(_) = newVisitAnnotations(_)
         alias superVisitIdentifier(_) = newVisitIdentifier(_)
-        alias superVisitCall(_) = newVisitCall(_)
-        alias superVisitBind(_) = newVisitBind(_)
+        alias superVisitRequest(_) = newVisitRequest(_)
+        alias superVisitAssignment(_) = newVisitAssignment(_)
 
     // I replace implicit requests by explicit requests.  I also make some other
     // checks on the parse tree: those that cannot be performed until all of the
@@ -441,22 +441,22 @@ class disambiguationVisitor {
             possiblyRewrittenNode.newAccept(self)
         }
     }
-    method newVisitCall (aCallNode) {
+    method newVisitRequest (aCallNode) {
         if (aCallNode.receiver.isImplicit.not) then {
-            return superVisitCall(aCallNode)
+            return superVisitRequest(aCallNode)
         }
         def rewrittenNode = nodeRewriter.rewriteImplicitRequest (aCallNode)
         if ((rewrittenNode == aCallNode )) then {
-            superVisitCall (aCallNode)
+            superVisitRequest (aCallNode)
         } else {
             rewrittenNode.acceptVisitor (self)
         }
     }
-    method newVisitBind (anAssignment) {
+    method newVisitAssignment (anAssignment) {
         // if this is an assignment request, replace this assignment node with a request node
         def rewrittenNode = nodeRewriter.rewriteAssignment (anAssignment)
         if ((rewrittenNode == anAssignment )) then {
-            superVisitBind (anAssignment)
+            superVisitAssignment (anAssignment)
         } else {
             rewrittenNode.acceptVisitor (self)
         }
@@ -484,7 +484,7 @@ def nodeRewriter = object {
         if (aResolvedVariable.definition.isMethod.not) then {
             return anIdentifierNode
         }
-        def request = ast.requestPart.request (anIdentifierNode.nameString)
+        def request = ast.requestPart (anIdentifierNode.nameString)
         def newNode = generateOneselfRequestOf (request) from (anIdentifierNode) objectsOut (aResolvedVariable.objectsUp)
         anIdentifierNode.replaceWith (newNode)
         return newNode
@@ -511,7 +511,7 @@ def nodeRewriter = object {
         // return a new requestPart node to replace anAssignment
 
         def requestName = anAssignment.lhs.nameString ++ ":="
-        def newNode = ast.requestPart.request(requestName) withArgs [anAssignment.rhs]
+        def newNode = ast.requestPart(requestName) withArgs [anAssignment.rhs]
         newNode.setPositionFrom := anAssignment
         newNode.fixParentPointers
     }
@@ -578,7 +578,7 @@ def nodeRewriter = object {
 }
 class reuseVisitor {
     inherit ancestorsVisitor
-        alias superVisitMethod(_) = newVisitMethod(_)
+        alias superVisitMethodDec(_) = newVisitMethodDec(_)
         alias superVisitObject(_) = newVisitObject(_)
         alias superVisitTypeDec(_) = newVisitTypeDec(_)
         alias superVisitBlock(_) = newVisitBlock(_)
@@ -593,10 +593,10 @@ class reuseVisitor {
     // requires that resused names already be in the scopes?   Scopes are
     // built on demand to avoid this problem.
 
-    method newVisitMethod (aMethod) {
+    method newVisitMethodDec (aMethod) {
         // Check for shadowing
         aMethod.scope.reportShadowingErrors
-        return superVisitMethod (aMethod)
+        return superVisitMethodDec (aMethod)
     }
     method newVisitObject(anObjectConstructor) {
         // this method is also used to visit Module nodes — a subclass of ObjectConstructor nodes
@@ -631,7 +631,7 @@ class buildScopesVisitor {
         alias superVisitDialect(_) = newVisitDialect(_)
         alias superVisitInterfaceLiteral(_) = newVisitInterfaceLiteral(_)
         alias superVisitMethodSignature(_) = newVisitMethodSignature(_)
-        alias superVisitMethod(_) = newVisitMethod(_)
+        alias superVisitMethodDec(_) = newVisitMethodDec(_)
         alias superVisitReturn(_) = newVisitReturn(_)
         alias superVisitImport(_) = newVisitImport(_)
         alias superVisitModule(_) = newVisitModule(_)
@@ -648,12 +648,12 @@ class buildScopesVisitor {
         }
         return superVisitDefDec (aDefDecl)
     }
-    method newVisitMethodParameter (aMethodParameter) {
+    method newVisitMethodDecParameter (aMethodParameter) {
         aMethodParameter.id.markAsDefinition
         if (aMethodParameter.id.isAnonymous.not) then {
             aMethodParameter.scope.add (GraceParameter.fromParseTreeNode (aMethodParameter))
         }
-        return superVisitMethodParameter (aMethodParameter)
+        return superVisitMethodDecParameter (aMethodParameter)
     }
     method newVisitDialect (aDialectNode) {
         assert {
@@ -692,7 +692,7 @@ class buildScopesVisitor {
         createScope (aSignature.scopeKind) in (aSignature)
         return superVisitMethodSignature (aSignature)
     }
-    method newVisitMethod (aMethodDecl) {
+    method newVisitMethodDec (aMethodDecl) {
         if (aMethodDecl.isMarkerDeclaration.not && { aMethodDecl.hasBody.not }) then {
             syntaxError.noBodyIn (aMethodDecl)
         }
@@ -711,7 +711,7 @@ class buildScopesVisitor {
         }
         aMethodDecl.scope.add (GraceMethod.fromParseTreeNode (aMethodDecl))
         createScope (aMethodDecl.scopeKind) in (aMethodDecl)
-        return superVisitMethod (aMethodDecl)
+        return superVisitMethodDec (aMethodDecl)
     }
     method newVisitIdentifier (anIdentifier) {
         if (anIdentifier.isAnonymous) then {

@@ -6,7 +6,7 @@ dialect "standard"
 def scope is public = object {
     // keep track of each kind of expression separately
     def variables is public = list.with (mt "variable")
-    def methods is public = list⟦MethodType⟧.with (mt "method")
+    def methods is public = list⟦MethodType⟧.with (mt "methodDec")
     def types is public = list⟦MethodType⟧.with (mt "type")
     print "scope done"
 }

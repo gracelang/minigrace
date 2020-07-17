@@ -179,7 +179,7 @@ testSuite "toGrace methods" with {
     }
 
     test "methodSignature" by {
-        def a = parseNode "typeliteral" from
+        def a = parseNode "interfaceliteral" from
             ‹interface {
     firstPart(param1:Number, param2:String)
         seceondPart(param3:interface{foo→Done})

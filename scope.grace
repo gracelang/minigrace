@@ -244,7 +244,7 @@ class methodScope {
         }
         superAdd (aVariable) withName (aString)
     }
-    method variety { "method" }
+    method variety { "methodDec" }
 }
 class objectScope {
     // I represent an object scope in a Grace program.  I support reuse via
@@ -1101,7 +1101,7 @@ class methodVariableFrom (node) {
 //        return result
 //    }
     method isMethod { true }
-    method kind { "method" }
+    method kind { "methodDec" }
     def tagString = "mth"
 }
 class graceObjectMethodFrom (node) {
@@ -1289,7 +1289,7 @@ class implicitMethodVariableFrom (node) {
     method isPublic { false }
     method asString { "implicitMeth " ++ name }
     method isImplicit { true }
-    method kind { "method" }
+    method kind { "methodDec" }
     method attributeScope { predefinedObjectScope "done" }
 }
 class requiredMethodVariableFrom (node) {
@@ -1316,7 +1316,7 @@ class variableSpecialControlStructureFrom (node) withName (aMethodName) {
     name := aMethodName
     method isSpecialControlStructure { true }
     method asString { "ctrl " ++ name }
-    method kind { "method" }
+    method kind { "methodDec" }
     method isTryCatch { name.startsWith "try" }
     method isIfThenElse { name.startsWith "if" }
     method isMatchCase { name.startsWith "match" }
@@ -1383,7 +1383,7 @@ class abstractVariable {
     //   isMethod — true for methods, both implicit & explicit
     //   isExplicitMethod — true for explicit methods only
     //   isImplicit — self, outer^n, and implicit methods
-    //   kind — a string ("var", "def", "method", "parameter" etc.)
+    //   kind — a string ("var", "def", "methodDec", "parameter" etc.)
     //   definingNode — the parse tree node that defines this variable
     //   range — the source-code range of my declaration
     //   startPosition — the start of the range
