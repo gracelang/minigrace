@@ -132,7 +132,7 @@ do
                 else
                     if [ $exitCode -ne 0 ];
                     then false;
-                    else diff test-$$.out ${tcase%_test.grace}.out
+                    else diff test-$$.out ${tcase%_test.grace}.out > test-$$.diff
                     fi
                 fi)
             then
@@ -149,7 +149,8 @@ do
                     printf "\nERROR: $tcase exited with code $exitCode\n"
                     fail "${tcase}: exit $exitCode"
                 else
-                    printf "\nERROR: $tcase produced wrong output\n"
+                    printf "\nERROR: $tcase produced wrong output:\n"
+                    cat test-$$.diff
                     fail "${tcase}: wrong output"
                 fi
             fi
@@ -189,8 +190,11 @@ do
             cat test-$$.out >> test.log
             if [ -e ${tcase%_test.grace}.out ]
             then
-                printf "\nExpected output:\n" >> test.log
-                cat ${tcase%_test.grace}.out >> test.log
+                # printf "\nExpected output:\n" >> test.log
+                # cat ${tcase%_test.grace}.out >> test.log
+                printf "\nDifference from expected output:\n" >> test.log
+                cat test-$$.diff >> test.log
+                rm test-$$.diff
             fi
             grep -v "0 failed, 0 errors" test-$$.out
         fi
