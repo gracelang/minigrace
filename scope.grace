@@ -51,6 +51,13 @@ def emptyScope:MinimalScope is public = object {
 
     def uid is public = "$scopeEmpty"
     predefined.at(uid) put (self)
+
+    method meet (anotherScope) {
+        // create and return a new scope that is the mathematical meet of self
+        // and anotherScope; it contains those names common to both scopes.
+
+        self
+    }
     method isTheEmptyScope { true }
     method isTheUniversalScope { false }
     method isFresh { false }
