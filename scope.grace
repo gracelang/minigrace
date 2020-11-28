@@ -211,6 +211,12 @@ def universalScope:Scope is public = object {
     method outerScope := (nu) {
         ProgrammingError.raise "the universal scope cannot be given an outerScope"
     }
+    method meet (anotherScope) {
+        // create and return a new scope that is the mathematical meet of self
+        // and anotherScope; it contains those names common to both scopes.
+
+        anotherScope
+    }
     method variety { "universal" }
     method clear {
         ProgrammingError.raise "can't clear the universal scope"
