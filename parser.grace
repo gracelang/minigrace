@@ -166,12 +166,12 @@ method findNextValidToken(validFollowTokens) {
     return candidate        // candidate is eof
 }
 
-method findClosingBrace(token, inserted) {
-    // Finds the closing brace for token (that is the beginning of a control
+method findClosingBrace(opening, inserted) {
+    // Finds the closing brace correspondng to opening (that is the beginning of a control
     // structure) -- an opening brace. Returns an object with two fields: found
-    // and tok. If a closing brace is found, found is set to true, and tok is set to
-    // the closing brace. Otherwise found is set to false, and tok is set to the
-    // token that the closing brace should appear after.
+    // and tok. If a closing brace is found, found is true, and tok is
+    // the closing brace. Otherwise, found is false, and tok is the
+    // token after which the closing brace should appear.
 
     var n := sym
     var numOpening := if (inserted) then {1} else {0}
@@ -180,8 +180,8 @@ method findClosingBrace(token, inserted) {
         var found is public
         var tok is public
     }
-    // Skip all tokens on the same line first.
-    while {(n.isEof.not) && (n.line == token.line)} do {
+    // Count all tokens on the same line first.
+    while {(n.isEof.not) && (n.line == opening.line)} do {
         if (n.isLBrace) then {
             numOpening := numOpening + 1
         } elseif { n.isRBrace } then {
@@ -189,8 +189,8 @@ method findClosingBrace(token, inserted) {
         }
         n := n.next
     }
-    // Skip all tokens that have greater indent than the target closing brace.
-    while {(n.isEof.not) && (n.indent > token.indent)} do {
+    // Count all tokens that have greater indent than the opening brace.
+    while {(n.isEof.not) && (n.indent > opening.indent)} do {
         if (n.isLBrace) then {
             numOpening := numOpening + 1
         } elseif { n.isRBrace } then {
@@ -201,10 +201,6 @@ method findClosingBrace(token, inserted) {
     if (n.isRBrace) then {
         result.found := true
         result.tok := n
-    } elseif {(n.prev.isRBrace) && (numOpening == numClosing)} then {
-        // Check that the number of opening and closing braces matches.
-        result.found := true
-        result.tok := n.prev
     } else {
         result.found := false
         result.tok := n.prev
