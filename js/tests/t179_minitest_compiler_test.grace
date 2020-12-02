@@ -3,6 +3,7 @@ dialect "minitest"
 import "compiler" as compiler
 import "identifierresolution" as identifierresolution
 import "errormessages" as errormessages
+import "constantScope" as constantScope
 
 def MatchError = ProgrammingError.refine "MatchError"
 def SyntaxError = errormessages.SyntaxError
@@ -264,6 +265,22 @@ method tryIt(a) {
                 case { _ : interface { foo -> String} -> print "foo returns String" }
                 case { _ : interface { foo -> Number} -> print "foo returns Number" }
         } shouldRaise (MatchError) mentioning "2 cases match"
+    }
+
+    test "each case answers number, so whole match…case annswers number" by {
+        def module = identifierresolution.resolve(compiler.parseString(‹
+class pieceOn (colorNum: Number) {
+    def current:Number = match(colorNum)
+        case {1 -> 2}
+        case {2 -> 3}
+        case {3 -> 4}
+        case {4 -> 5}
+}
+›))
+        def moduleScope = module.scope
+        def pieceOnScope = moduleScope.lookup "pieceOn(1)" .attributeScope
+        def currentScope = pieceOnScope.lookup "current" .attributeScope
+        assert (currentScope) shouldBe (constantScope.numberScope)
     }
 }
 
