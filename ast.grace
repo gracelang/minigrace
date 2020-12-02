@@ -744,6 +744,7 @@ class matchCase (matchee', cases', elsecase') {
         if (false ≠ elsecase) then {
             result := result.meet(elsecase.attributeScope)
         }
+        result
     }
 
     method childrenDo(anAction:Procedure1) {
