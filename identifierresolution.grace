@@ -482,9 +482,8 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.parentKind := myParent.kind
             if (myParent.isObject) then {
                 if (o.isTyped) then {
-                    def nameString = o.nameString
-                    s.methodTypes.at(nameString) put(readerSignature(o))
-                    s.methodTypes.at(nameString) put(writerSignature(o))
+                    s.methodTypes.at (o.nameString) put(readerSignature(o))
+                    s.methodTypes.at (o.writerNameString) put(writerSignature(o))
                 }
             }
             true
@@ -497,9 +496,8 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 if (o.isDeclaredByParent.not && isWild.not) then {
                     def declaringNode = o.declaringNodeWithAncestors(anc)
                     if (scope.isObjectScope && declaringNode.isVarDec) then {
-                        def nameGets = o.nameString ++ ":=(1)"
-                        scope.add(sm.varVariableFrom(declaringNode)) withName (nameGets)
-                        // scope.add will complain if {nameGets} is already declared.
+                        scope.add(sm.varVariableFrom(declaringNode)) withName (o.writerNameString)
+                        // scope.add will complain if o.writerNameString is already declared.
                         // We use a variableVar and not a variableMethod to
                         // distinguish this from a hand-written assignment method
                     }
@@ -1004,7 +1002,7 @@ method transformBind(bindNode) ancestors(anc) {
         if (lhs.receiver.isSelfOrOuter) then { newCall.onSelf }
         return newCall
     }
-    def defs = sm.variableResolver.definitionsOf "{nm}:=(1)" visibleIn (s)
+    def defs = sm.variableResolver.definitionsOf (lhs.writerNameString) visibleIn (s)
     if (defs.isEmpty) then {
         def variable = s.lookup (nm) ifAbsent {
             // no def for "{nm}" or "{nm}:=(1)"
