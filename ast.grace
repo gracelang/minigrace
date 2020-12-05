@@ -2501,6 +2501,7 @@ class identifier (name', dtype') {
         end := line (line) column (column + nu.size - 1)
     }
     method nameString { value }
+    once method writerNameString { "{value}:=(1)" }
     var canonicalName is public := value
     method quoted { value.quoted }
     method isIdentifier { true }
@@ -3126,6 +3127,7 @@ class varDec (name', val, dtype') {
     }
 
     method isVarDec { true }
+    once method writerNameString { "{nameString}:=(1)" }
     method description { "var" }
     method isPublic {
         // vars are confidential by default
