@@ -38,9 +38,9 @@ def keywords = set
 def keywordsStartingStatement = re.fromString ‹^(class|def|inherit|method|once|trait|type|use|var)\b›
 method lineSeemsToStartStatement -> Boolean {
     // answers true if the currrent line seems to be a statement.
-    // This check can produce a better error message if the opening brace
-    // of a blcok is omitted, and the indentation of the first statement in
-    // the block is therefore taken to be a continuation of the prior line
+    // This check can help produce a better error message if the opening brace
+    // of a block is omitted, and the indentation of the first statement in
+    // the block causes it to be taken as a continuation of the prior line
 
     def currentLine = inputLines.at (lineNumber).substringFrom(columnNumber)
     keywordsStartingStatement.matches(currentLine)
