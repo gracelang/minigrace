@@ -1664,11 +1664,11 @@ class request (receiver', parts') {
         def spc = "  " * (depth+1)
         var s := basePretty(depth)
         s := s ++ if (isSelfRequest) then { " on self\n" } else { "\n" }
-        s := s ++ spc ++ "Receiver: {receiver.pretty(depth + 1)}\n"
+        s := s ++ spc ++ "Receiver: {receiver.pretty(depth+2)}\n"
         s := s ++ spc ++ "Method Name: {nameString}\n"
         s := s ++ spc ++ "Parts:"
         for (self.parts) do { part ->
-            s := s ++ "\n  " ++ spc ++ part.pretty(depth + 2)
+            s := s ++ "\n  " ++ spc ++ part.pretty(depth+2)
         }
         s
     }
@@ -2241,12 +2241,12 @@ class requestWithoutArgs(request, receiver') {
         def spc = "  " * (depth+1)
         var s := basePretty(depth)
         s := s ++ if (isSelfRequest) then { " on self\n" } else { "\n" }
-        s := s ++ spc ++ "Receiver: " ++ receiver.pretty(depth) ++ "\n"
+        s := s ++ spc ++ "Receiver: " ++ receiver.pretty(depth+2) ++ "\n"
         s := s ++ spc ++ "Method Name: " ++ parts.first.pretty(depth)
         if (false != generics) then {
-            s := s ++ "\n" ++ spc ++ "Generics:"
+            s := s ++ "\n" ++ spc ++ "TypeArgs:"
             for (generics) do {g->
-                s := s ++ "\n" ++ spc ++ "  " ++ g.pretty(depth+1)
+                s := s ++ "\n" ++ spc ++ "  " ++ g.pretty(depth+2)
             }
         }
         s
@@ -3781,9 +3781,11 @@ class requestPart(rPart) withArgs(xs) {
                 s := "{s}\n    {spc}{tArg.pretty(depth + 2)}"
             }
         }
-        s := "{s}\n{spc}Args:"
-        for (args) do { a ->
-            s := "{s}\n    {spc}{a.pretty(depth + 2)}"
+        if (args.size > 0) then {
+            s := "{s}\n{spc}Args:"
+            for (args) do { a ->
+                s := "{s}\n    {spc}{a.pretty(depth + 2)}"
+            }
         }
         s
     }
