@@ -1723,7 +1723,7 @@ class request (receiver', parts') {
 
 class module (b) named(nm) {
     inherit objectWithBody(b)
-        alias oNPostCopy(_) = postCopy(_)
+        alias oPostCopy(_) = postCopy(_)
         alias objChildrenDo(_) = childrenDo(_)
         alias objChildrenMap(_) = childrenMap(_)
 
@@ -1795,9 +1795,7 @@ class module (b) named(nm) {
         imports := other.imports
         directImports := other.directImports
         theDialect := other.theDialect
-        // copy the fields of moduleNode
-
-        oNPostCopy(other)
+        oPostCopy(other)
         self
     }
 }
@@ -2228,6 +2226,7 @@ class requestWithoutArgs(request, receiver') {
         }
     }
     method isSelfOrOuter {
+        // TODO — shouldn't this just return false, i.e., use the inherited method?
         receiver.isSelfOrOuter
     }
     method map(blk) ancestors(ac) {
@@ -2795,7 +2794,7 @@ class opRequest (op, l, r) {
     var right is public := r
     var generics is public := false
     var isTailCall is public := false      // is possibly the final value of a method
-    var isSelfRequest is public := false
+    var isSelfRequest is public := left.isSelfOrOuter
 
 
     method attributeScope {
@@ -2845,8 +2844,9 @@ class opRequest (op, l, r) {
     method accept(visitor : AstVisitor) from(ac) {
         if (visitor.visitOp(self) up(ac)) then {
             def newChain = ac.extend(self)
-            self.left.accept(visitor) from(newChain)
-            self.right.accept(visitor) from(newChain)
+            typeArgsDo { each -> each.accept(visitor) from (newChain) }
+            left.accept(visitor) from(newChain)
+            right.accept(visitor) from(newChain)
         }
     }
     method map(blk) ancestors(ac) {
@@ -2858,29 +2858,41 @@ class opRequest (op, l, r) {
     }
     method pretty(depth) {
         def spc = "  " * (depth+1)
-        var s := "{basePretty(depth)}‹{self.nameString}›"
-        s := s ++ "\n"
-        s := s ++ spc ++ self.left.pretty(depth + 1)
-        s := s ++ "\n"
-        s := s ++ spc ++ self.right.pretty(depth + 1)
+        var s := "{basePretty(depth)} ‹{nameString}›\n"
+        s := "{s}{spc}Receiver: {left.pretty(depth+2)}\n"
+        if (hasTypeArgs) then {
+            s := "{s}{spc}TypeArgs:"
+            typeArgs.do { tArg ->
+                s := "{s}{spc}  {tArg.pretty(depth+2)}\n"
+            }
+        }
+        s := "{s}{spc}Arg: {right.pretty(depth+2)}"
         s
     }
     method toGrace(depth : Number) -> String {
         var s := ""
-        if ((self.left.kind == "op") && {self.left.value != self.value}) then {
-            s := "(" ++ self.left.toGrace(0) ++ ")"
+        if ((left.kind == "op") && {left.value != self.value}) then {
+            s := "(" ++ left.toGrace(0) ++ ")"
         } else {
-            s := self.left.toGrace(0)
+            s := left.toGrace(0)
+        }
+        var v := self.value
+        if (hasTypeArgs) then {
+            v := v ++ "⟦"
+            typeArgs.do { tArg ->
+                v := v ++ tArg.toGrace(depth + 1)
+            } separatedBy { v := v ++ ", " }
+            v := v ++ "⟧"
         }
         if (self.value == "..") then {
-            s := s ++ self.value
+            s := s ++ v
         } else {
-            s := s ++ " " ++ self.value ++ " "
+            s := s ++ " " ++ v ++ " "
         }
-        if ((self.right.kind == "op") && {self.right.value != self.value}) then {
-            s := s ++ "(" ++ self.right.toGrace(0) ++ ")"
+        if ((right.kind == "op") && {right.value != self.value}) then {
+            s := s ++ "(" ++ right.toGrace(0) ++ ")"
         } else {
-            s := s ++ self.right.toGrace(0)
+            s := s ++ right.toGrace(0)
         }
         s
     }
@@ -2899,6 +2911,7 @@ class opRequest (op, l, r) {
     method postCopy(other) {
         isTailCall := other.isTailCall
         isSelfRequest := other.isSelfRequest
+        generics := other.generics
         self
     }
 }
