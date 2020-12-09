@@ -1524,25 +1524,13 @@ method expression(acceptBlocks) {
     }
 }
 
-// Calculate the precedence of an operator. In this case, only
-// multiplication and division have nontrivial precedence. Used in
-// expressionrest.
-method oprec(o) {
-    if (o == "*") then {
-        return 10
-    } elseif { o == "/" } then {
-        return 10
-    }
-    return 5
-}
-
-// Return the precedence of the operator at the top of the "ops" stack.
 method toprec(ops) {
-    if (ops.size > 0) then {
-        var o := ops.last
-        return oprec(o)
+    // Return the precedence of the operator at the top of the "ops" stack.
+    if (ops.isEmpty) then {
+        0
+    } else {
+        ops.last.precedence
     }
-    0
 }
 
 
@@ -1558,12 +1546,31 @@ method valueexpressionrest {
     }
 }
 
-method isArithmetic(o) {
-    if (o == "*") then { return true }
-    if (o == "/") then { return true }
-    if (o == "+") then { return true }
-    if (o == "-") then { return true }
-    false
+class operator(opSymToken) {
+    // represents a binary operator in an expression
+    // opSymToken is the operator symbol token
+
+    def symbol = opSymToken
+    def op is public = symbol.value
+    var typeArgs is public := false
+    def start:Position is public = symbol.start
+    def end:Position is public = symbol.end
+
+    once method isArithmetic {
+        if (op == "*") then { return true }
+        if (op == "/") then { return true }
+        if (op == "+") then { return true }
+        if (op == "-") then { return true }
+        false
+    }
+
+    once method precedence {
+        // Answer the precedence of this operator. Only
+        // multiplication and division have nontrivial precedence.
+        if (op == "*") then { 10 }
+            elseif { op == "/" } then { 10 }
+            else { 5 }
+    }
 }
 
 method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
@@ -1573,32 +1580,26 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
     // left-associative.  It is parameterised so that it
     // can be used for both type- and value- expressions.
     
-    var terms := list [] // List of operands yet to be used
-    var ops := list []   // Operator stack
+    def terms = list [] // stack of operands yet to be used
+    def ops = list []   // Operator stack
     var o
-    var o2
-    var tmp2
-    var tmp := values.pop
-    terms.push(tmp)
-    var prec
-    var allarith := true // Consists only of arithmetic operators
-    var opcount := 0
-    var opdtype := "" // The single operator being used in this expression
+    terms.push(values.pop)
+    var allArithmetic := true // This expr consists only of arithmetic operators
+    var opSymbol              // The single operator being used in this expression
+    var opSymbolEncountered := false  // true once opSymbol has been assigned
     while {
         (sym.isOp) && {sym.value ≠ "="}
     } do {
-        opcount := opcount + 1
-        o := sym.value
+        o := operator(sym)
         next
-        def oTypeArgs = typeArgs        // parsed, but ignored at present
-        prec := oprec(o)
-        if (isArithmetic(o).not) then {
-            allarith := false
+        o.typeArgs := typeArgs          // parse the type arguments, if present
+        if (o.isArithmetic.not) then {
+            allArithmetic := false
         }
-        if ((opdtype != "") && (opdtype != o) && (allarith.not)) then {
-            // If: this is not the first operator, it is not the same
-            // as the last operator, and the expression has not been
-            // entirely arithmetic, raise a syntax error.
+        if (opSymbolEncountered && {(opSymbol.op ≠ o.op) && allArithmetic.not}) then {
+            // If: this is not the first operator, and it is not the same as
+            // the previous operator, and the expression has not been entirely
+            // arithmetic (that is, comprising +, -, * and /), raise an error.
             def suggestions = list [ ]
             var suggestion := errormessages.suggestion.new
             suggestion.insert(")")afterToken(sym)
@@ -1608,28 +1609,29 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
             suggestion.insert(")")afterToken(lastToken.prev)
             suggestion.insert("(")beforeToken(lastToken.prev.prev.prev)
             suggestions.push(suggestion)
-            def msg = if (isArithmetic(o) ≠ isArithmetic(opdtype)) then {
-                "containing both arithmetic and non-arithmetic operators"
+            def msg = if (o.isArithmetic ≠ opSymbol.isArithmetic) then {
+                "using both arithmetic and non-arithmetic operators"
             } else {
                 "using two different operators"
             }
-            errormessages.syntaxError("an expression {msg} requires parentheses") atRange (
+            errormessages.syntaxError "an expression {msg} requires parentheses" atRange (
                   lastToken.prev.prev.prev.line, lastToken.prev.prev.prev.column,
                   lastToken.column) withSuggestions (suggestions)
         }
-        opdtype := o
-        while {(ops.size > 0) && (prec <= toprec(ops))} do {
+        opSymbol := o
+        opSymbolEncountered := true
+        while {(ops.size > 0) && (o.precedence <= toprec(ops))} do {
             // Do the shunting: for as long as the current operator
             // has lesser or equal precedence than the one on the
             // top of the stack, take the operator off the stack and
             // replace its two operands with the combined operator node.
-            // This corresponds to left-associative operators only.
-            o2 := ops.pop
-            tmp2 := terms.pop
-            tmp := terms.pop
-            util.setPosition(tmp.line, tmp.column)
-            tmp := ast.opRequest(o2, tmp, tmp2)
-            terms.push(tmp)
+            // This rule works for left-associative operators only.
+            def o2 = ops.pop
+            def tmp2 = terms.pop
+            def tmp1 = terms.pop
+            terms.push(ast.opRequest(o2.op, tmp1, tmp2).
+                withGenericArgs(o2.typeArgs).
+                setPositionFrom(tmp1))
         }
         ops.push(o)
         if (sym.isLParen) then {
@@ -1694,26 +1696,23 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
         }
 
         // Regardless of where the last value came from, it may have
-        // method invocations, indexes, or method call happening to it,
-        // which should be applied and the result put into the operands
-        // list.
+        // method invocations happening to it.  These should now be applied,
+        // and the result put into the operands list.
         dotrest(acceptBlocks)
         callrest(acceptBlocks)
-        tmp := values.pop
-        terms.push(tmp)
+        terms.push(values.pop)
     }
     while {ops.size > 0} do {
         // Shunt off any remaining operators at the end
-        o := ops.pop
-        tmp2 := terms.pop
-        tmp := terms.pop
-        util.setPosition(tmp.line, tmp.column)
-        tmp := ast.opRequest(o, tmp, tmp2)
-        terms.push(tmp)
+        def top = ops.pop
+        def t2 = terms.pop
+        def t1 = terms.pop
+        terms.push(ast.opRequest(top.op, t1, t2)
+            .withGenericArgs(top.typeArgs)
+            .setPositionFrom(t1))
     }
-    tmp := terms.pop
-    values.push(tmp)
-    if (terms.size > 0) then {
+    values.push(terms.pop)
+    if (terms.isEmpty.not) then {
         errormessages.syntaxError("values left on term stack.")atPosition(sym.line, sym.column)
     }
 }
@@ -2110,12 +2109,10 @@ method sequenceConstructor {
     if (sym.isLSquare) then {
         def lSq = sym
         next
-        var tmp
-        var params := list []
+        def params = list []
         if (successfulParse {expression(blocksOK)}) then {
             while {sym.isComma} do {
-                tmp := values.pop
-                params.push(tmp)
+                params.push(values.pop)
                 next
                 if (unsuccessfulParse {expression(blocksOK)}) then {
                     def suggestions = list [ ]
@@ -2134,8 +2131,7 @@ method sequenceConstructor {
                         atPosition(sym.line, sym.column) withSuggestions(suggestions)
                 }
             }
-            tmp := values.pop
-            params.push(tmp)
+            params.push(values.pop)
         }
         if (sym.isRSquare.not) then {
             def suggestion = errormessages.suggestion.new
