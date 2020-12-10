@@ -175,6 +175,12 @@ method rightBrace {
           atRange (lineNumber, startColumn, columnNumber)
     }
 }
+once class null {
+    // used only within the token class, but moved here so that it is a singleton
+    use identityEquality
+    method asString { "⏚" }
+    method isHeader { true }
+}
 
 class token {
     use equality
@@ -182,11 +188,6 @@ class token {
     def indent is public = currentLineIndent
     def column is public = startColumn
 
-    def null = object {
-        use identityEquality
-        method asString { "⏚" }
-        method isHeader { true }
-    }
     var next is public := null
     var prev is public := null
 
