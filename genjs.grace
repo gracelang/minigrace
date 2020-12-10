@@ -1201,20 +1201,16 @@ method compilematchcase(o) {
     o.register := "matchres" ++ myc
 }
 method compileop(o) {
-    def left = compilenode(o.left)
-    def opRight = o.right
-    def right = compilenode(opRight)
     def opSym = o.value
     def rnm = if (opSym == "+") then { "sum" }
               elseif {opSym == "*"} then { "prod" }
               elseif {opSym == "-"} then { "diff" }
               elseif {(opSym == "/") || (opSym == "÷")} then { "quotient" }
               elseif {o.value == "%"} then { "modulus" }
-              else { "opresult" }
-    def register = uidWithPrefix(rnm)
-    out("var {register} = request({left}, \"" ++
-          "{escapestring(o.nameString)}\", [1], {right});")
-    o.register := register
+              elseif {opSym == "++"} then { "concat" }
+              else { "term" }
+    o.register := uidWithPrefix(rnm)
+    compileOtherRequest(o, compileArguments(o))
 }
 method compileNormalArguments(o, args) {
     o.argumentsDo { a ->
@@ -1245,11 +1241,11 @@ method scopeThatDefines(id) ifNone (action) {
     var thisScope := id.scope
     def name = id.nameString
     while {
-        if (thisScope.isTheEmptyScope) then { return action.apply }
         if (thisScope.variety == "fake") then {
             util.log 30 verbose "found fake symbol table in {id} at {id.range}"
             return action.apply
         }
+        if (thisScope.isTheEmptyScope) then { return action.apply }
         thisScope.definesLocallyOrReuses(name).not
     } do {
         thisScope := thisScope.outerScope
