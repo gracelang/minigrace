@@ -1,0 +1,58 @@
+#! /usr/bin/env bash
+for f in "$@"
+do
+    sed -e "s/ifNode\.new/ifExpr/g" \
+        -e "s/annotationsNode *(/annotations(/g" \
+        -e "s/annotationsNode/noAnnotations/g" \
+        -e "s/blockNode\.new/block/g" \
+        -e "s/tryCatchNode\.new/tryCatch/g" \
+        -e "s/matchCaseNode\.new/matchCase/g" \
+        -e "s/methodSignatureNode/methodSignature/g" \
+        -e "s/typeLiteralNode.new/interfaceLiteral/g" \
+        -e "s/\"typeliteral\"/\"interfaceliteral\"/g" \
+        -e "s/typeDecNode\.new/typeDec/g" \
+        -e "s/methodNode\.new/methodDec/g" \
+        -e "s/\"method\"/\"methodDec\"/g" \
+        -e "s/callNode\.new/request/g" \
+        -e "s/moduleNode\.body/module/g" \
+        -e "s/objectNode\.new/objectWithBody/g" \
+        -e "s/objectNode.body/objectWithBody/g" \
+        -e "s/arrayNode\.new/sequenceConstructor/g" \
+        -e "s/\"array\"/\"sequence\"/g" \
+        -e "s/memberNode\.new/requestWithoutArgs/g" \
+        -e "s/genericNode\.new/typeApplication/g" \
+        -e "s/\"generic\"/\"typeapp\"/g" \
+        -e "s/typeParametersNode/typeParameters/g" \
+        -e "s/identifierNode\.new/identifier/g" \
+        -e "s/identifierNode.\wildcard/wildcardIdentifier/g" \
+        -e "s/ellipsisNode/ellipsis/g" \
+        -e "s/unknownNode/unknownLiteral/g" \
+        -e "s/selfTypeNode/selfTypeLiteral/g" \
+        -e "s/stringNode\.new/stringLiteral/g" \
+        -e "s/numNode\.new/numeral/g" \
+        -e "s/opNode\.new/opRequest/g" \
+        -e "s/bindNode\.new/assignment/g" \
+        -e "s/\"bind\"/\"assignment\"/g" \
+        -e "s/isBind/isAssignment/g" \
+        -e "s/defDecNode\.new/defDec/g" \
+        -e "s/varDecNode\.new/varDec/g" \
+        -e "s/importNode.new/importStatement/g" \
+        -e "s/dialectNode\.new/dialectStatement/g" \
+        -e "s/dialectNode\.fromStringNode/dialectFromStringLiteral/g" \
+        -e "s/returnNode\.new/returnStatement/g" \
+        -e "s/inheritNode\.new/inheritStatement/g" \
+        -e "s/signaturePart\.partName/signaturePart/g" \
+        -e "s/requestPart\.request/requestPart/g" \
+        -e "s/commentNode\.new/comment/g" \
+        -e "s/isitMethodType/isitMethodSignature/g" \
+        -e "s/isitTypeLiteral/isitInterfaceLiteral/g" \
+        -e "s/isitMethod/isitMethodDec/" \
+        -e "s/isitCall/isitRequest/g" \
+        -e "s/isitArray/isitSequence/g" \
+        -e "s/isitMember/isitRequestWithoutArgs/g" \
+        -e "s/isitGeneric/typeApplication/g" \
+        -e "s/isitNum/isitNumeral/" \
+        -e "s/isitBind/isitAssignment/g" \
+        -e "s/isitInherits/isitInherit/g" \
+        $f > $f.$$ && mv $f.$$ $f
+done
