@@ -1393,10 +1393,10 @@ def range is public = object {
             }
             method at(ix:Number) {
                 if (!(ix <= self.size)) then {
-                    BoundsError.raise "requested range.at({ix}), but upper bound is {size}"
+                    BoundsError.raise "requested range.at {ix}, but upper bound is {size}"
                 }
                 if (!(ix >= 1)) then {
-                    BoundsError.raise "requested range.at({ix}), but lower bound is 1"
+                    BoundsError.raise "requested range.at {ix}, but lower bound is 1"
                 }
                 return start + (ix - 1)
             }
@@ -1458,8 +1458,14 @@ def range is public = object {
 
             method values { self }
 
-            method asString -> String{
-                "range.from({lower})to({upper})"
+            method asDebugString -> String {
+                "range.from {lower} to {upper}"
+            }
+            method asString -> String {
+                var s := "["
+                do { each -> s := s ++ each.asString }
+                    separatedBy { s := s ++ ", " }
+                s ++ "]"
             }
         }
     }
@@ -1569,8 +1575,14 @@ def range is public = object {
 
             method values { self }
 
-            method asString -> String {
+            method asDebugString -> String {
                 "range.from {upper} downTo {lower}"
+            }
+            method asString -> String {
+                var s := "["
+                do { each -> s := s ++ each.asString }
+                    separatedBy { s := s ++ ", " }
+                s ++ "]"
             }
         }
     }

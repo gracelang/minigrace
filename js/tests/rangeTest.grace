@@ -245,5 +245,14 @@ trait rangeTest {
         method testHashesDiffer {
             assert (rangeDown.hash) shouldntBe (rangeUp.hash)
         }
+        method testAsStringUp {
+            assert (rangeUp.asString) shouldBe (sequence(rangeUp).asString)
+        }
+        method testAsStringDown {
+            assert (rangeDown.asString) shouldBe (sequence(rangeDown).asString)
+        }
+        method testAsStringEmpty {
+            assert (emptyDown.asString) shouldBe ([].asString)
+        }
     }
 }
