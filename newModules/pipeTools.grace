@@ -1,3 +1,4 @@
+import "collections" as collections
 
 class enumerate⟦T⟧ {
     method << (source:Collection⟦T⟧) {
@@ -15,14 +16,14 @@ class enumerate⟦T⟧ {
 class sort⟦T⟧ {
     method << (source:Collection⟦T⟧) {
         // returns a sorted version of source
-        list.withAll(source).sort
+        sequence.withAll(source).sorted
     }
 }
 
 class sortBy⟦T⟧(ordering:Function2⟦T, T, Number⟧) {
     method << (source:Collection⟦T⟧) {
         // returns a sorted version of source
-        list.withAll(source).sortBy(ordering)
+        sequence.withAll(source).sortedBy(ordering)
     }
 }
 
@@ -43,7 +44,7 @@ class tagWith⟦K,T⟧(tags:Enumerable⟦K⟧) {
 }
 
 class reject⟦T⟧(condition:Predicate1⟦T⟧) {
-    method << (source:Collection⟦T⟧) {
+    method << (source:Collection⟦T⟧) → Collection⟦T⟧ {
         collections.lazySequenceOver(source) filteredBy { each:T → 
             condition.apply(each).not 
         }
@@ -51,7 +52,7 @@ class reject⟦T⟧(condition:Predicate1⟦T⟧) {
 }
 
 class select⟦T⟧(condition:Predicate1⟦T⟧) {
-    method << (source:Collection⟦T⟧) {
+    method << (source:Collection⟦T⟧) → Collection⟦T⟧ {
         collections.lazySequenceOver(source) filteredBy { each:T → 
             condition.apply(each)
         }
@@ -59,7 +60,7 @@ class select⟦T⟧(condition:Predicate1⟦T⟧) {
 }
 
 class sum {
-    method << (source:Collection⟦Number⟧) {
+    method << (source:Collection⟦Number⟧) → Number {
         var total := 0
         source.do { each:Number → total := total + each }
         total
@@ -67,7 +68,7 @@ class sum {
 }
 
 class average {
-    method << (source:Collection⟦Number⟧) {
+    method << (source:Collection⟦Number⟧) → Number {
         var total := 0
         var count := 0
         source.do { each:Number → 
@@ -75,5 +76,36 @@ class average {
             count := count + 1
         }
         total / count
+    }
+}
+
+type Summary = interface {
+    min → Number
+    lowerQ → Number
+    median → Number
+    upperQ → Number
+    max → Number
+}
+
+class summary {
+    method << (source:Collection⟦Number⟧) → Summary {
+        def n = source.size
+        def c = source.sorted
+        object {
+            def lowerQ is public = Q(1)
+            def median is public = Q(2)
+            def upperQ is public = Q(3)
+            method min {c.first}
+            method max {c.last}
+            method Q(q) {
+                def ix = (n * q) / 4
+                if (ix.isInteger) then {
+                    (c.at(ix) + c.at(ix + 1)) / 2
+                } else {
+                    c.at(ix.ceiling)
+                }
+            }
+            method asString { "min={min}; Q₁={lowerQ}; Q₂={median}; Q₃={upperQ}; max={max}" }
+        }
     }
 }
