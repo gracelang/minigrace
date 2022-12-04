@@ -19,8 +19,8 @@ var targetv := defaultTarget
 var extensionsv := dictionary.empty
 var recurse is readable := true
 var dynamicModule is public := false
-def cLines is readable = list [ ]
-def lines is readable = list [ ]
+def lines is readable = list [ ]    // contains all of the input lines
+def cLines is readable = list [ ]   // as above, with C escapes for \ and "
 def nullFile = filePath.null        // don't modify this one
 var filename is readable := nullFile
 var commandLineExtensions is readable := ""
@@ -478,19 +478,4 @@ method printhelp {
     print "By default, {sys.argv.at(1)} FILE will compile and execute FILE."
     print "More detailed usage information is in the <doc/usage> file in the source tree."
     sys.exit(0)
-}
-method debug(s) {
-
-}
-var hexdigits := "0123456789abcdef"
-method hex(num) {
-    var tmp := num
-    var s := ""
-    while {tmp > 0} do {
-        var i := tmp % 16
-        s := hexdigits.at(i + 1) ++ s
-        tmp := tmp - i
-        tmp := tmp / 16
-    }
-    s
 }
