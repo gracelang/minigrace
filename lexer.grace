@@ -67,12 +67,6 @@ method isBadControl(ch) {
     return unicode.inCategory(ch, "C")
 }
 
-def selfModes = "(),\{}[];⟦⟧"
-method isSelfMode(ch) { selfModes.contains(ch) }
-
-def brackets = "()\{}[]⟦⟧"
-method isBracket(ch) { brackets.contains(ch) }
-
 def alphaNums = "_'0123456789abcdefghijklmnopqrstuvwzyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 method isIdentifierChar(ch) {
     if (alphaNums.contains(ch)) then { return true }
