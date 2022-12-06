@@ -1401,8 +1401,10 @@ class abstractVariable {
     //   range — the source-code range of my declaration
     //   startPosition — the start of the range
     //   stopPosition  — the end of the range
-    //   attributeScope — characterizes
-    //      paramaters and vars have the emptyScope as attributeScope,
+    //   attributeScope — characterizes the attributes of the object bound to
+    //      this variable.  For example, if a variable is a def bound to an object j,
+    //      then attributeScope describes the attibutes of j.  Variables representing
+    //      parameters and vars have the emptyScope as attributeScope,
     //      because we don't know to what object they will be bound.
 
     var name is public
