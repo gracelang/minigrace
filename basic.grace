@@ -212,6 +212,8 @@ trait open {
                         "{end.line} column {end.column}"
             }
         }
+        method line { start.line }
+        method column { start.column }
         method rangeString {
             // returns a range string such as "17:5" , "17:5-25" or "17:5–22:10"
             if ((start == end) || (end == noPosition)) then {
