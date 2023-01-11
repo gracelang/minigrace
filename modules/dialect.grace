@@ -137,13 +137,13 @@ method fail (message) from (startCol) to (endCol) {
     DialectError.raise (message) with (rng)
 }
 
-method fail(message) from (startCol) to (endCol) suggest (sugg) {
+method fail(message) from (startCol) to (endCol) suggest (s) {
     // fail, with an object that contains a source range and a suggestion
 
     def o = object {
         inherit ast.start (ast.line(currentLine) column(startCol))
                 end (ast.line(currentLine) column(endCol))
-        def suggestions is public = [sugg]
+        def sugg is public = [s]
     }
     DialectError.raise (message) with (o)
 }
