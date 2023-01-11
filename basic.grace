@@ -214,6 +214,11 @@ trait open {
         }
         method line { start.line }
         method column { start.column }
+
+        method arrow { ("-" * (start.column-1)) ++ ("^" * (end.column - start.column + 1)) }
+            // so that we can behave as an error object
+        method sugg { [] }
+            // so that we can behave as an error object
         method rangeString {
             // returns a range string such as "17:5" , "17:5-25" or "17:5–22:10"
             if ((start == end) || (end == noPosition)) then {
