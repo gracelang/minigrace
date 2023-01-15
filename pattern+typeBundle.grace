@@ -58,6 +58,7 @@ trait open {
         method |(o) { TypeVariant(self, o) }
         method +(o) { TypeUnion(self, o) }
         method -(o) { TypeSubtraction(self, o) }
+        method prefix ¬ { NotPattern(self) }
         method asString { "type {self.name}" }
         method setName(nu) is confidential {
             self.name := nu
@@ -133,6 +134,7 @@ trait open {
             exclude matches(_)
             exclude isType
             exclude setTypeName(_)
+            exclude prefix ¬
         use BaseType
         var name is readable := "‹anon›"
         method methodNames {
@@ -161,6 +163,7 @@ trait open {
             exclude matches(_)
             exclude isType
             exclude setTypeName(_)
+            exclude prefix ¬
         use BaseType
         var name is readable := "‹anon›"
         method methodNames {
