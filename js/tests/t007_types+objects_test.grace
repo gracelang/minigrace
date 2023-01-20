@@ -1,4 +1,37 @@
 dialect "minitest"
+import "mirror" as mirror
+
+type Crippled = Dictionary - interface { at(_) }
+
+method expectType (t) toHaveMethod (name) {
+    def m = mirror.reflect(t)
+    assert (m.methodNames.contains(name)) description "type doesn't have {name} but has  {m.methods}"
+}
+
+type t = interface { wombat → Number }
+type u = interface { wombat → Number ; kanga → String }
+type w = u - t
+
+testSuite "type-level operations" with {
+
+    test "built-in (gracelib) type has ¬ operation" by {
+        expectType (Number) toHaveMethod "prefix¬"
+    }
+    test "standard type has ¬ operation" by {
+        expectType (Collection) toHaveMethod "prefix¬"
+    }
+    test "type literal has ¬ operation" by {
+        expectType (t) toHaveMethod "prefix¬"
+        expectType (u) toHaveMethod "prefix¬"
+    }
+    test "type subtraction has ¬ operaton" by {
+        expectType (w) toHaveMethod "prefix¬"
+        expectType (w) toHaveMethod "prefix¬"
+    }
+    test "type subtraction has type type" by {
+        assert (w) hasType (Type)
+    }
+}
 
 testSuite "standard types and objects" with {
 
@@ -7,6 +40,16 @@ testSuite "standard types and objects" with {
     }
     test "numbers have type Pattern" by {
         assert 3 hasType (Pattern)
+    }
+    test "negated type is a pattern" by {
+        assert (¬ Dictionary) hasType (Pattern)
+        assert (¬ Number) hasType (Pattern)
+    }
+    test "subtraction type is a type" by {
+        assert (Crippled) hasType (Type)
+    }
+    test "negated subtraction type is a pattern" by {
+        assert (¬ Crippled) hasType (Pattern)
     }
     test "Number describes numbers" by {
         assertType (Number) describes 3
