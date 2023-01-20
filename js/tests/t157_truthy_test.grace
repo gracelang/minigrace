@@ -61,6 +61,12 @@ describe "alternative truth values" with {
         expect (falsy) toHaveType (Boolean)
         expect (falsy) toHaveType (Pattern)
     }
+    specify "value of truthy" by {
+        expect (truthy) toBe true
+    }
+    specify "value of falsy" by {
+        expect (falsy) toBe false
+    }
     specify "if truthy happens" by {
         if (truthy) then {
             pass
