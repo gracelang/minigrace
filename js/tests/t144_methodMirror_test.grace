@@ -1,42 +1,65 @@
-dialect "standard"
+dialect "minispec"
 import "mirror" as mirror
 
 def foo = object {
-    method example (a)  { print "a = {a}" }
-    method example (a1,a2) and (b1) {print "a1 = {a1}, a2 = {a2}, b1 = {b1}"}
-    method noParams { print "no params" }
+    method example (a)  { "a = {a}" }
+    method example (a1,a2) and (b1) { "a1 = {a1}, a2 = {a2}, b1 = {b1}"}
+    method noParams { "no params" }
     method notInherited is confidential { "not requestable from outside" }
-}
-
-foo.example("a")
-foo.example("a1", "a2")and("b1")
-foo.noParams
-
-method describe (methodMirror) {
-    var s := ""
-    s := s ++ if (methodMirror.isConfidential) then
-                { "Confidential" }  else { "" }
-    s := s ++ if (methodMirror.isPublic) then
-                { "Public" } else { "" }
-    s := s ++ " method {methodMirror.name} has {methodMirror.numberOfParams} parameters"
-    print(s)
 }
 
 def fooMirror = mirror.reflect(foo)
 def exampleMirror = fooMirror.onMethod "example(_)"
-print "got exampleMirror"
-describe(exampleMirror)
 def exampleAndMirror = fooMirror.onMethod "example(_,_)and(_)"
-describe(exampleAndMirror)
 def noParamsMirror = fooMirror.onMethod "noParams"
-describe(noParamsMirror)
 def notInhMirror = fooMirror.onMethod "notInherited"
-describe(notInhMirror)
 
-print "\nrequests using `requestWithArgs`"
+describe "method metadata" with {
+    specify "visibility" by {
+        expect (exampleMirror.isConfidential) toBe false
+        expect (exampleMirror.isPublic) toBe true
+        expect (noParamsMirror.isConfidential) toBe false
+        expect (noParamsMirror.isPublic) toBe true
+        expect (notInhMirror.isConfidential) toBe true
+        expect (notInhMirror.isPublic) toBe false
+    }
+    specify "number of parameters" by {
+        expect (exampleMirror.numberOfParams) toBe 1
+        expect (exampleAndMirror.numberOfParams) toBe 3
+        expect (noParamsMirror.numberOfParams) toBe 0
+        expect (notInhMirror.numberOfParams) toBe 0
+    }
+}
 
-exampleMirror.requestWithArgs [1]
-exampleAndMirror.requestWithArgs ["a1", "a2", "b1"]
-noParamsMirror.requestWithArgs []
+describe "reflective requests with arguments" with {
+    specify "request with single arg" by {
 
-print "\ndone"
+        expect (exampleMirror.requestWithArgs [1]) toBe "a = 1"
+    }
+    specify "request with three args" by {
+        expect (exampleAndMirror.requestWithArgs ["a1", "a2", "b1"]) toBe "a1 = a1, a2 = a2, b1 = b1"
+    }
+    specify "request with zero args" by {
+        expect (noParamsMirror.requestWithArgs []) toBe "no params"
+    }
+}
+
+describe "mirror equality" with {
+    specify "mirror == itself" by {
+        expect (exampleMirror == exampleMirror) toBe true orSay "example mirror is not == to itself"
+    }
+    specify "mirror = another mirror on same method" by {
+        def m1 = fooMirror.onMethod "example(_)"
+        expect (exampleMirror == m1) toBe true orSay "example mirror is not == to another mirror on same method"
+    }
+    specify "mirror ≠ mirror on another method" by {
+        expect (exampleMirror == exampleAndMirror) toBe false orSay "example mirror is == to exampleAndMirror"
+    }
+    specify "mirror ≠ mirror on another object" by {
+        def m1 = mirror.reflect 1 .onMethod "+(_)"
+        def m2 = mirror.reflect 2 .onMethod "+(_)"
+        expect (m1 == m2) toBe false orSay "mirror on 1.+(_) is == mirror on 2.+(_)"
+    }
+}
+
+exit

@@ -127,10 +127,10 @@ class reflect(subj) {
     }
     method == (other) {
         native "js" code ‹
-            if (this.classUid !== other.classUid) {
+            if (this.classUid !== var_other.classUid) {
                 return GraceFalse;   // return false if other is not a Mirror
             }
-            if (this.data.subject !== other.data.subject) {
+            if (this.data.subject !== var_other.data.subject) {
                 return GraceFalse;   // return false if we don't have the same subject
             }
             return GraceTrue;
@@ -254,16 +254,16 @@ class methodMirror(theSubject, aMethodName) {
 
     method == (other) {
         native "js" code ‹
-            if (this.classUid !== other.classUid) {
+            if (this.classUid !== var_other.classUid) {
                 return GraceFalse;   // return false if other is not a methodMirror
             }
-            if (this.data.subject !== other.data.subject) {
+            if (this.data.subject !== var_other.data.subject) {
                 return GraceFalse;   // return false if we don't have the same subject
             }
-            if (this.numericName !== other.numericName) {
+            if (this.numericName !== var_other.numericName) {
                 return GraceFalse;   // return false if not the same method
             }
-            return true;
+            return GraceTrue;
         ›
     }
 }
