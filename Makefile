@@ -204,7 +204,7 @@ install: minigrace $(COMPILER_MODULES:%.grace=j2/%.js) js/grace js/grace-inspect
 	test -d $(INCLUDE_PATH) || install -d $(INCLUDE_PATH)
 	install -p -m 755 js/mgc js/grace js/grace-inspect js/unicodedata.js $(PREFIX)/bin/
 	install -p -m 755 js/gracelib.js js/unicodedata.js $(MODULE_PATH)
-	install -p -m 644 $(COMPILER_MODULES) $(COMPILER_MODULES:%.grace=j2/%.js) $(MODULE_PATH)
+	install -p -m 644 $(MGSOURCEFILES) $(MGSOURCEFILES:%.grace=j2/%.js) $(MODULE_PATH)
 	install -p -m 644 $(PRELUDESOURCEFILES) $(PRELUDESOURCEFILES:%.grace=j2/%.js) $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=j2/%.js) $(MODULE_PATH)
 	@./tools/warnAbout PATH $(PREFIX)/bin
 	@./tools/warnAbout GRACE_MODULE_PATH $(MODULE_PATH)
