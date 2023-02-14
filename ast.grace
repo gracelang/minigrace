@@ -3970,7 +3970,7 @@ type AstVisitor = interface {
     visitAlias(o) up(ac) -> Boolean
 }
 
-class baseVisitor -> AstVisitor {
+trait upConversion {
     method visitIf(o) up(ac) { visitIf(o) }
     method visitBlock(o) up(ac) { visitBlock(o) }
     method visitMatchCase(o) up(ac) { visitMatchCase(o) }
@@ -4005,6 +4005,45 @@ class baseVisitor -> AstVisitor {
     method visitYourself(o) up(ac) -> Boolean { visitYourself(o) }
     method visitSelfType(o) up(ac) -> Boolean { visitSelfType(o) }
     method visitAlias(o) up(ac) -> Boolean { visitAlias(o) }
+
+    method visitIf(o) is required
+    method visitBlock(o) is required
+    method visitMatchCase(o) is required
+    method visitTryCatch(o) is required
+    method visitMethodSignature(o) is required
+    method visitSignaturePart(o) is required
+    method visitTypeDec(o) is required
+    method visitUnknown(o) is required
+    method visitInterfaceLiteral(o) is required
+    method visitTypeParameters(o) is required
+    method visitMethodDec(o) is required
+    method visitRequest(o) is required
+    method visitObject(o) is required
+    method visitModule(o) is required
+    method visitSequence(o) is required
+    method visitRequestWithoutArgs(o) is required
+    method vtypeApplication(o) is required
+    method visitIdentifier(o) is required
+    method visitEllipsis(o) is required
+    method visitString(o) is required
+    method visitNumeral(o) is required
+    method visitOp(o) is required
+    method visitAssignment(o) is required
+    method visitDefDec(o) is required
+    method visitVarDec(o) is required
+    method visitImport(o) is required
+    method visitReturn(o) is required
+    method visitInherit(o) is required
+    method visitDialect(o) is required
+    method visitComment(o) is required
+    method visitImplicit(o) is required
+    method visitYourself(o) is required
+    method visitSelfType(o) is required
+    method visitAlias(o) is required
+}
+
+class baseVisitor -> AstVisitor {
+    use upConversion
 
     method visitIf(o) -> Boolean { true }
     method visitBlock(o) -> Boolean { true }
