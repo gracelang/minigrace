@@ -594,20 +594,22 @@ method guessesForIdentifier(node) {
     def guesses = set.empty
     def nodeScope = node.scope
     def thresh = 4      // max number of guesses
-    nodeScope.withSurroundingScopesDo { s →
-        s.localAndReusedNamesAndValuesDo { n, _ →
-            if (name (nm) mightBeIntendedToBe(n)) then {
-                guesses.add(canonicalName(n))
+    try {
+        nodeScope.withSurroundingScopesDo { s →
+            s.localAndReusedNamesAndValuesDo { n, _ →
+                if (name (nm) mightBeIntendedToBe(n)) then {
+                    guesses.add(canonicalName(n))
+                    if (guesses.size ≥ thresh) then { return guesses }
+                }
+            }
+        }
+        nodeScope.localAndReusedNamesAndValuesDo { n, v →
+            if (v.attributeScope.defines(nm)) then {
+                guesses.add "{n}.{canonicalName(nm)}"
                 if (guesses.size ≥ thresh) then { return guesses }
             }
         }
-    }
-    nodeScope.localAndReusedNamesAndValuesDo { n, v →
-        if (v.attributeScope.defines(nm)) then {
-            guesses.add "{n}.{canonicalName(nm)}"
-            if (guesses.size ≥ thresh) then { return guesses }
-        }
-    }
+    } catch { ex:GatheringError -> }
     guesses
 }
 

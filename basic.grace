@@ -358,4 +358,7 @@ trait open {
         // converts c, a Grace canonical method name, to minigrace's numeric name
         native "js" code ‹return new GraceString(numericMethodName(var_c._value));›
     }
+
+    once method CompilerError  { ProgrammingError.refine "CompilerError" }
+    once method GatheringError { CompilerError.refine "GatheringError" }
 }

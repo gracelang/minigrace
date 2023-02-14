@@ -339,7 +339,7 @@ class objectScope {
     method reuses (name) {
         // Is name defined by a scope that this scope reuses?
         if (areReusedNamesCompleted.not) then {
-            ProgrammingError.raise ("reused names of {self} declared on " ++
+            GatheringError.raise ("reused names of {self} declared on " ++
                 "{node.range.lineRangeString} have not been gathered")
         }
         reusedNames.containsKey (name)
@@ -348,7 +348,7 @@ class objectScope {
         // Return the variable corresponding to name, if it is defined in a scope that this
         // scope reuses.	If it is not defined, return the value of executing aBlock.
         if (areReusedNamesCompleted.not) then {
-            ProgrammingError.raise ("reused names of {self} declared on " ++
+            GatheringError.raise ("reused names of {self} declared on " ++
                 "{node.range.lineRangeString} have not been gathered")
         }
         reusedNames.at (name) ifAbsent {
@@ -366,7 +366,7 @@ class objectScope {
         // scope reuses, apply pBlock to it and return the result.
         // If it is not defined, return the value of executing aBlock.
         if (areReusedNamesCompleted.not) then {
-            ProgrammingError.raise ("reused names of {self} declared on " ++
+            GatheringError.raise ("reused names of {self} declared on " ++
                 "{node.range.lineRangeString} have not been gathered")
         }
         def variable = reusedNames.at (name) ifAbsent {
