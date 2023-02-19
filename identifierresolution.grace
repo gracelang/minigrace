@@ -649,7 +649,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitRequestWithoutArgs(o) up (anc) {
             visitRequest(o) up (anc)
         }
-        method vtypeApplication(o) up (anc) { o.scope := anc.parent.scope ; true }
+        method visitTypeApplication(o) up (anc) { o.scope := anc.parent.scope ; true }
         method visitString(o) up (anc) { o.scope := anc.parent.scope ; true }
         method visitNumeral(o) up (anc) { o.scope := anc.parent.scope ; true }
         method visitOp(o) up (anc) { o.scope := anc.parent.scope ; true }

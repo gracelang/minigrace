@@ -50,7 +50,7 @@ do
         -e "s/isitCall/isitRequest/g" \
         -e "s/isitArray/isitSequence/g" \
         -e "s/isitMember/isitRequestWithoutArgs/g" \
-        -e "s/isitGeneric/typeApplication/g" \
+        -e "s/isitGeneric/isitTypeApplication/g" \
         -e "s/isitNum/isitNumeral/" \
         -e "s/isitBind/isitAssignment/g" \
         -e "s/isitInherits/isitInherit/g" \

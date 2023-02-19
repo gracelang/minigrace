@@ -2315,7 +2315,7 @@ class typeApplication (base, arguments) {
     method nameString { value.nameString }
     method nodeString { toGrace 0 }
     method accept(visitor : AstVisitor) from(ac) {
-        if (visitor.vtypeApplication(self) up(ac)) then {
+        if (visitor.visitTypeApplication(self) up(ac)) then {
             def newChain = ac.extend(self)
             self.value.accept(visitor) from(newChain)
             for (self.args) do { p ->
@@ -3949,7 +3949,7 @@ type AstVisitor = interface {
     visitModule(o) up(ac) -> Boolean
     visitSequence(o) up(ac) -> Boolean
     visitRequestWithoutArgs(o) up(ac) -> Boolean
-    vtypeApplication(o) up(ac) -> Boolean
+    visitTypeApplication(o) up(ac) -> Boolean
     visitIdentifier(o) up(ac) -> Boolean
     visitEllipsis(o) up(ac) -> Boolean
     visitString(o) up(ac) -> Boolean
@@ -3986,7 +3986,7 @@ trait upConversion {
     method visitModule(o) up(ac) { visitModule(o) }
     method visitSequence(o) up(ac) { visitSequence(o) }
     method visitRequestWithoutArgs(o) up(ac) { visitRequestWithoutArgs(o) }
-    method vtypeApplication(o) up(ac) { vtypeApplication(o) }
+    method visitTypeApplication(o) up(ac) { visitTypeApplication(o) }
     method visitIdentifier(o) up(ac) { visitIdentifier(o) }
     method visitEllipsis(o) up(ac) { visitEllipsis(o) }
     method visitString(o) up(ac) { visitString(o) }
@@ -4021,7 +4021,7 @@ trait upConversion {
     method visitModule(o) is required
     method visitSequence(o) is required
     method visitRequestWithoutArgs(o) is required
-    method vtypeApplication(o) is required
+    method visitTypeApplication(o) is required
     method visitIdentifier(o) is required
     method visitEllipsis(o) is required
     method visitString(o) is required
@@ -4060,7 +4060,7 @@ class baseVisitor -> AstVisitor {
     method visitModule(o) -> Boolean { true }
     method visitSequence(o) -> Boolean { true }
     method visitRequestWithoutArgs(o) -> Boolean { true }
-    method vtypeApplication(o) -> Boolean { true }
+    method visitTypeApplication(o) -> Boolean { true }
     method visitIdentifier(o) -> Boolean { true }
     method visitEllipsis(o) -> Boolean { true }
     method visitString(o) -> Boolean { true }
@@ -4104,7 +4104,7 @@ class pluggableVisitor(visitation:Predicate2⟦AstNode, Object⟧) -> AstVisitor
     method visitModule(o) up(ac) { visitation.apply (o, ac) }
     method visitSequence(o) up(ac) { visitation.apply (o, ac) }
     method visitRequestWithoutArgs(o) up(ac) { visitation.apply (o, ac) }
-    method vtypeApplication(o) up(ac) { visitation.apply (o, ac) }
+    method visitTypeApplication(o) up(ac) { visitation.apply (o, ac) }
     method visitIdentifier(o) up(ac) { visitation.apply (o, ac) }
     method visitEllipsis(o) up(ac) { visitation.apply (o, ac) }
     method visitString(o) up(ac) { visitation.apply (o, ac) }
