@@ -273,7 +273,7 @@ method sequenceNr {
 method methodSignature(methNode) → String {
     var s: String := ""
     var shouldEmitTypeParams := methNode.hasTypeParams
-    for (methNode.signature) do { part →
+    methNode.signatureParts.do { part →
         s := s ++ part.name
         if (shouldEmitTypeParams) then {
             s := s ++ methNode.typeParams.toGrace 1

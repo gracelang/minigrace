@@ -26,8 +26,8 @@ def staticVisitor = object {
         }
         true
     }
-    method visitMethod(v) -> Boolean is public {
-        v.signature.do { p ->
+    method visitMethodDec(v) -> Boolean is public {
+        v.signatureParts.do { p ->
             if (p.isIdentifier && {p.wildcard.not && (false == p.dtype)}) then {
                 CheckerFailure.raise ("no type given to declaration"
                     ++ " of parameter '{p.value}'") with (p)

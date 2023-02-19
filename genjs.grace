@@ -569,7 +569,7 @@ method compiletypeliteral(o) in (obj) {
 }
 method paramNames(o) {
     def result = list [ ]
-    o.signature.do { part ->
+    o.signatureParts.do { part ->
         part.params.do { param ->
             result.push(param.nameString)
         }
@@ -585,7 +585,7 @@ method typeParamNames(o) {
     result
 }
 method hasTypedParams(o) {
-    for (o.signature) do { part ->
+    for (o.signatureParts) do { part ->
         for (part.params) do { p->
             if (p.dtype != false) then {
                 if ((p.dtype.isIdentifier) || (p.dtype.isInterface)) then {
@@ -618,7 +618,7 @@ method compileMethodPostamble(o, funcName, name) {
 method compileParameterDebugFrame(o, name) {
     if (debugMode) then {
         out "var myframe = new StackFrame(\"{name}\");"
-        for (o.signature) do { part ->
+        for (o.signatureParts) do { part ->
             for (part.params) do { p ->
                 def pName = p.nameString
                 def varName = varf(pName)
@@ -653,7 +653,7 @@ method compileDefaultsForTypeParameters(o) extraParams (extra) {
 method compileArgumentTypeChecks(o) {
     if ( emitTypeChecks.not ) then { return }
     if (o.numParams == 1) then {
-        def p = o.signature.first.params.first
+        def p = o.signatureParts.first.params.first
         def pName = p.value
         compileCheckThat (varf(pName))
               called "argument to request of `{o.canonicalName}`"
@@ -1015,7 +1015,7 @@ method paramlist(o) {
     // a comma-prefixed and separated list of the parameters
     // described by methodnode o.
     var result := ""
-    o.signature.do { part ->
+    o.signatureParts.do { part ->
         part.params.do { param ->
             result := result ++ ", {varf(param.nameString)}"
         }
@@ -1036,7 +1036,7 @@ method typeParamlist(o) {
 }
 method compilemethodtypes(func, o) {
     out "{func}.paramTypes = [];"
-    for (o.signature) do { part ->
+    for (o.signatureParts) do { part ->
         for (part.params) do {p->
             // We store information for static top-level types only:
             // absent information is treated as Unknown (and unchecked).

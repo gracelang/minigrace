@@ -386,7 +386,7 @@ def astVisitor = object {
     method visitMethodType(node) -> Boolean {
         runRules(node)
 
-        node.signature.do { part ->
+        node.signatureParts.do { part ->
             part.params.do { param ->
                 runRules(aParameter.fromNode(param))
             }
@@ -402,7 +402,7 @@ def astVisitor = object {
     method visitMethod(node) -> Boolean {
         runRules(node)
 
-        node.signature.do { part ->
+        node.signatureParts.do { part ->
             part.params.do { param ->
                 runRules(aParameter.fromNode(param))
             }

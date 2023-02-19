@@ -145,10 +145,10 @@ def bsVisitor = object {
         }
         true
     }
-    method visitMethod(v) -> Boolean {
+    method visitMethodDec(v) -> Boolean {
         if (false == v.comments) then {
             def headerEnd = if (false == v.dtype) then {
-                v.signature.last.end
+                v.signatureParts.last.end
             } else {
                 v.dtype.end
             }
@@ -175,16 +175,16 @@ def bsVisitor = object {
                 }
             }
         }
-        def mn1 = v.signature.first.name
+        def mn1 = v.signatureParts.first.name
         if (unicode.inCategory(mn1, "Lu")) then {
             DialectError.raise("by convention, method names start " ++
-                "with a lower-case letter") with (v.signature.first)
+                "with a lower-case letter") with (v.signatureParts.first)
         }
         if (v.isClass) then { return true }
         if (false == v.dtype) then {
             DialectError.raise "no return type given to method '{v.canonicalName}'" 
                 with (ast.start(v.start)
-                            end(v.signature.last.end))
+                            end(v.signatureParts.last.end))
         } elseif {(v.dtype.nameString ≠ "Done") && {
               ((lowerCommentString.contains "returns") || (lowerCommentString.contains "answers")).not} } then {
             DialectError.raise ("purpose statement of method '{v.canonicalName}" ++

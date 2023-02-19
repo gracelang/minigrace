@@ -820,7 +820,7 @@ class matchCase (matchee', cases', elsecase') {
 
 class methodSignature (parts', dtype') {
     // Represents a method signature in a type literal, or in an inheritance modifier.
-    // parts' is a collection of signaturePart objects, which
+    // parts' is a sequence of signaturePart objects, which
     // contain the parts of this method's name and the parameter lists;
     // dtype' is the return type of this method, or false if not specified.
 
@@ -1206,7 +1206,7 @@ class methodDec (signature', body', dtype') {
         alias hasReturnType = isTyped
     method kind { "methodDec" }
     var description is public := kind   // changed to "class" or "trait" by parser
-    var signature is public := signature'
+    var signatureParts is public := signature'
     var hasBody is public := true
     var body is public := body'
     if (false == body') then {
@@ -1231,16 +1231,16 @@ class methodDec (signature', body', dtype') {
     }
     method isTyped {
         if (hasReturnType) then { return true }
-        signature.anySatisfy{ each -> each.isTyped }
+        signatureParts.anySatisfy{ each -> each.isTyped }
     }
     method childrenDo(anAction:Procedure1) {
-        signature.do(anAction)
+        signatureParts.do(anAction)
         decType.do(anAction)
         body.do(anAction)
     }
     method childrenMap(f:Function1) {
         def result = list.empty
-        signature.map(f) >> result
+        signatureParts.map(f) >> result
         decType.map(f) >> result
         body.map(f) >> result
     }
@@ -1262,7 +1262,7 @@ class methodDec (signature', body', dtype') {
         if (false ≠ dtype) then {
             return positionOfNext "}" after (dtype.end)
         }
-        return positionOfNext "}" after (signature.last.end)
+        return positionOfNext "}" after (signatureParts.last.end)
     }
     method ilkName {
         // a string describing the ilk of the objects returned by this method
@@ -1280,23 +1280,23 @@ class methodDec (signature', body', dtype') {
         self
     }
     method numParams {
-        signature.fold { acc, p -> acc + p.numParams } startingWith 0
+        signatureParts.fold { acc, p -> acc + p.numParams } startingWith 0
     }
     method parametersDo(b) {
-        signature.do { part ->
+        signatureParts.do { part ->
             part.params.do { each -> b.apply(each) }
         }
     }
     method parameterCounts {
         def result = list []
-        signature.do { part ->
+        signatureParts.do { part ->
             result.push(part.params.size)
         }
         result
     }
     method parameterNames {
         def result = list []
-        signature.do { part ->
+        signatureParts.do { part ->
             part.params.do { param ->
                 result.push(param.nameString)
             }
@@ -1306,54 +1306,54 @@ class methodDec (signature', body', dtype') {
     method typeParameterNames {
         if (hasTypeParams.not) then { return list [] }
         def result = list []
-        signature.first.typeParams.do { each ->
+        signatureParts.first.typeParams.do { each ->
             result.push(each.nameString)
         }
         result
     }
-    method numTypeParams { signature.first.numTypeParams }
+    method numTypeParams { signatureParts.first.numTypeParams }
     method endCol {
-        def lastPart = signature.last
+        def lastPart = signatureParts.last
         lastPart.column + lastPart.name.size - 1
     }
     method headerRange {
-        start ( self.start ) end ( signature.last.end )
+        start ( self.start ) end ( signatureParts.last.end )
     }
 
     once method nameString {
-        signature.fold { acc, each -> acc ++ each.nameString }
+        signatureParts.fold { acc, each -> acc ++ each.nameString }
             startingWith ""
     }
     method asIdentifier {
         if (uninitialized == cachedIdentifier) then {
             cachedIdentifier := identifier(nameString, false)
             cachedIdentifier.scope := scope
-            cachedIdentifier.line := signature.first.line
-            cachedIdentifier.column := signature.first.column
+            cachedIdentifier.line := signatureParts.first.line
+            cachedIdentifier.column := signatureParts.first.column
             cachedIdentifier.isBindingOccurrence := isBindingOccurrence
-            cachedIdentifier.end := signature.last.end
+            cachedIdentifier.end := signatureParts.last.end
             cachedIdentifier.canonicalName := canonicalName
         }
         cachedIdentifier
     }
     method value { asIdentifier }
     method canonicalName {
-        signature.fold { acc, each -> acc ++ each.canonicalName }
+        signatureParts.fold { acc, each -> acc ++ each.canonicalName }
             startingWith ""
     }
-    method hasParams { signature.first.params.isEmpty.not }
+    method hasParams { signatureParts.first.params.isEmpty.not }
     method numParamLists {
         // the number of my parameter lists.  If I have a single
         // part to my name, there may be 0 or 1
-        def sigSz = signature.size
+        def sigSz = signatureParts.size
         if (sigSz > 1) then { return sigSz }
-        if {signature.first.params.isEmpty} then { return 0 }
+        if {signatureParts.first.params.isEmpty} then { return 0 }
         return 1
     }
-    method hasTypeParams { false ≠ signature.first.typeParams }
-    method typeParams { signature.first.typeParams }
+    method hasTypeParams { false ≠ signatureParts.first.typeParams }
+    method typeParams { signatureParts.first.typeParams }
     method withTypeParams(tp) {
-        signature.first.typeParams := tp
+        signatureParts.first.typeParams := tp
         self
     }
     method isMethod { true }
@@ -1362,7 +1362,7 @@ class methodDec (signature', body', dtype') {
     method isClass { usesClassSyntax || isFresh }
     method isTrait { usesTraitSyntax || (isFresh && { body.last.isTrait } ) }
     method needsArgChecks {
-        signature.do { part ->
+        signatureParts.do { part ->
             part.params.do { p -> if (p.isTyped) then { return true } }
         }
         return false
@@ -1432,7 +1432,7 @@ class methodDec (signature', body', dtype') {
         if (visitor.visitMethodDec(self) up(ac)) then {
             def newChain = ac.extend(self)
             asIdentifier.accept(visitor) from(newChain)
-            for (self.signature) do { part ->
+            for (self.signatureParts) do { part ->
                 part.accept(visitor) from(newChain)
             }
             if (false != dtype) then {
@@ -1449,9 +1449,8 @@ class methodDec (signature', body', dtype') {
     method map(blk) ancestors(ac){
         var n := shallowCopy
         def newChain = ac.extend(n)
-        n.signature := listMap(signature, blk) ancestors(newChain)
+        n.signatureParts := listMap(signatureParts, blk) ancestors(newChain)
         n.body := listMap(body, blk) ancestors(newChain)
-        n.signature := listMap(signature, blk) ancestors(newChain)
         n.annotations := listMap(annotations, blk) ancestors(newChain)
         n.dtype := maybeMap(dtype, blk) ancestors(newChain)
         blk.apply(n, ac)
@@ -1468,7 +1467,7 @@ class methodDec (signature', body', dtype') {
         if (isBindingOccurrence.not) then { s := s ++ spc ++ "Applied\n" }
         if (isFresh) then { s := s ++ spc ++ "Fresh\n" }
         s := "{s}{spc}Signature:"
-        for (signature) do { part ->
+        for (signatureParts) do { part ->
             s := "{s}\n  {spc}Part: {part.name}"
             if (part.hasTypeParams) then {
                 s := "{s}\n    {spc}Type Parameters:"
@@ -1504,7 +1503,7 @@ class methodDec (signature', body', dtype') {
         def spc = "    " * depth
         var s := if (isOnceMethod) then { "once "} else { "" }
         s := s ++ description ++ " "
-        for (self.signature) do { part -> s := s ++ part.toGrace(depth) }
+        for (self.signatureParts) do { part -> s := s ++ part.toGrace(depth) }
         if (false != self.dtype) then {
             s := s ++ " -> {self.dtype.toGrace(0)}"
         }
@@ -1527,7 +1526,7 @@ class methodDec (signature', body', dtype') {
         s
     }
     method shallowCopy {
-        methodDec(signature, body, dtype).shallowCopyFieldsFrom(self)
+        methodDec(signatureParts, body, dtype).shallowCopyFieldsFrom(self)
     }
     method postCopy(other) {
         isFresh := other.isFresh
@@ -3613,8 +3612,8 @@ class aliasNew(n) old(o) {
 }
 
 class signaturePart(n) params(ps) {
-    // a sequence of signatureParts makes up a signature, which is
-    // a component of a methodDec
+    // a sequence of objects of this class make up the signatureParts
+    // component of a methodDec
     inherit baseNode
     method kind { "signaturepart" }
     var name is public := n

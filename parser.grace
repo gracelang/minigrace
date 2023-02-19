@@ -2553,7 +2553,7 @@ method methodDecRest(tm) {
     //
     // tm is a methodNode.  This method modifies tm.params in place.
 
-    var signature := tm.signature
+    var signatureParts := tm.signatureParts
     while {sym.isIdentifier} do {
         pushIdentifier
         def part = ast.signaturePart(values.pop.nameString) params (list [])
@@ -2592,7 +2592,7 @@ method methodDecRest(tm) {
                   withSuggestion(suggestion)
         }
         next
-        signature.push(part)
+        signatureParts.push(part)
     }
 }
 
@@ -2903,7 +2903,7 @@ method methodSignature {
     def firstTok = sym
     def m = methodHeader
     var rt := m.dtype
-    ast.methodSignature(m.signature, rt).setPositionFrom(firstTok)
+    ast.methodSignature(m.signatureParts, rt).setPositionFrom(firstTok)
 }
 
 method checkForSeparatorInInterface {

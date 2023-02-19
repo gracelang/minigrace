@@ -10,7 +10,7 @@ type MethodType = interface {
     // Method signature information consisting of the name, list of MixParts,
     // return type and info on what types it specializes.
     name -> String
-    signature -> List⟦MixPart⟧
+    signatureParts -> List⟦MixPart⟧
     returnType -> ObjectType
     isSpecialisationOf (other: MethodType) -> Boolean
 }
@@ -49,23 +49,23 @@ class mixPartNamed (name': String)
 
 // A factory object to create method types
 def aMethodType = object {
-    // create method type from signature and return type
+    // create method type from signatureParts and return type
     // The name is constructed by gluing together part names
-    class signature (signature': List⟦MixPart⟧)
+    class signatureParts (signature': List⟦MixPart⟧)
           returnType (rType: ObjectType)-> MethodType {
-        def signature: List⟦MixPart⟧ is public = signature'
+        def signatureParts: List⟦MixPart⟧ is public = signature'
         def returnType: ObjectType is public = rType
 
         var name: String is readable:= ""
         var show: String:= ""
 
-        def fst = signature.at 1
+        def fst = signatureParts.at 1
 
         if (fst.parameters.size == 0) then {
             name := fst.name
             show := name
         } else {
-            signature.do { part ->
+            signatureParts.do { part ->
                 name:= "{name}{part.name}("
                 show:= "{show}{part.name}("
                 part.parameters.do { param ->
@@ -92,11 +92,11 @@ def aMethodType = object {
                 return false
             }
 
-            if (other.signature.size != signature.size) then {
+            if (other.signatureParts.size != signatureParts.size) then {
                 return false
             }
 
-            for (signature) and (other.signature) do { part, part' ->
+            for (signatureParts) and (other.signatureParts) do { part, part' ->
                 if (part.name != part'.name) then {
                     return false
                 }
@@ -120,7 +120,7 @@ def aMethodType = object {
 
     // create method type for methods without parameters
     method member (name: String) ofType (rType: ObjectType) -> MethodType {
-        signature ([mixPartNamed (name) parameters [ ] ]) returnType (rType)
+        signatureParts ([mixPartNamed (name) parameters [ ] ]) returnType (rType)
     }
 
     // create method type from a node
@@ -128,9 +128,9 @@ def aMethodType = object {
     // If it is a def or var, create method to return value
     method fromNode (node) -> MethodType {
         match (node) case { meth: Method | Class | MethodSignature ->
-            def signature = list []
+            def signatureParts = list []
 
-            meth.signature.do { part ->
+            meth.signatureParts.do { part ->
                 def params = list []
 
                 part.params.do { param ->
@@ -138,7 +138,7 @@ def aMethodType = object {
                         ofType (objectType.fromDType (param.dtype)))
                 }
 
-                signature.push (mixPartNamed (part.name) parameters (params))
+                signatureParts.push (mixPartNamed (part.name) parameters (params))
             }
 
             def rType = match (meth) case { m: Method | Class ->
@@ -147,12 +147,12 @@ def aMethodType = object {
                 meth.rtype
             } else { }
 
-            return signature (signature)
+            return signatureParts (signatureParts)
                 returnType (objectType.fromDType (rType))
         } case { defd: Def | Var ->
-            def signature = [mixPartNamed (defd.name.value) parameters [ ] ]
+            def signatureParts = [mixPartNamed (defd.name.value) parameters [ ] ]
             def dtype = objectType.fromDType (defd.dtype)
-            return signature (signature) returnType (dtype)
+            return signatureParts (signatureParts) returnType (dtype)
         } else {
             Exception.raise "unrecognised method node" with (node)
         }
@@ -442,8 +442,8 @@ def objectType = object {
 
     method blockTaking (params: List⟦Parameter⟧)
             returning (rType: ObjectType) -> ObjectType {
-        def signature = [mixPartNamed "apply" parameters (params)]
-        def meths = [aMethodType.signature (signature) returnType (rType)]
+        def signatureParts = [mixPartNamed "apply" parameters (params)]
+        def meths = [aMethodType.signatureParts (signatureParts) returnType (rType)]
 
         fromMethods (meths) withName "Procedure0"
     }
@@ -454,8 +454,8 @@ def objectType = object {
 
     method addTo (oType: ObjectType) name (name': String)
             returns (rType: ObjectType) -> Done is confidential {
-        def signature = [mixPartNamed (name') parameters (list [ ]) ]
-        oType.methods.push (aMethodType.signature (signature) returnType (rType))
+        def signatureParts = [mixPartNamed (name') parameters (list [ ]) ]
+        oType.methods.push (aMethodType.signatureParts (signatureParts) returnType (rType))
     }
 
     method addTo (oType: ObjectType) name (name': String)
@@ -466,9 +466,9 @@ def objectType = object {
             parameters.push (aParam.ofType (ptype))
         }
 
-        def signature = [mixPartNamed (name') parameters (parameters)]
+        def signatureParts = [mixPartNamed (name') parameters (parameters)]
 
-        oType.methods.push (aMethodType.signature (signature) returnType (rType))
+        oType.methods.push (aMethodType.signatureParts (signatureParts) returnType (rType))
     }
 
     method extend (this: ObjectType) with (that: ObjectType)
@@ -681,7 +681,7 @@ method check (req: Request)
         against (meth: MethodType) -> ObjectType is confidential {
     def name = meth.name
 
-    for (meth.signature) and (req.parts) do { part, args' ->
+    for (meth.signatureParts) and (req.parts) do { part, args' ->
         def params = part.parameters
         def args   = args'.args
 
@@ -754,7 +754,7 @@ rule { op: Operator ->
                 "`{rec.toGrace (0)}` of type '{rType}'") with (op)
         } case { meth: MethodType ->
             def arg = op.right
-            def params = meth.signature.first.parameters
+            def params = meth.signatureParts.first.parameters
 
             if (params.size == 0) then {
                 RequestError.raise ("the definition of operator " ++
@@ -850,7 +850,7 @@ rule { meth: Method ->
     def returnType = mType.returnType
 
     scope.enter {
-        meth.signature.do { part ->
+        meth.signatureParts.do { part ->
             part.params.do { param ->
                 scope.variables.at (param.value)
                     put (objectType.fromDType (param.dtype))
@@ -921,7 +921,7 @@ rule { cls: Class ->
     def name = cls.name.value
     def dType = objectType.fromDType (cls.dtype)
     def cType = scope.enter {
-        cls.signature.do { part ->
+        cls.signatureParts.do { part ->
             part.params.do { param ->
                 scope.variables.at (param.value)
                     put (objectType.fromDType (param.dtype))
@@ -991,7 +991,7 @@ rule { defd: Def | Var ->
             def sig = [mixPartNamed (name') parameters ([param])]
 
             scope.methods.at (name')
-                put (aMethodType.signature (sig) returnType (objectType.done))
+                put (aMethodType.signatureParts (sig) returnType (objectType.done))
         }
     }
     objectType.done
@@ -1207,8 +1207,8 @@ method collectTypes (nodes: List) -> Done is confidential {
 
 // Determines if a method will be accessed as a member.
 method isMember (mType: MethodType) -> Boolean is confidential {
-    (mType.signature.size == 1) && {
-        mType.signature.first.parameters.size == 0
+    (mType.signatureParts.size == 1) && {
+        mType.signatureParts.first.parameters.size == 0
     }
 }
 
