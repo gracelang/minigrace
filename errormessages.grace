@@ -581,8 +581,8 @@ method error(message) atPosition(errLinenum, errPosition)
     def arr = "^"
 
     def errorObj = object {
-        def lineNum is public = errLinenum
-        def position is public = errPosition
+        def line is public = errLinenum
+        def column is public = errPosition
         def arrow is public = arr
         def sugg is public = suggestions
     }

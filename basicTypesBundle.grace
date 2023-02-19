@@ -47,7 +47,7 @@ trait open {
                                     // when it was raised, if there was one. Otherwise,
                                     // the string "no data".
 
-        lineNumber → Number         // the source-code line of the raise request
+        line → Number               // the source-code line of the raise request
                                     //  that created this exception.
 
         moduleName → String         // the name of the module containing the raise

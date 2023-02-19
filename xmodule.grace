@@ -149,7 +149,7 @@ method reportDialectError(ex) {
 method printBacktrace(exceptionPacket) asFarAs (methodName) {
     def ex = exceptionPacket.exception
     def msg = exceptionPacket.message
-    def lineNr = exceptionPacket.lineNumber
+    def lineNr = exceptionPacket.line
     def mod = exceptionPacket.moduleName
     io.error.write "{ex}: {msg}\n"
     def bt = exceptionPacket.backtrace

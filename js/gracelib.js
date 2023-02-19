@@ -2996,7 +2996,7 @@ function GraceExceptionPacket(exception, message, data) {
     this.exception = exception;
     this.message = message;
     this.data = data;
-    this.lineNumber = lineNumber;
+    this.line = lineNumber;
     this.method = arguments.callee.caller;
     this.stackFrames = [];
     this.exitStack = [];
@@ -3023,8 +3023,8 @@ GraceExceptionPacket.prototype = {
             return new GraceString(this.exception.name + ": " +
                     this.message._value);
         },
-        "lineNumber": function(argcv) {
-            return new GraceNum(this.lineNumber);
+        "line": function(argcv) {
+            return new GraceNum(this.line);
         },
         "moduleName": function(argcv) {
             return new GraceString(this.moduleName);

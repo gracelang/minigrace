@@ -276,7 +276,7 @@ class testCaseNamed(name') -> TestCase {
     method printBackTrace(exceptionPacket) limitedTo(testName) {
         def ex = exceptionPacket.exception
         def msg = exceptionPacket.message
-        def lineNr = exceptionPacket.lineNumber
+        def lineNr = exceptionPacket.line
         def modName = exceptionPacket.moduleName
         if (lineNr == 0) then {
             if (modName == "native code") then {
