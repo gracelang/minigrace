@@ -183,6 +183,11 @@ trait assertion {
         assert (missingFromT.isEmpty) description (missingFromT)
     }
 
+    method assertType(T:Type) exactlyDescribes (anObject) {
+        assert(anObject) hasType (T)
+        assertType(T) describes (anObject)
+    }
+
     method methodsIn(DesiredType) missingFrom (value) -> String is confidential {
         def vMirror = mirror.reflect(value)
         def allMethods = vMirror.methodNames

@@ -36,58 +36,66 @@ trait open {
         assert(cond) description (complaint)
     }
 
-    method expect(s1:Object) toBe (s2:Object) {
+    method expect (s1:Object) toBe (s2:Object) {
         assert(s1) shouldBe (s2)
     }
 
-    method expect(s1:Object) toBe (s2:Object) orSay (complaint) {
+    method expect (s1:Object) toBe (s2:Object) orSay (complaint) {
         assert(s1 == s2)
             description (complaint)
     }
 
-    method expect(s1:Object) notToBe (s2:Object) {
+    method expect (s1:Object) notToBe (s2:Object) {
         assert(s1) shouldntBe (s2)
     }
 
-    method expect(s1:Object) notToBe (s2:Object) orSay (complaint) {
+    method expect (s1:Object) notToBe (s2:Object) orSay (complaint) {
         assert(s1 ≠ s2)
             description (complaint)
     }
 
-    method expect(n1:Number) toBe (n2:Number) within (epsilon:Number) {
+    method expect (n1:Number) toBe (n2:Number) within (epsilon:Number) {
         assert(n1) shouldEqual (n2) within (epsilon)
     }
 
-    method expect(b:Procedure0) toRaise (desired) {
+    method expect (b:Procedure0) toRaise (desired) {
         assert(b) shouldRaise (desired)
     }
 
-    method expect(b:Procedure0) toRaise (desired) mentioning (error) {
+    method expect (b:Procedure0) toRaise (desired) mentioning (error) {
         assert(b) shouldRaise (desired) mentioning (error)
     }
 
-    method expect(b:Procedure0) toRaise (desired) mentioning (err1) and (err2) {
+    method expect (b:Procedure0) toRaise (desired) mentioning (err1) and (err2) {
         assert(b) shouldRaise (desired) mentioning (err1) and (err2)
     }
 
-    method expect(b:Procedure0) toRaise (desired) matchedBy (regexStr) {
+    method expect (b:Procedure0) toRaise (desired) matchedBy (regexStr) {
         assert(b) shouldRaise (desired) matchedBy (regexStr)
     }
 
-    method expect(b:Procedure0) notToRaise (undesired:ExceptionKind) {
+    method expect (b:Procedure0) notToRaise (undesired:ExceptionKind) {
         assert(b) shouldntRaise (undesired)
     }
 
-    method expect(s:Unknown) toHaveType (desired:Type) {
+    method expect (s:Unknown) toHaveType (desired:Type) {
         assert(s) hasType (desired)
     }
 
-    method expect(s:Unknown) notToHaveType (undesired:Type) {
+    method expect (s:Unknown) notToHaveType (undesired:Type) {
         deny(s) hasType (undesired)
     }
 
-    method failAndSay(reason) {
-        assert(false) description(reason)
+    method expectType (T:Type) toDescribe (anObject) {
+        assertType(T) describes (anObject)
+    }
+
+    method expectType (T:Type) toExactlyDescribe (anObject) {
+        assertType(T) exactlyDescribes (anObject)
+    }
+
+    method failAndSay (reason) {
+        assert(false) description (reason)
     }
 
     method describe (name:String) with (block:Procedure0) {
