@@ -59,14 +59,15 @@ function object_notEquals (argcv, o) {
     return callmethod(b, "not", [0]);
 }
 
-function object_isMe (argcv, o) {
-    return Object.is(this, o) ? GraceTrue : GraceFalse;
+function object_isMe (argcv, other) {
+    return Object.is(this, other) ? GraceTrue : GraceFalse;
 }
 object_isMe.confidential = true;
-
-function object_Equals (argcv, o) {
-    return Object.is(this, o) ? GraceTrue : GraceFalse;
-}
+object_isMe.methodName = "isMe(_)";
+object_isMe.paramCounts = [1];
+object_isMe.paramNames = ["other"];
+object_isMe.definitionLine = 0;
+object_isMe.definitionModule = "built-in library";
 
 var identityHashSeed = 1001;
 
@@ -78,6 +79,10 @@ function object_identityHash(argcv) {
     return this.identityHash;
 }
 object_identityHash.confidential = true;
+object_identityHash.methodName = "identityHash";
+object_identityHash.paramCounts = [0];
+object_identityHash.definitionLine = 0;
+object_identityHash.definitionModule = "built-in library";
 
 function object_basicAsString (argcv) {
     var s = "object {";
@@ -345,8 +350,8 @@ function failStringMethodArgCheck(desc, className, methodName) {
 GraceString.prototype = {
     failArgCheck: failStringMethodArgCheck,
     methods: {
-        "isMe(1)":          object_isMe,
-        "myIdentityHash":   object_identityHash,
+        "isMe(1)":          value_equals,
+        "myIdentityHash":   string_hash,
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debug$Iterator":   object_debugIterator,
@@ -354,6 +359,7 @@ GraceString.prototype = {
         "++(1)": function(argcv, other) {
             var o = other.className == "string" ? other : request(other, "asString", [0]);
             if (this._value.length === 0) return o;
+            if (o._value.length === 0) return this;
             return new GraceString(this._value + o._value);
         },
         ">>(1)": function(argcv, target) {
@@ -814,6 +820,32 @@ function pointObject() {
     return pointObject.cache
 }
 
+function value_equals(argcv, other) {
+    // Do NOT test for identity, because then NaN == NaN !
+    if (this.className === other.className &&
+          this._value === other._value)
+        return GraceTrue;
+    return GraceFalse;
+}
+value_equals.methodName = "==(_)";
+value_equals.paramCounts = [1];
+value_equals.paramNames = ["other"];
+value_equals.definitionLine = 0;
+value_equals.definitionModule = "built-in library";
+
+function num_hash (argcv) {
+    var self = this._value;
+    if (isNaN(self)) {
+        throw new GraceExceptionPacket(RequestErrorObject,
+            new GraceString("attempting to hash NaN"));
+    }
+    var raw = self * 7;   // was 13, but hash tables can be of size 13!
+    return new GraceNum(Math.abs(raw & raw));  // & converts to 32-bit int
+}
+num_hash.methodName = "hash";
+num_hash.definitionLine = 0;
+num_hash.definitionModule = "built-in library";
+
 function GraceNum(n) {
     this._value = n;
 }
@@ -821,8 +853,8 @@ function GraceNum(n) {
 GraceNum.prototype = {
     failArgCheck: failNumMethodArgCheck,
     methods: {
-        "isMe(1)":          object_isMe,
-        "myIdentityHash":   object_identityHash,
+        "isMe(1)":          value_equals,
+        "myIdentityHash":   num_hash,
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debug$Iterator":   object_debugIterator,
@@ -1001,26 +1033,12 @@ GraceNum.prototype = {
                     new GraceString("argument to asStringDecimals(_) must be between 0 and 20"));
             return new GraceString(num.toFixed(d));
         },
-        "==(1)": function(argcv, other) {
-            // Do NOT test for identity, because then NaN == NaN !
-            if (this.className === other.className &&
-                  this._value === other._value)
-                return GraceTrue;
-            return GraceFalse;
-        },
+        "==(1)": value_equals,
         "≠(1)": function(argcv, other) {
             var t = callmethod(this, "==(1)", [1], other);
             return callmethod(t, "not", [0]);
         },
-        "hash": function num_hash (argcv) {
-            var self = this._value;
-            if (isNaN(self)) {
-                throw new GraceExceptionPacket(RequestErrorObject,
-                    new GraceString("attempting to hash NaN"));
-            }
-            var raw = self * 7;   // was 13, but hash tables can be of size 13!
-            return new GraceNum(Math.abs(raw & raw));  // & converts to 32-bit int
-        },
+        "hash": num_hash,
         "inBase(1)": function(argcv, other) {
             var mine = this._value;
             var base = other._value;
