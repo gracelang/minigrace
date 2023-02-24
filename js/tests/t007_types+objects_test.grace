@@ -35,9 +35,6 @@ testSuite "type-level operations" with {
 
 testSuite "standard types and objects" with {
 
-    test "numbers have type Number" by {
-        assert 3 hasType (Number)
-    }
     test "numbers have type Pattern" by {
         assert 3 hasType (Pattern)
     }
@@ -52,10 +49,7 @@ testSuite "standard types and objects" with {
         assert (¬ Crippled) hasType (Pattern)
     }
     test "Number describes numbers" by {
-        assertType (Number) describes 3
-    }
-    test "strings have type String" by {
-        assert "test" hasType (String)
+        assertType (Number) exactlyDescribes 3
     }
     test "strings have type Pattern" by {
         assert "test" hasType (Pattern)
@@ -63,35 +57,23 @@ testSuite "standard types and objects" with {
     test "String describes strings" by {
         assertType (String) exactlyDescribes "test"
     }
-    test "booleans have type Boolean" by {
-        assert true hasType (Boolean)
-    }
-    test "booleans have type Pattern" by {
-        assert true hasType (Pattern)
-    }
     test "Boolean describes booleans" by {
-        assertType (Boolean) describes true
-    }
-    test "sequences have type Sequence" by {
-        assert [1, 2] hasType (Sequence⟦Number⟧)
+        assertType (Boolean) exactlyDescribes true
     }
     test "Sequence describes sequences" by {
-        assertType (Sequence⟦Number⟧) describes [1, 2, 3]
+        assertType (Sequence⟦Number⟧) exactlyDescribes [1, 2, 3]
     }
     test "> patterns have type Pattern" by {
         assert (>3) hasType (Pattern)
     }
-    test "AndPatterns have type Pattern" by {
-        assert (>3 & <10) hasType (Pattern)
-    }
     test "Pattern describes AndPattern" by {
-        assertType (Pattern) describes (>3 & <10)
+        assertType (Pattern) exactlyDescribes (>3 & <10)
     }
-    test "OrPatterns have type Pattern" by {
-        assert (<3 | >10) hasType (Pattern)
+    test "Pattern describes NotPatterns" by {
+        assertType (Pattern) exactlyDescribes (¬ <3)
     }
     test "Pattern describes OrPattern" by {
-        assertType (Pattern) describes (<3 | >10)
+        assertType (Pattern) exactlyDescribes (<3 | >10)
     }
     test "UninitializedVariable has type ExceptionKind" by {
         assert (UninitializedVariable) hasType (ExceptionKind)
