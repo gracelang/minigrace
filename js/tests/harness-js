@@ -118,7 +118,7 @@ do
         then
             execname="${tcase%%.*}"
 #   The %%.* _deletes_ the longest . extension.
-            COMMAND="GRACE_MODULE_PATH=../../:../../j2:../../j1:../../modules:.:subtest $EXECUTOR\"./$execname\""
+            COMMAND="GRACE_MODULE_PATH=../../:../../j2:../../js:../../modules:.:subtest $EXECUTOR\"./$execname\""
             echo execution cmd for case "$tcase" = $COMMAND > test-$$.log
             eval $COMMAND >> test-$$.out 2> test-$$.err
             exitCode=$?

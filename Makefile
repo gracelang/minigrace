@@ -393,10 +393,12 @@ test.compile: minigrace
 
 $(TYPE_DIALECTS:%=js/%.js): js/%.js: $(DIALECTS_NEED:%=%.js) $(patsubst modules/%, js/%.js, $(filter modules/%,$(DIALECTS_NEED)))
 
-test: minigrace.env js/tests/gracelib.js
+test: minigrace.env
 # if TESTS is underfined, runs all tests.  Otherwise, TESTS should be set to a
 # space-separated sequence of test-name prefixes, e.g., "TESTS=t001 t027 t041"
 	rm -f js/tests/*.js
+	cp -p js/gracelib.js js/tests
+	cp -p js/unicodedata.js js/tests
 	js/tests/harness-js j2/minigrace-js js/tests "" $(TESTS)
 
 togracetest: minigrace
@@ -406,10 +408,10 @@ uninstall:
 	rm -f $(PREFIX)/bin/minigrace
 	rm -f $(PREFIX)/bin/minigrace-js
 	rm -f $(PREFIX)/bin/grace
-	rm -f $(OBJECT_PATH)/gracelib.o
-	rm -f $(INCLUDE_PATH)/gracelib.h
-	rm -rf $(MODULE_PATH)/*.{gct,js,grace,gcn,gso,gso.dSYM,c}
-	rm -rf $(MODULE_PATH)/gracelib.o
+	rm -f $(PREFIX)/bin/grace-inspect
+	rm -rf $(MODULE_PATH)/*.grace
+	rm -rf $(MODULE_PATH)/gracelib.js
+	rm -rf $(MODULE_PATH)/unicodedata.js
 
 .git/hooks/commit-msg: ./tools/validate-commit-message
 	@ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
