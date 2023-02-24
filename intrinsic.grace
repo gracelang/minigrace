@@ -32,7 +32,7 @@ def NoneType = object {
     method ==(other) { self.isMe(other) }
     method hash { myIdentityHash }
     method isNone { true }
-
+    method isType { true }
 }
 
 trait types {
