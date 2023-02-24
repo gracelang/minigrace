@@ -326,6 +326,11 @@ function string_hash(argcv) {
     return this._hash;
 }
 
+function string_identityHash(argcv) {
+    return string_hash(argcv);
+}
+string_identityHash.confidential = true;
+
 function string_indices(argcv) {
     var size = this._value.length;
     return callmethod(GraceRangeClass(), "uncheckedFrom(1)to(1)", [1, 1],
@@ -350,8 +355,8 @@ function failStringMethodArgCheck(desc, className, methodName) {
 GraceString.prototype = {
     failArgCheck: failStringMethodArgCheck,
     methods: {
-        "isMe(1)":          value_equals,
-        "myIdentityHash":   string_hash,
+        "isMe(1)":          value_isMe,
+        "myIdentityHash":   string_identityHash,
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debug$Iterator":   object_debugIterator,
@@ -833,6 +838,22 @@ value_equals.paramNames = ["other"];
 value_equals.definitionLine = 0;
 value_equals.definitionModule = "built-in library";
 
+function value_isMe(argcv, other) {
+    // identity test for value objects, which should be considered identical if
+    // they have equal values.  Can't re-use value_equals, because isMe is confidential
+    if (this.className === other.className &&
+          this._value === other._value)
+        return GraceTrue;
+    return GraceFalse;
+}
+value_isMe.confidential = true;
+    // returns the first character of self, as a String of size 1; self must not be empty
+value_isMe.methodName = "isMe(_)";
+value_isMe.paramCounts = [1];
+value_isMe.paramNames = ["other"];
+value_isMe.definitionLine = 0;
+value_isMe.definitionModule = "built-in library";
+
 function num_hash (argcv) {
     var self = this._value;
     if (isNaN(self)) {
@@ -846,6 +867,12 @@ num_hash.methodName = "hash";
 num_hash.definitionLine = 0;
 num_hash.definitionModule = "built-in library";
 
+function num_identityHash (argcv) {
+    return num_hash (argcv);
+}
+
+num_identityHash.confidential = true;
+
 function GraceNum(n) {
     this._value = n;
 }
@@ -853,8 +880,8 @@ function GraceNum(n) {
 GraceNum.prototype = {
     failArgCheck: failNumMethodArgCheck,
     methods: {
-        "isMe(1)":          value_equals,
-        "myIdentityHash":   num_hash,
+        "isMe(1)":          value_isMe,
+        "myIdentityHash":   num_identityHash,
         "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debug$Iterator":   object_debugIterator,
@@ -2020,18 +2047,16 @@ function badBlockArgs(...args) {
                 typeName = "required type";
             }
             var argDesc = (numArgs === 1) ? "argument" : "argument " + n ;
-            if (typeSpec.className.startsWith("Type")) {
-                // startsWith("Type") catches TypeIntersection, TypeUnion,
-                // etc, as well as class "Type" itself.
+            if (request(typeSpec, "isType")._value) {
                 raiseTypeError(argDesc + " to block." + canonicalName +
                             " does not have " + typeName,
                             typeSpec, args[ix]);
             } else {
                 argDesc += " (" + safeJsString(args[ix]) + ")";
                 let patternDesc = safeJsString(typeSpec);
-                throw new GraceExceptionPacket(RequestErrorObject,
-                   new GraceString(argDesc + " to block." +
-                       canonicalName + " does not match " + patternDesc));
+                raiseException(RequestErrorObject,
+                   argDesc + " to block." +
+                   canonicalName + " does not match " + patternDesc);
             }
 
         }
@@ -2042,8 +2067,9 @@ function assertTypeOrMsg(obj, type, objDesc, typeDesc) {
     if (type === var_Unknown) return;  // an optimization
     if (type.methods["matches(1)"]) {
         if (!Grace_isTrue(request(type, "matches(1)", [1], obj))) {
-            if ((type.name) && (type.name !== typeDesc)) {
-                typeDesc += " (= " + type.name + ")";
+            const typeName = safeJsString(request(type, "name"));
+            if ((typeName) && (typeName !== typeDesc)) {
+                typeDesc += " (= " + typeName + ")";
             }
             let message = objDesc + " does not have type " + typeDesc;
             raiseTypeError(message, type, obj);
@@ -2051,7 +2077,7 @@ function assertTypeOrMsg(obj, type, objDesc, typeDesc) {
     } else {
         raiseException(ProgrammingErrorObject,
                 "while checking that " + objDesc + " has type " +  typeDesc +
-                ", found that " + typeDesc + " is not a type (has no matches(_) method)");
+                ", found that " + typeDesc + " is not a type (because it has no matches(_) method)");
     }
 }
 
