@@ -48,7 +48,7 @@ trait open {
                                     // the string "no data".
 
         line → Number               // the source-code line of the raise request
-                                    //  that created this exception.
+                                    // that created this exception.
 
         moduleName → String         // the name of the module containing the raise
                                     // request that created this exception.
@@ -347,6 +347,202 @@ trait open {
             // returns target << self; used for writing pipelines
         << (source: Collection⟦T⟧) → Collection⟦T⟧
             // returns self ++ source; used for writing pipelines
+    }
+
+    type Number = EqualityObject & Pattern & interface {
+        @ (other: Number) -> Point
+        // asnsers a point with self as the x-coordinate, and other as the y-coordinate
+
+        ^ (n: Object) -> Number
+        // answers self raised to the power n, if n is a Number.
+        // Otherwise, answers n.reversePowerNumber(self)
+
+        sqrt -> Number
+        // answers the square root of self
+
+        + (n: Object) -> Number
+        // sum of self and n, if n is a Number.
+        // Otherwise, answers n.reversePlusNumber(self)
+
+        - (n: Object) -> Number
+        // difference of self and n, if n is a Number.
+        // Otherwise, answers n.reverseMinusNumber(self)
+
+        * (n: Object) -> Number
+        // product of self and n, if n is a Number.
+        // Otherwise, answers n.reverseTimesNumber(self)
+
+        / (n: Object) -> Number
+        // quotient of self divided by n (in general, a fraction), if n is a Number.
+        // Otherwise, answers n.reverseDivideNumber(self)
+
+        % (n: Object) -> Number
+        // if n is a Number, answers the remainder r after integer division of
+        // self by n, where 0 ≤ r < self;  see also ÷.
+        // If n is not a Number, answers n.reverseRemainderNumber(self)
+
+        ÷ (n: Object) -> Number
+        // quotient q of self after integer division by n, if n is a Number:
+        // self = (n * q) + remainder, where remainder = (self % other)
+        // If n is not a Number, answers n.reverseQuotientNumber(self)
+
+        .. (last: Number) -> Sequence⟦Number⟧
+        // the Sequence of numbers from self to last, so 2..4 contains 2, 3, and 4
+
+        downTo(last:Number) -> Sequence⟦Number⟧
+        // the Sequence of numbers from self down to last, so 2.downTo 0 contains 2, 1 and 0.
+
+        < (other: Number) -> Boolean
+        // true iff self is less than other
+
+        <= (other: Number) -> Boolean
+        // true iff self is less than or equal to other
+
+        > (other: Number) -> Boolean
+        // true iff self is greater than other
+
+        >= (other: Number) -> Boolean
+        // true iff self is greater than or equal to other
+
+        prefix - -> Number
+        // negation of self
+
+        compare (other:Number) -> Number
+        // a three-way comparison: -1 if (self < other), 0 if (self == other), and +1 if (self > other).
+        // This is useful when writing a comparison function for sortBy
+
+        inBase (base:Number) -> String
+        // a string representing self as a base number (e.g., 5.inBase 2 = "101")
+
+        asString -> String
+        // returns a string representing self rounded to six decimal places
+
+        asDebugString -> String
+        // returns a string representing self with all available precision
+
+        asStringDecimals(d) -> String
+        // returns a string representing self with exactly d decimal digits
+
+        isInteger -> Boolean
+        // true if number is an integer, i.e., a whole number with no fractional part
+
+        truncated -> Number
+        // number obtained by throwing away self's fractional part
+
+        rounded -> Number
+        // whole number closest to self
+
+        floor -> Number
+        // largest whole number less than or equal to self
+
+        ceiling -> Number
+        // smallest whole number greater than or equal to self
+
+        abs -> Number
+        // the absolute value of self
+
+        sgn -> Number
+        // the signum function: 0 when self == 0, -1 when self < 0, and +1 when self > 0
+
+        isNaN -> Boolean
+        // true if this Number is not a number, i.e., if it is NaN.  For example, 0/0 returns NaN
+
+        isEven -> Boolean
+        // true if this number is even
+
+        isOdd -> Boolean
+        // true if this number is odd
+
+        sin -> Number
+        // trigonometric sine (self in radians)
+
+        cos -> Number
+        // cosine (self in radians)
+
+        tan -> Number
+        // tangent (self in radians)
+
+        asin -> Number
+        // arcsine of self (result in radians)
+
+        acos -> Number
+        // arccosine of self (result in radians)
+
+        atan -> Number
+        // arctangent of self (result in radians)
+
+        lg -> Number
+        // log base 2 of self
+
+        ln -> Number
+        // the natural log of self
+
+        exp -> Number
+        // e raised to the power of self
+
+        log10 -> Number
+        // log base 10 of self
+
+        prefix > -> Pattern
+        // a pattern that matches all numbers > self
+
+        prefix ≥ -> Pattern
+        // a pattern that matches all numbers ≥ self
+
+        prefix < -> Pattern
+        // a pattern that matches all numbers < self
+
+        prefix ≤ -> Pattern
+        // a pattern that matches all numbers ≤ self
+    }
+
+    type Point =  EqualityObject & interface {
+
+        x -> Number
+        // the x-coordinates of self
+
+        y -> Number
+        // the y-coordinate of self
+
+        == (other:outer.Object) -> Boolean
+        // true if other is a Point with the same x and y coordinates as self.
+
+        + (other:Point|Number) -> Point
+        // if other is a Point, returns the Point that is the vector sum of self
+        // and other, i.e. (self.x+other.x) @ (self.y+other.y).  If other is a Number,
+        // returns the point (self.x+other) @ (self.y+other)
+
+        - (other:Point|Number) -> Point
+        // if other is a Point, returns the Point that is the vector difference of
+        // self and other, i.e. (self.x-other.x) @ (self.y-other.y). If other is a
+        // Number, returns the point (self.x-other) @ (self.y-other)
+
+        prefix - -> Point
+        // the negation of self
+
+        * (factor:Number) -> Point
+        // this point scaled by factor, i.e. (self.x*factor) @ (self.y*factor)
+
+        / (factor:Number) -> Point
+        // this point scaled by 1/factor, i.e. (self.x/factor) @ (self.y/factor)
+
+        length -> Number
+        // distance from self to the origin
+
+        distanceTo(other:Point) -> Number
+        // distance from self to other
+
+        dot (other:Point) -> Number
+        ⋅ (other:Point) -> Number
+        // dot product of self and other: (self.x * other.x) + (self.y + other.y)
+
+        norm -> Point
+        // the unit vector (vecor of length 1) in same direction as self
+
+        reverseTimesNumber(n:Number) → Point       // for double-dispatch; answers (n * x)@(n * y)
+        reversePlusNumber(n:Number) → Point        // for double-dispatch; answers (n + x)@(n + y)
+        reverseDivideNumber(n:Number) → Point      // for double-dispatch; answers (n / x)@(n / y)
+        reverseMinusNumber(n:Number) → Point       // for double-dispatch; answers (n - x)@(n - y)
     }
 
     type Sink⟦T⟧ = interface {
