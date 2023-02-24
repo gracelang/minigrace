@@ -65,7 +65,9 @@ trait open {
             self     // for chaining
         }
         method setTypeName(nu) {
-            self.setName(nu)
+            // requested from compiled code when a named type is declared
+            self.name := nu
+            self     // for chaining
         }
         method name:=(nu) is required
         method name is required
