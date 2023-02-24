@@ -5,6 +5,12 @@ type Custom = interface {
     -(_) → Custom
 }
 
+type Join = Custom & ExceptionKind
+
+type Variant = Custom | ExceptionKind
+
+type Meet = Custom + ExceptionKind
+
 testSuite "type error messages" with {
 
     def nss = { a:Number, b:String, c:String ->
@@ -19,7 +25,27 @@ testSuite "type error messages" with {
               mentioning "argument 1 to block.apply(_,_) does not have type Number"
               and "missing methods %(_), +(_), -(_), ..(_), /(_), @(_), ^(_), abs, acos, asStringDecimals(_), asin, atan, ceiling"
     }
-
+    
+    test "cutom type is a type" by {
+        assert (Custom.isType) description "isType method on Custom answers {Custom.isType}"
+    }
+    
+    test "Built-in type is a type" by {
+        assert (Number.isType) description "isType method on Number answers {Number.isType}"
+    }
+    
+    test "Join type is a type" by {        
+        assert (Join.isType) description "isType method on Join answers {Join.isType}"
+    }
+      
+    test "Variant type is a type" by {        
+        assert (Variant.isType) description "isType method on Variant answers {Variant.isType}"
+    }
+      
+    test "Meet type is a type" by {        
+        assert (Meet.isType) description "isType method on Meet answers {Meet.isType}"
+    }
+       
     test "block argument with custom type" by {
         assert {
             def b = { n:Custom, m:Number -> n + m }

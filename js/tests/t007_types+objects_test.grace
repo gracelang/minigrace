@@ -61,7 +61,7 @@ testSuite "standard types and objects" with {
         assert "test" hasType (Pattern)
     }
     test "String describes strings" by {
-        assertType (String) describes "test"
+        assertType (String) exactlyDescribes "test"
     }
     test "booleans have type Boolean" by {
         assert true hasType (Boolean)

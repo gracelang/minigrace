@@ -41,7 +41,8 @@ trait types {
 
     type Type = TypeType
     type None = NoneType
-    type String = StringType
+
+    // move to module basicTypesBundle:
     type Number = NumberType
     type Boolean = BooleanType
     type Done = DoneType

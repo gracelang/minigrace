@@ -107,6 +107,204 @@ trait open {
     type Predicate3⟦ArgT1, ArgT2, ArgT3⟧ = Function3⟦ArgT1, ArgT2, ArgT3, Boolean⟧
         // Function with 3 arguments of types ArgT1, ArgT2, and ArgT3, returning Boolean
 
+    type String = EqualityObject & Pattern & interface {
+        reverseTimesNumber(n:Number) -> String
+        // answers self * n.  (Used by numbers to implement number * String)
+
+        * (n: Number) -> String
+        // returns a string that contains n repetitions of self, so "Abc" * 3 = "AbcAbcAbc"
+
+        ++(other: Object) -> String
+        // returns a string that is the concatenation of self and other.asString
+
+        < (other: String)
+        // true if self precedes other lexicographically
+
+        <= (other: String)
+        // (self == other) || (self < other)
+
+        > (other: String)
+        // true if self follows other lexicographically
+
+        >= (other: String)
+        // (self == other) || (self > other)
+
+        at(index: Number) -> String
+        // returns the character in position index (as a string of size 1); index must be an integer in
+        // the range 1..size
+
+        first -> String
+        // returns the first character of self, as a String of size 1; self must not be empty
+
+        second -> String
+        // returns the second character of self, as a String of size 1; requires self.size ≥ 2
+
+        third -> String
+        // returns the third character of self, as a String of size 1; requires self.size ≥ 3
+
+        fourth -> String
+        // returns the fourth character of self, as a String of size 1; requires self.size ≥ 4
+
+        fifth -> String
+        // returns the fifth character of self, as a String of size 1; requires self.size ≥ 5
+
+        last -> String
+        // returns the last character of self, as a String of size 1; self must not be empty
+
+        allSatisfy(p:Predicate1⟦String⟧) -> Boolean
+        // answers true iff all the characters in self satisfy the predicate p
+
+        anySatisfy(p:Predicate1⟦String⟧) -> Boolean
+        // answers true iff any one of the characters in self satisfies the predicate p
+
+        asDebugString -> String
+        // returns self enclosed in quotes, and with embedded special characters quoted.  See also quoted.
+
+        asLower -> String
+        // returns a string like self, except that all letters are in lower case
+
+        asNumber -> Number
+        // attempts to parse self as a number;  returns that number, or NaN if it can't.
+
+        asUpper -> String
+        // returns a string like self, except that all letters are in upper case
+
+        do(action:Procedure1⟦String⟧) -> Done
+        // applies action to each character of self.
+
+        do(action:Procedure1⟦String⟧) separatedBy(sep:Procedure0) -> Done
+        // applied action to each character of self, and applies sep between actions.
+
+        capitalized -> String
+        // returns a string like self, except that the initial letters of all words are in upper case
+
+        compare (other:String) -> Number
+        // a three-way comparison: -1 if (self < other), 0 if (self == other), and +1 if (self > other).
+        // This is useful when writing a comparison function for sortBy
+
+        contains (other:String) -> Boolean
+        // returns true if other is a substring of self
+
+        endsWith (possibleSuffix: String)
+        // true if self ends with possibleSuffix
+
+        filter (predicate: Function1⟦String,Boolean⟧) -> String
+        // returns the String containing those characters of self for which predicate returns true
+
+        fold⟦U⟧ (binaryFunction: Function2⟦U,String,U⟧) startingWith(initial: U) -> U
+        // performs a left fold of binaryFunction over self, starting with initial.
+        // For example, fold {a, b -> a + b.ord} startingWith 0 will compute the sum
+        // of the ords of the characters in self
+
+        indexOf (pattern:String) -> Number
+        // returns the leftmost index at which pattern appears in self, or 0 if it is not there.
+
+        indexOf⟦W⟧ (pattern:String) ifAbsent (absent:Function0⟦W⟧) -> Number | W
+        // returns the leftmost index at which pattern appears in self; applies absent if it is not there.
+
+        indexOf (pattern:String) startingAt (offset) -> Number
+        // like indexOf(pattern), but returns the smallest index ≥ offset, or 0 if pattern is not found.
+
+        indexOf⟦W⟧ (pattern:String) startingAt(offset) ifAbsent (action:Function0⟦W⟧) -> Number | W
+        // like the above, except that it returns the result of applying action if there is no such index.
+
+        indices -> Sequence⟦Number⟧
+        keys -> Sequence⟦Number⟧
+        // an object representing the range of indices of self (1..self.size).
+
+        isEmpty -> Boolean
+        // true if self is the empty string
+
+        iterator -> Iterator⟦String⟧
+        // an iterator over the characters of self
+
+        keysAndValuesDo(action:Function2⟦Number, String, Done⟧) -> Done
+        // applies action to two arguments for each character in self: the key (index) of the character,
+        // and the character itself.
+
+        lastIndexOf (sub:String) -> Number
+        // returns the rightmost index at which sub appears in self, or 0 if it is not there.
+
+        lastIndexOf (sub:String) startingAt (offset) ->  Number
+        // like the above, except that it returns the rightmost index ≤ offset.
+
+        lastIndexOf⟦W⟧ (sub:String) ifAbsent (absent:Function0⟦W⟧) -> Number | W
+        // returns the rightmost index at which sub appears in self; applies absent if it is not there.
+
+        lastIndexOf⟦W⟧ (sub:String)
+           startingAt (offset)
+           ifAbsent (action:Function0⟦W⟧) ->  Number | W
+        // like the above, except that it returns the rightmost index ≤ offset.
+
+        map⟦U⟧ (function:Function1⟦String,U⟧) -> Collection⟦U⟧
+        // returns a Collection containing the results of successive applications of function to the
+        // individual characters of self. Note that the result is not a String, even if type U happens to be String.
+        // If a String is desired, use fold (_) startingWith "" with a function that concatenates.
+
+        ord -> Number
+        // a numeric representation of the first character of self, or NaN if self is empty.
+
+        replace (pattern:String) with (new:String) -> String
+        // a string like self, but with all occurrences of pattern replaced by new
+
+        size -> Number
+        // returns the size of self, i.e., the number of characters it contains.
+
+        sizeIfUnknown⟦W⟧(action:Procedure0⟦W⟧) -> Number
+        // returns the size of self, which is always known, so action is never executed.
+
+        split(splitter:String) -> Sequence⟦String⟧
+        // answers a sequence of substrings of self, split before and after each
+        // occurrence of splitter in self.  If self is empty, the result sequence
+        // will also be empty; otherwise, if self does not contain splitter,
+        // the result sequence will be of size 1.
+
+        startsWith (possiblePrefix:String) -> Boolean
+        // true when possiblePrefix is a prefix of self
+
+        startsWithDigit -> Boolean
+        // true if the first character of self is a (Unicode) digit.
+
+        startsWithLetter -> Boolean
+        // true if the first character of self is a (Unicode) letter
+
+        startsWithPeriod -> Boolean
+        // true if the first character of self is a period
+
+        startsWithSpace -> Boolean
+        // true if the first character of self is a (Unicode) space.
+
+        substringFrom (start:Number) size (max:Number) -> String
+        // returns the substring of self starting at index start and of length max characters,
+        // or extending to the end of self if that is less than max.  If start = self.size + 1 or
+        // stop < start, the empty string is returned.   If start is outside the range
+        // 1..self.size+1, BoundsError is raised.
+
+        substringFrom (start:Number) to (stop:Number) -> String
+        // returns the substring of self starting at index start and extending
+        // either to the end of self, or to stop.    If start = self.size + 1, or
+        // stop < start, the empty string is returned.   If start is outside the range
+        // 1..self.size+1, BoundsError is raised.
+
+        substringFrom (start:Number) -> String
+        // returns the substring of self starting at index start and extending
+        // to the end of self.    If start = self.size + 1, the empty string is returned.
+        // If start is outside the range 1..self.size+1, BoundsError is raised.
+
+        trim -> String
+        // a string like self except that leading and trailing spaces are omitted.
+
+        quoted -> String
+        // returns a quoted version of self, with internal characters like " and \ and newline escaped,
+        // but without surrounding quotes.  See also asDebugString
+
+        >> (target:Sink⟦String⟧) -> Collection
+        // returns target << self
+
+        << (source:Collection⟦String⟧) -> String
+        // returns a string containing me, followed in order by the elements of source.
+    }
+
     type Collection⟦T⟧ = Object & interface {
         // Note that Collection does not include :: or hash, so collections
         // cannot be used as keys in dictionaries (although Sequences can).
@@ -145,10 +343,14 @@ trait open {
             // returns true if I contain an element e such that condition.apply(e) holds
         allSatisfy (condition:Predicate1⟦T⟧) → Boolean
             // returns true all of my elements e are such that condition.apply(e) holds
-        >> (target: Collection⟦T⟧ | CollectionFactory⟦T⟧) → Collection⟦T⟧
+        >> (target: Sink⟦T⟧) → Collection⟦T⟧
             // returns target << self; used for writing pipelines
         << (source: Collection⟦T⟧) → Collection⟦T⟧
             // returns self ++ source; used for writing pipelines
+    }
+
+    type Sink⟦T⟧ = interface {
+        << (source:Collection⟦T⟧) -> Collection⟦T⟧
     }
 
     type CollectionFactory⟦T⟧ = Object & interface {
