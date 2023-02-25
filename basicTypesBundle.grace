@@ -8,7 +8,10 @@ trait open {
     type Type = EqualityObject & Pattern & interface {
         name → String           // the name of this type
         isNone → Boolean        // true for the type None, otherwise false
-        methodNames → Sequence⟦String⟧  // sorted sequence of the methods of conforming objects
+        methodNames → Sequence⟦String⟧  // sorted sequence of Self's methods
+        + (other:Type)          // answers the meet of Self and other
+        - (other:Type)          // answers the type that is like Self
+                                // but excludes the methods of other
     }
 
     type Object = interface {
