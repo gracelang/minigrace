@@ -3,11 +3,57 @@ import "intrinsic" as intrinsic
 
 trait open {
 
-    use intrinsic.types
+    type None = intrinsic.NoneType
+
+    type Type = EqualityObject & Pattern & interface {
+        name → String           // the name of this type
+        isNone → Boolean        // true for the type None, otherwise false
+        methodNames → Sequence⟦String⟧  // sorted sequence of the methods of conforming objects
+    }
 
     type Object = interface {
         asString → String
         asDebugString → String
+    }
+
+    type Done = interface {
+        asString → String
+        asDebugString → String
+    }
+
+    type Boolean =  EqualityObject & Pattern & interface {
+
+        not -> Boolean
+        prefix ! -> Boolean
+        // the negation of self
+
+        && (other: Predicate0 | Boolean) -> Boolean
+        // returns true when self and other are both true
+
+        || (other: Predicate0 | Boolean) -> Boolean
+        // returns true when either self or other (or both) are true
+
+        ifTrue (action:Function0⟦Unknown⟧) → Unknown
+        // if self is true, executes action and returns its result
+
+        ifFalse (action:Function0⟦Unknown⟧) → Unknown
+        // if self is false, executes action and returns its result
+
+        ifTrue(trueAction:Function0⟦Unknown⟧) ifFalse(falseAction:Function0⟦Unknown⟧) → Unknown
+        // if self is true, executes trueAction; otherewise, executes falseAction.
+        // Answers the result of the action that was executed
+
+        ifFalse(falseAction:Function0⟦Unknown⟧) ifTrue(trueAction:Function0⟦Unknown⟧) → Unknown
+        // if self is false, executes falseAction; otherewise, executes trueAction.
+        // Answers the result of the action that was executed
+
+        asString → String
+        asDebugString → Unknown
+        // answers thes string "true" or "false"
+
+        hash → Number
+        // the hash of this boolean; true.hash ≠ false.hash
+
     }
 
     type Pattern = Object & interface {

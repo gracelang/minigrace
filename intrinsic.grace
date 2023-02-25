@@ -7,19 +7,12 @@ dialect "none"
 once method Exception { native "js" code ‹return ExceptionObject;› }
 def UnimplementedMethod = Exception.refine "UnimplementedMethod"
 
-def TypeType = native "js" code ‹result = type_Type›
-def StringType = native "js" code ‹result = type_String›
-def NumberType = native "js" code ‹result = type_Number›
-def BooleanType = native "js" code ‹result = type_Boolean›
-def ObjectType = native "js" code ‹result = type_Object›
-def DoneType = native "js" code ‹result = type_Done›
-
 def NoneType = object {
     method name { "None" }
     method matches(obj) { false }
     method | (other) { other }
     method & (other) { self }
-    method prefix ¬ { DoneType }
+    method prefix ¬ { interface { } }
     method +(other) { other }
     method -(other) {
         UnimplementedMethod.raise "can't subtract methods from type {name}"
@@ -33,18 +26,6 @@ def NoneType = object {
     method hash { myIdentityHash }
     method isNone { true }
     method isType { true }
-}
-
-trait types {
-    // these types are defined in terms of names defined elsewhere because the rhs
-    // of a type declaration cannot be an arbitrary request, such as native(_)code(_)
-
-    type Type = TypeType
-    type None = NoneType
-
-    // move to module basicTypesBundle:
-    type Boolean = BooleanType
-    type Done = DoneType
 }
 
 trait annotations {
