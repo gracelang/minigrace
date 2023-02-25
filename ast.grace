@@ -2853,6 +2853,7 @@ class opRequest (op, l, r) {
         def newChain = ac.extend(n)
         n.left := left.map(blk) ancestors(newChain)
         n.right := right.map(blk) ancestors(newChain)
+        n.generics := maybeListMap(typeArgs, blk) ancestors(newChain)
         blk.apply(n, ac)
     }
     method pretty(depth) {
@@ -2862,7 +2863,7 @@ class opRequest (op, l, r) {
         if (hasTypeArgs) then {
             s := "{s}{spc}TypeArgs:"
             typeArgs.do { tArg ->
-                s := "{s}{spc}  {tArg.pretty(depth+2)}\n"
+                s := "{s}\n{spc}  {tArg.pretty(depth+2)}"
             }
         }
         s := "{s}{spc}Arg: {right.pretty(depth+2)}"
