@@ -64,7 +64,7 @@ trait open {
             self.name := nu
             self     // for chaining
         }
-        method setTypeName(nu) {
+        method setTypeName(nu) is confidential {
             // requested from compiled code when a named type is declared
             self.name := nu
             self     // for chaining

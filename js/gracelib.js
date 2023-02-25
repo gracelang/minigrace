@@ -1939,10 +1939,8 @@ GraceType.prototype = {
         "hash": function type_hash (argcv) {
             return selfRequest(this, "myIdentityHash", argcv)
         },
-        "setName(1)": type_setName,
-        "setTypeName(1)": function type_setTypeName (argcv, nu) {
-            return type_setName.call(this, argcv, nu)
-        },
+        "setName(1)": type_setName,         // confidential
+        "setTypeName(1)": type_setName,     // confidential
         "name": function type_name (argcv) {
             return new GraceString(this.name);
         },
