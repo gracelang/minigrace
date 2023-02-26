@@ -57,6 +57,9 @@ testSuite "standard types and objects" with {
     test "String describes strings" by {
         assertType (String) exactlyDescribes "test"
     }
+    test "Type Type describes interface t" by {
+        assertType (Type) exactlyDescribes (t)
+    }
     test "Boolean describes booleans" by {
         assertType (Boolean) exactlyDescribes true
     }
