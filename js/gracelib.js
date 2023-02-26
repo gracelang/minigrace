@@ -3544,5 +3544,4 @@ if (typeof global !== "undefined") {
     global.type_Unknown = type_Unknown;
     global.TypeErrorObject = TypeErrorObject;
     global.var_HashMap = var_HashMap;
-    global.var_Unknown = type_Unknown;
 }
