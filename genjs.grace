@@ -634,7 +634,7 @@ method compileDefaultsForTypeParameters(o) extraParams (extra) {
     if (false ≠ tps) then {
         o.typeParams.do { g->
             def gName = varf(g.value)
-            out "if (! {gName}) {gName} = var_Unknown;"
+            out "if (! {gName}) {gName} = type_Unknown;"
         }
     }
     if (emitArgChecks) then {

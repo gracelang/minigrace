@@ -1957,8 +1957,6 @@ GraceType.prototype = {
     classUid: "Type-built-in"
 };
 
-GraceType.prototype.methods["setName(1)"].confidential = true;
-
 function GraceSelfType() {
     this.name = "Self";
     this.typeMethods = [];
@@ -2062,7 +2060,7 @@ function badBlockArgs(...args) {
 }
 
 function assertTypeOrMsg(obj, type, objDesc, typeDesc) {
-    if (type === var_Unknown) return;  // an optimization
+    if (type === type_Unknown) return;  // an optimization
     if (type.methods["matches(1)"]) {
         if (!Grace_isTrue(request(type, "matches(1)", [1], obj))) {
             const typeName = safeJsString(request(type, "name"));
@@ -2106,42 +2104,7 @@ function raiseTypeArgError(methodName, required, given) {
                         " type argument" + s + ", but was given " + given));
 }
 
-function classType(o) {
-    var t = new GraceType(capitalize(o.className));
-    for (let m in o.methods) {
-        if (! (m.includes("$") || o.methods[m].confidential)) {
-            t.typeMethods.push(m);
-        }
-    };
-    if (o.types) {
-        for (let m in o.types) {
-            if (! o.types[m].confidential) {
-                t.typeMethods.push(m);
-            }
-        }
-    }
-    return t;
-}
-
-var var_graceObject = new GraceObject();
-var var_Unknown = new GraceType("Unknown");
-var var_Done = new GraceType("Done");
-var_Done.typeMethods.push("asString");
-var_Done.typeMethods.push("asDebugString");
-var var_String = classType(GraceEmptyString);
-var var_Number = classType(new GraceNum(1));
-var var_Boolean = classType(GraceTrue);
-var var_Object = classType(new GraceObject);
-    var_Object.name = "Object";
-    // type Object is an exception to the normal naming rule
-var var_Type = classType(var_Boolean);
-var type_String = var_String;
-var type_Number = var_Number;
-var type_Boolean = var_Boolean;
-var type_Object = var_Object;
-var type_Unknown = var_Unknown;
-var type_Type = var_Type;
-var type_Done = var_Done;
+var type_Unknown = new GraceType("Unknown");
 
 function hashMap_empty () { return new GraceHashMap(); };
 
@@ -2229,6 +2192,8 @@ GraceHashMap.prototype.methods['contains(1)'] = hashMap_containsKey;
 GraceHashMap.prototype.methods['containsKey(1)'] = hashMap_containsKey;
 GraceHashMap.prototype.methods['asString'] = hashMap_asString;
 GraceHashMap.prototype.methods['asDebugString'] = hashMap_asString;
+GraceHashMap.prototype.methods['isMe(1)'] = object_isMe;
+GraceHashMap.prototype.methods['myIdentityHash'] = object_identityHash;
 
 function GraceSequenceIterator(l) {
     this._value = l._value;
@@ -3492,7 +3457,6 @@ if (typeof global !== "undefined") {
     global.callmethod = callmethod;
     global.canonicalMethodName = canonicalMethodName;
     global.checkBounds = checkBounds;
-    global.classType = classType;
     global.confidentialVersion = confidentialVersion;
     global.dbg = dbg;
     global.dbgp = dbgp;
@@ -3577,24 +3541,8 @@ if (typeof global !== "undefined") {
     global.setModuleName = setModuleName;
     global.StackFrame = StackFrame;
     global.tryCatch = tryCatch;
-    global.type_Boolean = type_Boolean;
-    global.type_Done = type_Done;
-    global.type_Number = type_Number;
-    global.type_Object = type_Object;
-    global.type_String = type_String;
-    global.type_Type = type_Type;
     global.type_Unknown = type_Unknown;
     global.TypeErrorObject = TypeErrorObject;
-    global.var_$builtIn = var_$builtIn;
-    global.var_Done = var_Done;
-    global.var_done = var_done;
-    global.var_Boolean = var_Boolean;
     global.var_HashMap = var_HashMap;
-    global.var_graceObject = var_graceObject;
-    global.var_GraceType = var_GraceType;
-    global.var_Number = var_Number;
-    global.var_Object = var_Object;
-    global.var_String = var_String;
-    global.var_Type = var_Type;
-    global.var_Unknown = var_Unknown;
+    global.var_Unknown = type_Unknown;
 }
