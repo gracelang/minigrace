@@ -457,4 +457,4 @@ def aGraceLangTest = object {
 def graceLangTest = gU.testSuite.fromTestMethodsIn(aGraceLangTest) named "t002"
 graceLangTest.runAndPrintResults
 
-
+gU.exit
