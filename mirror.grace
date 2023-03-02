@@ -30,6 +30,7 @@ type MethodMirror = EqualityObject & interface {
     partCount → Number              // the number of parts to name
     paramCounts → Sequence⟦Number⟧   // the number of parameters to each part
     paramNames → Sequence⟦String⟧    // the names of the parameters
+    paramTypes → Sequence⟦Type⟧      // the types of the parameters
     typeParamNames → Sequence⟦String⟧// the names of the type parameters
     requestWithArgs(args:Sequence⟦Object⟧) → Unknown
         // executes the method with args; ordonary arguments first, followed by type args
@@ -234,6 +235,19 @@ class methodMirror(theSubject, aMethodName) {
         native "js" code ‹
             const graceNames = this.theFunction.paramNames.map(s => new GraceString(s));
             return new GraceSequence(graceNames);
+        ›
+    }
+    
+    method paramTypes {
+        native "js" code ‹
+            var types;
+            const paramTypes = this.theFunction.paramTypes;
+            if (paramTypes) {
+                types = this.theFunction.paramTypes;
+            } else {
+                types = Array(this.theFunction.paramNames.length).fill(type_Unknown);
+            }
+            return new GraceSequence(types);
         ›
     }
 
