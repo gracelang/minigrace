@@ -48,7 +48,6 @@ var buildtype := "bc"
 var inBlock := false
 var compilationDepth := 0
 def importedModules = set.empty
-def topLevelTypes = set.empty
 var debugMode := false
 var priorLineSeen := 0
 var priorLineComment := ""
@@ -1010,7 +1009,7 @@ method compileCallToBuildMethod(callExpr) withArgs (args) {
     callExpr.parts.removeLast
 }
 method paramlist(o) {
-    // a comma-prefixed and separated list of the parameters
+    // a comma-prefixed and separated list of the parameters of the method
     // described by methodnode o.
     var result := ""
     o.signatureParts.do { part ->
@@ -1021,7 +1020,7 @@ method paramlist(o) {
     result
 }
 method typeParamlist(o) {
-    // a comma-prefixed and separated list of the type parameters of
+    // a comma-prefixed and separated list of the type parameters of the method
     // described by methodnode o.
 
     var result := ""
@@ -1033,28 +1032,18 @@ method typeParamlist(o) {
     result
 }
 method compilemethodtypes(func, o) {
-    out "{func}.paramTypes = [];"
-    for (o.signatureParts) do { part ->
-        for (part.params) do {p->
-            // We store information for static top-level types only:
-            // absent information is treated as Unknown (and unchecked).
-            // TODO: figure out what to do about type that are not top-level
-            if (false != p.dtype) then {
-                if ((p.dtype.isIdentifier) || (p.dtype.isInterface)) then {
-                    def typeid = escapeident(p.dtype.value)
-                    if (topLevelTypes.contains(typeid)) then {
-                        out("{func}.paramTypes.push(["
-                            ++ "type_{typeid}, \"{escapestring(p.nameString)}\"]);")
-                    } else {
-                        out("{func}.paramTypes.push([]);")
-                    }
-                } else {
-                    out("{func}.paramTypes.push([]);")
-                }
-            } else {
-                out("{func}.paramTypes.push([]);")
-            }
+    var paramTypes :=  list [ ]
+    var paramsAreTyped := false
+    var first := true
+    o.parametersDo { each ->
+        def dType = each.decType
+        paramTypes.push(compilenode(dType))
+        if (dType.isUnknownType.not) then {
+            paramsAreTyped := true
         }
+    }
+    if (paramsAreTyped) then {
+        out "{func}.paramTypes = {literalList(paramTypes)};"
     }
 }
 method compileif(o) {
@@ -1568,12 +1557,7 @@ method initializeCodeGenerator(moduleObject) {
         debugMode := true
     }
     util.log_verbose("generating JavaScript code.")
-    topLevelTypes.add "String"
-    topLevelTypes.add "Number"
-    topLevelTypes.add "Boolean"
-    topLevelTypes.add "Done"
-    topLevelTypes.add "Type"
-    topLevelTypes.add "Object"
+
     if (util.extensions.containsKey "strict") then {
         util.outprint ";\"use strict\";"
     }
