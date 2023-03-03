@@ -3,9 +3,10 @@ import "intrinsic" as intrinsic
 
 trait open {
 
-    type None = intrinsic.NoneType
+    type None = intrinsic.NoneType  // the interface type with all possile methods
 
     type Type⟦T⟧ = Object & interface {
+        // a type is a disjunction of interfaces
         name → String           // the name of this type
         typeParameterNames → Sequence⟦String⟧
         isNone → Boolean        // true for the type None, otherwise false
@@ -23,9 +24,12 @@ trait open {
         hash → Number
         interfaces → Sequence⟦Interface⟦?⟧⟧
         subject → Type⟦T⟧               // the parameter T
+        isType → Boolean        // answers true (and false for other patterns)
     }
 
     type Interface⟦T⟧ = Type⟦T⟧ & interface {
+        // An interface is also a type: the type with self as its sole interface.
+        // Hence, its `interfaces` method must answer [ self ]
         methods → Dictionary⟦String, Signature⟧
             // keys are the canonical names of the methods,
             // and values their signatures
