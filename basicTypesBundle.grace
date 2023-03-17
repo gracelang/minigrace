@@ -11,18 +11,15 @@ trait open {
         typeParameterNames → Sequence⟦String⟧
         isNone → Boolean        // true for the type None, otherwise false
         matches (value:Object) → Boolean
-        & (other:Type) → Type⟦?⟧   // ansers the join (Self & other)
-        | (other:Type) → Type⟦?⟧   // answers the variant type (Self | other)
-        + (other:Type)          // answers the meet of Self and other (do we need this?)
-        - (other:Type)          // answers the type that is like Self
-                                // but excludes the methods of other
-        :> (other:Type) → Boolean       // other conforms to self
-        <: (other:Type) → Boolean       // self conforms to other
-        :=: (other:Type) → Boolean      // (self <: other) && (other :> self)
-        == (other:Type) → Boolean       // object identity
-        ≠ (other:Type) → Boolean        // object non-identity
+        & (other:Type⟦U⟧) → Type⟦T&U⟧    // answers the join (Self & other)
+        | (other:Type⟦U⟧) → Type⟦T|U⟧    // answers the variant type (Self | other)
+        :> (other:Type⟦U⟧) → Boolean     // other conforms to self
+        <: (other:Type⟦U⟧) → Boolean     // self conforms to other
+        :=: (other:Type⟦U⟧) → Boolean    // (self <: other) && (other :> self)
+        == (other:Type⟦U⟧) → Boolean     // object identity
+        ≠ (other:Type⟦U⟧) → Boolean     // object non-identity
         hash → Number
-        interfaces → Sequence⟦Interface⟦?⟧⟧
+        interfaces → Sequence⟦Interface⟦Unknown⟧⟧
         subject → Type⟦T⟧               // the parameter T
         isType → Boolean        // answers true (and false for other patterns)
     }
@@ -30,12 +27,12 @@ trait open {
     type Interface⟦T⟧ = Type⟦T⟧ & interface {
         // An interface is also a type: the type with self as its sole interface.
         // Hence, its `interfaces` method must answer [ self ]
-        methods → Dictionary⟦String, Signature⟧
-            // keys are the canonical names of the methods,
-            // and values their signatures
-        methodNames → Sequence⟦String⟧  // sorted sequence of Self's methods.keys
-        - (other:Interface) → Interface     // the interface that is like self,
-            // but with a methods dictionary whose keys exclude other.methods.keys
+        methodNames → Sequence⟦String⟧  // sorted sequence of the canonical
+                                       // names of the methods in this interface
+        methodAt(canonicalName:String) → Signature
+            // argument is the canonical name of a method; answers its signature
+        - (other:Interface⟦U⟧) → Interface⟦T-U⟧     // the interface that is like self,
+            // but excluding other.methodNames
     }
 
     type Signature = interface {
@@ -43,9 +40,9 @@ trait open {
             // the canonical name of the method
         typeParameterNames → Sequence⟦String⟧
         parameterNames → Sequence⟦String⟧
-        parameterTypes → Sequence⟦Type⟦?⟧⟧
+        parameterTypes → Sequence⟦Type⟦Unknown⟧⟧
             // the types of the parameters, in order
-        result → Type⟦?⟧
+        result → Type⟦Unknown⟧
             // the type of the result
     }
 
@@ -71,17 +68,16 @@ trait open {
         || (other: Predicate0 | Boolean) → Boolean
         // returns true when either self or other (or both) are true
 
-        ifTrue (action:Function0⟦Unknown⟧) → Unknown
-        // if self is true, executes action and returns its result
+        ifTrue (action:Function0⟦T⟧) → Done
+        // if self is true, executes action
+        ifFalse (action:Function0⟦T⟧) → Done
+        // if self is false, executes action
 
-        ifFalse (action:Function0⟦Unknown⟧) → Unknown
-        // if self is false, executes action and returns its result
-
-        ifTrue(trueAction:Function0⟦Unknown⟧) ifFalse(falseAction:Function0⟦Unknown⟧) → Unknown
+        ifTrue(trueAction:Function0⟦T⟧) ifFalse(falseAction:Function0⟦F⟧) → T | F
         // if self is true, executes trueAction; otherewise, executes falseAction.
         // Answers the result of the action that was executed
 
-        ifFalse(falseAction:Function0⟦Unknown⟧) ifTrue(trueAction:Function0⟦Unknown⟧) → Unknown
+        ifFalse(falseAction:Function0⟦F⟧) ifTrue(trueAction:Function0⟦T⟧) → T | F
         // if self is false, executes falseAction; otherewise, executes trueAction.
         // Answers the result of the action that was executed
 
@@ -105,7 +101,7 @@ trait open {
         isType → Boolean
     }
 
-    type Binding⟦K,T⟧ = EqualityObject & interface {
+    type Binding⟦K,T where T <: EqualityObject⟧ = EqualityObject & interface {
         key → K
         value → T
     }
