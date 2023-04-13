@@ -5,33 +5,32 @@ trait open {
 
     type None = intrinsic.NoneType  // the interface type with all possile methods
 
-    type Type⟦T⟧ = Object & interface {
+    type Type = Object & interface {
         // a type is a disjunction of interfaces
         name → String           // the name of this type
         typeParameterNames → Sequence⟦String⟧
         isNone → Boolean        // true for the type None, otherwise false
         matches (value:Object) → Boolean
-        & (other:Type⟦U⟧) → Type⟦T&U⟧    // answers the join (Self & other)
-        | (other:Type⟦U⟧) → Type⟦T|U⟧    // answers the variant type (Self | other)
-        :> (other:Type⟦U⟧) → Boolean     // other conforms to self
-        <: (other:Type⟦U⟧) → Boolean     // self conforms to other
-        :=: (other:Type⟦U⟧) → Boolean    // (self <: other) && (other :> self)
-        == (other:Type⟦U⟧) → Boolean     // object identity
-        ≠ (other:Type⟦U⟧) → Boolean     // object non-identity
+        & (other:Type) → Type    // answers the join (Self & other)
+        | (other:Type) → Type    // answers the variant type (Self | other)
+        :> (other:Type) → Boolean     // other conforms to self
+        <: (other:Type) → Boolean     // self conforms to other
+        :=: (other:Type) → Boolean    // (self <: other) && (other :> self)
+        == (other:Type) → Boolean     // object identity
+        ≠ (other:Type) → Boolean     // object non-identity
         hash → Number
-        interfaces → Sequence⟦Interface⟦Unknown⟧⟧
-        subject → Type⟦T⟧               // the parameter T
+        interfaces → Sequence⟦Interface⟧
         isType → Boolean        // answers true (and false for other patterns)
     }
 
-    type Interface⟦T⟧ = Type⟦T⟧ & interface {
+    type Interface = Type & interface {
         // An interface is also a type: the type with self as its sole interface.
         // Hence, its `interfaces` method must answer [ self ]
         methodNames → Sequence⟦String⟧  // sorted sequence of the canonical
                                        // names of the methods in this interface
         methodAt(canonicalName:String) → Signature
             // argument is the canonical name of a method; answers its signature
-        - (other:Interface⟦U⟧) → Interface⟦T-U⟧     // the interface that is like self,
+        - (other:Interface) → Interface     // the interface that is like self,
             // but excluding other.methodNames
     }
 
@@ -39,11 +38,9 @@ trait open {
         name → String
             // the canonical name of the method
         typeParameterNames → Sequence⟦String⟧
-        parameterNames → Sequence⟦String⟧
-        parameterTypes → Sequence⟦Type⟦Unknown⟧⟧
-            // the types of the parameters, in order
-        result → Type⟦Unknown⟧
-            // the type of the result
+        parameterNames → Sequence⟦String⟧  // the names of the parameters, in order
+        parameterTypes → Sequence⟦Type⟧    // the types of the parameters, in order
+        result → Type                     // the type of the result
     }
 
     type Object = interface {
@@ -57,7 +54,6 @@ trait open {
     }
 
     type Boolean =  EqualityObject & interface {
-
         not → Boolean
         prefix ! → Boolean
         // the negation of self
@@ -89,8 +85,7 @@ trait open {
         // the hash of this boolean; true.hash ≠ false.hash
 
         prefix == → Pattern
-        // the pattern that matches objects o sucj that self.==(o)
-
+        // the pattern that matches objects o such that self == o
     }
 
     type Pattern = Object & interface {
