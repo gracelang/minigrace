@@ -64,16 +64,16 @@ trait open {
         || (other: Predicate0 | Boolean) → Boolean
         // returns true when either self or other (or both) are true
 
-        ifTrue (action:Function0⟦T⟧) → Done
+        ifTrue (action:Function0⟦T⟧) → Done forall T
         // if self is true, executes action
-        ifFalse (action:Function0⟦T⟧) → Done
+        ifFalse (action:Function0⟦T⟧) → Done forall T
         // if self is false, executes action
 
-        ifTrue(trueAction:Function0⟦T⟧) ifFalse(falseAction:Function0⟦F⟧) → T | F
+        ifTrue(trueAction:Function0⟦T⟧) ifFalse(falseAction:Function0⟦F⟧) → T | F forall T, F
         // if self is true, executes trueAction; otherewise, executes falseAction.
         // Answers the result of the action that was executed
 
-        ifFalse(falseAction:Function0⟦F⟧) ifTrue(trueAction:Function0⟦T⟧) → T | F
+        ifFalse(falseAction:Function0⟦F⟧) ifTrue(trueAction:Function0⟦T⟧) → T | F forall T, F
         // if self is false, executes falseAction; otherewise, executes trueAction.
         // Answers the result of the action that was executed
 
