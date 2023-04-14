@@ -530,7 +530,7 @@ method compiletypedec(o) in (obj) {
     if (rhs.isInterface) then { rhs.name := tName }
     def typeMethod = ast.methodDec(
             [ast.signaturePart(o.nameString) params [].setScope(s)],
-            typeFunBody (rhs) named (tName), ast.unknownLiteral).setScope(s)
+            typeFunBody (rhs) named (tName), ast.unknownLiteral, []).setScope(s)
             // Why do we make the type Unknown, rather than Type?  Because the
             // latter will compile a check that the return value is indeed a type,
             // which causes a circularity when trying to import collections. The
@@ -1365,7 +1365,7 @@ method compileimport(o) {
     out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", {formatModname(o.path)});")
     initializedVars.add(nm)
     def part = ast.signaturePart(o.nameString) params [].setScope(currentScope)
-    def accessor = ast.methodDec([part], [o.value], o.dtype).setScope(currentScope)
+    def accessor = ast.methodDec([part], [o.value], o.dtype, []).setScope(currentScope)
     accessor.line := o.line
     accessor.column := o.column
     accessor.annotations.addAll(o.annotations)

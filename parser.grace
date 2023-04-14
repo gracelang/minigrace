@@ -2633,7 +2633,8 @@ method methodHeader {
     def startToken = sym
     def part = ast.signaturePart(startToken.value) params (list [])
     next
-    def result = ast.methodDec( list [ part ], list [], false)
+    def universals = list []
+    def result = ast.methodDec( list [ part ], list [], false, universals)
     if ((startToken.value == "[") && {sym.isRSquare}) then {
         errormessages.syntaxError("methods named '[]' and '[]:=' are no longer part of Grace.")
             atRange(lastToken.line, lastToken.column, sym.column)
@@ -2709,6 +2710,24 @@ method methodHeader {
                   atRange(sym.line, sym.column, sym.endCol)
         }
         result.dtype := values.pop
+    }
+    if (acceptKeyword "forall") then {
+        // parse universal declaration
+        next
+        if (sym.isIdentifier.not) then {
+            errormessages.syntaxError "forall must be followed by one or more identifiers naming the universally-quantified types" atRange(sym.line, sym.column, sym.endCol)
+        }
+        universals.add(ast.universalDec(ast.identifier(sym.value, false)))
+        next
+        while {sym.isComma} do {
+            next
+            if (sym.isIdentifier.not) then {
+                errormessages.syntaxError ("a comma in a list of universally-quantified types must be followed by the name of another type")
+                    atRange (sym.line, sym.column, sym.endCol)
+            }
+            universals.add(ast.universalDec(ast.identifier(sym.value, false)))
+            next
+        }
     }
     result
 }
@@ -2902,8 +2921,8 @@ method methodSignature {
     }
     def firstTok = sym
     def m = methodHeader
-    var rt := m.dtype
-    ast.methodSignature(m.signatureParts, rt).setPositionFrom(firstTok)
+    ast.methodSignature(m.signatureParts, m.dtype, m.universalTypeDecls).
+            setPositionFrom(firstTok)
 }
 
 method checkForSeparatorInInterface {

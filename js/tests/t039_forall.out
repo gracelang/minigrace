@@ -1,0 +1,110 @@
+1:1-32:1 module
+  0:0 dialect
+      Path: standard
+  Name: standardInput
+  1:1-32:1 typedec
+    1:6-12 identifierBinding‹Boolean›
+    Value:1:16-32:1 interfaceliteral
+      Types:
+      Methods:
+        3:4-17 methodtype
+          Name: not
+          Returns: 3:11-17 identifier‹Boolean›
+          Signature Parts:
+            3:4-6 signaturepart: not
+        4:4-22 methodtype
+          Name: prefix!
+          Returns: 4:16-22 identifier‹Boolean›
+          Signature Parts:
+            4:4-10 signaturepart: prefix!
+        7:4-46 methodtype
+          Name: &&(1)
+          Returns: 7:40-46 identifier‹Boolean›
+          Signature Parts:
+            7:4-35 signaturepart: &&
+              Parameters:
+                7:8-12 identifierBinding‹other›
+                    Type: 7:15-34 op ‹|(1)›
+                      Receiver: 7:15-24 identifier‹Predicate0›
+                      Arg: 7:28-34 identifier‹Boolean›
+        10:4-46 methodtype
+          Name: ||(1)
+          Returns: 10:40-46 identifier‹Boolean›
+          Signature Parts:
+            10:4-35 signaturepart: ||
+              Parameters:
+                10:8-12 identifierBinding‹other›
+                    Type: 10:15-34 op ‹|(1)›
+                      Receiver: 10:15-24 identifier‹Predicate0›
+                      Arg: 10:28-34 identifier‹Boolean›
+        13:4-42 methodtype
+          Name: ifTrue(1)
+          Returns: 13:35-42 op ‹|(1)›
+              Receiver: 13:35 identifier‹T›
+              Arg: 13:39-42 identifier‹Done›
+          forall identifier ‹T› (13:51)
+          Signature Parts:
+            13:4-31 signaturepart: ifTrue
+              Parameters:
+                13:12-17 identifierBinding‹action›
+                    Type: 13:31-30 typeapp(13:19-27 identifier‹Function0›)⟦13:29 identifier‹T›⟧
+        16:4-43 methodtype
+          Name: ifFalse(1)
+          Returns: 16:36-43 op ‹|(1)›
+              Receiver: 16:36 identifier‹F›
+              Arg: 16:40-43 identifier‹Done›
+          forall identifier ‹F› (16:52)
+          Signature Parts:
+            16:4-32 signaturepart: ifFalse
+              Parameters:
+                16:13-18 identifierBinding‹action›
+                    Type: 16:32-31 typeapp(16:20-28 identifier‹Function0›)⟦16:30 identifier‹F›⟧
+        19:4-76 methodtype
+          Name: ifTrue(1)ifFalse(1)
+          Returns: 19:72-76 op ‹|(1)›
+              Receiver: 19:72 identifier‹T›
+              Arg: 19:76 identifier‹F›
+          forall identifier ‹T› (19:85)
+          forall identifier ‹F› (19:88)
+          Signature Parts:
+            19:4-34 signaturepart: ifTrue
+              Parameters:
+                19:11-20 identifierBinding‹trueAction›
+                    Type: 19:34-33 typeapp(19:22-30 identifier‹Function0›)⟦19:32 identifier‹T›⟧
+            19:43-68 signaturepart: ifFalse
+              Parameters:
+                19:44-54 identifierBinding‹falseAction›
+                    Type: 19:68-67 typeapp(19:56-64 identifier‹Function0›)⟦19:66 identifier‹F›⟧
+        23:4-76 methodtype
+          Name: ifFalse(1)ifTrue(1)
+          Returns: 23:72-76 op ‹|(1)›
+              Receiver: 23:72 identifier‹T›
+              Arg: 23:76 identifier‹F›
+          forall identifier ‹T› (23:85)
+          forall identifier ‹F› (23:88)
+          Signature Parts:
+            23:4-36 signaturepart: ifFalse
+              Parameters:
+                23:12-22 identifierBinding‹falseAction›
+                    Type: 23:36-35 typeapp(23:24-32 identifier‹Function0›)⟦23:34 identifier‹F›⟧
+            23:44-68 signaturepart: ifTrue
+              Parameters:
+                23:45-54 identifierBinding‹trueAction›
+                    Type: 23:68-67 typeapp(23:56-64 identifier‹Function0›)⟦23:66 identifier‹T›⟧
+        27:4-20 methodtype
+          Name: asString
+          Returns: 27:15-20 identifier‹String›
+          Signature Parts:
+            27:4-11 signaturepart: asString
+        28:4-26 methodtype
+          Name: asDebugString
+          Returns: 28:20-26 unknown
+          Signature Parts:
+            28:4-16 signaturepart: asDebugString
+        30:4-16 methodtype
+          Name: hash
+          Returns: 30:11-16 identifier‹Number›
+          Signature Parts:
+            30:4-7 signaturepart: hash
+
+

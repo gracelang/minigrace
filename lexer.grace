@@ -14,6 +14,7 @@ def keywords = set
     , "def"
     , "dialect"
     , "exclude"
+    , "forall"
     , "import"
     , "inherit"
     , "interface"

@@ -818,16 +818,18 @@ class matchCase (matchee', cases', elsecase') {
     }
 }
 
-class methodSignature (parts', dtype') {
+class methodSignature (parts', dtype', universals) {
     // Represents a method signature in a type literal, or in an inheritance modifier.
     // parts' is a sequence of signaturePart objects, which
     // contain the parts of this method's name and the parameter lists;
     // dtype' is the return type of this method, or false if not specified.
+    // universals is a sequence of declarations of universally-quantified types.
 
     inherit baseNode
     method kind { "methodtype" }
     var signatureParts is public := parts'
     var dtype is public := dtype'
+    var universalTypeDecls is public := universals
     var cachedIdentifier := uninitialized
     var isBindingOccurrence is readable := true
             // the only exceptions are the oldMethodName in an alias clause,
@@ -956,6 +958,9 @@ class methodSignature (parts', dtype') {
     method accept(visitor : AstVisitor) from(ac) {
         if (visitor.visitMethodSignature(self) up(ac)) then {
             def newChain = ac.extend(self)
+            for (universalTypeDecls) do { decl ->
+                decl.accept(visitor) from(newChain)
+            }
             for (signatureParts) do { part ->
                 part.accept(visitor) from(newChain)
             }
@@ -967,6 +972,7 @@ class methodSignature (parts', dtype') {
     method map(blk) ancestors(ac) {
         var n := shallowCopy
         def newChain = ac.extend(n)
+        n.universalTypeDecls := listMap(universalTypeDecls, blk) ancestors(newChain)
         n.dtype := maybeMap(dtype, blk) ancestors(newChain)
         n.signatureParts := listMap(signatureParts, blk) ancestors(newChain)
         blk.apply(n, ac)
@@ -977,6 +983,9 @@ class methodSignature (parts', dtype') {
         s := "{s}\n{spc}Name: {nameString}"
         if (false != dtype) then {
             s := "{s}\n{spc}Returns: {dtype.pretty(depth + 2)}"
+        }
+        for (universalTypeDecls) do { decl ->
+            s := "{s}\n{spc}forall {decl.name}"
         }
         s := "{s}\n{spc}Signature Parts:"
         for (signatureParts) do { part ->
@@ -990,10 +999,15 @@ class methodSignature (parts', dtype') {
         if (false != dtype) then {
             s := "{s} → {dtype.toGrace(depth + 1)}"
         }
+        if (universalTypeDecls.isEmpty.not) then {
+            s := s ++ "forall "
+            universalTypeDecls.do { decl -> s := "{s}{decl.name}" }
+                                separatedBy { s := "{s}, "}
+        }
         s
     }
     method shallowCopy {
-        methodSignature(signatureParts, dtype).shallowCopyFieldsFrom(self)
+        methodSignature(signatureParts, dtype, universalTypeDecls).shallowCopyFieldsFrom(self)
     }
 }
 class interfaceLiteral (methods', types') {
@@ -1195,12 +1209,64 @@ class typeDec (name', typeValue) {
     method attributeScope { constantScope.typeScope }
 }
 
-class methodDec (signature', body', dtype') {
+class universalDec (name') {
+    // the "forall T" clause in a method signature that declares T as universally-quantified
+    inherit typeDec (name', false)
+    method kind { "forall type" }
+    method childrenDo(anAction:Procedure1) {
+        name.do(anAction)
+    }
+    method childrenMap(f:Function1) {
+        name.map(f)
+    }
+    method end -> Position { name.end }
+    method isLegalInTrait { true }
+    method isTypeDec { true }
+    method decType is override { typeType }
+    method scope:=(st) {
+        // sets up the 2-way conection between this node
+        // and the synmol table that defines the scope that I open.
+        symbolTable := st
+        st.node := self
+    }
+
+    method accept(visitor : AstVisitor) from(ac) {
+        if (visitor.visitUniversalDec(self) up(ac)) then {
+            def newChain = ac.extend(self)
+            name.accept(visitor) from(newChain)
+        }
+    }
+    method map(blk) ancestors(ac) {
+        var n := shallowCopy
+        def newChain = ac.extend(n)
+        n.name := name.map(blk) ancestors(newChain)
+        blk.apply(n, ac)
+    }
+    method pretty(depth) {
+        def spc = "  " * (depth+1)
+        var s := basePretty(depth) ++ "\n"
+        s := s ++ spc ++ self.name.pretty(depth + 1) ++ "\n"
+        if (false != comments) then {
+            s := s ++ comments.pretty(depth + 1)
+        }
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        "forall type {name}"
+    }
+    method shallowCopy {
+        universalDec(name).shallowCopyFieldsFrom(self)
+    }
+}
+
+
+class methodDec (signature', body', dtype', universals) {
     // Represents a method declaration
-    // The name of the method is constructed from signature',
-    // which is a sequence of signatureParts;
-    // body is a sequence of statements and declarations.
-    // dtype is the declared return type of the method, or false.
+    // The name of the method is constructed from:
+    // signature' — sequence of signatureParts;
+    // body — a sequence of statements and declarations;
+    // dtype — the declared return type of the method, or false;
+    // universals — a sequence of declarations of universally-quantified types.
 
     inherit baseNode
         alias hasReturnType = isTyped
@@ -1218,6 +1284,7 @@ class methodDec (signature', body', dtype') {
     var annotations is public := list []
     var isFresh is public := false      // a method is 'fresh' if it answers a new object
     var isOnceMethod is public := false
+    var universalTypeDecls is public := universals
 
     method isDeclaredByParent { true }
     method nodeString { nameString }
@@ -1234,12 +1301,14 @@ class methodDec (signature', body', dtype') {
         signatureParts.anySatisfy{ each -> each.isTyped }
     }
     method childrenDo(anAction:Procedure1) {
+        universals.do(anAction)
         signatureParts.do(anAction)
         decType.do(anAction)
         body.do(anAction)
     }
     method childrenMap(f:Function1) {
         def result = list.empty
+        universals.map(f) >> result
         signatureParts.map(f) >> result
         decType.map(f) >> result
         body.map(f) >> result
@@ -1432,6 +1501,9 @@ class methodDec (signature', body', dtype') {
         if (visitor.visitMethodDec(self) up(ac)) then {
             def newChain = ac.extend(self)
             asIdentifier.accept(visitor) from(newChain)
+            for (universalTypeDecls) do { decl ->
+                decl.accept(visitor) from(newChain)
+            }
             for (self.signatureParts) do { part ->
                 part.accept(visitor) from(newChain)
             }
@@ -1449,6 +1521,7 @@ class methodDec (signature', body', dtype') {
     method map(blk) ancestors(ac){
         var n := shallowCopy
         def newChain = ac.extend(n)
+        n.universalTypeDecls := listMap(universalTypeDecls, blk) ancestors(newChain)
         n.signatureParts := listMap(signatureParts, blk) ancestors(newChain)
         n.body := listMap(body, blk) ancestors(newChain)
         n.annotations := listMap(annotations, blk) ancestors(newChain)
@@ -1467,6 +1540,9 @@ class methodDec (signature', body', dtype') {
         if (isBindingOccurrence.not) then { s := s ++ spc ++ "Applied\n" }
         if (isFresh) then { s := s ++ spc ++ "Fresh\n" }
         s := "{s}{spc}Signature:"
+        for (universalTypeDecls) do { decl ->
+            s := "{s}\n{spc}forall {decl.name}"
+        }
         for (signatureParts) do { part ->
             s := "{s}\n  {spc}Part: {part.name}"
             if (part.hasTypeParams) then {
@@ -1507,7 +1583,12 @@ class methodDec (signature', body', dtype') {
         if (false != self.dtype) then {
             s := s ++ " -> {self.dtype.toGrace(0)}"
         }
-        if (self.annotations.size > 0) then {
+        if (universalTypeDecls.isEmpty.not) then {
+            s := s ++ "forall "
+            universalTypeDecls.do { decl -> s := "{s}{decl.name}" }
+                                separatedBy { s := "{s}, "}
+        }
+        if (self.annotations.isEmpty.not) then {
             s := s ++ " is "
             s := s ++ self.annotations.fold{ a,b ->
                 if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0)
@@ -1526,7 +1607,7 @@ class methodDec (signature', body', dtype') {
         s
     }
     method shallowCopy {
-        methodDec(signatureParts, body, dtype).shallowCopyFieldsFrom(self)
+        methodDec(signatureParts, body, dtype, universalTypeDecls).shallowCopyFieldsFrom(self)
     }
     method postCopy(other) {
         isFresh := other.isFresh
@@ -3129,6 +3210,7 @@ class defDec (name', val, dtype') {
 
     method attributeScope { value.attributeScope }
 }
+
 class varDec (name', val, dtype') {
     inherit declaration(name', val, dtype')
 
@@ -3943,6 +4025,7 @@ type AstVisitor = interface {
     visitInterfaceLiteral(o) up(ac) -> Boolean
     visitTypeParameters(o) up(ac) -> Boolean
     visitTypeDec(o) up(ac) -> Boolean
+    visitUniversalDec(o) up(ac) -> Boolean
     visitUnknown(o) up(ac) -> Boolean
     visitMethodDec(o) up(ac) -> Boolean
     visitRequest(o) up(ac) -> Boolean
@@ -3978,6 +4061,7 @@ trait upConversion {
     method visitMethodSignature(o) up(ac) { visitMethodSignature(o) }
     method visitSignaturePart(o) up(ac) { visitSignaturePart(o) }
     method visitTypeDec(o) up(ac) { visitTypeDec(o) }
+    method visitUniversalDec(o) up(ac) { visitUniversalDec(o) }
     method visitUnknown(o) up(ac) { visitUnknown(o) }
     method visitInterfaceLiteral(o) up(ac) { visitInterfaceLiteral(o) }
     method visitTypeParameters(o) up(ac) { visitTypeParameters(o) }
@@ -4013,6 +4097,7 @@ trait upConversion {
     method visitMethodSignature(o) is required
     method visitSignaturePart(o) is required
     method visitTypeDec(o) is required
+    method visitUniversalDec(o) is required
     method visitUnknown(o) is required
     method visitInterfaceLiteral(o) is required
     method visitTypeParameters(o) is required
@@ -4052,6 +4137,7 @@ class baseVisitor -> AstVisitor {
     method visitMethodSignature(o) -> Boolean { true }
     method visitSignaturePart(o) -> Boolean { true }
     method visitTypeDec(o) -> Boolean { true }
+    method visitUniversalDec(o) -> Boolean { true }
     method visitUnknown(o) -> Boolean { true }
     method visitInterfaceLiteral(o) -> Boolean { true }
     method visitTypeParameters(o) -> Boolean { true }
@@ -4097,6 +4183,7 @@ class pluggableVisitor(visitation:Predicate2⟦AstNode, Object⟧) -> AstVisitor
     method visitMethodSignature(o) up(ac) { visitation.apply (o, ac) }
     method visitSignaturePart(o) up(ac) { visitation.apply (o, ac) }
     method visitTypeDec(o) up(ac) { visitation.apply (o, ac) }
+    method visitUniversalDec(o) up(ac) { visitation.apply (o, ac) }
     method visitUnknown(o) up(ac) { visitation.apply (o, ac) }
     method visitInterfaceLiteral(o) up(ac) { visitation.apply (o, ac) }
     method visitMethodDec(o) up(ac) { visitation.apply (o, ac) }
@@ -4137,6 +4224,7 @@ type Visitor = interface {  // the new ast visitor
     newVisitMethodSignature(aNode) -> Object
     newVisitInterfaceLiteral(aNode) -> Object
     newVisitTypeDec(aNode) -> Object
+    newVisitUniversalDec(aNode) -> Object
     newVisitUnknown(aNode) -> Object
     newvisitMethodDec(aNode) -> Object
     newVisitRequest(aNode) -> Object
@@ -4261,7 +4349,10 @@ class rootVisitor {
         newVisitRoot(aNode)
     }
     method newVisitDeclaration(aNode) -> Done {
-         newVisitRoot(aNode)
+        newVisitRoot(aNode)
+    }
+    method newVisitUniversalDec(aNode) -> Done {
+        newVisitRoot(aNode)
     }
     method newVisitImport(aNode) -> Done {
         newVisitRoot(aNode)

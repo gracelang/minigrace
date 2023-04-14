@@ -85,7 +85,7 @@ method methFooBarNode {
     def sig = list []
     sig.add(ast.signaturePart "foo" params [a])
     sig.add(ast.signaturePart "bar" params [b])
-    def result = ast.methodDec(sig, [], ast.unknownLiteral)
+    def result = ast.methodDec(sig, [], ast.unknownLiteral, [])
     result.setStart(line 3 column 5).
         setScope(scope.methodScope.in(scope.emptyScope))
     result
@@ -93,7 +93,7 @@ method methFooBarNode {
 
 method magicMethNode {
     def sig = [ ast.signaturePart(scope.magicKey) params [] ]
-    def result = ast.methodDec(sig, [], ast.unknownLiteral)
+    def result = ast.methodDec(sig, [], ast.unknownLiteral, [])
     result.setStart(line 1 column 5).
         setScope(scope.methodScope.in(scope.emptyScope))
     result
