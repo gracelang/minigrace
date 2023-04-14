@@ -1112,6 +1112,7 @@ class typeDec (name', typeValue) {
     inherit baseNode
     method kind { "typedec" }
     var name is public := name'
+    name.bindingOccurrence
     var value is public := typeValue
     var parentKind is public := "unset"
     var annotations is public := list []

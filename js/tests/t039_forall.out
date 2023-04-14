@@ -42,7 +42,7 @@
           Returns: 13:35-42 op ‹|(1)›
               Receiver: 13:35 identifier‹T›
               Arg: 13:39-42 identifier‹Done›
-          forall identifier ‹T› (13:51)
+          forall identifier binding ‹T› (13:51)
           Signature Parts:
             13:4-31 signaturepart: ifTrue
               Parameters:
@@ -53,7 +53,7 @@
           Returns: 16:36-43 op ‹|(1)›
               Receiver: 16:36 identifier‹F›
               Arg: 16:40-43 identifier‹Done›
-          forall identifier ‹F› (16:52)
+          forall identifier binding ‹F› (16:52)
           Signature Parts:
             16:4-32 signaturepart: ifFalse
               Parameters:
@@ -64,8 +64,8 @@
           Returns: 19:72-76 op ‹|(1)›
               Receiver: 19:72 identifier‹T›
               Arg: 19:76 identifier‹F›
-          forall identifier ‹T› (19:85)
-          forall identifier ‹F› (19:88)
+          forall identifier binding ‹T› (19:85)
+          forall identifier binding ‹F› (19:88)
           Signature Parts:
             19:4-34 signaturepart: ifTrue
               Parameters:
@@ -80,8 +80,8 @@
           Returns: 23:72-76 op ‹|(1)›
               Receiver: 23:72 identifier‹T›
               Arg: 23:76 identifier‹F›
-          forall identifier ‹T› (23:85)
-          forall identifier ‹F› (23:88)
+          forall identifier binding ‹T› (23:85)
+          forall identifier binding ‹F› (23:88)
           Signature Parts:
             23:4-36 signaturepart: ifFalse
               Parameters:
