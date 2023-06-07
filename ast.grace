@@ -1000,8 +1000,8 @@ class methodSignature (parts', dtype', universals) {
             s := "{s} → {dtype.toGrace(depth + 1)}"
         }
         if (universalTypeDecls.isEmpty.not) then {
-            s := s ++ "forall "
-            universalTypeDecls.do { decl -> s := "{s}{decl.name}" }
+            s := s ++ " forall "
+            universalTypeDecls.do { decl -> s := "{s}{decl.toGrace(depth)}" }
                                 separatedBy { s := "{s}, "}
         }
         s
@@ -1253,7 +1253,7 @@ class universalDec (name') {
         s
     }
     method toGrace(depth : Number) -> String {
-        "forall type {name}"
+        name.value
     }
     method shallowCopy {
         universalDec(name).shallowCopyFieldsFrom(self)
@@ -1585,8 +1585,8 @@ class methodDec (signature', body', dtype', universals) {
             s := s ++ " -> {self.dtype.toGrace(0)}"
         }
         if (universalTypeDecls.isEmpty.not) then {
-            s := s ++ "forall "
-            universalTypeDecls.do { decl -> s := "{s}{decl.name}" }
+            s := s ++ " forall "
+            universalTypeDecls.do { decl -> s := "{s}{decl.toGrace(depth)}" }
                                 separatedBy { s := "{s}, "}
         }
         if (self.annotations.isEmpty.not) then {
