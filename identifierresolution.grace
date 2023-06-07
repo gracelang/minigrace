@@ -475,7 +475,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             true
         }
-        method visitVarDec(o) up (anc) {
+        method visitVarDec (o) up (anc) {
             def myParent = anc.parent
             def s = myParent.scope
             o.scope := s
@@ -487,6 +487,13 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 }
             }
             true
+        }
+        method visitUniversalDec (o) up (anc) {
+            def myParent = anc.parent
+            def s = myParent.scope      // the scope of the method parameters
+            o.scope := s
+            o.parentKind := myParent.kind   // methodDec or methodtype (for a signature)
+            true        // hope that visitIdentifier creates the variable
         }
         method visitIdentifier (o) up (anc) {
             var scope := anc.parent.scope

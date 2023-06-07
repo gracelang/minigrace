@@ -1279,6 +1279,16 @@ class variableTypeParameterFrom (node) {
     def tagString = "tpar"
 
 }
+class universalVariableFrom(node) {
+    // I describe a "forall" type variable in a method signature
+    inherit variableTypeParameterFrom(node)
+    method isParameter { false }
+    method asString {
+        "forall " ++ name
+    }
+    method kind { "forall type" }
+    def tagString = "forall"
+}
 class varVariableFrom (node) {
     inherit abstractVariableFrom (node)
     // I describe the variable defined in a var declaration.
@@ -1509,6 +1519,7 @@ method variable(tag) from(node) {
     } case {"(par)" -> parameterVariableFrom (node)
     } case {"(type)" -> typeVariableFrom (node)
     } case {"(tpar)" -> variableTypeParameterFrom (node)
+    } case {"(forall)" -> universalVariableFrom (node)
     } case {"(var)" -> varVariableFrom (node)
     } case {"(req)" -> requiredMethodVariableFrom (node)
     } case {"(ctrl)" -> variableSpecialControlStructureFrom (node) withName (node.nameString)
@@ -1516,8 +1527,8 @@ method variable(tag) from(node) {
 }
 
 // nameDictionaries are a dictionaries with special logic for finding the names of
-// Grace's "special" control structures, such as if–then–elseif.
-// These names are found in any dictionary that contains the magicKey.
+// Grace's "special" control structures, such as if–then–elseif and match-case
+// These names are found in any nameDictionary that contains the magicKey.
 
 def ctrlStructureRegEx is public = regEx.fromString (
     ‹^((if\(1\)then\(1\)(elseif\(1\)then\(1\))*(else\(1\))?)$|› ++

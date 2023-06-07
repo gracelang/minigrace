@@ -1220,6 +1220,7 @@ class universalDec (name') {
     method childrenMap(f:Function1) {
         name.map(f)
     }
+    method createVariableFor(id) { sm.universalVariableFrom(self) }
     method end -> Position { name.end }
     method isLegalInTrait { true }
     method isTypeDec { true }
