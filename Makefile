@@ -42,6 +42,7 @@ WEBFILES_DYNAMIC = $(sort $(ALL_LIBRARY_MODULES:%.grace=%.js) $(filter-out util.
 WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/gtk.js js/debugger.js js/ace  js/debugger.html js/unicodedata.js $(ICONS:%=js/%) $(ALL_LIBRARY_MODULES:%.grace=j2/%.js) $(filter-out j2/util.js, $(MGSOURCEFILES:%.grace=j2/%.js))))
 WEBFILES_SIMPLE = $(filter-out js-simple/sample,$(sort js-simple/index.html js-simple/global.css js-simple/tests js-simple/minigrace.js js-simple/tabs-simple.js js-simple/gracelib.js js-simple/gtk.js js-simple/debugger.js js-simple/ace  js-simple/debugger.html  js-simple/unicodedata.js $(ICONS:%=js-simple/%) $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js, $(MGSOURCEFILES:%.grace=%.js))))
 WEB_GRAPHICS_MODULES = modules/turtle.grace modules/logo.grace
+WEB_REPO?=gracelang
 
 # The next few rules are here for their side effects: updating
 # buildinfo.grace if necessary, and creating directories.
@@ -347,17 +348,17 @@ oldWeb: $(WEBFILES) js/ace/ace.js js/ace/mode-grace.js
 pull-web-editor:
 	@$(OFFLINE) || if [ -e grace-web-editor ] ; \
        then printf "grace-web-editor: " ; cd grace-web-editor; git pull ; \
-       else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi
+       else git clone --branch pdx https://github.com/$(WEB_REPO)/grace-web-editor/ ; fi
 
 pull-objectdraw:
 	@$(OFFLINE) || if [ -e objectdraw ] ; \
        then printf "objectdraw: " ; cd objectdraw; git pull ; git checkout bundled ; \
-       else git clone --branch bundled https://github.com/gracelang/objectdraw/ ; fi
+       else git clone --branch bundled https://github.com/$(WEB_REPO)/objectdraw/ ; fi
 
 pull-brace: pull-web-editor
 	@$(OFFLINE) || if [ -e grace-web-editor/brace ] ; \
        then printf "grace-web-editor/brace: " ; cd grace-web-editor/brace; git pull ; \
-       else git clone https://github.com/gracelang/brace/ grace-web-editor/brace ; fi
+       else git clone https://github.com/$(WEB_REPO)/brace/ grace-web-editor/brace ; fi
 
 sample-dialects: $(DIALECT_DEPENDENCIES)
 	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
