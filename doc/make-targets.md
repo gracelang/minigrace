@@ -18,7 +18,12 @@ Builds everything necessary to use the minigrace compiler with the JS-backend.
 Installs a complete set of files into the directory tree rooted at `PREFIX`.  
 `PREFIX` is typically set to something like
 `/usr/local` in the environment or on the make command line.  Files are written 
-to `$(PREFIX)/bin`, `$(PREFIX)/include`, `$(PREFIX)/lib/grace/modules`, and `$(PREFIX)/lib/grace`.
+to 
+
+    $(PREFIX)/bin
+    $(PREFIX)/include
+    $(PREFIX)/lib/grace/modules, and 
+    $(PREFIX)/lib/grace
 
 ### self.test
 
