@@ -1,27 +1,42 @@
-A compiler for the Grace language.
+Minigrace: A Compiler for the Grace language
+============================================
 
-Minigrace compiles Grace to C and JavaScript. The compiler is written in
-Grace itself. It supports most of the specified language to date: for
-details on current language feature support see <doc/errata>.
+Minigrace compiles Grace to JavaScript. The compiler is written in
+Grace itself. It supports most of the specified language.  The current
+language specification is on github at gracelang/language, or at
+http://web.cecs.pdx.edu/~grace/doc/.
+
+Details on how the language supported by _minigrace_ differs from the spec are in
+<doc/errata>.
 
 Minigrace should work on POSIX-compliant systems, and is known to work
-on Linux, NetBSD, and Mac OS X. It requires a properly-configured GCC on
-the path, which may require installing development tools.
+on Linux, NetBSD, and MacOS. It requires a working installation of node.js and npm.
+If you don't hav ethese already, the best way to get them is to first install
+`npm`, the node package manager, from https://github.com/npm-sh/npm
 
-Tarball distributions should compile with just `./configure && make`.
+A "stable" verison of minigrace can be installed with `npm install minigrace`.
+The bootstrapping process works by installing this stable compiler locally, and
+then using it to compile the curent development compiler. This compiler is then
+used to compile itself.
 
-The Git repository is able to bootstrap itself with `make` on some
-systems, but it is recommended first to bootstrap from a tarball by
-running `tools/tarball-bootstrap -a`. More detailed build instructions
-are in <doc/build>.
+After boostrapping, the compiled javascript files will be in the j2/ directory.
+The script j2/minigrace-js will run the compiler; try j2/minigrace-js --help.
 
-After building there will be a `minigrace` executable in the root. This
-executable supports a few different modes and options, described in
-<doc/usage>. The simplest usage is just:
-  ./minigrace file.grace
-which will compile file.grace to an executable and then run it.
+    j2/minigrace-js --version
 
-The Minigrace documentation is listed in the <doc/index> file.
+will report the version number and the sha of the git repository from which the
+compiler was built.  The simplest usage is just:
+
+    j2/minigrace-js file.grace
+
+which will compile file.grace to Javascript and then run it.   Usually, running
+a Grace program will require some library modules, such as the _standard_ module,
+or the definition of the dialect that you are using. _Minigrace_ searches for
+libraries in the directory of the source file, in the current directory, and in
+directories along the environment variable GRACE_MODULE_PATH (which should be a
+list of directories separated by colons).
+
+Minigrace's documentation files are listed in the <doc/index> file.
 
 Licensing
 ---------

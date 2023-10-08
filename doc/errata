@@ -1,25 +1,21 @@
-Minigrace supports most of the specified dynamically-typed language, and
-a static structural type-checker. It does not yet support:
-- Overriding the if-then-else construct: only the built-in construct may
-  begin with "if()". for()do and while()do can be used as any ordinary
-  method.
+Minigrace supports most of the specified language.  It does nto yet include
+a static type-checker. It also does not support:
+
+- Overriding the if-then-else construct: only the built-in `if` construct may
+  begin with "if(_)". In contrast, `for(_)do(_)` and `while(_)do(_)` are
+  ordinary methods.
 
 Some functionality is incomplete:
-- Runtime type checks use only method names and not any other type
-  information. This applies both to pattern-matching and to gradual
-  checks at method boundaries.
+- Runtime type checks are "single level": they check the methods available on
+  arguments, but do not recursively check the types of the argumenst and results.
+  This restriction applies to pattern-matching and to gradual checks at method
+  boundaries.
 - Numeric literals in non-decimal bases may only be integral.
 - Interpolated code inside string literals may not contain a right brace
   in any context.
-- Visibility annotations are checked only dynamically, not statically
-- Types are checked dynamically, but constraints on tyype parameters are
+- Visibility annotations are checked dynamically, but not statically
+- Types are checked dynamically, but constraints on type parameters are
   not checked.
-
-The compiler also supports the following extensions used internally,
-which are not part of the language and are subject to change:
-
-- Methods defined in the prelude can always be accessed through the
-  implicitly-bound "prelude" object.
 
 
 Certain environment variables affect the behaviour of running Grace

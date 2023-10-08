@@ -7,25 +7,29 @@ Minigrace uses the Git version control system (<http://git-scm.com>). To
 have your changes incorporated upstream you should work against the
 latest master branch of <https://github.com/gracelang/minigrace.git>.
 
-To build the compiler including your changes, follow the standard
-instructions in <doc/build>. These will cause the build system to
-rebuild the compiler with itself multiple times to ensure that it is
-functional.
+To set up your build environment, you should fork the gracelang/minigrace
+repository, and then clone it onto your development machine in a convenient
+location.
+
+To build the compiler including your changes, follow the instructions in
+<doc/build>. (Sort version: type `make test` or `make alltest`.)
+Either of these will rebuild the compiler with itself multiple times to
+ensure that it is functional.
 
 If you are using the JavaScript backend in a web browser, you will probably find that
 you need to perform a hard reload (commonly shift-reload) in your
-browser to cause it to pick up the new versions of files. If your
-modifications are only to js/gracelib.js you do not need to `make minigrace`
-after changes, but editing any .grace or .in.html always requires
-rebuilding. To run the compiler in the browser, the browser
-_must_ be accessed over HTTP;  browsers will not
+browser to cause it to pick up the new versions of files. Editing any .grace
+or .in.html always requires rebuilding. To run the compiler in your web browser,
+the Grace environment _must_ be accessed over HTTP; browsers will not
 permit loading from file://.
 
 Configuring Git
 ---------------
 Git should be configured with your name and email address. Use
+
     git config --global user.name "Your Name"
     git config --global user.email "you@example.com"
+
 to set these before making any commits.
 
 Additional documentation for Git can be found on the Git website:
@@ -44,7 +48,7 @@ the subject.  More information can be added after a blank line.
 
 Unrelated changes should be in separate commits.
 
-When have a completed, discrete, change to the compiler that you
+When you have a completed, discrete, change to the compiler that you
 want to integrate in your own branch, ensure that this branch is
 fast-forward from the upstream master (that is, the tip of upstream
 master is a direct ancestor of the tip of the branch to be merged). You
@@ -58,9 +62,8 @@ ensure that the tests succeed in the web interface as well.
 
 Submitting changes
 ------------------
-To submit changes for inclusion, publish the branch containing them
-somewhere publicly accessible (such as in your own repository on github)
-and make a pull request to gracelang/minigrace for
+To submit changes for inclusion, publish the branch in your own repository
+on github, and make a pull request to gracelang/minigrace for
 the branch you want to merge, stating what it is you want to integrate.
 
 Revising changes

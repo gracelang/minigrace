@@ -700,16 +700,14 @@ method compileFreshMethod(o, outerRef) {
     // and one to initialize it.  The build method will also implement
     // the statements in the body of this method that preceed the final
     // (result) expression.
-    // The final (result) expression of method o may be of three kinds:
+    // The final (result) expression of method o may be of two kinds:
     //   (1) an object constructor,
-    //   (2) a request on another fresh method (which will return its init function),
-    //   (3) a request of a clone or a copy (which returns a null init function).
-    //   TODO: eliminate case 3
+    //   (2) a request on another fresh method (which will return its init function).
 
     def resultExpr = o.resultExpression
     if (resultExpr.isObject) then {     // case (1)
         compileBuildMethodFor(o) withObjCon (resultExpr) inside (outerRef)
-    } else {                            // cases (2) and (3)
+    } else {                            // case (2)
         compileBuildMethodFor(o) withFreshCall (resultExpr) inside (outerRef)
     }
     return "GraceDone"

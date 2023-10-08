@@ -16,7 +16,9 @@ The Minigrace distribution includes some additional modules that may be
 useful in user code. They are briefly described here.
 
 ## WARNING
-The documentation here is probably out of date.  To see the interface currently provided by these modules, look at the corresponding interface definition in _stubs/moduleName.grace_
+The documentation here is probably out of date.  To see the interface currently
+provided by these modules, look at the corresponding interface definition in
+_modules/moduleName.grace_
 
 stringMap
 ---------
@@ -25,34 +27,24 @@ the keys are strings.  It exists for two reasons: it has an interface
 that is largely backward-compatable with the now-defunct *mgcollections* module,
 and it has an accelerated implementation in JavaScript.
 
-mirrors
--------
-The mirrors module supports reflection on Grace objects. The module supports one method: 
+mirror
+------
+The mirror module supports reflection on Grace objects. The module defines types
+`Mirror` and `MethodMirror`, and classes
 
     reflect(o : Object)
     
-which returns a `Mirror` on the object `o`.
+which returns a `Mirror` on the object `o`, and
 
-`Mirror`s support two methods: 
+    methodMirror(theSubject, aMethodName)
 
-    methods // returns a list of MirrorMethods representing the methods of the subject. 
-    getMethod(n) // returns a MirrorMethod for the method named n.
+which answers a `MethodMirror` on theSubject's method with name `aMethodName`.
+For flexibility, we allow aMethodName to be canonical or numeric.
 
-MirrorMethods support four methods: name returns the name of the method,
-partcount the number of parts (words) in the name, and paramcounts a
-list of parameter counts in each part. The request method takes a list
-of lists as argument, where the elements of the top-level list are lists
-of the arguments to provide each part of the name.
-
-A sample use might be:
-  import "mirrors" as m
-  m.reflect(1).getMethod("+").request([[2]]) == 3
-
-This module is available with both the native and JavaScript compiler.
 
 unicode
 -------
-The unicode module supports accessing the Unicode Character Database.
+The unicode module supports access to the Unicode Character Database.
 The module may be built either dynamically or statically, but is dynamic
 on platforms that support it.
 
@@ -75,7 +67,8 @@ These all return or test the corresponding Unicode property, or in the
 case of create return a String consisting of the character with the
 given codepoint.
 
-This module is available with both the native and JavaScript compiler.
+This module is available with the JavaScript compiler, but some of the methods are
+not implemented.
 
 curl
 ----
@@ -128,7 +121,7 @@ A sample use might be:
   }
   req.perform
 
-This module is only available in the native compiler, on architectures
+This module was available only in the C compilre, on architectures
 that support dynamic modules.
 
 math

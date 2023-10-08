@@ -85,12 +85,15 @@ inheritance chain is compiled away, and need not be searched at runtime.
 
 ## Inheriting from "special" methods
 
-prelude.clone is treated as a fresh method, as are true and false.   They have
-hand-built `$build(3)` variants in the standard library, which are called by the
+Inheriting from `prelude`, and from `true` and `false`, have been eliminated.
+This happened somewhere around commit c7d08170669fa3697fc5a1493610075818bc5919
+(18–23 November 2019).   Prior to that date, prelude.clone was treated as a fresh
+method, as were true and false.   They had
+hand-built `$build(3)` variants in the standard library, which were called by the
 compiled code just like the generated `$build(3)` variants for other fresh methods.
-Thus, from the persepctive of code-generation, they don't really need to be
-"special".  However, the .gct mechanism does not yet classify them as fresh, so
-these are still special cases in identifierresolution.
+Thus, from the persepctive of code-generation, they didn't really need to be
+"special".  However, the .gct mechanism does not classify them as fresh, so
+these were still special cases in identifierresolution.
 
 
 

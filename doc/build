@@ -1,5 +1,5 @@
 Minigrace should compile on any POSIX-compatible system with node.js
-veriosn 5 or greater.
+version 10 or greater.
 
 First clone the git repository, and then execute
 
@@ -35,13 +35,13 @@ three times, then it is correct.  This theorem is of course false, but
 compiling three times does give one some confidence that _the features 
 of minigrace exercised by he minigrace compiler_ are being compiled
 correctly.  (It does nothing at all for the features of minigrace not
-exercised by the compiler, such as minigraces's behaviour when given 
+exercised by the compiler, such as minigrace's behaviour when given
 non-programs, or dialects).
 
 The subdirectory js-kg comptains old but working javascript versions
 of the minigrace compiler. The version identified by
 the NPM_STABLE_VERSION variable in the makefile is used to compile the
-compiler.  The output of this compilation is stired in the j1
+compiler.  The output of this compilation is stored in the j1
 subdirectory.
 
 If this is successful, then the j1/minigrace-js compiler is used to
@@ -79,7 +79,8 @@ its libraries into the location you specified in the PREFIX
 environment variable, or /usr if PREFIX is not set. If $PREFIX/bin
 is on your path after this you will be able to run `mgc` from anywhere.
 
-Once a js executable has been generated, mgc will normally run it once.
+Once a js executable for your Grace prohgram has been generated, mgc will
+normally run your program once.
 If you want to run it again without recompiling, the command
 
     grace compiledFile.js
@@ -89,12 +90,12 @@ will do so.  There is also a script
     grace-debug
 
 that can be used to run a compiled file under the Javascript debugger
-in Chrome.  This requires that node-inspector be installed.  At present
-there is no debugger for minigrace.
+in Chrome.  This requires that node-inspector be installed, and that Chrome
+is your default web browser.  At present there is no debugger for minigrace.
 
 Platform notes
 --------------
-Most development has taken place on Mac OS X.  minigrace has
+Most development has taken place on MacOS X.  minigrace has
 also been successfully built on Linux.  I don't know if it will
 work on Cygwin; if you can test it, and provide necessary corrections,
 please do so and submit a pull request.
