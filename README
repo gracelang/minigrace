@@ -6,6 +6,10 @@ Grace itself. It supports most of the specified language.  The current
 language specification is on github at gracelang/language, or at
 http://web.cecs.pdx.edu/~grace/doc/.
 
+In the past, mingrace had backends that generated C, Java and LLVM, as well as
+an XML encoding of the parse tree.  These are no longer supported.  The last C
+version is on branch lastCVersion, which was abandoned on 31 March 2017.
+
 Details on how the language supported by _minigrace_ differs from the spec are in
 <doc/errata>.
 
