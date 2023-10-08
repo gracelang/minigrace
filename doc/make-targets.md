@@ -4,8 +4,9 @@
 ## The JS Builds
 
 
-This file describes the purpose of some of the top-level makefile targets.  Type `make <targetName>` to use one.
-All of these targets use the version of minigrace that compiles to JavaScipt.
+This file describes the purpose of some of the top-level makefile targets.  
+Type `make <targetName>` to use one.
+All of these targets use the version of minigrace that compiles to JavaScript.
 The C, Java and LLVM backends are no longer supported. 
 
 ### minigrace-js-env
@@ -14,8 +15,10 @@ Builds everything necessary to use the minigrace compiler with the JS-backend.
 
 ### install
 
-Installs a complete set of files into the directory tree rooted at PREFIX.  PREFIX is typically set to something like
-`/usr/local` in the environment or on the make command line.  Files are written to $(PREFIX)/bin, $(PREFIX)/include, $(PREFIX)/lib/grace/modules, and $(PREFIX)/lib/grace.
+Installs a complete set of files into the directory tree rooted at `PREFIX`.  
+`PREFIX` is typically set to something like
+`/usr/local` in the environment or on the make command line.  Files are written 
+to `$(PREFIX)/bin`, `$(PREFIX)/include`, `$(PREFIX)/lib/grace/modules`, and `$(PREFIX)/lib/grace`.
 
 ### self.test
 
@@ -37,7 +40,7 @@ These targets bootstrap minigrace starting with the JS version of the compiler.
 ### npm-get-kg
 
 Uses _npm_ to install the "known good" version of the JS compiler.
-Copies it into the js-kg/$(NPM_STABLE_VERSION) directory,
+Copies it into the `js-kg/$(NPM_STABLE_VERSION)` directory,
 so that several versions can co-exist.
 
 ### npm-build-kg
@@ -47,7 +50,7 @@ Builds a new known-good environment, as will be needed to do an npm-publish
 ### ide
 
 Builds and delpoys the generated JavaScript to a web server, whose location
-must be specified in the Makefile variable WEB_SERVER.  The default location
-is public_html/ide/; a different location can be specifed by setting the variable
-WEB_DIRECTORY.
+must be specified in the Makefile variable `WEB_SERVER`.  The default location
+is `public_html/ide/`; a different location can be specifed by setting the variable
+`WEB_DIRECTORY`.
 
