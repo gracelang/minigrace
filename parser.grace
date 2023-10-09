@@ -72,7 +72,7 @@ method next {
         nextToken
         pushComments
     } else {
-        errormessages.syntaxError("unexpectedly found the end of the input. " 
+        errormessages.syntaxError("unexpectedly found the end of the input. "
             ++ "This is often caused by a missing '\}'")
             atPosition(sym.line, sym.column)
     }
@@ -194,7 +194,7 @@ method findClosingBrace(opening, inserted) {
         if (n.isLBrace) then {
             numOpening := numOpening + 1
         } elseif { n.isRBrace } then {
-            numClosing := numClosing + 1 
+            numClosing := numClosing + 1
         }
         n := n.next
     }
@@ -1579,7 +1579,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
     // ensure the correct precedence, and treats all operators as
     // left-associative.  It is parameterised so that it
     // can be used for both type- and value- expressions.
-    
+
     def terms = list [] // stack of operands yet to be used
     def ops = list []   // Operator stack
     var o
@@ -1800,7 +1800,7 @@ method callrest(acceptBlocks) {
         genericIdents := g
     }
     foundArgs := parseArgumentsFor(meth) into (part) acceptBlocks (acceptBlocks)
-    
+
     if (foundArgs) then {
         def realRcvr = if (meth.isIdentifier) then {
             ast.implicit.setPositionFrom(meth)
@@ -2233,7 +2233,7 @@ method inheritModifier(node) {
     if (sym.isKeyword.not) then { return false }
     def symValue = sym.value
     if (symValue == "alias") then {
-        parseAlias(node) 
+        parseAlias(node)
     } elseif {symValue == "exclude"} then {
         parseExclude(node)
     } else {
@@ -2274,7 +2274,7 @@ method doobject {
 
     if (acceptKeyword "object") then {
         next
-        parseObjectConstructorBody "an object constructor" 
+        parseObjectConstructorBody "an object constructor"
             startingWith (lastToken) after "'object'"
     }
 }
@@ -2650,47 +2650,10 @@ method methodHeader {
     if (sym.isLParen) then {
         def lparen = sym
         next
-        var id
-        var comma := false
-        while {
-            sym.isIdentifier || (sym.isOp && (sym.value == "*"))
-        } do {
-            // Parse the parameter list, including optional dtype
-            // annotations.
-            if (sym.isOp) then {
-                next
-                errormessages.syntaxError("variable length parameters (parameters prefixed by '*') are no longer part of Grace.  Consider making {sym.value} a sequence.")
-                    atPosition(lastToken.line, lastToken.column)
-            }
-            pushIdentifier
-            id := values.pop
-            id.isBindingOccurrence := true
-            id.isParameter := true
-            id.dtype := optionalTypeAnnotation
-            part.params.push(id)
-            if (sym.isComma) then {
-                comma := sym
-                next
-            } elseif { sym.isRParen.not } then {
-                def suggestion = errormessages.suggestion.new
-                suggestion.insert ")" afterToken(lastToken)
-                errormessages.syntaxError("a parameter list beginning with a '(' must " ++
-                      "end with a ')'.")
-                        atPosition(lastToken.line, lastToken.column + lastToken.size)
-                        withSuggestion(suggestion)
-            }
-        }
-        if (sym.isRParen.not) then {
-            def suggestion = errormessages.suggestion.new
-            def rparen = findNextToken { t -> (t.isRParen) && (t.line == lastToken.line) }
-            if (false == rparen) then {
-                suggestion.replaceToken(lastToken)with(")")
-            } else {
-                suggestion.deleteToken(sym)
-            }
-            errormessages.syntaxError("a parameter list beginning with a '(' must end with a ')'.")atRange(
-                lastToken.line, lastToken.column, lastToken.column)withSuggestion(suggestion)
-        }
+        if (sym.isOp && (sym.value == "*")) then { errorNoVarArgs }
+        if (sym.isKeyword) then { errorUnexpectedKeyword }
+        if (sym.isIdentifier.not) then { errorMissingIdentifier }
+        parameterList(part)
         if (sym.line == part.line) then {
             part.lineLength := sym.column - part.column
         }
@@ -2730,6 +2693,46 @@ method methodHeader {
         }
     }
     result
+}
+
+method parameterList(part) {
+    // Parse the parameter list, including optional type annotations.
+    // Precondition: sym.isIdentifier
+
+    while { sym.isIdentifier } do {
+        pushIdentifier
+        def id = values.pop
+        id.isBindingOccurrence := true
+        id.isParameter := true
+        id.dtype := optionalTypeAnnotation
+        part.params.push(id)
+        if (sym.isComma) then {
+            next
+        } elseif { sym.isRParen.not } then {
+            def suggestion = errormessages.suggestion.new
+            suggestion.insert ")" afterToken(lastToken)
+            errormessages.syntaxError("a parameter list beginning with a '(' must " ++
+                    "end with a ')'.")
+                    atPosition(lastToken.line, lastToken.column + lastToken.size)
+                    withSuggestion(suggestion)
+        }
+    }
+}
+
+method errorNoVarArgs {
+    next
+    errormessages.syntaxError("variable length parameters (parameters prefixed by '*') are no longer part of Grace.  Consider making {sym.value} a sequence.")
+        atPosition(lastToken.line, lastToken.column)
+}
+
+method errorMissingIdentifier {
+    errormessages.syntaxError("a parameter list beginning with a '(' must be followed by an identifer.")
+                        atPosition(lastToken.line, lastToken.column + lastToken.size)
+}
+
+method errorUnexpectedKeyword {
+    errormessages.syntaxError "'{sym.value}' is a reserved word, and cannot be used as an identifier."
+                        atRange(sym)
 }
 
 method typeparameters {
@@ -3155,7 +3158,7 @@ method reconcileComments {
 
     pushComments
     def node = if (values.isEmpty) then {
-        moduleObject 
+        moduleObject
     } else {
         values.last
     }

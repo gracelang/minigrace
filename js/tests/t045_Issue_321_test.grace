@@ -1,0 +1,3 @@
+method variable (class) name (cannonicalName) kind (knd) {
+    ...
+}
