@@ -2018,7 +2018,7 @@ method defdec {
         def anns = doannotation
         def o = ast.defDec(name, ast.nullNode, dtype).setPositionFrom(defTok)
         if (false != anns) then { o.annotations.addAll(anns) }
-        if (sym.isOp && (sym.value == "=")) then {
+        if (sym.isOp "=") then {
             next
             if (unsuccessfulParse {expression(blocksOK)}) then {
                 errorDefNoExpression
@@ -2082,7 +2082,7 @@ method vardec {
             }
             val := values.pop
         } else {
-            if ((sym.isOp) && (sym.value == "=")) then {
+            if (sym.isOp "=") then {
                 def suggestions = list [ ]
                 var suggestion := errormessages.suggestion.new
                 suggestion.replaceToken(sym)with(":=")
@@ -2245,7 +2245,7 @@ method parseAlias(node) {
     // parse an alias modifier on an `inherit` clause; node is the inheritNode
     next    // skip the alias keyword
     def newMeth = methodSignature
-    if (sym.isOp && (sym.value == "=")) then {
+    if (sym.isOp "=") then {
         next
         def oldMeth = methodSignature.appliedOccurrence
         if (newMeth.numParams ≠ oldMeth.numParams) then {
@@ -2565,31 +2565,26 @@ method methodDecRest(tm) {
                   atPosition(sym.line, sym.column)withSuggestion(suggestion)
         }
         next
-        var comma := false
         while {
-            sym.isIdentifier || { sym.isOp && (sym.value == "*") }
+            sym.isIdentifier || { sym.isOp "*" }
         } do {
-            if (sym.isOp) then {
-                next
-                errormessages.syntaxError("variable length parameter lists (parameters prefixed by '*') are no longer part of Grace.  Consider making {sym.value} a Collection.")
-                    atPosition(lastToken.line, lastToken.column)
-            }
+            if (sym.isOp "*") then { errorNoVarArgs }
             pushIdentifier
             def nxt = values.pop
             nxt.isBindingOccurrence := true
             nxt.dtype := optionalTypeAnnotation
             part.params.push(nxt)
             if (sym.isComma) then {
-                comma := sym
                 next
+            } elseif { sym.isIdentifier } then {
+                errorMissingComma  // this exits the while(_)do(_) loop
             }
         }
         if (sym.isRParen.not) then {
-            def suggestion = errormessages.suggestion.new
-            suggestion.insert(")")afterToken(lastToken)
-            errormessages.syntaxError "a parameter list beginning with a '(' must end with a ')'"
-                  atPosition(lastToken.line, lastToken.column + lastToken.size)
-                  withSuggestion(suggestion)
+            if (sym.isKeyword) then { errorUnexpectedKeyword }
+            errormessages.syntaxError
+                    "a parameter list beginning with a '(' must end with a ')'"
+                    atRange(lastToken)
         }
         next
         signatureParts.push(part)
@@ -2708,6 +2703,8 @@ method parameterList(part) {
         part.params.push(id)
         if (sym.isComma) then {
             next
+        } elseif { sym.isIdentifier } then {
+            errorMissingComma   // this exits the while(_)do(_) loop
         } elseif { sym.isRParen.not } then {
             def suggestion = errormessages.suggestion.new
             suggestion.insert ")" afterToken(lastToken)
@@ -2721,18 +2718,27 @@ method parameterList(part) {
 
 method errorNoVarArgs {
     next
-    errormessages.syntaxError("variable length parameters (parameters prefixed by '*') are no longer part of Grace.  Consider making {sym.value} a sequence.")
+    errormessages.syntaxError
+        "variable length parameters (parameters prefixed by '*') are no longer part of Grace.  Consider making {sym.value} a sequence."
         atPosition(lastToken.line, lastToken.column)
 }
 
 method errorMissingIdentifier {
-    errormessages.syntaxError("a parameter list beginning with a '(' must be followed by an identifer.")
-                        atPosition(lastToken.line, lastToken.column + lastToken.size)
+    errormessages.syntaxError
+            "a parameter list beginning with a '(' must be followed by an identifer."
+            atPosition(lastToken.line, lastToken.column + lastToken.size)
+}
+
+method errorMissingComma {
+    errormessages.syntaxError
+            "the identifiers in a parameter list must be separated by commas"
+            atRange(lastToken.line, lastToken.endCol+1, sym.line, sym.column-1)
 }
 
 method errorUnexpectedKeyword {
-    errormessages.syntaxError "'{sym.value}' is a reserved word, and cannot be used as an identifier."
-                        atRange(sym)
+    errormessages.syntaxError
+            "'{sym.value}' is a reserved word, and cannot be used as an identifier."
+            atRange(sym)
 }
 
 method typeparameters {

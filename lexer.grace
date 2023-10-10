@@ -223,6 +223,7 @@ class token {
     method isNum { false }
     method isKeyword { false }
     method isOp { false }
+    method isOp(str) { false }
     method isArrow { false }
     method isAssignment { false }
     method isSeparator { false }
@@ -347,6 +348,7 @@ class opToken(v) {
     def value is public = v
     def size is public = v.size
     method isOp { true }
+    method isOp(str) { value == str }
 }
 class arrowToken {
     inherit token
