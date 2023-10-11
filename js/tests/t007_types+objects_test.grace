@@ -111,13 +111,13 @@ testSuite "standard types and objects" with {
         assert {1} hasType (Function0⟦Number⟧)
         assert {a → 1} hasType (Function1⟦Unknown, Number⟧)
         assert {a, b → 1} hasType (Function2⟦Unknown, Unknown, Number⟧)
-        assert {a, b, c → 1} hasType (Function3⟦Unknown, Unknown, Unknown Number⟧)
+        assert {a, b, c → 1} hasType (Function3⟦Unknown, Unknown, Unknown, Number⟧)
     }
     test "FunctionN describes blocks" by {
         assertType (Function0⟦Number⟧) describes {1}
         assertType (Function1⟦Unknown, Number⟧) describes {a → 1}
         assertType (Function2⟦Unknown, Unknown, Number⟧) describes {a, b → 1}
-        assertType (Function3⟦Unknown, Unknown, Unknown Number⟧) describes {a, b, c → 1}
+        assertType (Function3⟦Unknown, Unknown, Unknown, Number⟧) describes {a, b, c → 1}
     }
 }
 

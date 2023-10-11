@@ -9,7 +9,7 @@ use basic.open
 
 var tokens := false
 var moduleObject
-def comments = list.empty   // so we can request `removeAt`
+def comments = list []   // so we can request `removeAt`
 
 var auto_count := 0
 def noBlocks = false
@@ -1382,7 +1382,7 @@ method matchcase {
             }
             next
         } else {
-            def suggestions = list.empty
+            def suggestions = list []
             def nextTok = findNextTokenIndentedAt(lastToken)
             var suggestion := errormessages.suggestion.new
             if (nextTok == false) then {
@@ -1910,28 +1910,34 @@ method typeArgs {
     // Parses one or more type arguments, if present, and returns them as a list.
 
     if (sym.isLGeneric.not) then { return [] }
-    def args = list [ ]
+    def args = list []
     def startToken = sym
     next
-    while {successfulParse{typeexpression}} do {
+    if (unsuccessfulParse{typeexpression}) then {
+        errormessages.syntaxError
+                "a '⟦' must be followed by one or more type arguments"
+                atRange(sym)
+    }
+    args.add(values.pop)
+    while {sym.isComma} do {
+        next
+        if (unsuccessfulParse{typeexpression}) then {
+            errormessages.syntaxError
+                    "a comma in a list of type arguments must be followed by another type argument"
+                    atRange(sym)
+        }
         args.add(values.pop)
-        if (sym.isComma) then { next }
     }
     if (sym.isRGeneric.not) then {
         def suggestion = errormessages.suggestion.new
         suggestion.insert "⟧" afterToken(lastToken)
-        def suggestion2 = errormessages.suggestion.new
-        suggestion2.insert " " beforeToken(startToken)
-        def suggestions = [suggestion, suggestion2]
-        errormessages.syntaxError "a type argument list containing a '⟦' must have a matching '⟧'. "
-              atPosition(lastToken.line, lastToken.column + lastToken.size)
-              withSuggestions(suggestions)
+        errormessages.syntaxError
+                "a type argument list starting with a '⟦' must have commas between the arguments, and a matching '⟧' at the end. "
+                atPosition(lastToken.line, lastToken.column + lastToken.size)
+                withSuggestion(suggestion)
     }
     if (args.isEmpty) then {
-        def suggestion = errormessages.suggestion.new
-        suggestion.insert("«type expression»")afterToken(lastToken)
-        errormessages.syntaxError "a type argument list starting with a '⟦' must end with a matching '⟧'. "
-            atPosition(lastToken.line, lastToken.column + lastToken.size) withSuggestion(suggestion)
+        basic.CompilerError.raise "type argument list is empty"
     }
     next
     return args
@@ -2745,10 +2751,12 @@ method typeparameters {
     // precondition: sym.isLGeneric
     def openBracket = sym
     next
-    def typeIds = list.empty
-    def whereConditions = list.empty
+    def typeIds = list []
+    def whereConditions = list []
     if {sym.isIdentifier.not} then {
-        errormessages.syntaxError "a '⟦' must be followed by one or more identifiers naming the type parameters" atRange(sym.line, sym.column, sym.endCol)
+        errormessages.syntaxError
+                "a '⟦' must be followed by one or more identifiers naming the type parameters"
+                atRange(sym)
     }
     pushIdentifier              // does next
     typeIds.add(values.pop.typeParameter)
@@ -2757,7 +2765,7 @@ method typeparameters {
         if { sym.isIdentifier.not } then {
             errormessages.syntaxError ("a comma in a list of type parameters must " ++
                   "be followed by the name of another type parameter")
-                  atRange (sym.line, sym.column, sym.endCol)
+                  atRange(sym)
         }
         pushIdentifier         // does next
         typeIds.push(values.pop.typeParameter)
@@ -2767,14 +2775,14 @@ method typeparameters {
         def conditionStart = sym
         if (unsuccessfulParse {expression(noBlocks)}) then {
             errormessages.syntaxError "`where` must be followed by a condition on one of the type parameters"
-                  atRange(conditionStart.line, conditionStart.column, conditionStart.endCol)
+                  atRange(conditionStart)
         }
         whereConditions.add(checkWhereCondition)
         while {sym.isComma} do {
             next
             if (unsuccessfulParse {expression(noBlocks)}) then {
                 errormessages.syntaxError "`where` must be followed by list of conditions on the type parameters"
-                      atRange(sym.line, sym.column, sym.endCol)
+                      atRange(sym)
             }
             whereConditions.add(checkWhereCondition)
         }
@@ -3174,8 +3182,8 @@ method reconcileComments {
         return
     }
     def oLine = node.line
-    def preComments = list.empty
-    def postComments = list.empty
+    def preComments = list []
+    def postComments = list []
 
     var ix := comments.size
     while { ix > 0 } do {
