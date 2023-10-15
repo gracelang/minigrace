@@ -1460,7 +1460,7 @@ GraceSequence.prototype = {
                     return new GraceNum(i+1);
             }
             return callmethod(absentBlock, "apply", [0]);
-        },                             
+        },
         "indexOf(1)": function sequence_indexOf(argcv, other, absentBlock) {
             for (var i=0; i<this._value.length; i++) {
                 var v = this._value[i];
@@ -1862,8 +1862,8 @@ function GraceTypeUnion(l, r) {
 function GraceTypeVariant(l, r) {
     return request(patternAndType(), "TypeVariant(2)", [2], l, r);
 }
-function GraceTypeSubtraction(l, r) {
-    return request(patternAndType(), "TypeSubtraction(2)", [2], l, r);
+function GraceTypeExclusion(l, r) {
+    return request(patternAndType(), "TypeExclusion(2)", [2], l, r);
 }
 function type_setName (argcv, nu) {
     if (nu.className !== "string") nu = request(nu, "asString", [0]);
@@ -1916,7 +1916,7 @@ GraceType.prototype = {
             return new GraceTypeUnion(this, other);
         },
         "-(1)": function type_and(argcv, other) {
-            return new GraceTypeSubtraction(this, other);
+            return new GraceTypeExclusion(this, other);
         },
         "asString": function type_asString (argcv) {
             return new GraceString("type " + this.name);
