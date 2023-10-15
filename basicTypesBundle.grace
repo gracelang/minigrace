@@ -13,9 +13,9 @@ trait open {
         matches (value:Object) → Boolean
         & (other:Type) → Type    // answers the join (Self & other)
         | (other:Type) → Type    // answers the variant type (Self | other)
-        :> (other:Type) → Boolean     // other conforms to self
-        <: (other:Type) → Boolean     // self conforms to other
-        :=: (other:Type) → Boolean    // (self <: other) && (other :> self)
+ //       :> (other:Type) → Boolean     // other conforms to self       ToDo: implement this!
+ //       <: (other:Type) → Boolean     // self conforms to other       ToDo: implement this!
+ //       :=: (other:Type) → Boolean    // (self <: other) && (other :> self)       ToDo: implement this!
         == (other:Type) → Boolean     // object identity
         ≠ (other:Type) → Boolean     // object non-identity
         hash → Number
@@ -83,9 +83,6 @@ trait open {
 
         hash → Number
         // the hash of this boolean; true.hash ≠ false.hash
-
-        prefix == → Pattern
-        // the pattern that matches objects o such that self == o
     }
 
     type Pattern = Object & interface {
@@ -106,7 +103,7 @@ trait open {
         ==(other:Object) → Boolean
         ≠(other:Object) → Boolean
         hash → Number
-        prefix == → Pattern
+//      prefix == → Pattern         // ToDo: implement this!
     }
 
     type ExceptionKind = EqualityObject & Pattern & interface {
