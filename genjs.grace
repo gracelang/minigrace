@@ -1439,6 +1439,8 @@ method compilenode(o) {
         compilemethodnode(o) in "this"
     } elseif { oKind == "typeapp" } then {
         o.register := compilenode(o.value)
+    } elseif { oKind == "unknown" } then {
+        compileUnknown(o)
     } else {
         noteLineNumber(o.line)comment "compilenode {oKind}"
         // no point in setting the line number for the above kinds
@@ -1490,8 +1492,6 @@ method compilenode(o) {
             compiledialect(o)
         } elseif { oKind == "import" } then {
             compileimport(o)
-        } elseif { oKind == "unknown" } then {
-            compileUnknown(o)
         } elseif { oKind == "selftype" } then {
             compileSelfType(o)
         } elseif {o.isNull} then {
