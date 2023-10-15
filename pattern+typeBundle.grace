@@ -56,7 +56,6 @@ trait open {
 
         method &(o) { TypeIntersection(self, o)  }
         method |(o) { TypeVariant(self, o) }
-        method +(o) { TypeUnion(self, o) }
         method -(o) { TypeSubtraction(self, o) }
         method prefix ¬ { NotPattern(self) }
         method asString { "type {self.name}" }
@@ -86,6 +85,17 @@ trait open {
         }
         method isNone { false }
         method isType { true }
+        method methodNames {
+            native "js" code ‹
+                let jsResult = [];
+                for (let i=0; i<this.typeMethods.length; i++) {
+                    const methName = this.typeMethods[i];
+                    jsResult.push(canonicalMethodName(methName));
+                }
+                return new GraceSequence(jsResult.sort().map(
+                    nm => new GraceString(nm)));
+            ›
+        }
     }
 
     method merge(cs, ds) {
@@ -174,37 +184,6 @@ trait open {
         method asString {
             if (self.name == "‹anon›") then {
                 "({t1} | {t2})"
-            } else {
-                "type {self.name}"
-            }
-        }
-    }
-
-    method TypeUnion (t1, t2) {
-        if (t2.isType.not) then { return t2 + t1 }   // double-dispatch to Pattern t2
-        if (t1.isNone) then {return t2}
-        if (t2.isNone) then {return t1}
-        PlusType(t1, t2)
-    }
-    class PlusType(t1, t2)  {
-        use BaseType
-        var name is readable := "‹anon›"
-        method methodNames {
-            ((coll.set(t1.methodNames) ** coll.set(t2.methodNames))
-                >> coll.list).sort
-        }
-        method matchHook(o) {
-            def oMethodNames = mirror.reflect(o).methodNames >> coll.set
-            self.methodNames.do { each ->
-                if (! oMethodNames.contains(each)) then {
-                    return false
-                }
-            }
-            return true
-        }
-        method asString {
-            if (self.name == "‹anon›") then {
-                "({t1} + {t2})"
             } else {
                 "type {self.name}"
             }

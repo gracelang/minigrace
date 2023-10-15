@@ -40,7 +40,7 @@ type MixPart = interface {
     parameters -> List⟦Param⟧
 }
 
-// create a mixPart from name and list of parameters 
+// create a mixPart from name and list of parameters
 class mixPartNamed (name': String)
         parameters (parameters': List⟦Param⟧) -> MixPart {
     def name: String is public = name'
@@ -373,7 +373,7 @@ def objectType = object {
                 return if (false ≠ lit.value) then {
                     object {
 //                        inherit oType | fromDType (union.last)
-                        inherit PlusType(oType, fromDType (union.last))
+                        inherit BarType(oType, fromDType (union.last))
                         def asString: String is public, override = lit.value
                     }
                 } else {
