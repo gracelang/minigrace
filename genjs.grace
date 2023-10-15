@@ -561,7 +561,7 @@ method compiletypeliteral(o) in (obj) {
     if (o.methods.anySatisfy { each -> each.kind == "ellipsis" }) then {
         out "Object.defineProperty({reg}, 'typeMethods', \{ get: ellipsisFun \});"
     } else {
-        out "{reg}.typeMethods = {stringList(o.methods.map { meth -> meth.nameString })};"
+        out "{reg}.typeMethods = {stringList(o.methods.map { meth -> meth.nameString }.sorted)};"
     }
     o.register := reg
     reg
