@@ -56,7 +56,7 @@ trait open {
 
         method &(o) { TypeIntersection(self, o)  }
         method |(o) { TypeVariant(self, o) }
-        method -(o) { TypeSubtraction(self, o) }
+        method -(o) { TypeExclusion(self, o) }
         method prefix ¬ { NotPattern(self) }
         method asString { "type {self.name}" }
         method setName(nu) is confidential {
@@ -190,7 +190,7 @@ trait open {
         }
     }
 
-    class TypeSubtraction (t1, t2) {
+    class TypeExclusion (t1, t2) {
         use BaseType
         var name is readable := "‹anon›"
         method methodNames {
