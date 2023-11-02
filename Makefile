@@ -348,12 +348,12 @@ oldWeb: $(WEBFILES) js/ace/ace.js js/ace/mode-grace.js
 pull-web-editor:
 	@$(OFFLINE) || if [ -e grace-web-editor ] ; \
        then printf "grace-web-editor: " ; cd grace-web-editor; git pull ; \
-       else git clone --branch pdx https://github.com/$(WEB_REPO)/grace-web-editor/ ; fi
+       else git clone --branch master https://github.com/$(WEB_REPO)/grace-web-editor/ ; fi
 
 pull-objectdraw:
 	@$(OFFLINE) || if [ -e objectdraw ] ; \
-       then printf "objectdraw: " ; cd objectdraw; git pull ; git checkout bundled ; \
-       else git clone --branch bundled https://github.com/$(WEB_REPO)/objectdraw/ ; fi
+       then printf "objectdraw: " ; cd objectdraw; git pull ; git checkout master ; \
+       else git clone --branch master https://github.com/$(WEB_REPO)/objectdraw/ ; fi
 
 pull-brace: pull-web-editor
 	@$(OFFLINE) || if [ -e grace-web-editor/brace ] ; \
