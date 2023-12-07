@@ -5,48 +5,42 @@ trait open {
 
     type None = intrinsic.NoneType  // the interface type with all possile methods
 
-    type Type⟦T⟧ = Object & interface {
+    type Type = Object & interface {
         // a type is a disjunction of interfaces
         name → String           // the name of this type
         typeParameterNames → Sequence⟦String⟧
         isNone → Boolean        // true for the type None, otherwise false
         matches (value:Object) → Boolean
-        & (other:Type) → Type⟦?⟧   // ansers the join (Self & other)
-        | (other:Type) → Type⟦?⟧   // answers the variant type (Self | other)
-        + (other:Type)          // answers the meet of Self and other (do we need this?)
-        - (other:Type)          // answers the type that is like Self
-                                // but excludes the methods of other
-        :> (other:Type) → Boolean       // other conforms to self
-        <: (other:Type) → Boolean       // self conforms to other
-        :=: (other:Type) → Boolean      // (self <: other) && (other :> self)
-        == (other:Type) → Boolean       // object identity
-        ≠ (other:Type) → Boolean        // object non-identity
+        & (other:Type) → Type    // answers the join (Self & other)
+        | (other:Type) → Type    // answers the variant type (Self | other)
+        :> (other:Type) → Boolean     // other conforms to self
+        <: (other:Type) → Boolean     // self conforms to other
+        :=: (other:Type) → Boolean    // (self <: other) && (other :> self)
+        == (other:Type) → Boolean     // object identity
+        ≠ (other:Type) → Boolean     // object non-identity
         hash → Number
-        interfaces → Sequence⟦Interface⟦?⟧⟧
-        subject → Type⟦T⟧               // the parameter T
+        interfaces → Sequence⟦Interface⟧
         isType → Boolean        // answers true (and false for other patterns)
     }
 
-    type Interface⟦T⟧ = Type⟦T⟧ & interface {
+    type Interface = Type & interface {
         // An interface is also a type: the type with self as its sole interface.
         // Hence, its `interfaces` method must answer [ self ]
-        methods → Dictionary⟦String, Signature⟧
-            // keys are the canonical names of the methods,
-            // and values their signatures
-        methodNames → Sequence⟦String⟧  // sorted sequence of Self's methods.keys
+        methodNames → Sequence⟦String⟧  // sorted sequence of the canonical
+                                       // names of the methods in this interface
+        methodAt(canonicalName:String) → Signature
+            // argument is the canonical name of a method; answers its signature
         - (other:Interface) → Interface     // the interface that is like self,
-            // but with a methods dictionary whose keys exclude other.methods.keys
+            // but excluding other.methodNames
     }
 
     type Signature = interface {
         name → String
             // the canonical name of the method
         typeParameterNames → Sequence⟦String⟧
-        parameterNames → Sequence⟦String⟧
-        parameterTypes → Sequence⟦Type⟦?⟧⟧
-            // the types of the parameters, in order
-        result → Type⟦?⟧
-            // the type of the result
+        parameterNames → Sequence⟦String⟧  // the names of the parameters, in order
+        parameterTypes → Sequence⟦Type⟧    // the types of the parameters, in order
+        result → Type                     // the type of the result
     }
 
     type Object = interface {
@@ -60,7 +54,6 @@ trait open {
     }
 
     type Boolean =  EqualityObject & interface {
-
         not → Boolean
         prefix ! → Boolean
         // the negation of self
@@ -71,17 +64,16 @@ trait open {
         || (other: Predicate0 | Boolean) → Boolean
         // returns true when either self or other (or both) are true
 
-        ifTrue (action:Function0⟦Unknown⟧) → Unknown
-        // if self is true, executes action and returns its result
+        ifTrue (action:Function0⟦T⟧) → Done | T forall T
+        // if self is true, executes action
+        ifFalse (action:Function0⟦T⟧) → Done | T forall T
+        // if self is false, executes action
 
-        ifFalse (action:Function0⟦Unknown⟧) → Unknown
-        // if self is false, executes action and returns its result
-
-        ifTrue(trueAction:Function0⟦Unknown⟧) ifFalse(falseAction:Function0⟦Unknown⟧) → Unknown
+        ifTrue(trueAction:Function0⟦T⟧) ifFalse(falseAction:Function0⟦F⟧) → T | F forall T, F
         // if self is true, executes trueAction; otherewise, executes falseAction.
         // Answers the result of the action that was executed
 
-        ifFalse(falseAction:Function0⟦Unknown⟧) ifTrue(trueAction:Function0⟦Unknown⟧) → Unknown
+        ifFalse(falseAction:Function0⟦F⟧) ifTrue(trueAction:Function0⟦T⟧) → T | F forall T, F
         // if self is false, executes falseAction; otherewise, executes trueAction.
         // Answers the result of the action that was executed
 
@@ -91,9 +83,6 @@ trait open {
 
         hash → Number
         // the hash of this boolean; true.hash ≠ false.hash
-
-        prefix == → Pattern
-        // the pattern that matches objects o sucj that self.==(o)
 
     }
 
@@ -105,7 +94,7 @@ trait open {
         isType → Boolean
     }
 
-    type Binding⟦K,T⟧ = EqualityObject & interface {
+    type Binding⟦K,T where K <* EqualityObject⟧ = EqualityObject & interface {
         key → K
         value → T
     }
@@ -116,6 +105,9 @@ trait open {
         ≠(other:Object) → Boolean
         hash → Number
         prefix == → Pattern
+        // the pattern that matches objects o such that self == o
+        prefix ¬ → Pattern
+        // the pattern that matches objects o such that self ≠ o
     }
 
     type ExceptionKind = EqualityObject & Pattern & interface {
