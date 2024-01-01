@@ -22,7 +22,7 @@ native "js" code ‹
     function wrapDOMField(o, obj, k) {
         o.methods[k + ":=(1)"] = function(argcv, val) {
             obj[k] = wrapGraceObject(val);
-            return var_done;
+            return GraceDone;
         };
         return function() {
             return wrapDOMObject(obj[k]);
