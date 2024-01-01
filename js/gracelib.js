@@ -731,8 +731,11 @@ GraceString.prototype = {
         "&(1)": function string_andPattern (argcv, o) {
             return graceAndPattern(this, o);
         },
-        "prefix¬": function(argcv) {
-            return graceNotPattern(this);
+        "prefix≠": function(argcv) {
+            return new GracePredicatePattern(arg => arg !== this._value);
+        },
+        "prefix==": function(argcv) {
+            return new GracePredicatePattern(arg => arg === this._value);
         },
         "startsWithSpace": function string_startsWithSpace (argcv) {
             var s = this._value.charCodeAt(0);
@@ -1038,6 +1041,12 @@ GraceNum.prototype = {
         "prefix≥": function(argcv) {
             return new GracePredicatePattern(arg => arg >= this._value);
         },
+        "prefix==": function(argcv) {
+            return new GracePredicatePattern(arg => arg === this._value);
+        },
+        "prefix≠": function(argcv) {
+            return new GracePredicatePattern(arg => arg !== this._value);
+        },
         "asString": function(argcv) {
             var num = this._value;
             if (num === Infinity)
@@ -1062,10 +1071,6 @@ GraceNum.prototype = {
             return new GraceString(num.toFixed(d));
         },
         "==(1)": value_equals,
-        "≠(1)": function(argcv, other) {
-            var t = callmethod(this, "==(1)", [1], other);
-            return callmethod(t, "not", [0]);
-        },
         "hash": num_hash,
         "inBase(1)": function(argcv, other) {
             var mine = this._value;
@@ -1144,18 +1149,6 @@ GraceNum.prototype = {
         "sqrt": function(argcv) {
             return new GraceNum(Math.sqrt(this._value));
         },
-        "matches(1)": function(argcv, o) {
-            return callmethod(this, "==(1)", [1], o);
-        },
-        "|(1)": function(argcv, o) {
-            return graceOrPattern(this, o);
-        },
-        "&(1)": function(argcv, o) {
-            return graceAndPattern(this, o);
-        },
-        "prefix¬": function(argcv) {
-            return graceNotPattern(this);
-        },
         "isType": function(argcv) {
             return GraceFalse;
         }
@@ -1174,7 +1167,6 @@ GracePredicatePattern.prototype = {
     methods: {
         "isMe(1)":          object_isMe,
         "myIdentityHash":   object_identityHash,
-        "≠(1)":             object_notEquals,
         "basicAsString":    object_basicAsString,
         "debug$Iterator":   object_debugIterator,
         "::(1)":            object_colonColon,
@@ -1210,6 +1202,45 @@ GracePredicatePattern.prototype = {
     definitionModule: "built-in library",
     definitionLine: 0,
     classUid: "predicatePattern-built-in"
+};
+function GraceCurriedMethodPattern(obj, methName) {
+    this._subject = obj;
+    this._methName = methName;
+}
+
+GraceCurriedMethodPattern.prototype = {
+    methods: {
+        "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
+        "basicAsString":    object_basicAsString,
+        "debug$Iterator":   object_debugIterator,
+        "asString": function(argcv) {
+            return new GraceString("a curried method pattern");
+        },
+        "asDebugString": function(argcv) {
+            return new GraceString("a curried method pattern for " +
+                this._methName + " on " + safeJsString(this._subject));
+        },
+        "matches(1)": function matches (argcv, o) {
+            return request(this._subject, this._methName, o);
+        },
+        "|(1)": function predicate_orPattern(argcv, o) {
+            return graceOrPattern(this, o);
+        },
+        "&(1)": function predicate_andPattern (argcv, o) {
+            return graceAndPattern(this, o);
+        },
+        "prefix¬": function predicate_notPattern (argcv) {
+            return graceNotPattern(this);
+        },
+        "isType": function type_isType (argcv) {
+            return GraceFalse;
+        }
+    },
+    className: "curriedMethodPattern",
+    definitionModule: "built-in library",
+    definitionLine: 0,
+    classUid: "curriedMethodPattern-built-in"
 }
 
 var GraceTrue;
@@ -1245,14 +1276,11 @@ var GraceFalse;
             "prefix!": function(argcv) {
                 return this.negated;
             },
-            "&(1)": function(argcv, other) {
-                return graceAndPattern(this, other);
+            "prefix≠": function(argcv) {
+                return new GraceCurriedMethodPattern(this, "≠(1)");
             },
-            "|(1)": function(argcv, other) {
-                return graceOrPattern(this, other);
-            },
-            "prefix¬": function(argcv) {
-                return graceNotPattern(this);
+            "prefix==": function(argcv) {
+                return new GraceCurriedMethodPattern(this, "==(1)");
             },
             "&&(1)": function(argcv, other) {
                 if (!this._value)
@@ -1283,9 +1311,6 @@ var GraceFalse;
                 if (! it) return GraceFalse;
                 const otherBool = it.call(other, [1], jsTrueBlock, jsFalseBlock);
                 return (this._value === otherBool) ? GraceTrue : GraceFalse;
-            },
-            "matches(1)": function(argcv, o) {
-                return this.methods["==(1)"].call(this, [1], o);
             },
             "hash": function(argcv) {
                 return new GraceNum(this._value ? 3637 : 1741);
@@ -1520,8 +1545,11 @@ GraceSequence.prototype = {
             return selfRequest(collections,
                         "isEqual(1)toCollection(1)", [1, 1], this, other);
         },
-        "matches(1)": function(argcv, other) {
-            return selfRequest(this, "==(1)", [1], other)
+        "prefix≠": function(argcv) {
+            return new GraceCurriedMethodPattern(this, "≠(1)");
+        },
+        "prefix==": function(argcv) {
+            return new GraceCurriedMethodPattern(this, "==(1)");
         },
         "hash": function(argcv) {
             var result = 0x5E0EACE;     // sort of like SEQENCE
@@ -1725,10 +1753,6 @@ GracePrimitiveArray.prototype = {
                 return GraceTrue;
             return GraceFalse;
         },
-        "≠(1)": function(argcv, other) {
-            var t = callmethod(this, "==(1)", [1], other);
-            return callmethod(t, "not", [0]);
-        },
         "iterator": function(argcv) {
             return new GraceIterator(this);
         },
@@ -1909,9 +1933,6 @@ GraceType.prototype = {
         },
         "prefix¬": function(argcv) {
             return graceNotPattern(this);
-        },
-        "+(1)": function type_and(argcv, other) {
-            return new GraceTypeUnion(this, other);
         },
         "-(1)": function type_and(argcv, other) {
             return new GraceTypeSubtraction(this, other);

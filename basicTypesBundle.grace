@@ -106,7 +106,7 @@ trait open {
         hash → Number
         prefix == → Pattern
         // the pattern that matches objects o such that self == o
-        prefix ¬ → Pattern
+        prefix ≠ → Pattern
         // the pattern that matches objects o such that self ≠ o
     }
 
@@ -186,7 +186,7 @@ trait open {
     type Predicate3⟦ArgT1, ArgT2, ArgT3⟧ = Function3⟦ArgT1, ArgT2, ArgT3, Boolean⟧
         // Function with 3 arguments of types ArgT1, ArgT2, and ArgT3, returning Boolean
 
-    type String = EqualityObject & Pattern & interface {
+    type String = EqualityObject & interface {
         reverseTimesNumber(n:Number) → String
         // answers self * n.  (Used by numbers to implement number * String)
 
@@ -428,7 +428,7 @@ trait open {
             // returns self ++ source; used for writing pipelines
     }
 
-    type Number = EqualityObject & Pattern & interface {
+    type Number = EqualityObject & interface {
         @ (other: Number) → Point
         // asnsers a point with self as the x-coordinate, and other as the y-coordinate
 

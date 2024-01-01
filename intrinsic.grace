@@ -31,7 +31,7 @@ def NoneType = object {
 trait annotations {
     // these _can_ be declared in Grace, but we don't want to repeat the
     // definitions in many files
-    
+
     method annotation is annotation
     method required is annotation
     method abstract is annotation
@@ -170,4 +170,9 @@ method hashCombine(a, b) {
         var aHash = a * 1664525;
         var bHash = (b * 1664525 - 0xA21FE89) * 3;
         result = new GraceNum((aHash * 2) ^ bHash);›
+}
+
+method curriedMethodPattern(subject, methName) {
+    native "js" code ‹
+        return new GraceCurriedMethodPattern(var_subject, var_methName._value);›
 }

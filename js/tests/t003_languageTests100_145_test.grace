@@ -45,9 +45,9 @@ type Pair = interface {
 }
 method t118_tryMatch(o) {
     match(o)
-        case { 1 -> "ONE" }
-        case { "hello" -> "HELLO" }
-        case { x : String & ¬ "hello" -> "STRING '{x}'" }
+        case { ==1 -> "ONE" }
+        case { =="hello" -> "HELLO" }
+        case { x : String & ≠ "hello" -> "STRING '{x}'" }
         case { _ : > 1 -> "NUMBER" }
 }
 var t120_theBlock
@@ -63,17 +63,17 @@ method t120_bar(n) {
     }
     "{t120_bar(n - 1)}{n}"
 }
-def t123_a = 1
+def t123_onePattern = ==1
 method t123_tryMatch(x) {
     match(x)
         case { y : String -> out "STRING" }
-        case { (t123_a) -> out "ONE" }
+        case { (t123_onePattern) -> out "ONE" }
         case { y : > t123_a -> out "FALLTHROUGH {y}" }
 }
 method t124_tryMatch(x) {
     match(x)
         case { y : String -> out "STRING" }
-        case { 2 -> out "TWO" }
+        case { ==2 -> out "TWO" }
         else { out "FALLTHROUGH {x}" }
 }
 method t129_foo(x : interface { bar -> String }) {
@@ -145,11 +145,11 @@ def aGraceLangTest = object {
 
         method test_100_squarebracket {
             def aString = "test"
-            
+
             out(aString.at(1))
             out(aString.at(2))
             out(aString.at(3).size)
-            
+
             assert(str)shouldBe("t\ne\n1\n")
         }
 
@@ -181,12 +181,12 @@ def aGraceLangTest = object {
                         bbbaz
                     }
                 }
-                
+
                 var b := cc "ARGUMENT"
                 b.foo
                 b.bar
                 b.baz
-            
+
                 assert(str)shouldBe("A's foo: ARGUMENT\nB's bar\nC's baz invokes...\nB's baz invokes...\nA's baz\n")
             }
         }
@@ -217,28 +217,28 @@ def aGraceLangTest = object {
                     out "world"
                 }
             }
-            
+
             def ab = b.new
             ab.test
             ab.test2
-            
+
             assert(str)shouldBe("Hello\nworld\n")
         }
-        
+
         class a_103 {
             method foo { "world" }
         }
-        
+
         class b_103 {
             inherit a_103
             method bar { "hello {foo}" }
         }
-        
+
         class c_103 {
             inherit b_103
             method quux { "X " ++ bar }
         }
-        
+
         class d_103 {
             inherit c_103
             method foo is override { "Nyssa" }
@@ -275,7 +275,7 @@ def aGraceLangTest = object {
             }
             assert(str)shouldBe("3\n3\n3\n")
         }
-        
+
 
         method test_105_classstatement {
             object {
@@ -285,17 +285,17 @@ def aGraceLangTest = object {
                         out(y)
                     }
                 }
-                
+
                 x(5)
-                
-                
+
+
                 assert(str)shouldBe("5\n5\n")
             }
         }
 
         method test_107_downcall {
             object {
-            
+
                 class aa {
                   method a {
                     b
@@ -304,30 +304,30 @@ def aGraceLangTest = object {
                     out("A")
                   }
                 }
-                
+
                 class bb {
                   inherit aa
                   method b {
                     out("B")
                   }
                 }
-                
+
                 bb.a
-                
+
                 assert(str)shouldBe("B\n")
             }
         }
 
         method test_108_classouter {
-            
+
             def A = object {
                 class new {
                     method b { t108_a }
                 }
             }
-            
+
             A.new.b
-            
+
             assert(str)shouldBe("out\n")
         }
 
@@ -339,7 +339,7 @@ def aGraceLangTest = object {
             out(8x2322)
             out(25x1o9)
             out(36xya)
-            
+
             assert(str)shouldBe("1234\n1234\n1234\n1234\n1234\n1234\n1234\n")
         }
 
@@ -351,12 +351,12 @@ def aGraceLangTest = object {
                     }
                 }
             }
-            
+
             def myCat = aCat.named "Timothy"
             def yourCat = aCat.named "Gregory"
             myCat.describe
             yourCat.describe
-            
+
             assert(str)shouldBe("A cat called Timothy\nA cat called Gregory\n")
         }
 
@@ -370,13 +370,13 @@ def aGraceLangTest = object {
                         out "{name} is a {colour} cat"
                     }
                 }
-                
+
                 def myCat = named "Timothy" coloured ("black")
                 def yourCat = named "Gregory" coloured ("tortoiseshell")
-                
+
                 myCat.describe
                 yourCat.describe
-                
+
                 assert(str)shouldBe("Timothy is a black cat\nGregory is a tortoiseshell cat\n")
             }
         }
@@ -404,12 +404,12 @@ def aGraceLangTest = object {
             } else {
                 out "OK"
             }
-            
+
             assert(str)shouldBe("OK\nOK\n")
         }
 
         method test_116_builtintypematch {
-            
+
             t116_tryMatch(String, "hello")
             t116_tryMatch(String, "hello" ++ "world")
             t116_tryNoMatch(String, 1)
@@ -417,51 +417,51 @@ def aGraceLangTest = object {
             t116_tryNoMatch(Number, "hello")
             t116_tryMatch(Boolean, true)
             t116_tryNoMatch(Boolean, 1)
-            
+
             assert(str)shouldBe("OK\nOK\nOK\nOK\nOK\nOK\nOK\n")
         }
 
-        method test_117_literalmatch {
-            
-            t117_tryMatch(1,1)
-            t117_tryNoMatch(1,2)
-            t117_tryMatch("test", "test")
-            t117_tryNoMatch("test", "wrong")
-            t117_tryMatch(true, true)
-            t117_tryNoMatch(true, false)
-            t117_tryNoMatch(1, true)
-            t117_tryNoMatch("test", true)
-            t117_tryNoMatch(true, 2)
-            
+        method test_117_equalityMatch {
+
+            t117_tryMatch(==1,1)
+            t117_tryNoMatch(==1,2)
+            t117_tryMatch(=="test", "test")
+            t117_tryNoMatch(=="test", "wrong")
+            t117_tryMatch(==true, true)
+            t117_tryNoMatch(==true, false)
+            t117_tryNoMatch(==1, true)
+            t117_tryNoMatch(=="test", true)
+            t117_tryNoMatch(==true, 2)
+
             assert(str)shouldBe("OK\nOK\nOK\nOK\nOK\nOK\nOK\nOK\nOK\n")
         }
 
         method test_118_matchcasesimple {
-            
+
             out(t118_tryMatch 1)
             out(t118_tryMatch 2)
             out(t118_tryMatch "hello")
             out(t118_tryMatch "world")
-            
+
             assert(str)shouldBe("ONE\nNUMBER\nHELLO\nSTRING 'world'\n")
         }
 
-        method test_120_nonlocalrecurse {            
-            out(t120_bar(5))    
+        method test_120_nonlocalrecurse {
+            out(t120_bar(5))
             assert(str)shouldBe("YE5\n")
         }
 
-        method test_123_matchingblockparen {      
+        method test_123_matchingblockparen {
             t123_tryMatch 2
             t123_tryMatch 1
-            
+
             assert(str)shouldBe("FALLTHROUGH 2\nONE\n")
         }
 
-        method test_124_matchingbare {        
+        method test_124_matchingbare {
             t124_tryMatch 2
             t124_tryMatch 1
-            
+
             assert(str)shouldBe("TWO\nFALLTHROUGH 1\n")
         }
 
@@ -472,7 +472,7 @@ def aGraceLangTest = object {
             t129_foo(y)
             assert (str) shouldBe "OK\n"
         }
-        
+
         method test_129_anontypeFail {
             def y = object {
                 def bar = "OK\n"
@@ -483,7 +483,7 @@ def aGraceLangTest = object {
         type A = interface {
             bar -> String
         }
-        
+
         type B = A & interface {
             quux -> Number
         }
@@ -491,7 +491,7 @@ def aGraceLangTest = object {
             def t131_context = object {
                 method btaker(b : B) {
                     out "{b.bar}{b.quux}"
-                }   
+                }
             }
             def t131_barAndQuux = object {
                 def bar is readable = "YE"
@@ -500,12 +500,12 @@ def aGraceLangTest = object {
             t131_context.btaker(t131_barAndQuux)
             assert (str) shouldBe "YE5\n"
         }
-        
+
         method test_131_anonintersectionFail {
             def t131_context = object {
                 method btaker(b : B) {
                     out "{b.bar}{b.quux}"
-                }   
+                }
             }
             def t131_noMethods = object {
                 def bar = "YE"
@@ -514,25 +514,25 @@ def aGraceLangTest = object {
             assert {t131_context.btaker(t131_noMethods)} shouldRaise(NoSuchMethod)
             // because object does not have right methods
         }
-        
+
         method test_132_matchpatternop {
             match ("success")
                 case { "fail" -> out "FAIL" }
                 case { "true" | "success" -> out "SUCCESS" }
                 else { out "FAIL 2" }
-            
+
             assert(str)shouldBe("SUCCESS\n")
         }
 
         method test_133_exceptions {
-            
+
             try {
                 var x := 1
                 x.nonExistentMethod
             } catch {
                 e: ProgrammingError -> assert (e.exception) shouldBe (NoSuchMethod)
             }
-            
+
             try {
                 ProgrammingError.raise "OK"
             } catch {
@@ -543,20 +543,20 @@ def aGraceLangTest = object {
         }
 
         method test_134_exceptionrefine {
-            
+
             def MyException = Exception.refine "MyException"
             out "OK; Refined an exception."
-            
+
             try {
                 MyException.raise "OK"
             } catch {
                 e : MyException -> out "{e.message}; Caught a refined exception."
             }
-            
+
             def MySubException = MyException.refine "MySubException"
             def MySubException2 = MyException.refine "MySubException"
             out "OK; Refined sub-exceptions."
-            
+
             try {
                 MyException.raise "OK"
             } catch { e:MyException ->
@@ -564,12 +564,12 @@ def aGraceLangTest = object {
             } catch { e:MySubException ->
                 out "Failed; did not catch a refined exception as super-exception."
             }
-            
+
             assert(str)shouldBe("OK; Refined an exception.\nOK; Caught a refined exception.\nOK; Refined sub-exceptions.\nOK; Caught a refined exception with super-exception.\n")
         }
 
         method test_135_finally {
-            
+
             var count := 0
             try {
                 out "OK; inside main block."
@@ -582,31 +582,31 @@ def aGraceLangTest = object {
                 out "OK."
                 count := count + 2
             }
-            
+
             match (count)
-                case { 3 -> out "OK; both exception handler and finally ran." }
-                case { 2 -> out "Failed; exception handler did not run." }
-                case { 1 -> out "Failed; finally block did not run." }
-                case { 0 -> out "Failed; neither exception handler nor finally ran." }
+                case { ==3 -> out "OK; both exception handler and finally ran." }
+                case { ==2 -> out "Failed; exception handler did not run." }
+                case { ==1 -> out "Failed; finally block did not run." }
+                case { ==0 -> out "Failed; neither exception handler nor finally ran." }
                 else { out "Failed; something is very broken." }
-            
-            
+
+
             assert(str)shouldBe("OK; inside main block.\nOK.\nOK.\nOK; both exception handler and finally ran.\n")
         }
 
         method test_136_finallynonlocal {
             t136_baz
             match (t136_count)
-                case { 7 -> out "OK; all finallies ran." }
-                case { 6 -> out "Failed; inner finally did not run." }
-                case { 5 -> out "Failed; middle finally did not run." }
-                case { 4 -> out "Failed; only outer finally ran." }
-                case { 3 -> out "Failed; outer finally did not run." }
-                case { 2 -> out "Failed; only middle finally ran." }
-                case { 1 -> out "Failed; only inner finally ran." }
-                case { 0 -> out "Failed; no finally blocks ran." }
+                case { ==7 -> out "OK; all finallies ran." }
+                case { ==6 -> out "Failed; inner finally did not run." }
+                case { ==5 -> out "Failed; middle finally did not run." }
+                case { ==4 -> out "Failed; only outer finally ran." }
+                case { ==3 -> out "Failed; outer finally did not run." }
+                case { ==2 -> out "Failed; only middle finally ran." }
+                case { ==1 -> out "Failed; only inner finally ran." }
+                case { ==0 -> out "Failed; no finally blocks ran." }
                 else { out "Failed; something is very broken." }
-            
+
             assert(str)shouldBe("OK.\nOK.\nOK.\nOK; all finallies ran.\n")
         }
 
@@ -616,7 +616,7 @@ def aGraceLangTest = object {
             out(t137_c.x)
             assert (str) shouldBe "3\n2\n1\n"
         }
-        
+
         method test_138_fractionalnum {
             out(1.0026)
             assert(str) shouldBe "1.0026\n"
@@ -631,7 +631,7 @@ def aGraceLangTest = object {
                 }
                 method asString { "a" }
             }
-            
+
             def context = object {
                 method asString { "m" }
                 a.new
@@ -642,7 +642,7 @@ def aGraceLangTest = object {
             }
             assert (str) shouldBe "a\na\nm\n"
         }
-        
+
         method test_142_anontypevalue {
             if (interface { y -> String }.matches(t142_x)) then {
                 out(t142_x.y)
@@ -652,7 +652,7 @@ def aGraceLangTest = object {
                 case { z : interface { y -> String} -> out(z.y) }
             assert (str) shouldBe "ok\nok\n"
         }
-        
+
         method test_143_repeat {
             repeat 1 times { out "once" }
             repeat 4 times { out "four times" }
@@ -660,7 +660,7 @@ def aGraceLangTest = object {
             repeat (-2) times { out "this should not appear either" }
             assert (str) shouldBe "once\nfour times\nfour times\nfour times\nfour times\n"
         }
-        
+
         method test_145_lineupDo {
             def l = [1, 2, 3, 4]
             out(l)
