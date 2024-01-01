@@ -1,3 +1,5 @@
+/* global minigrace, unicode */
+
 var inBrowser = (typeof global === "undefined");
 
 if (!inBrowser) {  // if we are in Node.js
@@ -11,7 +13,7 @@ function setLineNumber(n) {
 function getLineNumber() {
     return lineNumber;
 }
-function setModuleName(m) {
+function setModuleName() {
     return;
 }
 function getModuleName() {
@@ -30,7 +32,7 @@ Array.prototype.sum = function () {
 
 if (!Array.prototype.includes) {
     Array.prototype.includes = function (needle) {
-        for (var i = 0, len = this.length ; i < len ; i++) {
+        for (let i = 0, len = this.length ; i < len ; i++) {
             if (this[i] === needle) return true;
         }
         return false;
@@ -157,7 +159,9 @@ function trait_asString (argcv) {
 
 function confidentialVersion(fun, optionalName) {
     if (fun.wrappedFunction) fun = fun.wrappedFunction;  // avoid multiple wrappers
-    const newFun = function confidentialV (...args) { return fun.apply(this, args) };
+    const newFun = function confidentialV (...args) {
+        return fun.apply(this, args);
+    };
     newFun.confidential = true;
     newFun.wrappedFunction = fun;
     if (fun.paramCounts) newFun.paramCounts = fun.paramCounts;
@@ -169,7 +173,7 @@ function confidentialVersion(fun, optionalName) {
 
 function publicVersion(fun, optionalName) {
     if (fun.wrappedFunction) fun = fun.wrappedFunction;  // avoid multiple wrappers
-    const newFun = function publicV (...args) { return fun.apply(this, args) };
+    const newFun = function publicV (...args) { return fun.apply(this, args); };
     newFun.wrappedFunction = fun;
     if (fun.paramCounts) newFun.paramCounts = fun.paramCounts;
     if (fun.paramNames) newFun.paramNames = fun.paramNames;
@@ -184,7 +188,7 @@ function memoized(methodFun, memoCellName) {
             this[memoCellName] = methodFun.call(this);
         }
         return this[memoCellName];
-    }
+    };
 }
 
 GraceTrait.prototype = {
@@ -223,7 +227,6 @@ function Grace_allocObject(superConstructor, givenName) {
     givenName = givenName || "object";
     givenName = givenName.toString();
     var resultObj = {
-        closureKeys: [],
         methods: newMethods,
         data: {},
         className: givenName,
@@ -407,7 +410,6 @@ GraceString.prototype = {
                   this.failArgCheck('second ', "string", "replace(_)with(_)");
 
             }
-            var sl = what._value.length;
             let pattern = new RegExp(escapeRegExp(what._value), 'gm');
             let replacement = escapeReplacement(wth._value);
                 // a string, not a RegExp, but must escape any $ characters
@@ -445,20 +447,19 @@ GraceString.prototype = {
             return new GraceNum(result + 1);
         },
         "indexOf(1)startingAt(1)ifAbsent(1)": function string_indexOf_startingAt_ifAbsent (argcv, needle, startPos, block0) {
-            var self = this._value;
             if (needle.className !== "string") {
                   this.failArgCheck('first ', "string", "indexOf(_)startingAt(_)ifAbsent(_)");
             }
-            var start = startPos._value - 1;
             if (startPos.className !== "number") {
                   this.failArgCheck('second ', "number", "indexOf(_)startingAt(_)ifAbsent(_)");
             }
-            var start = startPos._value - 1
-            var result = self.indexOf(needle._value, start);
+            const self = this._value;
+            const start = startPos._value - 1;
+            const result = self.indexOf(needle._value, start);
             if (result === -1) { return callmethod(block0, "apply", [0]); }
             return new GraceNum(result + 1);
         },
-        "lastIndexOf(1)": function string_lastIndexOf_ifAbsent (argcv, needle, block0) {
+        "lastIndexOf(1)": function string_lastIndexOf (argcv, needle) {
             var self = this._value;
             if (needle.className !== "string") {
                   this.failArgCheck('', "string", "indexOf(_)");
@@ -610,7 +611,7 @@ GraceString.prototype = {
             if (self.lastIndexOf(n, 0) === 0) return GraceTrue;
             return GraceFalse;
         },
-        "endsWith(1)": function string_endsWith(argvc, needle) {
+        "endsWith(1)": function string_endsWith(argcv, needle) {
             var self = this._value;
             if (needle.className !== "string") {
                   this.failArgCheck('', "string", "endsWith(_)");
@@ -721,7 +722,7 @@ GraceString.prototype = {
         "asNumber": function string_asNumber(argcv) {
             return new GraceNum(+this._value);
         },
-        "matches(1)": function string_match (argcv, o) {
+        "matches(1)": function string_match (argcv, o) {  // TODO: remove
             return callmethod(this, "==(1)", [1], o);
         },
         "|(1)": function string_orPattern(argcv, o) {
@@ -822,7 +823,7 @@ function pointObject() {
         const openBundle = request(pointBundle, "open");
         pointObject.cache = openBundle;
     }
-    return pointObject.cache
+    return pointObject.cache;
 }
 
 function value_equals(argcv, other) {
@@ -929,7 +930,7 @@ GraceNum.prototype = {
             }
             return callmethod(other, "reverseRemainderNumber(1)", [1], this);
         },
-        "÷(1)": function(argv, other) {
+        "÷(1)": function(argcv, other) {
             if (other.className === "number") {
                 var quo = this._value / other._value;
                 var q = Math.trunc(quo);
@@ -1005,14 +1006,14 @@ GraceNum.prototype = {
             }
             return request(other, "<(1)", [1], this);
         },
-        "isInteger": function(argcv, other) {
+        "isInteger": function(argcv) {
             if (Number.isInteger(this._value)) return GraceTrue; else return GraceFalse;
         },
-        "isEven": function(argcv, other) {
+        "isEven": function(argcv) {
             if (this._value % 2 === 0) return GraceTrue; else return GraceFalse;
         },
-        "isOdd": function(argcv, other) {
-            // we can't just check that remainder is 1, becasue negative
+        "isOdd": function(argcv) {
+            // we can't just check that remainder is 1, because negative
             // arguments give a remaider of -1.  This is much faster than
             // checking for +1 or -1, or taking abs!
             var val = this._value;
@@ -1088,34 +1089,34 @@ GraceNum.prototype = {
         "isNaN": function Num_isNaN(argcv) {
             return (isNaN(this._value)) ? GraceTrue : GraceFalse;
         },
-        "sin": function(argv) {
+        "sin": function(argcv) {
             return new GraceNum(Math.sin(this._value));
         },
-        "cos": function(argv) {
+        "cos": function(argcv) {
             return new GraceNum(Math.cos(this._value));
         },
-        "tan": function(argv) {
+        "tan": function(argcv) {
             return new GraceNum(Math.tan(this._value));
         },
-        "asin": function(argv) {
+        "asin": function(argcv) {
             return new GraceNum(Math.asin(this._value));
         },
-        "acos": function(argv) {
+        "acos": function(argcv) {
             return new GraceNum(Math.acos(this._value));
         },
-        "atan": function(argv) {
+        "atan": function(argcv) {
             return new GraceNum(Math.atan(this._value));
         },
-        lg: function(argv) {
+        lg: function(argcv) {
             return new GraceNum(Math.log(this._value) / Math.LN2);
         },
-        ln: function(argv) {
+        ln: function(argcv) {
             return new GraceNum(Math.log(this._value));
         },
-        exp: function(argv) {
+        exp: function(argcv) {
             return new GraceNum(Math.exp(this._value));
         },
-        log10: function(argv) {
+        log10: function(argcv) {
             return new GraceNum(Math.log(this._value) / Math.LN10);
         },
         "truncated": function(argcv) {
@@ -1460,8 +1461,8 @@ GraceSequence.prototype = {
                     return new GraceNum(i+1);
             }
             return callmethod(absentBlock, "apply", [0]);
-        },                             
-        "indexOf(1)": function sequence_indexOf(argcv, other, absentBlock) {
+        },
+        "indexOf(1)": function sequence_indexOf(argcv, other) {
             for (var i=0; i<this._value.length; i++) {
                 var v = this._value[i];
                 if (Grace_isTrue(callmethod(v, "==(1)", [1], other)))
@@ -1529,7 +1530,6 @@ GraceSequence.prototype = {
             }
             return new GraceNum(result);
         },
-        "::(1)": object_colonColon,
         "iterator": function(argcv) {
             return new GraceSequenceIterator(this);
         },
@@ -1601,13 +1601,11 @@ GraceSequence.prototype = {
         "sortedBy(1)": function sequence_sortedBy(argcv, compareBlock) {
             const result = new GraceSequence(this._value.slice(0));
                               // slice creates a shallow copy
-            var len = this._value.length;
             function compareFun(a, b) {
                 var res = callmethod(compareBlock, "apply(2)", [2], a, b);
                 if (res.className === "number") return res._value;
                 throw new GraceExceptionPacket(TypeErrorObject,
-                       new GraceString("compare block in primitiveArray.sort method " +
-                                       "did not return a Number"));
+                       new GraceString("compare block in primitiveArray.sort method did not return a Number"));
             }
             result._value.sort(compareFun);
             return result;
