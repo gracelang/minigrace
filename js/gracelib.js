@@ -3445,9 +3445,6 @@ function escapestring(str) {
     return os;
 }
 
-// these names are used in the generated code.
-var var_done = GraceDone;
-
 // for node: explicitly make names global
 if (typeof global !== "undefined") {
     global.Alias = Alias;
