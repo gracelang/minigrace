@@ -74,8 +74,8 @@ permitted or interpreted. Literals in non-standard bases may be written
 in the form:
   BxNNNNN...
 where B is the base in decimal and N is drawn from the first B
-characters of "0123456789abcdefghijklmnopqrstuvwxyz", all the ASCII
-digits in order followed by all the lower-case ASCII letters in order.
+characters of "0123456789abcdefghijklmnopqrstuvwxyz" (i.e., the ASCII
+digits in order followed by the lower-case ASCII letters in order).
 B may range from 0 to 36 but not be 1. The special base of 0 is
 equivalent to 16.
 
@@ -100,6 +100,7 @@ The unicode module contains methods for dealing with Unicode data:
   create(codepoint : Number) -> String
   lookup(name : String) -> String
 
-All methods return the corresponding property from the Unicode Character
-Database, or in the case of create and lookup return a string of size 1
-consisting of the character with the given code-point or name.
+The first 11 methods return the corresponding property from the Unicode Character
+Database. The `create` method returns a string of size 1 consisting of the character
+with the given codepoint.  The `lookup` method returns a string of size 1
+consisting of the character with the given name.
