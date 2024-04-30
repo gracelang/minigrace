@@ -5,7 +5,7 @@ trait open {
 
     type None = intrinsic.NoneType  // the interface type with all possile methods
 
-    type Type = Object & interface {
+    type Type = EqualityObject & interface {
         // a type is a disjunction of interfaces
         name → String           // the name of this type
         typeParameterNames → Sequence⟦String⟧
