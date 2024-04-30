@@ -5,12 +5,29 @@ type Crippled = Dictionary - interface { at(_) }
 
 method expectType (t) toHaveMethod (name) {
     def m = mirror.reflect(t)
-    assert (m.methodNames.contains(name)) description "type doesn't have {name} but has  {m.methods}"
+    assert (m.methodNames.contains(name)) description "type doesn't have {name} but does have {m.methods}"
 }
 
 type t = interface { wombat → Number }
 type u = interface { wombat → Number ; kanga → String }
 type w = u - t
+type x = Number | String
+def trivial = object { method asString { "a trivial object" } }
+def eoPrimitive = object {
+    method :: (o:Object) → Binding { binding.key (self) value (o) }
+    method == (other:Object) → Boolean { isMe(other) }
+    method ≠(other:Object) → Boolean { (self == other).not }
+    method hash → Number { self.myIdentityHash }
+    method prefix == → Pattern {
+        native "js" code ‹
+            return new GracePredicatePattern(arg =>
+                selfRequest(this, "==(1)", [1], arg));
+        ›
+    }
+}
+def eoFromTrait = object {
+    use identityEquality
+}
 
 testSuite "type-level operations" with {
 
@@ -26,7 +43,6 @@ testSuite "type-level operations" with {
     }
     test "type subtraction has ¬ operaton" by {
         expectType (w) toHaveMethod "prefix¬"
-        expectType (w) toHaveMethod "prefix¬"
     }
     test "type subtraction has type type" by {
         assert (w) hasType (Type)
@@ -35,8 +51,11 @@ testSuite "type-level operations" with {
 
 testSuite "standard types and objects" with {
 
-    test "numbers have type Pattern" by {
-        assert 3 hasType (Pattern)
+    test "numbers do not have type Pattern" by {
+        deny 3 hasType (Pattern)
+    }
+    test "numbers can be converted to Patterns" by {
+        assert (==3) hasType (Pattern)
     }
     test "negated type is a pattern" by {
         assert (¬ Dictionary) hasType (Pattern)
@@ -51,14 +70,29 @@ testSuite "standard types and objects" with {
     test "Number describes numbers" by {
         assertType (Number) exactlyDescribes 3
     }
-    test "strings have type Pattern" by {
-        assert "test" hasType (Pattern)
+    test "strings do not have type Pattern" by {
+        deny "test" hasType (Pattern)
+    }
+    test "strings can be converted to Patterns" by {
+        assert (== "test") hasType (Pattern)
     }
     test "String describes strings" by {
         assertType (String) exactlyDescribes "test"
     }
-    test "Type Type describes interface t" by {
-        assertType (Type) exactlyDescribes (t)
+    test "Type Interface describes interface t" by {
+        assertType (Interface) exactlyDescribes (t)
+    }
+    test "Type Type describes union x" by {
+        assertType (Type) exactlyDescribes (x)
+    }
+    test "Object describes trivial" by {
+        assertType (Object) exactlyDescribes (trivial)
+    }
+    test "EqualityObject describes eoPrimitive" by {
+        assertType (EqualityObject) exactlyDescribes (eoPrimitive)
+    }
+    test "EqualityObject describes eoFromTrait" by {
+        assertType (EqualityObject) exactlyDescribes (eoFromTrait)
     }
     test "Boolean describes booleans" by {
         assertType (Boolean) exactlyDescribes true

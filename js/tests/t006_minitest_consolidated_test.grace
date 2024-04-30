@@ -148,7 +148,7 @@ testSuite "point tests" with {
 def TooMuchRecursion = ProgrammingError.refine "TooMuchRecursion"
 
 method currentHand → List⟦String⟧ {
-    return currentHand 
+    return currentHand
 }
 
 testSuite "stack overflow" with {
@@ -244,8 +244,8 @@ method tryUnaryNumericPatterns(x) {
     match(x)
           case {>40 → "greater than 40"}
           case {≥30 & ¬ >40 → "greater than or equal to 30"}
-          case {17 -> "equal to 17"}
-          case {≤18 & ¬17 → "less than or equal to 18"}
+          case {==17 -> "equal to 17"}
+          case {≤18 & ¬ ==17 → "less than or equal to 18"}
           case {<20 & ¬ ≤18 -> "less than a score"}
 }
 
@@ -294,7 +294,7 @@ testSuite "multi-parameter blocks" with {
         assert (blk.apply(2, "Hi")) shouldBe "found a Number and the string Hi"
     }
     test "two named parameters match" by {
-        def blk = { n:Number, 5 -> "found the Numbers {n} and 5" }
+        def blk = { n:Number, ==5 -> "found the Numbers {n} and 5" }
         assert (blk.apply(2, 5)) shouldBe "found the Numbers 2 and 5"
     }
     test "two parameters Type mis-match" by {
@@ -302,8 +302,9 @@ testSuite "multi-parameter blocks" with {
         assert {blk.apply("Hello", 007)} shouldRaise (TypeError)
     }
     test "two named parameters Value mis-match" by {
-        def blk = { n:Number, 5 -> "found the Numbers {n} and 5" }
+        def blk = { n:Number, ==5 -> "found the Numbers {n} and 5" }
         assert {blk.apply(7, 19)} shouldRaise (RequestError)
+            mentioning "argument 2 (19)" and "does not match"
     }
 }
 

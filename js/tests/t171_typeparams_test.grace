@@ -131,6 +131,21 @@ def typeTest = object {
             assert (typeComparison⟦Sequence,Collection⟧)
                 shouldBe "type Sequence conforms to type Collection"
         }
+        method testInterfaceIsaType {
+            assert (X) hasType (Type)
+        }
+        method testAndTypeIsaType {
+            assert (Y) hasType (Type)
+        }
+        method testZeroTypeParameterNames {
+            assert (X.typeParameterNames) shouldBe []
+        }
+        method testOneTypeParameterName {
+            assert (Z.typeParameterNames) shouldBe [ "P" ]
+        }
+        method testTwoTypeParameterNames {
+            assert (Dictionary.typeParameterNames) shouldBe [ "K", "V" ]
+        }
     }
 }
 

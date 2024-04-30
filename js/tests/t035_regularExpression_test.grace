@@ -14,19 +14,19 @@ testSuite "regex syntax errors" with {
 }
 
 testSuiteNamed "single matches" with {
-    
+
     test "matches succeeds" by {
         def pat = re.fromString "ae|ie|ou"
         assert (pat.matches "aeroplane") description "{pat} did not match \"aeroplane\""
         assert (pat.matches "piebald") description "{pat} did not match \"piebald\""
     }
-    
+
     test "match fails" by {
-        def pat = "ho*se"
+        def pat = re.fromString "ho*se"
         deny (pat.matches "zebra")
         deny (pat.matches "armadillo")
     }
-    
+
     test "firstMatch succeeds" by {
         def pat = re.fromString "ae|ie|ou"
         assert (pat.firstMatchingPosition "aeroplane" ifNone {failBecause "pattern {pat} did not match"})
@@ -34,14 +34,14 @@ testSuiteNamed "single matches" with {
         assert (pat.firstMatchingPosition "piebald" ifNone {failBecause "pattern {pat} did not match"})
             shouldBe 2
     }
-    
+
     test "firstMatch fails" by {
         def pat = re.fromString "ae|ie|ou"
         var noMatch := false
         def matchPos = pat.firstMatchingPosition "airplane" ifNone {noMatch := true}
         assert (noMatch) description "{pat} matched \"airplane\" at index {matchPos}"
     }
-       
+
     test "matchingString succeeds" by {
         def pat = re.fromString "ae|ie|ou"
         assert (pat.firstMatchingString "aeroplane" ifNone {failBecause "pattern {pat} did not match"})
@@ -49,18 +49,18 @@ testSuiteNamed "single matches" with {
         assert (pat.firstMatchingString "piebald" ifNone {failBecause "pattern {pat} did not match"})
             shouldBe "ie"
     }
-    
+
     test "matchingString fails" by {
         def pat = re.fromString "ae|ie|ou"
         var noMatch := false
         def matchStr = pat.firstMatchingString "airplane" ifNone {noMatch := true}
         assert (noMatch) description "{pat} matched \"airplane\" substring {matchStr}"
     }
-    
+
 }
 
 testSuiteNamed "global matches" with {
-    
+
     test "allMatches succeeds test first" by {
         def pat = re.fromString ‹(ae)|(ie)|(ou)|(l[ie])› modifiers "g"
         def text = "outboard lie aeroplanes"
@@ -75,7 +75,7 @@ testSuiteNamed "global matches" with {
         assert (firstMatch.group 3) shouldBe "ou"
         assert (firstMatch.group 4) shouldBe ""
     }
-    
+
     test "allMatches succeeds test second" by {
         def pat = re.fromString ‹(ae)|(ie)|(ou)|l(.)› modifiers "g"
         def text = "outboard lie aeroplanes"
@@ -90,7 +90,7 @@ testSuiteNamed "global matches" with {
         assert (secondMatch.group 3) shouldBe ""
         assert (secondMatch.group 4) shouldBe "i"
     }
-    
+
     test "allMatches succeeds test third" by {
         def pat = re.fromString ‹(ae)|(ie)|(ou)|l(.)› modifiers "g"
         def text = "outboard lie aeroplanes"
@@ -105,7 +105,7 @@ testSuiteNamed "global matches" with {
         assert (thirdMatch.group 3) shouldBe ""
         assert (thirdMatch.group 4) shouldBe ""
     }
-    
+
     test "allMatches succeeds test fourth" by {
         def pat = re.fromString ‹(ae)|(ie)|(ou)|l(.)› modifiers "g"
         def text = "outboard lie aeroplanes"
@@ -120,7 +120,7 @@ testSuiteNamed "global matches" with {
         assert (fourthMatch.group 3) shouldBe ""
         assert (fourthMatch.group 4) shouldBe ""
     }
-    
+
     test "allMatches succeeds test fifth" by {
         def pat = re.fromString ‹(ae)|(ie)|(ou)|l(.)› modifiers "g"
         def text = "outboard lie aeroplanes"
@@ -135,12 +135,12 @@ testSuiteNamed "global matches" with {
         assert (fifthMatch.group 3) shouldBe ""
         assert (fifthMatch.group 4) shouldBe "a"
     }
-    
+
     test "match fails" by {
         def pat = re.fromString "ho*se" modifiers "g"
         assert (pat.allMatches "zebra".isEmpty)
         assert (pat.allMatches "armadillo".isEmpty)
-    }    
+    }
 }
 
 exit

@@ -31,7 +31,7 @@ method colorT(c') constructor(fn:Function1) {
     // whatever class uses this trait
     object {
         method c { c' }
-        method darker { 
+        method darker {
             fn.apply "dark {c}"
         }
         method asString { "color {c}" }
@@ -385,12 +385,12 @@ testSuite "once methods" with {
         assert (firstMethod.isMethod) description "firstMethod is a {firstMethod.kind}"
         assert (firstMethod.isOnceMethod) description "method {firstMethod.nameString} is not a once method"
     }
-    
+
     test "first once method header range starts at 1:1" by {
         def r = firstMethod.headerRange
         assert (r.start) shouldBe (ast.line 1 column 1)
     }
-    
+
     test "first once method header range ends at 1:33" by {
         def r = firstMethod.headerRange
         assert (r.end) shouldBe (ast.line 1 column 33)
@@ -400,12 +400,12 @@ testSuite "once methods" with {
         assert (secondMethod.isMethod) description "secondMethod is a {secondMethod.kind}"
         assert (secondMethod.isOnceMethod) description "method {secondMethod.nameString} is not a once method"
     }
-    
+
     test "second once method header range starts at 4:1" by {
         def r = secondMethod.headerRange
         assert (r.start) shouldBe (ast.line 4 column 1)
     }
-    
+
     test "second once method header range ends at 4:31" by {
         def r = secondMethod.headerRange
         assert (r.end) shouldBe (ast.line 4 column 31)
@@ -415,12 +415,12 @@ testSuite "once methods" with {
         assert (thirdMethod.isMethod) description "thirdMethod is a {thirdMethod.kind}"
         deny (thirdMethod.isOnceMethod) description "method {thirdMethod.nameString} is a once method"
     }
-    
+
     test "third method header range starts at 7:1" by {
         def r = thirdMethod.headerRange
         assert (r.start) shouldBe (ast.line 7 column 1)
     }
-    
+
     test "third once method header range ends at 7:23" by {
         def r = thirdMethod.headerRange
         assert (r.end) shouldBe (ast.line 7 column 23)
@@ -453,7 +453,7 @@ testSuite "types in interfaces" with {
     test "type T has U method" by {
         assert (T.methodNames) shouldBe ["U", "x", "y"]
     }
-    
+
     test "foo doesn't return a T" by {
         assert { foo } shouldRaise (TypeError) mentioning "missing method U"
     }
@@ -490,25 +490,25 @@ testSuite "numeric ordering" with {
     test "≥ on numbers error" by { assert {19 ≥ "18"} shouldRaise (TypeError)}
     test "prefix <" by {
         def p = < 6
-        assert(p.matches 5)
+        assert(p.matches 5) description "pattern <6 does not match number 5"
         deny (p.matches 6)
         deny (p.matches 7)
     }
     test "prefix >" by {
         def p = > 6
-        assert(p.matches 7)
+        assert(p.matches 7) description "pattern >6 does not match number 7"
         deny (p.matches 6)
         deny (p.matches 5)
     }
     test "prefix ≤" by {
         def p = ≤ 6
-        assert(p.matches 5)
+        assert(p.matches 5) description "pattern ≤6 does not match number 5"
         assert (p.matches 6)
         deny (p.matches 7)
     }
     test "prefix ≥" by {
         def p = ≥ 6
-        assert(p.matches 7)
+        assert(p.matches 7) description "pattern ≥6 does not match number 7"
         assert (p.matches 6)
         deny (p.matches 5)
     }

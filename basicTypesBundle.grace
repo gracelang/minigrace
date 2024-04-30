@@ -103,7 +103,7 @@ trait open {
         ==(other:Object) → Boolean
         ≠(other:Object) → Boolean
         hash → Number
-//      prefix == → Pattern         // ToDo: implement this!
+        prefix == → Pattern
     }
 
     type ExceptionKind = EqualityObject & Pattern & interface {
@@ -182,7 +182,7 @@ trait open {
     type Predicate3⟦ArgT1, ArgT2, ArgT3⟧ = Function3⟦ArgT1, ArgT2, ArgT3, Boolean⟧
         // Function with 3 arguments of types ArgT1, ArgT2, and ArgT3, returning Boolean
 
-    type String = EqualityObject & Pattern & interface {
+    type String = EqualityObject & interface {
         reverseTimesNumber(n:Number) → String
         // answers self * n.  (Used by numbers to implement number * String)
 
@@ -378,6 +378,12 @@ trait open {
 
         << (source:Collection⟦String⟧) → String
         // returns a string containing me, followed in order by the elements of source.
+
+        prefix < → Pattern  // the pattern matching strings < self
+        prefix > → Pattern  // the pattern matching strings > self
+        prefix ≤ → Pattern  // the pattern matching strings ≤ self
+        prefix ≥ → Pattern  // the pattern matching strings ≥ self
+        // prefix == is defined in the equality trait
     }
 
     type Collection⟦T⟧ = Object & interface {
@@ -424,9 +430,9 @@ trait open {
             // returns self ++ source; used for writing pipelines
     }
 
-    type Number = EqualityObject & Pattern & interface {
+    type Number = EqualityObject & interface {
         @ (other: Number) → Point
-        // asnsers a point with self as the x-coordinate, and other as the y-coordinate
+        // answers a point with self as the x-coordinate, and other as the y-coordinate
 
         ^ (n: Object) → Number
         // answers self raised to the power n, if n is a Number.
@@ -569,6 +575,9 @@ trait open {
 
         prefix ≤ → Pattern
         // a pattern that matches all numbers ≤ self
+
+        prefix == → Pattern
+        // a pattern that matches all numbers == self
     }
 
     type Point =  EqualityObject & interface {

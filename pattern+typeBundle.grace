@@ -81,6 +81,7 @@ trait open {
                 if (result) return result;
                 result = selfRequest(this, "matchHook(1)", [1], var_obj);
                 this.matchCache[key] = result;
+                return result;
             ›
         }
         method isNone { false }
@@ -96,6 +97,16 @@ trait open {
                     nm => new GraceString(nm)));
             ›
         }
+        method typeParameterNames {
+            native "js" code ‹
+                if (! this.typeParamNames) {
+                    return new GraceSequence([]);
+                }
+                return new GraceSequence(this.typeParamNames.map(
+                        nm => new GraceString(nm)));
+            ›
+        }
+        method interfaces { [ self ] }
     }
 
     method merge(cs, ds) {
@@ -149,7 +160,7 @@ trait open {
             exclude prefix ¬
         use BaseType
         var name is readable := "‹anon›"
-        method methodNames {
+        once method methodNames {
             merge(t1.methodNames, t2.methodNames)
         }
         method asString {

@@ -78,7 +78,7 @@ method compileInputFile {
 
         // Perform the actual compilation
         match(util.target)
-          case { "js" ->
+          case { == "js" ->
             genjs.compile(moduleObject, util.outfile, util.buildtype, util.gracelibPath)
         } else {
             io.error.write("minigrace: no such target '" ++ util.target ++ "'\n")

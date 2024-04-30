@@ -655,7 +655,7 @@ class graceScope {
         // applies pBlock to the variable corresponding to name, if it is defined
         // in this scope, or in one of the lexically surrounding scopes.  If it
         // is not defined, return the value of executing aBlock.
-        
+
         lookupLocallyOrReused (name) ifAbsent {
             outerScope.lookup (name) ifAbsent (aBlock) ifPresent (pBlock)
         } ifPresent (pBlock)
@@ -1512,17 +1512,17 @@ class abstractVariableFrom (aDeclarationNode) {
 
 method variable(tag) from(node) {
     match (tag)
-      case {"(def)" -> defVariableFrom (node)
-    } case {"(impt)" -> importVariableFrom (node)
-    } case {"(mth)" -> methodVariableFrom (node)
-    } case {"(go)" -> graceObjectMethodFrom (node)
-    } case {"(par)" -> parameterVariableFrom (node)
-    } case {"(type)" -> typeVariableFrom (node)
-    } case {"(tpar)" -> variableTypeParameterFrom (node)
-    } case {"(forall)" -> universalVariableFrom (node)
-    } case {"(var)" -> varVariableFrom (node)
-    } case {"(req)" -> requiredMethodVariableFrom (node)
-    } case {"(ctrl)" -> variableSpecialControlStructureFrom (node) withName (node.nameString)
+      case { == "(def)" -> defVariableFrom (node)
+    } case { == "(impt)" -> importVariableFrom (node)
+    } case { == "(mth)" -> methodVariableFrom (node)
+    } case { == "(go)" -> graceObjectMethodFrom (node)
+    } case { == "(par)" -> parameterVariableFrom (node)
+    } case { == "(type)" -> typeVariableFrom (node)
+    } case { == "(tpar)" -> variableTypeParameterFrom (node)
+    } case { == "(forall)" -> universalVariableFrom (node)
+    } case { == "(var)" -> varVariableFrom (node)
+    } case { == "(req)" -> requiredMethodVariableFrom (node)
+    } case { == "(ctrl)" -> variableSpecialControlStructureFrom (node) withName (node.nameString)
     }
 }
 

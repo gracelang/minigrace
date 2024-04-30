@@ -45,13 +45,13 @@ method parseargs(bi) {
             arg := argv.at(ai)
             if (!skip && (arg.at(1) == "-")) then {
                 match(arg)
-                  case { "-o" ->
+                  case { == "-o" ->
                         if(argv.size < (ai + 1)) then {
                             startupFailure "-o requires an argument."
                         }
                         outfilev := io.open(argv.at(ai + 1), "w")
                         skip := true
-                } case { "--verbose" ->
+                } case { == "--verbose" ->
                     verbosity := 40
                     if (argv.size >= (ai + 1)) then {
                         def nextArg = argv.at(ai + 1)
@@ -61,21 +61,21 @@ method parseargs(bi) {
                             verbosity := nextArg.asNumber
                         }
                     }
-                } case { "--help" ->
+                } case { == "--help" ->
                     printhelp
-                } case { "--vtag" ->
+                } case { == "--vtag" ->
                     skip := true
                     if(argv.size < (ai + 1)) then {
                         startupFailure "--vtag requires an argument."
                     }
                     vtagv := argv.at(ai + 1)
-                } case { "--make" ->
+                } case { == "--make" ->
                     buildtypev := "bc"
-                } case { "--no-recurse" ->
+                } case { == "--no-recurse" ->
                     recurse := false
-                } case { "--run" ->
+                } case { == "--run" ->
                     buildtypev := "run"
-                } case { "--dir" ->
+                } case { == "--dir" ->
                     skip := true
                     if(argv.size < (ai + 1)) then {
                         startupFailure "--dir requires an argument."
@@ -86,23 +86,23 @@ method parseargs(bi) {
                         outDirCache := outDirCache ++ "/"
                     }
                     createDirectoryIfNecessary(outDirCache)
-                } case { "--stdout" ->
+                } case { == "--stdout" ->
                     toStdout := true
-                } case { "-" ->
+                } case { == "-" ->
                     toStdout := true
-                } case { "--module" ->
+                } case { == "--module" ->
                     skip := true
                     if(argv.size < (ai + 1)) then {
                         startupFailure "--module requires an argument."
                     }
                     modnamev := argv.at(ai + 1)
-                } case { "--gracelib" ->
+                } case { == "--gracelib" ->
                     skip := true
                     if(argv.size < (ai + 1)) then {
                         startupFailure "--gracelib requires an argument."
                     }
                     gracelibPathv := argv.at(ai + 1)
-                } case { "--target" ->
+                } case { == "--target" ->
                     skip := true
                     if(argv.size < (ai + 1)) then {
                         startupFailure "--target requires an argument."
@@ -116,9 +116,9 @@ method parseargs(bi) {
                         }
                         sys.exit(0)
                     }
-                } case { "--gctfile" ->
+                } case { == "--gctfile" ->
                     extensionsv.at "gctfile" put true
-                } case { "--version" ->
+                } case { == "--version" ->
                     print("minigrace version "
                         ++ "{buildinfo.gitgeneration}")
                     print("git revision " ++ buildinfo.gitrevision)
@@ -160,14 +160,14 @@ method parseargs(bi) {
     }
     if ((outfilev == io.output) && {!toStdout}) then {
         outfilev := match(targetv)
-            case { "js" -> io.open(outDir ++ modnamev ++ ".js", "w") }
-            case { "parse" -> io.open(outDir ++ modnamev ++ ".parse", "w") }
-            case { "lex" -> io.open(outDir ++ modnamev ++ ".lex", "w") }
-            case { "processed-ast" -> io.open(outDir ++ modnamev ++ ".ast", "w") }
-            case { "ast" -> io.open(outDir ++ modnamev ++ ".ast", "w") }
-            case { "symbols" -> io.open(outDir ++ modnamev ++ ".symbols", "w") }
-            case { "grace" -> io.open(outDir ++ modnamev ++ "_new.grace", "w") }
-            case { "imports" -> io.output }
+            case { == "js" -> io.open(outDir ++ modnamev ++ ".js", "w") }
+            case { == "parse" -> io.open(outDir ++ modnamev ++ ".parse", "w") }
+            case { == "lex" -> io.open(outDir ++ modnamev ++ ".lex", "w") }
+            case { == "processed-ast" -> io.open(outDir ++ modnamev ++ ".ast", "w") }
+            case { == "ast" -> io.open(outDir ++ modnamev ++ ".ast", "w") }
+            case { == "symbols" -> io.open(outDir ++ modnamev ++ ".symbols", "w") }
+            case { == "grace" -> io.open(outDir ++ modnamev ++ "_new.grace", "w") }
+            case { == "imports" -> io.output }
             else { startupFailure "unrecognized target '{targetv}'." }
     }
     if (target != "js") then {
