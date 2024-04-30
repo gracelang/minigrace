@@ -454,13 +454,13 @@ method compileblock(o) {
     out "var {blockId} = new GraceBlock(this, {o.line}, {nParams});"
     var paramList := ""
     var paramTypes :=  list [ ]
-    var paramsAreTyped := false
+    var someParamIsTyped := false
     var first := true
     for (o.params) do { each ->
         def dType = each.decType
         paramTypes.push(compilenode(dType))
         if (dType.isUnknownType.not) then {
-            paramsAreTyped := true
+            someParamIsTyped := true
         }
         if (first) then {
             paramList := varf(each.value)
@@ -469,7 +469,7 @@ method compileblock(o) {
             paramList := paramList ++ ", " ++ varf(each.value)
         }
     }
-    if (paramsAreTyped) then {
+    if (someParamIsTyped) then {
         out "{blockId}.paramTypes = {literalList(paramTypes)};"
     }
 
@@ -553,11 +553,11 @@ method typeFunBody(typeExpr) named (tName) {
         [ typeExpr ]
     }
 }
-method compiletypeliteral(o) in (obj) {
+method compileinterfaceliteral(o) in (obj) {
     def reg = uidWithPrefix "typeLit"
     def escName = escapestring(o.name)
-    out "//   Type literal "
-    out "var {reg} = new GraceType(\"{escName}\");"
+    out "//   interface literal "
+    out "var {reg} = new GraceInterface(\"{escName}\");"
     if (o.methods.anySatisfy { each -> each.kind == "ellipsis" }) then {
         out "Object.defineProperty({reg}, 'typeMethods', \{ get: ellipsisFun \});"
     } else {
@@ -565,23 +565,6 @@ method compiletypeliteral(o) in (obj) {
     }
     o.register := reg
     reg
-}
-method paramNames(o) {
-    def result = list [ ]
-    o.signatureParts.do { part ->
-        part.params.do { param ->
-            result.push(param.nameString)
-        }
-    }
-    result
-}
-method typeParamNames(o) {
-    if (false == o.typeParams) then { return list [ ] }
-    def result = list [ ]
-    o.typeParams.do { each ->
-        result.push(each.nameString)
-    }
-    result
 }
 method hasTypedParams(o) {
     for (o.signatureParts) do { part ->
@@ -1033,16 +1016,16 @@ method typeParamlist(o) {
 }
 method compilemethodtypes(func, o) {
     var paramTypes :=  list [ ]
-    var paramsAreTyped := false
+    var someParamIsTyped := false
     var first := true
     o.parametersDo { each ->
         def dType = each.decType
         paramTypes.push(compilenode(dType))
         if (dType.isUnknownType.not) then {
-            paramsAreTyped := true
+            someParamIsTyped := true
         }
     }
-    if (paramsAreTyped) then {
+    if (someParamIsTyped) then {
         out "{func}.paramTypes = {literalList(paramTypes)};"
     }
 }
@@ -1483,7 +1466,7 @@ method compilenode(o) {
         } elseif { oKind == "typedec" } then {
             compiletypedec(o) in "this"
         } elseif { oKind == "interfaceliteral" } then {
-            compiletypeliteral(o) in "this"
+            compileinterfaceliteral(o) in "this"
         } elseif { oKind == "inherit" } then {
             compileInherit(o) forClass "irrelevant"
         } elseif { oKind == "yourself" } then {

@@ -1855,6 +1855,101 @@ function type_setName (argcv, nu) {
 }
 type_setName.confidential = true;
 
+function GraceInterface(name) {
+    this.name = name;
+    this.typeMethods = [];
+    this.matchCache = [];
+}
+GraceInterface.prototype = {
+    methods: {
+        "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
+        "≠(1)":             object_notEquals,
+        "basicAsString":    object_basicAsString,
+        "debug$Iterator":   object_debugIterator,
+        "::(1)":            object_colonColon,
+        "matches(1)": function type_match (argcv, other) {
+            let cUid = other.classUid;
+            if (cUid) {
+                let c = this.matchCache[cUid];
+                if (c !== undefined) return c;
+            } else {
+                minigrace.stderr_write(dbgp(other) + " has no classUid\n");
+            }
+            for (var i=0; i<this.typeMethods.length; i++) {
+                var m = this.typeMethods[i];
+                if (!other.methods[m]) {
+                    if (cUid) this.matchCache[cUid] = GraceFalse;
+                    return GraceFalse;
+                }
+            }
+            if (cUid) this.matchCache[cUid] = GraceTrue;
+            return GraceTrue;
+        },
+        "|(1)": function type_or(argcv, other) {
+            return new GraceTypeVariant(this, other);
+        },
+        "&(1)": function type_and(argcv, other) {
+            return new GraceTypeIntersection(this, other);
+        },
+        "prefix¬": function(argcv) {
+            return graceNotPattern(this);
+        },
+        "+(1)": function type_and(argcv, other) {
+            return new GraceTypeUnion(this, other);
+        },
+        "-(1)": function type_and(argcv, other) {
+            return new GraceTypeExclusion(this, other);
+        },
+        "asString": function type_asString (argcv) {
+            return new GraceString("type " + this.name);
+        },
+        "asDebugString": function type_asDebugString (argcv) {
+            return new GraceString("built-in type " + this.name);
+        },
+        "methodNames": function type_methodNames (argcv) {
+            var result = [];
+            for (var i=0; i<this.typeMethods.length; i++) {
+                const methName = canonicalMethodName(this.typeMethods[i]);
+                result.push(methName);
+            }
+            return new GraceSequence(result.sort().map(
+                    nm => new GraceString(nm)));;
+        },
+        "==(1)": function type_identity (argcv, other) {
+            return selfRequest(this, "isMe(1)", argcv, other)
+        },
+        "hash": function type_hash (argcv) {
+            return selfRequest(this, "myIdentityHash", argcv)
+        },
+        "setName(1)": type_setName,         // confidential
+        "setTypeName(1)": type_setName,     // confidential
+        "name": function type_name (argcv) {
+            return new GraceString(this.name);
+        },
+        "isNone": function type_isNone (argcv) {
+            return GraceFalse;
+        },
+        "isType": function type_isType (argcv) {
+            return GraceTrue;
+        },
+        "typeParameterNames": function type_typeParameterNames (argcv) {
+            if (! this.typeParamNames) {
+                return new GraceSequence([]);
+            }
+            return new GraceSequence(this.typeParamNames.map(
+                    nm => new GraceString(nm)));
+        },
+        "interfaces": function type_interfaces (argcv) {
+            return new GraceSequence( [ this ] );
+        }
+    },
+    className: "Interface",
+    definitionModule: "built-in library",
+    definitionLine: 1858,
+    classUid: "Interface-built-in"
+};
+
 function GraceType(name) {
     this.name = name;
     this.typeMethods = [];
@@ -1946,7 +2041,7 @@ GraceType.prototype = {
     },
     className: "Type",
     definitionModule: "built-in library",
-    definitionLine: 1875,
+    definitionLine: 1953,
     classUid: "Type-built-in"
 };
 
@@ -3487,6 +3582,7 @@ if (typeof global !== "undefined") {
     global.GraceExceptionPacket = GraceExceptionPacket;
     global.GraceFalse = GraceFalse;
     global.GraceHashMap = GraceHashMap;
+    global.GraceInterface = GraceInterface;
     global.Grace_isTrue = Grace_isTrue;
     global.GraceIterator = GraceIterator;
     global.GraceList = GraceList;
