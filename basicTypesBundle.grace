@@ -3,7 +3,7 @@ import "intrinsic" as intrinsic
 
 trait open {
 
-    type None = intrinsic.NoneType  // the interface type with all possile methods
+    type None = intrinsic.noneType  // the interface type with all possile methods
 
     type Type = EqualityObject & interface {
         // a type is a disjunction of interfaces
@@ -18,9 +18,12 @@ trait open {
  //       :=: (other:Type) → Boolean    // (self <: other) && (other :> self)       ToDo: implement this!
         == (other:Type) → Boolean     // object identity
         ≠ (other:Type) → Boolean     // object non-identity
+        - (other:Interface) → Interface     // the type that is like self,
+            // but excluding other.methodNames from all self's interfaces
         hash → Number
         interfaces → Sequence⟦Interface⟧
-        isType → Boolean        // answers true (and false for other patterns)
+        isType → Boolean        // answers true (and false for patterns that are not types)
+        prefix ¬ → Pattern      //
     }
 
     type Interface = Type & interface {
@@ -30,8 +33,6 @@ trait open {
                                        // names of the methods in this interface
         methodAt(canonicalName:String) → Signature
             // argument is the canonical name of a method; answers its signature
-        - (other:Interface) → Interface     // the interface that is like self,
-            // but excluding other.methodNames
     }
 
     type Signature = interface {

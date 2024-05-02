@@ -21,6 +21,26 @@ def RequestError is public = ProgrammingError.refine "RequestError"
 def ConcurrentModification is public = ProgrammingError.refine "ConcurrentModification"
 def SizeUnknown is public = Exception.refine "SizeUnknown"
 
+type MinimalyIterable = interface {
+    iterator -> Iterator
+}
+
+method isEqual(left) toCollection(right) is confidential {
+    // a confidential helper method, also used from gracelib
+    if (MinimalyIterable.matches(right)) then {
+        def leftIter = left.iterator
+        def rightIter = right.iterator
+        while {leftIter.hasNext && rightIter.hasNext} do {
+            if (leftIter.next != rightIter.next) then {
+                return false
+            }
+        }
+        leftIter.hasNext == rightIter.hasNext
+    } else {
+        false
+    }
+}
+
 type List⟦T⟧ = Sequenceable⟦T⟧ & interface {
     add(x: T) -> List⟦T⟧
     addAll(xs: Collection⟦T⟧) -> List⟦T⟧
@@ -105,15 +125,17 @@ type DictionaryFactory⟦K,T⟧ = interface {
     // identical to withAll(_)
 }
 
-trait iteratorOver⟦T,R⟧ (sourceIterator: Iterator⟦T⟧)
-        mappedBy (function:Function1⟦T, R⟧) -> Iterator⟦R⟧ {
+trait iteratorOver⟦T,R⟧  (sourceIterator) mappedBy (function) {
+    // declaring types causes a circularity
+    // (sourceIterator: Iterator⟦T⟧) mappedBy (function:Function1⟦T, R⟧) -> Iterator⟦R⟧ {
     method asString { "a mapped iterator over {sourceIterator}" }
     method hasNext { sourceIterator.hasNext }
     method next { function.apply(sourceIterator.next) }
 }
 
-class lazySequenceOver⟦T,R⟧ (source: Collection⟦T⟧)
-        mappedBy (function:Function1⟦T, R⟧) -> Enumerable⟦R⟧ {
+class lazySequenceOver⟦T,R⟧ (source) mappedBy (function) {
+    // declaring types causes a circularity
+    // (source: Collection⟦T⟧) mappedBy (function:Function1⟦T, R⟧) -> Enumerable⟦R⟧ {
     use enumerable⟦T⟧
     class iterator {
         use iteratorOver⟦T,R⟧ (source.iterator) mappedBy (function)
@@ -255,7 +277,9 @@ trait collection⟦T⟧ {
         }
         return result
     }
-    method map⟦R⟧(block1:Function1⟦T, R⟧) -> Enumerable⟦R⟧ {
+    method map⟦R⟧ (block1) {
+        // declaring types causes a circularity
+        // (block1:Function1⟦T, R⟧) -> Enumerable⟦R⟧ {
         lazySequenceOver(self) mappedBy(block1)
     }
     method filter(selectionCondition:Predicate1⟦T⟧) -> Enumerable⟦T⟧ {
@@ -372,26 +396,6 @@ class sequence⟦T⟧ {
 }
 
 method sequence⟦T⟧(xs) { [] ++ xs }
-
-type MinimalyIterable = interface {
-    iterator -> Iterator
-}
-
-method isEqual(left) toCollection(right) {
-    if (MinimalyIterable.matches(right)) then {
-        def leftIter = left.iterator
-        def rightIter = right.iterator
-        while {leftIter.hasNext && rightIter.hasNext} do {
-            if (leftIter.next != rightIter.next) then {
-                return false
-            }
-        }
-        leftIter.hasNext == rightIter.hasNext
-    } else {
-        false
-    }
-}
-
 
 method hashAndCombine(aHash, anObj) {
     def objHash = anObj.hash

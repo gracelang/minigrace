@@ -7,7 +7,7 @@ dialect "none"
 once method Exception { native "js" code ‹return ExceptionObject;› }
 def UnimplementedMethod = Exception.refine "UnimplementedMethod"
 
-def NoneType = object {
+once class noneType {
     method name { "None" }
     method matches(obj) { false }
     method | (other) { other }
@@ -31,7 +31,7 @@ def NoneType = object {
 trait annotations {
     // these _can_ be declared in Grace, but we don't want to repeat the
     // definitions in many files
-    
+
     method annotation is annotation
     method required is annotation
     method abstract is annotation

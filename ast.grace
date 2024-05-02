@@ -1271,7 +1271,8 @@ class methodDec (signature', body', dtype', universals) {
     // universals — a sequence of declarations of universally-quantified types.
 
     inherit baseNode
-        alias hasReturnType = isTyped
+        alias inheritedIsTyped = isTyped   // Grace doesn't let us make this public
+    method hasReturnType { inheritedIsTyped }
     method kind { "methodDec" }
     var description is public := kind   // changed to "class" or "trait" by parser
     var signatureParts is public := signature'
@@ -1300,7 +1301,10 @@ class methodDec (signature', body', dtype', universals) {
     }
     method isTyped {
         if (hasReturnType) then { return true }
-        signatureParts.anySatisfy{ each -> each.isTyped }
+        hasParameterTypes
+    }
+    method hasParameterTypes {
+        signatureParts.anySatisfy {each -> each.isTyped}
     }
     method childrenDo(anAction:Procedure1) {
         universals.do(anAction)
@@ -4384,7 +4388,7 @@ class rootVisitor {
     method postVisit(result) {
         // hook method
         result
-    } 
+    }
 }
 
 class rootMappingVisitor {

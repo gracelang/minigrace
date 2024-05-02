@@ -237,17 +237,44 @@ class methodMirror(theSubject, aMethodName) {
             return new GraceSequence(graceNames);
         ›
     }
-    
+
     method paramTypes {
         native "js" code ‹
             var types;
             const paramTypes = this.theFunction.paramTypes;
+            if (typeof paramTypes == "function") {
+                const nrTypeParams = this.theFunction.typeParamNames.length;
+                const paramTypesBlock = new GraceBlock(
+                    {definitionModule: "mirror"}, 247, nrTypeParams);
+                paramTypesBlock.guard = jsTrue;
+                paramTypesBlock.real = (...args) =>
+                    new GraceSequence(paramTypes.apply(this.theFunction, args));
+                const applyMeth = (argcv, ...args) => paramTypesBlock.real.apply(this.theFunction, args);
+                applyMeth.methodName = "apply(" + nrTypeParams + ")";
+                applyMeth.paramCounts = [nrTypeParams];
+                applyMeth.paramNames = this.theFunction.typeParamNames;
+                applyMeth.definitionLine = this.theFunction.definitionLine;
+                applyMeth.definitionModule = this.theFunction.definitionModule;
+                paramTypesBlock.methods["apply("+nrTypeParams+")"] = applyMeth;
+                return paramTypesBlock;
+            }
             if (paramTypes) {
                 types = this.theFunction.paramTypes;
             } else {
                 types = Array(this.theFunction.paramNames.length).fill(type_Unknown);
             }
             return new GraceSequence(types);
+        ›
+    }
+
+    method returnType {
+        native "js" code ‹
+            const resultType = this.theFunction.returnType;
+            if (resultType) {
+                return resultType;
+            } else {
+                return type_Unknown;
+            }
         ›
     }
 
@@ -309,7 +336,7 @@ class methodMirror(theSubject, aMethodName) {
 
 method loadModule(moduleName) {
     // loads moduleName dynamically
-    
+
     native "js" code ‹return loadDynamicModule(safeJsString(var_moduleName));›
 }
 

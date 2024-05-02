@@ -524,7 +524,6 @@ method compiletypedec(o) in (obj) {
     var reg := uidWithPrefix "type"
     def tName = o.nameString
     out "// Type decl {tName}"
-    // declaredvars.push(escapeident(tName))
     def rhs = o.value
     if (rhs.isInterface) then { rhs.name := tName }
     def typeMethod = ast.methodDec(
@@ -532,8 +531,8 @@ method compiletypedec(o) in (obj) {
             typeFunBody (rhs) named (tName), ast.unknownLiteral, []).setScope(s)
             // Why do we make the type Unknown, rather than Type?  Because the
             // latter will compile a check that the return value is indeed a type,
-            // which causes a circularity when trying to import collections. The
-            // check is subsumed by a call to `isType` in the body of `setTypeName`
+            // which causes a circularity. The check is subsumed by a call to
+            // `isType` in the body of `setTypeName`
     typeMethod.isOnceMethod := true
     typeMethod.withTypeParams(o.typeParams)
     s.node := originalNode       // gct generation will scan the ast after code is generated
@@ -563,18 +562,15 @@ method compileinterfaceliteral(o) in (obj) {
     } else {
         out "{reg}.typeMethods = {stringList(o.methods.map { meth -> meth.nameString }.sorted)};"
     }
+    if (o.hasTypeParams) then {
+        out "{reg}.typeParams = [{stringList(o.typeParams.map {p -> p.nameString})}];"
+    }
     o.register := reg
     reg
 }
 method hasTypedParams(o) {
-    for (o.signatureParts) do { part ->
-        for (part.params) do { p->
-            if (p.dtype != false) then {
-                if ((p.dtype.isIdentifier) || (p.dtype.isInterface)) then {
-                    return true
-                }
-            }
-        }
+    o.parametersDo { p ->
+        if (p.dtype != false) then { return true }
     }
     return false
 }
@@ -589,9 +585,7 @@ method compileMethodPreamble(o, funcName, name) withParams (p) {
 method compileMethodPostamble(o, funcName, name) {
     decreaseindent
     out "\};    // end of method {name}"
-    if (hasTypedParams(o)) then {
-        compilemethodtypes(funcName, o)
-    }
+    compilemethodtypes(funcName, o)
     if (o.isConfidential) then {
         out "{funcName}.confidential = true;"
     }
@@ -1007,26 +1001,43 @@ method typeParamlist(o) {
     // described by methodnode o.
 
     var result := ""
-    if (false ≠ o.typeParams) then {
+    if (o.hasTypeParams) then {
         o.typeParams.do { each ->
             result := result ++ ", {varf(each.nameString)}"
         }
     }
     result
 }
+method parameterTypes(o) {
+    // compiles the types of the parameters of method o.
+    // answers a list of the registers representing the types
+    def paramTypes = list [ ]
+    o.parametersDo { each →
+        paramTypes.addLast(compilenode(each.decType))
+    }
+    paramTypes
+}
 method compilemethodtypes(func, o) {
-    var paramTypes :=  list [ ]
-    var someParamIsTyped := false
-    var first := true
-    o.parametersDo { each ->
-        def dType = each.decType
-        paramTypes.push(compilenode(dType))
-        if (dType.isUnknownType.not) then {
-            someParamIsTyped := true
+    if (o.hasParameterTypes) then {
+        if (o.hasTypeParams) then {
+            out "{func}.paramTypes = ({typeParamlist(o).substringFrom 3}) => \{"
+            increaseindent
+            out "return {literalList(parameterTypes(o))}; }"
+            decreaseindent
+        } else {
+            out "{func}.paramTypes = {literalList(parameterTypes(o))};"
         }
     }
-    if (someParamIsTyped) then {
-        out "{func}.paramTypes = {literalList(paramTypes)};"
+    if (o.hasReturnType) then {
+        if (o.hasTypeParams) then {
+            out "{func}.returnType = ({typeParamlist(o).substringFrom 3}) => \{"
+            increaseindent
+            def rt = compilenode(o.dtype)
+            out "return {rt}; }"
+            decreaseindent
+        } else {
+            out "{func}.returnType = {compilenode(o.dtype)};"
+        }
     }
 }
 method compileif(o) {

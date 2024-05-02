@@ -1,8 +1,10 @@
 dialect "none"
 import "equalityBundle" as equalityBundle
-import "mirror" as mirror
 import "collections" as coll
 import "intrinsic" as intrinsic
+
+// This module _defines_ the & and | operations on types.  Hence, we
+// _cannot_ define or use here any types made with & or |.
 
 def ic = intrinsic.controlStructures
 use intrinsic.annotations
@@ -86,17 +88,6 @@ trait open {
         }
         method isNone { false }
         method isType { true }
-        method methodNames {
-            native "js" code ‹
-                let jsResult = [];
-                for (let i=0; i<this.typeMethods.length; i++) {
-                    const methName = this.typeMethods[i];
-                    jsResult.push(canonicalMethodName(methName));
-                }
-                return new GraceSequence(jsResult.sort().map(
-                    nm => new GraceString(nm)));
-            ›
-        }
         method typeParameterNames {
             native "js" code ‹
                 if (! this.typeParamNames) {
@@ -160,6 +151,41 @@ trait open {
             exclude prefix ¬
         use BaseType
         var name is readable := "‹anon›"
+ //       once method methodNames {
+ //           merge(t1.methodNames, t2.methodNames)
+ //       }
+        method asString {
+            if (self.name == "‹anon›") then {
+                "({t1} & {t2})"
+            } else {
+                "type {self.name}"
+            }
+        }
+    }
+
+    method InterfaceAnd (t1, t2) {
+        if (t2.isInterface.not) then { return t2 & t1 }   // double-dispatch to t2
+        if (t1.isNone) then {return t1}
+        if (t2.isNone) then {return t2}
+        def resultName = "({t1} & {t2})"
+        def resultMethods = merge(t1.methodNames, t2.methodNames)
+        native "js" code ‹
+            const intf = new GraceInterface(var_resultName._value);
+            intf.typeMethods = var_resultMethods._value.map(mn => mn._value);
+            return intf;
+        ›
+    }
+    class AndInterface (t1, t2) {
+        use AndPattern (t1, t2)
+            alias matchHook(_) = matches(_)
+            exclude &(_)
+            exclude |(_)
+            exclude matches(_)
+            exclude isType
+            exclude setTypeName(_)
+            exclude prefix ¬
+        use BaseType
+        var name is readable := "‹anon›"
         once method methodNames {
             merge(t1.methodNames, t2.methodNames)
         }
@@ -167,7 +193,7 @@ trait open {
             if (self.name == "‹anon›") then {
                 "({t1} & {t2})"
             } else {
-                "type {self.name}"
+                "interface {self.name}"
             }
         }
     }
@@ -189,9 +215,9 @@ trait open {
             exclude prefix ¬
         use BaseType
         var name is readable := "‹anon›"
-        method methodNames {
-            self.MethodsInTypeVariantsNotImplemented
-        }
+//        method methodNames {
+//            self.MethodsInTypeVariantsNotImplemented
+//        }
         method asString {
             if (self.name == "‹anon›") then {
                 "({t1} | {t2})"
@@ -204,9 +230,9 @@ trait open {
     class TypeExclusion (t1, t2) {
         use BaseType
         var name is readable := "‹anon›"
-        method methodNames {
-            coll.list(t1.methodNames).removeAll(t2.methodNames)
-        }
+//       method methodNames {
+//           coll.list(t1.methodNames).removeAll(t2.methodNames)
+//       }
         method asString {
             if (self.name == "‹anon›") then {
                 "({t1} - {t2})"

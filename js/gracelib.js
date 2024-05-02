@@ -1839,6 +1839,30 @@ function patternAndType() {
 function GraceTypeIntersection(l, r) {
     return request(patternAndType(), "TypeIntersection(2)", [2], l, r);
 }
+function GraceInterfaceAnd(l, r) {
+    const result = new GraceInterface(l.name + " & " + r.name);
+    result.typeMethods = mergeSorted (l.typeMethods, r.typeMethods);
+    return result;
+}
+function mergeSorted(l1, l2) {
+    let i1 = 0, i2 = 0;
+    const result = [];
+    while ((i1 < l1.length) && (i2 < l2.length)) {
+        let n1 = l1[i1], n2 = l2[i2];
+        if (n1 <= n2) {
+            result.push(n1);
+            i1++;
+            if (n1 === n2) i2++
+        } else {
+            result.push(n2);
+            i2++;
+        }
+    }
+    while (i1 < l1.length) { result.push(l1[i1++]); }
+    while (i2 < l2.length) { result.push(l2[i2++]); }
+    return result;
+}
+
 function GraceTypeUnion(l, r) {
     return request(patternAndType(), "TypeUnion(2)", [2], l, r);
 }
@@ -1890,16 +1914,27 @@ GraceInterface.prototype = {
             return new GraceTypeVariant(this, other);
         },
         "&(1)": function type_and(argcv, other) {
-            return new GraceTypeIntersection(this, other);
+            return new GraceInterfaceAnd(this, other);
         },
         "prefix¬": function(argcv) {
             return graceNotPattern(this);
         },
-        "+(1)": function type_and(argcv, other) {
-            return new GraceTypeUnion(this, other);
+        "prefix==": function(argcv) {
+            return self         // self is already a pattern
         },
-        "-(1)": function type_and(argcv, other) {
-            return new GraceTypeExclusion(this, other);
+        "-(1)": function type_exclusion(argcv, other) {
+            if (other.className !== "Interface") {
+                raiseException(TypeErrorObject,
+                    "right-hand argument to `-` operator is not an interface");
+            }
+            const result = new GraceInterface("‹anon›");
+            this.typeMethods.forEach(elem =>
+                {   if (! other.typeMethods.includes(elem)) {
+                        result.typeMethods.push(elem);
+                    }
+                }
+            );
+            return result;
         },
         "asString": function type_asString (argcv) {
             return new GraceString("type " + this.name);
@@ -1915,6 +1950,9 @@ GraceInterface.prototype = {
             }
             return new GraceSequence(result.sort().map(
                     nm => new GraceString(nm)));;
+        },
+        "methodAt(1)": function interface_methodAt (argcv, methName) {
+            return new GraceMethod(methname, [], Unknown);
         },
         "==(1)": function type_identity (argcv, other) {
             return selfRequest(this, "isMe(1)", argcv, other)
@@ -1942,6 +1980,9 @@ GraceInterface.prototype = {
         },
         "interfaces": function type_interfaces (argcv) {
             return new GraceSequence( [ this ] );
+        },
+        "isInterface": function constant_true (argcv) {
+            return GraceTrue;
         }
     },
     className: "Interface",
@@ -1950,8 +1991,40 @@ GraceInterface.prototype = {
     classUid: "Interface-built-in"
 };
 
-function GraceType(name) {
-    this.name = name;
+function GraceMethod(methodName, parameterTypes, resultType) {
+    this.name = methodName;
+    this.parameterTypes = parameterTypes;
+    this.resultType = resultType;
+}
+GraceMethod.prototype = {
+    methods: {
+        "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
+        "≠(1)":             object_notEquals,
+        "basicAsString":    object_basicAsString,
+        "debug$Iterator":   object_debugIterator,
+        "name": function method_name (argcv) {
+            return new GraceString(this.name);
+        },
+        "parameterTypes": function method_parameterTypes (argcv) {
+            return new GraceSequence(this.parameterTypes);
+        },
+        "resultType": function method_resultType (argcv) {
+            return this.resultType;
+        },
+        "asString": function method_asString (argcv) {
+            return new GraceString("method " + this.name + " returning " +
+                request(this.resultType, "asString", [])._value);
+        }
+    },
+    className: "Method",
+    definitionModule: "built-in library",
+    definitionLine: 1959,
+    classUid: "Method-built-in"
+};
+
+function GraceType(methodName) {        // dead code?
+    this.name = methodName;
     this.typeMethods = [];
     this.matchCache = [];
 }
@@ -1990,9 +2063,6 @@ GraceType.prototype = {
         "prefix¬": function(argcv) {
             return graceNotPattern(this);
         },
-        "+(1)": function type_and(argcv, other) {
-            return new GraceTypeUnion(this, other);
-        },
         "-(1)": function type_and(argcv, other) {
             return new GraceTypeExclusion(this, other);
         },
@@ -2001,15 +2071,6 @@ GraceType.prototype = {
         },
         "asDebugString": function type_asDebugString (argcv) {
             return new GraceString("built-in type " + this.name);
-        },
-        "methodNames": function type_methodNames (argcv) {
-            var result = [];
-            for (var i=0; i<this.typeMethods.length; i++) {
-                const methName = canonicalMethodName(this.typeMethods[i]);
-                result.push(methName);
-            }
-            return new GraceSequence(result.sort().map(
-                    nm => new GraceString(nm)));;
         },
         "==(1)": function type_identity (argcv, other) {
             return selfRequest(this, "isMe(1)", argcv, other)
@@ -2037,6 +2098,9 @@ GraceType.prototype = {
         },
         "interfaces": function type_interfaces (argcv) {
             return new GraceSequence( [ this ] );
+        },
+        "isInterface": function constant_false (argcv) {
+            return GraceFalse;
         }
     },
     className: "Type",
@@ -2198,9 +2262,6 @@ function hashMap_empty () { return new GraceHashMap(); };
 
 var var_HashMap = { methods: { 'new': hashMap_empty,
                                'empty': hashMap_empty } };
-var var_GraceType = { methods: { 'new':
-    function GraceType_new () { return new GraceType(); } }
-};
 
 function hashMap_at_put (argcv, k, v) {
     var hc = callmethod(k, "hash", [0]);
