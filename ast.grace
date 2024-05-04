@@ -2293,7 +2293,7 @@ class requestWithoutArgs(request, receiver') {
     method isMember { true }
     method isCall { true }
 
-    method parts { list.with(requestPart(nameString).setStart(reqStart)) }
+    method parts { [ requestPart(nameString).setStart(reqStart) ] }
     method arguments { [] }
     method argumentsDo(action) { }
     method numArgs { 0 }
@@ -2916,9 +2916,7 @@ class opRequest (op, l, r) {
     method receiver { left }
     method isCall { true }
 
-    method parts {
-        list.with(requestPart (value) withArgs [right] .setStart(opPos))
-    }
+    method parts { [ requestPart (value) withArgs [right] .setStart(opPos) ] }
     method arguments { [ right ] }
     method argumentsDo(action) { action.apply(right) }
     method numArgs { 1 }
