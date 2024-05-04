@@ -1991,10 +1991,10 @@ GraceInterface.prototype = {
     classUid: "Interface-built-in"
 };
 
-function GraceMethod(methodName, parameterTypes, resultType) {
+function GraceMethod(methodName, parameterTypes, returnType) {
     this.name = methodName;
     this.parameterTypes = parameterTypes;
-    this.resultType = resultType;
+    this.returnType = returnType;
 }
 GraceMethod.prototype = {
     methods: {
@@ -2009,12 +2009,12 @@ GraceMethod.prototype = {
         "parameterTypes": function method_parameterTypes (argcv) {
             return new GraceSequence(this.parameterTypes);
         },
-        "resultType": function method_resultType (argcv) {
-            return this.resultType;
+        "returnType": function method_returnType (argcv) {
+            return this.returnType;
         },
         "asString": function method_asString (argcv) {
             return new GraceString("method " + this.name + " returning " +
-                request(this.resultType, "asString", [])._value);
+                request(this.returnType, "asString", [])._value);
         }
     },
     className: "Method",

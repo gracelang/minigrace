@@ -51,6 +51,18 @@ testSuite "method parameter types" with {
         def abcd_1_M = mm.onMethod "abcd_1(_,_,_)"
         assert (abcd_1_M.paramTypes.apply(Unique)) shouldBe [Unique, String, List]
     }
+    test "one parametric type fixed result" by {
+        def abcd_1_M = mm.onMethod "abcd_1(_,_,_)"
+        assert (abcd_1_M.returnType.apply(Unique)) shouldBe (Dictionary)
+    }
+    test "two parametric types" by {
+        def aBcd_2_M = mm.onMethod "aBcd_2(_,_,_)"
+        assert (aBcd_2_M.paramTypes.apply(Unique, Number)) shouldBe [Unique, Unknown, Number]
+    }
+    test "one parametric type parametric result" by {
+        def ABCd_1_M = mm.onMethod "ABCd_1(_,_,_)"
+        assert (ABCd_1_M.returnType.apply(Unique)) shouldBe (Unique)
+    }
 }
 
 exit

@@ -269,9 +269,9 @@ class methodMirror(theSubject, aMethodName) {
 
     method returnType {
         native "js" code ‹
-            const resultType = this.theFunction.returnType;
-            if (resultType) {
-                return resultType;
+            const returnType = this.theFunction.returnType;
+            if (returnType) {
+                return returnType;
             } else {
                 return type_Unknown;
             }

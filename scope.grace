@@ -1355,7 +1355,7 @@ class variableSpecialControlStructureFrom (node) withName (aMethodName) {
 //        argumentTypes := methA.arguments.with (methB.arguments) collect { a, b →
 //            a.declaredType.meet (b.declaredType)
 //        }
-//        resultType := methA.result.declaredType.join (methB.result.declaredType)
+//        returnType := methA.result.declaredType.join (methB.result.declaredType)
 //    }
 //}
 //class graceTypeInstanceFrom (aGraceType) withArguments (typeArgs) {
