@@ -1245,13 +1245,14 @@ method compileUninitializedCheck(id) {
 }
 method partl(o) {
     var result := ""
-    for (o.parts.indices) do { partnr ->
-        result := result ++ o.parts.at(partnr).args.size
-        if (partnr < o.parts.size) then {
+    def nParts = o.parts.size
+    for (1 .. nParts) do { partNr ->
+        result := result ++ o.parts.at(partNr).args.size
+        if (partNr < nParts) then {
             result := result ++ ", "
         }
     }
-    if (false != o.generics) then {
+    if (o.hasTypeArgs) then {
         result := result ++ ", {o.generics.size}"
     }
     result
