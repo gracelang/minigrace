@@ -325,8 +325,11 @@ class methodMirror(theSubject, aMethodName) {
 
     method typeParamNames {
         native "js" code ‹
-            const graceNames = this.theFunction.typeParamNames.map(s => new GraceString(s));
-            return new GraceSequence(graceNames);
+            const jsNames = this.theFunction.typeParamNames
+            if (jsNames) {
+                return new GraceSequence(jsNames.map(s => new GraceString(s)));
+            }
+            return new GraceSequence([]);
         ›
     }
 
