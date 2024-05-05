@@ -1,5 +1,6 @@
 dialect "standard"
 import "gUnit" as gU
+import "mirror" as mirror
 
 type SimpleType = Object & interface {
     simple -> String
@@ -36,6 +37,9 @@ type Z⟦P⟧ = interface {
     b -> String
     c -> Z⟦P⟧
 }
+
+def module_mirror = mirror.reflect(self)
+def dialect_mirror = mirror.reflect(outer)
 
 def typeTest = object {
     class forMethod(m) {
@@ -138,17 +142,20 @@ def typeTest = object {
             assert (Y) hasType (Type)
         }
         method testZeroTypeParameterNames {
-            assert (X.typeParameterNames) shouldBe []
+            def X_mirror = module_mirror.onMethod "X"
+            assert (X_mirror.typeParamNames) shouldBe []
         }
         method testOneTypeParameterName {
-            assert (Z.typeParameterNames) shouldBe [ "P" ]
+            def Z_mirror = module_mirror.onMethod "Z"
+            assert (Z_mirror.typeParamNames) shouldBe [ "P" ]
         }
         method testTwoTypeParameterNames {
-            assert (Dictionary.typeParameterNames) shouldBe [ "K", "V" ]
+            def Dictionary_mirror = dialect_mirror.onMethod "Dictionary"
+            assert (Dictionary_mirror.typeParamNames) shouldBe [ "K", "T" ]
         }
     }
 }
 
 def typeTests = gU.testSuite.fromTestMethodsIn(typeTest)
 typeTests.runAndPrintResults
-
+gU.exit
