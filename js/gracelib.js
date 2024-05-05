@@ -163,6 +163,8 @@ function confidentialVersion(fun, optionalName) {
     if (fun.paramCounts) newFun.paramCounts = fun.paramCounts;
     if (fun.paramNames) newFun.paramNames = fun.paramNames;
     if (fun.typeParamNames) newFun.typeParamNames = fun.typeParamNames;
+    if (fun.paramTypes) newFun.paramTypes = fun.paramTypes;
+    if (fun.returnType) newFun.returnType = fun.returnType;
     if (optionalName) newFun.methodName = optionalName;
     return newFun;
 }
@@ -174,6 +176,8 @@ function publicVersion(fun, optionalName) {
     if (fun.paramCounts) newFun.paramCounts = fun.paramCounts;
     if (fun.paramNames) newFun.paramNames = fun.paramNames;
     if (fun.typeParamNames) newFun.typeParamNames = fun.typeParamNames;
+    if (fun.paramTypes) newFun.paramTypes = fun.paramTypes;
+    if (fun.returnType) newFun.returnType = fun.returnType;
     if (optionalName) newFun.methodName = optionalName;
     return newFun;
 }
