@@ -31,6 +31,7 @@ type MethodMirror = EqualityObject & interface {
     paramCounts → Sequence⟦Number⟧   // the number of parameters to each part
     paramNames → Sequence⟦String⟧    // the names of the parameters
     paramTypes → Sequence⟦Type⟧      // the types of the parameters
+    returnType → Type
     typeParamNames → Sequence⟦String⟧// the names of the type parameters
     requestWithArgs(args:Sequence⟦Object⟧) → Unknown
         // executes the method with args; ordonary arguments first, followed by type args
@@ -178,8 +179,8 @@ class methodMirror(theSubject, aMethodName) {
         if (! this.data.subject.methods[this.numericName]) {
             var exceptionMsg = new GraceString("no method " +
                   this.canonicalMethodName + " in mirror for ");
-            const objDescription = callmethod(this.data.subject, "asString", [0]);
-            exceptionMsg = callmethod(exceptionMsg, "++(1)", [1], objDescription);
+            const objDescription = request(this.data.subject, "asString", [0]);
+            exceptionMsg = request(exceptionMsg, "++(1)", [1], objDescription);
             throw new GraceExceptionPacket(NoSuchMethodErrorObject, exceptionMsg);
         };
         this.theFunction = this.data.subject.methods[this.numericName];
@@ -246,16 +247,30 @@ class methodMirror(theSubject, aMethodName) {
                 const nrTypeParams = this.theFunction.typeParamNames.length;
                 const paramTypesBlock = new GraceBlock(
                     {definitionModule: "mirror"}, 247, nrTypeParams);
-                paramTypesBlock.guard = jsTrue;
+                paramTypesBlock.guard = function(...args) {
+                    for (let i=0; i<args.length; i++) {
+                        if (! isGraceType(args[i])) return false;
+                    }
+                    return true;
+                };
                 paramTypesBlock.real = (...args) =>
                     new GraceSequence(paramTypes.apply(this.theFunction, args));
-                const applyMeth = (argcv, ...args) => paramTypesBlock.real.apply(this.theFunction, args);
+                const applyMeth = (argcv, ...args) => {
+                    if (paramTypesBlock.guard.apply(paramTypesBlock, args))
+                        return paramTypesBlock.real.apply(this.theFunction, args);
+                    for (let i=0; i<args.length; i++) {
+                        if (! isGraceType(args[i])) {
+                            raiseException(RequestErrorObject,
+                                "argument " + (i+1) + " to block (from methodMirror.paramTypes) is not a type.");
+                        }
+                    }
+                };
                 applyMeth.methodName = "apply(" + nrTypeParams + ")";
                 applyMeth.paramCounts = [nrTypeParams];
                 applyMeth.paramNames = this.theFunction.typeParamNames;
                 applyMeth.definitionLine = this.theFunction.definitionLine;
                 applyMeth.definitionModule = this.theFunction.definitionModule;
-                paramTypesBlock.methods["apply("+nrTypeParams+")"] = applyMeth;
+                paramTypesBlock.methods[applyMeth.methodName] = applyMeth;
                 return paramTypesBlock;
             }
             if (paramTypes) {
@@ -270,6 +285,36 @@ class methodMirror(theSubject, aMethodName) {
     method returnType {
         native "js" code ‹
             const returnType = this.theFunction.returnType;
+            if (typeof returnType == "function") {
+                const nrTypeParams = this.theFunction.typeParamNames.length;
+                const returnTypeBlock = new GraceBlock(
+                    {definitionModule: "mirror"}, 285, nrTypeParams);
+                returnTypeBlock.guard = function(...args) {
+                    for (let i=0; i<args.length; i++) {
+                        if (! isGraceType(args[i])) return false;
+                    }
+                    return true;
+                };
+                returnTypeBlock.real = (...args) =>
+                    returnType.apply(this.theFunction, args);
+                const applyMeth = (argcv, ...args) => {
+                    if (returnTypeBlock.guard.apply(returnTypeBlock, args))
+                        return returnTypeBlock.real.apply(this.theFunction, args);
+                    for (let i=0; i<args.length; i++) {
+                        if (! isGraceType(args[i])) {
+                            raiseException(RequestErrorObject,
+                                "argument " + (i+1) + " to block (from methodMirror.returnType) is not a type.");
+                        }
+                    }
+                };
+                applyMeth.methodName = "apply(" + nrTypeParams + ")";
+                applyMeth.paramCounts = [nrTypeParams];
+                applyMeth.paramNames = this.theFunction.typeParamNames;
+                applyMeth.definitionLine = this.theFunction.definitionLine;
+                applyMeth.definitionModule = this.theFunction.definitionModule;
+                returnTypeBlock.methods[applyMeth.methodName] = applyMeth;
+                return returnTypeBlock;
+            }
             if (returnType) {
                 return returnType;
             } else {
@@ -292,7 +337,7 @@ class methodMirror(theSubject, aMethodName) {
                     this.theFunction.paramNames.length : 0;
             var ntp = (this.theFunction.typeParamNames) ?
                     this.theFunction.typeParamNames.length : 0;
-            var providedLen = callmethod(var_argList, "size", [0])._value;
+            var providedLen = request(var_argList, "size", [0])._value;
             if ((providedLen !== np) && (providedLen != (np + ntp))) {
                 const tParamPart = (ntp > 0) ? (" and " + ntp + " type arguments") : "";
                 throw new GraceExceptionPacket(RequestErrorObject,
@@ -301,9 +346,9 @@ class methodMirror(theSubject, aMethodName) {
                                     ", but was given " + providedLen + "."));
             }
             const requestArgs = [this.data.subject, this.numericName, paramcv];
-            const argsIter = callmethod(var_argList, "iterator", [0]);
-            while (Grace_isTrue(callmethod(argsIter, "hasNext", [0]))) {
-                const arg = callmethod(argsIter, "next", [0]);
+            const argsIter = request(var_argList, "iterator", [0]);
+            while (Grace_isTrue(request(argsIter, "hasNext", [0]))) {
+                const arg = request(argsIter, "next", [0]);
                 requestArgs.push(arg);
             }
             return selfRequest.apply(null, requestArgs);

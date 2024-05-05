@@ -59,6 +59,20 @@ testSuite "method parameter types" with {
         def aBcd_2_M = mm.onMethod "aBcd_2(_,_,_)"
         assert (aBcd_2_M.paramTypes.apply(Unique, Number)) shouldBe [Unique, Unknown, Number]
     }
+    test "two parametric types with bad arg 1" by {
+        def aBcd_2_M = mm.onMethod "aBcd_2(_,_,_)"
+        assert {aBcd_2_M.paramTypes.apply(17, Number)} shouldRaise (RequestError)
+            mentioning "argument 1"
+    }
+    test "two parametric types produce fixed result" by {
+        def aBcd_2_M = mm.onMethod "aBcd_2(_,_,_)"
+        assert (aBcd_2_M.returnType.apply(Unique, Number)) shouldBe (Dictionary)
+    }
+    test "two parametric types with bad arg 2" by {
+        def aBcd_2_M = mm.onMethod "aBcd_2(_,_,_)"
+        assert {aBcd_2_M.paramTypes.apply(Unique, "Hello")} shouldRaise (RequestError)
+            mentioning "argument 2"
+    }
     test "one parametric type parametric result" by {
         def ABCd_1_M = mm.onMethod "ABCd_1(_,_,_)"
         assert (ABCd_1_M.returnType.apply(Unique)) shouldBe (Unique)
