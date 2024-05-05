@@ -23,7 +23,8 @@ trait open {
         hash → Number
         interfaces → Sequence⟦Interface⟧
         isType → Boolean        // answers true (and false for patterns that are not types)
-        prefix ¬ → Pattern      //
+        isInterface → Boolean   // answers true for interface types (and false other types)
+        prefix ¬ → Pattern      // answers a pattern that's the inverse of this type
     }
 
     type Interface = Type & interface {
@@ -36,12 +37,11 @@ trait open {
     }
 
     type Signature = interface {
-        name → String
-            // the canonical name of the method
-        typeParameterNames → Sequence⟦String⟧
-        parameterNames → Sequence⟦String⟧  // the names of the parameters, in order
-        parameterTypes → Sequence⟦Type⟧    // the types of the parameters, in order
-        result → Type                     // the type of the result
+        name → String                       // the canonical name of the method
+        typeParameterNames → Sequence⟦String⟧ // the names of the type parameters
+        parameterNames → Sequence⟦String⟧   // the names of the parameters, in order
+        parameterTypes → Sequence⟦Type⟧     // the types of the parameters, in order
+        returnType → Type                   // the type of the result
     }
 
     type Object = interface {

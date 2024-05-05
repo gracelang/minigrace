@@ -1840,9 +1840,15 @@ function GraceTypeIntersection(l, r) {
     return request(patternAndType(), "TypeIntersection(2)", [2], l, r);
 }
 function GraceInterfaceAnd(l, r) {
-    const result = new GraceInterface(l.name + " & " + r.name);
-    result.typeMethods = mergeSorted (l.typeMethods, r.typeMethods);
-    return result;
+    // This has to be defined in gracelib, because loading module
+    // pattern+typeBundle causes a circularity
+    if (r.className == "Interface") {
+        const result = new GraceInterface(l.name + " & " + r.name);
+        result.typeMethods = mergeSorted (l.typeMethods, r.typeMethods);
+        return result;
+    }
+    if (isGraceType(r)) return request(r, "&(1)", [1], l);
+    return graceAndPattern(l, r);
 }
 function mergeSorted(l1, l2) {
     let i1 = 0, i2 = 0;
@@ -2115,6 +2121,15 @@ function GraceSelfType() {
     this.matchCache = [];
 }
 GraceSelfType.prototype = GraceType.prototype;
+
+function isGraceType(t) {
+    // is t a Grace Type?  Instead of cheking type conformity, we take some shortcuts
+    if (t.className == "Type") return true;
+    if (t.className == "Interface") return true;
+    if (t.methods.isType) return request(t, "isType", [0])._value;
+    // types and patterns defined in Grace code will have an isType method
+    return false;
+}
 
 function GraceBlock(recvr, lineNum, numParams) {
     this.definitionModule = recvr.definitionModule;
@@ -3461,11 +3476,15 @@ function raiseException(ex, msg, data) {
     var callee = arguments.callee;
     var caller = callee.caller;
     var count = 0;      // to avoid an infinite loop if everything goes wrong
-    while ((! caller.isGraceRequest) && (count++ < 10)) {
-        // searches for a request or selfRequest on the stack
-        callee = caller;
-        caller = caller.caller;
-    }
+    try {
+        // some recent versions of Chromium refuse to execute caller.caller,
+        // even if not in strict mode.
+        while ((! caller.isGraceRequest) && (count++ < 10)) {
+            // searches for a request or selfRequest on the stack
+            callee = caller;
+            caller = caller.caller;
+        }
+    } catch (ex) {}
     if (caller.isGraceRequest) {
         Object.defineProperty(newEx, 'moduleName', {value: callee.definitionModule});
         let methName = caller.arguments[1];
@@ -3659,6 +3678,7 @@ if (typeof global !== "undefined") {
     global.GraceTrue = GraceTrue;
     global.GraceType = GraceType;
     global.importedModules = importedModules;
+    global.isGraceType = isGraceType;
     global.ImportErrorObject = ImportErrorObject;
     global.IteratorExhaustedObject = IteratorExhaustedObject;
     global.inBrowser = inBrowser;

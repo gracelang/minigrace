@@ -196,6 +196,7 @@ trait open {
                 "interface {self.name}"
             }
         }
+        method isInterface { true }
     }
 
     method TypeVariant (t1, t2) {
@@ -215,9 +216,7 @@ trait open {
             exclude prefix ¬
         use BaseType
         var name is readable := "‹anon›"
-//        method methodNames {
-//            self.MethodsInTypeVariantsNotImplemented
-//        }
+        method interfaces { t1.interfaces ++ t2.interfaces }
         method asString {
             if (self.name == "‹anon›") then {
                 "({t1} | {t2})"
@@ -225,6 +224,7 @@ trait open {
                 "type {self.name}"
             }
         }
+        method isInterface { false }
     }
 
     class TypeExclusion (t1, t2) {
