@@ -1902,7 +1902,7 @@ GraceInterface.prototype = {
         "basicAsString":    object_basicAsString,
         "debug$Iterator":   object_debugIterator,
         "::(1)":            object_colonColon,
-        "matches(1)": function type_match (argcv, other) {
+        "matches(1)": function interface_match (argcv, other) {
             let cUid = other.classUid;
             if (cUid) {
                 let c = this.matchCache[cUid];
@@ -1910,8 +1910,10 @@ GraceInterface.prototype = {
             } else {
                 minigrace.stderr_write(dbgp(other) + " has no classUid\n");
             }
-            for (var i=0; i<this.typeMethods.length; i++) {
-                var m = this.typeMethods[i];
+            const tm = this.typeMethods;
+            let requiredMethodNames = Array.isArray(tm) ? tm : Object.keys(tm);
+            for (var i=0; i<requiredMethodNames.length; i++) {
+                var m = requiredMethodNames[i];
                 if (!other.methods[m]) {
                     if (cUid) this.matchCache[cUid] = GraceFalse;
                     return GraceFalse;
@@ -1938,8 +1940,11 @@ GraceInterface.prototype = {
                     "right-hand argument to `-` operator is not an interface");
             }
             const result = new GraceInterface("‹anon›");
-            this.typeMethods.forEach(elem =>
-                {   if (! other.typeMethods.includes(elem)) {
+            const tm = this.typeMethods, om = other.typeMethods;
+            let origMethodNames = Array.isArray(tm) ? tm : Object.keys(tm);
+            let exclMethodNames = Array.isArray(om) ? om : Object.keys(om);
+            origMethodNames.forEach(elem =>
+                {   if (! exclMethodNames.includes(elem)) {
                         result.typeMethods.push(elem);
                     }
                 }
@@ -1954,12 +1959,13 @@ GraceInterface.prototype = {
         },
         "methodNames": function type_methodNames (argcv) {
             var result = [];
-            for (var i=0; i<this.typeMethods.length; i++) {
-                const methName = canonicalMethodName(this.typeMethods[i]);
-                result.push(methName);
+            if (Array.isArray(this.typeMethods)) {
+                this.typeMethods.forEach( (mn) =>
+                    result.push(canonicalMethodName(mn)));
+            } else {
+                result = Object.ketys(this.typeMethods);
             }
-            return new GraceSequence(result.sort().map(
-                    nm => new GraceString(nm)));;
+            return graceStringSequence(result.sort());
         },
         "methodAt(1)": function interface_methodAt (argcv, methName) {
             return new GraceMethod(methname, [], Unknown);
@@ -2033,8 +2039,35 @@ GraceMethod.prototype = {
     classUid: "Method-built-in"
 };
 
-function GraceType(methodName) {        // dead code?
+function graceStringSequence(jsListOfJsStrings) {
+    return new GraceSequence(
+        jsListOfJsStrings.map(s => new GraceString(s)))
+}
+
+function GraceSignature(methodName, paramNames, paramTypes, resultType) {
     this.name = methodName;
+    this.paramNames = paramNames;
+    this.paramTypes = paramTypes;
+    this.resultType = resultType;
+    this.typeParams = [];
+}
+GraceSignature.prototype = {
+    methods: {
+        numericName: () => new GraceString(this.name),
+        name: () => new GraceString(canonicalMethodName(this.name)),
+        typeParameterNames: () => graceStringSequence(this.typeParams),
+        parameterNames: () => graceStringSequence(paramsNames),
+        parameterTypes: () => new GraceSequence(paramtypes),
+        resultType: () => resultType
+    },
+    className: "Signature",
+    definitionModule: "built-in library",
+    definitionLine: 2059,
+    classUid: "Signature-built-in"
+};
+
+function GraceType(typeName) {        // dead code?
+    this.name = typeName;
     this.typeMethods = [];
     this.matchCache = [];
 }
@@ -2054,8 +2087,10 @@ GraceType.prototype = {
             } else {
                 minigrace.stderr_write(dbgp(other) + " has no classUid\n");
             }
-            for (var i=0; i<this.typeMethods.length; i++) {
-                var m = this.typeMethods[i];
+            const tm = this.typeMethods;
+            let requiredMethodNames = Array.isArray(tm) ? tm : Object.keys(tm);
+            for (var i=0; i<requiredMethodNames.length; i++) {
+                var m = requiredMethodNames[i];
                 if (!other.methods[m]) {
                     if (cUid) this.matchCache[cUid] = GraceFalse;
                     return GraceFalse;
@@ -2100,11 +2135,8 @@ GraceType.prototype = {
             return GraceTrue;
         },
         "typeParameterNames": function type_typeParameterNames (argcv) {
-            if (! this.typeParamNames) {
-                return new GraceSequence([]);
-            }
-            return new GraceSequence(this.typeParamNames.map(
-                    nm => new GraceString(nm)));
+            const names = this.typeParamNames | [];
+            return graceStringSequence(names);
         },
         "interfaces": function type_interfaces (argcv) {
             return new GraceSequence( [ this ] );
@@ -2115,7 +2147,7 @@ GraceType.prototype = {
     },
     className: "Type",
     definitionModule: "built-in library",
-    definitionLine: 1953,
+    definitionLine: 2063,
     classUid: "Type-built-in"
 };
 
