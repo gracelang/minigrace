@@ -12,12 +12,8 @@ trait open {
         method hash is required    // should obey invariant (a == b) => (a.hash == b.hash)
         method ≠ (other)  { (self == other).not }
         method :: (obj) { binding.key (self) value (obj) }
-        method prefix == {
-            native "js" code ‹
-                return new GracePredicatePattern(arg =>
-                    selfRequest(this, "==(1)", [1], arg));
-            ›
-        }
+        method prefix == { intrinsic.curriedPredicate(self, "==(_)") }
+        method prefix ≠ { intrinsic.curriedPredicate(self, "≠(_)") }
     }
 
     trait identityEquality {

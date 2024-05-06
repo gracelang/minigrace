@@ -105,6 +105,7 @@ trait open {
         ≠(other:Object) → Boolean
         hash → Number
         prefix == → Pattern
+        prefix ≠ → Pattern
     }
 
     type ExceptionKind = EqualityObject & Pattern & interface {

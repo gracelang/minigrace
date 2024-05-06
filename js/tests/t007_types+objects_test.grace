@@ -1,5 +1,6 @@
 dialect "minitest"
 import "mirror" as mirror
+import "intrinsic" as intrinsic
 
 type Crippled = Dictionary - interface { at(_) }
 
@@ -18,12 +19,8 @@ def eoPrimitive = object {
     method == (other:Object) → Boolean { isMe(other) }
     method ≠(other:Object) → Boolean { (self == other).not }
     method hash → Number { self.myIdentityHash }
-    method prefix == → Pattern {
-        native "js" code ‹
-            return new GracePredicatePattern(arg =>
-                selfRequest(this, "==(1)", [1], arg));
-        ›
-    }
+    method prefix == → Pattern { intrinsic.curriedPredicate(self, "==(1)") }
+    method prefix ≠ → Pattern { intrinsic.curriedPredicate(self, "≠(1)") }
 }
 def eoFromTrait = object {
     use identityEquality

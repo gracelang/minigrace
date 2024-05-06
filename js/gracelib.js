@@ -333,6 +333,17 @@ function string_hash(argcv) {
     return this._hash;
 }
 
+
+function curriedEquality(argcv) {
+    return new GracePredicatePattern(arg =>
+        selfRequest(this, "==(1)", [1], arg));
+}
+
+function curriedInequality(argcv) {
+    return new GracePredicatePattern(arg =>
+        selfRequest(this, "≠(1)", [1], arg));
+}
+
 function string_identityHash(argcv) {
     return string_hash(argcv);
 }
@@ -805,10 +816,8 @@ GraceString.prototype = {
             return new GracePredicatePattern(arg =>
                 (arg.className == "string") ?  selfRequest(this, "≤(1)", [1], arg) : GraceFalse);
         },
-        "prefix==": function(argcv) {
-            return new GracePredicatePattern(arg =>
-                (arg.className == "string") ?  selfRequest(this, "==(1)", [1], arg) : GraceFalse);
-        }
+        "prefix==": curriedEquality,
+        "prefix≠": curriedInequality
     },
     className: "string",
     definitionModule: "built-in library",
@@ -1054,6 +1063,10 @@ GraceNum.prototype = {
             return new GracePredicatePattern(arg =>
                 (arg.className == "number") ?  selfRequest(this, "==(1)", [1], arg) : GraceFalse);
         },
+        "prefix≠": function(argcv) {
+            return new GracePredicatePattern(arg =>
+                (arg.className == "number") ?  selfRequest(this, "≠(1)", [1], arg) : GraceTrue);
+        },
         "asString": function(argcv) {
             var num = this._value;
             if (num === Infinity)
@@ -1243,10 +1256,8 @@ var GraceFalse;
             "prefix!": function(argcv) {
                 return this.negated;
             },
-            "prefix==": function(argcv) {
-                return new GracePredicatePattern(arg =>
-                    selfRequest(this, "==(1)", [1], arg));
-            },
+            "prefix==": curriedEquality,
+            "prefix≠": curriedInequality,
             "&&(1)": function(argcv, other) {
                 if (!this._value)
                     return this;
@@ -1607,9 +1618,8 @@ GraceSequence.prototype = {
             result._value.sort(compareFun);
             return result;
         },
-        "prefix==": function(argcv) {
-            return new GracePredicatePattern(arg => selfRequest(this, "==(1)", [1], arg));
-        }
+        "prefix==": curriedEquality,
+        "prefix≠": curriedInequality
     },
     className: "sequence",
     definitionModule: "built-in library",
@@ -1929,9 +1939,8 @@ GraceInterface.prototype = {
         "prefix¬": function(argcv) {
             return graceNotPattern(this);
         },
-        "prefix==": function(argcv) {
-            return self         // self is already a pattern
-        },
+        "prefix==": curriedEquality,
+        "prefix≠": curriedInequality,
         "-(1)": function type_exclusion(argcv, other) {
             if (other.className !== "Interface") {
                 raiseException(TypeErrorObject,
@@ -2106,6 +2115,8 @@ GraceType.prototype = {
         "prefix¬": function(argcv) {
             return graceNotPattern(this);
         },
+        "prefix==": curriedEquality,
+        "prefix≠": curriedInequality,
         "-(1)": function type_and(argcv, other) {
             return new GraceTypeExclusion(this, other);
         },
@@ -3379,9 +3390,8 @@ GraceException.prototype = {
         "isType": function exception_isType(argcv) {
             return GraceFalse;
         },
-        "prefix==": function exception_to_pattern(argcv) {
-            return this;    // I'm already a pattern; == method is required of EqualityObjects
-        }
+        "prefix==": curriedEquality,
+        "prefix≠": curriedInequality
     },
     className: 'Exception',
     definitionModule: "built-in library",

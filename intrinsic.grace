@@ -171,3 +171,17 @@ method hashCombine(a, b) {
         var bHash = (b * 1664525 - 0xA21FE89) * 3;
         result = new GraceNum((aHash * 2) ^ bHash);›
 }
+
+method curriedPredicate(subject, methodName) {
+    native "js" code ‹
+        var methName = var_methodName._value;
+        if (methName.substr(methName.length - 3) === "(_)") {
+            methName = methName.substring(0, methName.length - 3) + "(1)"
+        } else if (methName.substr(methName.length - 3) !== "(1)") {
+            raiseException(RequestErrorObject,
+                "curriedPredicate requires a single-argument method such as ==(_); given " + methName)
+        }
+        return new GracePredicatePattern(arg =>
+            selfRequest(var_subject, methName, [1], arg));
+    ›
+}
