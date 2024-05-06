@@ -274,6 +274,25 @@ testSuite "unary comparison patterns" with {
     test "= pattern exact" by {
         assert (tryUnaryNumericPatterns 17) shouldBe "equal to 17"
     }
+    test "Equality on Strings" by {
+        assert ((=="Hello").matches "Hello") description "pattern ==\"Hello\" doesn't match \"Hello\""
+    }
+    test "Inequality on string and differing string" by {
+        assert ((≠"Hello").matches "Howdy") description "pattern ≠\"Hello\" doesn't match \"Howdy\""
+    }
+    test "Inequality on string and a number" by {
+        assert ((≠"Hello").matches 17) description "pattern ≠\"Hello\" doesn't match 17"
+    }
+    test "Equality on Number Type" by {
+        assert ((==Number).matches(Number)) description "pattern ==Number doesn't match Number"
+    }
+    test "Inequality on Number and a number" by {
+        assert ((≠Number).matches(17)) description "pattern ==Number doesn't match 17"
+    }
+    test "Equality on Number and a number" by {
+        deny ((==Number).matches(17)) description "pattern ==Number matches 17: it should match only Number"
+    }
+
 }
 
 testSuite "multi-parameter blocks" with {
