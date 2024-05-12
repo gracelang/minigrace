@@ -1897,6 +1897,13 @@ function type_setName (argcv, nu) {
 }
 type_setName.confidential = true;
 
+function interface_asString (argcv) {
+    return new GraceString("interface " + this.name);
+}
+function type_asString (argcv) {
+    return new GraceString("type " + this.name);
+}
+
 function GraceInterface(name) {
     this.name = name;
     this.typeMethods = [];
@@ -1958,12 +1965,8 @@ GraceInterface.prototype = {
             );
             return result;
         },
-        "asString": function type_asString (argcv) {
-            return new GraceString("type " + this.name);
-        },
-        "asDebugString": function type_asDebugString (argcv) {
-            return new GraceString("built-in type " + this.name);
-        },
+        "asString": type_asString,
+        "asDebugString": interface_asString,
         "methodNames": function type_methodNames (argcv) {
             var result = [];
             if (Array.isArray(this.typeMethods)) {
@@ -2045,7 +2048,6 @@ GraceMethod.prototype = {
     definitionLine: 1959,
     classUid: "Method-built-in"
 };
-
 function graceStringSequence(jsListOfJsStrings) {
     return new GraceSequence(
         jsListOfJsStrings.map(s => new GraceString(s)))
@@ -2120,9 +2122,7 @@ GraceType.prototype = {
         "-(1)": function type_and(argcv, other) {
             return new GraceTypeExclusion(this, other);
         },
-        "asString": function type_asString (argcv) {
-            return new GraceString("type " + this.name);
-        },
+        "asString": type_asString,
         "asDebugString": function type_asDebugString (argcv) {
             return new GraceString("built-in type " + this.name);
         },
