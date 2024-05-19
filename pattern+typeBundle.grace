@@ -97,40 +97,8 @@ trait open {
                         nm => new GraceString(nm)));
             ›
         }
-        method interfaces { [ self ] }
-    }
-
-    method merge(cs, ds) {
-        // cs and ds are sorted sequences.  Return their sorted merge
-        def cIter = cs.iterator
-        def dIter = ds.iterator
-        def result = coll.list.empty
-
-        if (cIter.hasNext.not) then { return ds }
-        if (dIter.hasNext.not) then { return cs }
-
-        var c := cIter.next
-        var d := dIter.next
-
-        ic.while {cIter.hasNext && dIter.hasNext} do {
-            if (c <= d) then {
-                result.addLast(c)
-                c := cIter.next
-                if (c == d) then {  d := dIter.next }
-            } else {
-                result.addLast(d)
-                d := dIter.next
-            }
-        }
-
-        if (c <= d) then {
-            result.addAll [c,d]
-        } else {
-            result.addAll [d,c]
-        }
-        ic.while {cIter.hasNext} do { result.addLast(cIter.next) }
-        ic.while {dIter.hasNext} do { result.addLast(dIter.next) }
-        result
+        method interfaces is required
+        method isInterface { false }
     }
 
 
@@ -150,54 +118,19 @@ trait open {
             exclude setTypeName(_)
             exclude prefix ¬
         use BaseType
-        var name is readable := "‹anon›"
- //       once method methodNames {
- //           merge(t1.methodNames, t2.methodNames)
- //       }
-        method asString {
-            if (self.name == "‹anon›") then {
-                "({t1} & {t2})"
-            } else {
-                "type {self.name}"
-            }
+        // t1 can't be a GraceInterface (from gracelib) — it must be an
+        // exclusion
+        var name is readable := "{t1.name} & {t2.name}"
+        def interfaces is readable = t1.interfaces.map { each -> each & t2 }
+        method asDebugString {
+            var result := ""
+            interfaces.do { each -> result := result ++ each.name }
+                separatedBy { result := result ++ " | " }
+            result
         }
     }
 
-    method InterfaceAnd (t1, t2) {
-        if (t2.isInterface.not) then { return t2 & t1 }   // double-dispatch to t2
-        if (t1.isNone) then {return t1}
-        if (t2.isNone) then {return t2}
-        def resultName = "({t1} & {t2})"
-        def resultMethods = merge(t1.methodNames, t2.methodNames)
-        native "js" code ‹
-            const intf = new GraceInterface(var_resultName._value);
-            intf.typeMethods = var_resultMethods._value.map(mn => mn._value);
-            return intf;
-        ›
-    }
-    class AndInterface (t1, t2) {
-        use AndPattern (t1, t2)
-            alias matchHook(_) = matches(_)
-            exclude &(_)
-            exclude |(_)
-            exclude matches(_)
-            exclude isType
-            exclude setTypeName(_)
-            exclude prefix ¬
-        use BaseType
-        var name is readable := "‹anon›"
-        once method methodNames {
-            merge(t1.methodNames, t2.methodNames)
-        }
-        method asString {
-            if (self.name == "‹anon›") then {
-                "({t1} & {t2})"
-            } else {
-                "interface {self.name}"
-            }
-        }
-        method isInterface { true }
-    }
+
 
     method TypeVariant (t1, t2) {
         if (t2.isType.not) then { return t2 | t1 }   // double-dispatch to Pattern t2
@@ -215,30 +148,40 @@ trait open {
             exclude setTypeName(_)
             exclude prefix ¬
         use BaseType
-        var name is readable := "‹anon›"
-        method interfaces { t1.interfaces ++ t2.interfaces }
-        method asString {
-            if (self.name == "‹anon›") then {
-                "({t1} | {t2})"
-            } else {
-                "type {self.name}"
+        var name is readable := {  // not a once method, because
+            // compiled code uses name:=(_) to set the name
+            def t1Name = if (t1.name.startsWith "(") then { t1.name }
+                elseif { t1.name.contains "&" } then { "({t1.name})" }
+                else { t1.name }
+
+            def t2Name = if (t2.name.startsWith "(") then { t2.name }
+                elseif { t2.name.contains "&" } then { "({t2.name})" }
+                else { t2.name }
+
+            "{t1Name} | {t2Name}"
+        }.apply
+        once method interfaces {
+            def result = t1.interfaces >> coll.list
+            t2.interfaces.do { each ->
+                if (! result.contains(each)) then {
+                    result.addLast(each)
+                }
             }
+            result >> coll.sequence
         }
         method isInterface { false }
     }
 
     class TypeExclusion (t1, t2) {
         use BaseType
-        var name is readable := "‹anon›"
-//       method methodNames {
-//           coll.list(t1.methodNames).removeAll(t2.methodNames)
-//       }
-        method asString {
-            if (self.name == "‹anon›") then {
-                "({t1} - {t2})"
-            } else {
-                "type {self.name}"
-            }
+        var name is readable := "{t1} - {t2}"
+        if (t2.isInterface.not) then {
+            intrinsic.constants.TypeError.raise
+                "right-hand argument to `-` operator is not an interface"
+        }
+
+        once method interfaces {
+            t1.interfaces.map { each -> each - t2 }
         }
     }
 

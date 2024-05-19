@@ -13,6 +13,8 @@ type t = interface { wombat → Number }
 type u = interface { wombat → Number ; kanga → String }
 type w = u - t
 type x = Number | String
+type z = t | u
+type i_of_u = x & z
 def trivial = object { method asString { "a trivial object" } }
 def eoPrimitive = object {
     method :: (o:Object) → Binding { binding.key (self) value (o) }
@@ -79,8 +81,17 @@ testSuite "standard types and objects" with {
     test "Type Interface describes interface t" by {
         assertType (Interface) exactlyDescribes (t)
     }
-    test "Type Type describes union x" by {
-        assertType (Type) exactlyDescribes (x)
+    test "Type Interface describes t & u" by {
+        assertType (Interface) exactlyDescribes (t & u)
+    }
+    test "Type Type describes union z" by {
+        assertType (Type) exactlyDescribes (z)
+    }
+    test "Type Type describes intersection of unions" by {
+        assertType (Type) exactlyDescribes (i_of_u)
+    }
+    test "Type Interface describes exclusion w" by {
+        assertType (Interface) exactlyDescribes (w)
     }
     test "Object describes trivial" by {
         assertType (Object) exactlyDescribes (trivial)

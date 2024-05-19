@@ -1978,13 +1978,30 @@ GraceInterface.prototype = {
             return graceStringSequence(result.sort());
         },
         "methodAt(1)": function interface_methodAt (argcv, methName) {
-            return new GraceMethod(methname, [], Unknown);
+            return new GraceMethod(methName._value, [], type_Unknown);
         },
-        "==(1)": function type_identity (argcv, other) {
-            return selfRequest(this, "isMe(1)", argcv, other)
+        "==(1)": function interface_equality (argcv, other) {
+            if (Object.is(this, other)) return GraceTrue;
+            const iim = findMethod(other, "isInterface");
+            if (! iim) return GraceFalse;   // has no `isInterface` method, so can't be an interface
+            if (! Grace_isTrue(request(other, "isInterface", []))) return GraceFalse;
+            const selfMethods = selfRequest(this, "methodNames", [])._value;
+            const otherMethods = request(other, "methodNames", [])._value;
+            // methodNames are sorted, so we can compare them easilly
+            const n = selfMethods.length;
+            if (otherMethods.length !== n) return GraceFalse;
+            for (let i = 0; i < n; i++) {
+                const methName = selfMethods[i];
+                const selfMeth = request(this, "methodAt(1)", [1], selfMethods[i]);
+                const otherMeth = request(other, "methodAt(1)", [1], otherMethods[i]);
+                if (! Grace_isTrue(request(selfMeth, "==(1)", [1], otherMeth))) return GraceFalse;
+            }
+            return GraceTrue;
         },
-        "hash": function type_hash (argcv) {
-            return selfRequest(this, "myIdentityHash", argcv)
+        "hash": function interface_hash (argcv) {
+            // must correspond to interface_equality
+            const selfMethods = selfRequest(this, "methodNames", []);
+            return hashAndCombine(0x496E, selfMethods);
         },
         "setName(1)": type_setName,         // confidential
         "setTypeName(1)": type_setName,     // confidential
@@ -2041,11 +2058,17 @@ GraceMethod.prototype = {
         "asString": function method_asString (argcv) {
             return new GraceString("method " + this.name + " returning " +
                 request(this.returnType, "asString", [])._value);
+        },
+        "==(1)": function method_equality(argcv, other) {
+            // TODO: test parameter and result type equality, but that requires
+            // a cache of assumptions (to avoid infinite regress).  The cache
+            // must be indexed by identity.
+            return this.name == other.name ? GraceTrue : GraceFalse;
         }
     },
     className: "Method",
     definitionModule: "built-in library",
-    definitionLine: 1959,
+    definitionLine: 2035,
     classUid: "Method-built-in"
 };
 function graceStringSequence(jsListOfJsStrings) {
@@ -2827,9 +2850,9 @@ function safeJsString (obj) {
     return result;
 }
 
-function findMethod (obj, methname) {
+function findMethod (obj, methName) {
     var s = obj;
-    var meth = s.methods[methname];
+    var meth = s.methods[methName];
     if (typeof(meth) !== "function") meth = null;
     return meth;
 }
@@ -2847,7 +2870,7 @@ function GraceCallStackToString() {
         modName = "native code";
         errorLine = 0;
     }
-    const effectiveName = canonicalMethodName(stripDollarSuffix(this.methname));
+    const effectiveName = canonicalMethodName(stripDollarSuffix(this.methName));
     let errorString = effectiveName;
     if (this.className !== "module") {
         errorString = this.className + "." + effectiveName;
@@ -2860,11 +2883,11 @@ function GraceCallStackToString() {
     return errorString;
 }
 
-function handleRequestException(ex, obj, methname, method, methodArgs) {
+function handleRequestException(ex, obj, methName, method, methodArgs) {
     if (ex.exctype === 'graceexception') {
         ex.exitStack.unshift({
             className: obj.className,
-            methname: methname,
+            methName: methName,
             method: method,
             lineNumber: lineNumber,
             toString: GraceCallStackToString
@@ -2874,8 +2897,8 @@ function handleRequestException(ex, obj, methname, method, methodArgs) {
         throw ex;
     } else if (obj == undefined) {
         throw new GraceExceptionPacket(UninitializedVariableObject,
-            new GraceString("requested method '" + methname + "' on uninitialised variable."));
-    } else if (methname === 'module initialization') {
+            new GraceString("requested method '" + methName + "' on uninitialised variable."));
+    } else if (methName === 'module initialization') {
         const where = lineNumber ? "on line " + lineNumber : "in initialisation";
         const newEx = new GraceExceptionPacket(RequestErrorObject,
             new GraceString("error " + where + " of module " +
@@ -2883,16 +2906,16 @@ function handleRequestException(ex, obj, methname, method, methodArgs) {
         Object.defineProperty(newEx, 'moduleName', {value: obj.definitionModule});
         newEx.lineNumber = lineNumber;
         throw newEx;
-    } else if (typeof(obj.methods[methname]) !== "function") {
+    } else if (typeof(obj.methods[methName]) !== "function") {
         var argsGSeq = new GraceSequence( methodArgs.slice(1) );
-        return dealWithNoMethod(methname, obj, argsGSeq);
+        return dealWithNoMethod(methName, obj, argsGSeq);
     } else {
         throwStackOverflowIfAppropriate(ex);
         const newEx = new GraceExceptionPacket(MinigraceErrorObject,
             new GraceString("implementation error in JavaScript method. " + ex.toString()));
         newEx.exitStack.unshift({
             className: obj.className,
-            methname: methname,
+            methName: methName,
             method: method,
             lineNumber: 0,
             toString: GraceCallStackToString
@@ -2901,15 +2924,15 @@ function handleRequestException(ex, obj, methname, method, methodArgs) {
     }
 }
 
-function request(obj, methname, ...args) {
+function request(obj, methName, ...args) {
     var origLineNumber = lineNumber;
     lineNumber = 0;                      // to avoid reporting line number in native code
     var returnTarget = invocationCount;  // will be incremented by invoked method
     var meth
     try {
-        meth = obj.methods[methname];
+        meth = obj.methods[methName];
         if (meth.confidential) {
-            raiseConfidentialMethod(methname, obj);
+            raiseConfidentialMethod(methName, obj);
         }
         var ret = meth.apply(obj, args); // in request (...)
     } catch(ex) {
@@ -2919,7 +2942,7 @@ function request(obj, methname, ...args) {
             }
             throw ex;
         } else {
-            return handleRequestException(ex, obj, methname, meth, args);
+            return handleRequestException(ex, obj, methName, meth, args);
         }
     } finally {
         setLineNumber(origLineNumber);
@@ -2930,13 +2953,13 @@ function request(obj, methname, ...args) {
 request.isGraceRequest = true;  // marks this as a request dispatch
 var callmethod = request;       // for backward compatibility
 
-function selfRequest(obj, methname, ...args) {
+function selfRequest(obj, methName, ...args) {
     var origLineNumber = lineNumber;
     lineNumber = 0;                      // to avoid reporting line number in native code
     var returnTarget = invocationCount;  // will be incremented by invoked method
     var meth
     try {
-        meth = obj.methods[methname];
+        meth = obj.methods[methName];
         var ret = meth.apply(obj, args); // in selfRequest (...)
     } catch(ex) {
         if (ex.exctype === 'return') {
@@ -2945,7 +2968,7 @@ function selfRequest(obj, methname, ...args) {
             }
             throw ex;
         } else {
-            return handleRequestException(ex, obj, methname, meth, args);
+            return handleRequestException(ex, obj, methName, meth, args);
         }
     } finally {
         setLineNumber(origLineNumber);
