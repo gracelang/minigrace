@@ -1707,9 +1707,7 @@ method compileUnknown(uNode) {
     uNode.register := "type_Unknown"
 }
 method compileSelfType(stNode) {
-    def newType = varf(uidWithPrefix "selfType")
-    stNode.register := newType
-    out "const {newType} = new GraceSelfType();"
+    stNode.register := "type_Self"
 }
 method compileInherit(inhNode) forClass(className) {
     // The object under construction is `this`.

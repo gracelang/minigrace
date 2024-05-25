@@ -1899,6 +1899,11 @@ function type_setName (argcv, nu) {
 }
 type_setName.confidential = true;
 
+function noOp (argcv, nu) {
+    return this;
+}
+noOp.confidential = true;
+
 function interface_asString (argcv) {
     return new GraceString("interface " + this.name);
 }
@@ -2018,7 +2023,7 @@ GraceInterface.prototype = {
         },
         "typeParameterNames": function type_typeParameterNames (argcv) {
             if (! this.typeParamNames) {
-                return new GraceSequence([]);
+                return GraceEmptySequence;
             }
             return new GraceSequence(this.typeParamNames.map(
                     nm => new GraceString(nm)));
@@ -2100,97 +2105,6 @@ GraceSignature.prototype = {
     classUid: "Signature-built-in"
 };
 
-function GraceType(typeName) {        // dead code?
-    this.name = typeName;
-    this.typeMethods = [];
-    this.matchCache = [];
-}
-GraceType.prototype = {
-    methods: {
-        "isMe(1)":          object_isMe,
-        "myIdentityHash":   object_identityHash,
-        "≠(1)":             object_notEquals,
-        "basicAsString":    object_basicAsString,
-        "debug$Iterator":   object_debugIterator,
-        "::(1)":            object_colonColon,
-        "matches(1)": function type_match (argcv, other) {
-            let cUid = other.classUid;
-            if (cUid) {
-                let c = this.matchCache[cUid];
-                if (c !== undefined) return c;
-            } else {
-                minigrace.stderr_write(dbgp(other) + " has no classUid\n");
-            }
-            const tm = this.typeMethods;
-            let requiredMethodNames = Array.isArray(tm) ? tm : Object.keys(tm);
-            for (var i=0; i<requiredMethodNames.length; i++) {
-                const m = requiredMethodNames[i];
-                if (!other.methods[m]) {
-                    if (cUid) this.matchCache[cUid] = GraceFalse;
-                    return GraceFalse;
-                }
-            }
-            if (cUid) this.matchCache[cUid] = GraceTrue;
-            return GraceTrue;
-        },
-        "|(1)": function type_or(argcv, other) {
-            return new GraceTypeVariant(this, other);
-        },
-        "&(1)": function type_and(argcv, other) {
-            return new GraceTypeIntersection(this, other);
-        },
-        "prefix¬": function(argcv) {
-            return graceNotPattern(this);
-        },
-        "prefix==": curriedEquality,
-        "prefix≠": curriedInequality,
-        "-(1)": function type_and(argcv, other) {
-            return new GraceTypeExclusion(this, other);
-        },
-        "asString": type_asString,
-        "asDebugString": function type_asDebugString (argcv) {
-            return new GraceString("built-in type " + this.name);
-        },
-        "==(1)": function type_identity (argcv, other) {
-            return selfRequest(this, "isMe(1)", argcv, other)
-        },
-        "hash": function type_hash (argcv) {
-            return selfRequest(this, "myIdentityHash", argcv)
-        },
-        "setName(1)": type_setName,         // confidential
-        "setTypeName(1)": type_setName,     // confidential
-        "name": function type_name (argcv) {
-            return new GraceString(this.name);
-        },
-        "isNone": function type_isNone (argcv) {
-            return GraceFalse;
-        },
-        "isType": function type_isType (argcv) {
-            return GraceTrue;
-        },
-        "typeParameterNames": function type_typeParameterNames (argcv) {
-            const names = this.typeParamNames | [];
-            return graceStringSequence(names);
-        },
-        "interfaces": function type_interfaces (argcv) {
-            return new GraceSequence( [ this ] );
-        },
-        "isInterface": function constant_false (argcv) {
-            return GraceFalse;
-        }
-    },
-    className: "Type",
-    definitionModule: "built-in library",
-    definitionLine: 2063,
-    classUid: "Type-built-in"
-};
-
-function GraceSelfType() {
-    this.name = "Self";
-    this.typeMethods = [];
-    this.matchCache = [];
-}
-GraceSelfType.prototype = GraceType.prototype;
 
 function isGraceType(t) {
     // is t a Grace Type?  Instead of cheking type conformity, we take some shortcuts
@@ -2341,7 +2255,82 @@ function raiseTypeArgError(methodName, required, given) {
                         " type argument" + s + ", but was given " + given));
 }
 
-var type_Unknown = new GraceType("Unknown");
+const type_Unknown = {
+    name: "Unknown",
+    typeMethods: [],
+    matchCache: [],
+    methods: {
+        // we can use arrow functions only for those that do not refer to `this`
+        "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
+        "≠(1)":             object_notEquals,
+        "basicAsString":    object_basicAsString,
+        "debug$Iterator":   object_debugIterator,
+        "::(1)":            object_colonColon,
+        "matches(1)": (argcv, other) => GraceTrue,
+        "|(1)"(argcv, other) { return this },
+        "&(1)"(argcv, other) { return new GraceTypeIntersection(this, other) },
+        "prefix¬"(argcv) { return graceNotPattern(this) },
+        "prefix==": curriedEquality,
+        "prefix≠": curriedInequality,
+        "-(1)"(argcv, other) { return this},
+        "asString": type_asString,
+        "asDebugString": (argcv) => new GraceString("built-in type Unknown"),
+        "==(1)": publicVersion(object_isMe, "==(_)"),
+        "hash": publicVersion(object_identityHash, "hash"),
+        "setName(1)": noOp,         // confidential
+        "setTypeName(1)": noOp,     // confidential
+        "name"(argcv) { return new GraceString(this.name) },
+        "isNone": argcv => GraceFalse,
+        "isType": (argcv) = GraceTrue,
+        "typeParameterNames": argcv => GraceEmptySequence,
+        "interfaces": argcv => GraceEmptySequence,
+        "isInterface": argcv => GraceFalse
+    },
+    className: "TypeUnknown",
+    definitionModule: "built-in library",
+    definitionLine: 2256,
+    classUid: "Unknown-built-in"
+};
+
+const type_Self = {
+    name: "Self",
+    typeMethods: [],
+    matchCache: [],
+    methods: {
+        // we can use arrow functions only for those that do not refer to `this`
+        "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
+        "≠(1)":             object_notEquals,
+        "basicAsString":    object_basicAsString,
+        "debug$Iterator":   object_debugIterator,
+        "::(1)":            object_colonColon,
+        "matches(1)": (argcv, other) => raiseException(ProgrammingErrorObject, "Self.matches doesn't make sense"),
+        "|(1)"(argcv, other) { return GraceTypeVariant(this, other) },
+        "&(1)"(argcv, other) { return GraceTypeIntersection(this, other) },
+        "prefix¬"(argcv) { return graceNotPattern(this) },
+        "prefix==": curriedEquality,
+        "prefix≠": curriedInequality,
+        "-(1)"(argcv, other) { return GraceTypeExclusion(this, other) },
+        "asString": argcv => "type Self",
+        "asDebugString": (argcv) => new GraceString("built-in type Self"),
+        "==(1)": publicVersion(object_isMe, "==(_)"),
+        "hash": publicVersion(object_identityHash, "hash"),
+        "setName(1)": noOp,      // confidential, does not change name
+        "setTypeName(1)": noOp,  // confidential, does not change name
+        "name"(argcv) { return new GraceString(this.name) },
+        "isNone": argcv => GraceFalse,
+        "isType": (argcv) = GraceTrue,
+        "typeParameterNames": argcv => GraceEmptySequence,
+        "interfaces": argcv => GraceEmptySequence,
+        "isInterface": argcv => GraceFalse
+    },
+    className: "TypeSelf",
+    definitionModule: "built-in library",
+    definitionLine: 2293,
+    classUid: "Self-built-in"
+};
+
 
 function hashMap_empty () { return new GraceHashMap(); };
 
@@ -2808,7 +2797,7 @@ function gracecode_util() {
 }
 
 if (typeof(process) === "undefined" && typeof gctCache !== "undefined")
-    gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=(1)\n dynamicModule\n dynamicModule:=(1)\n importDynamic\n importDynamic:=(1)\n jobs\n jobs:=(1)\n cLines\n cLines:=(1)\n lines\n lines:=(1)\n filename\n filename:=(1)\n errno\n errno:=(1)\n parseargs\n previousElapsed\n previousElapsed:=(1)\n log_verbose\n outprint\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n column\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath(1)\n file(1)on(1)orPath(1)otherwise(1)\n file(1)onPath(1)otherwise(1)\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n stringMap\n buildinfo\n sys\n io\n";
+    gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=(1)\n dynamicModule\n dynamicModule:=(1)\n importDynamic\n importDynamic:=(1)\n jobs\n jobs:=(1)\n cLines\n cLines:=(1)\n lines\n lines:=(1)\n filename\n filename:=(1)\n errno\n errno:=(1)\n parseargs\n previousElapsed\n previousElapsed:=(1)\n log_verbose\n outprint\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n column\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath(1)\n file(1)on(1)orPath(1)otherwise(1)\n file(1)onPath(1)otherwise(1)\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n unixFilePath\n sys\n io\n";
 
 function loadDynamicModule (moduleName, directory) {
     // `directory` is optional; if omitted, we search GRACE_MODULE_PATH
@@ -3736,14 +3725,12 @@ if (typeof global !== "undefined") {
     global.GraceNum = GraceNum;
     global.GraceObject = GraceObject;
     global.GracePrimitiveArray = GracePrimitiveArray;
-    global.GraceSelfType = GraceSelfType;
     global.GraceSequence = GraceSequence;
     global.GraceSequenceIterator = GraceSequenceIterator;
     global.GraceString = GraceString;
     global.GraceStringIterator = GraceStringIterator;
     global.GraceTrait = GraceTrait;
     global.GraceTrue = GraceTrue;
-    global.GraceType = GraceType;
     global.importedModules = importedModules;
     global.isGraceType = isGraceType;
     global.ImportErrorObject = ImportErrorObject;
@@ -3780,6 +3767,7 @@ if (typeof global !== "undefined") {
     global.setModuleName = setModuleName;
     global.StackFrame = StackFrame;
     global.tryCatch = tryCatch;
+    global.type_Self = type_Self;
     global.type_Unknown = type_Unknown;
     global.TypeErrorObject = TypeErrorObject;
     global.var_HashMap = var_HashMap;

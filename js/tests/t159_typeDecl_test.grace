@@ -9,6 +9,8 @@ type AB = A & B
 type AB' = A | B
 type ABC = A & B & C
 type ABC' = A | B | C
+type S = Self
+type U = Unknown
 
 type ListWithoutSequence = List - Sequence
 
@@ -74,8 +76,24 @@ testSuite "type names" with {
     test "AB'.asDebugString" by { assert (AB'.asDebugString) shouldBe "type AB'" }
     test "name of A | B" by { assert ((A | B).name) shouldBe "A | B" }
     test "name of A & B" by { assert ((A & B).name) shouldBe "A & B" }
+    test "name of S" by { assert (S.name) shouldBe "Self" }
+    test "name of Self" by { assert (Self.name) shouldBe "Self" }
+    test "name of U" by { assert (U.name) shouldBe "Unknown" }
+    test "name of Unknown" by { assert (Unknown.name) shouldBe "Unknown" }
+    test "AB' & C has a generated name" by {
+        assert ((AB' & C).name) shouldBe "AB' & C"
+    }
+    test "ABC' has its own name" by {
+        assert (ABC'.name) shouldBe "ABC'"
+    }
 }
 
+testSuite "Type Equality" with {
+    test "U == Unknown" by {
+        assert (U == Unknown) description "U isn't the same as Unknown" }
+    test "S == Self" by {
+        assert (S == Self) description "S isn't the same as Self" }
+}
 
 testSuite "Compoiste Types" with {
     test "A & B is an interface" by {
@@ -90,7 +108,6 @@ testSuite "Compoiste Types" with {
     test "methodNames is understood by composite interface" by {
         assert (AB.methodNames) shouldBe [ "a(_)", "b(_)"]
     }
-
     test "A | B | C is not an interface" by {
         deny ((A | B | C ).isInterface) description "A | B | C is an interface"
     }
@@ -100,22 +117,14 @@ testSuite "Compoiste Types" with {
     test "Composite types do not understand methodNames" by {
         assert {(A | B | C).methodNames} shouldRaise (NoSuchMethod)
     }
-
     test "ABC' is not an interface" by {
         deny (ABC'.isInterface) description "ABC' is an interface"
     }
-    test "ABC' has its own name" by {
-        assert (ABC'.name) shouldBe "ABC'"
-    }
-    test "Variant types do not understand methodNames" by {
+    test "Variant types do not understand `methodNames`" by {
         assert {ABC'.methodNames} shouldRaise (NoSuchMethod)
     }
-
-    test "AB' & C is put into disjunctive normal form" by {
+    test "Variant & interface is put into disjunctive normal form" by {
         deny ((AB' & C).isInterface) description "AB' & C is an interface"
-    }
-    test "AB' & C has a generated name" by {
-        assert ((AB' & C).name) shouldBe "AB' & C"
     }
     test "Variant & interface first variant" by {
         assert ((AB' & C).interfaces.size) shouldBe 2
@@ -131,6 +140,9 @@ testSuite "Compoiste Types" with {
     }
     test "(Variant & Interface) does not understand methodNames" by {
         assert {(AB' & C).methodNames} shouldRaise (NoSuchMethod)
+    }
+    test "(Unknown & Interface) is intersection type" by {
+        assert ((Unknown & C).name) shouldBe "Unknown & C"
     }
 }
 
