@@ -2,7 +2,7 @@
 
 Module files will be found in several locations. Grace source files of
 modules in these locations will be automatically compiled if the module
-is imported. 
+is imported.
 The searched locations are:
 
  * The current directory
@@ -20,20 +20,13 @@ The documentation here is probably out of date.  To see the interface currently
 provided by these modules, look at the corresponding interface definition in
 _modules/moduleName.grace_
 
-stringMap
----------
-This is a Grace module that implements a simple dictionary where
-the keys are strings.  It exists for two reasons: it has an interface
-that is largely backward-compatable with the now-defunct *mgcollections* module,
-and it has an accelerated implementation in JavaScript.
-
 mirror
 ------
 The mirror module supports reflection on Grace objects. The module defines types
 `Mirror` and `MethodMirror`, and classes
 
     reflect(o : Object)
-    
+
 which returns a `Mirror` on the object `o`, and
 
     methodMirror(theSubject, aMethodName)
