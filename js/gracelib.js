@@ -825,7 +825,7 @@ GraceString.prototype = {
     classUid: "string-built-in"
 };
 
-var GraceEmptyString = new GraceString("");
+const GraceEmptyString = new GraceString("");
 
 function failNumMethodArgCheck(desc, className, methodName) {
     const idStart = /^[a-zA-Z_]/;
@@ -1626,6 +1626,8 @@ GraceSequence.prototype = {
     definitionLine: 0,
     classUid: "sequence-built-in"
 };
+
+const GraceEmptySequence = new GraceSequence( [] );
 
 function GracePrimitiveArray(len) {
     this._value = new Array(len);
@@ -3721,6 +3723,7 @@ if (typeof global !== "undefined") {
     // version of the util module will be loaded.
     // global.gracecode_util = gracecode_util;
     global.GraceDone = GraceDone;
+    global.GraceEmptySequence = GraceEmptySequence;
     global.GraceEmptyString = GraceEmptyString;
     global.GraceException = GraceException;
     global.GraceExceptionPacket = GraceExceptionPacket;

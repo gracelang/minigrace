@@ -174,12 +174,16 @@ method uidWithPrefix(str) {
 //
 /////////////////////////////////////////////////////////////
 
-method compilearray(o) {
-    def reg = uidWithPrefix "seq"
-    var vals := list []
-    for (o.value) do { a -> vals.push(compilenode(a)) }
-    out "var {reg} = new GraceSequence({literalList(vals)});"
-    o.register := reg
+method compileSequence(o) {
+    if (o.value.isEmpty) then {
+        o.register := "GraceEmptySequence"
+    } else {
+        def reg = uidWithPrefix "seq"
+        var vals := list []
+        for (o.value) do { a -> vals.push(compilenode(a)) }
+        out "var {reg} = new GraceSequence({literalList(vals)});"
+        o.register := reg
+    }
 }
 method compileobjouter(o, outerRef) is confidential {
     def outerPropName = outerProp(o)
@@ -1449,12 +1453,13 @@ method compilenode(o) {
         } elseif { oKind == "num" } then {
             o.register := "new GraceNum(" ++ stripLeadingZeros(o.value) ++ ")"
         } elseif {oKind == "string"} then {
-            // Escape characters that may not be legal in string literals
-            def os = escapestring(o.value)
-            out("var string" ++ auto_count ++ " = new GraceString(\""
-                ++ os ++ "\");")
-            o.register := "string" ++ auto_count
-            auto_count := auto_count + 1
+            if (o.value.isEmpty) then {
+                o.register := "GraceEmptyString"
+            } else {
+                o.register := uidWithPrefix "string"
+                def os = escapestring(o.value) // escapes illegal characters
+                out "var {o.register} = new GraceString(\"{os}\");"
+            }
         } elseif { oKind == "assignment" } then {
             compilebind(o)
         } elseif { oKind == "return" } then {
@@ -1466,7 +1471,7 @@ method compilenode(o) {
         } elseif { oKind == "block" } then {
             compileblock(o)
         } elseif { oKind == "sequence" } then {
-            compilearray(o)
+            compileSequence(o)
         } elseif { oKind == "if" } then {
             compileif(o)
         } elseif { oKind == "trycatch" } then {
