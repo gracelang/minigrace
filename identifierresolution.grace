@@ -248,8 +248,8 @@ type HasName = interface { nameString → String }
 
 method typeName (typeNode) in (scope) {
     // returns a name for the type expression denoted by typeNode.
-    // typeNode may be an ast.identifierNode, a constantScope.typeNode
-    // or a string (such as "Unknown").
+    // typeNode may be an ast node (identifier or unknownLiteral),
+    // a constantScope.typeNode, or a string (such as "Unknown").
     // If necessary, creates a name starting with $, and enters it in scope's
     // types dictionary
 
@@ -376,7 +376,7 @@ method numTypeParams(typeName) is confidential {
 method scopeWithUid(str) for (gct) {
     // find the appropriate external scope, or create it if it
     // does not yet exist
-    
+
     def result = importedScopes.at(str) ifAbsent {
         sm.predefined.at(str) ifAbsent {
             def newScope = sm.externalScope

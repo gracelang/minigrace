@@ -1864,7 +1864,9 @@ function GraceInterfaceAnd(l, r) {
     if (isGraceType(r)) return request(r, "&(1)", [1], l);
     return graceAndPattern(l, r);
 }
-function mergeSorted(l1, l2) {
+function mergeSorted(leftMeths, rightMeths) {
+    const l1 = Array.isArray(leftMeths) ? leftMeths : Object.keys(leftMeths).sort();
+    const l2 = Array.isArray(rightMeths) ? rightMeths : Object.keys(rightMeths).sort();
     let i1 = 0, i2 = 0;
     const result = [];
     while ((i1 < l1.length) && (i2 < l2.length)) {
@@ -1975,14 +1977,16 @@ GraceInterface.prototype = {
         "asString": type_asString,
         "asDebugString": interface_asString,
         "methodNames": function type_methodNames (argcv) {
-            var result = [];
+            var result;
             if (Array.isArray(this.typeMethods)) {
-                this.typeMethods.forEach( (mn) =>
-                    result.push(canonicalMethodName(mn)));
+                result = this.typeMethods.map(
+                    mn => canonicalMethodName(mn));
             } else {
-                result = Object.ketys(this.typeMethods);
+                result = Object.keys(this.typeMethods).map (
+                    mn => canonicalMethodName(mn));
+                result.sort()
             }
-            return graceStringSequence(result.sort());
+            return graceStringSequence(result);
         },
         "methodAt(1)": function interface_methodAt (argcv, methName) {
             return new GraceMethod(methName._value, [], type_Unknown);
@@ -2083,9 +2087,10 @@ function graceStringSequence(jsListOfJsStrings) {
         jsListOfJsStrings.map(s => new GraceString(s)))
 }
 
-function GraceSignature(methodName, paramNames, paramTypes, resultType) {
+function GraceSignature(methodName, paramNames, typeParameterNames, paramTypes, resultType) {
     this.name = methodName;
     this.paramNames = paramNames;
+    this.typeParameterNames = typeParameterNames;
     this.paramTypes = paramTypes;
     this.resultType = resultType;
     this.typeParams = [];
@@ -3727,6 +3732,7 @@ if (typeof global !== "undefined") {
     global.GracePrimitiveArray = GracePrimitiveArray;
     global.GraceSequence = GraceSequence;
     global.GraceSequenceIterator = GraceSequenceIterator;
+    global.GraceSignature = GraceSignature;
     global.GraceString = GraceString;
     global.GraceStringIterator = GraceStringIterator;
     global.GraceTrait = GraceTrait;

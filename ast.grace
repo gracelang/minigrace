@@ -826,6 +826,8 @@ class methodSignature (parts', dtype', universals) {
     // universals is a sequence of declarations of universally-quantified types.
 
     inherit baseNode
+        alias inheritedIsTyped = isTyped   // Grace doesn't let us make this public
+    method hasReturnType { inheritedIsTyped }
     method kind { "methodtype" }
     var signatureParts is public := parts'
     var dtype is public := dtype'
@@ -894,6 +896,18 @@ class methodSignature (parts', dtype', universals) {
             result.push(each.nameString)
         }
         result
+    }
+    method parameterTypes {
+        def result = list []
+        parametersDo { p -> result.addLast(p.decType) }
+        result
+    }
+    method isTyped {
+        if (hasReturnType) then { return true }
+        hasParameterTypes
+    }
+    method hasParameterTypes {
+        signatureParts.anySatisfy {each -> each.isTyped}
     }
     method numTypeParams { signatureParts.first.numTypeParams }
     method hasTypeParams { false ≠ signatureParts.first.typeParams }
@@ -1991,6 +2005,13 @@ class objectWithBody (b) inheriting (superclass') using (ts) {
 
         value.do { o ->
             if (o.isMethod) then { action.apply(o) }
+        }
+    }
+
+    method typesDo(action) {
+        // iterate over my method and type declarations
+        value.do { o ->
+            if (o.isTypeDec) then { action.apply(o) }
         }
     }
 

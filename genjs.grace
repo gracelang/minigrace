@@ -295,17 +295,13 @@ method create (kind) field (o) in (objr) {
 method installLocalAttributesOf(o) into (objr) {
     var mutable := false
 
-    for (o.body) do { e ->
+    o.body.do { e ->
         if (e.isMethod) then {
             compilemethodnode(e) in (objr)
-        } elseif { e.kind == "vardec" } then {
-            create "var" field (e) in (objr)
-            mutable := true
-        } elseif { e.kind == "defdec" } then {
-            if (e.value.isNull.not) then {
-                create "def" field (e) in (objr)
-            }
-        } elseif { e.isTypeDec } then {
+        } elseif { e.isFieldDec } then {
+            create (e.description) field (e) in (objr)
+            if (e.isVarDec) then { mutable := true }
+        } elseif {e.isTypeDec } then {
             compiletypedec(e) in (objr)
         }
     }
@@ -557,26 +553,48 @@ method typeFunBody(typeExpr) named (tName) {
     }
 }
 method compileinterfaceliteral(o) in (obj) {
-    def reg = uidWithPrefix "typeLit"
+    def reg = uidWithPrefix "iface"
+    o.register := reg
     def escName = escapestring(o.name)
     out "//   interface literal "
     out "var {reg} = new GraceInterface(\"{escName}\");"
+    compileMethodsForInterface(o)
+    reg
+}
+
+method compileMethodsForInterface(o) {
+    def reg = o.register
     if (o.methods.anySatisfy { each -> each.kind == "ellipsis" }) then {
         out "Object.defineProperty({reg}, 'typeMethods', \{ get: ellipsisFun \});"
     } else {
-        out "{reg}.typeMethods = {stringList(o.methods.map { meth -> meth.nameString }.sorted)};"
+        o.methods.do { meth -> compileSignature(meth) }
+        out "{reg}.typeMethods = \{"
+        increaseindent
+        var sep := "  "
+        o.methods.do { meth ->
+            out "{sep}\"{meth.nameString.quoted}\": {meth.register}"
+            if ("  " == sep) then { sep := ", " }
+        }
+        decreaseindent
+        out "};"
     }
     if (o.hasTypeParams) then {
         out "{reg}.typeParams = [{stringList(o.typeParams.map {p -> p.nameString})}];"
     }
-    o.register := reg
-    reg
 }
-method hasTypedParams(o) {
-    o.parametersDo { p ->
-        if (p.dtype != false) then { return true }
-    }
-    return false
+
+method compileSignature(m) {
+    def reg = uidWithPrefix "sig"
+    m.parameterTypes.do { each -> compilenode(each) }
+    compilenode(m.decType)
+    out( "{reg} = new GraceSignature(\"{m.nameString.quoted}\"," ++
+         " {stringList(m.parameterNames)}," ++
+         " {stringList(m.typeParameterNames)}," ++
+         " {literalList(m.parameterTypes.map { each -> each.register })}," ++
+         " {m.decType.register});"
+    )
+    m.register := reg
+    reg
 }
 
 method compileMethodPreamble(o, funcName, name) withParams (p) {
@@ -1273,7 +1291,6 @@ method partl(o) {
     result
 }
 method compileOuterRequest(o, args) {
-    out "// call case 1: outer request"
     compilenode(o.receiver)
     out("var {o.register} = selfRequest({o.receiver.register}" ++
           ", \"{escapestring(o.nameString)}\"" ++
@@ -1281,7 +1298,6 @@ method compileOuterRequest(o, args) {
 }
 
 method compileSelfRequest(o, args) {
-    out "// call case 2: self request with {o.numArgs} args and {o.numTypeArgs} typeArgs "
     out("var {o.register} = selfRequest(this" ++
           ", \"{escapestring(o.nameString)}\", [{partl(o)}]{assembleArguments(args)});")
 }
