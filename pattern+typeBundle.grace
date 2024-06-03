@@ -104,11 +104,14 @@ trait open {
 
     method TypeIntersection (t1, t2) {
         if (t2.isType.not) then { return t2 & t1 }   // double-dispatch to Pattern t2
-        if (t1.isNone) then {return t1}
-        if (t2.isNone) then {return t2}
+        if (t2.isNone) then {return t2}     // if t1.isNone, we won't come here
         AndType (t1, t2)
     }
     class AndType (t1, t2) {
+        // Objects of this class are used to represent Self & <an interface> and
+        // Unknown & <an interface>, becuase apb doesn't yet know what else to do.
+        // The & of two interfaces generates another "Interface-built-in", and
+        // not an instance of this class.
         use AndPattern (t1, t2)
             alias matchHook(_) = matches(_)
             exclude &(_)
@@ -121,7 +124,9 @@ trait open {
         // t1 can't be a GraceInterface (from gracelib) — it must be an
         // exclusion
         var name is readable := "{t1.name} & {t2.name}"
-        def interfaces is readable = t1.interfaces.map { each -> each & t2 }
+        def interfaces is readable = coll.sequence.withAll(  // because map is lazy
+            t1.interfaces.map { each -> each & t2 }
+        )
         method asDebugString {
             var result := ""
             interfaces.do { each -> result := result ++ each.name }
@@ -181,7 +186,9 @@ trait open {
         }
 
         once method interfaces {
-            t1.interfaces.map { each -> each - t2 }
+            coll.sequence.withAll(      // because map is lazy
+                t1.interfaces.map { each -> each - t2 }
+            )
         }
     }
 
