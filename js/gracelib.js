@@ -1925,10 +1925,16 @@ GraceInterface.prototype = {
     },
     methodAt: function nativeMethodAt (numericName) {
         // returns a function that, when called, returns the method signature
-        if (Array.isArray(this.typeMethods)) {
+        const tm = this.typeMethods
+        if (Array.isArray(tm)) {
+            // the compiler didn't record a signature, so we invent one!
             return () => new GraceSignature(numericName, [], [], [], type_Unknown);
         }
-        return this.typeMethods[numericName];
+        if (tm[numericName]) return tm[numericName];
+        raiseException(NoSuchObjectErrorObject,
+            safeJsString(this) +
+            " does not have a method " +
+            canonicalMethodName(numericName), numericName);
     },
     methods: {
         "isMe(1)":          object_isMe,
@@ -2079,10 +2085,10 @@ GraceSignature.prototype = {
             return graceStringSequence(this.typeParams);
         },
         parameterNames() {
-            return graceStringSequence(this.paramsNames);
+            return graceStringSequence(this.paramNames);
         },
         parameterTypes() {
-            return new GraceSequence(this.paramtypes);
+            return new GraceSequence(this.paramTypes);
         },
         resultType() {
             return this.resultType;
