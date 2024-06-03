@@ -2,6 +2,8 @@ dialect "minitest"
 
 type A = interface {a(n:Number) -> Number}
 type B = interface {b(s:String) -> String}
+type D = interface {d(u:Unknown) -> Unknown}
+type D' = interface {d(_)e(_,_)}
 type A' = A
 type B' = B
 type C = interface {c -> Done }
@@ -11,6 +13,10 @@ type ABC = A & B & C
 type ABC' = A | B | C
 type S = Self
 type U = Unknown
+type W = interface {
+    a(s:String) -> String
+    x(n:Number) -> Number
+}
 
 type ListWithoutSequence = List - Sequence
 
@@ -95,7 +101,7 @@ testSuite "Type Equality" with {
         assert (S == Self) description "S isn't the same as Self" }
 }
 
-testSuite "Compoiste Types" with {
+testSuite "Composite Types" with {
     test "A & B is an interface" by {
         assert ((A & B).isInterface) description "A & B is not an interface"
     }
@@ -114,13 +120,16 @@ testSuite "Compoiste Types" with {
     test "A | B | C has generated name" by {
         assert ((A | B | C ).name) shouldBe "A | B | C"
     }
-    test "Composite types do not understand methodNames" by {
+    test "Variant type expressions do not understand `methodNames`" by {
         assert {(A | B | C).methodNames} shouldRaise (NoSuchMethod)
+    }
+    test "Variant types know their consituent interfaces" by {
+        assert ((A | B | C).interfaces) shouldBe [ A, B, C ]
     }
     test "ABC' is not an interface" by {
         deny (ABC'.isInterface) description "ABC' is an interface"
     }
-    test "Variant types do not understand `methodNames`" by {
+    test "Named variant types do not understand `methodNames`" by {
         assert {ABC'.methodNames} shouldRaise (NoSuchMethod)
     }
     test "Variant & interface is put into disjunctive normal form" by {
@@ -134,7 +143,7 @@ testSuite "Compoiste Types" with {
     }
     test "Variant & interface second variant" by {
         assert ((AB' & C).interfaces.size) shouldBe 2
-        def secondVariant = sequence.withAll((AB' & C).interfaces).second
+        def secondVariant = (AB' & C).interfaces.second
         assert (secondVariant.methodNames) shouldBe ((B & C).methodNames)
         assert (secondVariant) shouldBe (B & C)
     }
@@ -143,6 +152,70 @@ testSuite "Compoiste Types" with {
     }
     test "(Unknown & Interface) is intersection type" by {
         assert ((Unknown & C).name) shouldBe "Unknown & C"
+    }
+    test "Simple exclusion" by {
+        assert (AB - B) shouldBe (A)
+    }
+    test "Null exclusion" by {
+        assert (AB - interface { z(_:String) -> Done }) shouldBe (AB)
+    }
+    test "Invalid exclusion" by {
+        assert {AB - AB'} shouldRaise (TypeError)
+            mentioning "right-hand argument" and "not an interface"
+    }
+}
+
+testSuite "Signatures" with {
+    test "method names" by {
+        assert (D.methodNames) shouldBe [ "d(_)" ]
+    }
+    test "method name in signature" by {
+        assert (D.methodAt "d(_)".name) shouldBe "d(_)"
+        assert (D.methodAt "d(_)".numericName) shouldBe "d(1)"
+    }
+    test "parameter name when given" by {
+        assert (D.methodAt "d(_)".parameterNames) shouldBe [ "u" ]
+    }
+    test  "parameter name when omitted" by {
+        assert (D'.methodAt "d(_)e(_,_)".parameterNames) shouldBe [ "__1", "__2", "__3" ]
+    }
+    test "parameter type when given" by {
+        assert (B.methodAt "b(_)".parameterTypes) shouldBe [ String ]
+    }
+    test  "methodAt for a method that doesn't exist" by {
+        assert {D'.methodAt "d(_)"} shouldRaise (NoSuchObject)
+            mentioning "D' does not have a method d(_)"
+    }
+    test  "parameter types when omitted" by {
+        assert (D'.methodAt "d(_)e(_,_)".parameterTypes) shouldBe [ Unknown, Unknown, Unknown ]
+    }
+    test  "parameter type when Unknown" by {
+        assert (D.methodAt "d(_)".parameterTypes) shouldBe [ Unknown ]
+    }
+    test "result type when given" by {
+        assert (B.methodAt "b(_)".returnType) shouldBe (String)
+    }
+    test  "result type when omitted" by {
+        assert (D'.methodAt "d(_)e(_,_)".returnType) shouldBe (Unknown)
+    }
+    test  "result type when Unknown" by {
+        assert (D.methodAt "d(_)".returnType) shouldBe (Unknown)
+    }
+    test "Signature after exclusion" by {
+        assert ((ABC - C).methodAt "a(_)") shouldBe (A.methodAt "a(_)")
+    }
+    test "Excluded Signature" by {
+        assert (C.methodAt "c") hasType (Signature)
+        assert ((ABC - C).methodNames) shouldBe [ "a(_)", "b(_)" ]
+        assert {(ABC - C).methodAt "c"} shouldRaise (NoSuchObject)
+            mentioning "does not have a method c"
+    }
+    test "Type & has the union of methodNames" by {
+        assert ((ABC & W).methodNames) shouldBe ["a(_)", "b(_)", "c", "x(_)"]
+    }
+    test "Signature & has a composed signature" by {
+        def combined_a = interface { a(s:Number|String) -> Number|String }.methodAt "a(_)"
+        assert ((ABC & W).methodAt "a(_)") shouldBe (combined_a)
     }
 }
 

@@ -1856,15 +1856,29 @@ function GraceTypeIntersection(l, r) {
 function GraceInterfaceAnd(l, r) {
     // This has to be defined in gracelib, because loading module
     // pattern+typeBundle causes a circularity
-    if (r.className == "Interface") {
+    if (r.classUid == "Interface-built-in") {
         const result = new GraceInterface(l.name + " & " + r.name);
-        result.typeMethods = mergeSorted (l.typeMethods, r.typeMethods);
+        const leftMeths = l.typeMethods;
+        const rightMeths = r.typeMethods;
+        if ( Array.isArray(leftMeths) || Array.isArray(rightMeths) ) {
+            result.typeMethods = mergeSortedLists (leftMeths, rightMeths);
+        } else {
+            result.typeMethods = {};
+            for (let methName in leftMeths) {
+                result.typeMethods[methName] = SignatureFuncAnd(leftMeths[methName], rightMeths[methName]);
+            }
+            for (let methName in rightMeths) {
+                if (! result.typeMethods.hasOwnProperty(methName)) {
+                    result.typeMethods[methName] = rightMeths[methName];
+                }
+            }
+        }
         return result;
     }
     if (isGraceType(r)) return request(r, "&(1)", [1], l);
     return graceAndPattern(l, r);
 }
-function mergeSorted(leftMeths, rightMeths) {
+function mergeSortedLists(leftMeths, rightMeths) {
     const l1 = Array.isArray(leftMeths) ? leftMeths : Object.keys(leftMeths).sort();
     const l2 = Array.isArray(rightMeths) ? rightMeths : Object.keys(rightMeths).sort();
     let i1 = 0, i2 = 0;
@@ -1884,6 +1898,33 @@ function mergeSorted(leftMeths, rightMeths) {
     while (i2 < l2.length) { result.push(l2[i2++]); }
     return result;
 }
+
+function SignatureFuncAnd(sf1, sf2) {
+    // sf1 and sf2 are functions that return Signatures s1 and s2, respectively.
+    // sf2 may be undefined.  Answer a function that returns (s1 & s2).
+    if (! sf2) return sf1;
+    return () => {
+        const s1 = sf1();
+        const s2 = sf2();
+        if (s1.typeParameterNames.length != s2.typeParameterNames.length)
+            raiseTypeError("Incompatible signatures for " + s1.name +
+                " in & operation: different number of type parameters");
+        return new GraceSignature(s1.name, s1.paramNames, s1.typeParameterNames,
+            typeListOr(s1.paramTypes, s2.paramTypes),
+            request(s1.returnType, "&(1)", [1], s2.returnType));
+    }
+}
+
+function typeListOr(l1, l2) {
+    // l1 and l2 are equal-length lists of types: answer the pairwise |
+    const result = [];
+    const len = l1.length;
+    for (let i = 0; i < len; i++) {
+        result.push(request(l1[i], "|(1)", [1], l2[i]));
+    }
+    return result;
+}
+
 
 function GraceTypeUnion(l, r) {
     return request(patternAndType(), "TypeUnion(2)", [2], l, r);
@@ -1926,7 +1967,7 @@ GraceInterface.prototype = {
     methodAt: function nativeMethodAt (numericName) {
         // returns a function that, when called, returns the method signature
         const tm = this.typeMethods
-        if (Array.isArray(tm)) {
+        if (Array.isArray(tm) && tm.includes(numericName)) {
             // the compiler didn't record a signature, so we invent one!
             return () => new GraceSignature(numericName, [], [], [], type_Unknown);
         }
@@ -1974,21 +2015,28 @@ GraceInterface.prototype = {
         },
         "prefix==": curriedEquality,
         "prefix≠": curriedInequality,
-        "-(1)": function type_exclusion(argcv, other) {
-            if (other.className !== "Interface") {
+        "-(1)": function type_exclusion(argcv, exclusions) {
+            if (exclusions.classUid !== "Interface-built-in") {
                 raiseException(TypeErrorObject,
                     "right-hand argument to `-` operator is not an interface");
             }
-            const result = new GraceInterface("‹anon›");
-            const tm = this.typeMethods, om = other.typeMethods;
-            let origMethodNames = Array.isArray(tm) ? tm : Object.keys(tm);
-            let exclMethodNames = Array.isArray(om) ? om : Object.keys(om);
-            origMethodNames.forEach(elem =>
-                {   if (! exclMethodNames.includes(elem)) {
-                        result.typeMethods.push(elem);
+            const result = new GraceInterface(this.name + " - " + exclusions.name);
+            const tm = this.typeMethods, xm = exclusions.typeMethods;
+            let exclMethodNames = Array.isArray(xm) ? xm : Object.keys(xm);
+            if (Array.isArray(tm)) {
+                tm.forEach(methName => {
+                    if (! exclMethodNames.includes(methName)) {
+                        result.typeMethods.push(methName);
+                    }
+                });
+            } else {    // tm is a record
+                result.typeMethods = {};
+                for (const methName in tm) {
+                    if ( ! exclMethodNames.includes(methName)) {
+                        result.typeMethods[methName] = tm[methName];
                     }
                 }
-            );
+            }
             return result;
         },
         "asString": type_asString,
@@ -2059,12 +2107,16 @@ function graceStringSequence(jsListOfJsStrings) {
         jsListOfJsStrings.map(s => new GraceString(s)))
 }
 
-function GraceSignature(methodName, paramNames, typeParameterNames, paramTypes, resultType) {
+function Signature_asString (argcv) {
+    return new GraceString("Signature for `" + canonicalMethodName(this.name) + "`");
+}
+
+function GraceSignature(methodName, paramNames, typeParameterNames, paramTypes, returnType) {
     this.name = methodName;
     this.paramNames = paramNames;
     this.typeParameterNames = typeParameterNames;
     this.paramTypes = paramTypes;
-    this.resultType = resultType;
+    this.returnType = returnType;
     this.typeParams = [];
 }
 GraceSignature.prototype = {
@@ -2075,6 +2127,8 @@ GraceSignature.prototype = {
         "basicAsString":    object_basicAsString,
         "debug$Iterator":   object_debugIterator,
         "::(1)":            object_colonColon,
+        asDebugString:      Signature_asString,
+        asString:           Signature_asString,
         numericName() {
             return new GraceString(this.name);
         },
@@ -2090,8 +2144,8 @@ GraceSignature.prototype = {
         parameterTypes() {
             return new GraceSequence(this.paramTypes);
         },
-        resultType() {
-            return this.resultType;
+        returnType() {
+            return this.returnType;
         },
         "==(1)": function method_equality(argcv, other) {
             // TODO: test parameter and result type equality, but that requires
