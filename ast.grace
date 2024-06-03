@@ -257,7 +257,7 @@ class baseNode {
     method isReadable { true }
     method isPublic { true }
     method isConfidential { isPublic.not }
-    method decType {
+    once method decType {       // answers the SAME unknownLiteral each time
         if (false == self.dtype) then { return unknownLiteral }
         self.dtype
     }
@@ -1158,7 +1158,7 @@ class typeDec (name', typeValue) {
     method end -> Position { value.end }
     method isLegalInTrait { true }
     method isTypeDec { true }
-    method decType is override { typeType }
+    once method decType is override { typeType }
     method scope:=(st) {
         // sets up the 2-way conection between this node
         // and the synmol table that defines the scope that I open.
@@ -1238,7 +1238,7 @@ class universalDec (name') {
     method end -> Position { name.end }
     method isLegalInTrait { true }
     method isTypeDec { true }
-    method decType is override { typeType }
+    once method decType is override { typeType }
     method scope:=(st) {
         // sets up the 2-way conection between this node
         // and the synmol table that defines the scope that I open.
