@@ -1919,6 +1919,17 @@ function GraceInterface(name) {
     this.matchCache = [];
 }
 GraceInterface.prototype = {
+    methodNames: function nativeMethodNames () {
+        if (Array.isArray(this.typeMethods)) return this.typeMethods;
+        return Object.keys(this.typeMethods).sort();
+    },
+    methodAt: function nativeMethodAt (numericName) {
+        // returns a function that, when called, returns the method signature
+        if (Array.isArray(this.typeMethods)) {
+            return () => new GraceSignature(numericName, [], [], [], type_Unknown);
+        }
+        return this.typeMethods[numericName];
+    },
     methods: {
         "isMe(1)":          object_isMe,
         "myIdentityHash":   object_identityHash,
@@ -1976,20 +1987,12 @@ GraceInterface.prototype = {
         },
         "asString": type_asString,
         "asDebugString": interface_asString,
-        "methodNames": function type_methodNames (argcv) {
-            var result;
-            if (Array.isArray(this.typeMethods)) {
-                result = this.typeMethods.map(
-                    mn => canonicalMethodName(mn));
-            } else {
-                result = Object.keys(this.typeMethods).map (
-                    mn => canonicalMethodName(mn));
-                result.sort()
-            }
+        "methodNames": function interface_methodNames (argcv) {
+            const result = this.methodNames().map(mn => canonicalMethodName(mn));
             return graceStringSequence(result);
         },
         "methodAt(1)": function interface_methodAt (argcv, methName) {
-            return new GraceMethod(methName._value, [], type_Unknown);
+            return this.methodAt(numericMethodName(methName._value))();
         },
         "==(1)": function interface_equality (argcv, other) {
             if (Object.is(this, other)) return GraceTrue;
@@ -2045,43 +2048,6 @@ GraceInterface.prototype = {
     classUid: "Interface-built-in"
 };
 
-function GraceMethod(methodName, parameterTypes, returnType) {
-    this.name = methodName;
-    this.parameterTypes = parameterTypes;
-    this.returnType = returnType;
-}
-GraceMethod.prototype = {
-    methods: {
-        "isMe(1)":          object_isMe,
-        "myIdentityHash":   object_identityHash,
-        "≠(1)":             object_notEquals,
-        "basicAsString":    object_basicAsString,
-        "debug$Iterator":   object_debugIterator,
-        "name": function method_name (argcv) {
-            return new GraceString(this.name);
-        },
-        "parameterTypes": function method_parameterTypes (argcv) {
-            return new GraceSequence(this.parameterTypes);
-        },
-        "returnType": function method_returnType (argcv) {
-            return this.returnType;
-        },
-        "asString": function method_asString (argcv) {
-            return new GraceString("method " + this.name + " returning " +
-                request(this.returnType, "asString", [])._value);
-        },
-        "==(1)": function method_equality(argcv, other) {
-            // TODO: test parameter and result type equality, but that requires
-            // a cache of assumptions (to avoid infinite regress).  The cache
-            // must be indexed by identity.
-            return this.name == other.name ? GraceTrue : GraceFalse;
-        }
-    },
-    className: "Method",
-    definitionModule: "built-in library",
-    definitionLine: 2035,
-    classUid: "Method-built-in"
-};
 function graceStringSequence(jsListOfJsStrings) {
     return new GraceSequence(
         jsListOfJsStrings.map(s => new GraceString(s)))
@@ -2097,12 +2063,36 @@ function GraceSignature(methodName, paramNames, typeParameterNames, paramTypes, 
 }
 GraceSignature.prototype = {
     methods: {
-        numericName: () => new GraceString(this.name),
-        name: () => new GraceString(canonicalMethodName(this.name)),
-        typeParameterNames: () => graceStringSequence(this.typeParams),
-        parameterNames: () => graceStringSequence(paramsNames),
-        parameterTypes: () => new GraceSequence(paramtypes),
-        resultType: () => resultType
+        "isMe(1)":          object_isMe,
+        "myIdentityHash":   object_identityHash,
+        "≠(1)":             object_notEquals,
+        "basicAsString":    object_basicAsString,
+        "debug$Iterator":   object_debugIterator,
+        "::(1)":            object_colonColon,
+        numericName() {
+            return new GraceString(this.name);
+        },
+        name() {
+            return new GraceString(canonicalMethodName(this.name));
+        },
+        typeParameterNames() {
+            return graceStringSequence(this.typeParams);
+        },
+        parameterNames() {
+            return graceStringSequence(this.paramsNames);
+        },
+        parameterTypes() {
+            return new GraceSequence(this.paramtypes);
+        },
+        resultType() {
+            return this.resultType;
+        },
+        "==(1)": function method_equality(argcv, other) {
+            // TODO: test parameter and result type equality, but that requires
+            // a cache of assumptions (to avoid infinite regress).  The cache
+            // must be indexed by identity.
+            return this.name == other.name ? GraceTrue : GraceFalse;
+        }
     },
     className: "Signature",
     definitionModule: "built-in library",

@@ -585,14 +585,18 @@ method compileMethodsForInterface(o) {
 
 method compileSignature(m) {
     def reg = uidWithPrefix "sig"
+    out "{reg} = ({withoutComma(typeParamlist(m))}) => \{"
+    increaseindent
     m.parameterTypes.do { each -> compilenode(each) }
     compilenode(m.decType)
-    out( "{reg} = new GraceSignature(\"{m.nameString.quoted}\"," ++
-         " {stringList(m.parameterNames)}," ++
-         " {stringList(m.typeParameterNames)}," ++
-         " {literalList(m.parameterTypes.map { each -> each.register })}," ++
-         " {m.decType.register});"
-    )
+    out ("return new GraceSignature(\"{m.nameString.quoted}\"," ++
+        " {stringList(m.parameterNames)}," ++
+        " {stringList(m.typeParameterNames)}," ++
+        " {literalList(m.parameterTypes.map { each -> each.register })}," ++
+        " {m.decType.register});")
+    decreaseindent
+    out "}"
+
     m.register := reg
     reg
 }
@@ -867,7 +871,7 @@ method compileOnceWrapper(o, selfobj, name) {
         out "\};"
     } else {
         def commaParamNames = paramlist(o) ++ typeParamlist(o);
-        def paramNames = commaParamNames.substringFrom 3
+        def paramNames = withoutComma(commaParamNames)
         out "function {memoFuncName}(argcv{commaParamNames}) \{"
         increaseindent
         compileDefaultsForTypeParameters(o) extraParams 0
@@ -1020,15 +1024,19 @@ method paramlist(o) {
 }
 method typeParamlist(o) {
     // a comma-prefixed and separated list of the type parameters of the method
-    // described by methodnode o.
+    // described by methodDec or methodSignature node o.
 
     var result := ""
     if (o.hasTypeParams) then {
-        o.typeParams.do { each ->
-            result := result ++ ", {varf(each.nameString)}"
+        o.typeParameterNames.do { each ->
+            result := result ++ ", {varf(each)}"
         }
     }
     result
+}
+method withoutComma(str) {
+    if (str.isEmpty) then { return str }
+    str.substringFrom 3     // removes leading comma and space
 }
 method parameterTypes(o) {
     // compiles the types of the parameters of method o.
@@ -1042,7 +1050,7 @@ method parameterTypes(o) {
 method compilemethodtypes(func, o) {
     if (o.hasParameterTypes) then {
         if (o.hasTypeParams) then {
-            out "{func}.paramTypes = ({typeParamlist(o).substringFrom 3}) => \{"
+            out "{func}.paramTypes = ({withoutComma(typeParamlist(o))}) => \{"
             increaseindent
             out "return {literalList(parameterTypes(o))}; }"
             decreaseindent
@@ -1052,7 +1060,7 @@ method compilemethodtypes(func, o) {
     }
     if (o.hasReturnType) then {
         if (o.hasTypeParams) then {
-            out "{func}.returnType = ({typeParamlist(o).substringFrom 3}) => \{"
+            out "{func}.returnType = ({withoutComma(typeParamlist(o))}) => \{"
             increaseindent
             def rt = compilenode(o.dtype)
             out "return {rt}; }"
