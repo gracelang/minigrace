@@ -215,6 +215,7 @@ j1-minigrace: $(J1-MINIGRACE) $(JSINSPECTORS:%=j1/%)
 j2-minigrace: j1-minigrace $(J2-MINIGRACE) $(JSINSPECTORS:%=j2/%)
 
 $(JSJSFILES:%.js=j1/%.js): j1/%.js: js/%.js
+	node --check $<
 	cp -pf $< $@
 
 $(JSJSFILES:%.js=j2/%.js): j2/%.js: js/%.js
