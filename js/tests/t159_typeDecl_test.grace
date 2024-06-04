@@ -1,12 +1,13 @@
 dialect "minitest"
 
-type A = interface {a(n:Number) -> Number}
-type B = interface {b(s:String) -> String}
-type D = interface {d(u:Unknown) -> Unknown}
+type A = interface {a(n:Number) → Number}
+type AS = interface {a(n:String) → String}
+type B = interface {b(s:String) → String}
+type D = interface {d(u:Unknown) → Unknown}
 type D' = interface {d(_)e(_,_)}
 type A' = A
 type B' = B
-type C = interface {c -> Done }
+type C = interface {c → Done }
 type AB = A & B
 type AB' = A | B
 type ABC = A & B & C
@@ -14,8 +15,12 @@ type ABC' = A | B | C
 type S = Self
 type U = Unknown
 type W = interface {
-    a(s:String) -> String
-    x(n:Number) -> Number
+    a(s:String) → String
+    x(n:Number) → Number
+}
+
+def anA = object {
+    method a(n:Number) → Number { n + 1 }
 }
 
 type ListWithoutSequence = List - Sequence
@@ -157,7 +162,7 @@ testSuite "Composite Types" with {
         assert (AB - B) shouldBe (A)
     }
     test "Null exclusion" by {
-        assert (AB - interface { z(_:String) -> Done }) shouldBe (AB)
+        assert (AB - interface { z(_:String) → Done }) shouldBe (AB)
     }
     test "Invalid exclusion" by {
         assert {AB - AB'} shouldRaise (TypeError)
@@ -214,8 +219,15 @@ testSuite "Signatures" with {
         assert ((ABC & W).methodNames) shouldBe ["a(_)", "b(_)", "c", "x(_)"]
     }
     test "Signature & has a composed signature" by {
-        def combined_a = interface { a(s:Number|String) -> Number|String }.methodAt "a(_)"
+        def combined_a = interface { a(s:Number|String) → Number|String }.methodAt "a(_)"
         assert ((ABC & W).methodAt "a(_)") shouldBe (combined_a)
+    }
+    test "Type matching examines the signature" by {
+        match (anA)
+          case {_:A → assert true
+        } case {_:AS → assert false description "anA is an AS!"
+        } else { assert false description "anA is neither an A nor a AS"
+        }
     }
 }
 
